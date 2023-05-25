@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -78,7 +78,13 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public static interface </span><span class="element-name type-name-label">H2ProtocolConfig.KeepAlivePolicy</span></div>
-<div class="block">A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.</div>
+<div class="block">A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.
+ <p>
+ While <a href="#idleDuration()"><code>idleDuration()</code></a> and <a href="#ackTimeout()"><code>ackTimeout()</code></a>} can be configured independently, users should keep
+ them reasonably aligned. When <a href="#idleDuration()"><code>idle duration</code></a> is positive, the system expects to receive
+ <code>PING</code> acknowledgment before it can send the following <code>PING</code> frames. A good practice is to keep
+ <a href="#ackTimeout()"><code>ackTimeout()</code></a> less than or equal to <a href="#idleDuration()"><code>idleDuration()</code></a>}. Otherwise, the following <code>PING</code>
+ frames can be delayed awaiting acknowledgment of the previous one.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -130,11 +136,17 @@ loadScripts(document, 'script');</script>
 <h3>idleDuration</h3>
 <div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">idleDuration</span>()</div>
 <div class="block"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of time the connection has to be idle before a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.</div>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+ <p>
+ Too short idle duration can be used for testing but may cause unnecessarily high network traffic in real
+ environments. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a> disables keep-alive <code>PING</code> frames. In this case,
+ <a href="#ackTimeout()"><code>ackTimeout()</code></a> is still used for <code>PING</code> acknowledgment during graceful closure process between
+ two <a href="https://datatracker.ietf.org/doc/html/rfc9113#section-6.8">GOAWAY</a> frames.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of time the connection has to be idle before a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.</dd>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent or <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a> to
+ disable keep-alive <code>PING</code> frames.</dd>
 </dl>
 </section>
 </li>
@@ -143,8 +155,16 @@ loadScripts(document, 'script');</script>
 <h3>ackTimeout</h3>
 <div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">ackTimeout</span>()</div>
 <div class="block"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to wait for acknowledgment from the peer after a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received,
- a closure of the connection will be initiated.</div>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received
+ within the configured timeout, a connection will be closed.
+ <p>
+ This duration must be positive. Too short ack timeout can cause undesirable connection closures. Too long ack
+ timeout can add unnecessary delay when the remote peer is unresponsive or the network connection is broken,
+ because under normal circumstances <code>PING</code> frames ara acknowledged immediately.
+ <p>
+ When <a href="#idleDuration()"><code>idleDuration()</code></a> is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>zero</code></a>, this timeout is still used for <code>PING</code>
+ acknowledgment during graceful closure process between two
+ <a href="https://datatracker.ietf.org/doc/html/rfc9113#section-6.8">GOAWAY</a> frames.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to wait for acknowledgment from the peer after a

@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -169,11 +169,15 @@ loadScripts(document, 'script');</script>
 <h3>idleDuration</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H2KeepAlivePolicies.KeepAlivePolicyBuilder.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies.KeepAlivePolicyBuilder</a></span>&nbsp;<span class="element-name">idleDuration</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;idleDuration)</span></div>
 <div class="block">Set the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of idleness on a connection after which a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.</div>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+ <p>
+ Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
+ environments. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a> disables keep-alive <code>PING</code> frames.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>idleDuration</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of idleness on a connection after which a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.</dd>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent or <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a> to
+ disable keep-alive <code>PING</code> frames.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>
@@ -190,8 +194,12 @@ loadScripts(document, 'script');</script>
 <h3>ackTimeout</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H2KeepAlivePolicies.KeepAlivePolicyBuilder.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies.KeepAlivePolicyBuilder</a></span>&nbsp;<span class="element-name">ackTimeout</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ackTimeout)</span></div>
 <div class="block">Set the maximum <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to wait for an acknowledgment of a previously sent
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>. If no acknowledgment is received, the
- connection will be closed.</div>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>. If no acknowledgment is received, within
+ the configured timeout, a connection will be closed.
+ <p>
+ This duration must be positive. Too short ack timeout can cause undesirable connection closures. Too long ack
+ timeout can add unnecessary delay when the remote peer is unresponsive or the network connection is broken,
+ because under normal circumstances <code>PING</code> frames ara acknowledged immediately.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>ackTimeout</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to wait for an acknowledgment of a previously sent

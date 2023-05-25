@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -145,14 +145,8 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">influenceStrategy</a><wbr>(<a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Optionally modify the passed <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to a new <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that suits
- this <a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Return an <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
 </div>
@@ -216,26 +210,6 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../../http/api/HttpExecutionStrategyInfluencer.html#requiredOffloads()">requiredOffloads</a></code>&nbsp;in interface&nbsp;<code><a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></code></dd>
 <dt>Returns:</dt>
 <dd>the <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> required by the influencer.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">
-<h3>influenceStrategy</h3>
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></span>&nbsp;<span class="element-name">influenceStrategy</span><wbr><span class="parameters">(<a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../http/api/HttpExecutionStrategyInfluencer.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">HttpExecutionStrategyInfluencer</a></code></span></div>
-<div class="block">Optionally modify the passed <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to a new <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that suits
- this <a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>.
-
- <p>Implementations should not return <a href="../../http/api/HttpExecutionStrategies.html#defaultStrategy()"><code>HttpExecutionStrategies.defaultStrategy()</code></a> unless it was also
- provided as input.</p></div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../http/api/HttpExecutionStrategyInfluencer.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">influenceStrategy</a></code>&nbsp;in interface&nbsp;<code><a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></code></dd>
-<dt>Parameters:</dt>
-<dd><code>strategy</code> - <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to influence.</dd>
-<dt>Returns:</dt>
-<dd><a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that suits this <a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></dd>
 </dl>
 </section>
 </li>

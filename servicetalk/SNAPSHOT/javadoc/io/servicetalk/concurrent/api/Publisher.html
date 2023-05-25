@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -1072,6 +1072,19 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toIterable(int)" class="member-name-link">toIterable</a><wbr>(int&nbsp;queueCapacityHint)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts <code>this</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to an <a href="../BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateOutstandingDemand()" class="member-name-link">validateOutstandingDemand</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Validate the outstanding demand (<a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validateOutstandingDemand(java.util.function.ObjLongConsumer,io.servicetalk.concurrent.api.LongBinaryConsumer)" class="member-name-link">validateOutstandingDemand</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ObjLongConsumer.html" title="class or interface in java.util.function" class="external-link">ObjLongConsumer</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;onNextConsumer,
+ <a href="LongBinaryConsumer.html" title="interface in io.servicetalk.concurrent.api">LongBinaryConsumer</a>&nbsp;requestConsumer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Validate the outstanding demand (<a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenCancel(java.lang.Runnable)" class="member-name-link">whenCancel</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onCancel)</code></div>
@@ -3266,6 +3279,69 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <li><a href="#afterCancel(java.lang.Runnable)"><code>afterCancel(Runnable)</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="validateOutstandingDemand()">
+<h3>validateOutstandingDemand</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">validateOutstandingDemand</span>()</div>
+<div class="block">Validate the outstanding demand (<a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative. This can be a useful diagnostic tool if custom operators
+ or async sources are in use to ensure outstanding demand is always non-negative.
+ <p>
+ Invalid <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> maybe propagated by this operator, and is still the responsibility
+ of upstream source to terminate in error.
+ <p>
+ Here is pseudo-code demonstrating the functionality of this operator:
+ <pre><code>
+   request(1);
+   onNext(t1);
+   onNext(t2); // throws an Exception because outstanding demand is 0
+ </code></pre></div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#validateOutstandingDemand(java.util.function.ObjLongConsumer,io.servicetalk.concurrent.api.LongBinaryConsumer)"><code>validateOutstandingDemand(ObjLongConsumer, LongBinaryConsumer)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="validateOutstandingDemand(java.util.function.ObjLongConsumer,io.servicetalk.concurrent.api.LongBinaryConsumer)">
+<h3>validateOutstandingDemand</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">validateOutstandingDemand</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/ObjLongConsumer.html" title="class or interface in java.util.function" class="external-link">ObjLongConsumer</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;onNextConsumer,
+ <a href="LongBinaryConsumer.html" title="interface in io.servicetalk.concurrent.api">LongBinaryConsumer</a>&nbsp;requestConsumer)</span></div>
+<div class="block">Validate the outstanding demand (<a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative. This can be a useful diagnostic tool if custom operators
+ or async sources are in use to ensure outstanding demand is always non-negative.
+ <p>
+ ReactiveStreams specification allows <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> and <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> to be concurrent, therefore the
+ arguments of this function maybe invoked concurrently.
+ <p>
+ Invalid <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> maybe propagated by this operator, and is still the responsibility
+ of upstream source to terminate in error.
+ <p>
+ Here is pseudo-code demonstrating the functionality of this operator:
+ <pre><code>
+   request(1); // calls requestConsumer(1, 1)
+   onNext(t1); // calls onNextConsumer(t1, 0)
+   onNext(t2); // calls onNextConsumer(t1, -1), throws an Exception because outstanding demand is 0
+ </code></pre></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>onNextConsumer</code> - Called when <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> is invoked with first argument is the signal
+ and second argument is demand (after decrementing). This consumer is meant to be used for observability purposes,
+ and is assumed to not throw.</dd>
+<dd><code>requestConsumer</code> - Called when <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> is invoked with first argument of <code>n</code>
+ and second argument of current demand (after incrementing). This method may only be called if <code>n</code> is valid.
+ This consumer is meant to be used for observability purposes, and is assumed to not throw.</dd>
+<dt>Returns:</dt>
+<dd>The new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
 </dl>
 </section>
 </li>
@@ -6151,6 +6227,13 @@ B&gt;</span>
 <div class="block">Create a new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that when subscribed will emit all data from the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> to the
  <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> and then <a href="../PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.
  <p>
+ The resulting publisher is not replayable and supports only a single <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.
+ <p>
+ After a returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is subscribed, it owns the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>, meaning that the
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> will be automatically closed when the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is cancelled or terminated. Not
+ necessary to close the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> after subscribe, but it should be closed when control flow never
+ subscribes to the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
+ <p>
  The Reactive Streams specification provides two criteria (
  <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
  <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
@@ -6174,6 +6257,13 @@ B&gt;</span>
  int&nbsp;readChunkSize)</span></div>
 <div class="block">Create a new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that when subscribed will emit all data from the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> to the
  <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> and then <a href="../PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.
+ <p>
+ The resulting publisher is not replayable and supports only a single <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.
+ <p>
+ After a returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is subscribed, it owns the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>, meaning that the
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> will be automatically closed when the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is cancelled or terminated. Not
+ necessary to close the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> after subscribe, but it should be closed when control flow never
+ subscribes to the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
  <p>
  The Reactive Streams specification provides two criteria (
  <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and

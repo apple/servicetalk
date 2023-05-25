@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -76,6 +76,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/dns/discovery/netty/ServiceDiscovererUtils.TwoIntsConsumer.html#accept(int,int)" class="member-name-link">accept(int, int)</a> - Method in interface io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.dns.discovery.netty">ServiceDiscovererUtils.TwoIntsConsumer</a></dt>
 <dd>
 <div class="block">Performs this operation on the given arguments.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/LongBinaryConsumer.html#accept(long,long)" class="member-name-link">accept(long, long)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/LongBinaryConsumer.html" title="interface in io.servicetalk.concurrent.api">LongBinaryConsumer</a></dt>
+<dd>
+<div class="block">Evaluates this consumer on the given arguments.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html#accept(io.servicetalk.transport.api.ConnectionContext)" class="member-name-link">accept(ConnectionContext)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></dt>
 <dd>
@@ -1521,7 +1525,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ArrayUtils.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">ArrayUtils</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
-<div class="block">Utilities for arrays.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This internal class will be removed in the future releases without a replacement. If you depend on it,
+ consider copying into your codebase.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcClient.html#asBlockingClient()" class="member-name-link">asBlockingClient()</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api">GrpcClient</a></dt>
 <dd>
@@ -4018,14 +4025,19 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a>&lt;<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="type parameter in ConcurrentTerminalSubscriber">T</a>&gt; - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
-<div class="block">A <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> that allows for concurrent delivery of terminal events.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This internal class will be removed in the future releases without a replacement. If you depend on it,
+ consider copying into your codebase.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#%3Cinit%3E(io.servicetalk.concurrent.PublisherSource.Subscriber)" class="member-name-link">ConcurrentTerminalSubscriber(PublisherSource.Subscriber&lt;T&gt;)</a> - Constructor for class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#%3Cinit%3E(io.servicetalk.concurrent.PublisherSource.Subscriber,boolean)" class="member-name-link">ConcurrentTerminalSubscriber(PublisherSource.Subscriber&lt;T&gt;, boolean)</a> - Constructor for class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentUtils.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">ConcurrentUtils</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
@@ -5428,11 +5440,13 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deferredOnComplete()" class="member-name-link">deferredOnComplete()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Indicate that a <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onComplete()"><code>ConcurrentTerminalSubscriber.onComplete()</code></a> should be delivered after <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deliverDeferredTerminal()"><code>ConcurrentTerminalSubscriber.deliverDeferredTerminal()</code></a> is
  later called.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deferredOnError(java.lang.Throwable)" class="member-name-link">deferredOnError(Throwable)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Indicate that a <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onError(java.lang.Throwable)"><code>ConcurrentTerminalSubscriber.onError(Throwable)</code></a> should be delivered after <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deliverDeferredTerminal()"><code>ConcurrentTerminalSubscriber.deliverDeferredTerminal()</code></a> is
  later called.</div>
 </dd>
@@ -5791,6 +5805,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deliverDeferredTerminal()" class="member-name-link">deliverDeferredTerminal()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Try to deliver a terminal signal typically set by <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deferredOnComplete()"><code>ConcurrentTerminalSubscriber.deferredOnComplete()</code></a> or
  <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#deferredOnError(java.lang.Throwable)"><code>ConcurrentTerminalSubscriber.deferredOnError(Throwable)</code></a>.</div>
 </dd>
@@ -10405,6 +10420,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ArrayUtils.html#indexOf(X,X%5B%5D)" class="member-name-link">indexOf(X, X[])</a> - Static method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ArrayUtils.html" title="class in io.servicetalk.concurrent.internal">ArrayUtils</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Find the index of <code>l</code> in <code>array</code>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#inferPeerHost(boolean)" class="member-name-link">inferPeerHost(boolean)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
@@ -10439,8 +10455,6 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">Implement <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#requiredOffloads()"><code>HttpExecutionStrategyInfluencer.requiredOffloads()</code></a> instead.</div>
 </div>
 </dd>
-<dt><a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverRequesterFilter.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">influenceStrategy(HttpExecutionStrategy)</a> - Method in class io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverRequesterFilter</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/TimeoutFromRequest.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">influenceStrategy(HttpExecutionStrategy)</a> - Method in interface io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -12076,6 +12090,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html#logUserData()" class="member-name-link">logUserData()</a> - Method in class io.servicetalk.logging.slf4j.internal.<a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html" title="class in io.servicetalk.logging.slf4j.internal">DefaultUserDataLoggerConfig</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/LongBinaryConsumer.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">LongBinaryConsumer</a> - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">A special consumer that takes two <code>long</code> arguments.</div>
+</dd>
 <dt><a href="io/servicetalk/opentracing/internal/HexUtils.html#longOfHexBytes(java.lang.String,int)" class="member-name-link">longOfHexBytes(String, int)</a> - Static method in class io.servicetalk.opentracing.internal.<a href="io/servicetalk/opentracing/internal/HexUtils.html" title="class in io.servicetalk.opentracing.internal">HexUtils</a></dt>
 <dd>
 <div class="block">Retrieves the <code>long</code> value represented by the provided hex <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a>.</div>
@@ -14139,7 +14157,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html#onComplete()" class="member-name-link">onComplete()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html" title="class in io.servicetalk.concurrent.internal">CancelImmediatelySubscriber</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onComplete()" class="member-name-link">onComplete()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html#onComplete()" class="member-name-link">onComplete()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" title="class in io.servicetalk.concurrent.internal">LatestValueSubscriber</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -14189,7 +14209,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html#onError(java.lang.Throwable)" class="member-name-link">onError(Throwable)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html" title="class in io.servicetalk.concurrent.internal">CancelImmediatelySubscriber</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onError(java.lang.Throwable)" class="member-name-link">onError(Throwable)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html#onError(java.lang.Throwable)" class="member-name-link">onError(Throwable)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" title="class in io.servicetalk.concurrent.internal">LatestValueSubscriber</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -14447,7 +14469,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html#onNext(java.lang.Object)" class="member-name-link">onNext(Object)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html" title="class in io.servicetalk.concurrent.internal">CancelImmediatelySubscriber</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onNext(T)" class="member-name-link">onNext(T)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html#onNext(T)" class="member-name-link">onNext(T)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" title="class in io.servicetalk.concurrent.internal">LatestValueSubscriber</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -14566,7 +14590,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe(PublisherSource.Subscription)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html" title="class in io.servicetalk.concurrent.internal">CancelImmediatelySubscriber</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe(PublisherSource.Subscription)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe(PublisherSource.Subscription)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" title="class in io.servicetalk.concurrent.internal">LatestValueSubscriber</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -15464,10 +15490,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#processOnComplete()" class="member-name-link">processOnComplete()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Attempt to process <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onComplete()"><code>ConcurrentTerminalSubscriber.onComplete()</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#processOnError(java.lang.Throwable)" class="member-name-link">processOnError(Throwable)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Attempt to process <a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onError(java.lang.Throwable)"><code>ConcurrentTerminalSubscriber.onError(Throwable)</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Processors.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Processors</a> - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
@@ -15859,14 +15887,19 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a> - Exception in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
-<div class="block">Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is no longer used by ServiceTalk and will be removed in the future releases. If you depend on
+ it, consider copying into your codebase.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">QueueFullAndRejectedSubscribeException(String)</a> - Constructor for exception io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html#%3Cinit%3E(java.lang.String,int)" class="member-name-link">QueueFullAndRejectedSubscribeException(String, int)</a> - Constructor for exception io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/QueueFullAndRejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/QueueFullException.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">QueueFullException</a> - Exception in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
@@ -21596,6 +21629,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#validateNames()" class="member-name-link">validateNames()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#validateOutstandingDemand()" class="member-name-link">validateOutstandingDemand()</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Validate the outstanding demand (<a href="io/servicetalk/concurrent/PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#validateOutstandingDemand(java.util.function.ObjLongConsumer,io.servicetalk.concurrent.api.LongBinaryConsumer)" class="member-name-link">validateOutstandingDemand(ObjLongConsumer&lt;T&gt;, LongBinaryConsumer)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Validate the outstanding demand (<a href="io/servicetalk/concurrent/PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> minus
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>) does not go negative.</div>
+</dd>
 <dt><a href="io/servicetalk/router/utils/internal/RouteExecutionStrategyUtils.html#validateRouteExecutionStrategyAnnotationIfPresent(java.lang.reflect.Method,java.lang.Class,io.servicetalk.router.api.RouteExecutionStrategyFactory,java.util.Set)" class="member-name-link">validateRouteExecutionStrategyAnnotationIfPresent(Method, Class&lt;?&gt;, RouteExecutionStrategyFactory&lt;? extends ExecutionStrategy&gt;, Set&lt;String&gt;)</a> - Static method in class io.servicetalk.router.utils.internal.<a href="io/servicetalk/router/utils/internal/RouteExecutionStrategyUtils.html" title="class in io.servicetalk.router.utils.internal">RouteExecutionStrategyUtils</a></dt>
 <dd>
 <div class="block">Validates configuration of <a href="io/servicetalk/router/api/RouteExecutionStrategy.html" title="annotation interface in io.servicetalk.router.api"><code>RouteExecutionStrategy</code></a> annotation is correct if present.</div>

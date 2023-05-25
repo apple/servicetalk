@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -86,9 +86,14 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="RejectedSubscribeError.html" title="interface in io.servicetalk.concurrent.internal">RejectedSubscribeError</a></code>, <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">QueueFullAndRejectedSubscribeException</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">QueueFullAndRejectedSubscribeException</span>
 <span class="extends-implements">extends <a href="QueueFullException.html" title="class in io.servicetalk.concurrent.internal">QueueFullException</a>
 implements <a href="RejectedSubscribeError.html" title="interface in io.servicetalk.concurrent.internal">RejectedSubscribeError</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is no longer used by ServiceTalk and will be removed in the future releases. If you depend on
+ it, consider copying into your codebase.</div>
+</div>
 <div class="block">Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.</div>
 <dl class="notes">
 <dt>See Also:</dt>
@@ -111,11 +116,13 @@ implements <a href="RejectedSubscribeError.html" title="interface in io.servicet
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">QueueFullAndRejectedSubscribeException</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;queueIdentifier)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,int)" class="member-name-link">QueueFullAndRejectedSubscribeException</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;queueIdentifier,
  int&nbsp;capacity)</code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -146,6 +153,7 @@ implements <a href="RejectedSubscribeError.html" title="interface in io.servicet
 <section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>QueueFullAndRejectedSubscribeException</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">QueueFullAndRejectedSubscribeException</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;queueIdentifier)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -158,6 +166,7 @@ implements <a href="RejectedSubscribeError.html" title="interface in io.servicet
 <h3>QueueFullAndRejectedSubscribeException</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">QueueFullAndRejectedSubscribeException</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;queueIdentifier,
  int&nbsp;capacity)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

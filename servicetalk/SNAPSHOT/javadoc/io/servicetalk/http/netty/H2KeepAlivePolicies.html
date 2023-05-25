@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -171,6 +171,12 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>A <a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
  ping</a> if the channel is idle for the passed <code>idleDuration</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="H2ProtocolConfig.KeepAlivePolicy.html#idleDuration()"><code>H2ProtocolConfig.KeepAlivePolicy.idleDuration()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -186,13 +192,22 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>idleDuration</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of idleness on a connection after which a
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.</dd>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+ This value is recommended to be greater than or equal to <code>ackTimeout</code>.</dd>
 <dd><code>ackTimeout</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to wait for an acknowledgment of a previously sent
- <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.</dd>
+ <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.
+ This value is recommended to be less than or equal to <code>idleDuration</code>.</dd>
 <dt>Returns:</dt>
 <dd>A <a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
  ping</a> if the channel is idle for the passed <code>idleDuration</code> and waits for <code>ackTimeout</code> for an ack
  for that <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="H2ProtocolConfig.KeepAlivePolicy.html#idleDuration()"><code>H2ProtocolConfig.KeepAlivePolicy.idleDuration()</code></a></li>
+<li><a href="H2ProtocolConfig.KeepAlivePolicy.html#ackTimeout()"><code>H2ProtocolConfig.KeepAlivePolicy.ackTimeout()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

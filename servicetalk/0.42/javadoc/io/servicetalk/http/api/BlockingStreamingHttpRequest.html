@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -483,6 +483,9 @@ R&gt;&nbsp;<a href="BlockingStreamingHttpRequest.html" title="interface in io.se
 <h3>payloadBody</h3>
 <div class="member-signature"><span class="return-type"><a href="BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></span>&nbsp;<span class="element-name">payloadBody</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;payloadBody)</span></div>
 <div class="block">Returns a <a href="BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpRequest</code></a> with its underlying payload set to <code>payloadBody</code>.
+ <p>
+ After the request is sent, it owns the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>, meaning that the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> will be
+ automatically closed when the request is finished.
  <p>
  A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
  default policy is not sufficient you can use <a href="#transformPayloadBody(java.util.function.UnaryOperator)"><code>transformPayloadBody(UnaryOperator)</code></a> for more fine grain
