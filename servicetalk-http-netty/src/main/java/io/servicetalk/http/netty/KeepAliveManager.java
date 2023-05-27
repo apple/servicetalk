@@ -98,7 +98,7 @@ final class KeepAliveManager {
     @Nullable
     private Object keepAliveState;
     @Nullable
-    private Future<?> inputShutdownFuture;
+    private Future<?> inputShutdownTimeoutFuture;
     @Nullable
     private final GenericFutureListener<Future<? super Void>> pingWriteCompletionListener;
 
@@ -143,8 +143,8 @@ final class KeepAliveManager {
                             keepAliveState = State.KEEP_ALIVE_ACK_TIMEDOUT;
                             LOGGER.debug(
                                     "{} Timeout after {}ms waiting for keep-alive PING(ACK), writing GO_AWAY and " +
-                                            "closing the channel",
-                                    this.channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
+                                            "closing the channel with activeStreams={}",
+                                    this.channel, NANOSECONDS.toMillis(pingAckTimeoutNanos), activeStreams);
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
                                         if (!f.isSuccess()) {
@@ -208,10 +208,10 @@ final class KeepAliveManager {
 
         cancelIfStateIsAFuture(gracefulCloseState);
         cancelIfStateIsAFuture(keepAliveState);
-        cancelIfStateIsAFuture(inputShutdownFuture);
+        cancelIfStateIsAFuture(inputShutdownTimeoutFuture);
         gracefulCloseState = State.CLOSED;
         keepAliveState = State.CLOSED;
-        inputShutdownFuture = null;
+        inputShutdownTimeoutFuture = null;
     }
 
     void initiateGracefulClose(final Runnable whenInitiated) {
@@ -244,8 +244,8 @@ final class KeepAliveManager {
 
     void channelInputShutdown() {
         assert channel.eventLoop().inEventLoop();
-        cancelIfStateIsAFuture(inputShutdownFuture);
-        inputShutdownFuture = null;
+        cancelIfStateIsAFuture(inputShutdownTimeoutFuture);
+        inputShutdownTimeoutFuture = null;
         channelHalfShutdown("input", DuplexChannel::isOutputShutdown);
     }
 
@@ -386,7 +386,6 @@ final class KeepAliveManager {
             channel.close();
             return;
         }
-        assert activeStreams == 0;
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
         // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
         // closure, if there is no write pending then flush is a noop.
@@ -414,11 +413,12 @@ final class KeepAliveManager {
                 LOGGER.debug("{} Input and output shutdown, closing the channel", channel);
                 channel.close();
             } else {
-                // If we are in this state, we already finished GO_AWAY exchange and there are no more active streams.
+                // If we are in this state, we either already finished a GO_AWAY exchange and there are no more active
+                // streams, or we didn't receive PING(ACK) withing a timeout.
                 // Give the remote peer some time to propagate InputShutdown, then force close the channel if it didn't
-                // happen withing reasonable time frame.
-                inputShutdownFuture = scheduler.afterDuration(() -> {
-                    inputShutdownFuture = null;
+                // happen within reasonable time frame.
+                inputShutdownTimeoutFuture = scheduler.afterDuration(() -> {
+                    inputShutdownTimeoutFuture = null;
                     if (duplexChannel.isInputShutdown()) {
                         return;
                     }
