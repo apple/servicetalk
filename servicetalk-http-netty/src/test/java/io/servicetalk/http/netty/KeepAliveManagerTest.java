@@ -50,6 +50,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
@@ -291,7 +292,9 @@ class KeepAliveManagerTest {
         pingAckTimeoutTask.task.run();
 
         verifyNoWrite();
-        if (!duplex) {
+        if (duplex) {
+            verifyAtMostOneScheduledTasks();
+        } else {
             verifyNoScheduledTasks();
         }
     }
@@ -301,7 +304,9 @@ class KeepAliveManagerTest {
         assertThat("Unexpected error in go_away", secondGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
         assertThat("Unexpected extra stream ids", secondGoAway.extraStreamIds(), is(0));
         assertThat("Unexpected last stream id", secondGoAway.lastStreamId(), is(-1));
-        if (!duplex) {
+        if (duplex) {
+            verifyAtMostOneScheduledTasks();
+        } else {
             verifyNoScheduledTasks();
         }
     }
@@ -346,6 +351,10 @@ class KeepAliveManagerTest {
         assertThat("Unexpected tasks scheduled.", scheduledTasks.poll(), is(nullValue()));
     }
 
+    private void verifyAtMostOneScheduledTasks() {
+        assertThat(scheduledTasks.size(), lessThanOrEqualTo(1));
+    }
+
     private Http2StreamChannel addActiveStream(final KeepAliveManager manager) {
         Http2StreamChannel stream = mock(Http2StreamChannel.class);
         ChannelPromise closeFuture = channel.newPromise();
@@ -362,7 +371,9 @@ class KeepAliveManagerTest {
             throws InterruptedException {
         ackTimeoutTask.task.run();
         verifyWrite(instanceOf(Http2GoAwayFrame.class));
-        if (!duplex) {
+        if (duplex) {
+            verifyAtMostOneScheduledTasks();
+        } else {
             verifyNoScheduledTasks();
         }
         shutdownInputIfDuplexChannel();
