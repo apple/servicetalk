@@ -98,6 +98,8 @@ final class KeepAliveManager {
     @Nullable
     private Object keepAliveState;
     @Nullable
+    private Future<?> inputShutdownFuture;
+    @Nullable
     private final GenericFutureListener<Future<? super Void>> pingWriteCompletionListener;
 
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
@@ -206,8 +208,10 @@ final class KeepAliveManager {
 
         cancelIfStateIsAFuture(gracefulCloseState);
         cancelIfStateIsAFuture(keepAliveState);
+        cancelIfStateIsAFuture(inputShutdownFuture);
         gracefulCloseState = State.CLOSED;
         keepAliveState = State.CLOSED;
+        inputShutdownFuture = null;
     }
 
     void initiateGracefulClose(final Runnable whenInitiated) {
@@ -240,6 +244,8 @@ final class KeepAliveManager {
 
     void channelInputShutdown() {
         assert channel.eventLoop().inEventLoop();
+        cancelIfStateIsAFuture(inputShutdownFuture);
+        inputShutdownFuture = null;
         channelHalfShutdown("input", DuplexChannel::isOutputShutdown);
     }
 
@@ -377,9 +383,10 @@ final class KeepAliveManager {
 
         if (cause != null) {
             // Previous write failed with an exception, close immediately.
-            closeNotifyAndShutdownOutput();
+            channel.close();
             return;
         }
+        assert activeStreams == 0;
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
         // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
         // closure, if there is no write pending then flush is a noop.
@@ -387,28 +394,40 @@ final class KeepAliveManager {
     }
 
     private void closeNotifyAndShutdownOutput() {
-        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
-        if (sslHandler != null) {
-            // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
-            sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());
+        if (channel instanceof DuplexChannel) {
+            SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+            if (sslHandler != null) {
+                // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
+                sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());
+            } else {
+                doShutdownOutput();
+            }
         } else {
-            doShutdownOutput();
+            channel.close();
         }
     }
 
     private void doShutdownOutput() {
-        if (channel instanceof DuplexChannel) {
-            final DuplexChannel duplexChannel = (DuplexChannel) channel;
-            duplexChannel.shutdownOutput().addListener(f -> {
-                if (duplexChannel.isInputShutdown()) {
-                    LOGGER.debug("{} Input and output shutdown, closing the channel with activeStreams={}",
-                            channel, activeStreams);
+        final DuplexChannel duplexChannel = (DuplexChannel) channel;
+        duplexChannel.shutdownOutput().addListener(f -> {
+            if (duplexChannel.isInputShutdown()) {
+                LOGGER.debug("{} Input and output shutdown, closing the channel", channel);
+                channel.close();
+            } else {
+                // If we are in this state, we already finished GO_AWAY exchange and there are no more active streams.
+                // Give the remote peer some time to propagate InputShutdown, then force close the channel if it didn't
+                // happen withing reasonable time frame.
+                inputShutdownFuture = scheduler.afterDuration(() -> {
+                    inputShutdownFuture = null;
+                    if (duplexChannel.isInputShutdown()) {
+                        return;
+                    }
+                    LOGGER.debug("{} Timeout after {}ms waiting for InputShutdown, closing the channel",
+                            channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
                     channel.close();
-                }
-            });
-        } else {
-            channel.close();
-        }
+                }, pingAckTimeoutNanos, NANOSECONDS);
+            }
+        });
     }
 
     private void cancelIfStateIsAFuture(@Nullable final Object state) {
@@ -417,7 +436,8 @@ final class KeepAliveManager {
                 ((Future<?>) state).cancel(true);
             } catch (Throwable t) {
                 LOGGER.debug("{} Failed to cancel {} scheduled future",
-                        channel, state == keepAliveState ? "keep-alive" : "graceful close", t);
+                        channel, state == keepAliveState ? "keep-alive" :
+                                (state == gracefulCloseState ? "graceful close" : "input shutdown"), t);
             }
         }
     }
