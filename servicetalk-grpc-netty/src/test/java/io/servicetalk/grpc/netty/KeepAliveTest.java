@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
@@ -57,7 +58,7 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.time.Duration.ofSeconds;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -112,8 +113,8 @@ class KeepAliveTest {
 
     static Stream<Arguments> data() {
         return Stream.of(
-                Arguments.of(true, ofSeconds(1), ofSeconds(2)),
-                Arguments.of(false, ofSeconds(1), ofSeconds(2))
+                Arguments.of(true, ofMillis(CI ? 1000 : 200), ofMillis(CI ? 2000 : 400)),
+                Arguments.of(false, ofMillis(CI ? 1000 : 200), ofMillis(CI ? 2000 : 400))
         );
     }
 
