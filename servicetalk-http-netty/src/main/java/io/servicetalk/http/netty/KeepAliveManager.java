@@ -15,7 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -43,6 +46,7 @@ import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -141,17 +145,23 @@ final class KeepAliveManager {
                     keepAliveState = scheduler.afterDuration(() -> {
                         if (keepAliveState != null) {
                             keepAliveState = State.KEEP_ALIVE_ACK_TIMEDOUT;
+                            final long timeoutMillis = NANOSECONDS.toMillis(pingAckTimeoutNanos);
                             LOGGER.debug(
                                     "{} Timeout after {}ms waiting for keep-alive PING(ACK), writing GO_AWAY and " +
                                             "closing the channel with activeStreams={}",
-                                    this.channel, NANOSECONDS.toMillis(pingAckTimeoutNanos), activeStreams);
+                                    this.channel, timeoutMillis, activeStreams);
+                            final TimeoutException cause = StacklessTimeoutException.newInstance(
+                                    "Timeout after " + timeoutMillis + "ms waiting for keep-alive PING(ACK)",
+                                    KeepAliveManager.class, "keepAlivePingAckTimeout()");
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
+                                        Throwable closeCause = cause;
                                         if (!f.isSuccess()) {
+                                            closeCause = addSuppressed(f.cause(), cause);
                                             LOGGER.debug("{} Failed to write the last GO_AWAY after PING(ACK) " +
-                                                            "timeout, closing the channel", channel, f.cause());
+                                                            "timeout, closing the channel", channel, closeCause);
                                         }
-                                        close0(f.cause());
+                                        close0(closeCause);
                                     });
                         }
                     }, pingAckTimeoutNanos, NANOSECONDS);
@@ -178,7 +188,7 @@ final class KeepAliveManager {
                 LOGGER.debug("{} Graceful close PING(ACK) received, writing the second GO_AWAY, activeStreams={}",
                         channel, activeStreams);
                 cancelIfStateIsAFuture(gracefulCloseState);
-                gracefulCloseWriteSecondGoAway();
+                gracefulCloseWriteSecondGoAway(null);
             } else if (pingAckContent == KEEP_ALIVE_PING_CONTENT) {
                 LOGGER.trace("{} PING(ACK) received, activeStreams={}", channel, activeStreams);
                 cancelIfStateIsAFuture(keepAliveState);
@@ -294,12 +304,18 @@ final class KeepAliveManager {
                     gracefulCloseState != State.CLOSED) {
                 // If we have not started the graceful close process, or waiting for ack/read to complete the graceful
                 // close process just force a close now because we will not read any more data.
-                LOGGER.debug("{} Observed {} shutdown, graceful close is not started or in progress, must force " +
+                final String state = gracefulCloseState == null ? "not started" : "in progress";
+                final IllegalStateException cause = new IllegalStateException("Observed " + side +
+                        " shutdown while graceful closure is " + state);
+                LOGGER.debug("{} Observed {} shutdown while graceful closure is {}, must force " +
                                 "channel closure with activeStreams={}, gracefulCloseState={}, keepAliveState={}",
-                        channel, side, activeStreams, gracefulCloseState, keepAliveState);
-                channel.close();
+                        channel, side, state, activeStreams, gracefulCloseState, keepAliveState, cause);
+                ChannelCloseUtils.close(channel, cause);
             }
         } else {
+            LOGGER.debug("{} Observed {} shutdown, closing non-duplex channel with " +
+                            "activeStreams={}, gracefulCloseState={}, keepAliveState={}",
+                    channel, side, activeStreams, gracefulCloseState, keepAliveState);
             channel.close();
         }
     }
@@ -342,16 +358,19 @@ final class KeepAliveManager {
                     // If the PING(ACK) times out we may have under estimated the 2RTT time so we
                     // optimistically keep the connection open and rely upon higher level timeouts to tear
                     // down the connection.
-                    LOGGER.debug(
-                            "{} Timeout after {}ms waiting for graceful close PING(ACK), writing the second GO_AWAY",
-                            channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
-                    gracefulCloseWriteSecondGoAway();
+                    final long timeoutMillis = NANOSECONDS.toMillis(pingAckTimeoutNanos);
+                    LOGGER.debug("{} Timeout after {}ms waiting for graceful close PING(ACK), writing the second " +
+                                    "GO_AWAY and closing the channel with activeStreams={}",
+                            channel, timeoutMillis, activeStreams);
+                    gracefulCloseWriteSecondGoAway(StacklessTimeoutException.newInstance(
+                            "Timeout after " + timeoutMillis + "ms waiting for graceful close PING(ACK)",
+                            KeepAliveManager.class, "gracefulClosePingAckTimeout()"));
                 }, pingAckTimeoutNanos, NANOSECONDS);
             }
         });
     }
 
-    private void gracefulCloseWriteSecondGoAway() {
+    private void gracefulCloseWriteSecondGoAway(@Nullable final Throwable cause) {
         assert channel.eventLoop().inEventLoop();
 
         if (gracefulCloseState == State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
@@ -362,10 +381,11 @@ final class KeepAliveManager {
 
         channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
             if (!future.isSuccess()) {
-                LOGGER.debug("{} Failed to write the second GO_AWAY, closing the channel", channel, future.cause());
-                close0(future.cause());
-            } else if (activeStreams == 0) {
-                close0(null);
+                final Throwable closeCause = cause == null ? future.cause() : addSuppressed(future.cause(), cause);
+                LOGGER.debug("{} Failed to write the second GO_AWAY, closing the channel", channel, closeCause);
+                close0(closeCause);
+            } else if (cause != null || activeStreams == 0) {
+                close0(cause);
             }
         });
     }
@@ -383,7 +403,7 @@ final class KeepAliveManager {
 
         if (cause != null) {
             // Previous write failed with an exception, close immediately.
-            channel.close();
+            ChannelCloseUtils.close(channel, cause);
             return;
         }
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
@@ -422,9 +442,12 @@ final class KeepAliveManager {
                     if (duplexChannel.isInputShutdown()) {
                         return;
                     }
+                    final long timeoutMillis = NANOSECONDS.toMillis(pingAckTimeoutNanos);
                     LOGGER.debug("{} Timeout after {}ms waiting for InputShutdown, closing the channel",
-                            channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
-                    channel.close();
+                            channel, timeoutMillis);
+                    ChannelCloseUtils.close(channel, StacklessTimeoutException.newInstance(
+                            "Timeout after " + timeoutMillis + "ms waiting for InputShutdown",
+                            KeepAliveManager.class, "doShutdownOutput()"));
                 }, pingAckTimeoutNanos, NANOSECONDS);
             }
         });
@@ -439,6 +462,24 @@ final class KeepAliveManager {
                         channel, state == keepAliveState ? "keep-alive" :
                                 (state == gracefulCloseState ? "graceful close" : "input shutdown"), t);
             }
+        }
+    }
+
+    private static final class StacklessTimeoutException extends TimeoutException {
+        private static final long serialVersionUID = -8647261218787418981L;
+
+        private StacklessTimeoutException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            // Don't fill in the stacktrace to reduce performance overhead
+            return this;
+        }
+
+        static StacklessTimeoutException newInstance(final String message, final Class<?> clazz, final String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessTimeoutException(message), clazz, method);
         }
     }
 }
