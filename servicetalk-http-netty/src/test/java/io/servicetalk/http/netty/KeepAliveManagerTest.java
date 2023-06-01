@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
@@ -35,16 +36,22 @@ import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.util.concurrent.Promise;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.netty.util.ReferenceCountUtil.release;
-import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_IDLE_DURATION;
+import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,7 +67,10 @@ import static org.mockito.Mockito.when;
 
 class KeepAliveManagerTest {
 
+    private static final Duration ACK_TIMEOUT = CI ? ofMillis(1000) : ofMillis(200);
+
     private final BlockingQueue<ScheduledTask> scheduledTasks = new LinkedBlockingQueue<>();
+    private final AtomicBoolean failWrite = new AtomicBoolean();
     private EmbeddedChannel channel;
     private KeepAliveManager manager;
 
@@ -71,7 +81,9 @@ class KeepAliveManagerTest {
 
     private void setUp(boolean duplex, boolean allowPingWithoutActiveStreams) {
         KeepAliveManagerHandler managerHandler = new KeepAliveManagerHandler();
-        channel = duplex ? new EmbeddedDuplexChannel(true, managerHandler) : new EmbeddedChannel(managerHandler);
+        FailWriteHandler failWriteHandler = new FailWriteHandler();
+        channel = duplex ? new EmbeddedDuplexChannel(true, failWriteHandler, managerHandler)
+                : new EmbeddedChannel(failWriteHandler, managerHandler);
         manager = newManager(allowPingWithoutActiveStreams, channel);
         managerHandler.keepAliveManager(manager);
     }
@@ -116,7 +128,7 @@ class KeepAliveManagerTest {
         manager.pingReceived(new DefaultHttp2PingFrame(ping.content(), true));
         assertThat("Ping ack timeout task not cancelled.", ackTimeoutTask.promise.isCancelled(), is(true));
 
-        ackTimeoutTask.task.run();
+        ackTimeoutTask.runTask();
         verifyNoWrite();
         verifyNoScheduledTasks();
         assertThat("Channel unexpectedly closed.", channel.isOpen(), is(true));
@@ -155,7 +167,7 @@ class KeepAliveManagerTest {
 
         sendGracefulClosePingAckAndVerifySecondGoAway(manager, pingFrame, duplex);
         shutdownInputIfDuplexChannel();
-        channel.closeFuture().sync().await();
+        channel.closeFuture().await();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -170,7 +182,7 @@ class KeepAliveManagerTest {
         assertThat("Channel not closed.", channel.isOpen(), is(true));
         activeStream.close().sync().await();
         shutdownInputIfDuplexChannel();
-        channel.closeFuture().sync().await();
+        channel.closeFuture().await();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -180,10 +192,10 @@ class KeepAliveManagerTest {
         initiateGracefulCloseVerifyGoAwayAndPing(manager);
 
         ScheduledTask pingAckTimeoutTask = scheduledTasks.take();
-        pingAckTimeoutTask.task.run();
+        pingAckTimeoutTask.runTask();
         verifySecondGoAway(duplex);
         shutdownInputIfDuplexChannel();
-        channel.closeFuture().sync().await();
+        channel.closeFuture().await();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -194,13 +206,13 @@ class KeepAliveManagerTest {
         initiateGracefulCloseVerifyGoAwayAndPing(manager);
 
         ScheduledTask pingAckTimeoutTask = scheduledTasks.take();
-        pingAckTimeoutTask.task.run();
+        pingAckTimeoutTask.runTask();
         verifySecondGoAway(duplex);
 
         assertThat("Channel closed.", channel.isOpen(), is(true));
         activeStream.close().sync().await();
         shutdownInputIfDuplexChannel();
-        channel.closeFuture().sync().await();
+        channel.closeFuture().await();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -261,6 +273,66 @@ class KeepAliveManagerTest {
         verifyNoOtherActionPostClose(manager);
     }
 
+    @Test
+    void duplexGracefulCloseNoInputShutdown() throws Exception {
+        setUp(true, false);
+        Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
+
+        sendGracefulClosePingAckAndVerifySecondGoAway(manager, pingFrame, true);
+        EmbeddedDuplexChannel duplexChannel = (EmbeddedDuplexChannel) channel;
+        duplexChannel.awaitOutputShutdown();
+        // Don't shutdown input, verify that timeout will force channel closure.
+        // Use CountDownLatch instead of channel.closeFuture().await() to avoid BlockingOperationException.
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        channel.closeFuture().addListener(f -> closeLatch.countDown());
+        assertThat("Channel closed unexpectedly",
+                closeLatch.await(ACK_TIMEOUT.toMillis(), MILLISECONDS), is(false));
+        ScheduledTask inputShutdownTimeoutTask = scheduledTasks.take();
+        inputShutdownTimeoutTask.runTask();
+        closeLatch.await();
+        channel.closeFuture().await();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
+    @ValueSource(booleans = {true, false})
+    void failureToWritePingClosesChannel(boolean duplex) throws Exception {
+        setUp(duplex, true);
+        failWrite.set(true);
+        manager.channelIdle();
+        channel.closeFuture().await();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
+    @ValueSource(booleans = {true, false})
+    void failureToWriteLastGoAwayAfterPingAckTimeoutClosesChannel(boolean duplex) throws Exception {
+        setUp(duplex, true);
+        manager.channelIdle();
+        verifyWrite(instanceOf(Http2PingFrame.class));
+        ScheduledTask ackTimeoutTask = verifyPingAckTimeoutScheduled();
+        failWrite.set(true);
+        ackTimeoutTask.runTask();
+        channel.closeFuture().await();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
+    @ValueSource(booleans = {true, false})
+    void failureToWriteFirstGoAwayClosesChannel(boolean duplex) throws Exception {
+        setUp(duplex, true);
+        failWrite.set(true);
+        initiateGracefulClose(manager);
+        channel.closeFuture().await();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
+    @ValueSource(booleans = {true, false})
+    void failureToWriteSecondGoAwayClosesChannel(boolean duplex) throws Exception {
+        setUp(duplex, true);
+        Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
+        failWrite.set(true);
+        manager.pingReceived(new DefaultHttp2PingFrame(pingFrame.content(), true));
+        channel.closeFuture().await();
+    }
+
     private void verifyNoOtherActionPostClose(final KeepAliveManager manager) {
         manager.channelIdle();
         verifyNoWrite();
@@ -277,7 +349,7 @@ class KeepAliveManagerTest {
         ScheduledTask ackTimeoutTask = scheduledTasks.poll();
         assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
         assertThat("Unexpected ping ack timeout duration.", ackTimeoutTask.delayMillis,
-                is(DEFAULT_ACK_TIMEOUT.toMillis()));
+                is(ACK_TIMEOUT.toMillis()));
         return ackTimeoutTask;
     }
 
@@ -289,7 +361,7 @@ class KeepAliveManagerTest {
         assertThat("Ping ack task not cancelled.", pingAckTimeoutTask.promise.isCancelled(), is(true));
         verifySecondGoAway(duplex);
 
-        pingAckTimeoutTask.task.run();
+        pingAckTimeoutTask.runTask();
 
         verifyNoWrite();
         if (duplex) {
@@ -312,9 +384,7 @@ class KeepAliveManagerTest {
     }
 
     private Http2PingFrame initiateGracefulCloseVerifyGoAwayAndPing(final KeepAliveManager manager) {
-        Runnable whenInitiated = mock(Runnable.class);
-        manager.initiateGracefulClose(whenInitiated);
-        verify(whenInitiated).run();
+        initiateGracefulClose(manager);
 
         Http2GoAwayFrame firstGoAway = verifyWrite(instanceOf(Http2GoAwayFrame.class));
         assertThat("Unexpected error in go_away", firstGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
@@ -323,6 +393,12 @@ class KeepAliveManagerTest {
         Http2PingFrame pingFrame = verifyWrite(instanceOf(Http2PingFrame.class));
         verifyNoWrite();
         return pingFrame;
+    }
+
+    private void initiateGracefulClose(final KeepAliveManager manager) {
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated).run();
     }
 
     @SuppressWarnings("unchecked")
@@ -369,7 +445,7 @@ class KeepAliveManagerTest {
 
     private void verifyChannelCloseOnMissingPingAck(final ScheduledTask ackTimeoutTask, boolean duplex)
             throws InterruptedException {
-        ackTimeoutTask.task.run();
+        ackTimeoutTask.runTask();
         verifyWrite(instanceOf(Http2GoAwayFrame.class));
         if (duplex) {
             verifyAtMostOneScheduledTasks();
@@ -383,7 +459,7 @@ class KeepAliveManagerTest {
     private KeepAliveManager newManager(final boolean allowPingWithoutActiveStreams, final Channel channel) {
         KeepAlivePolicy policy = mock(KeepAlivePolicy.class);
         when(policy.idleDuration()).thenReturn(DEFAULT_IDLE_DURATION);
-        when(policy.ackTimeout()).thenReturn(DEFAULT_ACK_TIMEOUT);
+        when(policy.ackTimeout()).thenReturn(ACK_TIMEOUT);
         when(policy.withoutActiveStreams()).thenReturn(allowPingWithoutActiveStreams);
         return new KeepAliveManager(channel, policy,
                 (task, delay, unit) -> {
@@ -416,6 +492,13 @@ class KeepAliveManagerTest {
             this.promise = promise;
             this.delayMillis = delayMillis;
         }
+
+        void runTask() {
+            if (promise.isCancelled()) {
+                return;
+            }
+            task.run();
+        }
     }
 
     private static final class KeepAliveManagerHandler extends ChannelInboundHandlerAdapter {
@@ -444,6 +527,18 @@ class KeepAliveManagerTest {
             } else {
                 release(evt);
             }
+        }
+    }
+
+    private final class FailWriteHandler extends ChannelOutboundHandlerAdapter {
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+            if (failWrite.get()) {
+                release(msg);
+                promise.tryFailure(DELIBERATE_EXCEPTION);
+                return;
+            }
+            ctx.write(msg, promise);
         }
     }
 }
