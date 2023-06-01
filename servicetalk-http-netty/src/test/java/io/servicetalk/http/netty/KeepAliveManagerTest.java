@@ -15,7 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 
 import io.netty.buffer.ByteBuf;
@@ -45,7 +48,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -60,6 +65,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -71,6 +77,7 @@ class KeepAliveManagerTest {
 
     private final BlockingQueue<ScheduledTask> scheduledTasks = new LinkedBlockingQueue<>();
     private final AtomicBoolean failWrite = new AtomicBoolean();
+    private final ConnectionObserver connectionObserver = mock(ConnectionObserver.class);
     private EmbeddedChannel channel;
     private KeepAliveManager manager;
 
@@ -84,6 +91,7 @@ class KeepAliveManagerTest {
         FailWriteHandler failWriteHandler = new FailWriteHandler();
         channel = duplex ? new EmbeddedDuplexChannel(true, failWriteHandler, managerHandler)
                 : new EmbeddedChannel(failWriteHandler, managerHandler);
+        new ConnectionObserverInitializer(connectionObserver, false, false).init(channel);
         manager = newManager(allowPingWithoutActiveStreams, channel);
         managerHandler.keepAliveManager(manager);
     }
@@ -138,7 +146,7 @@ class KeepAliveManagerTest {
     @ValueSource(booleans = {true, false})
     void keepAlivePingAckWithUnknownContent(boolean duplex) throws Exception {
         setUp(duplex, false);
-        addActiveStream(manager);
+        Http2StreamChannel activeStream = addActiveStream(manager);
         manager.channelIdle();
         Http2PingFrame ping = verifyWrite(instanceOf(Http2PingFrame.class));
         ScheduledTask ackTimeoutTask = verifyPingAckTimeoutScheduled();
@@ -147,16 +155,20 @@ class KeepAliveManagerTest {
         assertThat("Ping ack timeout task cancelled.", ackTimeoutTask.promise.isCancelled(), is(false));
 
         verifyChannelCloseOnMissingPingAck(ackTimeoutTask, duplex);
+        activeStream.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
     @ValueSource(booleans = {true, false})
     void keepAliveMissingPingAck(boolean duplex) throws Exception {
         setUp(duplex, false);
-        addActiveStream(manager);
+        Http2StreamChannel activeStream = addActiveStream(manager);
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
         verifyChannelCloseOnMissingPingAck(verifyPingAckTimeoutScheduled(), duplex);
+        activeStream.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -168,6 +180,7 @@ class KeepAliveManagerTest {
         sendGracefulClosePingAckAndVerifySecondGoAway(manager, pingFrame, duplex);
         shutdownInputIfDuplexChannel();
         channel.closeFuture().await();
+        verifyConnectionObserver(null);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -183,6 +196,7 @@ class KeepAliveManagerTest {
         activeStream.close().sync().await();
         shutdownInputIfDuplexChannel();
         channel.closeFuture().await();
+        verifyConnectionObserver(null);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -196,6 +210,7 @@ class KeepAliveManagerTest {
         verifySecondGoAway(duplex);
         shutdownInputIfDuplexChannel();
         channel.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -209,17 +224,16 @@ class KeepAliveManagerTest {
         pingAckTimeoutTask.runTask();
         verifySecondGoAway(duplex);
 
-        assertThat("Channel closed.", channel.isOpen(), is(true));
-        activeStream.close().sync().await();
-        shutdownInputIfDuplexChannel();
         channel.closeFuture().await();
+        activeStream.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
     @ValueSource(booleans = {true, false})
     void gracefulClosePendingPingsCloseConnection(boolean duplex) throws Exception {
         setUp(duplex, false);
-        addActiveStream(manager);
+        Http2StreamChannel activeStream = addActiveStream(manager);
         Http2PingFrame pingFrame = initiateGracefulCloseVerifyGoAwayAndPing(manager);
 
         sendGracefulClosePingAckAndVerifySecondGoAway(manager, pingFrame, duplex);
@@ -228,6 +242,8 @@ class KeepAliveManagerTest {
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
         verifyChannelCloseOnMissingPingAck(verifyPingAckTimeoutScheduled(), duplex);
+        activeStream.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -291,6 +307,7 @@ class KeepAliveManagerTest {
         inputShutdownTimeoutTask.runTask();
         closeLatch.await();
         channel.closeFuture().await();
+        verifyConnectionObserver(TimeoutException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -300,6 +317,7 @@ class KeepAliveManagerTest {
         failWrite.set(true);
         manager.channelIdle();
         channel.closeFuture().await();
+        verifyConnectionObserver(DeliberateException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -312,6 +330,7 @@ class KeepAliveManagerTest {
         failWrite.set(true);
         ackTimeoutTask.runTask();
         channel.closeFuture().await();
+        verifyConnectionObserver(DeliberateException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -321,6 +340,7 @@ class KeepAliveManagerTest {
         failWrite.set(true);
         initiateGracefulClose(manager);
         channel.closeFuture().await();
+        verifyConnectionObserver(DeliberateException.class);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] duplex={0}")
@@ -331,6 +351,7 @@ class KeepAliveManagerTest {
         failWrite.set(true);
         manager.pingReceived(new DefaultHttp2PingFrame(pingFrame.content(), true));
         channel.closeFuture().await();
+        verifyConnectionObserver(DeliberateException.class);
     }
 
     private void verifyNoOtherActionPostClose(final KeepAliveManager manager) {
@@ -440,6 +461,7 @@ class KeepAliveManagerTest {
             return channel.newSucceededFuture();
         });
         manager.trackActiveStream(stream);
+        channel.closeFuture().addListener(f -> stream.close());
         return stream;
     }
 
@@ -479,6 +501,16 @@ class KeepAliveManagerTest {
             if (!duplexChannel.isInputShutdown()) { // we may have forced input shutdown already due to timeout
                 duplexChannel.shutdownInput().sync();   // Simulate FIN from the remote peer
             }
+        }
+    }
+
+    private void verifyConnectionObserver(@Nullable Class<? extends Throwable> exceptionClass) {
+        if (exceptionClass != null) {
+            verify(connectionObserver).connectionClosed(any(exceptionClass));
+            verify(connectionObserver, never()).connectionClosed();
+        } else {
+            verify(connectionObserver).connectionClosed();
+            verify(connectionObserver, never()).connectionClosed(any(Throwable.class));
         }
     }
 
