@@ -72,8 +72,8 @@ final class KeepAliveManager {
             AtomicIntegerFieldUpdater.newUpdater(KeepAliveManager.class, "activeStreams");
 
     // Use the last digit (even or odd) to distinguish PING frames when frame logging is enabled.
-    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong() | 0x01L;
-    private static final long KEEP_ALIVE_PING_CONTENT = ThreadLocalRandom.current().nextLong() & ~0x01L;
+    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong() | 0x01L; // odd
+    private static final long KEEP_ALIVE_PING_CONTENT = ThreadLocalRandom.current().nextLong() & ~0x01L;    // even
 
     // Frame logging dumps data in hex format. An integer helps to understand the cause without decoding the content.
     static final ByteBuf LOCAL_GO_AWAY_CONTENT = staticByteBufFromAscii("0.local");
