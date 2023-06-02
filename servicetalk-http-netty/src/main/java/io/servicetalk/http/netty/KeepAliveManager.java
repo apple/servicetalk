@@ -19,12 +19,15 @@ import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
+import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslHandler;
@@ -42,7 +45,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
+import static io.netty.buffer.Unpooled.unreleasableBuffer;
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
@@ -65,8 +70,17 @@ final class KeepAliveManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeepAliveManager.class);
     private static final AtomicIntegerFieldUpdater<KeepAliveManager> activeStreamsUpdater =
             AtomicIntegerFieldUpdater.newUpdater(KeepAliveManager.class, "activeStreams");
-    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
-    private static final long KEEP_ALIVE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
+
+    // Use the last digit (even or odd) to distinguish PING frames when frame logging is enabled.
+    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong() | 0x01L; // odd
+    private static final long KEEP_ALIVE_PING_CONTENT = ThreadLocalRandom.current().nextLong() & ~0x01L;    // even
+
+    // Frame logging dumps data in hex format. An integer helps to understand the cause without decoding the content.
+    static final ByteBuf LOCAL_GO_AWAY_CONTENT = staticByteBufFromAscii("0.local");
+    static final ByteBuf REMOTE_GO_AWAY_CONTENT = staticByteBufFromAscii("1.remote");
+    static final ByteBuf SECOND_GO_AWAY_CONTENT = staticByteBufFromAscii("2.second");
+    static final ByteBuf GC_TIMEOUT_GO_AWAY_CONTENT = staticByteBufFromAscii("3.graceful-close-timeout");
+    static final ByteBuf KA_TIMEOUT_GO_AWAY_CONTENT = staticByteBufFromAscii("4.keep-alive-timeout");
 
     private volatile int activeStreams;
 
@@ -147,19 +161,19 @@ final class KeepAliveManager {
                             keepAliveState = State.KEEP_ALIVE_ACK_TIMEDOUT;
                             final long timeoutMillis = NANOSECONDS.toMillis(pingAckTimeoutNanos);
                             LOGGER.debug(
-                                    "{} Timeout after {}ms waiting for keep-alive PING(ACK), writing GO_AWAY and " +
-                                            "closing the channel with activeStreams={}",
+                                    "{} Timeout after {}ms waiting for keep-alive PING(ACK), writing GO_AWAY frame " +
+                                            "and closing the channel with activeStreams={}",
                                     this.channel, timeoutMillis, activeStreams);
                             final TimeoutException cause = StacklessTimeoutException.newInstance(
                                     "Timeout after " + timeoutMillis + "ms waiting for keep-alive PING(ACK)",
                                     KeepAliveManager.class, "keepAlivePingAckTimeout()");
-                            channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
+                            channel.writeAndFlush(newGoAwayFrame(NO_ERROR, KA_TIMEOUT_GO_AWAY_CONTENT))
                                     .addListener(f -> {
                                         Throwable closeCause = cause;
                                         if (!f.isSuccess()) {
                                             closeCause = addSuppressed(f.cause(), cause);
-                                            LOGGER.debug("{} Failed to write the last GO_AWAY after PING(ACK) " +
-                                                            "timeout, closing the channel", channel, closeCause);
+                                            LOGGER.debug("{} Failed to write the GO_AWAY frame after keep-alive " +
+                                                    "PING(ACK) timeout, closing the channel", channel, closeCause);
                                         }
                                         close0(closeCause);
                                     });
@@ -185,7 +199,7 @@ final class KeepAliveManager {
         if (pingFrame.ack()) {
             long pingAckContent = pingFrame.content();
             if (pingAckContent == GRACEFUL_CLOSE_PING_CONTENT) {
-                LOGGER.debug("{} Graceful close PING(ACK) received, writing the second GO_AWAY, activeStreams={}",
+                LOGGER.debug("{} Graceful close PING(ACK) received, writing the second GO_AWAY frame, activeStreams={}",
                         channel, activeStreams);
                 cancelIfStateIsAFuture(gracefulCloseState);
                 gracefulCloseWriteSecondGoAway(null);
@@ -224,12 +238,12 @@ final class KeepAliveManager {
         inputShutdownTimeoutFuture = null;
     }
 
-    void initiateGracefulClose(final Runnable whenInitiated) {
+    void initiateGracefulClose(final Runnable whenInitiated, final boolean local) {
         EventLoop eventLoop = channel.eventLoop();
         if (eventLoop.inEventLoop()) {
-            doCloseAsyncGracefully0(whenInitiated);
+            doCloseAsyncGracefully0(whenInitiated, local);
         } else {
-            eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated));
+            eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated, local));
         }
     }
 
@@ -320,7 +334,7 @@ final class KeepAliveManager {
         }
     }
 
-    private void doCloseAsyncGracefully0(final Runnable whenInitiated) {
+    private void doCloseAsyncGracefully0(final Runnable whenInitiated, final boolean local) {
         assert channel.eventLoop().inEventLoop();
 
         if (gracefulCloseState != null) {
@@ -342,7 +356,8 @@ final class KeepAliveManager {
         // time duration for inflight frames to land, and the second GOAWAY includes the maximum known stream ID.
         // To account for 2 RTTs we can send a PING and when the PING(ACK) comes back we can send the second GOAWAY.
         // [1] https://tools.ietf.org/html/rfc7540#section-6.8
-        DefaultHttp2GoAwayFrame goAwayFrame = new DefaultHttp2GoAwayFrame(NO_ERROR);
+        DefaultHttp2GoAwayFrame goAwayFrame = newGoAwayFrame(NO_ERROR,
+                local ? LOCAL_GO_AWAY_CONTENT : REMOTE_GO_AWAY_CONTENT);
         goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
         channel.write(goAwayFrame);
         channel.writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
@@ -360,7 +375,7 @@ final class KeepAliveManager {
                     // down the connection.
                     final long timeoutMillis = NANOSECONDS.toMillis(pingAckTimeoutNanos);
                     LOGGER.debug("{} Timeout after {}ms waiting for graceful close PING(ACK), writing the second " +
-                                    "GO_AWAY and closing the channel with activeStreams={}",
+                                    "GO_AWAY frame and closing the channel with activeStreams={}",
                             channel, timeoutMillis, activeStreams);
                     gracefulCloseWriteSecondGoAway(StacklessTimeoutException.newInstance(
                             "Timeout after " + timeoutMillis + "ms waiting for graceful close PING(ACK)",
@@ -379,10 +394,12 @@ final class KeepAliveManager {
 
         gracefulCloseState = State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT;
 
-        channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
+        channel.writeAndFlush(newGoAwayFrame(NO_ERROR, cause == null ?
+                SECOND_GO_AWAY_CONTENT : GC_TIMEOUT_GO_AWAY_CONTENT)).addListener(future -> {
             if (!future.isSuccess()) {
                 final Throwable closeCause = cause == null ? future.cause() : addSuppressed(future.cause(), cause);
-                LOGGER.debug("{} Failed to write the second GO_AWAY, closing the channel", channel, closeCause);
+                LOGGER.debug("{} Failed to write the second GO_AWAY frame{}, closing the channel",
+                        channel, cause == null ? "" : " after graceful close PING(ACK) timeout", closeCause);
                 close0(closeCause);
             } else if (cause != null || activeStreams == 0) {
                 close0(cause);
@@ -463,6 +480,16 @@ final class KeepAliveManager {
                                 (state == gracefulCloseState ? "graceful close" : "input shutdown"), t);
             }
         }
+    }
+
+    private static DefaultHttp2GoAwayFrame newGoAwayFrame(final Http2Error error, final ByteBuf content) {
+        return new DefaultHttp2GoAwayFrame(error, content.duplicate());
+    }
+
+    private static ByteBuf staticByteBufFromAscii(final String str) {
+        ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.directBuffer(str.length());
+        writeAscii(buf, str);
+        return unreleasableBuffer(buf.asReadOnly());
     }
 
     private static final class StacklessTimeoutException extends TimeoutException {
