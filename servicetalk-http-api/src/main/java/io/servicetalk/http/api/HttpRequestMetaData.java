@@ -411,6 +411,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      *
      * @return the fragment part of the request target.
      */
+    // FIXME: 0.43 - consider removing default implementations
     @Nullable
     default String fragment() {
         throw new UnsupportedOperationException("HttpRequestMetaData#fragment() is not supported by " +
@@ -422,6 +423,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param fragment the fragment to set.
      * @return {@code this}.
      */
+    // FIXME: 0.43 - consider removing default implementations
     default HttpRequestMetaData fragment(@Nullable String fragment) {
         throw new UnsupportedOperationException("HttpRequestMetaData#fragment(String) is not supported by " +
                                                 getClass());
