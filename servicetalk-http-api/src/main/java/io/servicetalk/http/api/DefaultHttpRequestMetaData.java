@@ -457,10 +457,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         originalRequestTarget = originalRequestTarget.substring(0, originalRequestTarget.length() - fragmentLength);
       }
 
-      return requestTarget(fragment == null
-              ? originalRequestTarget
-              : originalRequestTarget + "#" + fragment
-      );
+      return requestTarget(fragment == null ? originalRequestTarget : (originalRequestTarget + "#" + fragment));
     }
 
     private void invalidateParsedUri() {

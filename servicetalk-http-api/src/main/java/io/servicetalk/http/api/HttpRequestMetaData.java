@@ -407,7 +407,8 @@ public interface HttpRequestMetaData extends HttpMetaData {
     boolean removeQueryParameters(String key, String value);
 
     /**
-     * Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request target.
+     * Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+     * target.
      *
      * @return the fragment part of the request target.
      */
@@ -419,7 +420,9 @@ public interface HttpRequestMetaData extends HttpMetaData {
     }
 
     /**
-     * Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request target.
+     * Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+     * target.
+     *
      * @param fragment the fragment to set.
      * @return {@code this}.
      */
