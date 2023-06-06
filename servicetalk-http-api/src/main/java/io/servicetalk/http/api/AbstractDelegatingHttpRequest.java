@@ -182,6 +182,12 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
         return original.query();
     }
 
+    @Nullable
+    @Override
+    public String fragment() {
+        return original.fragment();
+    }
+
     @Override
     public boolean hasQueryParameter(final String key) {
         return original.hasQueryParameter(key);

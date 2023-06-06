@@ -146,6 +146,12 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
+    public HttpRequest fragment(@Nullable String fragment) {
+        original.fragment(fragment);
+        return this;
+    }
+
+    @Override
     public HttpRequest addHeader(final CharSequence name, final CharSequence value) {
         original.addHeader(name, value);
         return this;

@@ -156,6 +156,11 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
         return this;
     }
 
+    public StreamingHttpRequest fragment(@Nullable String fragment) {
+        super.fragment(fragment);
+        return this;
+    }
+
     @Override
     public Publisher<Buffer> payloadBody() {
         return payloadHolder.payloadBody();

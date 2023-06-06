@@ -284,6 +284,9 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     @Override
     StreamingHttpRequest method(HttpRequestMethod method);
 
+    @Override
+    StreamingHttpRequest fragment(@Nullable String fragment);
+
     @Deprecated
     @Override
     default StreamingHttpRequest encoding(ContentCodec encoding) {

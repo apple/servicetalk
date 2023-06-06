@@ -155,6 +155,12 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
+    public BlockingStreamingHttpRequest fragment(@Nullable String fragment) {
+        original.fragment(fragment);
+        return this;
+    }
+
+    @Override
     public BlockingIterable<Buffer> payloadBody() {
         return original.payloadBody().toIterable();
     }

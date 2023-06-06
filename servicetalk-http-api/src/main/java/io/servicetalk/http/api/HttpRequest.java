@@ -137,6 +137,9 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest setQueryParameters(String key, String... values);
 
     @Override
+    HttpRequest fragment(@Nullable String fragment);
+
+    @Override
     HttpRequest version(HttpProtocolVersion version);
 
     @Deprecated
