@@ -72,7 +72,7 @@ import javax.annotation.Nullable;
 import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -102,8 +102,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
-    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
-    static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
+    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(8);
+    static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(256);
 
     @Nullable
     private final U address;
@@ -209,8 +209,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 return sd;
             }
             if (sdRetryStrategy == null) {
-                sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
-                        SD_RETRY_STRATEGY_JITTER, executionContext.executor());
+                sdRetryStrategy = retryWithExponentialBackoffFullJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
+                        SD_RETRY_STRATEGY_MAX_DELAY, executionContext.executor());
             }
             return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus), sdRetryStrategy);
         }
