@@ -76,18 +76,4 @@ public final class ThrowableUtils {
         }
         return original;
     }
-
-    /**
-     * Returns the root cause of the passed {@link Throwable}.
-     *
-     * @param t {@link Throwable} to find the root cause
-     * @return the root cause of {@link Throwable}
-     */
-    public static Throwable rootCause(final Throwable t) {
-        Throwable root = t;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        return root;
-    }
 }

@@ -80,7 +80,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
-import static io.servicetalk.utils.internal.ThrowableUtils.rootCause;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -733,12 +732,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         public Publisher<Collection<E>> discover(final U u) {
             return delegate().discover(u)
                     .beforeOnError(t -> {
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.warn("Observed an error from {} while discovering '{}':", delegate(), u, t);
-                        } else {
-                            LOGGER.warn("Observed an error from {} while discovering '{}': {}",
-                                    delegate(), u, rootCause(t));
-                        }
+                        LOGGER.debug("Observed an error from {} while discovering '{}':", delegate(), u, t);
                         status.nextError(t);
                     })
                     .beforeOnNext(__ -> status.resetError());
