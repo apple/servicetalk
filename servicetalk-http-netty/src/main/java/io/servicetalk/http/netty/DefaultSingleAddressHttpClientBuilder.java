@@ -720,6 +720,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static final class StatusAwareServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
             extends DelegatingServiceDiscoverer<U, R, E> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(StatusAwareServiceDiscoverer.class);
         private final SdStatusCompletable status;
 
         StatusAwareServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate, final SdStatusCompletable status) {
@@ -730,7 +731,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         @Override
         public Publisher<Collection<E>> discover(final U u) {
             return delegate().discover(u)
-                    .beforeOnError(status::nextError)
+                    .beforeOnError(t -> {
+                        LOGGER.debug("Observed an error from {} while discovering '{}':", delegate(), u, t);
+                        status.nextError(t);
+                    })
                     .beforeOnNext(__ -> status.resetError());
             // We do not complete sdStatus to let LB decide when to retry if SD completes.
         }
