@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
@@ -83,6 +84,19 @@ public interface DnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     DnsServiceDiscovererBuilder ttlJitter(Duration ttlJitter);
+
+    /**
+     * Set the local {@link SocketAddress} to bind to.
+     *
+     * @param localAddress the local {@link SocketAddress} to bind to or {@code null} to skip binding. When specified,
+     * all DNS queries will be sent from the specified address. When skipped, OS will automatically bind before sending
+     * frames but address won't be available in logs.
+     * @return {@code this}.
+     */
+    default DnsServiceDiscovererBuilder localAddress(@Nullable SocketAddress localAddress) {
+        throw new UnsupportedOperationException("DnsServiceDiscovererBuilder#localAddress(SocketAddress) is not " +
+                "supported by " + getClass());
+    }
 
     /**
      * Set the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.

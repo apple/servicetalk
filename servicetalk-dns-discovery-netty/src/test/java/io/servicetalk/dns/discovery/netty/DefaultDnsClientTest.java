@@ -74,6 +74,7 @@ import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createCnameRecord;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.net.InetAddress.getByName;
 import static java.time.Duration.ofMillis;
@@ -1164,6 +1165,7 @@ class DefaultDnsClientTest {
 
     private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
         return new DefaultDnsServiceDiscovererBuilder("test")
+                .localAddress(localAddress(0))
                 .ioExecutor(new NettyIoExecutorWithTestTimer(ioExecutor.executor(), timerExecutor.executor()))
                 .dnsResolverAddressTypes(IPV4_ONLY)
                 .optResourceEnabled(false)

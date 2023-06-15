@@ -63,6 +63,7 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -146,6 +147,7 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
+                     @Nullable final SocketAddress localAddress,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
                      final ServiceDiscovererEvent.Status missingRecordStatus) {
@@ -179,6 +181,7 @@ final class DefaultDnsClient implements DnsClient {
                 (Class<? extends SocketChannel>) socketChannel(eventLoop, InetSocketAddress.class);
         final ResolvedAddressTypes resolvedAddressTypes = DnsResolverAddressTypes.toNettyType(addressTypes);
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
+                .localAddress(localAddress)
                 .channelType(datagramChannel(eventLoop))
                 .resolvedAddressTypes(resolvedAddressTypes)
                 // Enable TCP fallback to be able to handle truncated responses.

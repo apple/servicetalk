@@ -20,7 +20,11 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -32,6 +36,7 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemDefault;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static java.lang.Boolean.getBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -44,10 +49,43 @@ import static java.util.Objects.requireNonNull;
  */
 @Deprecated // FIXME: 0.43 - make package private
 public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDiscovererBuilder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscovererBuilder.class);
+
+    /**
+     * @deprecated This system property is introduced temporarily as a way for users to skip binding and revert the
+     * preexisting behavior.
+     */
+    @Deprecated // FIXME: 0.43 - consider removing this system property
+    private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
+    private static final boolean SKIP_BINDING = getBoolean(SKIP_BINDING_PROPERTY);
+    private static final SocketAddress DEFAULT_LOCAL_ADDRESS = new InetSocketAddress(0);
+    private static final DnsResolverAddressTypes DEFAULT_DNS_RESOLVER_ADDRESS_TYPES = systemDefault();
+    private static final int DEFAULT_MIN_TTL_POLL_SECONDS = 10;
+    private static final int DEFAULT_MAX_TTL_POLL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(5);
+    private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;
+    private static final int DEFAULT_MAX_TTL_CACHE_SECONDS = 0;
+    private static final ServiceDiscovererEvent.Status DEFAULT_MISSING_RECOREDS_STATUS = EXPIRED;
+
+    static {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("-D{}: {}", SKIP_BINDING_PROPERTY, SKIP_BINDING);
+            LOGGER.debug("Default local address to bind to: {}", DEFAULT_LOCAL_ADDRESS);
+            LOGGER.debug("Default DnsResolverAddressTypes: {}", DEFAULT_DNS_RESOLVER_ADDRESS_TYPES);
+            LOGGER.debug("Default TTL poll boundaries in seconds: [{}, {}]",
+                    DEFAULT_MIN_TTL_POLL_SECONDS, DEFAULT_MAX_TTL_POLL_SECONDS);
+            LOGGER.debug("Default TTL cache boundaries in seconds: [{}, {}]",
+                    DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
+            LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
+        }
+    }
+
     private final String id;
     @Nullable
+    private SocketAddress localAddress = DEFAULT_LOCAL_ADDRESS;
+    @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
-    private DnsResolverAddressTypes dnsResolverAddressTypes = systemDefault();
+    private DnsResolverAddressTypes dnsResolverAddressTypes = DEFAULT_DNS_RESOLVER_ADDRESS_TYPES;
     @Nullable
     private Integer maxUdpPayloadSize;
     @Nullable
@@ -58,22 +96,22 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
-    private int minTTLSeconds = 10;
-    private int maxTTLSeconds = (int) TimeUnit.MINUTES.toSeconds(5);
-    private int minTTLCacheSeconds;
-    private int maxTTLCacheSeconds;
+    private int minTTLSeconds = DEFAULT_MIN_TTL_POLL_SECONDS;
+    private int maxTTLSeconds = DEFAULT_MAX_TTL_POLL_SECONDS;
+    private int minTTLCacheSeconds = DEFAULT_MIN_TTL_CACHE_SECONDS;
+    private int maxTTLCacheSeconds = DEFAULT_MAX_TTL_CACHE_SECONDS;
     private Duration ttlJitter = ofSeconds(4);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
     private boolean srvFilterDuplicateEvents;
-    private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
+    private Duration srvHostNameRepeatInitialDelay = ofSeconds(DEFAULT_MIN_TTL_POLL_SECONDS);
     private Duration srvHostNameRepeatJitter = ofSeconds(5);
     @Nullable
     private DnsClientFilterFactory filterFactory;
     @Nullable
     private DnsServiceDiscovererObserver observer;
-    private ServiceDiscovererEvent.Status missingRecordStatus = EXPIRED;
+    private ServiceDiscovererEvent.Status missingRecordStatus = DEFAULT_MISSING_RECOREDS_STATUS;
 
     /**
      * Creates a new {@link DefaultDnsServiceDiscovererBuilder}.
@@ -110,7 +148,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     @Override
     public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds) {
-        ttl(minSeconds, maxSeconds, 0, 0);
+        ttl(minSeconds, maxSeconds, DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
         return this;
     }
 
@@ -142,6 +180,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     public DefaultDnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
         ensurePositive(ttlJitter, "jitter");
         this.ttlJitter = ttlJitter;
+        return this;
+    }
+
+    @Override
+    public DefaultDnsServiceDiscovererBuilder localAddress(@Nullable final SocketAddress localAddress) {
+        this.localAddress = localAddress;
         return this;
     }
 
@@ -293,7 +337,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, ttlJitter.toNanos(),
                 srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
-                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);
+                queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
+                missingRecordStatus);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

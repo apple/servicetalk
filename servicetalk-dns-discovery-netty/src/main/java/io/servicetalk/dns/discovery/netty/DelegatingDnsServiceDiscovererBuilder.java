@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
@@ -67,6 +68,12 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     @Override
     public DnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
         delegate = delegate.ttlJitter(ttlJitter);
+        return this;
+    }
+
+    @Override
+    public DnsServiceDiscovererBuilder localAddress(@Nullable final SocketAddress localAddress) {
+        delegate = delegate.localAddress(localAddress);
         return this;
     }
 
