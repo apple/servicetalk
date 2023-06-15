@@ -59,7 +59,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
     private static final boolean SKIP_BINDING = getBoolean(SKIP_BINDING_PROPERTY);
-    private static final SocketAddress DEFAULT_LOCAL_ADDRESS = new InetSocketAddress(0);
+    @Nullable
+    private static final SocketAddress DEFAULT_LOCAL_ADDRESS = SKIP_BINDING ? null : new InetSocketAddress(0);
     private static final DnsResolverAddressTypes DEFAULT_DNS_RESOLVER_ADDRESS_TYPES = systemDefault();
     private static final int DEFAULT_MIN_TTL_POLL_SECONDS = 10;
     private static final int DEFAULT_MAX_TTL_POLL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(5);
