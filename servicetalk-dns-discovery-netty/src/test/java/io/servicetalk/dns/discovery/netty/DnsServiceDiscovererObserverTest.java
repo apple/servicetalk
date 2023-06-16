@@ -44,6 +44,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Math.min;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -102,6 +103,7 @@ class DnsServiceDiscovererObserverTest {
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
                 .ttl(DEFAULT_TTL, MAX_TTL)
+                .localAddress(localAddress(0))
                 .build());
     }
 
