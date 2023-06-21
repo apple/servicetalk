@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -78,6 +79,13 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
         delegate = delegate.sslConfig(defaultConfig, sniMap);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
+                                       final int maxClientHelloLength, final Duration clientHelloTimeout) {
+        delegate = delegate.sslConfig(defaultConfig, sniMap, maxClientHelloLength, clientHelloTimeout);
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.netty.util.DomainWildcardMappingBuilder;
 import io.netty.util.Mapping;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
@@ -45,6 +46,8 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     private final SslContext sslContext;
     @Nullable
     private final Mapping<String, SslContext> sniMapping;
+    private final int sniMaxClientHelloLength;
+    private final Duration sniClientHelloTimeout;
     private final boolean alpnConfigured;
 
     ReadOnlyTcpServerConfig(final TcpServerConfig from) {
@@ -61,7 +64,8 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
             }
             sslContext = forServer(sslConfig);
             boolean foundAlpn = !sslContext.applicationProtocolNegotiator().protocols().isEmpty();
-            DomainWildcardMappingBuilder<SslContext> mappingBuilder = new DomainWildcardMappingBuilder<>(sslContext);
+            final DomainWildcardMappingBuilder<SslContext> mappingBuilder =
+                    new DomainWildcardMappingBuilder<>(sniMap.size(), sslContext);
             for (Entry<String, ServerSslConfig> sniConfigEntry : sniMap.entrySet()) {
                 SslContext sniContext = forServer(sniConfigEntry.getValue());
                 foundAlpn |= !sniContext.applicationProtocolNegotiator().protocols().isEmpty();
@@ -78,6 +82,8 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
             sniMapping = null;
             alpnConfigured = false;
         }
+        sniMaxClientHelloLength = from.sniMaxClientHelloLength();
+        sniClientHelloTimeout = from.sniClientHelloTimeout();
     }
 
     /**
@@ -129,6 +135,14 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     @Nullable
     public Mapping<String, SslContext> sniMapping() {
         return sniMapping;
+    }
+
+    int sniMaxClientHelloLength() {
+        return sniMaxClientHelloLength;
+    }
+
+    Duration sniClientHelloTimeout() {
+        return sniClientHelloTimeout;
     }
 
     /**

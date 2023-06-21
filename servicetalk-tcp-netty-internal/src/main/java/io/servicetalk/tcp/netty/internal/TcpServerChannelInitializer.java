@@ -56,7 +56,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {    // F
         }
 
         if (config.sniMapping() != null) {
-            delegate = delegate.andThen(new SniServerChannelInitializer(config.sniMapping()));
+            delegate = delegate.andThen(new SniServerChannelInitializer(config.sniMapping(),
+                    config.sniMaxClientHelloLength(), config.sniClientHelloTimeout().toMillis()));
         } else if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }

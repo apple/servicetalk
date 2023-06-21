@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -60,6 +61,7 @@ public interface HttpServerBuilder {
 
     /**
      * Set the SSL/TLS configuration.
+     *
      * @param config The configuration to use.
      * @return {@code this}.
      */
@@ -67,6 +69,7 @@ public interface HttpServerBuilder {
 
     /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
+     *
      * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
      * SNI hostname doesn't match any values in {@code sniMap}.
      * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
@@ -74,6 +77,29 @@ public interface HttpServerBuilder {
      * @return {@code this}.
      */
     HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
+
+    /**
+     * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
+     *
+     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
+     * SNI hostname doesn't match any values in {@code sniMap}.
+     * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
+     * to provide the corresponding {@link ServerSslConfig}.
+     * @param maxClientHelloLength The maximum length of a
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1">2^14</a> bytes.
+     * Zero ({@code 0}) disables validation.
+     * @param clientHelloTimeout The timeout for waiting until
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+     * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.
+     * {@link Duration#ZERO Zero (0)} disables timeout.
+     * @return {@code this}.
+     */
+    default HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap,
+                                        int maxClientHelloLength, Duration clientHelloTimeout) {
+        throw new UnsupportedOperationException(
+                "sslConfig(ServerSslConfig, Map, int, Durations) is not supported by " + getClass());
+    }
 
     /**
      * Adds a {@link SocketOption} that is applied to connected/accepted socket channels.
@@ -220,8 +246,7 @@ public interface HttpServerBuilder {
      * @see #appendLateConnectionAcceptor(LateConnectionAcceptor)
      */
     default HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor) {
-        throw new UnsupportedOperationException("appendEarlyConnectionAcceptor is not supported " +
-                "by " + getClass());
+        throw new UnsupportedOperationException("appendEarlyConnectionAcceptor is not supported by " + getClass());
     }
 
     /**
@@ -252,8 +277,7 @@ public interface HttpServerBuilder {
      * @see #appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)
      */
     default HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor) {
-        throw new UnsupportedOperationException("appendLateConnectionAcceptor is not supported " +
-                "by " + getClass());
+        throw new UnsupportedOperationException("appendLateConnectionAcceptor is not supported by " + getClass());
     }
 
     /**

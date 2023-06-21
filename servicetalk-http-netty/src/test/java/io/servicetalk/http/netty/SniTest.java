@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,10 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,12 +46,14 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
-import static io.servicetalk.http.netty.MutualSslTest.SSL_PROVIDERS;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
+import static io.servicetalk.http.netty.SslHandshakeTimeoutTest.HANDSHAKE_TIMEOUT_MILLIS;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,7 +71,8 @@ class SniTest {
 
     private static final String SNI_HOSTNAME = serverPemHostname();
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void sniSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                     HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -80,7 +85,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void sniDefaultFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                    HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -93,7 +99,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void sniFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
                          HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -107,7 +114,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void sniDefaultFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                         HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -121,7 +129,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void sniClientDefaultServerSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                        HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -133,7 +142,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void noSniClientDefaultServerFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                                  HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -157,7 +167,8 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
     @MethodSource("params")
     void noSniClientDefaultServerFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                                       HttpProtocol protocol, boolean useALPN) throws Exception {
@@ -178,10 +189,26 @@ class SniTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] sslProvider={0}")
+    @EnumSource(SslProvider.class)
+    void sniTimeout(SslProvider sslProvider) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, HTTP_1)
+                .sslConfig(trustedServerConfig(sslProvider, null),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(sslProvider, null)),
+                        16 * 1024, Duration.ofMillis(HANDSHAKE_TIMEOUT_MILLIS))
+                .listenBlockingAndAwait(newSslVerifyService());
+             // Use a non-secure client to open a new connection without sending ClientHello or any data.
+             // We expect that remote server will close the connection after SNI timeout.
+             BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, HTTP_1).buildBlocking();
+             ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
+            connection.connectionContext().onClose().toFuture().get(HANDSHAKE_TIMEOUT_MILLIS * 2, MILLISECONDS);
+        }
+    }
+
     private static Collection<Arguments> params() {
         List<Arguments> params = new ArrayList<>();
-        for (SslProvider serverSslProvider : SSL_PROVIDERS) {
-            for (SslProvider clientSslProvider : SSL_PROVIDERS) {
+        for (SslProvider serverSslProvider : SslProvider.values()) {
+            for (SslProvider clientSslProvider : SslProvider.values()) {
                 for (HttpProtocol protocol : HttpProtocol.values()) {
                     for (boolean useAlpn : asList(false, true)) {
                         params.add(Arguments.of(serverSslProvider, clientSslProvider, protocol, useAlpn));
