@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,6 +193,11 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public Single<HttpServerContext> listenService(final HttpServiceBase service) {
+        return delegate.listenService(service);
+    }
+
+    @Override
     public Single<HttpServerContext> listen(final HttpService service) {
         return delegate.listen(service);
     }
@@ -210,6 +215,11 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     @Override
     public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         return delegate.listenBlockingStreaming(service);
+    }
+
+    @Override
+    public HttpServerContext listenServiceAndAwait(final HttpServiceBase service) throws Exception {
+        return delegate.listenServiceAndAwait(service);
     }
 
     @Override

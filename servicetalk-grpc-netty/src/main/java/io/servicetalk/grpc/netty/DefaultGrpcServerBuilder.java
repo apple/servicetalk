@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,30 +28,17 @@ import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.DelegatingHttpServerBuilder;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpLifecycleObserver;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ConnectionAcceptorFactory;
-import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.LateConnectionAcceptor;
-import io.servicetalk.transport.api.ServerSslConfig;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
-import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -190,8 +177,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         return interceptorBuilder.listenBlockingStreaming(service);
     }
 
-    private static class ExecutionContextInterceptorHttpServerBuilder implements HttpServerBuilder {
-        private final HttpServerBuilder delegate;
+    private static class ExecutionContextInterceptorHttpServerBuilder extends DelegatingHttpServerBuilder {
         private final ExecutionContextBuilder<GrpcExecutionStrategy> contextBuilder =
                 new ExecutionContextBuilder<GrpcExecutionStrategy>()
                     // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy
@@ -199,162 +185,35 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
                     .executionStrategy(defaultStrategy());
 
         ExecutionContextInterceptorHttpServerBuilder(final HttpServerBuilder delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
         public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
             contextBuilder.ioExecutor(ioExecutor);
-            delegate.ioExecutor(ioExecutor);
+            delegate().ioExecutor(ioExecutor);
             return this;
         }
 
         @Override
         public HttpServerBuilder executor(final Executor executor) {
             contextBuilder.executor(executor);
-            delegate.executor(executor);
+            delegate().executor(executor);
             return this;
         }
 
         @Override
         public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
             contextBuilder.bufferAllocator(allocator);
-            delegate.bufferAllocator(allocator);
+            delegate().bufferAllocator(allocator);
             return this;
         }
 
         @Override
         public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
             contextBuilder.executionStrategy(GrpcExecutionStrategy.from(strategy));
-            delegate.executionStrategy(strategy);
+            delegate().executionStrategy(strategy);
             return this;
-        }
-
-        @Override
-        public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
-            delegate.protocols(protocols);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder sslConfig(final ServerSslConfig config) {
-            delegate.sslConfig(config);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig,
-                                           final Map<String, ServerSslConfig> sniMap) {
-            delegate.sslConfig(defaultConfig, sniMap);
-            return this;
-        }
-
-        @Override
-        public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
-            delegate.socketOption(option, value);
-            return this;
-        }
-
-        @Override
-        public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-            delegate.listenSocketOption(option, value);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder enableWireLogging(final String loggerName,
-                                                   final LogLevel logLevel,
-                                                   final BooleanSupplier logUserData) {
-            delegate.enableWireLogging(loggerName, logLevel, logUserData);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
-            delegate.transportObserver(transportObserver);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
-            delegate.lifecycleObserver(lifecycleObserver);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
-            delegate.drainRequestPayloadBody(enable);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
-            delegate.allowDropRequestTrailers(allowDrop);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-            delegate.appendConnectionAcceptorFilter(factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor factory) {
-            delegate.appendEarlyConnectionAcceptor(factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor factory) {
-            delegate.appendLateConnectionAcceptor(factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-            delegate.appendNonOffloadingServiceFilter(factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                                  final StreamingHttpServiceFilterFactory factory) {
-            delegate.appendNonOffloadingServiceFilter(predicate, factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-            delegate.appendServiceFilter(factory);
-            return this;
-        }
-
-        @Override
-        public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                     final StreamingHttpServiceFilterFactory factory) {
-            delegate.appendServiceFilter(predicate, factory);
-            return this;
-        }
-
-        @Override
-        public Single<HttpServerContext> listen(final HttpService service) {
-            return delegate.listen(service);
-        }
-
-        @Override
-        public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
-            return delegate.listenStreaming(service);
-        }
-
-        @Override
-        public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
-            return delegate.listenBlocking(service);
-        }
-
-        @Override
-        public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-            return delegate.listenBlockingStreaming(service);
         }
     }
 }
