@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -23,6 +24,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
+
+import static io.servicetalk.transport.api.AbstractSslConfigBuilder.DEFAULT_HANDSHAKE_TIMEOUT;
 
 /**
  * Specifies the configuration for TLS/SSL.
@@ -155,9 +158,22 @@ public interface SslConfig {
      *
      * @return the list of certificate compression algorithms to advertise.
      * @see <a href="https://www.rfc-editor.org/rfc/rfc8879">RFC8879 - TLS Certificate Compression</a>
+     * @see CertificateCompressionAlgorithms
      */
     @Nullable // FIXME 0.43 - remove default implementation
     default List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
         return null;
+    }
+
+    /**
+     * Get the timeout for the handshake process.
+     * <p>
+     * Implementations can round the returned {@link Duration} to full time units, depending on their time granularity.
+     * {@link Duration#ZERO Zero duration} disables the timeout.
+     *
+     * @return the timeout for the handshake process or {@link Duration#ZERO} to disable it.
+     */
+    default Duration handshakeTimeout() {   // FIXME 0.43 - remove default implementation
+        return DEFAULT_HANDSHAKE_TIMEOUT;
     }
 }

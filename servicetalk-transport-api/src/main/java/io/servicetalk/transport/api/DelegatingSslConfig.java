@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -121,5 +122,10 @@ public abstract class DelegatingSslConfig<T extends SslConfig> implements SslCon
     @Override
     public List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
         return delegate.certificateCompressionAlgorithms();
+    }
+
+    @Override
+    public Duration handshakeTimeout() {
+        return delegate.handshakeTimeout();
     }
 }

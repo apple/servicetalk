@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 
-import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
-import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
+import static io.servicetalk.transport.netty.internal.SslUtils.newServerSslHandler;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,6 +37,6 @@ public final class SslServerChannelInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        channel.pipeline().addLast(newHandler(sslContext, POOLED_ALLOCATOR));
+        channel.pipeline().addLast(newServerSslHandler(sslContext));
     }
 }

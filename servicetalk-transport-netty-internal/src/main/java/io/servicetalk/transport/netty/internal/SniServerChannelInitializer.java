@@ -25,7 +25,7 @@ import io.netty.util.Mapping;
 
 import javax.net.ssl.SSLEngine;
 
-import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.SslUtils.newServerSslHandler;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -58,7 +58,7 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
 
         @Override
         protected SslHandler newSslHandler(final SslContext context, final ByteBufAllocator ignore) {
-            return super.newSslHandler(context, POOLED_ALLOCATOR);
+            return newServerSslHandler(context);
         }
     }
 }

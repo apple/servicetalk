@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
+import static io.netty.util.AttributeKey.newInstance;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
 import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
@@ -50,6 +52,8 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
  * A factory for creating {@link SslContext}s.
  */
 public final class SslContextFactory {
+
+    static final AttributeKey<Long> HANDSHAKE_TIMEOUT_MILLIS = newInstance("HANDSHAKE_TIMEOUT_MILLIS");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SslContextFactory.class);
 
@@ -82,9 +86,7 @@ public final class SslContextFactory {
      * @return A new {@link SslContext} for a client.
      */
     public static SslContext forClient(ClientSslConfig config) {
-        final SslContextBuilder builder = SslContextBuilder.forClient()
-                .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
-        configureTrustManager(config, builder);
+        final SslContextBuilder builder = SslContextBuilder.forClient();
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
             builder.keyManager(keyManagerFactory);
@@ -103,22 +105,10 @@ public final class SslContextFactory {
                 }
             }
         }
-        List<String> alpnProtocols = config.alpnProtocols();
-        SslProvider nettySslProvider =
-                toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
-        builder.sslProvider(nettySslProvider);
 
-        builder.protocols(config.sslProtocols());
-        builder.ciphers(config.ciphers());
-        builder.applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
-
+        SslProvider nettySslProvider = configureSslProvider(config, builder);
         configureCertificateCompression(config, builder, nettySslProvider, false);
-
-        try {
-            return builder.build();
-        } catch (SSLException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return build(config, builder);
     }
 
     /**
@@ -148,10 +138,6 @@ public final class SslContextFactory {
             }
         }
 
-        List<String> alpnProtocols = config.alpnProtocols();
-        builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
-                .applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
-
         switch (config.clientAuthMode()) {
             case NONE:
                 builder.clientAuth(ClientAuth.NONE);
@@ -165,21 +151,37 @@ public final class SslContextFactory {
             default:
                 throw new IllegalArgumentException("Unsupported: " + config.clientAuthMode());
         }
-        configureTrustManager(config, builder);
-        builder.protocols(config.sslProtocols());
-        builder.ciphers(config.ciphers());
 
-        io.netty.handler.ssl.SslProvider nettySslProvider =
+        SslProvider nettySslProvider = configureSslProvider(config, builder);
+        configureCertificateCompression(config, builder, nettySslProvider, true);
+        return build(config, builder);
+    }
+
+    private static SslContext build(SslConfig config, SslContextBuilder builder) {
+        configureTrustManager(config, builder);
+        builder.protocols(config.sslProtocols())
+                .ciphers(config.ciphers())
+                .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
+
+        final SslContext sslContext;
+        try {
+            sslContext = builder.build();
+        } catch (SSLException e) {
+            throw new IllegalArgumentException("Failed to build SslContext", e);
+        }
+        sslContext.attributes().attr(HANDSHAKE_TIMEOUT_MILLIS).set(config.handshakeTimeout().toMillis());
+        return sslContext;
+    }
+
+    @Nullable
+    private static SslProvider configureSslProvider(SslConfig config, SslContextBuilder builder) {
+        List<String> alpnProtocols = config.alpnProtocols();
+        builder.applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
+
+        SslProvider nettySslProvider =
                 toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
         builder.sslProvider(nettySslProvider);
-
-        configureCertificateCompression(config, builder, nettySslProvider, true);
-
-        try {
-            return builder.build();
-        } catch (SSLException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return nettySslProvider;
     }
 
     private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
@@ -210,7 +212,7 @@ public final class SslContextFactory {
      * @param forServer if this is for a server or client context.
      */
     private static void configureCertificateCompression(SslConfig config, SslContextBuilder builder,
-                                                        @Nullable io.netty.handler.ssl.SslProvider nettySslProvider,
+                                                        @Nullable SslProvider nettySslProvider,
                                                         boolean forServer) {
         final List<CertificateCompressionAlgorithm> algorithms = config.certificateCompressionAlgorithms();
         if (algorithms == null || algorithms.isEmpty()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -51,7 +52,9 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
 
     /**
      * Create a new instance using {@code tmf} to verify trusted servers.
+     *
      * @param tmf The {@link TrustManagerFactory} used to verify trusted servers.
+     * @see ClientSslConfig#trustManagerFactory()
      */
     public ClientSslConfigBuilder(TrustManagerFactory tmf) {
         trustManager(requireNonNull(tmf));
@@ -64,6 +67,8 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
+     *
+     * @see ClientSslConfig#trustCertChainSupplier()
      */
     public ClientSslConfigBuilder(Supplier<InputStream> trustCertChainSupplier) {
         trustManager(trustCertChainSupplier);
@@ -78,6 +83,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * Endpoint Identification Algorithm Name</a>.
      * An empty {@code String} ({@code ""}) disables hostname verification.
      * @return {@code this}.
+     * @see ClientSslConfig#hostnameVerificationAlgorithm()
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     public ClientSslConfigBuilder hostnameVerificationAlgorithm(String algorithm) {
@@ -87,8 +93,10 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
 
     /**
      * Set the non-authoritative name of the peer.
+     *
      * @param peerHost the non-authoritative name of the peer.
      * @return {@code this}.
+     * @see ClientSslConfig#peerHost()
      * @see SSLEngine#getPeerHost()
      */
     public ClientSslConfigBuilder peerHost(@Nullable String peerHost) {
@@ -98,9 +106,11 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
 
     /**
      * Set the non-authoritative port of the peer.
+     *
      * @param peerPort the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      * @return {@code this}.
+     * @see ClientSslConfig#peerPort()
      * @see SSLEngine#getPeerPort()
      */
     public ClientSslConfigBuilder peerPort(int peerPort) {
@@ -113,8 +123,10 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
 
     /**
      * Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
+     *
      * @param sniHostname <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @return {@code this}.
+     * @see ClientSslConfig#sniHostname()
      * @see SSLParameters#setServerNames(List)
      */
     public ClientSslConfigBuilder sniHostname(String sniHostname) {
@@ -133,7 +145,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
                 keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), sessionCacheSize(), sessionTimeout(),
-                provider(), certificateCompressionAlgorithms());
+                provider(), certificateCompressionAlgorithms(), handshakeTimeout());
     }
 
     @Override
@@ -162,10 +174,11 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
                                @Nullable final List<String> ciphers, final long sessionCacheSize,
                                final long sessionTimeout, @Nullable final SslProvider provider,
-                               @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms) {
+                               @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
+                               final Duration handshakeTimeout) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
                     keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout, provider,
-                    certificateCompressionAlgorithms);
+                    certificateCompressionAlgorithms, handshakeTimeout);
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
             this.peerHost = peerHost;
             this.peerPort = peerPort;

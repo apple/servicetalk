@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,6 +26,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
@@ -33,6 +36,10 @@ import static java.util.Objects.requireNonNull;
  * @param <T> The type of {@link AbstractSslConfigBuilder} which is returned by setter methods.
  */
 abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
+
+    // FIXME: 0.43 - make DEFAULT_HANDSHAKE_TIMEOUT constant private
+    static final Duration DEFAULT_HANDSHAKE_TIMEOUT = ofSeconds(10);    // same as default in Netty SslHandler
+
     @Nullable
     private TrustManagerFactory trustManagerFactory;
     @Nullable
@@ -57,11 +64,14 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private SslProvider provider;
     @Nullable
     private List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms;
+    private Duration handshakeTimeout = DEFAULT_HANDSHAKE_TIMEOUT;
 
     /**
      * Set the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
+     *
      * @param tmf the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
      * @return {@code this}.
+     * @see SslConfig#trustManagerFactory()
      */
     public final T trustManager(TrustManagerFactory tmf) {
         this.trustManagerFactory = requireNonNull(tmf);
@@ -77,12 +87,14 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     /**
      * Set the trusted certificates for verifying the remote endpoint's certificate. The input stream should
      * contain an {@code X.509} certificate chain in {@code PEM} format.
+     *
      * @param trustCertChainSupplier the trusted certificates for verifying the remote endpoint's certificate. The input
      * stream should contain an {@code X.509} certificate chain in {@code PEM} format.
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
+     * @see SslConfig#trustCertChainSupplier()
      */
     public final T trustManager(Supplier<InputStream> trustCertChainSupplier) {
         this.trustCertChainSupplier = requireNonNull(trustCertChainSupplier);
@@ -100,6 +112,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshake.
      * @return {@code this}.
+     * @see SslConfig#keyManagerFactory()
      */
     public final T keyManager(KeyManagerFactory kmf) {
         this.keyManagerFactory = requireNonNull(kmf);
@@ -117,6 +130,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     /**
      * Set a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM} format and
      * a {@code PKCS#8} private key in {@code PEM} format.
+     *
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
@@ -127,6 +141,8 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
+     * @see SslConfig#keyCertChainSupplier()
+     * @see SslConfig#keySupplier()
      */
     public final T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
@@ -139,6 +155,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     /**
      * Set a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM} format and
      * a {@code PKCS#8} private key in {@code PEM} format protected by a password.
+     *
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
@@ -150,6 +167,9 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * caller is responsible for invoking {@link InputStream#close()}.
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      * @return {@code this}.
+     * @see SslConfig#keyCertChainSupplier()
+     * @see SslConfig#keySupplier()
+     * @see SslConfig#keyPassword()
      */
     public final T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
                  @Nullable String keyPassword) {
@@ -180,6 +200,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param protocols the TLS protocols to enable, in the order of preference.
      * @return {@code this}.
+     * @see SslConfig#sslProtocols()
      * @see SSLEngine#setEnabledProtocols(String[])
      */
     public final T sslProtocols(List<String> protocols) {
@@ -195,6 +216,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param protocols the TLS protocols to enable, in the order of preference.
      * @return {@code this}.
+     * @see SslConfig#sslProtocols()
      * @see SSLEngine#setEnabledProtocols(String[])
      */
     public final T sslProtocols(final String... protocols) {
@@ -211,8 +233,10 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * <p>
      * Note that each ALPN protocol typically requires corresponding configuration at the protocol layer and as a result
      * maybe inferred and overridden by the protocol layer.
+     *
      * @param protocols the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      * @return {@code this}.
+     * @see SslConfig#alpnProtocols()
      */
     public final T alpnProtocols(final List<String> protocols) {
         if (protocols.isEmpty()) {
@@ -227,8 +251,10 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * <p>
      * Note that each ALPN protocol typically requires corresponding configuration at the protocol layer and as a result
      * maybe inferred and overridden by the protocol layer.
+     *
      * @param protocols the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      * @return {@code this}.
+     * @see SslConfig#alpnProtocols()
      */
     public final T alpnProtocols(final String... protocols) {
         return alpnProtocols(asList(protocols));
@@ -244,6 +270,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param ciphers the ciphers to use.
      * @return {@code this}.
+     * @see SslConfig#ciphers()
      */
     public final T ciphers(final List<String> ciphers) {
         if (ciphers.isEmpty()) {
@@ -258,6 +285,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param ciphers the ciphers to use.
      * @return {@code this}.
+     * @see SslConfig#ciphers()
      */
     public final T ciphers(final String... ciphers) {
         return ciphers(asList(ciphers));
@@ -273,6 +301,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param sessionCacheSize the size of the cache used for storing SSL session objects.
      * @return {@code this}.
+     * @see SslConfig#sessionCacheSize()
      * @see SSLSessionContext#setSessionCacheSize(int)
      */
     public final T sessionCacheSize(long sessionCacheSize) {
@@ -292,6 +321,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param sessionTimeout the timeout for the cached SSL session objects, in seconds.
      * @return {@code this}.
+     * @see SslConfig#sessionTimeout()
      * @see SSLSessionContext#setSessionTimeout(int)
      */
     public final T sessionTimeout(long sessionTimeout) {
@@ -311,6 +341,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param provider the {@link SslProvider} to use.
      * @return {@code this}.
+     * @see SslConfig#provider()
      */
     public final T provider(SslProvider provider) {
         this.provider = requireNonNull(provider);
@@ -327,6 +358,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param algorithms the certificate compression algorithms to use.
      * @return {@code this}.
+     * @see SslConfig#certificateCompressionAlgorithms()
      * @see CertificateCompressionAlgorithms
      */
     public final T certificateCompressionAlgorithms(final List<CertificateCompressionAlgorithm> algorithms) {
@@ -342,6 +374,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param algorithms the certificate compression algorithms to use.
      * @return {@code this}.
+     * @see SslConfig#certificateCompressionAlgorithms()
      * @see CertificateCompressionAlgorithms
      */
     public final T certificateCompressionAlgorithms(final CertificateCompressionAlgorithm... algorithms) {
@@ -351,6 +384,25 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     @Nullable
     final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
         return certificateCompressionAlgorithms;
+    }
+
+    /**
+     * Sets the timeout for the handshake process.
+     * <p>
+     * Implementations can round the returned {@link Duration} to full time units, depending on their time granularity.
+     * {@link Duration#ZERO Zero duration} disables the timeout.
+     *
+     * @param handshakeTimeout the timeout for the handshake process or {@link Duration#ZERO} to disable it.
+     * @return {@code this}.
+     * @see SslConfig#handshakeTimeout()
+     */
+    public final T handshakeTimeout(final Duration handshakeTimeout) {
+        this.handshakeTimeout = ensureNonNegative(handshakeTimeout, "handshakeTimeout");
+        return thisT();
+    }
+
+    final Duration handshakeTimeout() {
+        return handshakeTimeout;
     }
 
     abstract T thisT();

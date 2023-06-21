@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -56,7 +57,17 @@ public final class AddressUtils {
      * @return a {@link HostAndPort} representation of server's listening address.
      */
     public static HostAndPort serverHostAndPort(final ServerContext ctx) {
-        return HostAndPort.of((InetSocketAddress) ctx.listenAddress());
+        return serverHostAndPort(ctx.listenAddress());
+    }
+
+    /**
+     * Returns a {@link HostAndPort} representation of server's listening address.
+     *
+     * @param address The {@link SocketAddress} of the server
+     * @return a {@link HostAndPort} representation of server's listening address.
+     */
+    public static HostAndPort serverHostAndPort(final SocketAddress address) {
+        return HostAndPort.of((InetSocketAddress) address);
     }
 
     /**
