@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,9 @@ abstract class SourceToFuture<T> implements Future<T> {
             if (latch.await(timeout, unit)) {
                 return reportGet(this.value);
             } else {
-                throw new TimeoutException("Timed out waiting for the result");
+                // We do not cancel the source on timeout or interrupt because users can reattempt getting the value
+                // after processing an exception.
+                throw new TimeoutException("Timed out after " + timeout + ' ' + unit + " waiting for the result");
             }
         } else {
             return reportGet(value);
