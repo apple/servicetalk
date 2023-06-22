@@ -156,6 +156,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
         return this;
     }
 
+    @Override
     public StreamingHttpRequest fragment(@Nullable String fragment) {
         super.fragment(fragment);
         return this;
