@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -45,9 +46,9 @@ abstract class AbstractSslConfig implements SslConfig {
     private final long sessionTimeout;
     @Nullable
     private final SslProvider provider;
-
     @Nullable
     private final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms;
+    private final Duration handshakeTimeout;
 
     AbstractSslConfig(@Nullable final TrustManagerFactory trustManagerFactory,
                       @Nullable final Supplier<InputStream> trustCertChainSupplier,
@@ -58,7 +59,8 @@ abstract class AbstractSslConfig implements SslConfig {
                       @Nullable final List<String> alpnProtocols,
                       @Nullable final List<String> ciphers, final long sessionCacheSize,
                       final long sessionTimeout, @Nullable final SslProvider provider,
-                      @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms) {
+                      @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
+                      final Duration handshakeTimeout) {
         this.trustManagerFactory = trustManagerFactory;
         this.trustCertChainSupplier = trustCertChainSupplier;
         this.keyManagerFactory = keyManagerFactory;
@@ -72,6 +74,7 @@ abstract class AbstractSslConfig implements SslConfig {
         this.sessionTimeout = sessionTimeout;
         this.provider = provider;
         this.certificateCompressionAlgorithms = certificateCompressionAlgorithms;
+        this.handshakeTimeout = handshakeTimeout;
     }
 
     @Nullable
@@ -129,7 +132,7 @@ abstract class AbstractSslConfig implements SslConfig {
     }
 
     @Override
-    public long sessionCacheSize() {
+    public final long sessionCacheSize() {
         return sessionCacheSize;
     }
 
@@ -146,7 +149,12 @@ abstract class AbstractSslConfig implements SslConfig {
 
     @Nullable
     @Override
-    public List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
+    public final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
         return certificateCompressionAlgorithms;
+    }
+
+    @Override
+    public final Duration handshakeTimeout() {
+        return handshakeTimeout;
     }
 }

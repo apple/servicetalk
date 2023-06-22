@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
 
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
@@ -36,6 +35,8 @@ import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
 import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
+import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.SslContextFactory.HANDSHAKE_TIMEOUT_MILLIS;
 import static java.util.Collections.singletonList;
 
 /**
@@ -47,17 +48,16 @@ final class SslUtils {
     }
 
     /**
-     * Creates a new {@link SslHandler} which will supports SNI if the {@link InetSocketAddress} was created from
-     * a hostname.
+     * Creates a new {@link SslHandler} for the client-side which will support SNI if the {@link InetSocketAddress} was
+     * created from a hostname. It will use {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required.
      *
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
-     * @param allocator the {@link ByteBufAllocator} which will be used to allocate direct memory if required for
-     * {@link SSLEngine}
      * @param sslConfig used to obtain configuration for the {@link SslHandler}.
      * @return a {@link SslHandler}
      */
-    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator, ClientSslConfig sslConfig) {
-        SslHandler handler = context.newHandler(allocator, sslConfig.peerHost(), sslConfig.peerPort());
+    static SslHandler newClientSslHandler(SslContext context, ClientSslConfig sslConfig) {
+        SslHandler handler = context.newHandler(POOLED_ALLOCATOR, sslConfig.peerHost(), sslConfig.peerPort());
+        setHandshakeTimeout(handler, context);
         SSLEngine engine = handler.engine();
         try {
             String hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
@@ -80,14 +80,20 @@ final class SslUtils {
     }
 
     /**
-     * Creates a new {@link SslHandler}.
+     * Creates a new {@link SslHandler} for the server-side.
+     * It will use {@link CopyByteBufHandlerChannelInitializer#POOLED_ALLOCATOR} if required.
      *
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
-     * @param allocator the {@link ByteBufAllocator} which will be used
      * @return a {@link SslHandler}
      */
-    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator) {
-        return context.newHandler(allocator);
+    static SslHandler newServerSslHandler(SslContext context) {
+        SslHandler handler = context.newHandler(POOLED_ALLOCATOR);
+        setHandshakeTimeout(handler, context);
+        return handler;
+    }
+
+    private static void setHandshakeTimeout(SslHandler handler, SslContext context) {
+        handler.setHandshakeTimeoutMillis(context.attributes().attr(HANDSHAKE_TIMEOUT_MILLIS).get());
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -36,6 +37,7 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
      * Create a new instance using the {@link KeyManagerFactory} for SSL/TLS handshakes.
      *
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshakes.
+     * @see ServerSslConfig#keyManagerFactory()
      */
     public ServerSslConfigBuilder(KeyManagerFactory kmf) {
         keyManager(kmf);
@@ -44,6 +46,7 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     /**
      * Create a new instance from a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM}
      * format and a {@code PKCS#8} private key in {@code PEM} format.
+     *
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
@@ -53,6 +56,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
+     * @see ServerSslConfig#keyCertChainSupplier()
+     * @see ServerSslConfig#keySupplier()
      */
     public ServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier,
                                   Supplier<InputStream> keySupplier) {
@@ -62,6 +67,7 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     /**
      * Create a new instance from a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM}
      * format and a {@code PKCS#8} private key in {@code PEM} format.
+     *
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
      * <p>
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
@@ -72,6 +78,9 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
+     * @see ServerSslConfig#keyCertChainSupplier()
+     * @see ServerSslConfig#keySupplier()
+     * @see ServerSslConfig#keyPassword()
      */
     public ServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
                                   @Nullable String keyPassword) {
@@ -80,8 +89,10 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
 
     /**
      * Set the {@link SslClientAuthMode} which determines how client authentication should be done.
+     *
      * @param clientAuthMode the {@link SslClientAuthMode} which determines how client authentication should be done.
      * @return {@code this}.
+     * @see ServerSslConfig#clientAuthMode()
      * @see SSLParameters#getNeedClientAuth()
      * @see SSLParameters#getWantClientAuth()
      */
@@ -97,7 +108,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     public ServerSslConfig build() {
         return new DefaultServerSslConfig(clientAuthMode, trustManager(), trustCertChainSupplier(), keyManager(),
                 keyCertChainSupplier(), keySupplier(), keyPassword(), sslProtocols(), alpnProtocols(), ciphers(),
-                sessionCacheSize(), sessionTimeout(), provider(), certificateCompressionAlgorithms());
+                sessionCacheSize(), sessionTimeout(), provider(), certificateCompressionAlgorithms(),
+                handshakeTimeout());
     }
 
     @Override
@@ -117,10 +129,11 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
                                @Nullable final List<String> ciphers, final long sessionCacheSize,
                                final long sessionTimeout, @Nullable final SslProvider provider,
-                               @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms) {
+                               @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
+                               final Duration handshakeTimeout) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
                     keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout, provider,
-                    certificateCompressionAlgorithms);
+                    certificateCompressionAlgorithms, handshakeTimeout);
             this.clientAuthMode = clientAuthMode;
         }
 
