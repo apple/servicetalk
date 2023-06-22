@@ -83,8 +83,7 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
      * @param sniMapping to use for SNI configuration.
      * @param maxClientHelloLength The maximum length of a
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
-     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1">2^14</a> bytes.
-     * Zero ({@code 0}) disables validation.
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
      * @param clientHelloTimeoutMillis The timeout in milliseconds for waiting until
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
      * Zero ({@code 0}) disables timeout.

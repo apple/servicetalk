@@ -39,8 +39,9 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     /**
-     * The maximum length of client hello message as defined by
-     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1">RFC5246</a>.
+     * The maximum length of ClientHello message as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">RFC5246</a> and
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6347#section-3.2.3">RFC6347</a> as {@code 2^24 - 1}.
      */
     private static final int MAX_CLIENT_HELLO_LENGTH = 0xFFFFFF;
     private static final Duration DEFAULT_CLIENT_HELLO_TIMEOUT = ofSeconds(10); // same as default in Netty SslHandler
@@ -108,8 +109,7 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
      * found the corresponding {@link ServerSslConfig} is used.
      * @param maxClientHelloLength the maximum length of a
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
-     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1">2^14</a> bytes.
-     * Zero ({@code 0}) disables validation.
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
      * @param clientHelloTimeout The timeout for waiting until
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
      * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.

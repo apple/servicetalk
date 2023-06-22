@@ -87,8 +87,7 @@ public interface HttpServerBuilder {
      * to provide the corresponding {@link ServerSslConfig}.
      * @param maxClientHelloLength The maximum length of a
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
-     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-6.2.1">2^14</a> bytes.
-     * Zero ({@code 0}) disables validation.
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
      * @param clientHelloTimeout The timeout for waiting until
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
      * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.
