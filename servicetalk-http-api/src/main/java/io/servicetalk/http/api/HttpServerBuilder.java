@@ -70,7 +70,7 @@ public interface HttpServerBuilder {
     /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
      *
-     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
+     * @param defaultConfig The configuration to use if the client certificate's SNI extension isn't present or the
      * SNI hostname doesn't match any values in {@code sniMap}.
      * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
      * to provide the corresponding {@link ServerSslConfig}.
@@ -81,7 +81,7 @@ public interface HttpServerBuilder {
     /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
      *
-     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
+     * @param defaultConfig The configuration to use if the client certificate's SNI extension isn't present or the
      * SNI hostname doesn't match any values in {@code sniMap}.
      * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
      * to provide the corresponding {@link ServerSslConfig}.
