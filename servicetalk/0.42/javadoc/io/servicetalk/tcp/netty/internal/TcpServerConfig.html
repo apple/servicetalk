@@ -149,14 +149,22 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add SSL/TLS and SNI related config.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(SslConfigType)" class="member-name-link">sslConfig</a><wbr>(<a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerConfig</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultSslConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniConfig,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Add SSL/TLS and SNI related config.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(SslConfigType)" class="member-name-link">sslConfig</a><wbr>(<a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add SSL/TLS related config.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a <a href="../../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -219,6 +227,31 @@ loadScripts(document, 'script');</script>
 <dd><code>defaultSslConfig</code> - the default <a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> used when no SNI match is found.</dd>
 <dd><code>sniConfig</code> - client SNI hostname values are matched against keys in this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a> and if a match is
  found the corresponding <a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> is used.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="TcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerConfig</a></span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(<a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultSslConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniConfig,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</span></div>
+<div class="block">Add SSL/TLS and SNI related config.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>defaultSslConfig</code> - the default <a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> used when no SNI match is found.</dd>
+<dd><code>sniConfig</code> - client SNI hostname values are matched against keys in this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a> and if a match is
+ found the corresponding <a href="../../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> is used.</dd>
+<dd><code>maxClientHelloLength</code> - the maximum length of a
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+ <code>2^24 - 1</code> bytes. Zero (<code>0</code>) disables validation.</dd>
+<dd><code>clientHelloTimeout</code> - The timeout for waiting until
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+ Implementations can round the specified <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to full time units, depending on their time granularity.
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Zero (0)</code></a> disables timeout.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

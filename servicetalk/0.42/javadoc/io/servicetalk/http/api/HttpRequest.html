@@ -178,136 +178,142 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#method(io.servicetalk.http.api.HttpRequestMethod)" class="member-name-link">method</a><wbr>(<a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a>&nbsp;method)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#fragment(java.lang.String)" class="member-name-link">fragment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set the <a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a> of this <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
+<div class="block">Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#path(java.lang.String)" class="member-name-link">path</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#method(io.servicetalk.http.api.HttpRequestMethod)" class="member-name-link">method</a><wbr>(<a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a>&nbsp;method)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Set the <a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a> of this <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#path(java.lang.String)" class="member-name-link">path</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets the path, performing encoding according
  to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>, except for forward-slash
  (<code>'/'</code>) characters.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody()" class="member-name-link">payloadBody</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody()" class="member-name-link">payloadBody</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Gets the underlying payload as a <a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(io.servicetalk.buffer.api.Buffer)" class="member-name-link">payloadBody</a><wbr>(<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;payloadBody)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(io.servicetalk.buffer.api.Buffer)" class="member-name-link">payloadBody</a><wbr>(<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;payloadBody)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Returns an <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> with its underlying payload set to <code>payloadBody</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;T</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#payloadBody(io.servicetalk.http.api.HttpDeserializer)" class="member-name-link">payloadBody</a><wbr>(<a href="HttpDeserializer.html" title="interface in io.servicetalk.http.api">HttpDeserializer</a>&lt;T&gt;&nbsp;deserializer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;T</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#payloadBody(io.servicetalk.http.api.HttpDeserializer)" class="member-name-link">payloadBody</a><wbr>(<a href="HttpDeserializer.html" title="interface in io.servicetalk.http.api">HttpDeserializer</a>&lt;T&gt;&nbsp;deserializer)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#payloadBody(io.servicetalk.http.api.HttpDeserializer2)"><code>payloadBody(HttpDeserializer2)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;T</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(io.servicetalk.http.api.HttpDeserializer2)" class="member-name-link">payloadBody</a><wbr>(<a href="HttpDeserializer2.html" title="interface in io.servicetalk.http.api">HttpDeserializer2</a>&lt;T&gt;&nbsp;deserializer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;T</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(io.servicetalk.http.api.HttpDeserializer2)" class="member-name-link">payloadBody</a><wbr>(<a href="HttpDeserializer2.html" title="interface in io.servicetalk.http.api">HttpDeserializer2</a>&lt;T&gt;&nbsp;deserializer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Gets and deserializes the payload body.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
  <a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)"><code>payloadBody(Object, HttpSerializer2)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
  <a href="HttpSerializer2.html" title="interface in io.servicetalk.http.api">HttpSerializer2</a>&lt;T&gt;&nbsp;serializer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Returns an <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> with its underlying payload set to the results of serialization of <code>pojo</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#query(java.lang.String)" class="member-name-link">query</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;query)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#query(java.lang.String)" class="member-name-link">query</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;query)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets the path, performing encoding according
  to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rawPath(java.lang.String)" class="member-name-link">rawPath</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rawPath(java.lang.String)" class="member-name-link">rawPath</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets the path to <code>path</code>, without any encoding performed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rawQuery(java.lang.String)" class="member-name-link">rawQuery</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;query)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#rawQuery(java.lang.String)" class="member-name-link">rawQuery</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;query)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> to <code>query</code>, without
  any encoding performed.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#requestTarget(java.lang.String)" class="member-name-link">requestTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;requestTarget)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
-</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#requestTarget(java.lang.String,java.nio.charset.Charset)" class="member-name-link">requestTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;requestTarget,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/charset/Charset.html" title="class or interface in java.nio.charset" class="external-link">Charset</a>&nbsp;encoding)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#requestTarget(java.lang.String)" class="member-name-link">requestTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;requestTarget)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setHeader</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#requestTarget(java.lang.String,java.nio.charset.Charset)" class="member-name-link">requestTarget</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;requestTarget,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/charset/Charset.html" title="class or interface in java.nio.charset" class="external-link">Charset</a>&nbsp;encoding)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setHeaders</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setHeader</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setHeaders</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Clears the current header entries and copies all header entries of the specified <code>headers</code> object.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameter(java.lang.String,java.lang.String)" class="member-name-link">setQueryParameter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameter(java.lang.String,java.lang.String)" class="member-name-link">setQueryParameter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a query parameter with the specified <code>key</code> and <code>value</code>, which will be
  <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameters(java.lang.String,java.lang.Iterable)" class="member-name-link">setQueryParameters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;values)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Sets new query parameters with the specified <code>key</code> and <code>values</code>.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameters(java.lang.String,java.lang.String...)" class="member-name-link">setQueryParameters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;values)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameters(java.lang.String,java.lang.Iterable)" class="member-name-link">setQueryParameters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;values)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets new query parameters with the specified <code>key</code> and <code>values</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailer(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setTrailer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailers(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setTrailers</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#toBlockingStreamingRequest()" class="member-name-link">toBlockingStreamingRequest</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setQueryParameters(java.lang.String,java.lang.String...)" class="member-name-link">setQueryParameters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;values)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Sets new query parameters with the specified <code>key</code> and <code>values</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailer(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setTrailer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailers(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setTrailers</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#toBlockingStreamingRequest()" class="member-name-link">toBlockingStreamingRequest</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Translates this <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> to a <a href="BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpRequest</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#toStreamingRequest()" class="member-name-link">toStreamingRequest</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#toStreamingRequest()" class="member-name-link">toStreamingRequest</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Translates this <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> to a <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#trailers()" class="member-name-link">trailers</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#trailers()" class="member-name-link">trailers</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)" class="member-name-link">version</a><wbr>(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)" class="member-name-link">version</a><wbr>(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the protocol version of this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </div>
 </div>
@@ -318,7 +324,7 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <code><a href="HttpMetaData.html#context()">context</a>, <a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString()">toString</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpRequestMetaData">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></h3>
-<code><a href="HttpRequestMetaData.html#contentEncoding()">contentEncoding</a>, <a href="HttpRequestMetaData.html#effectiveHostAndPort()">effectiveHostAndPort</a>, <a href="HttpRequestMetaData.html#hasQueryParameter(java.lang.String)">hasQueryParameter</a>, <a href="HttpRequestMetaData.html#hasQueryParameter(java.lang.String,java.lang.String)">hasQueryParameter</a>, <a href="HttpRequestMetaData.html#host()">host</a>, <a href="HttpRequestMetaData.html#method()">method</a>, <a href="HttpRequestMetaData.html#path()">path</a>, <a href="HttpRequestMetaData.html#port()">port</a>, <a href="HttpRequestMetaData.html#query()">query</a>, <a href="HttpRequestMetaData.html#queryParameter(java.lang.String)">queryParameter</a>, <a href="HttpRequestMetaData.html#queryParameters()">queryParameters</a>, <a href="HttpRequestMetaData.html#queryParameters(java.lang.String)">queryParameters</a>, <a href="HttpRequestMetaData.html#queryParametersIterator(java.lang.String)">queryParametersIterator</a>, <a href="HttpRequestMetaData.html#queryParametersKeys()">queryParametersKeys</a>, <a href="HttpRequestMetaData.html#queryParametersSize()">queryParametersSize</a>, <a href="HttpRequestMetaData.html#rawPath()">rawPath</a>, <a href="HttpRequestMetaData.html#rawQuery()">rawQuery</a>, <a href="HttpRequestMetaData.html#removeQueryParameters(java.lang.String)">removeQueryParameters</a>, <a href="HttpRequestMetaData.html#removeQueryParameters(java.lang.String,java.lang.String)">removeQueryParameters</a>, <a href="HttpRequestMetaData.html#requestTarget()">requestTarget</a>, <a href="HttpRequestMetaData.html#requestTarget(java.nio.charset.Charset)">requestTarget</a>, <a href="HttpRequestMetaData.html#scheme()">scheme</a>, <a href="HttpRequestMetaData.html#userInfo()">userInfo</a></code></div>
+<code><a href="HttpRequestMetaData.html#contentEncoding()">contentEncoding</a>, <a href="HttpRequestMetaData.html#effectiveHostAndPort()">effectiveHostAndPort</a>, <a href="HttpRequestMetaData.html#fragment()">fragment</a>, <a href="HttpRequestMetaData.html#hasQueryParameter(java.lang.String)">hasQueryParameter</a>, <a href="HttpRequestMetaData.html#hasQueryParameter(java.lang.String,java.lang.String)">hasQueryParameter</a>, <a href="HttpRequestMetaData.html#host()">host</a>, <a href="HttpRequestMetaData.html#method()">method</a>, <a href="HttpRequestMetaData.html#path()">path</a>, <a href="HttpRequestMetaData.html#port()">port</a>, <a href="HttpRequestMetaData.html#query()">query</a>, <a href="HttpRequestMetaData.html#queryParameter(java.lang.String)">queryParameter</a>, <a href="HttpRequestMetaData.html#queryParameters()">queryParameters</a>, <a href="HttpRequestMetaData.html#queryParameters(java.lang.String)">queryParameters</a>, <a href="HttpRequestMetaData.html#queryParametersIterator(java.lang.String)">queryParametersIterator</a>, <a href="HttpRequestMetaData.html#queryParametersKeys()">queryParametersKeys</a>, <a href="HttpRequestMetaData.html#queryParametersSize()">queryParametersSize</a>, <a href="HttpRequestMetaData.html#rawPath()">rawPath</a>, <a href="HttpRequestMetaData.html#rawQuery()">rawQuery</a>, <a href="HttpRequestMetaData.html#removeQueryParameters(java.lang.String)">removeQueryParameters</a>, <a href="HttpRequestMetaData.html#removeQueryParameters(java.lang.String,java.lang.String)">removeQueryParameters</a>, <a href="HttpRequestMetaData.html#requestTarget()">requestTarget</a>, <a href="HttpRequestMetaData.html#requestTarget(java.nio.charset.Charset)">requestTarget</a>, <a href="HttpRequestMetaData.html#scheme()">scheme</a>, <a href="HttpRequestMetaData.html#userInfo()">userInfo</a></code></div>
 </section>
 </li>
 </ul>
@@ -683,6 +689,24 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <dt>Parameters:</dt>
 <dd><code>key</code> - the query parameter key.</dd>
 <dd><code>values</code> - the query parameter values.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fragment(java.lang.String)">
+<h3>fragment</h3>
+<div class="member-signature"><span class="return-type"><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></span>&nbsp;<span class="element-name">fragment</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpRequestMetaData.html#fragment(java.lang.String)">HttpRequestMetaData</a></code></span></div>
+<div class="block">Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpRequestMetaData.html#fragment(java.lang.String)">fragment</a></code>&nbsp;in interface&nbsp;<code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>fragment</code> - the fragment to set.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

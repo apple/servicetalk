@@ -152,83 +152,88 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the cipher suites to enable, in the order of preference.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hostnameVerificationAlgorithm(java.lang.String)" class="member-name-link">hostnameVerificationAlgorithm</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;algorithm)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#handshakeTimeout(java.time.Duration)" class="member-name-link">handshakeTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;handshakeTimeout)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the timeout for the handshake process.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hostnameVerificationAlgorithm(java.lang.String)" class="member-name-link">hostnameVerificationAlgorithm</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;algorithm)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the algorithm to use for hostname verification to verify the
  <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keyCertChainSupplier,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keyCertChainSupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keySupplier)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> which provides <code>X.509</code> certificate chain in <code>PEM</code> format and
  a <code>PKCS#8</code> private key in <code>PEM</code> format.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier,java.lang.String)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keyCertChainSupplier,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(java.util.function.Supplier,java.util.function.Supplier,java.lang.String)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keyCertChainSupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;keySupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;keyPassword)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> which provides <code>X.509</code> certificate chain in <code>PEM</code> format and
  a <code>PKCS#8</code> private key in <code>PEM</code> format protected by a password.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(javax.net.ssl.KeyManagerFactory)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/KeyManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">KeyManagerFactory</a>&nbsp;kmf)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keyManager(javax.net.ssl.KeyManagerFactory)" class="member-name-link">keyManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/KeyManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">KeyManagerFactory</a>&nbsp;kmf)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/KeyManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>KeyManagerFactory</code></a> to use for the SSL/TLS handshake.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerHost(java.lang.String)" class="member-name-link">peerHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;peerHost)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerHost(java.lang.String)" class="member-name-link">peerHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;peerHost)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the non-authoritative name of the peer.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerPort(int)" class="member-name-link">peerPort</a><wbr>(int&nbsp;peerPort)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerPort(int)" class="member-name-link">peerPort</a><wbr>(int&nbsp;peerPort)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the non-authoritative port of the peer.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#provider(io.servicetalk.transport.api.SslProvider)" class="member-name-link">provider</a><wbr>(<a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a>&nbsp;provider)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#provider(io.servicetalk.transport.api.SslProvider)" class="member-name-link">provider</a><wbr>(<a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a>&nbsp;provider)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="SslProvider.html" title="enum class in io.servicetalk.transport.api"><code>SslProvider</code></a> to use.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sessionCacheSize(long)" class="member-name-link">sessionCacheSize</a><wbr>(long&nbsp;sessionCacheSize)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sessionCacheSize(long)" class="member-name-link">sessionCacheSize</a><wbr>(long&nbsp;sessionCacheSize)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the size of the cache used for storing SSL session objects.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sessionTimeout(long)" class="member-name-link">sessionTimeout</a><wbr>(long&nbsp;sessionTimeout)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sessionTimeout(long)" class="member-name-link">sessionTimeout</a><wbr>(long&nbsp;sessionTimeout)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the timeout for the cached SSL session objects, in seconds.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sniHostname(java.lang.String)" class="member-name-link">sniHostname</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;sniHostname)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sniHostname(java.lang.String)" class="member-name-link">sniHostname</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;sniHostname)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.lang.String...)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;protocols)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the TLS protocols to enable, in the order of preference.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.lang.String...)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;protocols)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.util.List)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;protocols)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the TLS protocols to enable, in the order of preference.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslProtocols(java.util.List)" class="member-name-link">sslProtocols</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;protocols)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the TLS protocols to enable, in the order of preference.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#thisT()" class="member-name-link">thisT</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(java.util.function.Supplier)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;trustCertChainSupplier)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#thisT()" class="member-name-link">thisT</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(java.util.function.Supplier)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&gt;&nbsp;trustCertChainSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the trusted certificates for verifying the remote endpoint's certificate.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(javax.net.ssl.TrustManagerFactory)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">TrustManagerFactory</a>&nbsp;tmf)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trustManager(javax.net.ssl.TrustManagerFactory)" class="member-name-link">trustManager</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link">TrustManagerFactory</a>&nbsp;tmf)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>TrustManagerFactory</code></a> used for verifying the remote endpoint's certificate.</div>
 </div>
 </div>
@@ -264,6 +269,12 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>tmf</code> - The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>TrustManagerFactory</code></a> used to verify trusted servers.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#trustManagerFactory()"><code>SslConfig.trustManagerFactory()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -279,6 +290,12 @@ loadScripts(document, 'script');</script>
  <p>
  Each invocation of the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link"><code>Supplier</code></a> should provide an independent instance of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> and the
  caller is responsible for invoking <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html#close()" title="class or interface in java.io" class="external-link"><code>InputStream.close()</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#trustCertChainSupplier()"><code>SslConfig.trustCertChainSupplier()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -307,6 +324,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="ClientSslConfig.html#hostnameVerificationAlgorithm()"><code>ClientSslConfig.hostnameVerificationAlgorithm()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLParameters.html#setEndpointIdentificationAlgorithm(java.lang.String)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLParameters.setEndpointIdentificationAlgorithm(String)</code></a></li>
 </ul>
 </dd>
@@ -327,6 +345,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
+<li><a href="ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html#getPeerHost()" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine.getPeerHost()</code></a></li>
 </ul>
 </dd>
@@ -347,6 +366,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
+<li><a href="ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html#getPeerPort()" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine.getPeerPort()</code></a></li>
 </ul>
 </dd>
@@ -366,6 +386,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="ClientSslConfig.html#sniHostname()"><code>ClientSslConfig.sniHostname()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLParameters.html#setServerNames(java.util.List)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLParameters.setServerNames(List)</code></a></li>
 </ul>
 </dd>
@@ -399,6 +420,12 @@ loadScripts(document, 'script');</script>
 <dd><code>tmf</code> - the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/TrustManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>TrustManagerFactory</code></a> used for verifying the remote endpoint's certificate.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#trustManagerFactory()"><code>SslConfig.trustManagerFactory()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -417,6 +444,12 @@ loadScripts(document, 'script');</script>
  caller is responsible for invoking <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html#close()" title="class or interface in java.io" class="external-link"><code>InputStream.close()</code></a>.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#trustCertChainSupplier()"><code>SslConfig.trustCertChainSupplier()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -430,6 +463,12 @@ loadScripts(document, 'script');</script>
 <dd><code>kmf</code> - the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/KeyManagerFactory.html" title="class or interface in javax.net.ssl" class="external-link"><code>KeyManagerFactory</code></a> to use for the SSL/TLS handshake.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#keyManagerFactory()"><code>SslConfig.keyManagerFactory()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -453,6 +492,13 @@ loadScripts(document, 'script');</script>
  caller is responsible for invoking <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html#close()" title="class or interface in java.io" class="external-link"><code>InputStream.close()</code></a>.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#keyCertChainSupplier()"><code>SslConfig.keyCertChainSupplier()</code></a></li>
+<li><a href="SslConfig.html#keySupplier()"><code>SslConfig.keySupplier()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -479,6 +525,14 @@ loadScripts(document, 'script');</script>
 <dd><code>keyPassword</code> - the password required to access the key material from <code>keySupplier</code>.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="SslConfig.html#keyCertChainSupplier()"><code>SslConfig.keyCertChainSupplier()</code></a></li>
+<li><a href="SslConfig.html#keySupplier()"><code>SslConfig.keySupplier()</code></a></li>
+<li><a href="SslConfig.html#keyPassword()"><code>SslConfig.keyPassword()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -495,6 +549,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#sslProtocols()"><code>SslConfig.sslProtocols()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html#setEnabledProtocols(java.lang.String%5B%5D)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine.setEnabledProtocols(String[])</code></a></li>
 </ul>
 </dd>
@@ -514,6 +569,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#sslProtocols()"><code>SslConfig.sslProtocols()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html#setEnabledProtocols(java.lang.String%5B%5D)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine.setEnabledProtocols(String[])</code></a></li>
 </ul>
 </dd>
@@ -533,6 +589,12 @@ loadScripts(document, 'script');</script>
 <dd><code>protocols</code> - the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#alpnProtocols()"><code>SslConfig.alpnProtocols()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -549,6 +611,12 @@ loadScripts(document, 'script');</script>
 <dd><code>protocols</code> - the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#alpnProtocols()"><code>SslConfig.alpnProtocols()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -562,6 +630,12 @@ loadScripts(document, 'script');</script>
 <dd><code>ciphers</code> - the ciphers to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#ciphers()"><code>SslConfig.ciphers()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -575,6 +649,12 @@ loadScripts(document, 'script');</script>
 <dd><code>ciphers</code> - the ciphers to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#ciphers()"><code>SslConfig.ciphers()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -591,6 +671,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#sessionCacheSize()"><code>SslConfig.sessionCacheSize()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSessionContext.html#setSessionCacheSize(int)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSessionContext.setSessionCacheSize(int)</code></a></li>
 </ul>
 </dd>
@@ -610,6 +691,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#sessionTimeout()"><code>SslConfig.sessionTimeout()</code></a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSessionContext.html#setSessionTimeout(int)" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSessionContext.setSessionTimeout(int)</code></a></li>
 </ul>
 </dd>
@@ -626,6 +708,12 @@ loadScripts(document, 'script');</script>
 <dd><code>provider</code> - the <a href="SslProvider.html" title="enum class in io.servicetalk.transport.api"><code>SslProvider</code></a> to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#provider()"><code>SslConfig.provider()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -642,6 +730,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#certificateCompressionAlgorithms()"><code>SslConfig.certificateCompressionAlgorithms()</code></a></li>
 <li><a href="CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithms</code></a></li>
 </ul>
 </dd>
@@ -661,7 +750,30 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
+<li><a href="SslConfig.html#certificateCompressionAlgorithms()"><code>SslConfig.certificateCompressionAlgorithms()</code></a></li>
 <li><a href="CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithms</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="handshakeTimeout(java.time.Duration)">
+<h3>handshakeTimeout</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></span>&nbsp;<span class="element-name">handshakeTimeout</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;handshakeTimeout)</span></div>
+<div class="block">Sets the timeout for the handshake process.
+ <p>
+ Implementations can round the returned <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to full time units, depending on their time granularity.
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Zero duration</code></a> disables the timeout.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>handshakeTimeout</code> - the timeout for the handshake process or <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a> to disable it.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="SslConfig.html#handshakeTimeout()"><code>SslConfig.handshakeTimeout()</code></a></li>
 </ul>
 </dd>
 </dl>

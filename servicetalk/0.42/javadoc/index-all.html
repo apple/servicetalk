@@ -7754,6 +7754,22 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">302 Found</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/HttpRequestMetaData.html#fragment()" class="member-name-link">fragment()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></dt>
+<dd>
+<div class="block">Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#fragment(java.lang.String)" class="member-name-link">fragment(String)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpRequest.html#fragment(java.lang.String)" class="member-name-link">fragment(String)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpRequestMetaData.html#fragment(java.lang.String)" class="member-name-link">fragment(String)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></dt>
+<dd>
+<div class="block">Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/StreamingHttpRequest.html#fragment(java.lang.String)" class="member-name-link">fragment(String)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/Http2ErrorCode.html#FRAME_SIZE_ERROR" class="member-name-link">FRAME_SIZE_ERROR</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/Http2ErrorCode.html" title="class in io.servicetalk.http.api">Http2ErrorCode</a></dt>
 <dd>
 <div class="block"><a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">FRAME_SIZE_ERROR</a>.</div>
@@ -9372,6 +9388,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopSecurityHandshakeObserver.html#handshakeFailed(java.lang.Throwable)" class="member-name-link">handshakeFailed(Throwable)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopSecurityHandshakeObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopSecurityHandshakeObserver</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/DelegatingSslConfig.html#handshakeTimeout()" class="member-name-link">handshakeTimeout()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.html#handshakeTimeout()" class="member-name-link">handshakeTimeout()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></dt>
+<dd>
+<div class="block">Get the timeout for the handshake process.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html#handshakeTimeout(java.time.Duration)" class="member-name-link">handshakeTimeout(Duration)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets the timeout for the handshake process.</div>
+</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#hasArray()" class="member-name-link">hasArray()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
 <div class="block">Returns <code>true</code> if and only if this buffer has a backing byte array.</div>
@@ -11834,10 +11860,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a>s that are applied to the server socket channel which listens/accepts socket
  channels.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenService(HttpServiceBase)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenService(HttpServiceBase)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
 <dd>
 <div class="block">Starts this server and returns the <a href="io/servicetalk/http/api/HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenServiceAndAwait(HttpServiceBase)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenServiceAndAwait(HttpServiceBase)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
 <dd>
 <div class="block">Starts this server and returns the <a href="io/servicetalk/http/api/HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
@@ -11952,6 +11982,16 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/opentracing/zipkin/publisher/ZipkinPublisher.Builder.html#localAddress(java.net.InetSocketAddress)" class="member-name-link">localAddress(InetSocketAddress)</a> - Method in class io.servicetalk.opentracing.zipkin.publisher.<a href="io/servicetalk/opentracing/zipkin/publisher/ZipkinPublisher.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher">ZipkinPublisher.Builder</a></dt>
 <dd>
 <div class="block">Configures the local address.</div>
+</dd>
+<dt><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html#localAddress(java.net.SocketAddress)" class="member-name-link">localAddress(SocketAddress)</a> - Method in class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
+<dt><a href="io/servicetalk/dns/discovery/netty/DelegatingDnsServiceDiscovererBuilder.html#localAddress(java.net.SocketAddress)" class="member-name-link">localAddress(SocketAddress)</a> - Method in class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DelegatingDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DelegatingDnsServiceDiscovererBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/dns/discovery/netty/DnsServiceDiscovererBuilder.html#localAddress(java.net.SocketAddress)" class="member-name-link">localAddress(SocketAddress)</a> - Method in interface io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></dt>
+<dd>
+<div class="block">Set the local <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to bind to.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaderNames.html#LOCATION" class="member-name-link">LOCATION</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderNames.html" title="class in io.servicetalk.http.api">HttpHeaderNames</a></dt>
 <dd>
@@ -18891,6 +18931,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SniServerChannelInitializer.html#%3Cinit%3E(io.netty.util.Mapping)" class="member-name-link">SniServerChannelInitializer(Mapping&lt;String, SslContext&gt;)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SniServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">SniServerChannelInitializer</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/SniServerChannelInitializer.html#%3Cinit%3E(io.netty.util.Mapping,int,long)"><code>SniServerChannelInitializer(Mapping, int, long)</code></a>.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/SniServerChannelInitializer.html#%3Cinit%3E(io.netty.util.Mapping,int,long)" class="member-name-link">SniServerChannelInitializer(Mapping&lt;String, SslContext&gt;, int, long)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SniServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">SniServerChannelInitializer</a></dt>
+<dd>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html#SO_BACKLOG" class="member-name-link">SO_BACKLOG</a> - Static variable in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html" title="class in io.servicetalk.transport.api">ServiceTalkSocketOptions</a></dt>
@@ -19060,6 +19106,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)" class="member-name-link">sslConfig(ServerSslConfig, Map&lt;String, ServerSslConfig&gt;)</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerConfig</a></dt>
+<dd>
+<div class="block">Add SSL/TLS and SNI related config.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig(ServerSslConfig, Map&lt;String, ServerSslConfig&gt;, int, Duration)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig(ServerSslConfig, Map&lt;String, ServerSslConfig&gt;, int, Duration)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+</dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig(ServerSslConfig, Map&lt;String, ServerSslConfig&gt;, int, Duration)</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerConfig</a></dt>
 <dd>
 <div class="block">Add SSL/TLS and SNI related config.</div>
 </dd>

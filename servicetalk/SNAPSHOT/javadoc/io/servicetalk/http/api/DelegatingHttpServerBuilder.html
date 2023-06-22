@@ -233,6 +233,16 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#listenService(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenService</a><wbr>(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenServiceAndAwait</a><wbr>(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#listenSocketOption(java.net.SocketOption,T)" class="member-name-link">listenSocketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
  T&nbsp;value)</code></div>
@@ -271,12 +281,20 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -285,9 +303,6 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpServerBuilder">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></h3>
-<code><a href="HttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)">listenService</a>, <a href="HttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)">listenServiceAndAwait</a></code></div>
 </section>
 </li>
 </ul>
@@ -386,10 +401,39 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <dt>Specified by:</dt>
 <dd><code><a href="HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)">sslConfig</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
 <dt>Parameters:</dt>
-<dd><code>defaultConfig</code> - The configuration to use is the client certificate's SNI extension isn't present or the
+<dd><code>defaultConfig</code> - The configuration to use if the client certificate's SNI extension isn't present or the
  SNI hostname doesn't match any values in <code>sniMap</code>.</dd>
 <dd><code>sniMap</code> - A map where the keys are matched against the client certificate's SNI extension value in order
  to provide the corresponding <a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)">HttpServerBuilder</a></code></span></div>
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)">sslConfig</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>defaultConfig</code> - The configuration to use if the client certificate's SNI extension isn't present or the
+ SNI hostname doesn't match any values in <code>sniMap</code>.</dd>
+<dd><code>sniMap</code> - A map where the keys are matched against the client certificate's SNI extension value in order
+ to provide the corresponding <a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</dd>
+<dd><code>maxClientHelloLength</code> - The maximum length of a
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+ <code>2^24 - 1</code> bytes. Zero (<code>0</code>) disables validation.</dd>
+<dd><code>clientHelloTimeout</code> - The timeout for waiting until
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+ Implementations can round the specified <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to full time units, depending on their time granularity.
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Zero (0)</code></a> disables timeout.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -867,6 +911,31 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 </section>
 </li>
 <li>
+<section class="detail" id="listenService(io.servicetalk.http.api.HttpServiceBase)">
+<h3>listenService</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a>&gt;</span>&nbsp;<span class="element-name">listenService</span><wbr><span class="parameters">(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)">HttpServerBuilder</a></code></span></div>
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.
+ <p>
+ If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on <code>address</code>.
+ <p>
+ Note that this method is generic in the sense that it accepts all HTTP <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> implementations
+ to be passed in, namely <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>, <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a>, <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a>
+ and <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a>. It is especially useful when Dependency Injection is used and the type of
+ service is not known at compile time.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)">listenService</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>service</code> - Service invoked for every request received by this server. The returned <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a>
+ manages the lifecycle of the <code>service</code>, ensuring it is closed when the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> is closed.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes when the server is successfully started or terminates with an error if
+ the server could not be started.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="listen(io.servicetalk.http.api.HttpService)">
 <h3>listen</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a>&gt;</span>&nbsp;<span class="element-name">listen</span><wbr><span class="parameters">(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</span></div>
@@ -943,6 +1012,35 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <dt>Returns:</dt>
 <dd>A <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes when the server is successfully started or terminates with an error if
  the server could not be started.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)">
+<h3>listenServiceAndAwait</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a></span>&nbsp;<span class="element-name">listenServiceAndAwait</span><wbr><span class="parameters">(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</span>
+                                        throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)">HttpServerBuilder</a></code></span></div>
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.
+ <p>
+ If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on <code>address</code>.
+ <p>
+ Note that this method is generic in the sense that it accepts all HTTP <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> implementations
+ to be passed in, namely <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>, <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a>, <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a>
+ and <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a>. It is especially useful when Dependency Injection is used and the type of
+ service is not known at compile time.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)">listenServiceAndAwait</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>service</code> - Service invoked for every request received by this server. The returned <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a>
+ manages the lifecycle of the <code>service</code>, ensuring it is closed when the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> is closed.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> by blocking the calling thread until the server is successfully started or
+ throws an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link"><code>Exception</code></a> if the server could not be started.</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if an unsupported <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> type is being provided.</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - if the server could not be started.</dd>
 </dl>
 </section>
 </li>

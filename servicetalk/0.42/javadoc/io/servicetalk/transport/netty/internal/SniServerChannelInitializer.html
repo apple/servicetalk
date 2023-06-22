@@ -97,6 +97,14 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.netty.util.Mapping)" class="member-name-link">SniServerChannelInitializer</a><wbr>(io.netty.util.Mapping&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>io.netty.handler.ssl.SslContext&gt;&nbsp;sniMapping)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.netty.util.Mapping,int,long)"><code>SniServerChannelInitializer(Mapping, int, long)</code></a>.</div>
+</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.netty.util.Mapping,int,long)" class="member-name-link">SniServerChannelInitializer</a><wbr>(io.netty.util.Mapping&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>io.netty.handler.ssl.SslContext&gt;&nbsp;sniMapping,
+ int&nbsp;maxClientHelloLength,
+ long&nbsp;clientHelloTimeoutMillis)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -141,11 +149,34 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <li>
 <section class="detail" id="&lt;init&gt;(io.netty.util.Mapping)">
 <h3>SniServerChannelInitializer</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SniServerChannelInitializer</span><wbr><span class="parameters">(io.netty.util.Mapping&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>io.netty.handler.ssl.SslContext&gt;&nbsp;sniMapping)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">SniServerChannelInitializer</span><wbr><span class="parameters">(io.netty.util.Mapping&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>io.netty.handler.ssl.SslContext&gt;&nbsp;sniMapping)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.netty.util.Mapping,int,long)"><code>SniServerChannelInitializer(Mapping, int, long)</code></a>.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>sniMapping</code> - to use for SNI configuration.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(io.netty.util.Mapping,int,long)">
+<h3>SniServerChannelInitializer</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SniServerChannelInitializer</span><wbr><span class="parameters">(io.netty.util.Mapping&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>io.netty.handler.ssl.SslContext&gt;&nbsp;sniMapping,
+ int&nbsp;maxClientHelloLength,
+ long&nbsp;clientHelloTimeoutMillis)</span></div>
+<div class="block">Create a new instance.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>sniMapping</code> - to use for SNI configuration.</dd>
+<dd><code>maxClientHelloLength</code> - The maximum length of a
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+ <code>2^24 - 1</code> bytes. Zero (<code>0</code>) disables validation.</dd>
+<dd><code>clientHelloTimeoutMillis</code> - The timeout in milliseconds for waiting until
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+ Zero (<code>0</code>) disables timeout.</dd>
 </dl>
 </section>
 </li>

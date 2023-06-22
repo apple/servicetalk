@@ -258,9 +258,17 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -315,10 +323,36 @@ loadScripts(document, 'script');</script>
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>defaultConfig</code> - The configuration to use is the client certificate's SNI extension isn't present or the
+<dd><code>defaultConfig</code> - The configuration to use if the client certificate's SNI extension isn't present or the
  SNI hostname doesn't match any values in <code>sniMap</code>.</dd>
 <dd><code>sniMap</code> - A map where the keys are matched against the client certificate's SNI extension value in order
  to provide the corresponding <a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
+ int&nbsp;maxClientHelloLength,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</span></div>
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>defaultConfig</code> - The configuration to use if the client certificate's SNI extension isn't present or the
+ SNI hostname doesn't match any values in <code>sniMap</code>.</dd>
+<dd><code>sniMap</code> - A map where the keys are matched against the client certificate's SNI extension value in order
+ to provide the corresponding <a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</dd>
+<dd><code>maxClientHelloLength</code> - The maximum length of a
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+ <code>2^24 - 1</code> bytes. Zero (<code>0</code>) disables validation.</dd>
+<dd><code>clientHelloTimeout</code> - The timeout for waiting until
+ <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+ Implementations can round the specified <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to full time units, depending on their time granularity.
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Zero (0)</code></a> disables timeout.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

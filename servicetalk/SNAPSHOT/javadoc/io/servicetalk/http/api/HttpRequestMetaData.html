@@ -181,6 +181,18 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
  of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#fragment()" class="member-name-link">fragment</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#fragment(java.lang.String)" class="member-name-link">fragment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#hasQueryParameter(java.lang.String)" class="member-name-link">hasQueryParameter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
@@ -935,6 +947,34 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <dd><code>value</code> - the query parameter value.</dd>
 <dt>Returns:</dt>
 <dd><code>true</code> if at least one entry has been removed.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fragment()">
+<h3>fragment</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">fragment</span>()</div>
+<div class="block">Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the fragment part of the request target.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fragment(java.lang.String)">
+<h3>fragment</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></span>&nbsp;<span class="element-name">fragment</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fragment)</span></div>
+<div class="block">Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request
+ target.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>fragment</code> - the fragment to set.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
 </dl>
 </section>
 </li>
