@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -210,6 +211,13 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
         this.config.tcpConfig().sslConfig(defaultConfig, sniMap);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
+                                       final int maxClientHelloLength, final Duration clientHelloTimeout) {
+        this.config.tcpConfig().sslConfig(defaultConfig, sniMap, maxClientHelloLength, clientHelloTimeout);
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,27 @@ import io.netty.channel.ChannelOption;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers.
  */
 public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
+    /**
+     * The maximum length of ClientHello message as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">RFC5246</a> and
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6347#section-3.2.3">RFC6347</a> as {@code 2^24 - 1}.
+     */
+    private static final int MAX_CLIENT_HELLO_LENGTH = 0xFFFFFF;
+    private static final Duration DEFAULT_CLIENT_HELLO_TIMEOUT = ofSeconds(10); // same as default in Netty SslHandler
 
     @Nullable
     @SuppressWarnings("rawtypes")
@@ -42,6 +52,14 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ServerSslConfig> sniConfig;
+    private int sniMaxClientHelloLength = MAX_CLIENT_HELLO_LENGTH;
+    private Duration sniClientHelloTimeout = DEFAULT_CLIENT_HELLO_TIMEOUT;
+
+    @Nullable
+    @SuppressWarnings("rawtypes")
+    Map<ChannelOption, Object> listenOptions() {
+        return listenOptions;
+    }
 
     TransportObserver transportObserver() {
         return transportObserver;
@@ -52,10 +70,12 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
         return sniConfig;
     }
 
-    @Nullable
-    @SuppressWarnings("rawtypes")
-    Map<ChannelOption, Object> listenOptions() {
-        return listenOptions;
+    int sniMaxClientHelloLength() {
+        return sniMaxClientHelloLength;
+    }
+
+    Duration sniClientHelloTimeout() {
+        return sniClientHelloTimeout;
     }
 
     /**
@@ -78,6 +98,33 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig) {
         sslConfig(defaultSslConfig);
         this.sniConfig = requireNonNull(sniConfig);
+        return this;
+    }
+
+    /**
+     * Add SSL/TLS and SNI related config.
+     *
+     * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
+     * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
+     * found the corresponding {@link ServerSslConfig} is used.
+     * @param maxClientHelloLength the maximum length of a
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
+     * @param clientHelloTimeout The timeout for waiting until
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+     * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.
+     * {@link Duration#ZERO Zero (0)} disables timeout.
+     * @return {@code this}
+     */
+    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig,
+                                     int maxClientHelloLength, Duration clientHelloTimeout) {
+        sslConfig(defaultSslConfig, sniConfig);
+        if (maxClientHelloLength < 0 || maxClientHelloLength > MAX_CLIENT_HELLO_LENGTH) {
+            throw new IllegalArgumentException("maxClientHelloLength: " + maxClientHelloLength +
+                    "(expected [0, " + MAX_CLIENT_HELLO_LENGTH + ']');
+        }
+        this.sniMaxClientHelloLength = maxClientHelloLength;
+        this.sniClientHelloTimeout = ensureNonNegative(clientHelloTimeout, "clientHelloTimeout");
         return this;
     }
 

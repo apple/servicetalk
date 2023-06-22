@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,6 @@ import static io.servicetalk.http.netty.TcpFastOpenTest.clientTcpFastOpenOptions
 import static io.servicetalk.http.netty.TcpFastOpenTest.serverTcpFastOpenOptions;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslClientAuthMode.REQUIRE;
-import static io.servicetalk.transport.api.SslProvider.JDK;
-import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -52,7 +50,6 @@ import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MutualSslTest {
-    static final SslProvider[] SSL_PROVIDERS = {JDK, OPENSSL};
     @SuppressWarnings("rawtypes")
     private static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
             asList(emptyMap(), serverTcpFastOpenOptions());
@@ -63,8 +60,8 @@ class MutualSslTest {
     @SuppressWarnings({"rawtypes", "unused"})
     private static Collection<Arguments> params() {
         List<Arguments> params = new ArrayList<>();
-        for (SslProvider serverSslProvider : SSL_PROVIDERS) {
-            for (SslProvider clientSslProvider : SSL_PROVIDERS) {
+        for (SslProvider serverSslProvider : SslProvider.values()) {
+            for (SslProvider clientSslProvider : SslProvider.values()) {
                 for (Map<SocketOption, Object> serverListenOptions : SERVER_LISTEN_OPTIONS) {
                     for (Map<SocketOption, Object> clientOptions : CLIENT_OPTIONS) {
                         params.add(Arguments.of(serverSslProvider, clientSslProvider,
