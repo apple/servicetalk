@@ -137,7 +137,10 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest setQueryParameters(String key, String... values);
 
     @Override
-    HttpRequest fragment(@Nullable String fragment);
+    default HttpRequest fragment(@Nullable String fragment) {
+        throw new UnsupportedOperationException("HttpRequest#fragment(String) is not supported by " +
+                getClass());
+    }
 
     @Override
     HttpRequest version(HttpProtocolVersion version);

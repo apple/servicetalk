@@ -294,7 +294,10 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest version(HttpProtocolVersion version);
 
     @Override
-    BlockingStreamingHttpRequest fragment(@Nullable String fragment);
+    default BlockingStreamingHttpRequest fragment(@Nullable String fragment) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpRequest#fragment(String) is not supported by " +
+                getClass());
+    }
 
     @Deprecated
     @Override

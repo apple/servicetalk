@@ -285,7 +285,10 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest method(HttpRequestMethod method);
 
     @Override
-    StreamingHttpRequest fragment(@Nullable String fragment);
+    default StreamingHttpRequest fragment(@Nullable String fragment) {
+        throw new UnsupportedOperationException("StreamingHttpRequest#fragment(String) is not supported by " +
+                getClass());
+    }
 
     @Deprecated
     @Override
