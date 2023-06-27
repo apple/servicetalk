@@ -66,6 +66,14 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     }
 
     @Override
+    public DnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
+                                           final int minCacheSeconds, final int maxCacheSeconds,
+                                           final int negativeCacheSeconds) {
+        delegate = delegate.ttl(minSeconds, maxSeconds, minCacheSeconds, maxCacheSeconds, negativeCacheSeconds);
+        return this;
+    }
+
+    @Override
     public DnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
         delegate = delegate.ttlJitter(ttlJitter);
         return this;
