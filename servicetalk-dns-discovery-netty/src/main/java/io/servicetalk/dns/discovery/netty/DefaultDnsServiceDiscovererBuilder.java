@@ -37,6 +37,7 @@ import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemD
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
+import static java.lang.Math.min;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -65,7 +66,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final int DEFAULT_MIN_TTL_POLL_SECONDS = 10;
     private static final int DEFAULT_MAX_TTL_POLL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(5);
     private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;
-    private static final int DEFAULT_MAX_TTL_CACHE_SECONDS = 0;
+    private static final int DEFAULT_MAX_TTL_CACHE_SECONDS = 30;
+    private static final int DEFAULT_TTL_POLL_JITTER_SECONDS = 4;
     private static final ServiceDiscovererEvent.Status DEFAULT_MISSING_RECOREDS_STATUS = EXPIRED;
 
     static {
@@ -75,6 +77,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("Default DnsResolverAddressTypes: {}", DEFAULT_DNS_RESOLVER_ADDRESS_TYPES);
             LOGGER.debug("Default TTL poll boundaries in seconds: [{}, {}]",
                     DEFAULT_MIN_TTL_POLL_SECONDS, DEFAULT_MAX_TTL_POLL_SECONDS);
+            LOGGER.debug("Default TTL poll jitter seconds: {}", DEFAULT_TTL_POLL_JITTER_SECONDS);
             LOGGER.debug("Default TTL cache boundaries in seconds: [{}, {}]",
                     DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
@@ -101,12 +104,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private int maxTTLSeconds = DEFAULT_MAX_TTL_POLL_SECONDS;
     private int minTTLCacheSeconds = DEFAULT_MIN_TTL_CACHE_SECONDS;
     private int maxTTLCacheSeconds = DEFAULT_MAX_TTL_CACHE_SECONDS;
-    private Duration ttlJitter = ofSeconds(4);
+    private Duration ttlJitter = ofSeconds(DEFAULT_TTL_POLL_JITTER_SECONDS);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
     private boolean srvFilterDuplicateEvents;
-    private Duration srvHostNameRepeatInitialDelay = ofSeconds(DEFAULT_MIN_TTL_POLL_SECONDS);
+    private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
     private Duration srvHostNameRepeatJitter = ofSeconds(5);
     @Nullable
     private DnsClientFilterFactory filterFactory;
@@ -149,7 +152,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     @Override
     public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds) {
-        ttl(minSeconds, maxSeconds, DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
+        ttl(minSeconds, maxSeconds,
+                min(minSeconds, DEFAULT_MIN_TTL_CACHE_SECONDS), min(maxSeconds, DEFAULT_MAX_TTL_CACHE_SECONDS));
         return this;
     }
 
