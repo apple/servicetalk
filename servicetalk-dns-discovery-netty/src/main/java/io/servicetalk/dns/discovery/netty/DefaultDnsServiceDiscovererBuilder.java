@@ -69,9 +69,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;
     private static final int DEFAULT_MAX_TTL_CACHE_SECONDS = 30;
     private static final int DEFAULT_TTL_POLL_JITTER_SECONDS = 4;
-    // System property recognized by JVM: https://docs.oracle.com/javase/8/docs/technotes/guides/net/properties.html
-    // We do not support "networkaddress.cache.ttl" because it's behavior in JDK is different. It overrides the original
-    // TTL from the server and caches exactly for the specified amount of time via the property.
+    /**
+     * This is one of the standard <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/net/properties.html">
+     * Java Network Properties</a>.
+     * We do not support {@code networkaddress.cache.ttl} because it's behavior in JDK is different. It overrides the
+     * original TTL from the server and caches exactly for the specified amount of time instead of just being a max cap.
+     */
     private static final String NEGATIVE_TTL_CACHE_SECONDS_PROPERTY = "networkaddress.cache.negative.ttl";
     private static final int DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private static final ServiceDiscovererEvent.Status DEFAULT_MISSING_RECOREDS_STATUS = EXPIRED;
@@ -95,10 +98,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
         }
-
-        validateTtl(DEFAULT_MIN_TTL_POLL_SECONDS, DEFAULT_MAX_TTL_POLL_SECONDS,
-                DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS,
-                DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
     }
 
     private final String id;
@@ -186,18 +185,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
                                                   final int minCacheSeconds, final int maxCacheSeconds,
                                                   final int negativeTTLCacheSeconds) {
-        validateTtl(minSeconds, maxSeconds, minCacheSeconds, maxCacheSeconds, negativeTTLCacheSeconds);
-        this.minTTLSeconds = minSeconds;
-        this.maxTTLSeconds = maxSeconds;
-        this.minTTLCacheSeconds = minCacheSeconds;
-        this.maxTTLCacheSeconds = maxCacheSeconds;
-        this.negativeTTLCacheSeconds = negativeTTLCacheSeconds;
-        return this;
-    }
-
-    private static void validateTtl(final int minSeconds, final int maxSeconds,
-                                    final int minCacheSeconds, final int maxCacheSeconds,
-                                    final int negativeTTLCacheSeconds) {
         if (minSeconds <= 0 || maxSeconds < minSeconds) {
             throw new IllegalArgumentException("minSeconds: " + minSeconds + ", maxSeconds: " + maxSeconds +
                     " (expected: 0 < minSeconds <= maxSeconds)");
@@ -216,6 +203,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             throw new IllegalArgumentException("negativeTTLCacheSeconds: " + negativeTTLCacheSeconds +
                     " (expected >= 0)");
         }
+        this.minTTLSeconds = minSeconds;
+        this.maxTTLSeconds = maxSeconds;
+        this.minTTLCacheSeconds = minCacheSeconds;
+        this.maxTTLCacheSeconds = maxCacheSeconds;
+        this.negativeTTLCacheSeconds = negativeTTLCacheSeconds;
+        return this;
     }
 
     @Override
