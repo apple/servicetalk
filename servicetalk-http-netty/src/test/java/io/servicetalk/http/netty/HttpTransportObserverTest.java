@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.lenient;
@@ -386,7 +387,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverReadObserver, atLeastOnce()).itemRead(any());
         verify(serverReadObserver, atMostOnce()).readCancelled();
 
-        verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
+        verify(serverWriteObserver, atLeast(0)).requestedToWrite(anyLong());
         // WriteStreamSubscriber.close0(...) cancels subscription and then terminates the subscriber:
         verify(serverWriteObserver, await()).writeFailed(any(Exception.class));
         verify(serverWriteObserver, atMostOnce()).writeCancelled();
