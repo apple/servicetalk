@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isEpollAvailable;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isIoUringAvailable;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.isKQueueAvailable;
-import static java.lang.Runtime.getRuntime;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -67,7 +66,7 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor}.
      *
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @return The created {@link IoExecutor}
      */
     public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads) {
@@ -77,7 +76,7 @@ public final class NettyIoExecutors {
     /**
      * Create a new {@link NettyIoExecutor}.
      *
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @return The created {@link IoExecutor}
      */
@@ -95,21 +94,20 @@ public final class NettyIoExecutors {
      */
     public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
             IoThreadFactory<T> threadFactory) {
-        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+        return createIoExecutor(0, threadFactory);
     }
 
     /**
      * Create a new {@link NettyIoExecutor}.
      *
      * @param <T> Type of the IO thread instances created by factory.
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @param threadFactory the {@link IoThreadFactory} to use. If possible you should use an instance of
      * {@link NettyIoThreadFactory} as it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
     public static <T extends Thread & IoThread> EventLoopAwareNettyIoExecutor createIoExecutor(
             int ioThreads, IoThreadFactory<T> threadFactory) {
-        validateIoThreads(ioThreads);
         return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true, true);
     }
 
@@ -193,7 +191,7 @@ public final class NettyIoExecutors {
     }
 
     private static void validateIoThreads(final int ioThreads) {
-        if (ioThreads <= 0) {
+        if (ioThreads < 0) {
             throw new IllegalArgumentException("ioThreads: " + ioThreads + " (expected >0)");
         }
     }
