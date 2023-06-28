@@ -80,10 +80,10 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final ServiceDiscovererEvent.Status DEFAULT_MISSING_RECOREDS_STATUS = EXPIRED;
 
     static {
-        final Integer negativeCacheTtlValue = parseProperty(NEGATIVE_TTL_CACHE_SECONDS_PROPERTY);
-        DEFAULT_NEGATIVE_TTL_CACHE_SECONDS = negativeCacheTtlValue == null ? 0 :
-                // A value of -1 indicates "cache forever".
-                (negativeCacheTtlValue < 0 ? Integer.MAX_VALUE : negativeCacheTtlValue);
+        final int negativeCacheTtlValue = parseProperty(NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, 0);
+        // sun.net.InetAddressCachePolicy considers all negative values as "-1", which indicates "cache forever".
+        // Netty needs a large value instead to have the same effect.
+        DEFAULT_NEGATIVE_TTL_CACHE_SECONDS = negativeCacheTtlValue < 0 ? Integer.MAX_VALUE : negativeCacheTtlValue;
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("-D{}: {}", SKIP_BINDING_PROPERTY, getBoolean(SKIP_BINDING_PROPERTY));
@@ -379,16 +379,16 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     @Nullable
-    private static Integer parseProperty(final String propertyName) {
-        final String propertyValue = getProperty(propertyName);
-        if (propertyValue == null) {
-            return null;
+    private static int parseProperty(final String name, final int defaultValue) {
+        final String value = getProperty(name);
+        if (value == null) {
+            return defaultValue;
         }
         try {
-            return Integer.valueOf(propertyValue);
+            return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            // Ignore
-            return null;
+            LOGGER.error("Can not parse the value of -D{}={}, using {} as a default", name, value, defaultValue, e);
+            return defaultValue;
         }
     }
 }
