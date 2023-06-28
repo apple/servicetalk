@@ -1006,7 +1006,9 @@ class DefaultDnsClientTest {
         final int cappedMaxTTL = 3;
         final int dnsServerMaxTTL = cappedMaxTTL * 2;
 
-        setup(builder -> builder.ttl(1, cappedMaxTTL));
+        setup(builder -> cache ?
+                builder.ttl(1, cappedMaxTTL, 1, cappedMaxTTL) :
+                builder.ttl(1, cappedMaxTTL, 0, 0));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1035,7 +1037,9 @@ class DefaultDnsClientTest {
         final int cappedMaxTTL = 3;
         final int dnsServerMaxTTL = cappedMaxTTL * 2;
 
-        setup(builder -> builder.ttl(1, cappedMaxTTL));
+        setup(builder -> cache ?
+                builder.ttl(1, cappedMaxTTL, 1, cappedMaxTTL) :
+                builder.ttl(1, cappedMaxTTL, 0, 0));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1172,7 +1176,7 @@ class DefaultDnsClientTest {
                 .srvConcurrency(512)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
-                .ttl(1, 5)
+                .ttl(1, 5, 0, 0)
                 .ttlJitter(Duration.ofNanos(1));
     }
 
