@@ -62,7 +62,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
     private static final DnsResolverAddressTypes DEFAULT_DNS_RESOLVER_ADDRESS_TYPES = systemDefault();
-    private static final int DEFAULT_CONSOLIDATE_CACHE_SIZE = 1024;
+    static final int DEFAULT_CONSOLIDATE_CACHE_SIZE = 1024;
     private static final int DEFAULT_MIN_TTL_POLL_SECONDS = 10;
     private static final int DEFAULT_MAX_TTL_POLL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(5);
     private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;

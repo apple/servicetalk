@@ -200,7 +200,7 @@ final class DefaultDnsClient implements DnsClient {
                                 // Use the same comparator as Netty uses by default.
                                 new NameServerComparator(preferredAddressType(resolvedAddressTypes).addressType())));
 
-        DnsNameResolverBuilderUtils.consolidateCacheSize(builder, consolidateCacheSize);
+        DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, consolidateCacheSize);
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }

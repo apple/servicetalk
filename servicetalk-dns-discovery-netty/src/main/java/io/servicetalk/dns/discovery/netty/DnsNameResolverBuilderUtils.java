@@ -23,12 +23,14 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder.DEFAULT_CONSOLIDATE_CACHE_SIZE;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.invoke.MethodType.methodType;
 
 final class DnsNameResolverBuilderUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DnsNameResolverBuilderUtils.class);
+    private static final String NETTY_VERSION = DnsNameResolverBuilder.class.getPackage().getImplementationVersion();
 
     @Nullable
     private static final MethodHandle CONSOLIDATE_CACHE_SIZE;
@@ -45,8 +47,7 @@ final class DnsNameResolverBuilderUtils {
             consolidateCacheSize(consolidateCacheSize, new DnsNameResolverBuilder(), 1);
         } catch (Throwable cause) {
             LOGGER.debug("DnsNameResolverBuilder#consolidateCacheSize(int) is available only starting from " +
-                            "Netty 4.1.88.Final. Detected Netty version: {}",
-                    DnsNameResolverBuilder.class.getPackage().getImplementationVersion(), cause);
+                            "Netty 4.1.88.Final. Detected Netty version: {}", NETTY_VERSION, cause);
             consolidateCacheSize = null;
         }
         CONSOLIDATE_CACHE_SIZE = consolidateCacheSize;
@@ -68,8 +69,16 @@ final class DnsNameResolverBuilderUtils {
         }
     }
 
-    static void consolidateCacheSize(final DnsNameResolverBuilder builder, final int maxNumConsolidation) {
+    static void consolidateCacheSize(final String id,
+                                     final DnsNameResolverBuilder builder,
+                                     final int maxNumConsolidation) {
         if (CONSOLIDATE_CACHE_SIZE == null) {
+            if (maxNumConsolidation != DEFAULT_CONSOLIDATE_CACHE_SIZE) {
+                LOGGER.warn("consolidateCacheSize({}) can not be applied for a new DNS ServiceDiscoverer '{}' " +
+                                "because io.netty.resolver.dns.DnsNameResolverBuilder#consolidateCacheSize(int) " +
+                                "method is not available in Netty {}, expected Netty version is 4.1.88.Final or later.",
+                        maxNumConsolidation, id, NETTY_VERSION);
+            }
             return;
         }
         consolidateCacheSize(CONSOLIDATE_CACHE_SIZE, builder, maxNumConsolidation);
