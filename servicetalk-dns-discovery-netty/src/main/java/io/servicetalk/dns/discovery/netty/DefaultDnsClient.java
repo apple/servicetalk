@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ final class DefaultDnsClient implements DnsClient {
     private final String id;
     private boolean closed;
 
-    DefaultDnsClient(final String id, final IoExecutor ioExecutor,
+    DefaultDnsClient(final String id, final IoExecutor ioExecutor, final int consolidateCacheSize,
                      final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
                      final int negativeTTLCacheSeconds, final long ttlJitterNanos,
                      final int srvConcurrency, final boolean inactiveEventsOnError,
@@ -201,6 +201,8 @@ final class DefaultDnsClient implements DnsClient {
                         new DefaultAuthoritativeDnsServerCache(minCacheTTL, maxCacheTTL,
                                 // Use the same comparator as Netty uses by default.
                                 new NameServerComparator(preferredAddressType(resolvedAddressTypes).addressType())));
+
+        DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, consolidateCacheSize);
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }

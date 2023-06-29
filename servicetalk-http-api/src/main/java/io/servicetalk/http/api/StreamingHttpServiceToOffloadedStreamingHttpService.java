@@ -70,12 +70,18 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
             }
             final Single<StreamingHttpResponse> resp;
             if (additionalOffloads.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
-                final StreamingHttpRequest r = request;
-                resp = useExecutor.submit(
-                                () -> delegate.handle(wrappedCtx, r, responseFactory).shareContextOnSubscribe())
-                        // exec.submit() returns a Single<Single<StreamingHttpResponse>>, so flatten nested Single.
-                        // No need to apply shareContextOnSubscribe() again because unwrapped Single already shares ctx.
-                        .flatMap(identity());
+                final StreamingHttpRequest finalRequest = request;
+                // If isSendOffloaded() then we can already be offloaded by the time it subscribes to SubmitSingle.
+                // Wrap with defer to verify the shouldOffload predicate after subscribe.
+                resp = additionalOffloads.isSendOffloaded() ? Single.defer(() -> {
+                    if (shouldOffload.getAsBoolean()) {
+                        return offloadHandle(useExecutor, wrappedCtx, finalRequest, responseFactory)
+                                .shareContextOnSubscribe();
+                    } else {
+                        return delegate.handle(wrappedCtx, finalRequest, responseFactory)
+                                .shareContextOnSubscribe();
+                    }
+                }) : offloadHandle(useExecutor, wrappedCtx, request, responseFactory);
             } else {
                 resp = delegate.handle(wrappedCtx, request, responseFactory);
             }
@@ -88,6 +94,16 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
                             .subscribeOn(useExecutor, shouldOffload) :
                     resp;
         }
+    }
+
+    private Single<StreamingHttpResponse> offloadHandle(final Executor executor,
+                                                        final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+        return executor.submit(() -> delegate.handle(ctx, request, responseFactory).shareContextOnSubscribe())
+                // exec.submit() returns a Single<Single<StreamingHttpResponse>>, so flatten nested Single.
+                // No need to apply shareContextOnSubscribe() again because unwrapped Single already shares ctx.
+                .flatMap(identity());
     }
 
     @Override
