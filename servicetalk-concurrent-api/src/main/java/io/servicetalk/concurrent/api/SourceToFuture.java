@@ -126,7 +126,9 @@ abstract class SourceToFuture<T> implements Future<T> {
             throw new ExecutionException((Throwable) value);
         }
         if (CancellationWrapper.isCancellationWrapper(value)) {
-            throw ((CancellationWrapper) value).exception;
+            CancellationException exception = new CancellationException();
+            exception.initCause(((CancellationWrapper) value).exception);
+            throw exception;
         }
         if (isThrowableWrapper(value)) {
             return (T) ((ThrowableWrapper) value).unwrap();

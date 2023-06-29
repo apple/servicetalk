@@ -75,6 +75,8 @@ public abstract class AbstractToFutureTest<T> {
     void testCancellableThrows() throws InterruptedException, ExecutionException {
         doThrow(DELIBERATE_EXCEPTION).when(mockCancellable).cancel();
         Future<T> future = toFuture();
+        // Since this test is targeting our Future implementation, use a JDK executor to avoid having to use Future
+        // conversions in this test.
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {
             // Goal is to have future.get() called before future.cancel() to avoid short circuit due to cancel and
