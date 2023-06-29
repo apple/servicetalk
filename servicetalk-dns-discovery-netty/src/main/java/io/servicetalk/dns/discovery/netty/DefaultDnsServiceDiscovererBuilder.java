@@ -38,6 +38,7 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Math.min;
+import static java.lang.System.getProperty;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -69,9 +70,22 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;
     private static final int DEFAULT_MAX_TTL_CACHE_SECONDS = 30;
     private static final int DEFAULT_TTL_POLL_JITTER_SECONDS = 4;
+    /**
+     * This is one of the standard <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/net/properties.html">
+     * Java Network Properties</a>.
+     * We do not support {@code networkaddress.cache.ttl} because it's behavior in JDK is different. It overrides the
+     * original TTL from the server and caches exactly for the specified amount of time instead of just being a max cap.
+     */
+    private static final String NEGATIVE_TTL_CACHE_SECONDS_PROPERTY = "networkaddress.cache.negative.ttl";
+    private static final int DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private static final ServiceDiscovererEvent.Status DEFAULT_MISSING_RECOREDS_STATUS = EXPIRED;
 
     static {
+        final int negativeCacheTtlValue = parseProperty(NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, 0);
+        // sun.net.InetAddressCachePolicy considers all negative values as "-1", which indicates "cache forever".
+        // Netty needs a large value instead to have the same effect.
+        DEFAULT_NEGATIVE_TTL_CACHE_SECONDS = negativeCacheTtlValue < 0 ? Integer.MAX_VALUE : negativeCacheTtlValue;
+
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("-D{}: {}", SKIP_BINDING_PROPERTY, getBoolean(SKIP_BINDING_PROPERTY));
             LOGGER.debug("Default local address to bind to: {}", DEFAULT_LOCAL_ADDRESS);
@@ -82,6 +96,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("Default TTL poll jitter seconds: {}", DEFAULT_TTL_POLL_JITTER_SECONDS);
             LOGGER.debug("Default TTL cache boundaries in seconds: [{}, {}]",
                     DEFAULT_MIN_TTL_CACHE_SECONDS, DEFAULT_MAX_TTL_CACHE_SECONDS);
+            LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
+            LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
         }
     }
@@ -107,6 +123,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private int maxTTLSeconds = DEFAULT_MAX_TTL_POLL_SECONDS;
     private int minTTLCacheSeconds = DEFAULT_MIN_TTL_CACHE_SECONDS;
     private int maxTTLCacheSeconds = DEFAULT_MAX_TTL_CACHE_SECONDS;
+    private int negativeTTLCacheSeconds = DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private Duration ttlJitter = ofSeconds(DEFAULT_TTL_POLL_JITTER_SECONDS);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
@@ -172,6 +189,14 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Override
     public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
                                                   final int minCacheSeconds, final int maxCacheSeconds) {
+        ttl(minSeconds, maxSeconds, minCacheSeconds, maxCacheSeconds, DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
+        return this;
+    }
+
+    @Override
+    public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
+                                                  final int minCacheSeconds, final int maxCacheSeconds,
+                                                  final int negativeTTLCacheSeconds) {
         if (minSeconds <= 0 || maxSeconds < minSeconds) {
             throw new IllegalArgumentException("minSeconds: " + minSeconds + ", maxSeconds: " + maxSeconds +
                     " (expected: 0 < minSeconds <= maxSeconds)");
@@ -186,10 +211,15 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                     " (expected: 0 <= minCacheSeconds <= minSeconds(" + minSeconds +
                     ") <= maxCacheSeconds <= maxSeconds(" + maxSeconds + "))");
         }
+        if (negativeTTLCacheSeconds < 0) {
+            throw new IllegalArgumentException("negativeTTLCacheSeconds: " + negativeTTLCacheSeconds +
+                    " (expected >= 0)");
+        }
         this.minTTLSeconds = minSeconds;
         this.maxTTLSeconds = maxSeconds;
         this.minTTLCacheSeconds = minCacheSeconds;
         this.maxTTLCacheSeconds = maxCacheSeconds;
+        this.negativeTTLCacheSeconds = negativeTTLCacheSeconds;
         return this;
     }
 
@@ -351,11 +381,26 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(id,
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, consolidateCacheSize,
-                minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, ttlJitter.toNanos(),
+                minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, negativeTTLCacheSeconds,
+                ttlJitter.toNanos(),
                 srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
                 missingRecordStatus);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
+    }
+
+    @Nullable
+    private static int parseProperty(final String name, final int defaultValue) {
+        final String value = getProperty(name);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            LOGGER.error("Can not parse the value of -D{}={}, using {} as a default", name, value, defaultValue, e);
+            return defaultValue;
+        }
     }
 }

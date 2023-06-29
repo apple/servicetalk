@@ -141,7 +141,8 @@ final class DefaultDnsClient implements DnsClient {
 
     DefaultDnsClient(final String id, final IoExecutor ioExecutor, final int consolidateCacheSize,
                      final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
-                     final long ttlJitterNanos, final int srvConcurrency, final boolean inactiveEventsOnError,
+                     final int negativeTTLCacheSeconds, final long ttlJitterNanos,
+                     final int srvConcurrency, final boolean inactiveEventsOnError,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
@@ -160,7 +161,8 @@ final class DefaultDnsClient implements DnsClient {
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
         this.ttlCache = new MinTtlCache(
-                maxCacheTTL == 0 ? NoopDnsCache.INSTANCE : new DefaultDnsCache(minCacheTTL, maxCacheTTL, 0),
+                maxCacheTTL == 0 && negativeTTLCacheSeconds == 0 ? NoopDnsCache.INSTANCE :
+                        new DefaultDnsCache(minCacheTTL, maxCacheTTL, negativeTTLCacheSeconds),
                 minTTL, nettyIoExecutor);
         this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.ttlJitterNanos = ttlJitterNanos;
