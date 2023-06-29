@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
     private static final DnsResolverAddressTypes DEFAULT_DNS_RESOLVER_ADDRESS_TYPES = systemDefault();
+    static final int DEFAULT_CONSOLIDATE_CACHE_SIZE = 1024;
     private static final int DEFAULT_MIN_TTL_POLL_SECONDS = 10;
     private static final int DEFAULT_MAX_TTL_POLL_SECONDS = (int) TimeUnit.MINUTES.toSeconds(5);
     private static final int DEFAULT_MIN_TTL_CACHE_SECONDS = 0;
@@ -75,6 +76,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("-D{}: {}", SKIP_BINDING_PROPERTY, getBoolean(SKIP_BINDING_PROPERTY));
             LOGGER.debug("Default local address to bind to: {}", DEFAULT_LOCAL_ADDRESS);
             LOGGER.debug("Default DnsResolverAddressTypes: {}", DEFAULT_DNS_RESOLVER_ADDRESS_TYPES);
+            LOGGER.debug("Default consolidate cache size: {}", DEFAULT_CONSOLIDATE_CACHE_SIZE);
             LOGGER.debug("Default TTL poll boundaries in seconds: [{}, {}]",
                     DEFAULT_MIN_TTL_POLL_SECONDS, DEFAULT_MAX_TTL_POLL_SECONDS);
             LOGGER.debug("Default TTL poll jitter seconds: {}", DEFAULT_TTL_POLL_JITTER_SECONDS);
@@ -100,6 +102,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
+    private int consolidateCacheSize = DEFAULT_CONSOLIDATE_CACHE_SIZE;
     private int minTTLSeconds = DEFAULT_MIN_TTL_POLL_SECONDS;
     private int maxTTLSeconds = DEFAULT_MAX_TTL_POLL_SECONDS;
     private int minTTLCacheSeconds = DEFAULT_MIN_TTL_CACHE_SECONDS;
@@ -132,6 +135,15 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             throw new IllegalArgumentException("id can not be empty");
         }
         this.id = id;
+    }
+
+    @Override
+    public DefaultDnsServiceDiscovererBuilder consolidateCacheSize(final int consolidateCacheSize) {
+        if (consolidateCacheSize < 0) {
+            throw new IllegalArgumentException("consolidateCacheSize: " + consolidateCacheSize + " (expected >= 0)");
+        }
+        this.consolidateCacheSize = consolidateCacheSize;
+        return this;
     }
 
     /**
@@ -338,7 +350,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(id,
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, consolidateCacheSize,
                 minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, ttlJitter.toNanos(),
                 srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,

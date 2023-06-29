@@ -53,6 +53,12 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     }
 
     @Override
+    public DnsServiceDiscovererBuilder consolidateCacheSize(final int consolidateCacheSize) {
+        delegate = delegate.consolidateCacheSize(consolidateCacheSize);
+        return this;
+    }
+
+    @Override
     public DnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds) {
         delegate = delegate.ttl(minSeconds, maxSeconds);
         return this;

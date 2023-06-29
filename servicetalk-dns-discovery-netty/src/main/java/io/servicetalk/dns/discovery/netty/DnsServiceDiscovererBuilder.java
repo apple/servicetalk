@@ -31,6 +31,21 @@ import javax.annotation.Nullable;
  */
 public interface DnsServiceDiscovererBuilder {
     /**
+     * Set the maximum size of the cache that is used to consolidate concurrent lookups for different hostnames.
+     * <p>
+     * This means if multiple lookups are done for the same hostname and still in-flight, only one actual query will
+     * be made and the result will be cascaded to the others.
+     *
+     * @param consolidateCacheSize The maximum number of different hostnames for consolidation of concurrent lookups, or
+     * {@code 0} if no consolidation should be performed.
+     * @return {@code this}.
+     */
+    default DnsServiceDiscovererBuilder consolidateCacheSize(int consolidateCacheSize) {
+        throw new UnsupportedOperationException("DnsServiceDiscovererBuilder#consolidateCacheSize(int) is not " +
+                "supported by " + getClass());
+    }
+
+    /**
      * Controls min/max TTL values that will influence polling intervals.
      * <p>
      * The created {@link ServiceDiscoverer} polls DNS server based on TTL value of the resolved records. Min/max values
