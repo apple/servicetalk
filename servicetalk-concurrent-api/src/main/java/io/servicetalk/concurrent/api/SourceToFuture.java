@@ -29,12 +29,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.ThrowableWrapper.isThrowableWrapper;
 import static java.util.Objects.requireNonNull;
 
 abstract class SourceToFuture<T> implements Future<T> {
-
     static final Object NULL = new Object();
-    private static final Object CANCELLED = new Object();
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<SourceToFuture, Object> valueUpdater =
@@ -65,9 +64,13 @@ abstract class SourceToFuture<T> implements Future<T> {
 
     @Override
     public final boolean cancel(final boolean mayInterruptIfRunning) {
-        if (valueUpdater.compareAndSet(this, null, CANCELLED)) {
-            cancellable.cancel();
-            latch.countDown();
+        if (value == null && valueUpdater.compareAndSet(this, null,
+                new CancellationWrapper(new CancellationException("Stacktrace from thread calling cancel()")))) {
+            try {
+                cancellable.cancel();
+            } finally {
+                latch.countDown();
+            }
             return true;
         }
         return false;
@@ -75,7 +78,7 @@ abstract class SourceToFuture<T> implements Future<T> {
 
     @Override
     public final boolean isCancelled() {
-        return value == CANCELLED;
+        return CancellationWrapper.isCancellationWrapper(value);
     }
 
     @Override
@@ -122,10 +125,12 @@ abstract class SourceToFuture<T> implements Future<T> {
         if (value instanceof Throwable) {
             throw new ExecutionException((Throwable) value);
         }
-        if (value == CANCELLED) {
-            throw new CancellationException();
+        if (CancellationWrapper.isCancellationWrapper(value)) {
+            CancellationException exception = new CancellationException("Stacktrace from thread calling get()");
+            exception.initCause(((CancellationWrapper) value).exception);
+            throw exception;
         }
-        if (value instanceof ThrowableWrapper) {
+        if (isThrowableWrapper(value)) {
             return (T) ((ThrowableWrapper) value).unwrap();
         }
         return (T) value;
@@ -168,6 +173,18 @@ abstract class SourceToFuture<T> implements Future<T> {
         @Override
         public void onComplete() {
             setValue(NULL);
+        }
+    }
+
+    private static final class CancellationWrapper {
+        private final CancellationException exception;
+
+        private CancellationWrapper(final CancellationException exception) {
+            this.exception = exception;
+        }
+
+        static boolean isCancellationWrapper(@Nullable Object o) {
+            return o != null && o.getClass().equals(CancellationWrapper.class);
         }
     }
 }

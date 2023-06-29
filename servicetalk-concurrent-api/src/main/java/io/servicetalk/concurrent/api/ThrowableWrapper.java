@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import javax.annotation.Nullable;
+
 /**
  * Used to distinguish between a real object and a {@link Throwable} from terminal error.
  */
@@ -23,6 +25,10 @@ final class ThrowableWrapper {
 
     ThrowableWrapper(final Throwable throwable) {
         this.throwable = throwable;
+    }
+
+    static boolean isThrowableWrapper(@Nullable Object o) {
+        return o != null && o.getClass().equals(ThrowableWrapper.class);
     }
 
     Throwable unwrap() {

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,25 +25,28 @@ import org.mockito.Mockito;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractToFutureTest<T> {
-
     @RegisterExtension
     protected static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor()
             .setClassLevel(true);
@@ -55,7 +59,7 @@ public abstract class AbstractToFutureTest<T> {
 
     protected abstract void completeSource();
 
-    protected abstract void failSource(Throwable t);
+    protected abstract void failSource(@Nullable Throwable t);
 
     @Nullable
     protected abstract T expectedResult();
@@ -65,6 +69,30 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(isSubscribed(), is(false));
         toFuture();
         assertThat(isSubscribed(), is(true));
+    }
+
+    @Test
+    void testCancellableThrows() throws InterruptedException, ExecutionException {
+        doThrow(DELIBERATE_EXCEPTION).when(mockCancellable).cancel();
+        Future<T> future = toFuture();
+        // Since this test is targeting our Future implementation, use a JDK executor to avoid having to use Future
+        // conversions in this test.
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        try {
+            // Goal is to have future.get() called before future.cancel() to avoid short circuit due to cancel and
+            // increase likelihood of needing to unblock the thread waiting on future.get().
+            CountDownLatch latch = new CountDownLatch(1);
+            Future<Void> f2 = executorService.submit(() -> {
+                latch.countDown();
+                assertThrows(CancellationException.class, future::get);
+                return null;
+            });
+            latch.await();
+            assertThrows(DeliberateException.class, () -> future.cancel(true));
+            assertThat(f2.get(), nullValue());
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 
     @Test
