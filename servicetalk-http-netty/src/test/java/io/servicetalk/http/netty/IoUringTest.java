@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.TestTimeoutConstants;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -70,7 +69,7 @@ class IoUringTest {
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
-            assumeTrue(TestTimeoutConstants.CI || IoUringUtils.isAvailable(), "io_uring is unavailable on " +
+            assumeTrue(IoUringUtils.isAvailable(), "io_uring is unavailable on " +
                     System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
             IOUring.ensureAvailability();
 
