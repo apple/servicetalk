@@ -65,7 +65,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Override
     public final boolean cancel(final boolean mayInterruptIfRunning) {
         if (value == null && valueUpdater.compareAndSet(this, null,
-                new CancellationWrapper(new CancellationException()))) {
+                new CancellationWrapper(new CancellationException("Stacktrace from thread calling cancel()")))) {
             try {
                 cancellable.cancel();
             } finally {
@@ -126,7 +126,7 @@ abstract class SourceToFuture<T> implements Future<T> {
             throw new ExecutionException((Throwable) value);
         }
         if (CancellationWrapper.isCancellationWrapper(value)) {
-            CancellationException exception = new CancellationException();
+            CancellationException exception = new CancellationException("Stacktrace from thread calling get()");
             exception.initCause(((CancellationWrapper) value).exception);
             throw exception;
         }
