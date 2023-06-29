@@ -32,7 +32,7 @@ public final class NettyIoExecutors {
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
      * @param <T> Type of the IO thread instances created by factory.
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @param threadFactory the {@link IoThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
@@ -44,7 +44,7 @@ public final class NettyIoExecutors {
     /**
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createIoExecutor(int ioThreads) {
@@ -75,7 +75,7 @@ public final class NettyIoExecutors {
     /**
      * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
      *
-     * @param ioThreads number of threads.
+     * @param ioThreads number of threads or {@code 0} (zero) to use the default value.
      * @param threadNamePrefix the name prefix used for the created {@link Thread}s.
      * @return The created {@link IoExecutor}
      */
