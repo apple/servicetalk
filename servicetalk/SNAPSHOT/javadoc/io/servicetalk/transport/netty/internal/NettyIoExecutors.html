@@ -206,7 +206,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Create a new <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>ioThreads</code> - number of threads.</dd>
+<dd><code>ioThreads</code> - number of threads or <code>0</code> (zero) to use the default value.</dd>
 <dt>Returns:</dt>
 <dd>The created <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
 </dl>
@@ -220,7 +220,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Create a new <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>ioThreads</code> - number of threads.</dd>
+<dd><code>ioThreads</code> - number of threads or <code>0</code> (zero) to use the default value.</dd>
 <dd><code>threadNamePrefix</code> - the name prefix used for the created <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html" title="class or interface in java.lang" class="external-link"><code>Thread</code></a>s.</dd>
 <dt>Returns:</dt>
 <dd>The created <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
@@ -255,7 +255,7 @@ loadScripts(document, 'script');</script>
 <dt>Type Parameters:</dt>
 <dd><code>T</code> - Type of the IO thread instances created by factory.</dd>
 <dt>Parameters:</dt>
-<dd><code>ioThreads</code> - number of threads.</dd>
+<dd><code>ioThreads</code> - number of threads or <code>0</code> (zero) to use the default value.</dd>
 <dd><code>threadFactory</code> - the <a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to use. If possible you should use an instance of
  <a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyIoThreadFactory</code></a> as it allows internal optimizations.</dd>
 <dt>Returns:</dt>
