@@ -170,8 +170,12 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
-            return connection.request(request.toStreamingRequest())
-                    .flatMap(response -> response.toResponse().shareContextOnSubscribe());
+            return Single.defer(() -> {
+                request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+                return connection.request(request.toStreamingRequest())
+                        .flatMap(response -> response.toResponse().shareContextOnSubscribe())
+                        .shareContextOnSubscribe();
+            });
         }
 
         @Override

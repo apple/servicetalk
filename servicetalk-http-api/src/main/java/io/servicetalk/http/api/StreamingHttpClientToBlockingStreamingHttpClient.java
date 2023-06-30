@@ -148,6 +148,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
         @Override
         public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return blockingInvocation(connection.request(request.toStreamingRequest()))
                     .toBlockingStreamingResponse();
         }

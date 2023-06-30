@@ -89,6 +89,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     static final class ReservedStreamingHttpConnectionToReservedBlockingHttpConnection implements
                                                                                        ReservedBlockingHttpConnection {
         private final ReservedStreamingHttpConnection connection;
+        private final HttpExecutionStrategy strategy;
         private final HttpConnectionContext context;
         private final HttpExecutionContext executionContext;
         private final HttpRequestResponseFactory reqRespFactory;
@@ -104,13 +105,13 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
                 final HttpExecutionStrategy strategy,
                 final HttpRequestResponseFactory reqRespFactory) {
 
-            requireNonNull(strategy);
             this.connection = requireNonNull(connection);
+            this.strategy = requireNonNull(strategy);
             final HttpConnectionContext originalCtx = connection.connectionContext();
             executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
                 @Override
                 public HttpExecutionStrategy executionStrategy() {
-                    return strategy;
+                    return ReservedStreamingHttpConnectionToReservedBlockingHttpConnection.this.strategy;
                 }
             };
             context = new DelegatingHttpConnectionContext(originalCtx) {
@@ -144,6 +145,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
         @Override
         public HttpResponse request(final HttpRequest request) throws Exception {
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return BlockingRequestUtils.request(connection, request);
         }
 
