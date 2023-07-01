@@ -44,6 +44,7 @@ abstract class AbstractSslConfig implements SslConfig {
     private final List<String> ciphers;
     private final long sessionCacheSize;
     private final long sessionTimeout;
+    private final int maxCertificateListBytes;
     @Nullable
     private final SslProvider provider;
     @Nullable
@@ -57,8 +58,8 @@ abstract class AbstractSslConfig implements SslConfig {
                       @Nullable final Supplier<InputStream> keySupplier,
                       @Nullable final String keyPassword, @Nullable final List<String> sslProtocols,
                       @Nullable final List<String> alpnProtocols,
-                      @Nullable final List<String> ciphers, final long sessionCacheSize,
-                      final long sessionTimeout, @Nullable final SslProvider provider,
+                      @Nullable final List<String> ciphers, final long sessionCacheSize, final long sessionTimeout,
+                      final int maxCertificateListBytes, @Nullable final SslProvider provider,
                       @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                       final Duration handshakeTimeout) {
         this.trustManagerFactory = trustManagerFactory;
@@ -72,6 +73,7 @@ abstract class AbstractSslConfig implements SslConfig {
         this.ciphers = ciphers;
         this.sessionCacheSize = sessionCacheSize;
         this.sessionTimeout = sessionTimeout;
+        this.maxCertificateListBytes = maxCertificateListBytes;
         this.provider = provider;
         this.certificateCompressionAlgorithms = certificateCompressionAlgorithms;
         this.handshakeTimeout = handshakeTimeout;
@@ -156,5 +158,10 @@ abstract class AbstractSslConfig implements SslConfig {
     @Override
     public final Duration handshakeTimeout() {
         return handshakeTimeout;
+    }
+
+    @Override
+    public int maxCertificateListBytes() {
+        return maxCertificateListBytes;
     }
 }

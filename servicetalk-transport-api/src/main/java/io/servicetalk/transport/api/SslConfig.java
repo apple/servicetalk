@@ -176,4 +176,14 @@ public interface SslConfig {
     default Duration handshakeTimeout() {   // FIXME 0.43 - remove default implementation
         return DEFAULT_HANDSHAKE_TIMEOUT;
     }
+
+    /**
+     * Get the preferred maximum allowed size of the certificate chain in bytes. This may not be respected
+     * and depends on if the {@link SSLEngine} supports this feature.
+     * @return Maximum number of bytes for the certificate chain, or {@code <=0} to use the default limit.
+     */
+    // FIXME 0.43 - remove default implementation
+    default int maxCertificateListBytes() {
+        return 0;
+    }
 }
