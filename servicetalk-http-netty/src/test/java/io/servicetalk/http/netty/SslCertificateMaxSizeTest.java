@@ -29,7 +29,6 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -67,19 +66,19 @@ final class SslCertificateMaxSizeTest {
             value = "certMaxSizeAvailable",
             disabledReason = "OpenSSL not available or max certificate size is not supported")
     void respectsCertificateMaxSize(boolean serverLowerLimit, boolean clientLowerLimit) throws Exception {
-        final byte[] serverCertChain = readAllBytes(DefaultTestCerts.loadServerPem());
-        final byte[] clientCertChain = readAllBytes(DefaultTestCerts.loadClientPem());
+        final int serverCertChain = getTotalByteCount(DefaultTestCerts.loadServerPem());
+        final int clientCertChain = getTotalByteCount(DefaultTestCerts.loadClientPem());
         // FIXME: To test the lower bound the cert length must be larger than BoringSSL's lower limit.
         if (serverLowerLimit) {
-            assumeTrue(clientCertChain.length > BORINGSSL_LOWER_LIMIT);
+            assumeTrue(clientCertChain > BORINGSSL_LOWER_LIMIT);
         }
         if (clientLowerLimit) {
-            assumeTrue(serverCertChain.length > BORINGSSL_LOWER_LIMIT);
+            assumeTrue(serverCertChain > BORINGSSL_LOWER_LIMIT);
         }
-        try (ServerContext server = serverBuilder(serverLowerLimit ? 1 : clientCertChain.length)
+        try (ServerContext server = serverBuilder(serverLowerLimit ? 1 : clientCertChain)
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()))) {
-            try (BlockingHttpClient client = clientBuilder(server, clientLowerLimit ? 1 : serverCertChain.length)
+            try (BlockingHttpClient client = clientBuilder(server, clientLowerLimit ? 1 : serverCertChain)
                     .buildBlocking()) {
                 if (serverLowerLimit || clientLowerLimit) {
                     assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/sayHello")));
@@ -112,18 +111,18 @@ final class SslCertificateMaxSizeTest {
                 .sslConfig(sslConfig.build());
     }
 
-    // JDK9+ can use InputStream.readAllBytes()
-    private static byte[] readAllBytes(InputStream is) throws IOException {
+    private static int getTotalByteCount(InputStream is) throws IOException {
+        int totalBytes = 0;
         try {
             final int readSize = 2048;
-            ByteArrayOutputStream buf = new ByteArrayOutputStream(readSize);
+            int length;
             byte[] bytes = new byte[readSize];
-            while (is.read(bytes) > 0) {
-                buf.write(bytes);
+            while ((length = is.read(bytes)) > 0) {
+                totalBytes += length;
             }
-            return buf.toByteArray();
         } finally {
             is.close();
         }
+        return totalBytes;
     }
 }
