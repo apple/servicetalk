@@ -128,4 +128,9 @@ public abstract class DelegatingSslConfig<T extends SslConfig> implements SslCon
     public Duration handshakeTimeout() {
         return delegate.handshakeTimeout();
     }
+
+    @Override
+    public int maxCertificateListBytes() {
+        return delegate.maxCertificateListBytes();
+    }
 }

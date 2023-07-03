@@ -42,6 +42,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
+import static io.netty.handler.ssl.OpenSslContextOption.MAX_CERTIFICATE_LIST_BYTES;
 import static io.netty.util.AttributeKey.newInstance;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
@@ -106,9 +107,7 @@ public final class SslContextFactory {
             }
         }
 
-        SslProvider nettySslProvider = configureSslProvider(config, builder);
-        configureCertificateCompression(config, builder, nettySslProvider, false);
-        return build(config, builder);
+        return configureBuilder(config, builder, false);
     }
 
     /**
@@ -152,36 +151,7 @@ public final class SslContextFactory {
                 throw new IllegalArgumentException("Unsupported: " + config.clientAuthMode());
         }
 
-        SslProvider nettySslProvider = configureSslProvider(config, builder);
-        configureCertificateCompression(config, builder, nettySslProvider, true);
-        return build(config, builder);
-    }
-
-    private static SslContext build(SslConfig config, SslContextBuilder builder) {
-        configureTrustManager(config, builder);
-        builder.protocols(config.sslProtocols())
-                .ciphers(config.ciphers())
-                .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
-
-        final SslContext sslContext;
-        try {
-            sslContext = builder.build();
-        } catch (SSLException e) {
-            throw new IllegalArgumentException("Failed to build SslContext", e);
-        }
-        sslContext.attributes().attr(HANDSHAKE_TIMEOUT_MILLIS).set(config.handshakeTimeout().toMillis());
-        return sslContext;
-    }
-
-    @Nullable
-    private static SslProvider configureSslProvider(SslConfig config, SslContextBuilder builder) {
-        List<String> alpnProtocols = config.alpnProtocols();
-        builder.applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
-
-        SslProvider nettySslProvider =
-                toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
-        builder.sslProvider(nettySslProvider);
-        return nettySslProvider;
+        return configureBuilder(config, builder, true);
     }
 
     private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
@@ -254,6 +224,38 @@ public final class SslContextFactory {
             }
         }
         builder.option(OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS, configBuilder.build());
+    }
+
+    private static void configureNettyOptions(SslConfig config, SslContextBuilder builder) {
+        final int maxCertificateListBytes = config.maxCertificateListBytes();
+        if (maxCertificateListBytes > 0) {
+            builder.option(MAX_CERTIFICATE_LIST_BYTES, maxCertificateListBytes);
+        }
+    }
+
+    private static SslContext configureBuilder(SslConfig config, SslContextBuilder builder, boolean forServer) {
+        configureTrustManager(config, builder);
+        List<String> alpnProtocols = config.alpnProtocols();
+        SslProvider nettySslProvider =
+                toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
+        builder.sessionCacheSize(config.sessionCacheSize())
+                .sessionTimeout(config.sessionTimeout())
+                .applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols))
+                .sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()))
+                .protocols(config.sslProtocols())
+                .ciphers(config.ciphers());
+
+        configureCertificateCompression(config, builder, nettySslProvider, forServer);
+        configureNettyOptions(config, builder);
+
+        final SslContext sslContext;
+        try {
+            sslContext = builder.build();
+        } catch (SSLException e) {
+            throw new IllegalArgumentException("Failed to build SslContext", e);
+        }
+        sslContext.attributes().attr(HANDSHAKE_TIMEOUT_MILLIS).set(config.handshakeTimeout().toMillis());
+        return sslContext;
     }
 
     @Nullable

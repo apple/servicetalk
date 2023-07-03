@@ -60,6 +60,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private List<String> ciphers;
     private long sessionCacheSize;
     private long sessionTimeout;
+    private int maxCertificateListBytes;
     @Nullable
     private SslProvider provider;
     @Nullable
@@ -403,6 +404,24 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
 
     final Duration handshakeTimeout() {
         return handshakeTimeout;
+    }
+
+    /**
+     * Set the preferred maximum allowed size of the certificate chain in bytes. This may not be respected
+     * and depends on if the {@link SSLEngine} supports this feature.
+     * @param maxBytes Number of bytes for the certificate chain. {@code 0} may mean "use the default limit".
+     * @return {@code this}.
+     */
+    public final T maxCertificateListBytes(int maxBytes) {
+        if (maxBytes < 0) {
+            throw new IllegalArgumentException("maxBytes: " + maxBytes + " (expected >=0)");
+        }
+        this.maxCertificateListBytes = maxBytes;
+        return thisT();
+    }
+
+    final int maxCertificateListBytes() {
+        return maxCertificateListBytes;
     }
 
     abstract T thisT();
