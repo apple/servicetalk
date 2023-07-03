@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpApiConversions.assignStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_ASYNC_CONNECTION_STRATEGY;
@@ -46,7 +46,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
         return Single.defer(() -> {
-            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            assignStrategy(request, strategy);
             return client.request(request.toStreamingRequest())
                     .flatMap(response -> response.toResponse().shareContextOnSubscribe())
                     .shareContextOnSubscribe();
@@ -56,7 +56,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<ReservedHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            assignStrategy(metaData, strategy);
             return client.reserveConnection(metaData)
                     .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, this.strategy,
                             reqRespFactory))
@@ -171,7 +171,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public Single<HttpResponse> request(final HttpRequest request) {
             return Single.defer(() -> {
-                request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+                assignStrategy(request, strategy);
                 return connection.request(request.toStreamingRequest())
                         .flatMap(response -> response.toResponse().shareContextOnSubscribe())
                         .shareContextOnSubscribe();
