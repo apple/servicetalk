@@ -20,18 +20,26 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.stubbing.Answer;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.AdditionalMatchers.leq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -116,12 +124,37 @@ class DelayedSubscriptionTest {
         verifyNoMoreInteractions(s1);
     }
 
-    @Test
-    void setDelayedFromAnotherThreadIsVisible() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void setDelayedMultipleRequestWhileSwitching(boolean doCancel) throws ExecutionException, InterruptedException {
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final AtomicLong totalDemand = new AtomicLong();
+        doAnswer((Answer<Void>) invocationOnMock -> {
+            totalDemand.addAndGet(invocationOnMock.getArgument(0, Long.class));
+            latch1.countDown();
+            latch2.await();
+            return null;
+        }).when(s1).request(anyLong());
         delayedSubscription.request(2);
-        executor.submit(() -> delayedSubscription.delayedSubscription(s1)).get();
-        verify(s1).request(2);
-        verifyNoMoreInteractions(s1);
+        Future<?> f = executor.submit(() -> delayedSubscription.delayedSubscription(s1));
+
+        latch1.await();
+        delayedSubscription.request(2);
+        // Do multiple calls to verify addition is done correctly.
+        if (doCancel) {
+            delayedSubscription.cancel();
+        } else {
+            delayedSubscription.request(3);
+        }
+        latch2.countDown();
+        f.get();
+
+        if (doCancel) {
+            verify(s1).cancel();
+        } else {
+            assertThat(totalDemand.get(), equalTo(7L));
+        }
     }
 
     @Test
