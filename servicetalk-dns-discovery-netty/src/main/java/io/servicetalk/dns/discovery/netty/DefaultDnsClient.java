@@ -317,7 +317,7 @@ final class DefaultDnsClient implements DnsClient {
                                 srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
                                 returnPub.map(ev -> mapEventList(ev, inetAddress ->
                                         new InetSocketAddress(inetAddress, srvEvent.address().port())));
-                    }).retryWhen((i, cause) -> {
+                    }).retryWhen(false, (i, cause) -> {
                         assertInEventloop();
                         // If this error is because the SRV entry was detected as inactive, then propagate the error and
                         // don't retry. Otherwise this is a resolution exception (e.g. UnknownHostException), and retry.

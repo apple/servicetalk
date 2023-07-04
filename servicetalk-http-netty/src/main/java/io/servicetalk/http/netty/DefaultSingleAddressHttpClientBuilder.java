@@ -752,7 +752,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         @Override
         public Publisher<Collection<E>> discover(final U u) {
-            return delegate().discover(u).retryWhen(retryStrategy);
+            // terminateOnNextException false -> LB is after this operator, if LB throws do best effort retry.
+            return delegate().discover(u).retryWhen(false, retryStrategy);
         }
     }
 

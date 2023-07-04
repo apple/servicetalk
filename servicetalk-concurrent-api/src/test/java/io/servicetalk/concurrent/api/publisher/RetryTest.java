@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -23,6 +24,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -44,7 +47,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class RetryTest {
-
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
     private BiIntPredicate<Throwable> shouldRetry;
@@ -152,5 +154,32 @@ class RetryTest {
         assertThat(subscriber.awaitOnError(), sameInstance(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
+    }
+
+    @Test
+    void exceptionAfterRetryPreservesDemand() {
+        final Integer[] signals = new Integer[] {1, 2, 3};
+        final AtomicInteger onNextCount = new AtomicInteger();
+        subscriber = new TestPublisherSubscriber<>();
+        BiIntPredicate<Throwable> retryFunc = (count, cause) -> cause == DELIBERATE_EXCEPTION;
+        toSource(Publisher.from(signals)
+                // First retry function will catch the error from onNext and propagate downstream to the second
+                // retry function.
+                .retry(true, retryFunc)
+                .validateOutstandingDemand()
+                .map(t -> {
+                    if (onNextCount.getAndIncrement() == 0) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                    return t;
+                })
+                // Second retry function will kick in and resubscribe generating new state.
+                .retry(retryFunc)
+                .validateOutstandingDemand()
+        ).subscribe(subscriber);
+
+        subscriber.awaitSubscription().request(signals.length);
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        subscriber.awaitOnComplete();
     }
 }

@@ -656,7 +656,7 @@ class PublisherBufferTest {
         AtomicInteger counter = new AtomicInteger();
         toSource(defer(() -> from(counter.incrementAndGet()))
                 .whenOnNext(items::add)
-                .retry((i, t) -> i < 3 && t == DELIBERATE_EXCEPTION)
+                .retry(false, (i, t) -> i < 3 && t == DELIBERATE_EXCEPTION)
                 .buffer(new TestBufferStrategy(bPublisher, 1)))
                 .subscribe(new Subscriber<Integer>() {
                     @Override

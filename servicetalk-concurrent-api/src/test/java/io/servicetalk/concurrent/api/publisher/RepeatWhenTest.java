@@ -17,8 +17,10 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
@@ -34,6 +37,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -50,11 +54,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class RepeatWhenTest {
-
-    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+    private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source;
     private IntFunction<Completable> shouldRepeat;
-    private LegacyTestCompletable repeatSignal;
+    private TestCancellable repeatSignalCancellable;
+    private TestCompletable repeatSignal;
     private Executor executor;
 
     @AfterEach
@@ -147,12 +151,12 @@ class RepeatWhenTest {
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onComplete();
-        repeatSignal.verifyListenCalled().onError(DELIBERATE_EXCEPTION); // stop repeat
+        repeatSignal.onError(DELIBERATE_EXCEPTION); // stop repeat
         subscriber.awaitOnComplete();
     }
 
     @Test
-    void testCancelPostCompleteButBeforeRetryStart() {
+    void testCancelPostCompleteButBeforeRetryStart() throws InterruptedException {
         SequentialPublisherSubscriberFunction<Integer> sequentialPublisherSubscriberFunction =
                 new SequentialPublisherSubscriberFunction<>();
         init(new TestPublisher.Builder<Integer>()
@@ -161,10 +165,10 @@ class RepeatWhenTest {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
-        repeatSignal.verifyListenCalled();
+        repeatSignal.awaitSubscribed();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         subscriber.awaitSubscription().cancel();
-        repeatSignal.verifyCancelled();
+        repeatSignalCancellable.awaitCancelled();
         assertFalse(sequentialPublisherSubscriberFunction.isSubscribed());
         verify(shouldRepeat).apply(1);
     }
@@ -190,11 +194,47 @@ class RepeatWhenTest {
     private void init(TestPublisher<Integer> source) {
         this.source = source;
         shouldRepeat = (IntFunction<Completable>) mock(IntFunction.class);
-        repeatSignal = new LegacyTestCompletable();
+        repeatSignal = new TestCompletable();
         when(shouldRepeat.apply(anyInt())).thenAnswer(invocation -> {
-            repeatSignal = new LegacyTestCompletable();
+            repeatSignal = new TestCompletable.Builder().disableAutoOnSubscribe().build(sub -> {
+                repeatSignalCancellable = new TestCancellable();
+                sub.onSubscribe(repeatSignalCancellable);
+                return sub;
+            });
             return repeatSignal;
         });
         toSource(source.repeatWhen(shouldRepeat)).subscribe(subscriber);
+    }
+
+    @Test
+    void exceptionAfterRetryPreservesDemand() {
+        executor = newCachedThreadExecutor();
+        final Integer[] signals = new Integer[] {1, 2, 3};
+        final AtomicInteger onNextCount = new AtomicInteger();
+        subscriber = new TestPublisherSubscriber<>();
+        IntFunction<Completable> retryFunc = i -> i == 1 ?
+                executor.timer(ofMillis(10)) : Completable.failed(DELIBERATE_EXCEPTION);
+        toSource(Publisher.from(signals)
+                // First repeat function will catch the error from onNext and propagate downstream to the second
+                // retry function. After the second repeat operator completes, this operator will trigger another repeat
+                // so we expect to see values from signals array twice.
+                .repeatWhen(true, retryFunc)
+                .validateOutstandingDemand()
+                .map(t -> {
+                    if (onNextCount.getAndIncrement() == 0) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                    return t;
+                })
+                .onErrorComplete()
+                // Second retry function will kick in and resubscribe generating new state.
+                .repeatWhen(retryFunc)
+                .validateOutstandingDemand()
+        ).subscribe(subscriber);
+
+        subscriber.awaitSubscription().request(signals.length * 2);
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        subscriber.awaitOnComplete();
     }
 }
