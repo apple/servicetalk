@@ -18,8 +18,9 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -55,20 +56,24 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class RetryWhenTest {
-
     private TestPublisher<Integer> source = new TestPublisher<>();
     private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private BiIntFunction<Throwable, Completable> shouldRetry;
-    private LegacyTestCompletable retrySignal;
+    private TestCancellable retrySignalCancellable;
+    private TestCompletable retrySignal;
     private Executor executor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
-        retrySignal = new LegacyTestCompletable();
+        retrySignal = new TestCompletable();
         when(shouldRetry.apply(anyInt(), any())).thenAnswer(invocation -> {
-            retrySignal = new LegacyTestCompletable();
+            retrySignalCancellable = new TestCancellable();
+            retrySignal = new TestCompletable.Builder().disableAutoOnSubscribe().build(sub -> {
+                sub.onSubscribe(retrySignalCancellable);
+                return sub;
+            });
             return retrySignal;
         });
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriber);
@@ -168,19 +173,20 @@ class RetryWhenTest {
         assertTrue(source.isSubscribed());
         source.onError(DELIBERATE_EXCEPTION);
         DeliberateException fatal = new DeliberateException();
-        retrySignal.verifyListenCalled().onError(fatal); // stop retry
+        retrySignal.awaitSubscribed();
+        retrySignal.onError(fatal); // stop retry
         assertThat(subscriber.awaitOnError(), sameInstance(fatal));
     }
 
     @Test
-    void testCancelPostErrorButBeforeRetryStart() {
+    void testCancelPostErrorButBeforeRetryStart() throws InterruptedException {
         subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        retrySignal.verifyListenCalled();
+        retrySignal.awaitSubscribed();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         subscriber.awaitSubscription().cancel();
-        retrySignal.verifyCancelled();
+        retrySignalCancellable.awaitCancelled();
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
     }
 
