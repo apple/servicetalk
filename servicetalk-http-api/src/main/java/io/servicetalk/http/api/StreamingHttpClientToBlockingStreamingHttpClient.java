@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpApiConversions.assignStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
@@ -46,9 +46,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     @Override
     public ReservedBlockingStreamingHttpConnection reserveConnection(final HttpRequestMetaData metaData)
             throws Exception {
+        assignStrategy(metaData, strategy);
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
-        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
         return blockingInvocation(client.reserveConnection(metaData)
                 .map(c -> new ReservedStreamingHttpConnectionToBlockingStreaming(c, this.strategy, reqRespFactory)));
     }
@@ -60,7 +60,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     @Override
     public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        assignStrategy(request, strategy);
         return blockingInvocation(client.request(request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 
@@ -148,6 +148,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
         @Override
         public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+            assignStrategy(request, strategy);
             return blockingInvocation(connection.request(request.toStreamingRequest()))
                     .toBlockingStreamingResponse();
         }

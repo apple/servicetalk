@@ -19,6 +19,8 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
@@ -485,5 +487,21 @@ public final class HttpApiConversions {
      */
     public static BlockingStreamingHttpService toBlockingStreamingHttpService(StreamingHttpService service) {
         return new StreamingHttpServiceToBlockingStreamingHttpService(service);
+    }
+
+    /**
+     * Tries assigning a strategy for a request execution if none is already assigned.
+     * <p>
+     * Top level user-facing API can optimize execution strategy (offloading) when it's known that users won't interact
+     * with some parts of request-response processing.
+     *
+     * @param metaData request meta-data to assign the strategy to
+     * @param strategy {@link HttpExecutionStrategy} to assign
+     * @see <a href=
+     * "https://docs.servicetalk.io/servicetalk-http-api/SNAPSHOT/blocking-safe-by-default.html#programming-models">
+     * Programming models</a>
+     */
+    static void assignStrategy(final HttpRequestMetaData metaData, final HttpExecutionStrategy strategy) {
+        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
     }
 }
