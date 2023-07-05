@@ -84,7 +84,6 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onConnectionSelected(final ConnectionInfo info) {
-            assert this.connInfo == null;
             this.connInfo = info;
         }
 
@@ -111,20 +110,19 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onRequestComplete() {
-            assert requestResult == null;
-            assert requestMetaData != null;
+            assert requestMetaData != null : "Request meta-data is not expected to be null on completion";
             requestResult = Result.complete;
         }
 
         @Override
         public void onRequestError(final Throwable cause) {
-            assert requestResult == null;
+            assert requestMetaData != null : "Request meta-data is not expected to be null on error";
             requestResult = cause;
         }
 
         @Override
         public void onRequestCancel() {
-            assert requestResult == null;
+            assert requestMetaData != null : "Request meta-data is not expected to be null on cancel";
             requestResult = Result.cancelled;
         }
 
@@ -151,28 +149,24 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
 
         @Override
         public void onGrpcStatus(final GrpcStatus status) {
-            assert this.grpcStatus == null;
             this.grpcStatus = status.code();
         }
 
         @Override
         public void onResponseComplete() {
-            assert responseResult == null;
-            assert responseMetaData != null;
+            assert responseMetaData != null : "Response meta-data is not expected to be null on completion";
             responseTimeMs = durationMs(startTime);
             responseResult = Result.complete;
         }
 
         @Override
         public void onResponseError(final Throwable cause) {
-            assert responseResult == null;
             responseTimeMs = durationMs(startTime);
             responseResult = cause;
         }
 
         @Override
         public void onResponseCancel() {
-            assert responseResult == null;
             responseTimeMs = durationMs(startTime);
             responseResult = Result.cancelled;
         }

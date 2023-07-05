@@ -39,6 +39,9 @@ public interface HttpLifecycleObserver {
 
     /**
      * Callback when a new HTTP exchange starts.
+     * <p>
+     * Depending on the order in which the observer is applied, this callback can be invoked either for every retry
+     * attempt (if an observer is added after retrying filter) or only once per exchange.
      *
      * @return an {@link HttpExchangeObserver} that provides visibility into exchange events
      */
@@ -56,6 +59,8 @@ public interface HttpLifecycleObserver {
 
         /**
          * Callback when a connection is selected for this exchange execution.
+         * <p>
+         * This callback may be invoked for every retry attempt.
          *
          * @param info {@link ConnectionInfo} of the selected connection
          */
