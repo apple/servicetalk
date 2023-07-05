@@ -23,4 +23,5 @@
     files="docs[\\/]modules[\\/]ROOT[\\/]assets[\\/]images[\\/].+\.svg"/>
   <!-- mapOnError supports re-throwing a Throwable from onError(Throwable) -->
   <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]ScanWithMapper.java"/>
+  <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]ScanMapper.java"/>
 </suppressions>

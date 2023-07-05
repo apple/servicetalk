@@ -24,7 +24,9 @@ import javax.annotation.Nullable;
  * Provides the ability to transform (aka map) signals emitted via the {@link Publisher#scanWith(Supplier)} operator.
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.
+ * @deprecated Use {@link ScanMapper}.
  */
+@Deprecated
 public interface ScanWithMapper<T, R> {
     /**
      * Invoked on each {@link Subscriber#onNext(Object)} signal and maps from type {@link T} to type {@link R}.

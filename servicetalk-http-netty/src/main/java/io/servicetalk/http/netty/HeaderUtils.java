@@ -18,7 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.ScanWithMapper;
+import io.servicetalk.concurrent.api.ScanMapper;
+import io.servicetalk.concurrent.api.ScanMapper.MappedTerminal;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
@@ -171,8 +172,8 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
-    static ScanWithMapper<Object, Object> appendTrailersMapper() {
-        return new ScanWithMapper<Object, Object>() {
+    static ScanMapper<Object, Object> appendTrailersMapper() {
+        return new ScanMapper<Object, Object>() {
             private boolean sawHeaders;
 
             @Nullable
@@ -186,20 +187,39 @@ final class HeaderUtils {
 
             @Nullable
             @Override
-            public Object mapOnError(final Throwable t) throws Throwable {
-                throw t;
+            public MappedTerminal<Object> mapOnError(final Throwable cause) throws Throwable {
+                throw cause;
             }
 
+            @Nullable
             @Override
-            public Object mapOnComplete() {
-                return EmptyHttpHeaders.INSTANCE;
-            }
-
-            @Override
-            public boolean mapTerminal() {
-                return !sawHeaders;
+            public MappedTerminal<Object> mapOnComplete() {
+                return sawHeaders ? null : EmptyHeadersComplete.INSTANCE;
             }
         };
+    }
+
+    private static final class EmptyHeadersComplete implements MappedTerminal<Object> {
+        private static final MappedTerminal<Object> INSTANCE = new EmptyHeadersComplete();
+
+        private EmptyHeadersComplete() {
+        }
+
+        @Override
+        public HttpHeaders onNext() {
+            return EmptyHttpHeaders.INSTANCE;
+        }
+
+        @Override
+        public boolean onNextValid() {
+            return true;
+        }
+
+        @Nullable
+        @Override
+        public Throwable terminal() {
+            return null;
+        }
     }
 
     static boolean emptyMessageBody(final HttpMetaData metadata, final Publisher<Object> messageBody) {

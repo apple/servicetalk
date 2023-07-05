@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.ScanWithMapper;
+import io.servicetalk.concurrent.api.ScanMapper;
 
 import org.testng.annotations.Test;
 
@@ -28,7 +28,7 @@ import static java.lang.String.valueOf;
 public class PublisherScanWithMapperTckTest extends AbstractPublisherOperatorTckTest<String> {
     @Override
     protected Publisher<String> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.scanWith(() -> new ScanWithMapper<Integer, String>() {
+        return publisher.scanWithMapper(() -> new ScanMapper<Integer, String>() {
             @Nullable
             @Override
             public String mapOnNext(@Nullable final Integer next) {
@@ -37,19 +37,14 @@ public class PublisherScanWithMapperTckTest extends AbstractPublisherOperatorTck
 
             @Nullable
             @Override
-            public String mapOnError(final Throwable cause) {
+            public MappedTerminal<String> mapOnError(final Throwable cause) {
                 return null;
             }
 
             @Nullable
             @Override
-            public String mapOnComplete() {
+            public MappedTerminal<String> mapOnComplete() {
                 return null;
-            }
-
-            @Override
-            public boolean mapTerminal() {
-                return false;
             }
         });
     }

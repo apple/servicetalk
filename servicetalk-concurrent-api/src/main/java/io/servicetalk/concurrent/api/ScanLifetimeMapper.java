@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,23 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.function.Supplier;
 
 /**
  * Provides the ability to transform (aka map) signals emitted via
- * the {@link Publisher#scanWithLifetime(Supplier)} operator, as well as the ability to cleanup state
+ * the {@link Publisher#scanWithLifetimeMapper(Supplier)} operator, as well as the ability to cleanup state
  * via {@link #afterFinally}.
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.
- * @deprecated Use {@link ScanLifetimeMapper}.
  */
-@Deprecated
-public interface ScanWithLifetimeMapper<T, R> extends ScanWithMapper<T, R> {
+public interface ScanLifetimeMapper<T, R> extends ScanMapper<T, R> {
     /**
-     * Invoked after a terminal signal {@link PublisherSource.Subscriber#onError(Throwable)} or
-     * {@link PublisherSource.Subscriber#onComplete()} or {@link PublisherSource.Subscription#cancel()}.
-     * No further interaction will occur with the {@link ScanWithLifetimeMapper} to prevent use-after-free
+     * Invoked after a terminal signal {@link Subscriber#onError(Throwable)} or
+     * {@link Subscriber#onComplete()} or {@link Subscription#cancel()}.
+     * No further interaction will occur with the {@link ScanLifetimeMapper} to prevent use-after-free
      * on internal state.
      */
     void afterFinally();

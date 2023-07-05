@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.api.ScanWithPublisher.ScanMapperAdapter;
+import io.servicetalk.concurrent.api.ScanWithPublisher.ScanWithSubscriber;
 import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
@@ -31,10 +33,16 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     private static final Logger LOGGER = LoggerFactory.getLogger(ScanWithLifetimePublisher.class);
 
     private final Publisher<T> original;
-    private final Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier;
+    private final Supplier<? extends ScanLifetimeMapper<? super T, ? extends R>> mapperSupplier;
 
     ScanWithLifetimePublisher(Publisher<T> original,
+                              @SuppressWarnings("deprecation")
                               Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier) {
+        this(new SupplierScanMapperLifetime<>(mapperSupplier), original);
+    }
+
+    ScanWithLifetimePublisher(Supplier<? extends ScanLifetimeMapper<? super T, ? extends R>> mapperSupplier,
+                              Publisher<T> original) {
         this.mapperSupplier = requireNonNull(mapperSupplier);
         this.original = original;
     }
@@ -52,10 +60,10 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     }
 
     /**
-     * Wraps the {@link io.servicetalk.concurrent.api.ScanWithPublisher.ScanWithSubscriber} to provide mutual exclusion
-     * to the {@link ScanWithLifetimeMapper#afterFinally()} call and guarantee a 'no-use-after-free' contract.
+     * Wraps the {@link ScanWithSubscriber} to provide mutual exclusion to the {@link ScanLifetimeMapper#afterFinally()}
+     * call and guarantee a 'no-use-after-free' contract.
      */
-    private static final class ScanWithLifetimeSubscriber<T, R> extends ScanWithPublisher.ScanWithSubscriber<T, R> {
+    private static final class ScanWithLifetimeSubscriber<T, R> extends ScanWithSubscriber<T, R> {
         private static final int STATE_UNLOCKED = 0;
         private static final int STATE_BUSY = 1;
         private static final int STATE_FINALIZED = 2;
@@ -67,13 +75,13 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         private volatile int state = STATE_UNLOCKED;
 
-        private final ScanWithLifetimeMapper<? super T, ? extends R> mapper;
+        private final ScanLifetimeMapper<? super T, ? extends R> mapper;
 
         ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
-                                   final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
+                                   final ScanLifetimeMapper<? super T, ? extends R> mapper,
                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             super(subscriber, mapper, contextProvider, contextMap);
-            this.mapper = mapper;
+            this.mapper = requireNonNull(mapper);
         }
 
         @Override
@@ -180,24 +188,12 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
         }
 
         @Override
-        protected void deliverOnCompleteFromSubscription(final Subscriber<? super R> subscriber) {
+        protected void deliverAllTerminalFromSubscription(
+                final ScanMapper.MappedTerminal<? extends R> mappedTerminal,
+                final Subscriber<? super R> subscriber) {
             if (shouldDeliverFromSubscription()) {
                 try {
-                    super.deliverOnCompleteFromSubscription(subscriber);
-                } finally {
-                    // Done, transit to FINALIZED.
-                    // No need to CAS, we have exclusion, and any cancellations will hand-over finalization to us.
-                    state = STATE_FINALIZED;
-                    finalize0();
-                }
-            }
-        }
-
-        @Override
-        protected void deliverOnErrorFromSubscription(final Throwable t, final Subscriber<? super R> subscriber) {
-            if (shouldDeliverFromSubscription()) {
-                try {
-                    super.deliverOnErrorFromSubscription(t, subscriber);
+                    super.deliverAllTerminalFromSubscription(mappedTerminal, subscriber);
                 } finally {
                     // Done, transit to FINALIZED.
                     // No need to CAS, we have exclusion, and any cancellations will hand-over finalization to us.
@@ -250,6 +246,36 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
             } catch (Throwable cause) {
                 LOGGER.error("Unexpected error occurred during finalization.", cause);
             }
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static final class SupplierScanMapperLifetime<T, R> implements
+                                                                       Supplier<ScanLifetimeMapper<T, R>> {
+        private final Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier;
+
+        private SupplierScanMapperLifetime(
+                final Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier) {
+            this.mapperSupplier = requireNonNull(mapperSupplier);
+        }
+
+        @Override
+        public ScanLifetimeMapper<T, R> get() {
+            return new ScanMapperLifetimeAdapter<>(mapperSupplier.get());
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static final class ScanMapperLifetimeAdapter<T, R>
+            extends ScanMapperAdapter<T, R, ScanWithLifetimeMapper<? super T, ? extends R>>
+            implements ScanLifetimeMapper<T, R> {
+        ScanMapperLifetimeAdapter(final ScanWithLifetimeMapper<? super T, ? extends R> mapper) {
+            super(mapper);
+        }
+
+        @Override
+        public void afterFinally() {
+            mapper.afterFinally();
         }
     }
 }

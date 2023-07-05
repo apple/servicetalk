@@ -429,7 +429,7 @@ final class NettyHttpServer {
                 } else {
                     flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
                     if (shouldAppendTrailers(protocolVersion, response)) {
-                        flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
+                        flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
                 }
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
