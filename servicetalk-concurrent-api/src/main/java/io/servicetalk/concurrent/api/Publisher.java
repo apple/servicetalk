@@ -2253,15 +2253,10 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
      *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted. <b>Unless you are sure all downstream operators consume the
-     *     {@link Subscriber#onNext(Object)} this option SHOULD be used</b>. Otherwise, the outstanding demand counting
-     *     in this operator will be incorrect and may lead to a "hang" (e.g. this operator thinks demand has been
-     *     consumed downstream so won't request it upstream after the retry, but if not all downstream operators see the
-     *     signal because one before threw, they may wait for a signal they requested but will never be delivered).</li>
+     *     no retry will be attempted.</li>
      *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. Use with caution as this may lead to incorrect demand accounting and
-     *     "hang" (see above). Example use case where this option makes sense is if the last {@link Subscriber} is
-     *     the only one expected to throw and demand is correctly accounted.</li>
+     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     *     isn't the last in the chain.</li>
      * </ul>
      * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
      * emitted from this {@link Publisher} determines if the operation should be retried.
@@ -2365,15 +2360,10 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
      *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted. <b>Unless you are sure all downstream operators consume the
-     *     {@link Subscriber#onNext(Object)} this option SHOULD be used</b>. Otherwise, the outstanding demand counting
-     *     in this operator will be incorrect and may lead to a "hang" (e.g. this operator thinks demand has been
-     *     consumed downstream so won't request it upstream after the retry, but if not all downstream operators see the
-     *     signal because one before threw, they may wait for a signal they requested but will never be delivered).</li>
+     *     no retry will be attempted.</li>
      *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. Use with caution as this may lead to incorrect demand accounting and
-     *     "hang" (see above). Example use case where this option makes sense is if the last {@link Subscriber} is
-     *     the only one expected to throw and demand is correctly accounted.</li>
+     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     *     isn't the last in the chain.</li>
      * </ul>
      * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
      * from this {@link Publisher} returns a {@link Completable}. If this {@link Completable} emits an error, that error
@@ -2438,15 +2428,10 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
      *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted. <b>Unless you are sure all downstream operators consume the
-     *     {@link Subscriber#onNext(Object)} this option SHOULD be used</b>. Otherwise, the outstanding demand counting
-     *     in this operator will be incorrect and may lead to a "hang" (e.g. this operator thinks demand has been
-     *     consumed downstream so won't request it upstream after the retry, but if not all downstream operators see the
-     *     signal because one before threw, they may wait for a signal they requested but will never be delivered).</li>
+     *     no retry will be attempted.</li>
      *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. Use with caution as this may lead to incorrect demand accounting and
-     *     "hang" (see above). Example use case where this option makes sense is if the last {@link Subscriber} is
-     *     the only one expected to throw and demand is correctly accounted.</li>
+     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     *     isn't the last in the chain.</li>
      * </ul>
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated.
@@ -2523,15 +2508,10 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
      *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted. <b>Unless you are sure all downstream operators consume the
-     *     {@link Subscriber#onNext(Object)} this option SHOULD be used</b>. Otherwise, the outstanding demand counting
-     *     in this operator will be incorrect and may lead to a "hang" (e.g. this operator thinks demand has been
-     *     consumed downstream so won't request it upstream after the retry, but if not all downstream operators see the
-     *     signal because one before threw, they may wait for a signal they requested but will never be delivered).</li>
+     *     no retry will be attempted.</li>
      *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. Use with caution as this may lead to incorrect demand accounting and
-     *     "hang" (see above). Example use case where this option makes sense is if the last {@link Subscriber} is
-     *     the only one expected to throw and demand is correctly accounted.</li>
+     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     *     isn't the last in the chain.</li>
      * </ul>
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Publisher} is

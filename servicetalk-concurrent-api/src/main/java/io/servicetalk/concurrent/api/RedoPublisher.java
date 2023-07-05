@@ -54,6 +54,13 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
+        /**
+         * Unless you are sure all downstream operators consume the {@link Subscriber#onNext(Object)} this option
+         * SHOULD be {@code true}. Otherwise, the outstanding demand counting in this operator will be incorrect and may
+         * lead to a "hang" (e.g. this operator thinks demand has been consumed downstream so won't request it upstream
+         * after the retry, but if not all downstream operators see the signal because one before threw, they may wait
+         * for a signal they requested but will never be delivered).
+         */
         private final boolean terminateOnNextException;
         private final SequentialSubscription subscription;
         private boolean terminated;
