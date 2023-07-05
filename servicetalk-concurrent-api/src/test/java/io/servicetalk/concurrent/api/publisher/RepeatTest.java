@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
@@ -22,6 +23,7 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -41,8 +43,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class RepeatTest {
-
-    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+    private TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<Integer> source = new TestPublisher<>();
     private final IntPredicate shouldRepeat = mock(IntPredicate.class);
     private boolean shouldRepeatValue;
@@ -130,5 +131,34 @@ class RepeatTest {
         subscriber.awaitSubscription().cancel();
         source.onComplete();
         assertTrue(subscription.isCancelled());
+    }
+
+    @Test
+    void exceptionAfterRetryPreservesDemand() {
+        final Integer[] signals = new Integer[] {1, 2, 3};
+        final AtomicInteger onNextCount = new AtomicInteger();
+        subscriber = new TestPublisherSubscriber<>();
+        toSource(Publisher.from(signals)
+                // First repeat function will catch the error from onNext and propagate downstream to the second
+                // retry function. After the second repeat operator completes, this operator will trigger another repeat
+                // so we expect to see values from signals array twice.
+                .repeat(true, i -> i == 1)
+                .validateOutstandingDemand()
+                .map(t -> {
+                    if (onNextCount.getAndIncrement() == 0) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                    return t;
+                })
+                .onErrorComplete()
+                // Second retry function will kick in and resubscribe generating new state.
+                .repeat(i -> i == 1)
+                .validateOutstandingDemand()
+        ).subscribe(subscriber);
+
+        subscriber.awaitSubscription().request(signals.length * 2);
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        subscriber.awaitOnComplete();
     }
 }

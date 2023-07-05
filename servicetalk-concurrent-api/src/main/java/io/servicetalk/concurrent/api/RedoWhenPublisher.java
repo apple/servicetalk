@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.RedoPublisher.AbstractRedoSubscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.context.api.ContextMap;
@@ -35,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted from this {@link Publisher}.
  */
 final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-
+    private final boolean terminateOnNextException;
     private final Publisher<T> original;
     private final BiFunction<Integer, TerminalNotification, Completable> shouldRedo;
     private final boolean forRetry;
@@ -44,16 +45,20 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
      * New instance.
      *
      * @param original {@link Publisher} on which this operator is applied.
-     * @param shouldRedo {@link BiFunction} to create a {@link Completable} that determines whether to redo the
-     * operation.
      * @param forRetry If redo has to be done for error i.e. it is used for retry. If {@code true} completion for
      * original source will complete the subscriber. Otherwise, error will send the error to the subscriber.
+     * @param terminateOnNextException {@code true} exceptions from {@link Subscriber#onNext(Object)} will be caught and
+     * terminated inside this operator (and the {@link Subscription} will be cancelled). {@code false} means exceptions
+     * from {@link Subscriber#onNext(Object)} will not be caught.
+     * @param shouldRedo {@link BiFunction} to create a {@link Completable} that determines whether to redo the
+     * operation.
      */
-    RedoWhenPublisher(Publisher<T> original, BiFunction<Integer, TerminalNotification, Completable> shouldRedo,
-                      boolean forRetry) {
+    RedoWhenPublisher(Publisher<T> original, boolean forRetry, boolean terminateOnNextException,
+                      BiFunction<Integer, TerminalNotification, Completable> shouldRedo) {
         this.original = original;
-        this.shouldRedo = shouldRedo;
         this.forRetry = forRetry;
+        this.terminateOnNextException = terminateOnNextException;
+        this.shouldRedo = shouldRedo;
     }
 
     @Override
@@ -62,12 +67,12 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
         original.delegateSubscribe(
-                new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber,
+                new RedoSubscriber<>(terminateOnNextException, new SequentialSubscription(), 0, subscriber,
                         contextMap.copy(), contextProvider, this),
                 contextMap, contextProvider);
     }
 
-    private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
+    private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
         private final ContextMap contextMap;
@@ -87,6 +92,8 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             @Override
             public void onError(Throwable t) {
+                // No need to check if terminated already because this Completable is only subscribed
+                // if a terminal is received from upstream but not yet delivered downstream.
                 if (!redoPublisher.forRetry) {
                     // repeat operator terminates repeat with error.
                     subscriber.onComplete();
@@ -96,10 +103,10 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
         };
 
-        RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       ContextMap contextMap, AsyncContextProvider contextProvider,
+        RedoSubscriber(boolean terminateOnNextException, SequentialSubscription subscription, int redoCount,
+                       Subscriber<? super T> subscriber, ContextMap contextMap, AsyncContextProvider contextProvider,
                        RedoWhenPublisher<T> redoPublisher) {
-            super(subscription, redoCount, subscriber);
+            super(terminateOnNextException, subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
@@ -107,13 +114,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         @Override
-        public void onNext(T t) {
-            subscription.itemReceived();
-            subscriber.onNext(t);
-        }
-
-        @Override
-        public void onError(Throwable t) {
+        void onError0(Throwable t) {
             if (!redoPublisher.forRetry) {
                 subscriber.onError(t);
                 return;
@@ -124,7 +125,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         @Override
-        public void onComplete() {
+        void onComplete0() {
             if (redoPublisher.forRetry) {
                 subscriber.onComplete();
                 return;

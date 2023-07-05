@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.context.api.ContextMap;
 
@@ -23,6 +24,7 @@ import java.util.function.IntPredicate;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * {@link Publisher} to do {@link Publisher#repeat(IntPredicate)} and {@link Publisher#retry(BiIntPredicate)}
@@ -31,12 +33,14 @@ import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
  * @param <T> Type of items emitted from this {@link Publisher}.
  */
 final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-
+    private final boolean terminateOnNextException;
     private final Publisher<T> original;
     private final BiPredicate<Integer, TerminalNotification> shouldRedo;
 
-    RedoPublisher(Publisher<T> original, BiPredicate<Integer, TerminalNotification> shouldRedo) {
+    RedoPublisher(Publisher<T> original, boolean terminateOnNextException,
+                  BiPredicate<Integer, TerminalNotification> shouldRedo) {
         this.original = original;
+        this.terminateOnNextException = terminateOnNextException;
         this.shouldRedo = shouldRedo;
     }
 
@@ -45,16 +49,27 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                          AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
-        original.delegateSubscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, contextMap.copy(),
-                contextProvider, this), contextMap, contextProvider);
+        original.delegateSubscribe(new RedoSubscriber<>(terminateOnNextException, new SequentialSubscription(), 0,
+                subscriber, contextMap.copy(), contextProvider, this), contextMap, contextProvider);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
-        final SequentialSubscription subscription;
+        /**
+         * Unless you are sure all downstream operators consume the {@link Subscriber#onNext(Object)} this option
+         * SHOULD be {@code true}. Otherwise, the outstanding demand counting in this operator will be incorrect and may
+         * lead to a "hang" (e.g. this operator thinks demand has been consumed downstream so won't request it upstream
+         * after the retry, but if not all downstream operators see the signal because one before threw, they may wait
+         * for a signal they requested but will never be delivered).
+         */
+        private final boolean terminateOnNextException;
+        private final SequentialSubscription subscription;
+        private boolean terminated;
         final Subscriber<? super T> subscriber;
         int redoCount;
 
-        AbstractRedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber) {
+        AbstractRedoSubscriber(boolean terminateOnNextException, SequentialSubscription subscription, int redoCount,
+                               Subscriber<? super T> subscriber) {
+            this.terminateOnNextException = terminateOnNextException;
             this.subscription = subscription;
             this.redoCount = redoCount;
             this.subscriber = subscriber;
@@ -63,6 +78,11 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Override
         public final void onSubscribe(Subscription s) {
             s = decorate(s);
+            if (terminateOnNextException) {
+                // ConcurrentSubscription because if exception is thrown from downstream onNext we invoke cancel which
+                // may introduce concurrency on the subscription.
+                s = ConcurrentSubscription.wrap(s);
+            }
             // Downstream Subscriber only gets one Subscription but every time we re-subscribe we switch the current
             // Subscription in SequentialSubscription to the new Subscription. This will make sure that we always
             // request from the "current" Subscription.
@@ -75,8 +95,55 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
         }
 
+        @Override
+        public final void onNext(T t) {
+            if (terminated) {
+                return;
+            }
+            subscription.itemReceived();
+            try {
+                subscriber.onNext(t);
+            } catch (Throwable cause) {
+                handleOnNextException(cause);
+            }
+        }
+
+        @Override
+        public final void onError(Throwable cause) {
+            if (terminated) {
+                return;
+            }
+            onError0(cause);
+        }
+
+        @Override
+        public final void onComplete() {
+            if (terminated) {
+                return;
+            }
+            onComplete0();
+        }
+
+        abstract void onComplete0();
+
+        abstract void onError0(Throwable cause);
+
         Subscription decorate(Subscription s) {
             return s;
+        }
+
+        private void handleOnNextException(Throwable cause) {
+            if (!terminateOnNextException) {
+                throwException(cause);
+            } else if (terminated) { // just in case on-next delivered a terminal in re-entry fashion
+                return;
+            }
+            terminated = true;
+            try {
+                subscription.cancel();
+            } finally {
+                subscriber.onError(cause);
+            }
         }
     }
 
@@ -85,28 +152,22 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
 
-        RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       ContextMap contextMap, AsyncContextProvider contextProvider,
+        RedoSubscriber(boolean terminateOnNextException, SequentialSubscription subscription, int redoCount,
+                       Subscriber<? super T> subscriber, ContextMap contextMap, AsyncContextProvider contextProvider,
                        RedoPublisher<T> redoPublisher) {
-            super(subscription, redoCount, subscriber);
+            super(terminateOnNextException, subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
         }
 
         @Override
-        public void onNext(T t) {
-            subscription.itemReceived();
-            subscriber.onNext(t);
-        }
-
-        @Override
-        public void onError(Throwable t) {
+        void onError0(Throwable t) {
             tryRedo(TerminalNotification.error(t));
         }
 
         @Override
-        public void onComplete() {
+        void onComplete0() {
             tryRedo(complete());
         }
 

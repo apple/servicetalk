@@ -31,15 +31,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -218,11 +219,31 @@ class RetryWhenTest {
     }
 
     @Test
-    void nullInTerminalCallsOnError() {
-        source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
-        toSource(source.retryWhen((times1, cause1) -> null)).subscribe(subscriber);
-        subscriber.awaitSubscription().request(1);
-        source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.awaitOnError(), instanceOf(NullPointerException.class));
+    void exceptionAfterRetryPreservesDemand() {
+        executor = newCachedThreadExecutor();
+        final Integer[] signals = new Integer[] {1, 2, 3};
+        final AtomicInteger onNextCount = new AtomicInteger();
+        subscriber = new TestPublisherSubscriber<>();
+        BiIntFunction<Throwable, Completable> retryFunc = (count, cause) -> cause == DELIBERATE_EXCEPTION ?
+                executor.timer(ofMillis(10)) : Completable.failed(cause);
+        toSource(Publisher.from(signals)
+                // First retry function will catch the error from onNext and propagate downstream to the second
+                // retry function.
+                .retryWhen(true, retryFunc)
+                .validateOutstandingDemand()
+                .map(t -> {
+                    if (onNextCount.getAndIncrement() == 0) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                    return t;
+                })
+                // Second retry function will kick in and resubscribe generating new state.
+                .retryWhen(retryFunc)
+                .validateOutstandingDemand()
+        ).subscribe(subscriber);
+
+        subscriber.awaitSubscription().request(signals.length);
+        assertThat(subscriber.takeOnNext(signals.length), contains(signals));
+        subscriber.awaitOnComplete();
     }
 }
