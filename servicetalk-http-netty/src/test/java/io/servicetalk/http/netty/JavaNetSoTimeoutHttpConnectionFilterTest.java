@@ -50,6 +50,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
@@ -80,8 +81,8 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     private static final String RETURN_RESPONSE_DELAY_MS = "RETURN_RESPONSE_DELAY_MS";
     private static final String RESPONSE_PAYLOAD_DELAY_MS = "RESPONSE_PAYLOAD_DELAY_MS";
 
-    private static final Duration READ_TIMEOUT_VALUE = Duration.ofMillis(100);
-    private static final String SERVER_DELAY_VALUE = "200";
+    private static final Duration READ_TIMEOUT_VALUE = Duration.ofMillis(CI ? 1000 : 100);
+    private static final String SERVER_DELAY_VALUE = CI ? "2000" : "200";
 
     private static final Key<Duration> READ_TIMEOUT_KEY = newKey("READ_TIMEOUT_KEY", Duration.class);
 
