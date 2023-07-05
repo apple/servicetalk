@@ -2213,7 +2213,7 @@ public abstract class Publisher<T> {
      * @see #retry(boolean, BiIntPredicate)
      */
     public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return retry(false, shouldRetry);
+        return retry(true, shouldRetry);
     }
 
     /**
@@ -2315,7 +2315,7 @@ public abstract class Publisher<T> {
      * @see #retryWhen(boolean, BiIntFunction)
      */
     public final Publisher<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
-        return retryWhen(false, retryWhen);
+        return retryWhen(true, retryWhen);
     }
 
     /**
@@ -2404,7 +2404,7 @@ public abstract class Publisher<T> {
      * @see #repeat(boolean, IntPredicate)
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return repeat(false, shouldRepeat);
+        return repeat(true, shouldRepeat);
     }
 
     /**
@@ -2477,7 +2477,7 @@ public abstract class Publisher<T> {
      * @see #repeatWhen(boolean, IntFunction)
      */
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
-        return repeatWhen(false, repeatWhen);
+        return repeatWhen(true, repeatWhen);
     }
 
     /**
