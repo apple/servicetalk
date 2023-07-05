@@ -210,6 +210,11 @@ class StreamObserverTest {
                     return eventKey == MAX_CONCURRENCY_NO_OFFLOADING ? (Publisher<? extends T>) maxConcurrency :
                             delegate().transportEventStream(eventKey);
                 }
+
+                @Override
+                public String toString() {
+                    return delegate().toString();
+                }
             };
         }
 

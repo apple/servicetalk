@@ -16,10 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -101,10 +98,10 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
 
     @Override
     ReservableRequestConcurrencyController newConcurrencyController(
-            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
+            final FilterableStreamingHttpConnection connection) {
         // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
         // ALPN completes. The actual maxConcurrency value will be updated by the MAX_CONCURRENCY stream,
         // when we create a connection.
-        return newController(maxConcurrency, onClosing, 1);
+        return newController(connection, 1);
     }
 }

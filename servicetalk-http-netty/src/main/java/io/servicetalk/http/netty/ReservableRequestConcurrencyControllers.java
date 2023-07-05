@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.RequestConcurrencyController;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
@@ -28,6 +27,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -51,6 +52,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -67,16 +69,14 @@ final class ReservableRequestConcurrencyControllers {
     /**
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
      *
-     * @param maxConcurrency A {@link Publisher} that provides the maximum allowed concurrency updates.
-     * @param onClosing A {@link Completable} that when terminated no more calls to
-     * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
-     * @param initialConcurrency The initial maximum value for concurrency, until {@code maxConcurrency} provides data.
+     * @param connection {@link FilterableStreamingHttpConnection} for which the controller is required.
+     * @param initialConcurrency The initial maximum value for concurrency, until {@code connection} provides data.
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
     static ReservableRequestConcurrencyController newController(
-            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing,
+            final FilterableStreamingHttpConnection connection,
             final int initialConcurrency) {
-        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency, onClosing, initialConcurrency);
+        return new ReservableRequestConcurrencyControllerMulti(connection, initialConcurrency);
     }
 
     /**
@@ -113,6 +113,7 @@ final class ReservableRequestConcurrencyControllers {
 
     private abstract static class AbstractReservableRequestConcurrencyController
             implements ReservableRequestConcurrencyController {
+        private static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY_KEY = MAX_CONCURRENCY_NO_OFFLOADING;
         private static final AtomicIntegerFieldUpdater<AbstractReservableRequestConcurrencyController>
                 pendingRequestsUpdater = newUpdater(AbstractReservableRequestConcurrencyController.class,
                 "pendingRequests");
@@ -133,14 +134,13 @@ final class ReservableRequestConcurrencyControllers {
         private volatile int lastMaxConcurrency;
 
         AbstractReservableRequestConcurrencyController(
-                final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
-                final Completable onClosing,
+                final FilterableStreamingHttpConnection connection,
                 final int initialConcurrency) {
             lastMaxConcurrency = initialConcurrency;
             // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the
             // STATE_QUIT before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency
             // error messages for the users on connection tear-down.
-            toSource(onClosing).subscribe(new CompletableSource.Subscriber() {
+            toSource(connection.onClosing()).subscribe(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
                     // No op
@@ -158,6 +158,8 @@ final class ReservableRequestConcurrencyControllers {
                     pendingRequests = STATE_QUIT;
                 }
             });
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency =
+                    connection.transportEventStream(MAX_CONCURRENCY_KEY);
             toSource(maxConcurrency).subscribe(new Subscriber<ConsumableEvent<Integer>>() {
 
                 @Nullable
@@ -174,6 +176,8 @@ final class ReservableRequestConcurrencyControllers {
 
                 @Override
                 public void onNext(@Nullable final ConsumableEvent<Integer> event) {
+                    LOGGER.debug("{} Received transportEventStream({}) event: {}",
+                            connection, MAX_CONCURRENCY_KEY, event);
                     assert subscription != null : "Subscription can not be null in onNext.";
                     assert event != null : "event can not be null in onNext.";
                     final int currentConcurrency = lastMaxConcurrency;
@@ -207,12 +211,13 @@ final class ReservableRequestConcurrencyControllers {
 
                 @Override
                 public void onError(final Throwable t) {
-                    LOGGER.info("Unexpected error from transportEventStream(MAX_CONCURRENCY).", t);
+                    LOGGER.info("{} Unexpected error from transportEventStream({})",
+                            connection, MAX_CONCURRENCY_KEY, t);
                 }
 
                 @Override
                 public void onComplete() {
-                    LOGGER.debug("transportEventStream(MAX_CONCURRENCY) stream completes.");
+                    LOGGER.debug("{} transportEventStream({}) stream completes", connection, MAX_CONCURRENCY_KEY);
                 }
             });
         }
@@ -273,10 +278,9 @@ final class ReservableRequestConcurrencyControllers {
 
     private static final class ReservableRequestConcurrencyControllerMulti
             extends AbstractReservableRequestConcurrencyController {
-        ReservableRequestConcurrencyControllerMulti(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
-                                                    final Completable onClosing,
+        ReservableRequestConcurrencyControllerMulti(final FilterableStreamingHttpConnection connection,
                                                     final int initialConcurrency) {
-            super(maxConcurrency, onClosing, initialConcurrency);
+            super(connection, initialConcurrency);
         }
 
         @Override
@@ -317,8 +321,13 @@ final class ReservableRequestConcurrencyControllers {
                                                                 final StreamingHttpRequest request) {
                     return delegate.request(request)
                             // Retry reasonable number of times to avoid infinite loops internally.
-                            .retry((count, t) -> count <= 32 &&
-                                    t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception);
+                            .retry((count, t) -> {
+                                if (count <= 32 && t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception) {
+                                    LOGGER.debug("Retrying {} for the {} time", t, count);
+                                    return true;
+                                }
+                                return false;
+                            });
                 }
 
                 @Override
