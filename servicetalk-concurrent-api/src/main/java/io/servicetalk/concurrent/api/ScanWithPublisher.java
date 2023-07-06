@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.api.ScanMapper.MappedTerminal;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.context.api.ContextMap;
 
@@ -31,14 +32,20 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Publisher<T> original;
-    private final Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier;
+    private final Supplier<? extends ScanMapper<? super T, ? extends R>> mapperSupplier;
 
     ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
-        this(original, new SupplierScanWithMapper<>(initial, accumulator));
+        this(new SupplierScanWithMapper<>(initial, accumulator), original);
     }
 
     ScanWithPublisher(Publisher<T> original,
+                      @SuppressWarnings("deprecation")
                       Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
+        this(new SupplierScanMapper<>(mapperSupplier), original);
+    }
+
+    ScanWithPublisher(Supplier<? extends ScanMapper<? super T, ? extends R>> mapperSupplier,
+                      Publisher<T> original) {
         this.mapperSupplier = requireNonNull(mapperSupplier);
         this.original = original;
     }
@@ -63,7 +70,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private static final long TERMINATED = Long.MIN_VALUE;
         private static final long TERMINAL_PENDING = TERMINATED + 1;
         /**
-         * We don't want to invoke {@link ScanWithMapper#mapOnError(Throwable)} for invalid demand because we may never
+         * We don't want to invoke {@link ScanMapper#mapOnError(Throwable)} for invalid demand because we may never
          * get enough demand to deliver an {@link #onNext(Object)} to the downstream subscriber. {@code -1} to avoid
          * {@link #demand} underflow in onNext (in case the source doesn't deliver a timely error).
          */
@@ -72,16 +79,17 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private final Subscriber<? super R> subscriber;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
-        private final ScanWithMapper<? super T, ? extends R> mapper;
+        private final ScanMapper<? super T, ? extends R> mapper;
         private volatile long demand;
         /**
-         * Retains the {@link #onError(Throwable)} cause for use in the {@link Subscription}.
+         * Retains the {@link MappedTerminal} cause for use in the {@link Subscription}.
          * Happens-before relationship with {@link #demand} means no volatile or other synchronization required.
          */
         @Nullable
-        private Throwable errorCause;
+        private MappedTerminal<? extends R> mappedTerminal;
 
-        ScanWithSubscriber(final Subscriber<? super R> subscriber, final ScanWithMapper<? super T, ? extends R> mapper,
+        ScanWithSubscriber(final Subscriber<? super R> subscriber,
+                           final ScanMapper<? super T, ? extends R> mapper,
                            final AsyncContextProvider contextProvider, final ContextMap contextMap) {
             this.subscriber = subscriber;
             this.contextProvider = contextProvider;
@@ -103,11 +111,8 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                     } else if (demandUpdater.getAndAccumulate(ScanWithSubscriber.this, n,
                             FlowControlUtils::addWithOverflowProtectionIfNotNegative) == TERMINAL_PENDING) {
                         demand = TERMINATED;
-                        if (errorCause != null) {
-                            deliverOnErrorFromSubscription(errorCause, newOffloadedSubscriber());
-                        } else {
-                            deliverOnCompleteFromSubscription(newOffloadedSubscriber());
-                        }
+                        assert mappedTerminal != null;
+                        deliverAllTerminalFromSubscription(mappedTerminal, newOffloadedSubscriber());
                     } else {
                         subscription.request(n);
                     }
@@ -157,79 +162,47 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         /**
          * Executes the on-error signal and returns {@code true} if demand was sufficient to deliver the result of the
-         * mapped {@code Throwable} with {@link ScanWithMapper#mapOnError(Throwable)}.
+         * mapped {@code Throwable} and terminal signal.
          *
          * @param t The throwable to propagate
          * @return {@code true} if the demand was sufficient to deliver the result of the mapped {@code Throwable} with
-         * {@link ScanWithMapper#mapOnError(Throwable)}.
+         * terminal signal.
          */
         protected boolean onError0(final Throwable t) {
-            errorCause = t;
-            final boolean doMap;
             try {
-                doMap = mapper.mapTerminal();
+                mappedTerminal = mapper.mapOnError(t);
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return true;
             }
-            if (doMap) {
-                for (;;) {
-                    final long currDemand = demand;
-                    if (currDemand > 0 && demandUpdater.compareAndSet(this, currDemand, TERMINATED)) {
-                        deliverOnError(t, subscriber);
-                        break;
-                    } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
-                        return false;
-                    } else if (currDemand < 0) {
-                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
-                        // In either circumstance we propagate the error downstream and bail.
-                        subscriber.onError(t);
-                        break;
-                    }
-                }
-            } else {
-                demand = TERMINATED;
-                subscriber.onError(t);
-            }
 
+            if (mappedTerminal != null) {
+                return deliverAllTerminal(mappedTerminal, subscriber, t);
+            }
+            demand = TERMINATED;
+            subscriber.onError(t);
             return true;
         }
 
         /**
          * Executes the on-completed signal and returns {@code true} if demand was sufficient to deliver the concat item
-         * from {@link ScanWithMapper#mapOnComplete()} downstream.
+         * from {@link ScanMapper#mapOnComplete()} downstream.
          *
          * @return {@code true} if demand was sufficient to deliver the concat item from
-         * {@link ScanWithMapper#mapOnComplete()} downstream.
+         * {@link ScanMapper#mapOnComplete()} downstream.
          */
         protected boolean onComplete0() {
-            final boolean doMap;
             try {
-                doMap = mapper.mapTerminal();
+                mappedTerminal = mapper.mapOnComplete();
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return true;
             }
-            if (doMap) {
-                for (;;) {
-                    final long currDemand = demand;
-                    if (currDemand > 0 && demandUpdater.compareAndSet(this, currDemand, TERMINATED)) {
-                        deliverOnComplete(subscriber);
-                        break;
-                    } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
-                        return false;
-                    } else if (currDemand < 0) {
-                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
-                        // In either circumstance we propagate the error downstream and bail.
-                        subscriber.onError(new IllegalStateException("onComplete with invalid demand: " + currDemand));
-                        break;
-                    }
-                }
-            } else {
-                demand = TERMINATED;
-                subscriber.onComplete();
+            if (mappedTerminal != null) {
+                return deliverAllTerminal(mappedTerminal, subscriber, null);
             }
-
+            demand = TERMINATED;
+            subscriber.onComplete();
             return true;
         }
 
@@ -237,36 +210,88 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
             //NOOP
         }
 
-        protected void deliverOnErrorFromSubscription(Throwable t, Subscriber<? super R> subscriber) {
-            deliverOnError(t, subscriber);
+        protected void deliverAllTerminalFromSubscription(final MappedTerminal<? extends R> mappedTerminal,
+                                                          final Subscriber<? super R> subscriber) {
+            deliverOnNextAndTerminal(mappedTerminal, subscriber);
         }
 
-        protected void deliverOnCompleteFromSubscription(Subscriber<? super R> subscriber) {
-            deliverOnComplete(subscriber);
-        }
-
-        private void deliverOnError(Throwable t, Subscriber<? super R> subscriber) {
+        private boolean deliverAllTerminal(final MappedTerminal<? extends R> mappedTerminal,
+                                           final Subscriber<? super R> subscriber,
+                                           @Nullable final Throwable originalCause) {
+            final boolean onNextValid;
             try {
-                subscriber.onNext(mapper.mapOnError(t));
+                onNextValid = mappedTerminal.onNextValid();
+            } catch (Throwable cause) {
+                subscriber.onError(cause);
+                return true;
+            }
+            if (onNextValid) {
+                for (;;) {
+                    final long currDemand = demand;
+                    if (currDemand > 0 && demandUpdater.compareAndSet(this, currDemand, TERMINATED)) {
+                        deliverOnNextAndTerminal(mappedTerminal, subscriber);
+                        break;
+                    } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
+                        return false;
+                    } else if (currDemand < 0) {
+                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal
+                        // event. In either circumstance we propagate the error downstream and bail.
+                        subscriber.onError(originalCause != null ? originalCause :
+                                new IllegalStateException("onComplete with invalid demand: " + currDemand));
+                        break;
+                    }
+                }
+            } else {
+                demand = TERMINATED;
+                deliverTerminal(mappedTerminal, subscriber);
+            }
+            return true;
+        }
+
+        private void deliverTerminal(final MappedTerminal<? extends R> mappedTerminal,
+                                     final Subscriber<? super R> subscriber) {
+            final Throwable cause;
+            try {
+                cause = mappedTerminal.terminal();
+            } catch (Throwable cause2) {
+                subscriber.onError(cause2);
+                return;
+            }
+            if (cause == null) {
+                subscriber.onComplete();
+            } else {
+                subscriber.onError(cause);
+            }
+        }
+
+        private void deliverOnNextAndTerminal(final MappedTerminal<? extends R> mappedTerminal,
+                                              final Subscriber<? super R> subscriber) {
+            try {
+                assert mappedTerminal.onNextValid();
+                subscriber.onNext(mappedTerminal.onNext());
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
             }
-            subscriber.onComplete();
-        }
-
-        private void deliverOnComplete(Subscriber<? super R> subscriber) {
-            try {
-                subscriber.onNext(mapper.mapOnComplete());
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
-                return;
-            }
-            subscriber.onComplete();
+            deliverTerminal(mappedTerminal, subscriber);
         }
     }
 
-    private static final class SupplierScanWithMapper<T, R> implements Supplier<ScanWithMapper<T, R>> {
+    @SuppressWarnings("deprecation")
+    private static final class SupplierScanMapper<T, R> implements Supplier<ScanMapper<T, R>> {
+        private final Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier;
+
+        SupplierScanMapper(Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
+            this.mapperSupplier = requireNonNull(mapperSupplier);
+        }
+
+        @Override
+        public ScanMapper<T, R> get() {
+            return new ScanMapperAdapter<>(mapperSupplier.get());
+        }
+    }
+
+    private static final class SupplierScanWithMapper<T, R> implements Supplier<ScanMapper<T, R>> {
         private final BiFunction<R, ? super T, R> accumulator;
         private final Supplier<R> initial;
 
@@ -276,8 +301,8 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         }
 
         @Override
-        public ScanWithMapper<T, R> get() {
-            return new ScanWithMapper<T, R>() {
+        public ScanMapper<T, R> get() {
+            return new ScanMapper<T, R>() {
                 @Nullable
                 private R state = initial.get();
 
@@ -287,25 +312,72 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                     return state;
                 }
 
+                @Nullable
                 @Override
-                public R mapOnError(final Throwable cause) {
-                    throw newMapTerminalUnsupported();
+                public MappedTerminal<R> mapOnError(final Throwable cause) {
+                    return null;
                 }
 
+                @Nullable
                 @Override
-                public R mapOnComplete() {
-                    throw newMapTerminalUnsupported();
-                }
-
-                @Override
-                public boolean mapTerminal() {
-                    return false;
+                public MappedTerminal<R> mapOnComplete() {
+                    return null;
                 }
             };
         }
+    }
 
-        private static IllegalStateException newMapTerminalUnsupported() {
-            throw new IllegalStateException("mapTerminal returns false, this method should never be invoked!");
+    @SuppressWarnings("deprecation")
+    static class ScanMapperAdapter<T, R, X extends ScanWithMapper<? super T, ? extends R>>
+            implements ScanMapper<T, R> {
+        final X mapper;
+
+        ScanMapperAdapter(final X mapper) {
+            this.mapper = requireNonNull(mapper);
+        }
+
+        @Nullable
+        @Override
+        public R mapOnNext(@Nullable final T next) {
+            return mapper.mapOnNext(next);
+        }
+
+        @Nullable
+        @Override
+        public MappedTerminal<R> mapOnError(final Throwable cause) throws Throwable {
+            return mapper.mapTerminal() ? new FixedMappedTerminal<>(mapper.mapOnError(cause)) : null;
+        }
+
+        @Nullable
+        @Override
+        public MappedTerminal<R> mapOnComplete() {
+            return mapper.mapTerminal() ? new FixedMappedTerminal<>(mapper.mapOnComplete()) : null;
+        }
+    }
+
+    private static final class FixedMappedTerminal<R> implements MappedTerminal<R> {
+        @Nullable
+        private final R onNext;
+
+        private FixedMappedTerminal(@Nullable final R onNext) {
+            this.onNext = onNext;
+        }
+
+        @Nullable
+        @Override
+        public R onNext() {
+            return onNext;
+        }
+
+        @Override
+        public boolean onNextValid() {
+            return true;
+        }
+
+        @Nullable
+        @Override
+        public Throwable terminal() {
+            return null;
         }
     }
 }

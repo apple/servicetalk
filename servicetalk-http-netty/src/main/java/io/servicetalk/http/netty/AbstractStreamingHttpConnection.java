@@ -188,7 +188,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                     // requests with non-replayable messageBody
                     flatRequest = Single.<Object>succeeded(request).concatDeferSubscribe(messageBody);
                     if (shouldAppendTrailers(connectionContext().protocol(), request)) {
-                        flatRequest = flatRequest.scanWith(HeaderUtils::appendTrailersMapper);
+                        flatRequest = flatRequest.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
                 }
                 addRequestTransferEncodingIfNecessary(request);

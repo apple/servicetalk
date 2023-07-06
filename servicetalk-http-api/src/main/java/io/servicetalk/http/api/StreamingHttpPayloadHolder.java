@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
-import io.servicetalk.concurrent.api.ScanWithMapper;
+import io.servicetalk.concurrent.api.ScanMapper;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpDataSourceTransformations.BridgeFlowControlAndDiscardOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
@@ -152,7 +152,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             final Publisher<Buffer> transformedPayloadBody = body.liftSync(
                     new PreserveTrailersBufferOperator(trailersProcessor));
             return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
-                    fromSource(trailersProcessor)).scanWith(() ->
+                    fromSource(trailersProcessor)).scanWithMapper(() ->
                             new TrailersMapper<>(trailersTransformer, headersFactory))
                     .shareContextOnSubscribe();
         }));
@@ -160,7 +160,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         transform(trailersTransformer,
-                body -> body.scanWith(() -> new TrailersMapper<>(trailersTransformer, headersFactory)));
+                body -> body.scanWithMapper(() -> new TrailersMapper<>(trailersTransformer, headersFactory)));
     }
 
     private <T, S> void transform(final TrailersTransformer<T, S> trailersTransformer,
@@ -276,7 +276,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
     }
 
-    private static final class TrailersMapper<T, S> implements ScanWithMapper<Object, Object> {
+    private static final class TrailersMapper<T, S> implements ScanMapper<Object, Object> {
         private final TrailersTransformer<T, S> trailersTransformer;
         private final HttpHeadersFactory headersFactory;
         @Nullable
@@ -307,19 +307,43 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             return trailersTransformer.accept(state, nextS);
         }
 
+        @Nullable
         @Override
-        public Object mapOnError(final Throwable t) throws Throwable {
-            return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
+        public MappedTerminal<Object> mapOnError(final Throwable t) throws Throwable {
+            return trailers == null ? new DefaultMappedTerminal<>(
+                    trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers())) : null;
+        }
+
+        @Nullable
+        @Override
+        public MappedTerminal<Object> mapOnComplete() {
+            return trailers == null ? new DefaultMappedTerminal<>(
+                    trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers())) : null;
+        }
+    }
+
+    private static final class DefaultMappedTerminal<T> implements ScanMapper.MappedTerminal<T> {
+        private final T onNext;
+
+        private DefaultMappedTerminal(final T onNext) {
+            this.onNext = onNext;
+        }
+
+        @Nullable
+        @Override
+        public T onNext() {
+            return onNext;
         }
 
         @Override
-        public Object mapOnComplete() {
-            return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
+        public boolean onNextValid() {
+            return true;
         }
 
+        @Nullable
         @Override
-        public boolean mapTerminal() {
-            return trailers == null;
+        public Throwable terminal() {
+            return null;
         }
     }
 
