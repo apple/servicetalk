@@ -218,7 +218,14 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private boolean deliverAllTerminal(final MappedTerminal<? extends R> mappedTerminal,
                                            final Subscriber<? super R> subscriber,
                                            @Nullable final Throwable originalCause) {
-            if (mappedTerminal.onNextValid()) {
+            final boolean onNextValid;
+            try {
+                onNextValid = mappedTerminal.onNextValid();
+            } catch (Throwable cause) {
+                subscriber.onError(cause);
+                return true;
+            }
+            if (onNextValid) {
                 for (;;) {
                     final long currDemand = demand;
                     if (currDemand > 0 && demandUpdater.compareAndSet(this, currDemand, TERMINATED)) {
@@ -243,7 +250,13 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         private void deliverTerminal(final MappedTerminal<? extends R> mappedTerminal,
                                      final Subscriber<? super R> subscriber) {
-            final Throwable cause = mappedTerminal.terminal();
+            final Throwable cause;
+            try {
+                cause = mappedTerminal.terminal();
+            } catch (Throwable cause2) {
+                subscriber.onError(cause2);
+                return;
+            }
             if (cause == null) {
                 subscriber.onComplete();
             } else {
@@ -253,8 +266,8 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         private void deliverOnNextAndTerminal(final MappedTerminal<? extends R> mappedTerminal,
                                               final Subscriber<? super R> subscriber) {
-            assert mappedTerminal.onNextValid();
             try {
+                assert mappedTerminal.onNextValid();
                 subscriber.onNext(mappedTerminal.onNext());
             } catch (Throwable cause) {
                 subscriber.onError(cause);
