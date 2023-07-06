@@ -218,7 +218,7 @@ class RepeatWhenTest {
                 // First repeat function will catch the error from onNext and propagate downstream to the second
                 // retry function. After the second repeat operator completes, this operator will trigger another repeat
                 // so we expect to see values from signals array twice.
-                .repeatWhen(true, retryFunc)
+                .repeatWhen(retryFunc)
                 .validateOutstandingDemand()
                 .map(t -> {
                     if (onNextCount.getAndIncrement() == 0) {

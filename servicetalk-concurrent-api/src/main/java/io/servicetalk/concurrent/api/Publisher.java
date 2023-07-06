@@ -2401,46 +2401,9 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes
      * if the passed {@link IntPredicate} returns {@code true}.
      * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
-     * @see #repeat(boolean, IntPredicate)
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return repeat(true, shouldRepeat);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} when it completes and the passed {@link IntPredicate} returns
-     * {@code true}.
-     * <pre>
-     * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an {@link Executor}. For example:
-     *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
-     * </pre>
-     * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
-     * <pre>{@code
-     *     List<T> results = new ...;
-     *     int i = 0;
-     *     do {
-     *         results.addAll(resultOfThisPublisher());
-     *     } while (shouldRepeat.test(++i));
-     *     return results;
-     * }</pre>
-     * @param terminateOnNextException
-     * <ul>
-     *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
-     *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted.</li>
-     *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
-     *     isn't the last in the chain.</li>
-     * </ul>
-     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
-     * repeated.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes
-     * if the passed {@link IntPredicate} returns {@code true}.
-     * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
-     */
-    public final Publisher<T> repeat(boolean terminateOnNextException, IntPredicate shouldRepeat) {
-        return new RedoPublisher<>(this, terminateOnNextException, (repeatCount, terminalNotification) ->
+        return new RedoPublisher<>(this, true, (repeatCount, terminalNotification) ->
                 terminalNotification.cause() == null && shouldRepeat.test(repeatCount));
     }
 
@@ -2474,55 +2437,9 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
      * emitted and {@link Completable} returned by {@link IntFunction} completes successfully.
      * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     * @see #repeatWhen(boolean, IntFunction)
      */
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
-        return repeatWhen(true, repeatWhen);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} when it completes and the {@link Completable} returned by the supplied
-     * {@link IntFunction} completes successfully. If the returned {@link Completable} emits an error, the returned
-     * {@link Publisher} is completed.
-     * <pre>
-     * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
-     * avoided by trampolining the call stack onto an {@link Executor}. For example:
-     *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
-     * </pre>
-     * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
-     * sequential programming is similar to:
-     * <pre>{@code
-     *     List<T> results = new ...;
-     *     int i = 0;
-     *     while (true) {
-     *         results.addAll(resultOfThisPublisher());
-     *         try {
-     *             repeatWhen.apply(++i); // Either throws or completes normally
-     *         } catch (Throwable cause) {
-     *             break;
-     *         }
-     *     }
-     *     return results;
-     * }</pre>
-     * @param terminateOnNextException
-     * <ul>
-     *     <li>{@code true} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will be
-     *     caught, cancel the {@link Subscription}, propagate a {@link Subscriber#onError(Throwable)} downstream, and
-     *     no retry will be attempted.</li>
-     *     <li>{@code false} means that exceptions thrown from downstream {@link Subscriber#onNext(Object)} will NOT
-     *     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
-     *     isn't the last in the chain.</li>
-     * </ul>
-     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
-     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Publisher} is
-     * re-subscribed when this {@link Completable} completes.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
-     * emitted and {@link Completable} returned by {@link IntFunction} completes successfully.
-     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Publisher<T> repeatWhen(boolean terminateOnNextException,
-                                         IntFunction<? extends Completable> repeatWhen) {
-        return new RedoWhenPublisher<>(this, false, terminateOnNextException, (retryCount, notification) ->
+        return new RedoWhenPublisher<>(this, false, true, (retryCount, notification) ->
                 notification.cause() != null ? completed() : repeatWhen.apply(retryCount));
     }
 
