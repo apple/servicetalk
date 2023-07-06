@@ -17,11 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -43,7 +41,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
@@ -121,11 +118,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.bind(filteredConnection, newConcurrencyController(
-                            filteredConnection.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
-                                    .beforeOnNext(event -> LOGGER.debug("{} Received {} event: {}",
-                                            conn, MAX_CONCURRENCY_NO_OFFLOADING, event)),
-                            filteredConnection.onClosing()), context);
+                    return protocolBinding.bind(filteredConnection, newConcurrencyController(filteredConnection),
+                            context);
                 });
     }
 
@@ -139,8 +133,14 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
             ResolvedAddress resolvedAddress, TransportObserver observer);
 
+    /**
+     * Create a new instance of {@link ReservableRequestConcurrencyController}.
+     *
+     * @param connection {@link FilterableStreamingHttpConnection} for which the controller is required.
+     * @return a new instance of {@link ReservableRequestConcurrencyController}.
+     */
     abstract ReservableRequestConcurrencyController newConcurrencyController(
-            Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, Completable onClosing);
+            FilterableStreamingHttpConnection connection);
 
     @Override
     public final Completable onClose() {
