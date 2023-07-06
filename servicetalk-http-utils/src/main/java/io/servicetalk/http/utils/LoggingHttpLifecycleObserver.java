@@ -24,7 +24,6 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 import io.servicetalk.transport.api.ConnectionInfo;
 
-import java.util.Arrays;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
@@ -81,7 +80,6 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
         @Override
         public void onConnectionSelected(final ConnectionInfo info) {
-            assert this.connInfo == null;
             this.connInfo = info;
         }
 
@@ -108,23 +106,19 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
         @Override
         public void onRequestComplete() {
-            Object current = requestResult;
-            assert current == null : assertResultMsg(current, "requestResult");
             assert requestMetaData != null : "Request meta-data is not expected to be null on completion";
             requestResult = Result.complete;
         }
 
         @Override
         public void onRequestError(final Throwable cause) {
-            Object current = requestResult;
-            assert current == null : assertResultMsg(current, "requestResult");
+            assert requestMetaData != null : "Request meta-data is not expected to be null on error";
             requestResult = cause;
         }
 
         @Override
         public void onRequestCancel() {
-            Object current = requestResult;
-            assert current == null : assertResultMsg(current, "requestResult");
+            assert requestMetaData != null : "Request meta-data is not expected to be null on cancel";
             requestResult = Result.cancelled;
         }
 
@@ -151,25 +145,19 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
         @Override
         public void onResponseComplete() {
-            Object current = responseResult;
-            assert current == null : assertResultMsg(current, "responseResult");
-            assert responseMetaData != null;
+            assert responseMetaData != null : "Response meta-data is not expected to be null on completion";
             responseTimeMs = durationMs(startTime);
             responseResult = Result.complete;
         }
 
         @Override
         public void onResponseError(final Throwable cause) {
-            Object current = responseResult;
-            assert current == null : assertResultMsg(current, "responseResult");
             responseTimeMs = durationMs(startTime);
             responseResult = cause;
         }
 
         @Override
         public void onResponseCancel() {
-            Object current = responseResult;
-            assert current == null : assertResultMsg(current, "responseResult");
             responseTimeMs = durationMs(startTime);
             responseResult = Result.cancelled;
         }
@@ -220,12 +208,6 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
         private enum Result {
             complete, error, cancelled
-        }
-
-        private static String assertResultMsg(final Object current, final String name) {
-            return "Unexpected " + name + ": " + current + (current instanceof Throwable ?
-                    '\n' + String.join("\n", Arrays.stream(((Throwable) current).getStackTrace())
-                            .map(String::valueOf).toArray(CharSequence[]::new)) : "");
         }
     }
 }
