@@ -778,6 +778,9 @@ final class DefaultDnsClient implements DnsClient {
             }
 
             private void cancelAndTerminate0(Throwable cause) {
+                assertInEventloop();
+                LOGGER.debug("{} subscription for {} will be cancelled and terminated with an error.",
+                        DefaultDnsClient.this, AbstractDnsPublisher.this, cause);
                 try {
                     cancel0();
                 } finally {
