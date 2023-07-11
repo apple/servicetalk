@@ -21,6 +21,7 @@ import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -678,7 +679,7 @@ abstract class RoundRobinLoadBalancerTest {
                         // try to prevent stack overflow
                         ofMillis(30), executorForRetries)));
             } catch (Exception e) {
-                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+                assertThat(e.getCause(), instanceOf(NoActiveHostException.class));
             } finally {
                 executorForRetries.closeAsync().toFuture().get();
             }
@@ -691,7 +692,7 @@ abstract class RoundRobinLoadBalancerTest {
                 unhealthyHostConnectionFactory.advanceTime(testExecutor);
 
                 // Assert still unhealthy
-                assertSelectThrows(instanceOf(NoAvailableHostException.class));
+                assertSelectThrows(instanceOf(NoActiveHostException.class));
             }
         } finally {
             // Shutdown the concurrent validation of unhealthiness.
@@ -739,7 +740,7 @@ abstract class RoundRobinLoadBalancerTest {
         // Assert the next select attempt after resubscribe internal triggers re-subscribe
         testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
-        assertSelectThrows(instanceOf(NoAvailableHostException.class));
+        assertSelectThrows(instanceOf(NoActiveHostException.class));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(3));
 
         // Verify state after re-subscribe
@@ -796,7 +797,7 @@ abstract class RoundRobinLoadBalancerTest {
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
         testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
-        assertSelectThrows(instanceOf(NoAvailableHostException.class));
+        assertSelectThrows(instanceOf(NoActiveHostException.class));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
     }
 

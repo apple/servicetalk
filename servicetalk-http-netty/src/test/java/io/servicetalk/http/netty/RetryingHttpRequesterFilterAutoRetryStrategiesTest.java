@@ -15,9 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -49,6 +51,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.DEFAULT_MAX_TOTAL_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,6 +71,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
             new RetryableConnectException("deliberate exception");
     private static final NoAvailableHostException NO_AVAILABLE_HOST =
             new NoAvailableHostException("deliberate exception");
+    private static final NoActiveHostException NO_ACTIVE_HOST =
+            new NoActiveHostException("deliberate exception");
     private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
             new UnknownHostException("deliberate exception");
 
@@ -240,6 +245,27 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         sdStatus.onComplete();
         verifyRetryResultCompleted();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void noActiveHostException(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
+                .maxTotalRetries(Integer.MAX_VALUE), offloading);
+        lbEvents.onNext(LOAD_BALANCER_READY_EVENT); // LB is ready before subscribing to the response
+        BiIntFunction<Throwable, Completable> retryStrategy =
+                filter.retryStrategy(REQUEST_META_DATA, filter.executionContext());
+        for (int i = 1; i <= DEFAULT_MAX_TOTAL_RETRIES * 2; i++) {
+            Completable retry = retryStrategy.apply(i, NO_ACTIVE_HOST);
+            TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+            toSource(retry).subscribe(subscriber);
+            assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
+            if (i < DEFAULT_MAX_TOTAL_RETRIES) {
+                subscriber.awaitOnComplete();
+            } else {
+                assertThat(subscriber.awaitOnError(), is(NO_ACTIVE_HOST));
+            }
+        }
     }
 
     @ParameterizedTest
