@@ -187,6 +187,10 @@ public final class RetryingHttpRequesterFilter
                 if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
                     ++lbNotReadyCount;
                     final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                    if (onHostsAvailable == null) {
+                        // Exit from the retrying loop if the LB is ready, but we keep getting NoAvailableHostException.
+                        return failed(t);
+                    }
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }
 

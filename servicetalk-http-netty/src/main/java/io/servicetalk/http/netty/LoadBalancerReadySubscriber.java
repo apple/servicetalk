@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -24,7 +25,6 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 
@@ -38,13 +38,18 @@ final class LoadBalancerReadySubscriber extends DelayedCancellable implements Su
 
     /**
      * Get {@link Completable} that will complete when a {@link LoadBalancerReadyEvent} returns {@code true}
-     * from {@link LoadBalancerReadyEvent#isReady()}.
+     * from {@link LoadBalancerReadyEvent#isReady()} or {@code null} if the {@link LoadBalancer} is already ready.
+     * <p>
+     * This can happen if the {@link LoadBalancer} already signaled its {@link LoadBalancerReadyEvent ready event}, but
+     * all hosts become unhealthy later.
+     *
      * @return A {@link Completable} that will complete when a {@link LoadBalancerReadyEvent} returns {@code true}
-     * from {@link LoadBalancerReadyEvent#isReady()}.
+     * from {@link LoadBalancerReadyEvent#isReady()} or {@code null} if the {@link LoadBalancer} is already ready.
      */
-    public Completable onHostsAvailable() {
+    @Nullable
+    Completable onHostsAvailable() {
         Processor onHostsAvailable = this.onHostsAvailable;
-        return onHostsAvailable == null ? completed() : fromSource(onHostsAvailable);
+        return onHostsAvailable == null ? null : fromSource(onHostsAvailable);
     }
 
     @Override

@@ -244,6 +244,18 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
+    void noAvailableHostAfterLbReady(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
+                .maxTotalRetries(Integer.MAX_VALUE), offloading);
+        lbEvents.onNext(LOAD_BALANCER_READY_EVENT); // LB is ready before subscribing to the response
+        Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
+        verifyRetryResultError(NO_AVAILABLE_HOST);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     void maxRetriesAreHonored(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
                 newFilter(new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1), offloading);
