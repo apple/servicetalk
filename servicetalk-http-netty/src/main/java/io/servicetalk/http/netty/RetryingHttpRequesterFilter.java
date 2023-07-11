@@ -188,8 +188,15 @@ public final class RetryingHttpRequesterFilter
                     ++lbNotReadyCount;
                     final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
                     if (onHostsAvailable == null) {
-                        // Exit from the retrying loop if the LB is ready, but we keep getting NoAvailableHostException.
-                        return failed(t);
+                        if (lbNotReadyCount > 1) {
+                            // Exit from the retrying loop if the LB is ready, but we keep getting
+                            // NoAvailableHostException. We do this only for the 2nd attempt to avoid the race between
+                            // request thread failing and LB thread delivering "ready-event".
+                            return failed(t);
+                        } else {
+                            // No need to ambWith "sdStatus" because it's always "completed".
+                            return completed();
+                        }
                     }
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }

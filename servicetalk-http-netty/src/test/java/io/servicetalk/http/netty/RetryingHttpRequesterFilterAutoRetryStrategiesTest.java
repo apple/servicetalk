@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -248,10 +249,19 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
                 .maxTotalRetries(Integer.MAX_VALUE), offloading);
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT); // LB is ready before subscribing to the response
-        Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
-        toSource(retry).subscribe(retrySubscriber);
-        assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
-        verifyRetryResultError(NO_AVAILABLE_HOST);
+        BiIntFunction<Throwable, Completable> retryStrategy =
+                filter.retryStrategy(REQUEST_META_DATA, filter.executionContext());
+        for (int i = 1; i <= 5; i++) {
+            Completable retry = retryStrategy.apply(i, NO_AVAILABLE_HOST);
+            TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+            toSource(retry).subscribe(subscriber);
+            assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
+            if (i == 1) {
+                subscriber.awaitOnComplete();
+            } else {
+                assertThat(subscriber.awaitOnError(), is(NO_AVAILABLE_HOST));
+            }
+        }
     }
 
     @ParameterizedTest
