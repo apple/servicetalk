@@ -78,6 +78,19 @@ public final class SubscriberUtils {
     }
 
     /**
+     * Create a new exception when a subscriber throws when it doesn't return "normally" according to
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Reactive Streams, Rule 2.13</a>.
+     * @param cause The original cause that was thrown.
+     * @return The exception which clarifies the invalid behavior.
+     */
+    public static RuntimeException newExceptionNonNormalReturn(Throwable cause) {
+        return SubscriberReturnNormalException.class.equals(cause.getClass()) ?
+                (SubscriberReturnNormalException) cause :
+                new IllegalStateException("Rule 2.13 states Subscriber methods must return normally. Operators that " +
+                        " track demand or are async may be put into an undefined state.", cause);
+    }
+
+    /**
      * Deliver a terminal complete to a {@link Subscriber} that has not yet had
      * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} called.
      * @param subscriber The {@link PublisherSource.Subscriber} to terminate.
@@ -391,5 +404,11 @@ public final class SubscriberUtils {
                         " forbidden see: " +
                         "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
                         "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7", cause));
+    }
+
+    private static final class SubscriberReturnNormalException extends IllegalStateException {
+        SubscriberReturnNormalException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

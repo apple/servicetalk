@@ -656,7 +656,7 @@ class PublisherBufferTest {
         AtomicInteger counter = new AtomicInteger();
         toSource(defer(() -> from(counter.incrementAndGet()))
                 .whenOnNext(items::add)
-                .retry(false, (i, t) -> i < 3 && t == DELIBERATE_EXCEPTION)
+                .retry(false, (i, t) -> i < 3 && t.getCause() == DELIBERATE_EXCEPTION)
                 .buffer(new TestBufferStrategy(bPublisher, 1)))
                 .subscribe(new Subscriber<Integer>() {
                     @Override
@@ -693,7 +693,7 @@ class PublisherBufferTest {
         assertThat(items, contains(1, 2, 3));
         assertThat(buffers, hasSize(3));
         assertThat(buffers, contains(1, 2, 3));
-        assertThat(terminal.get().cause(), is(DELIBERATE_EXCEPTION));
+        assertThat(terminal.get().cause().getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     private static void verifyCancelled(TestSubscription subscription) {
