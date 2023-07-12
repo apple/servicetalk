@@ -86,8 +86,9 @@ public final class SubscriberUtils {
     public static RuntimeException newExceptionNonNormalReturn(Throwable cause) {
         return SubscriberReturnNormalException.class.equals(cause.getClass()) ?
                 (SubscriberReturnNormalException) cause :
-                new IllegalStateException("Rule 2.13 states Subscriber methods must return normally. Operators that " +
-                        " track demand or are async may be put into an undefined state.", cause);
+                new IllegalStateException("Rule 2.13 states Subscriber methods must return normally (failures via " +
+                        "onError method only). Throwing may put operators that track demand into an undefined state.",
+                        cause);
     }
 
     /**
