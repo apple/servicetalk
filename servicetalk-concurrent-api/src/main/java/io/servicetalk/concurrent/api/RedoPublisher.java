@@ -22,7 +22,7 @@ import io.servicetalk.context.api.ContextMap;
 import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionNonNormalReturn;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionNormalReturn;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -134,7 +134,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         private void handleOnNextException(Throwable cause) {
-            cause = newExceptionNonNormalReturn(cause);
+            cause = newExceptionNormalReturn(cause);
             if (!terminateOnNextException) {
                 throwException(cause);
             } else if (terminated) { // just in case on-next delivered a terminal in re-entry fashion

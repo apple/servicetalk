@@ -224,7 +224,8 @@ class RetryWhenTest {
         final Integer[] signals = new Integer[] {1, 2, 3};
         final AtomicInteger onNextCount = new AtomicInteger();
         subscriber = new TestPublisherSubscriber<>();
-        BiIntFunction<Throwable, Completable> retryFunc = (count, cause) -> cause.getCause() == DELIBERATE_EXCEPTION ?
+        BiIntFunction<Throwable, Completable> retryFunc = (count, cause) ->
+                cause instanceof IllegalStateException && cause.getCause() == DELIBERATE_EXCEPTION ?
                 executor.timer(ofMillis(10)) : Completable.failed(cause);
         toSource(Publisher.from(signals)
                 // First retry function will catch the error from onNext and propagate downstream to the second

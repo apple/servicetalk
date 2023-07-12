@@ -83,12 +83,12 @@ public final class SubscriberUtils {
      * @param cause The original cause that was thrown.
      * @return The exception which clarifies the invalid behavior.
      */
-    public static RuntimeException newExceptionNonNormalReturn(Throwable cause) {
+    public static RuntimeException newExceptionNormalReturn(Throwable cause) {
         return SubscriberReturnNormalException.class.equals(cause.getClass()) ?
                 (SubscriberReturnNormalException) cause :
-                new IllegalStateException("Rule 2.13 states Subscriber methods must return normally (failures via " +
-                        "onError method only). Throwing may put operators that track demand into an undefined state.",
-                        cause);
+                new SubscriberReturnNormalException(
+                        "Rule 2.13 states Subscriber methods must return normally (failures via onError method only)." +
+                        " Throwing may put operators that track demand into an undefined state.", cause);
     }
 
     /**
