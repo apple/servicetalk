@@ -52,7 +52,7 @@
   </Match>
   <Match>
     <Class name="io.servicetalk.concurrent.internal.SubscriberUtils"/>
-    <Method name="newExceptionNonNormalReturn"/>
+    <Method name="newExceptionNormalReturn"/>
     <Bug pattern="BC_UNCONFIRMED_CAST"/>
   </Match>
 </FindBugsFilter>
