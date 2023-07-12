@@ -50,4 +50,9 @@
     <Method name="close"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.internal.SubscriberUtils"/>
+    <Method name="newExceptionNormalReturn"/>
+    <Bug pattern="BC_UNCONFIRMED_CAST"/>
+  </Match>
 </FindBugsFilter>

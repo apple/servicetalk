@@ -49,6 +49,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
@@ -650,13 +651,14 @@ class PublisherBufferTest {
     void originalSourceIsRetriedIfSubscriberThrows() {
         TestPublisher<Accumulator<Integer, Integer>> bPublisher = new TestPublisher<>();
         DelayedSubscription bSubscription = new DelayedSubscription();
-        AtomicReference<TerminalNotification> terminal = new AtomicReference<>();
+        AtomicReference<TerminalNotification> terminalRef = new AtomicReference<>();
         BlockingQueue<Integer> items = new LinkedBlockingDeque<>();
         BlockingQueue<Integer> buffers = new LinkedBlockingDeque<>();
         AtomicInteger counter = new AtomicInteger();
         toSource(defer(() -> from(counter.incrementAndGet()))
                 .whenOnNext(items::add)
-                .retry(false, (i, t) -> i < 3 && t == DELIBERATE_EXCEPTION)
+                .retry(false, (i, t) -> i < 3 &&
+                        (t instanceof IllegalStateException && t.getCause() == DELIBERATE_EXCEPTION))
                 .buffer(new TestBufferStrategy(bPublisher, 1)))
                 .subscribe(new Subscriber<Integer>() {
                     @Override
@@ -674,12 +676,12 @@ class PublisherBufferTest {
 
                     @Override
                     public void onError(Throwable t) {
-                        terminal.set(error(t));
+                        terminalRef.set(error(t));
                     }
 
                     @Override
                     public void onComplete() {
-                        terminal.set(complete());
+                        terminalRef.set(complete());
                     }
                 });
         bPublisher.onNext(new SumAccumulator(bPublisher));  // it will generate a new boundary on each accumulation
@@ -693,7 +695,11 @@ class PublisherBufferTest {
         assertThat(items, contains(1, 2, 3));
         assertThat(buffers, hasSize(3));
         assertThat(buffers, contains(1, 2, 3));
-        assertThat(terminal.get().cause(), is(DELIBERATE_EXCEPTION));
+        TerminalNotification terminal = terminalRef.get();
+        assertThat(terminal, notNullValue());
+        Throwable cause = terminal.cause();
+        assertThat(cause, instanceOf(IllegalStateException.class));
+        assertThat(cause.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     private static void verifyCancelled(TestSubscription subscription) {
