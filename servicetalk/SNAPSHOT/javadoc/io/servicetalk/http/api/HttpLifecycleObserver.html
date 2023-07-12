@@ -159,7 +159,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onNewExchange()">
 <h3>onNewExchange</h3>
 <div class="member-signature"><span class="return-type"><a href="HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpExchangeObserver</a></span>&nbsp;<span class="element-name">onNewExchange</span>()</div>
-<div class="block">Callback when a new HTTP exchange starts.</div>
+<div class="block">Callback when a new HTTP exchange starts.
+ <p>
+ Depending on the order in which the observer is applied, this callback can be invoked either for every retry
+ attempt (if an observer is added after retrying filter) or only once per exchange.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>an <a href="HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver.HttpExchangeObserver</code></a> that provides visibility into exchange events</dd>

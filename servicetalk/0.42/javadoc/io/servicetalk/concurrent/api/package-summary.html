@@ -246,41 +246,54 @@ loadScripts(document, 'script');</script>
 <div class="block">A set of strategies to use for retrying with <a href="Publisher.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Publisher.retryWhen(BiIntFunction)</code></a>,
  <a href="Single.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Single.retryWhen(BiIntFunction)</code></a>, and <a href="Completable.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Completable.retryWhen(BiIntFunction)</code></a> or in general.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanLifetimeMapper</a>&lt;T,<wbr>R&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Provides the ability to transform (aka map) signals emitted via
- the <a href="Publisher.html#scanWithLifetime(java.util.function.Supplier)"><code>Publisher.scanWithLifetime(Supplier)</code></a> operator, as well as the ability to cleanup state
- via <a href="ScanWithLifetimeMapper.html#afterFinally()"><code>ScanWithLifetimeMapper.afterFinally()</code></a>.</div>
+ the <a href="Publisher.html#scanWithLifetimeMapper(java.util.function.Supplier)"><code>Publisher.scanWithLifetimeMapper(Supplier)</code></a> operator, as well as the ability to cleanup state
+ via <a href="ScanLifetimeMapper.html#afterFinally()"><code>ScanLifetimeMapper.afterFinally()</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a>&lt;T,<wbr>R&gt;</div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
-<div class="block">Provides the ability to transform (aka map) signals emitted via the <a href="Publisher.html#scanWith(java.util.function.Supplier)"><code>Publisher.scanWith(Supplier)</code></a> operator.</div>
+<div class="block">Provides the ability to transform (aka map) signals emitted via the <a href="Publisher.html#scanWithMapper(java.util.function.Supplier)"><code>Publisher.scanWithMapper(Supplier)</code></a>
+ operator.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScanMapper.MappedTerminal.html" title="interface in io.servicetalk.concurrent.api">ScanMapper.MappedTerminal</a>&lt;R&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">Result of a mapping operation of a terminal signal.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">Use <a href="ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanLifetimeMapper</code></a>.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">Use <a href="ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An asynchronous computation that either completes with success giving the result or completes with an error.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;T,<wbr>R&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An operator contract for a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A contract that provides discrete callbacks for various ways in which a <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> can
  terminate.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SourceAdapters.html" title="class in io.servicetalk.concurrent.api">SourceAdapters</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SourceAdapters.html" title="class in io.servicetalk.concurrent.api">SourceAdapters</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A set of adapter methods to convert an asynchronous source in this module to a corresponding source in
  <a href="../package-summary.html"><code>io.servicetalk.concurrent</code></a> module.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A contract that provides discrete callbacks for various ways in which a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> or a
  <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> can terminate.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TriConsumer.html" title="interface in io.servicetalk.concurrent.api">TriConsumer</a>&lt;X,<wbr>Y,<wbr>Z&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TriConsumer.html" title="interface in io.servicetalk.concurrent.api">TriConsumer</a>&lt;X,<wbr>Y,<wbr>Z&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Represents an operation that accepts three input arguments and returns no
  result.</div>
 </div>

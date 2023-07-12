@@ -798,8 +798,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Invokes the <code>onCancel</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument <strong>after</strong> <a href="io/servicetalk/concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> is
  called for Subscriptions of the returned <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html#afterFinally()" class="member-name-link">afterFinally()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanLifetimeMapper</a></dt>
+<dd>
+<div class="block">Invoked after a terminal signal <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> or
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> or <a href="io/servicetalk/concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html#afterFinally()" class="member-name-link">afterFinally()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked after a terminal signal <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> or
  <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> or <a href="io/servicetalk/concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a>.</div>
 </dd>
@@ -12192,24 +12198,44 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Maps the result of this single to a different type.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.html#mapOnComplete()" class="member-name-link">mapOnComplete()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a></dt>
+<dd>
+<div class="block">Invoked when a <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> signal is received and can map the current state into an
+ object of type <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a> which will be emitted downstream as <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>, followed by
+ a terminal signal.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithMapper.html#mapOnComplete()" class="member-name-link">mapOnComplete()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked when a <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> signal is received, and maps the current state into an object of
  type <a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanWithMapper</code></a> which will be emitted downstream as <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>, followed by
  <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.html#mapOnError(java.lang.Throwable)" class="member-name-link">mapOnError(Throwable)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a></dt>
+<dd>
+<div class="block">Invoked when a <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> signal is received and can map the current state into an
+ object of type <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a> which will be emitted downstream as <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>, followed by
+ a terminal signal.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithMapper.html#mapOnError(java.lang.Throwable)" class="member-name-link">mapOnError(Throwable)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked when a <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> signal is received, and maps the current state into an
  object of type <a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanWithMapper</code></a> which will be emitted downstream as <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>, followed by
  <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.html#mapOnNext(T)" class="member-name-link">mapOnNext(T)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a></dt>
+<dd>
+<div class="block">Invoked on each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal and maps from type <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a> to type <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithMapper.html#mapOnNext(T)" class="member-name-link">mapOnNext(T)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked on each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal and maps from type <a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanWithMapper</code></a> to type <a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanWithMapper</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithMapper.html#mapTerminal()" class="member-name-link">mapTerminal()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked when a terminal signal is received and determines if an additional <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a>
  signal will be emitted downstream.</div>
 </dd>
@@ -12255,6 +12281,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/EmptyBuffer.html#maxCapacity()" class="member-name-link">maxCapacity()</a> - Method in class io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/EmptyBuffer.html" title="class in io.servicetalk.buffer.api">EmptyBuffer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/DelegatingSslConfig.html#maxCertificateListBytes()" class="member-name-link">maxCertificateListBytes()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.html#maxCertificateListBytes()" class="member-name-link">maxCertificateListBytes()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></dt>
+<dd>
+<div class="block">Get the preferred maximum allowed size of the certificate chain in bytes.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html#maxCertificateListBytes(int)" class="member-name-link">maxCertificateListBytes(int)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></dt>
+<dd>
+<div class="block">Set the preferred maximum allowed size of the certificate chain in bytes.</div>
+</dd>
 <dt><a href="io/servicetalk/encoding/netty/ZipCompressionBuilder.html#maxChunkSize(int)" class="member-name-link">maxChunkSize(int)</a> - Method in class io.servicetalk.encoding.netty.<a href="io/servicetalk/encoding/netty/ZipCompressionBuilder.html" title="class in io.servicetalk.encoding.netty">ZipCompressionBuilder</a></dt>
 <dd>
 <div class="block">Set the max allowed chunk size to inflate during decoding.</div>
@@ -13281,6 +13317,11 @@ loadScripts(document, 'script');</script>
  <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.9">Reactive Streams,
  Rule 3.9</a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/internal/SubscriberUtils.html#newExceptionNormalReturn(java.lang.Throwable)" class="member-name-link">newExceptionNormalReturn(Throwable)</a> - Static method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/SubscriberUtils.html" title="class in io.servicetalk.concurrent.internal">SubscriberUtils</a></dt>
+<dd>
+<div class="block">Create a new exception when a subscriber throws when it doesn't return "normally" according to
+ <a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Reactive Streams, Rule 2.13</a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Executors.html#newFixedSizeExecutor(int)" class="member-name-link">newFixedSizeExecutor(int)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Executors.html" title="class in io.servicetalk.concurrent.api">Executors</a></dt>
 <dd>
 <div class="block">Creates a new <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that has a fixed number of threads as specified by the <code>size</code>.</div>
@@ -13669,6 +13710,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/HttpHeaderValues.html#NO_TRANSFORM" class="member-name-link">NO_TRANSFORM</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderValues.html" title="class in io.servicetalk.http.api">HttpHeaderValues</a></dt>
 <dd>
 <div class="block"><code>"no-transform"</code></div>
+</dd>
+<dt><a href="io/servicetalk/client/api/NoActiveHostException.html" class="type-name-link" title="class in io.servicetalk.client.api">NoActiveHostException</a> - Exception in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
+<dd>
+<div class="block">Thrown when no host is active to establish a new connection.</div>
+</dd>
+<dt><a href="io/servicetalk/client/api/NoActiveHostException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">NoActiveHostException(String)</a> - Constructor for exception io.servicetalk.client.api.<a href="io/servicetalk/client/api/NoActiveHostException.html" title="class in io.servicetalk.client.api">NoActiveHostException</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/NoAvailableHostException.html" class="type-name-link" title="class in io.servicetalk.client.api">NoAvailableHostException</a> - Exception in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
 <dd>
@@ -14516,6 +14565,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopDataObserver.html#onNewWrite()" class="member-name-link">onNewWrite()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopDataObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopDataObserver</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#onNext()" class="member-name-link">onNext()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html" title="interface in io.servicetalk.concurrent.api">ScanMapper.MappedTerminal</a></dt>
+<dd>
+<div class="block">Get the signal to be delivered to <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> if <a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#onNextValid()"><code>ScanMapper.MappedTerminal.onNextValid()</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html#onNext(java.lang.Object)" class="member-name-link">onNext(Object)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/CancelImmediatelySubscriber.html" title="class in io.servicetalk.concurrent.internal">CancelImmediatelySubscriber</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html#onNext(T)" class="member-name-link">onNext(T)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ConcurrentTerminalSubscriber.html" title="class in io.servicetalk.concurrent.internal">ConcurrentTerminalSubscriber</a></dt>
@@ -14532,6 +14585,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/test/internal/TestPublisherSubscriber.html#onNext(T)" class="member-name-link">onNext(T)</a> - Method in class io.servicetalk.concurrent.test.internal.<a href="io/servicetalk/concurrent/test/internal/TestPublisherSubscriber.html" title="class in io.servicetalk.concurrent.test.internal">TestPublisherSubscriber</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#onNextValid()" class="member-name-link">onNextValid()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html" title="interface in io.servicetalk.concurrent.api">ScanMapper.MappedTerminal</a></dt>
+<dd>
+<div class="block">Determine if <a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#onNext()"><code>ScanMapper.MappedTerminal.onNext()</code></a> is valid and should be propagated downstream.</div>
+</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html#onRequest(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">onRequest(HttpRequestMetaData)</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcExchangeObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onRequest(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">onRequest(HttpRequestMetaData)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpExchangeObserver</a></dt>
@@ -17247,6 +17304,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Retrieves the specific <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Method.html" title="class or interface in java.lang.reflect" class="external-link"><code>Method</code></a> from the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link"><code>Class</code></a> without checked exception.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#retry(boolean,io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry(boolean, BiIntPredicate&lt;Throwable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Re-subscribes to this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the passed <a href="io/servicetalk/concurrent/api/BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
+ <code>true</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#retry(io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry(BiIntPredicate&lt;Throwable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
 <div class="block">Re-subscribes to this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> if an error is emitted and the passed <a href="io/servicetalk/concurrent/api/BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
@@ -17351,6 +17413,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A set of strategies to use for retrying with <a href="io/servicetalk/concurrent/api/Publisher.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Publisher.retryWhen(BiIntFunction)</code></a>,
  <a href="io/servicetalk/concurrent/api/Single.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Single.retryWhen(BiIntFunction)</code></a>, and <a href="io/servicetalk/concurrent/api/Completable.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Completable.retryWhen(BiIntFunction)</code></a> or in general.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#retryWhen(boolean,io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen(boolean, BiIntFunction&lt;Throwable, ? extends Completable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Re-subscribes to this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
+ supplied <a href="io/servicetalk/concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen(BiIntFunction&lt;Throwable, ? extends Completable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
@@ -17554,10 +17621,26 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">New instance.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ScanLifetimeMapper</a>&lt;<a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" title="type parameter in ScanLifetimeMapper">T</a>,<wbr><a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" title="type parameter in ScanLifetimeMapper">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Provides the ability to transform (aka map) signals emitted via
+ the <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetimeMapper(java.util.function.Supplier)"><code>Publisher.scanWithLifetimeMapper(Supplier)</code></a> operator, as well as the ability to cleanup state
+ via <a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html#afterFinally()"><code>ScanLifetimeMapper.afterFinally()</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ScanMapper</a>&lt;<a href="io/servicetalk/concurrent/api/ScanMapper.html" title="type parameter in ScanMapper">T</a>,<wbr><a href="io/servicetalk/concurrent/api/ScanMapper.html" title="type parameter in ScanMapper">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Provides the ability to transform (aka map) signals emitted via the <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithMapper(java.util.function.Supplier)"><code>Publisher.scanWithMapper(Supplier)</code></a>
+ operator.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ScanMapper.MappedTerminal</a>&lt;<a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html" title="type parameter in ScanMapper.MappedTerminal">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Result of a mapping operation of a terminal signal.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#scanWith(java.util.function.Supplier)" class="member-name-link">scanWith(Supplier&lt;? extends ScanWithMapper&lt;? super T, ? extends R&gt;&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block">Apply a function to each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
- optionally concat one <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithMapper(java.util.function.Supplier)"><code>Publisher.scanWithMapper(Supplier)</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#scanWith(java.util.function.Supplier,java.util.function.BiFunction)" class="member-name-link">scanWith(Supplier&lt;R&gt;, BiFunction&lt;R, ? super T, R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
@@ -17566,18 +17649,31 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetime(java.util.function.Supplier)" class="member-name-link">scanWithLifetime(Supplier&lt;? extends ScanWithLifetimeMapper&lt;? super T, ? extends R&gt;&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetimeMapper(java.util.function.Supplier)"><code>Publisher.scanWithLifetimeMapper(Supplier)</code></a>.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetimeMapper(java.util.function.Supplier)" class="member-name-link">scanWithLifetimeMapper(Supplier&lt;? extends ScanLifetimeMapper&lt;? super T, ? extends R&gt;&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
 <div class="block">Apply a function to each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
  optionally concat one <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;<a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html" title="type parameter in ScanWithLifetimeMapper">T</a>,<wbr><a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html" title="type parameter in ScanWithLifetimeMapper">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
-<div class="block">Provides the ability to transform (aka map) signals emitted via
- the <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetime(java.util.function.Supplier)"><code>Publisher.scanWithLifetime(Supplier)</code></a> operator, as well as the ability to cleanup state
- via <a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html#afterFinally()"><code>ScanWithLifetimeMapper.afterFinally()</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanLifetimeMapper</code></a>.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#scanWithMapper(java.util.function.Supplier)" class="member-name-link">scanWithMapper(Supplier&lt;? extends ScanMapper&lt;? super T, ? extends R&gt;&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Apply a function to each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
+ optionally concat one <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/ScanWithMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;<a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="type parameter in ScanWithMapper">T</a>,<wbr><a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="type parameter in ScanWithMapper">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
-<div class="block">Provides the ability to transform (aka map) signals emitted via the <a href="io/servicetalk/concurrent/api/Publisher.html#scanWith(java.util.function.Supplier)"><code>Publisher.scanWith(Supplier)</code></a> operator.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/DelegatingExecutor.html#schedule(java.lang.Runnable,long,java.util.concurrent.TimeUnit)" class="member-name-link">schedule(Runnable, long, TimeUnit)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/DelegatingExecutor.html" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a></dt>
 <dd>&nbsp;</dd>
@@ -19823,6 +19919,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html#temporaryRedirect()" class="member-name-link">temporaryRedirect()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#TEMPORARY_REDIRECT"><code>HttpResponseStatus.TEMPORARY_REDIRECT</code></a> response.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#terminal()" class="member-name-link">terminal()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html" title="interface in io.servicetalk.concurrent.api">ScanMapper.MappedTerminal</a></dt>
+<dd>
+<div class="block">The terminal event to propagate.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/TerminalNotification.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">TerminalNotification</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>

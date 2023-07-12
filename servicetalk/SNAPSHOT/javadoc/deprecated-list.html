@@ -123,6 +123,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#groupBy(java.util.function.Function,int)"><code>Publisher.groupBy(Function, int)</code></a> instead.</div>
 </div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.ScanWithLifetimeMapper</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanLifetimeMapper</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.ScanWithMapper</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a>.</div>
+</div>
 <div class="col-summary-item-name even-row-color"><a href="io/servicetalk/encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">io.servicetalk.encoding.api.ContentCodec</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a> and <a href="io/servicetalk/encoding/api/BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a>.</div>
@@ -550,6 +558,14 @@ loadScripts(document, 'script');</script>
 <div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#multicastToExactly(int,int)">io.servicetalk.concurrent.api.Publisher.multicastToExactly<wbr>(int, int)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,int)"><code>Publisher.multicast(int, int)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#scanWith(java.util.function.Supplier)">io.servicetalk.concurrent.api.Publisher.scanWith<wbr>(Supplier&lt;? extends ScanWithMapper&lt;? super T, ? extends R&gt;&gt;)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithMapper(java.util.function.Supplier)"><code>Publisher.scanWithMapper(Supplier)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetime(java.util.function.Supplier)">io.servicetalk.concurrent.api.Publisher.scanWithLifetime<wbr>(Supplier&lt;? extends ScanWithLifetimeMapper&lt;? super T, ? extends R&gt;&gt;)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#scanWithLifetimeMapper(java.util.function.Supplier)"><code>Publisher.scanWithLifetimeMapper(Supplier)</code></a>.</div>
 </div>
 <div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/Single.html#concat(io.servicetalk.concurrent.api.Publisher,boolean)">io.servicetalk.concurrent.api.Single.concat<wbr>(Publisher&lt;? extends T&gt;, boolean)</a></div>
 <div class="col-last odd-row-color">

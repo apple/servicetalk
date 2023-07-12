@@ -150,7 +150,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="onConnectionSelected(io.servicetalk.transport.api.ConnectionInfo)">
 <h3>onConnectionSelected</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onConnectionSelected</span><wbr><span class="parameters">(<a href="../../transport/api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</span></div>
-<div class="block">Callback when a connection is selected for this exchange execution.</div>
+<div class="block">Callback when a connection is selected for this exchange execution.
+ <p>
+ This callback may be invoked for every retry attempt.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>info</code> - <a href="../../transport/api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> of the selected connection</dd>

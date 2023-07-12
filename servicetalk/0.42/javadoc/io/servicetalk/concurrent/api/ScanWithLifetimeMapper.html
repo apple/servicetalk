@@ -82,8 +82,12 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;T,<wbr>R&gt;</code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">ScanWithLifetimeMapper&lt;T,<wbr>R&gt;</span><span class="extends-implements">
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public interface </span><span class="element-name type-name-label">ScanWithLifetimeMapper&lt;T,<wbr>R&gt;</span><span class="extends-implements">
 extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;T,<wbr>R&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanLifetimeMapper</code></a>.</div>
+</div>
 <div class="block">Provides the ability to transform (aka map) signals emitted via
  the <a href="Publisher.html#scanWithLifetime(java.util.function.Supplier)"><code>Publisher.scanWithLifetime(Supplier)</code></a> operator, as well as the ability to cleanup state
  via <a href="#afterFinally()"><code>afterFinally()</code></a>.</div>
@@ -95,15 +99,16 @@ extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurr
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#afterFinally()" class="member-name-link">afterFinally</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#afterFinally()" class="member-name-link">afterFinally</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked after a terminal signal <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> or
  <a href="../PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> or <a href="../Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a>.</div>
 </div>
@@ -128,6 +133,7 @@ extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurr
 <section class="detail" id="afterFinally()">
 <h3>afterFinally</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">afterFinally</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invoked after a terminal signal <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> or
  <a href="../PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> or <a href="../Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a>.
  No further interaction will occur with the <a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanWithLifetimeMapper</code></a> to prevent use-after-free

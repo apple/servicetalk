@@ -842,10 +842,24 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntFunction.html" title="class or interface in java.util.function" class="external-link"><code>IntFunction</code></a> completes successfully.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retry(io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry</a><wbr>(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retry(boolean,io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry</a><wbr>(boolean&nbsp;terminateOnNextException,
+ <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
  <code>true</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retry(io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry</a><wbr>(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
+ <code>true</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryWhen(boolean,io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen</a><wbr>(boolean&nbsp;terminateOnNextException,
+ <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
+ supplied <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen</a><wbr>(<a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</code></div>
@@ -853,11 +867,12 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
  supplied <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#scanWith(java.util.function.Supplier)" class="member-name-link">scanWith</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
- optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#scanWith(java.util.function.Supplier)" class="member-name-link">scanWith</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#scanWithMapper(java.util.function.Supplier)"><code>scanWithMapper(Supplier)</code></a>.</div>
+</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#scanWith(java.util.function.Supplier,java.util.function.BiFunction)" class="member-name-link">scanWith</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;R&gt;&nbsp;initial,
@@ -866,8 +881,21 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <div class="block">Apply a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> and an
  accumulated state.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#scanWithLifetime(java.util.function.Supplier)" class="member-name-link">scanWithLifetime</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#scanWithLifetimeMapper(java.util.function.Supplier)"><code>scanWithLifetimeMapper(Supplier)</code></a>.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#scanWithLifetimeMapper(java.util.function.Supplier)" class="member-name-link">scanWithLifetimeMapper</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
+ optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#scanWithLifetime(java.util.function.Supplier)" class="member-name-link">scanWithLifetime</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#scanWithMapper(java.util.function.Supplier)" class="member-name-link">scanWithMapper</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
  optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.</div>
@@ -1383,7 +1411,11 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <li>
 <section class="detail" id="scanWith(java.util.function.Supplier)">
 <h3>scanWith</h3>
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWith</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWith</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#scanWithMapper(java.util.function.Supplier)"><code>scanWithMapper(Supplier)</code></a>.</div>
+</div>
 <div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
  optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.
  <p>
@@ -1425,9 +1457,63 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 </section>
 </li>
 <li>
+<section class="detail" id="scanWithMapper(java.util.function.Supplier)">
+<h3>scanWithMapper</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWithMapper</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanMapper.html" title="interface in io.servicetalk.concurrent.api">ScanMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
+ optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.
+ <p>
+ This method provides a data transformation in sequential programming similar to:
+ <pre><code>
+     List&lt;R&gt; results = ...;
+     ScanWithLifetimeMapperExt&lt;T, R&gt; mapper = mapperSupplier.get();
+     MappedTerminal&lt;R&gt; mapped = null;
+     try {
+       for (T t : resultOfThisPublisher()) {
+         results.add(mapper.mapOnNext(t));
+       }
+     } catch (Throwable cause) {
+       mapped = mapper.mapOnError(cause);
+       if (mapped == null) {
+         throw cause;
+       }
+     }
+     if (mapped == null) {
+       mapped = mapper.mapOnComplete();
+     }
+     if (mapped.onNextValid()) {
+       results.add(mapped.onNext());
+     }
+     if (mapped.terminal() != null) {
+       throw mapped.terminal();
+     }
+     return results;
+ </code></pre></div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>R</code> - Type of the items emitted by the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>mapperSupplier</code> - Invoked on each <a href="../PublisherSource.html#subscribe(io.servicetalk.concurrent.PublisherSource.Subscriber)"><code>PublisherSource.subscribe(Subscriber)</code></a> and maintains any necessary
+ state for the mapping/accumulation for each <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that transforms elements emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> into a different type.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="https://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="scanWithLifetime(java.util.function.Supplier)">
 <h3>scanWithLifetime</h3>
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWithLifetime</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWithLifetime</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanWithLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanWithLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#scanWithLifetimeMapper(java.util.function.Supplier)"><code>scanWithLifetimeMapper(Supplier)</code></a>.</div>
+</div>
 <div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
  optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.
  Additionally the <a href="ScanWithLifetimeMapper.html#afterFinally()"><code>ScanWithLifetimeMapper.afterFinally()</code></a> method will be invoked on terminal or cancel
@@ -1454,6 +1540,64 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
          if (mapTerminal.test(state)) {
            results.add(mapper.mapOnComplete());
          }
+     } finally {
+       mapper.afterFinally();
+     }
+     return results;
+ </code></pre></div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>R</code> - Type of the items emitted by the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>mapperSupplier</code> - Invoked on each <a href="../PublisherSource.html#subscribe(io.servicetalk.concurrent.PublisherSource.Subscriber)"><code>PublisherSource.subscribe(Subscriber)</code></a> and maintains any necessary
+ state for the mapping/accumulation for each <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that transforms elements emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> into a different type.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="https://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="scanWithLifetimeMapper(java.util.function.Supplier)">
+<h3>scanWithLifetimeMapper</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="type-parameters">&lt;R&gt;</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</span>&nbsp;<span class="element-name">scanWithLifetimeMapper</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="ScanLifetimeMapper.html" title="interface in io.servicetalk.concurrent.api">ScanLifetimeMapper</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends R&gt;&gt;&nbsp;mapperSupplier)</span></div>
+<div class="block">Apply a function to each <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as well as
+ optionally concat one <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signal before the terminal signal is emitted downstream.
+ Additionally the <a href="ScanLifetimeMapper.html#afterFinally()"><code>ScanLifetimeMapper.afterFinally()</code></a> method will be invoked on terminal or cancel
+ signals which enables cleanup of state (if required). This provides a similar lifetime management as
+ <a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api"><code>TerminalSignalConsumer</code></a>.
+
+ <p>
+ This method provides a data transformation in sequential programming similar to:
+ <pre><code>
+     List&lt;R&gt; results = ...;
+     ScanWithLifetimeMapperExt&lt;T, R&gt; mapper = mapperSupplier.get();
+     try {
+       MappedTerminal&lt;R&gt; mapped = null;
+       try {
+         for (T t : resultOfThisPublisher()) {
+           results.add(mapper.mapOnNext(t));
+         }
+       } catch (Throwable cause) {
+         mapped = mapper.mapOnError(cause);
+         if (mapped == null) {
+           throw cause;
+         }
+       }
+       if (mapped == null) {
+         mapped = mapper.mapOnComplete();
+       }
+       if (mapped.onNextValid()) {
+         results.add(mapped.onNext());
+       }
+       if (mapped.terminal() != null) {
+          throw mapped.terminal();
+       }
      } finally {
        mapper.afterFinally();
      }
@@ -3848,8 +3992,69 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>shouldRetry</code> - <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> that given the retry count and the most recent <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>
- emitted from this
- <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> determines if the operation should be retried.</dd>
+ emitted from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> determines if the operation should be retried.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that emits all items from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> and re-subscribes if an error is
+ emitted if the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returned <code>true</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
+<li><a href="#retry(boolean,io.servicetalk.concurrent.api.BiIntPredicate)"><code>retry(boolean, BiIntPredicate)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="retry(boolean,io.servicetalk.concurrent.api.BiIntPredicate)">
+<h3>retry</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">retry</span><wbr><span class="parameters">(boolean&nbsp;terminateOnNextException,
+ <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</span></div>
+<div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
+ <code>true</code>.
+ <pre>
+ This method may result in a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/StackOverflowError.html" title="class or interface in java.lang" class="external-link"><code>StackOverflowError</code></a> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
+ This method provides a means to retry an operation under certain failure conditions and in sequential programming
+ is similar to:
+ <pre><code>
+     public List&lt;T&gt; execute() {
+         List&lt;T&gt; results = ...;
+         return execute(0, results);
+     }
+
+     private List&lt;T&gt; execute(int attempts, List&lt;T&gt; results) {
+         try {
+             Iterator&lt;T&gt; itr = resultOfThisPublisher();
+             while (itr.hasNext()) {
+                 T t = itr.next(); // Any iteration with the Iterator may throw
+                 results.add(t);
+             }
+             return results;
+         } catch (Throwable cause) {
+             if (!terminateOnNextException &amp;&amp; shouldRetry.apply(attempts + 1, cause)) {
+                 return execute(attempts + 1, results);
+             } else {
+                 throw cause;
+             }
+         }
+     }
+ </code></pre></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>terminateOnNextException</code> - <ul>
+     <li><code>true</code> means that exceptions thrown from downstream <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> will be
+     caught, cancel the <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>, propagate a <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> downstream, and
+     no retry will be attempted.</li>
+     <li><code>false</code> means that exceptions thrown from downstream <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> will NOT
+     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     isn't the last in the chain.</li>
+ </ul></dd>
+<dd><code>shouldRetry</code> - <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> that given the retry count and the most recent <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>
+ emitted from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> determines if the operation should be retried.</dd>
 <dt>Returns:</dt>
 <dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that emits all items from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> and re-subscribes if an error is
  emitted if the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returned <code>true</code>.</dd>
@@ -3902,6 +4107,75 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
  </code></pre></div>
 <dl class="notes">
 <dt>Parameters:</dt>
+<dd><code>retryWhen</code> - <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> that given the retry count and the most recent <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> emitted
+ from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>. If this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, that error
+ is emitted from the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>, otherwise, original <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is re-subscribed when this
+ <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> completes.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that emits all items from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> and re-subscribes if an error is
+ emitted and <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
+<li><a href="#retryWhen(boolean,io.servicetalk.concurrent.api.BiIntFunction)"><code>retryWhen(boolean, BiIntFunction)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="retryWhen(boolean,io.servicetalk.concurrent.api.BiIntFunction)">
+<h3>retryWhen</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">retryWhen</span><wbr><span class="parameters">(boolean&nbsp;terminateOnNextException,
+ <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</span></div>
+<div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
+ supplied <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully. If the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, the
+ returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> terminates with that error.
+ <pre>
+ This method may result in a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/StackOverflowError.html" title="class or interface in java.lang" class="external-link"><code>StackOverflowError</code></a> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
+ This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+ and in sequential programming is similar to:
+ <pre><code>
+     public List&lt;T&gt; execute() {
+         List&lt;T&gt; results = ...;
+         return execute(0, results);
+     }
+
+     private List&lt;T&gt; execute(int attempts, List&lt;T&gt; results) {
+         try {
+             Iterator&lt;T&gt; itr = resultOfThisPublisher();
+             while (itr.hasNext()) {
+                 T t = itr.next(); // Any iteration with the Iterator may throw
+                 results.add(t);
+             }
+             return results;
+         } catch (Throwable cause) {
+             if (terminateOnNextException) {
+               throw cause;
+             }
+             try {
+                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+                 execute(attempts + 1, results);
+             } catch (Throwable ignored) {
+                 throw cause;
+             }
+         }
+     }
+ </code></pre></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>terminateOnNextException</code> - <ul>
+     <li><code>true</code> means that exceptions thrown from downstream <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> will be
+     caught, cancel the <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>, propagate a <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> downstream, and
+     no retry will be attempted.</li>
+     <li><code>false</code> means that exceptions thrown from downstream <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> will NOT
+     be caught and will propagate upstream. May lead to incorrect demand accounting and "hangs" if this operator
+     isn't the last in the chain.</li>
+ </ul></dd>
 <dd><code>retryWhen</code> - <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> that given the retry count and the most recent <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> emitted
  from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>. If this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, that error
  is emitted from the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>, otherwise, original <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is re-subscribed when this
