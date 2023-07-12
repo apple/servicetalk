@@ -39,6 +39,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
 
     // FIXME: 0.43 - make DEFAULT_HANDSHAKE_TIMEOUT constant private
     static final Duration DEFAULT_HANDSHAKE_TIMEOUT = ofSeconds(10);    // same as default in Netty SslHandler
+    private static final int DEFAULT_MAX_CERTIFICATE_LIST_BYTES = 32 * 1024;    // 32Kb
 
     @Nullable
     private TrustManagerFactory trustManagerFactory;
@@ -60,7 +61,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private List<String> ciphers;
     private long sessionCacheSize;
     private long sessionTimeout;
-    private int maxCertificateListBytes;
+    private int maxCertificateListBytes = DEFAULT_MAX_CERTIFICATE_LIST_BYTES;
     @Nullable
     private SslProvider provider;
     @Nullable
