@@ -85,7 +85,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
-    private static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
+    static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
             new RetryingHttpRequesterFilter(true, false, false, 1, null,
                     (__, ___) -> NO_RETRIES);

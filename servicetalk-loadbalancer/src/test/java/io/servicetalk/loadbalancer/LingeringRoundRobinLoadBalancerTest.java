@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionRejectedException;
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -223,7 +224,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         final Predicate<TestLoadBalancedConnection> createNewConnection = alwaysNewConnectionFilter();
         Exception e = assertThrows(ExecutionException.class, () ->
                 lb.selectConnection(createNewConnection, null).toFuture().get());
-        assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+        assertThat(e.getCause(), instanceOf(NoActiveHostException.class));
 
         // When the host becomes available again, new connections can be created
         sendServiceDiscoveryEvents(upEvent("address-1"));

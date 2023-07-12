@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
@@ -554,7 +555,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     subscribeToEvents(true);
                 }
             }
-            return failed(StacklessNoAvailableHostException.newInstance("Failed to pick an active host for " +
+            return failed(StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                             targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                     RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
@@ -1099,6 +1100,24 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
+        }
+    }
+
+    private static final class StacklessNoActiveHostException extends NoActiveHostException {
+
+        private static final long serialVersionUID = 7500474499335155869L;
+
+        private StacklessNoActiveHostException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+
+        public static StacklessNoActiveHostException newInstance(String message, Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessNoActiveHostException(message), clazz, method);
         }
     }
 
