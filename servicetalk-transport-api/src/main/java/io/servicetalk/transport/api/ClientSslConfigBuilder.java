@@ -76,7 +76,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
 
     /**
      * Set the algorithm to use for hostname verification to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * <a href="https://tools.ietf.org/html/rfc2818#section-3.1">server identity</a>.
      *
      * @param algorithm The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
