@@ -2151,7 +2151,7 @@ public abstract class Publisher<T> {
      * @see #timeoutDemand(Duration, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeoutDemand(Duration duration) {
-        return timeout(duration, global());
+        return timeoutDemand(duration, global());
     }
 
     /**

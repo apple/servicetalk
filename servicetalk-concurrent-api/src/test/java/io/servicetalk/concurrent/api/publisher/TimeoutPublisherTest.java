@@ -58,6 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -96,9 +97,13 @@ class TimeoutPublisherTest {
     @RegisterExtension
     static final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
 
-    private final TestPublisher<Integer> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
+    private final TestPublisher<Integer> publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe()
+            .build(sub -> {
+                sub.onSubscribe(subscription);
+                return sub;
+            });
     private TestExecutor testExecutor;
 
     @BeforeEach
@@ -148,7 +153,6 @@ class TimeoutPublisherTest {
                     }
                 })
         ).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
 
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscription.isCancelled());
@@ -391,6 +395,24 @@ class TimeoutPublisherTest {
         } finally {
             executor.closeAsync().subscribe();
         }
+    }
+
+    @Test
+    void timeoutDemandDefaultExecutor() throws InterruptedException {
+        final int millis = 300;
+        toSource(publisher.timeoutDemand(ofMillis(millis)))
+                .subscribe(subscriber);
+
+        subscriber.awaitSubscription().request(1);
+        subscription.awaitRequestN(1);
+
+        // Wait until the expiration time expires to verify demand is being timed out, not onNext.
+        Thread.sleep(millis * 2);
+        publisher.onNext(1);
+
+        assertThat(subscriber.takeOnNext(), equalTo(1));
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
+        subscription.awaitCancelled();
     }
 
     private void init(TimerBehaviorParam params) {
