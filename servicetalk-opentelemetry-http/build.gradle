@@ -38,7 +38,7 @@ dependencies {
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing:$opentelemetryVersion"
   testImplementation "io.opentelemetry.instrumentation:opentelemetry-log4j-2.13.2:$opentelemetryInstrumentationVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.assertj:assertj-core:$assertJCore"
+  testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
   testImplementation "org.slf4j:slf4j-api"
