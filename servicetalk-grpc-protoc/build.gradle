@@ -103,16 +103,11 @@ protobuf {
       }
     }
   }
-  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
 
 afterEvaluate {
   // break the circular dependency (compileJava->generateProto->buildExecutable->compileJava).
   generateProto.enabled = false
-}
-
-clean {
-  delete protobuf.generatedFilesBaseDir
 }
 
 task testJavadoc(type: Javadoc) {

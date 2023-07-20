@@ -71,7 +71,3 @@ protobuf {
     artifact = "com.google.protobuf:protoc:$protobufVersion"
   }
 }
-
-clean {
-  delete protobuf.generatedFilesBaseDir
-}

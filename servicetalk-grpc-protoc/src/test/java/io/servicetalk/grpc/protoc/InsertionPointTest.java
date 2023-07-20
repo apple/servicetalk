@@ -98,7 +98,7 @@ class InsertionPointTest {
      */
     static DescriptorProtos.FileDescriptorSet getFileDescriptorSet() throws IOException {
         String baseDir = System.getProperty("generatedFilesBaseDir",
-                "servicetalk-grpc-protoc/build/generated/sources/proto");
+                "servicetalk-grpc-protoc/build/generated/source/proto");
         File descriptorSet = new File(baseDir + "/test/descriptor_set.desc");
         assertTrue(descriptorSet.exists());
         byte[] data = Files.readAllBytes(descriptorSet.toPath());

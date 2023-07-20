@@ -76,5 +76,4 @@ protobuf {
       }
     }
   }
-  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
