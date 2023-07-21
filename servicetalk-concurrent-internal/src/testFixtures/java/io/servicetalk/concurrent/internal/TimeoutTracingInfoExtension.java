@@ -60,7 +60,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final Pattern PATTERN = Pattern.compile("([1-9]\\d*) ?((?:[nμm]?s)|m|h|d)?",
+    private static final Pattern PATTERN = Pattern.compile("([1-9]\\d*) ?([nμm]?s|m|h|d)?",
             CASE_INSENSITIVE | UNICODE_CASE);
     private static final Map<String, TimeUnit> UNITS_MAP;
 
@@ -106,6 +106,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
         }
     }
 
+    @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
     static void dumpAllStacks() {
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         List<ThreadInfo> threadInfos = Stream.of(bean.getThreadInfo(bean.getAllThreadIds(),
@@ -118,7 +119,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
         for (ThreadInfo info : threadInfos) {
             sb.append('"').append(info.getThreadName()).append('"');
             sb.append(" #").append(info.getThreadId());
-            sb.append(" ").append(info.getThreadState().toString().toLowerCase());
+            sb.append(' ').append(info.getThreadState().toString().toLowerCase());
             if (info.getLockName() != null) {
                 sb.append(" on ").append(info.getLockName());
             }
@@ -132,27 +133,27 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
             if (info.isInNative()) {
                 sb.append(" (in native)");
             }
-            sb.append("\n");
+            sb.append('\n');
 
-            sb.append("  java.lang.Thread.State: ").append(info.getThreadState()).append("\n");
+            sb.append("  java.lang.Thread.State: ").append(info.getThreadState()).append('\n');
             StackTraceElement[] stackTrace = info.getStackTrace();
             for (int i = 0; i < stackTrace.length; ++i) {
-                sb.append("\t  at ").append(stackTrace[i]).append("\n");
+                sb.append("\t  at ").append(stackTrace[i]).append('\n');
                 for (MonitorInfo mi : info.getLockedMonitors()) {
                     if (mi.getLockedStackDepth() == i) {
-                        sb.append("\t  - locked ").append(mi).append("\n");
+                        sb.append("\t  - locked ").append(mi).append('\n');
                     }
                 }
             }
-            sb.append("\n");
+            sb.append('\n');
 
             LockInfo[] locks = info.getLockedSynchronizers();
             if (locks.length > 0) {
-                sb.append("\t  Number of locked synchronizers = ").append(locks.length).append("\n");
+                sb.append("\t  Number of locked synchronizers = ").append(locks.length).append('\n');
                 for (LockInfo li : locks) {
-                    sb.append("\t  - ").append(li).append("\n");
+                    sb.append("\t  - ").append(li).append('\n');
                 }
-                sb.append("\n");
+                sb.append('\n');
             }
         }
         System.out.println(sb);

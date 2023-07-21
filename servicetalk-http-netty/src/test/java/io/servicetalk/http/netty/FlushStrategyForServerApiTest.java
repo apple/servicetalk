@@ -36,7 +36,7 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
 
@@ -71,13 +71,7 @@ class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
         final StreamingHttpConnection connection = streamingHttpConnection();
 
         final Single<StreamingHttpResponse> responseSingle = connection.request(connection.newRequest(GET, "/"));
-
-        try {
-            responseSingle.toFuture().get(CI ? 900 : 100, MILLISECONDS);
-            fail("Expected timeout");
-        } catch (TimeoutException e) {
-            // We've given the server some time to write and send the metadata, if it was going to.
-        }
+        assertThrows(TimeoutException.class, () -> responseSingle.toFuture().get(CI ? 900 : 100, MILLISECONDS));
     }
 
     @Test

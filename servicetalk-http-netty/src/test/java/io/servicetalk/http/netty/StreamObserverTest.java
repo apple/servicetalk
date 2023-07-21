@@ -124,6 +124,7 @@ class StreamObserverTest {
         safeClose(client);
     }
 
+    @SuppressWarnings("PMD.AvoidPrintStackTrace")
     static void safeSync(Callable<Object> callable) throws Exception {
         try {
             callable.call();

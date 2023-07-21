@@ -204,7 +204,7 @@ public final class BasicAuthSecurityContextFilters {
 
     private static <UserInfo> SecurityContext newSecurityContext(final ContainerRequestContext requestCtx,
                                                                  final UserInfo userInfo) {
-        return new BasicAuthSecurityContext(newPrincipal(requestCtx, userInfo), isRequestSecure(requestCtx));
+        return new BasicAuthSecurityContext(newPrincipal(userInfo), isRequestSecure(requestCtx));
     }
 
     private static Function<ContainerRequestContext, SecurityContext> asSecurityContextFunction(
@@ -226,8 +226,7 @@ public final class BasicAuthSecurityContextFilters {
         return (requestCtx, __) -> securityContextFunction.apply(requestCtx);
     }
 
-    private static <UserInfo> Principal newPrincipal(final ContainerRequestContext __,
-                                                     final UserInfo userInfo) {
+    private static <UserInfo> Principal newPrincipal(final UserInfo userInfo) {
         return userInfo instanceof Principal ? (Principal) userInfo : new BasicAuthPrincipal<>(userInfo);
     }
 

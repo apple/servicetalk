@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018, 2023 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -40,12 +40,29 @@
   <rule ref="category/java/multithreading.xml/DontCallThreadRun"/>
   <rule ref="category/java/multithreading.xml/DoubleCheckedLocking"/>
 
-  <rule ref="category/java/bestpractices.xml/AvoidUsingHardCodedIP"/>
-  <rule ref="category/java/bestpractices.xml/CheckResultSet"/>
-  <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
-  <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
-  <rule ref="category/java/bestpractices.xml/SimplifiableTestAssertion"/>
-  <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+  <rule ref="category/java/bestpractices.xml">
+    <exclude name="AbstractClassWithoutAbstractMethod"/>
+    <exclude name="ArrayIsStoredDirectly"/>
+    <exclude name="AvoidReassigningLoopVariables"/>
+    <exclude name="AvoidReassigningParameters"/>
+    <exclude name="AvoidStringBufferField"/>
+    <exclude name="ForLoopCanBeForeach"/>
+    <exclude name="ForLoopVariableCount"/>
+    <exclude name="GuardLogStatement"/>
+    <exclude name="JUnit4TestShouldUseAfterAnnotation"/>
+    <exclude name="JUnit4TestShouldUseBeforeAnnotation"/>
+    <exclude name="JUnit4TestShouldUseTestAnnotation"/>
+    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
+    <exclude name="JUnitTestContainsTooManyAsserts"/>
+    <exclude name="JUnitTestsShouldIncludeAssert"/>
+    <exclude name="MethodReturnsInternalArray"/>
+    <exclude name="OneDeclarationPerLine"/>
+    <exclude name="UnusedAssignment"/>
+    <exclude name="UnusedPrivateField"/>
+    <exclude name="UnusedPrivateMethod"/>
+    <exclude name="UseTryWithResources"/>
+    <exclude name="UseVarargs"/>
+  </rule>
 
   <rule ref="category/java/codestyle.xml/ExtendsObject"/>
   <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>

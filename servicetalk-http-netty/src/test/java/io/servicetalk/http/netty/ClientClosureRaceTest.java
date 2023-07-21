@@ -101,12 +101,12 @@ class ClientClosureRaceTest {
                         out.print("Hello world!");
                         out.flush();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOGGER.error("Unexpected exception", e);
                     } finally {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.error("Unexpected exception while closing the socket: {}", socket, e);
                         }
                     }
                 });

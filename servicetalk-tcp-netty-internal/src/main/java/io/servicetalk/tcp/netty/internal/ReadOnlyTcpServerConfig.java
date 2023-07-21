@@ -112,6 +112,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
      * @return the {@link ServerSslConfig}, or {@code null} if SSL/TLS is not configured.
      */
     @Nullable
+    @Override
     public ServerSslConfig sslConfig() {
         return sslConfig;
     }

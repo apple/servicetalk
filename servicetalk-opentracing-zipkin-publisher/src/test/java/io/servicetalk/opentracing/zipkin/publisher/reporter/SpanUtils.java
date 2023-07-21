@@ -75,6 +75,6 @@ final class SpanUtils {
         assertEquals(String.valueOf(Long.MAX_VALUE), tags.get(LONG_KEY_TAG_NAME));
         assertEquals(String.valueOf(Float.MAX_VALUE), tags.get(FLOAT_KEY_TAG_NAME));
         assertEquals(String.valueOf(Double.MAX_VALUE), tags.get(DOUBLE_KEY_TAG_NAME));
-        assertTrue(span.annotations().stream().anyMatch(a -> a.value().equals(ANNOTATION_VAL)));
+        assertTrue(span.annotations().stream().anyMatch(a -> ANNOTATION_VAL.equals(a.value())));
     }
 }

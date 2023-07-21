@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.fromBlockingIterable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -38,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
-        return newPublisher(executor, values, (timeout, unit) -> { }, (timeout, unit) -> { }, () -> { });
+        return newPublisher(values, (timeout, unit) -> { }, (timeout, unit) -> { }, () -> { });
     }
 
-    private InMemorySource newPublisher(final Executor executor, final String[] values,
+    private InMemorySource newPublisher(final String[] values,
                                         BiConsumer<Long, TimeUnit> hashNextConsumer,
                                         BiConsumer<Long, TimeUnit> nextConsumer,
                                         AutoCloseable closeable) {
@@ -63,7 +62,7 @@ class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
         for (int i = 0; i < size; i++) {
             values[i] = "Hello" + i;
         }
-        return newPublisher(immediate(), values, hashNextConsumer, nextConsumer, closeable);
+        return newPublisher(values, hashNextConsumer, nextConsumer, closeable);
     }
 
     @Test

@@ -183,7 +183,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         List<T> list = new ArrayList<>(n);
         for (int i = 0; i < n; ++i) {
             T item;
-            do {
+            while (true) {
                 try {
                     item = unwrapNull(items.take());
                     break;
@@ -191,7 +191,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                     Thread.currentThread().interrupt();
                     throwException(e);
                 }
-            } while (true);
+            }
 
             list.add(item);
         }

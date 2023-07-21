@@ -70,6 +70,7 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 @Priority(ENTITY_CODER + 100)
 @Consumes(WILDCARD)
 @Produces(WILDCARD)
+@SuppressWarnings("PMD.UnusedFormalParameter")
 final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReader<Object>, MessageBodyWriter<Object> {
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.

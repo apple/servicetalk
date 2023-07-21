@@ -153,6 +153,7 @@ class HttpsProxyTest {
         safeClose(proxyTunnel);
     }
 
+    @SuppressWarnings("PMD.AvoidPrintStackTrace")
     static void safeClose(@Nullable AutoCloseable closeable) {
         if (closeable != null) {
             try {

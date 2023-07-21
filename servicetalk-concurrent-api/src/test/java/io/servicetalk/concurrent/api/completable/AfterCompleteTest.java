@@ -30,6 +30,7 @@ class AfterCompleteTest extends AbstractWhenOnCompleteTest {
     }
 
     @Test
+    @Override
     void testCallbackThrowsError() {
         toSource(doComplete(Completable.completed(), () -> {
             throw DELIBERATE_EXCEPTION;

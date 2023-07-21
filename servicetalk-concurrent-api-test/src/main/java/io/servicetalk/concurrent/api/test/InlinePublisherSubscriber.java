@@ -306,7 +306,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     private PublisherEvent pollNextEvent() {
         Queue<VerifyThreadEvent> verifyThreadEvents = null;
         int subscriptionBeginIndex = -1;
-        do {
+        while (true) {
             final int eventIndex = eventIndexUpdater.incrementAndGet(this);
             if (eventIndex >= events.size()) {
                 // try to execute any remaining events before completing
@@ -363,7 +363,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 }
                 break;
             }
-        } while (true);
+        }
 
         processVerifyThreadAggregate(verifyThreadEvents);
 
@@ -512,6 +512,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             this.iterable = requireNonNull(iterable);
         }
 
+        @Override
         String description() {
             return "expectNext(" + iterable + ")";
         }

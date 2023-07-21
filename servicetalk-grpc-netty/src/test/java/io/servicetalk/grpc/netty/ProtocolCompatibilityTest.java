@@ -883,8 +883,7 @@ class ProtocolCompatibilityTest {
                 final Status.Code code = sre.getStatus().getCode();
                 assertThat(code, is(Status.Code.INVALID_ARGUMENT));
             } else {
-                cause.printStackTrace();
-                fail("Unexpected exception type: " + cause);
+                fail("Unexpected exception", cause);
             }
         } finally {
             closeAll(client, server);
@@ -968,8 +967,7 @@ class ProtocolCompatibilityTest {
                 // underlying client is ServiceTalk
                 assertGrpcStatusException((GrpcStatusException) t, withStatus, expectCode, expectMessage);
             } else {
-                t.printStackTrace();
-                fail("Unexpected exception type: " + t);
+                fail("Unexpected exception", t);
             }
         }
     }

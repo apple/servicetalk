@@ -57,6 +57,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         detectPossibleConflicts();
     }
 
+    @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
     private void detectPossibleConflicts() {
         List<String> found = new ArrayList<>(KNOWN_CONFLICTS.length);
         for (String cls : KNOWN_CONFLICTS) {

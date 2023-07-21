@@ -261,6 +261,7 @@ class PredicateRouterOffloadingTest {
         assertThat("Unexpected offload points recorded.", invokingThreads.size(), is(2));
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private boolean recordRouterThread(StreamingHttpRequest req) {
         recordThread(RouterOffloadPoint.Predicate);
         return true;

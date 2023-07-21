@@ -389,6 +389,7 @@ final class HeaderUtils {
      * @return the normalized content-length from the headers or {@code -1} if no content-length header is found
      * @throws IllegalArgumentException if multiple content-length header values are present
      */
+    @SuppressWarnings("PMD.PreserveStackTrace")
     static long contentLength(final Iterator<? extends CharSequence> iterator) {
         if (!iterator.hasNext()) {
             return -1;

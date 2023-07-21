@@ -213,7 +213,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 throw cause;
                             default:
                                 throw new IllegalArgumentException("Unknown error handling strategy: " +
-                                        errorHandlingStrategyInDrain);
+                                        errorHandlingStrategyInDrain, cause);
                         }
                     }
                     if (terminalNotification != null && !hasNext) {

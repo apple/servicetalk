@@ -236,7 +236,7 @@ class SslAndNonSslConnectionsTest {
     void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) -> {
-                    if (scheme.equalsIgnoreCase("https")) {
+                    if ("https".equalsIgnoreCase(scheme)) {
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }
@@ -251,7 +251,7 @@ class SslAndNonSslConnectionsTest {
     void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) -> {
-                    if (scheme.equalsIgnoreCase("https")) {
+                    if ("https".equalsIgnoreCase(scheme)) {
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }

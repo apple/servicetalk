@@ -99,7 +99,7 @@ public abstract class AbstractHttpHeadersTest {
         final Iterator<Entry<CharSequence, CharSequence>> itr = headers.iterator();
         while (itr.hasNext()) {
             Entry<CharSequence, CharSequence> entry = itr.next();
-            if (entry.getKey().toString().compareToIgnoreCase("name2") == 0) {
+            if ("name2".compareToIgnoreCase(entry.getKey().toString()) == 0) {
                 itr.remove();
                 break;
             }
@@ -131,7 +131,7 @@ public abstract class AbstractHttpHeadersTest {
         assertTrue(itr.hasNext());
         while (itr.hasNext()) {
             Entry<CharSequence, CharSequence> entry = itr.next();
-            if (entry.getKey().toString().compareToIgnoreCase("name2") == 0) {
+            if ("name2".compareToIgnoreCase(entry.getKey().toString()) == 0) {
                 itr.remove();
                 break;
             }

@@ -131,6 +131,7 @@ public abstract class BaseContentCodingTest {
             this.list = list;
         }
 
+        @Override
         public String toString() {
             if (list.isEmpty()) {
                 return identity().name().toString();
@@ -159,6 +160,7 @@ public abstract class BaseContentCodingTest {
             this.codec = codec;
         }
 
+        @Override
         public String toString() {
             return codec.name().toString();
         }
