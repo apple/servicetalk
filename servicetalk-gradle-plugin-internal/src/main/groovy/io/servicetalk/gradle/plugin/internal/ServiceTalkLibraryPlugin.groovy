@@ -281,12 +281,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         incrementalAnalysis = true
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
-
-        pmdMain {
-          excludes = [
-              '**/src/generated/**'
-          ]
-        }
       }
 
       tasks.withType(Pmd).all {

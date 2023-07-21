@@ -52,33 +52,18 @@ processResources {
   duplicatesStrategy = 'include'
 }
 
-def extractedProtoDir = "$buildDir/extracted-protos/main"
-def generatedCodeDir = "$projectDir/src/generated"
-def generatedJavaPkg = "io.servicetalk.health.v1";
-
 task unzipGrpcProtos(type: Copy) {
   dependsOn processResources
   from zipTree(configurations.grpcProtos.singleFile).matching {
     include '**/health.proto'
   }
-  into extractedProtoDir
+  into "$buildDir/extracted-protos/main"
   includeEmptyDirs = false
   duplicatesStrategy = 'include'
   // Rename the java package name to avoid potential classpath conflicts with grpc-java.
   filter { line -> line.replace(
       'option java_package = "io.grpc.health.v1";',
-      "option java_package = \"$generatedJavaPkg\";")
-  }
-}
-
-sourceSets {
-  main {
-    java {
-      srcDir generatedCodeDir
-    }
-    proto {
-      srcDir "$extractedProtoDir/main"
-    }
+      'option java_package = "io.servicetalk.health.v1";')
   }
 }
 
@@ -126,5 +111,4 @@ protobuf {
       }
     }
   }
-  generatedFilesBaseDir = generatedCodeDir
 }
