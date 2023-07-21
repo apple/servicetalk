@@ -16,7 +16,6 @@
 package io.servicetalk.gradle.plugin.internal
 
 import com.github.spotbugs.snom.SpotBugsTask
-import info.solidsoft.gradle.pitest.PitestTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
@@ -30,8 +29,6 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
-import static io.servicetalk.gradle.plugin.internal.Versions.PITEST_JUNIT5_PLUGIN_VERSION
-import static io.servicetalk.gradle.plugin.internal.Versions.PITEST_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
@@ -49,7 +46,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     configureTestFixtures project
     configureTests project
     enforceCheckstyleRoot project
-    applyPitestPlugin project
     applyPmdPlugin project
     applySpotBugsPlugin project
     addQualityTask project
@@ -59,8 +55,10 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     project.configure(project) {
       pluginManager.apply("java-library")
 
-      sourceCompatibility = TARGET_VERSION
-      targetCompatibility = TARGET_VERSION
+      java {
+        sourceCompatibility = TARGET_VERSION
+        targetCompatibility = TARGET_VERSION
+      }
 
       def javaRelease = Integer.parseInt(TARGET_VERSION.getMajorVersion())
 
@@ -242,33 +240,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   private static void enforceCheckstyleRoot(Project project) {
     project.configure(project) {
       check.dependsOn checkstyleRoot
-    }
-  }
-
-  private static void applyPitestPlugin(Project project) {
-    project.configure(project) {
-      pluginManager.apply("info.solidsoft.pitest")
-
-      pitest {
-        pitestVersion = PITEST_VERSION
-        junit5PluginVersion = PITEST_JUNIT5_PLUGIN_VERSION
-      }
-
-      tasks.withType(PitestTask) {
-        timestampedReports = false
-
-        if (project.ext.isCiBuild) {
-          outputFormats = ['XML']
-        } else {
-          outputFormats = ['HTML']
-        }
-        failWhenNoMutations = false
-        verbose = false
-      }
-
-      tasks.withType(PitestTask).all {
-        group = "verification"
-      }
     }
   }
 
