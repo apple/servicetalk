@@ -145,6 +145,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
                 // Either the host was already CLOSED and removed from the usedHosts collection:
                 assertThat(thrown.getCause(),
                         either(instanceOf(NoAvailableHostException.class))
+                                .or(instanceOf(NoActiveHostException.class))
                                 // Or we selected the host and in the meantime it entered the CLOSED state:
                                 .or(instanceOf(ConnectionRejectedException.class)));
                 assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
