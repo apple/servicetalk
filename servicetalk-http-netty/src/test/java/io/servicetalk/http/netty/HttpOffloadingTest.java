@@ -116,7 +116,7 @@ class HttpOffloadingTest {
     @Nullable
     private Predicate<Thread> wrongClientPublishThread;
 
-    void setup() throws Exception {
+    private void setup() throws Exception {
         setup(true);
     }
 

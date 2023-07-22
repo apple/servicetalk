@@ -111,7 +111,7 @@ class DefaultDnsClientTest {
     private TestDnsServer dnsServer2;
     private DefaultDnsClient client;
 
-    void setup() throws Exception {
+    private void setup() throws Exception {
         setup(UnaryOperator.identity());
     }
 

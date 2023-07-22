@@ -192,7 +192,8 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private void processClosed(TerminalNotification currClosed) throws IOException {
         Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
-        if (currState instanceof Subscriber && currClosed.cause() != ConnectedPublisher.CONNECTED_PUBLISHER_CANCELLED) {
+        if (currState instanceof Subscriber &&
+                !ConnectedPublisher.CONNECTED_PUBLISHER_CANCELLED.equals(currClosed.cause())) {
             currClosed.terminate((Subscriber<?>) currState);
         }
         throw newAlreadyClosed(currClosed.cause());

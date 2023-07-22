@@ -251,6 +251,7 @@ final class HeaderUtils {
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
+        private static final long serialVersionUID = -6593491776432933503L;
         int contentLength;
 
         ContentLengthList(int contentLength, int arraySize) {

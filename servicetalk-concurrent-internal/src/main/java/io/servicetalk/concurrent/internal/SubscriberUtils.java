@@ -408,6 +408,8 @@ public final class SubscriberUtils {
     }
 
     private static final class SubscriberReturnNormalException extends IllegalStateException {
+        private static final long serialVersionUID = 3952004262432218730L;
+
         SubscriberReturnNormalException(String message, Throwable cause) {
             super(message, cause);
         }

@@ -172,7 +172,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     private BlockingHttpClient client;
     final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-    void start() throws Exception {
+    protected void start() throws Exception {
         serverContext = newServiceTalkServer(scenario, errors);
         client = newServiceTalkClient(serverHostAndPort(serverContext), scenario, errors);
     }

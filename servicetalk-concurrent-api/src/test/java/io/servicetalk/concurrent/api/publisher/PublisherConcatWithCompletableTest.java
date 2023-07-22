@@ -168,7 +168,7 @@ final class PublisherConcatWithCompletableTest {
         }
     }
 
-    void verifySubscriberErrored() {
+    private void verifySubscriberErrored() {
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }

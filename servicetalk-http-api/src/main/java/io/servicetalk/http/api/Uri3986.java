@@ -300,7 +300,7 @@ final class Uri3986 implements Uri {
         return fragment;
     }
 
-    @SuppressWarnings("StringEquality")
+    @SuppressWarnings({"StringEquality", "PMD.UseEqualsToCompareStrings"})
     @Nullable
     private static String unwrapNullableComponent(String component) {
         return component == NULL_COMPONENT ? null : component;

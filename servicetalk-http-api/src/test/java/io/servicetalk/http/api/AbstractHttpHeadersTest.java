@@ -25,6 +25,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -657,9 +658,9 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name2", "value3");
         String result = headers.toString((name, value) -> value);
         assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
-        assertTrue(result.toLowerCase().contains("name1: value1"), result);
-        assertTrue(result.toLowerCase().contains("name1: value2"), result);
-        assertTrue(result.toLowerCase().contains("name2: value3"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name1: value1"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name1: value2"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name2: value3"), result);
 
         headers = newHeaders();
         headers.add("name1", "value1");
@@ -667,15 +668,15 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name3", "value3");
         result = headers.toString((name, value) -> value);
         assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
-        assertTrue(result.toLowerCase().contains("name1: value1"), result);
-        assertTrue(result.toLowerCase().contains("name2: value2"), result);
-        assertTrue(result.toLowerCase().contains("name3: value3"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name1: value1"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name2: value2"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name3: value3"), result);
 
         headers = newHeaders();
         headers.add("name1", "value1");
         result = headers.toString((name, value) -> value);
         assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
-        assertTrue(result.toLowerCase().contains("name1: value1"), result);
+        assertTrue(result.toLowerCase(Locale.ENGLISH).contains("name1: value1"), result);
 
         headers = newHeaders();
         assertEquals(headers.getClass().getSimpleName() + "[]", headers.toString((name, value) -> value));

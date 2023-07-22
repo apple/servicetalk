@@ -70,7 +70,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         }
 
         if (found.size() > 1) {
-            System.err.printf((ADAPTER_CONFLICT_MESSAGE), Arrays.toString(found.toArray()));
+            System.err.printf(ADAPTER_CONFLICT_MESSAGE, Arrays.toString(found.toArray()));
             // Log4j's provider interface provides no formal way to declare ordering or precedence if there are multiple
             // provides which may overlap. Currently log4j2's ThreadContextMapFactory gives precedent to the logger
             // specified via system property [1] so we check for this as a "best effort" to detect that this class has
@@ -266,7 +266,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         return value == null ? NULL_STRING : value;
     }
 
-    @SuppressWarnings("StringEquality")
+    @SuppressWarnings({"StringEquality", "PMD.UseEqualsToCompareStrings"})
     @Nullable
     private static String unwrapNull(String value) {
         return value == NULL_STRING ? null : value;

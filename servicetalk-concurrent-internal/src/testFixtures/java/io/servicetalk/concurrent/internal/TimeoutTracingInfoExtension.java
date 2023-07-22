@@ -119,7 +119,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
         for (ThreadInfo info : threadInfos) {
             sb.append('"').append(info.getThreadName()).append('"');
             sb.append(" #").append(info.getThreadId());
-            sb.append(' ').append(info.getThreadState().toString().toLowerCase());
+            sb.append(' ').append(info.getThreadState().toString().toLowerCase(Locale.ENGLISH));
             if (info.getLockName() != null) {
                 sb.append(" on ").append(info.getLockName());
             }

@@ -80,7 +80,7 @@ class HttpMultiProxyTest {
         safeClose(serverBehindProxyContext);
     }
 
-    void startProxy() throws Exception {
+    private void startProxy() throws Exception {
         proxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName()).build();
         proxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
@@ -90,21 +90,21 @@ class HttpMultiProxyTest {
         proxyAddress = serverHostAndPort(proxyContext);
     }
 
-    void startServerBehindProxy() throws Exception {
+    private void startServerBehindProxy() throws Exception {
         serverBehindProxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverBehindProxyAddress = serverHostAndPort(serverBehindProxyContext);
     }
 
-    void startServerWithoutProxy() throws Exception {
+    private void startServerWithoutProxy() throws Exception {
         serverWithoutProxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverWithoutProxyAddress = serverHostAndPort(serverWithoutProxyContext);
     }
 
-    void createClient() {
+    private void createClient() {
         assert serverBehindProxyAddress != null && proxyAddress != null && serverWithoutProxyAddress != null;
         client = HttpClients
                 .forMultiAddressUrl(getClass().getSimpleName())

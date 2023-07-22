@@ -62,7 +62,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     private BlockingHttpClient client;
 
     @Override
-    void start() throws Exception {
+    protected void start() throws Exception {
         serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();

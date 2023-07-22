@@ -143,7 +143,7 @@ final class DefaultHostAndPort implements HostAndPort {
         String str = toString;
         if (str == null) {
             toString = str = hostName + ':' + port;
-        } else if (str == STR_IPV6) {
+        } else if (STR_IPV6.equals(str)) {
             toString = str = '[' + hostName + "]:" + port;
         }
         return str;

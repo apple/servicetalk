@@ -35,7 +35,7 @@ public final class VerificationTestUtils {
         assertNotNull(holder);
         boolean found = false;
         for (Throwable actualSuppressed : holder.getSuppressed()) {
-            if (actualSuppressed == expectedSuppressedCause) {
+            if (actualSuppressed.equals(expectedSuppressedCause)) {
                 found = true;
                 break;
             }

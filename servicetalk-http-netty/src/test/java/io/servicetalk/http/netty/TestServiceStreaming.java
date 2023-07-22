@@ -75,6 +75,7 @@ final class TestServiceStreaming implements StreamingHttpService {
     }
 
     @Override
+    @SuppressWarnings("PMD.ImplicitSwitchFallThrough")
     public Single<StreamingHttpResponse> handle(final HttpServiceContext context,
                                                 final StreamingHttpRequest req,
                                                 final StreamingHttpResponseFactory factory) {

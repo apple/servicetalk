@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -315,7 +316,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         // At the moment, we only support the official JSON mime-type and its related micro-formats
         return mediaType.getType().equalsIgnoreCase(APPLICATION_JSON_TYPE.getType()) &&
                 (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_JSON_TYPE.getSubtype()) ||
-                        mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
+                        mediaType.getSubtype().toLowerCase(Locale.ENGLISH)
+                                .endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
     }
 
     @SuppressWarnings("unchecked")
