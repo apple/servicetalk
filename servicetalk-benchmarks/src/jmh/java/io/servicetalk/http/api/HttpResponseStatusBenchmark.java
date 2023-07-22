@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * HttpResponseStatusBenchmark.toStringConcatenation  thrpt    5  63931127.209 ± 1936778.214  ops/s
  * HttpResponseStatusBenchmark.toStringConvertBuffer  thrpt    5  21250378.081 ±  234963.626  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 5)
 @Measurement(iterations = 5, time = 10)

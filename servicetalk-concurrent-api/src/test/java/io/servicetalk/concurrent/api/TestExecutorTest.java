@@ -37,9 +37,9 @@ class TestExecutorTest {
         long initialTime = fixture.currentNanos();
         assertThat(fixture.currentNanos(), equalTo(initialTime));
         fixture.advanceTimeByNoExecuteTasks(1000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(initialTime + 1000000000L));
+        assertThat(fixture.currentNanos(), equalTo(initialTime + 1_000_000_000L));
         fixture.advanceTimeByNoExecuteTasks(1000, MILLISECONDS);
-        assertThat(fixture.currentNanos(), equalTo(initialTime + 2000000000L));
+        assertThat(fixture.currentNanos(), equalTo(initialTime + 2_000_000_000L));
     }
 
     @Test

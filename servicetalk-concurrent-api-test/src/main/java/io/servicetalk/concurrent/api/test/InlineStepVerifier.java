@@ -189,7 +189,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
             public String toString() {
                 String s = StepAssertionError.class.getSimpleName();
                 String message = getLocalizedMessage();
-                return (message != null) ? (s + ": " + message) : s;
+                return message != null ? (s + ": " + message) : s;
             }
         }
     }

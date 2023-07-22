@@ -426,7 +426,7 @@ final class Uri3986 implements Uri {
     }
 
     private static int numberOfDigits(int port) {
-        if (port < 10000) {
+        if (port < 10_000) {
             if (port < 1000) {
                 if (port < 100) {
                     return port < 10 ? 1 : 2;
@@ -434,7 +434,8 @@ final class Uri3986 implements Uri {
                 return 3;
             }
             return 4;
-        } else if (port <= 65535) {
+        }
+        if (port <= 65_535) {
             return 5;
         }
         throw new IllegalArgumentException("Invalid URI format: port number out of bounds: " + port +

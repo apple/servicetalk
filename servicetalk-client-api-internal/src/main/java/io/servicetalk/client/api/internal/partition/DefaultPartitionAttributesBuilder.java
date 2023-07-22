@@ -229,8 +229,8 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
                 Key childKey = (Key) keyValueArray[childKeyIndex];
                 final int rightChildKeyIndex = (keyIndex << 1) + 4;
                 final Key rightChildKey;
-                if (rightChildKeyIndex <= endKeyIndex && childKey.compareTo((rightChildKey =
-                        (Key) keyValueArray[rightChildKeyIndex])) < 0) {
+                if (rightChildKeyIndex <= endKeyIndex && childKey.compareTo(rightChildKey =
+                        (Key) keyValueArray[rightChildKeyIndex]) < 0) {
                     childKey = rightChildKey;
                     childKeyIndex = rightChildKeyIndex;
                 }

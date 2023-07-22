@@ -136,7 +136,7 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         private void cancelUntil() {
             Cancellable untilCancellable =
-                    untilCancellableUpdater.getAndSet(TakeUntilSubscriber.this, IGNORE_CANCEL);
+                    untilCancellableUpdater.getAndSet(this, IGNORE_CANCEL);
             if (untilCancellable != null) {
                 untilCancellable.cancel();
             }

@@ -291,7 +291,7 @@ class RetryingHttpRequesterFilterTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void requestPublisherTransformNoStackOverflow(boolean mayReplayRequestPayload) throws Exception {
-        final int serverRequestsBeforeSucceed = 10000;
+        final int serverRequestsBeforeSucceed = 10_000;
         final RetryingHttpRequesterFilter retryFilter;
         final RetryingHttpRequesterFilter.Builder builder = new Builder()
                 .waitForLoadBalancer(true)

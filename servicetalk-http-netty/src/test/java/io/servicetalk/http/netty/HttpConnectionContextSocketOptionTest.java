@@ -75,7 +75,7 @@ class HttpConnectionContextSocketOptionTest {
     @ParameterizedTest(name = "protocol={0}")
     @EnumSource(HttpProtocol.class)
     void stIdleTimeoutSocketOption(HttpProtocol protocol) throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(30000L), equalTo("30000"), 30000L, protocol);
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(30_000L), equalTo("30000"), 30_000L, protocol);
     }
 
     @ParameterizedTest(name = "protocol={0}")

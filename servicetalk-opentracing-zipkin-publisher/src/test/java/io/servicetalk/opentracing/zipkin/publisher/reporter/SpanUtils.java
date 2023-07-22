@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class SpanUtils {
 
-    private static final long TIMESTAMP = 123456789L;
+    private static final long TIMESTAMP = 123_456_789L;
     private static final String TRACE_ID = "0000000000001234";
     private static final String SPAN_ID = "0000000000000002";
     private static final long DURATION = SECONDS.toMicros(1);

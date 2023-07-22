@@ -226,7 +226,7 @@ class PublisherFlatMapSingleTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] errorFirst={0} errorSecond={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void testDuplicateTerminal(boolean errorFirst, boolean errorSecond) {
         SingleSource<Integer> single = subscriber -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
@@ -299,7 +299,7 @@ class PublisherFlatMapSingleTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onError={0} delayError={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void onNextAfterTerminalThrows(boolean onError, boolean delayError) {
         PublisherSource<Single<Integer>> mappedPublisher = subscriber -> subscriber.onSubscribe(new Subscription() {
             private boolean terminated;
@@ -640,7 +640,7 @@ class PublisherFlatMapSingleTest {
         Queue<String> resultsQueue = new ConcurrentLinkedQueue<>();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        final Integer[] expectedNumbers = new Integer[1000000];
+        final Integer[] expectedNumbers = new Integer[1_000_000];
         // big enough to trigger stack overflow if we are not careful.
         for (int i = 0; i < expectedNumbers.length; ++i) {
             expectedNumbers[i] = i;

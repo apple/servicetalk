@@ -517,7 +517,7 @@ public final class CharSequences {
             if (!sign) {
                 sign = true;
                 negative = value == '-';
-                if ((negative || value == '+')) {
+                if (negative || value == '+') {
                     if (buffer.readableBytes() == 1) {
                         throw illegalInput(buffer);
                     } else {

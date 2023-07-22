@@ -221,7 +221,7 @@ class RetryWhenTest {
     @Test
     void exceptionAfterRetryPreservesDemand() {
         executor = newCachedThreadExecutor();
-        final Integer[] signals = new Integer[] {1, 2, 3};
+        final Integer[] signals = {1, 2, 3};
         final AtomicInteger onNextCount = new AtomicInteger();
         subscriber = new TestPublisherSubscriber<>();
         BiIntFunction<Throwable, Completable> retryFunc = (count, cause) ->

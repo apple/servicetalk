@@ -119,7 +119,7 @@ class ServerPipelineControlFlowTest {
 
     @ParameterizedTest(name =
             "{displayName} [{index}] serverHasOffloading={0} drainRequestPayloadBody={1} responseHasPayload={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void testBlockingStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                           boolean responseHasPayload) throws Exception {
@@ -167,7 +167,7 @@ class ServerPipelineControlFlowTest {
 
     @ParameterizedTest(name =
             "{displayName} [{index}] serverHasOffloading={0} drainRequestPayloadBody={1} responseHasPayload={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void testStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                   boolean responseHasPayload) throws Exception {

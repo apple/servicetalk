@@ -170,7 +170,7 @@ public interface ContextMap {
     @Nullable
     default <T> T getOrDefault(final Key<T> key, final T defaultValue) {
         final T current = get(key);
-        return ((current != null) || containsKey(key)) ? current : defaultValue;
+        return (current != null || containsKey(key)) ? current : defaultValue;
     }
 
     /**

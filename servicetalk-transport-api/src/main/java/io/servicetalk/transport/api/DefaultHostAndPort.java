@@ -164,7 +164,7 @@ final class DefaultHostAndPort implements HostAndPort {
     }
 
     private static boolean isValidPort(int port) {
-        return port >= 0 && port <= 65535;
+        return port >= 0 && port <= 65_535;
     }
 
     private static String compressIPv6(String rawIp, int start, int end) {

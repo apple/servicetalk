@@ -777,7 +777,7 @@ class ProtocolCompatibilityTest {
             if (!streaming) {
                 final CompatResponse response1 = client.scalarCall(metadata,
                         CompatRequest.newBuilder().setId(1).build());
-                assertEquals(1000001, response1.getSize());
+                assertEquals(1_000_001, response1.getSize());
             } else {
                 // clientStreamingCall returns the "sum"
                 final CompatResponse response2 = client.clientStreamingCall(metadata, asList(
@@ -785,7 +785,7 @@ class ProtocolCompatibilityTest {
                         CompatRequest.newBuilder().setId(2).build(),
                         CompatRequest.newBuilder().setId(3).build()
                 ));
-                assertEquals(1000006, response2.getSize());
+                assertEquals(1_000_006, response2.getSize());
 
                 // serverStreamingCall returns a stream from 0 to N-1
                 final BlockingIterable<CompatResponse> response3 =
@@ -793,9 +793,9 @@ class ProtocolCompatibilityTest {
                 final List<CompatResponse> response3List = new ArrayList<>();
                 response3.forEach(response3List::add);
                 assertEquals(3, response3List.size());
-                assertEquals(1000000, response3List.get(0).getSize());
-                assertEquals(1000001, response3List.get(1).getSize());
-                assertEquals(1000002, response3List.get(2).getSize());
+                assertEquals(1_000_000, response3List.get(0).getSize());
+                assertEquals(1_000_001, response3List.get(1).getSize());
+                assertEquals(1_000_002, response3List.get(2).getSize());
 
                 // bidirectionalStreamingCall basically echos also
                 final BlockingIterable<CompatResponse> response4 = client.bidirectionalStreamingCall(metadata,
@@ -807,9 +807,9 @@ class ProtocolCompatibilityTest {
                 final List<CompatResponse> response4List = new ArrayList<>();
                 response4.forEach(response4List::add);
                 assertEquals(3, response4List.size());
-                assertEquals(1000003, response4List.get(0).getSize());
-                assertEquals(1000004, response4List.get(1).getSize());
-                assertEquals(1000005, response4List.get(2).getSize());
+                assertEquals(1_000_003, response4List.get(0).getSize());
+                assertEquals(1_000_004, response4List.get(1).getSize());
+                assertEquals(1_000_005, response4List.get(2).getSize());
             }
         } finally {
             closeAll(client, server);
@@ -828,7 +828,7 @@ class ProtocolCompatibilityTest {
                 // scalarCall basically echos
                 final Single<CompatResponse> response1 =
                         client.scalarCall(metadata, CompatRequest.newBuilder().setId(1).build());
-                assertEquals(1000001, response1.toFuture().get().getSize());
+                assertEquals(1_000_001, response1.toFuture().get().getSize());
             } else {
                 // clientStreamingCall returns the "sum"
                 final Single<CompatResponse> response2 = client.clientStreamingCall(metadata, Publisher.from(
@@ -837,16 +837,16 @@ class ProtocolCompatibilityTest {
                         CompatRequest.newBuilder().setId(3).build()
                 ));
                 CompatResponse r = response2.toFuture().get();
-                assertEquals(1000006, r.getSize());
+                assertEquals(1_000_006, r.getSize());
 
                 // serverStreamingCall returns a stream from 0 to N-1
                 final Publisher<CompatResponse> response3 =
                         client.serverStreamingCall(metadata, CompatRequest.newBuilder().setId(3).build());
                 final List<CompatResponse> response3List = new ArrayList<>(response3.toFuture().get());
                 assertEquals(3, response3List.size());
-                assertEquals(1000000, response3List.get(0).getSize());
-                assertEquals(1000001, response3List.get(1).getSize());
-                assertEquals(1000002, response3List.get(2).getSize());
+                assertEquals(1_000_000, response3List.get(0).getSize());
+                assertEquals(1_000_001, response3List.get(1).getSize());
+                assertEquals(1_000_002, response3List.get(2).getSize());
 
                 // bidirectionalStreamingCall basically echos also
                 final Publisher<CompatResponse> response4 = client.bidirectionalStreamingCall(metadata,
@@ -857,9 +857,9 @@ class ProtocolCompatibilityTest {
 
                 final List<CompatResponse> response4List = new ArrayList<>(response4.toFuture().get());
                 assertEquals(3, response4List.size());
-                assertEquals(1000003, response4List.get(0).getSize());
-                assertEquals(1000004, response4List.get(1).getSize());
-                assertEquals(1000005, response4List.get(2).getSize());
+                assertEquals(1_000_003, response4List.get(0).getSize());
+                assertEquals(1_000_004, response4List.get(1).getSize());
+                assertEquals(1_000_005, response4List.get(2).getSize());
             }
         } finally {
             closeAll(client, server);
@@ -1068,7 +1068,7 @@ class ProtocolCompatibilityTest {
     private static CompatResponse computeResponse(final int value) {
         return CompatResponse.newBuilder()
                 .setId(value)
-                .setSize(1000000 + value)
+                .setSize(1_000_000 + value)
                 .setName("Response " + value)
                 .build();
     }

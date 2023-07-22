@@ -162,7 +162,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         private static <U> void tryClose(final Iterator<? extends U> currentIterator) {
             if (currentIterator instanceof AutoCloseable) {
-                closeAndReThrow(((AutoCloseable) currentIterator));
+                closeAndReThrow((AutoCloseable) currentIterator);
             }
         }
 

@@ -65,7 +65,7 @@ final class GrpcTimeoutOrderTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] appendNonOffloading={0} serverBuilderAppendTimeout={1} " +
             "serverManualAppendTimeout={2}")
-    @CsvSource(value = {"true,true,false", "false,true,false", "false,false,false", "true,false,true",
+    @CsvSource({"true,true,false", "false,true,false", "false,false,false", "true,false,true",
                         "true,false,false"})
     void serverFilterNeverRespondsAppliesDeadline(boolean appendNonOffloading, boolean serverBuilderAppendTimeout,
                                                   boolean serverManualAppendTimeout) throws Exception {

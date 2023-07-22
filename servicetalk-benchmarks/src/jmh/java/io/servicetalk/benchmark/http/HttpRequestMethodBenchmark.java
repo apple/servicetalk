@@ -56,7 +56,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * ofStringConstantLookup         PATCH  thrpt    5  145321385.794 ±  4382738.681  ops/s
  * ofStringConstantLookup       UNKNOWN  thrpt    5  189249897.729 ± 10985411.431  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

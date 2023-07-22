@@ -69,7 +69,7 @@ public final class FlushStrategyHolder {
             FlushStrategy newStrategy = strategyProvider.computeFlushStrategy(cStrategy,
                     cStrategy == originalFlushStrategy);
             if (flushStrategyUpdater.compareAndSet(this, cStrategy, newStrategy)) {
-                return () -> flushStrategyUpdater.getAndUpdate(FlushStrategyHolder.this,
+                return () -> flushStrategyUpdater.getAndUpdate(this,
                         // Only revert if the current strategy is what we had set, otherwise, some other code path has
                         // already modified the strategy.
                         fs -> fs == newStrategy ? originalFlushStrategy : fs);

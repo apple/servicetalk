@@ -32,11 +32,11 @@ import static org.mockito.Mockito.when;
 final class CompositeClosableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] merge={0} gracefully={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void sameOperationDoesNotSOE(boolean merge, boolean gracefully) throws Exception {
         AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
-        for (int i = 0; i < 100000; ++i) {
+        for (int i = 0; i < 100_000; ++i) {
             if (merge) {
                 compositeCloseable.merge(mockClosable);
             } else {
@@ -56,7 +56,7 @@ final class CompositeClosableTest {
     void alternatingOperationSOE(boolean gracefully) {
         AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
-        for (int i = 0; i < 100000; ++i) {
+        for (int i = 0; i < 100_000; ++i) {
             if ((i & 1) == 0) {
                 compositeCloseable.merge(mockClosable);
             } else {

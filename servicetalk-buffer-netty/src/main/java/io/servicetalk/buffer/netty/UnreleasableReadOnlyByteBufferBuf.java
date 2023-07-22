@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
 
 final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
-    protected final ByteBuffer buffer;
+    private final ByteBuffer buffer;
     private final ByteBufAllocator allocator;
     @Nullable
     private ByteBuffer tmpNioBuf;

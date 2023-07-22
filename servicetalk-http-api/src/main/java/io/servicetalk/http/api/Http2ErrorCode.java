@@ -97,7 +97,7 @@ public final class Http2ErrorCode {
     private final String name;
     private static final Http2ErrorCode[] INT_TO_ENUM_MAP;
     static {
-        final Http2ErrorCode[] errors = new Http2ErrorCode[] {NO_ERROR, PROTOCOL_ERROR, INTERNAL_ERROR,
+        final Http2ErrorCode[] errors = {NO_ERROR, PROTOCOL_ERROR, INTERNAL_ERROR,
                 FLOW_CONTROL_ERROR, SETTINGS_TIMEOUT, STREAM_CLOSED, FRAME_SIZE_ERROR, REFUSED_STREAM, CANCEL,
                 COMPRESSION_ERROR, CONNECT_ERROR, ENHANCE_YOUR_CALM, INADEQUATE_SECURITY, HTTP_1_1_REQUIRED};
         final Http2ErrorCode[] map = new Http2ErrorCode[errors.length];

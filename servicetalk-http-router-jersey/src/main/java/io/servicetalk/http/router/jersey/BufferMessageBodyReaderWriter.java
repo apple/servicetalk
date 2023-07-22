@@ -59,7 +59,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.
     @Context
-    protected Provider<Ref<ConnectionContext>> ctxRefProvider;
+    private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
     private Provider<ContainerRequestContext> requestCtxProvider;

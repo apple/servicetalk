@@ -76,8 +76,34 @@
     <exclude name="UseVarargs"/>
   </rule>
 
-  <rule ref="category/java/codestyle.xml/ExtendsObject"/>
-  <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>
+  <rule ref="category/java/codestyle.xml">
+    <exclude name="AtLeastOneConstructor"/>
+    <exclude name="CallSuperInConstructor"/>
+    <exclude name="CommentDefaultAccessModifier"/>
+    <exclude name="ConfusingTernary"/>
+    <exclude name="EmptyControlStatement"/>
+    <exclude name="EmptyMethodInAbstractClassShouldBeAbstract"/>
+    <exclude name="FieldDeclarationsShouldBeAtStartOfClass"/>
+    <exclude name="FieldNamingConventions"/>
+    <exclude name="FormalParameterNamingConventions"/>
+    <exclude name="GenericsNaming"/>
+    <exclude name="LinguisticNaming"/>
+    <exclude name="LocalVariableCouldBeFinal"/>
+    <exclude name="LongVariable"/>
+    <exclude name="MethodArgumentCouldBeFinal"/>
+    <exclude name="MethodNamingConventions"/>
+    <exclude name="OnlyOneReturn"/>
+    <exclude name="PrematureDeclaration"/>
+    <exclude name="ShortClassName"/>
+    <exclude name="ShortMethodName"/>
+    <exclude name="ShortVariable"/>
+    <exclude name="TooManyStaticImports"/>
+    <exclude name="UnnecessaryConstructor"/>
+    <exclude name="UnnecessaryFullyQualifiedName"/>
+    <exclude name="UnnecessaryImport"/>
+    <exclude name="UnnecessaryLocalBeforeReturn"/>
+    <exclude name="UselessParentheses"/>
+  </rule>
 
   <rule ref="category/java/performance.xml">
     <exclude name="AvoidInstantiatingObjectsInLoops"/>

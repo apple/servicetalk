@@ -264,7 +264,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, EMPTY_COMPLETED_DELIVERED)) {
+                    if (maybePayloadSubUpdater.compareAndSet(this, t, EMPTY_COMPLETED_DELIVERED)) {
                         ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(t);
                     } else {
                         ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
@@ -286,7 +286,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, EMPTY_COMPLETED);
                 if (maybeSubscriber instanceof PublisherSource.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, EMPTY_COMPLETED,
+                    if (maybePayloadSubUpdater.compareAndSet(this, EMPTY_COMPLETED,
                             EMPTY_COMPLETED_DELIVERED)) {
                         ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onComplete();
                     } else {

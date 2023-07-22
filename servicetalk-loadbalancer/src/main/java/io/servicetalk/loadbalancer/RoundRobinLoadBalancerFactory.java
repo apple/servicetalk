@@ -126,7 +126,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         private long healthCheckResubscribeLowerBound =
                 DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
         private long healthCheckResubscribeUpperBound =
-                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();;
+                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
 
         /**
          * Creates a new instance with default settings.

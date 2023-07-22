@@ -163,7 +163,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         event = checkNoSignalsExpectation("onNext", t, event);
         if (event instanceof OnNextEvent) {
             @SuppressWarnings("unchecked")
-            final OnNextEvent<T> castEvent = ((OnNextEvent<T>) event);
+            final OnNextEvent<T> castEvent = (OnNextEvent<T>) event;
             try {
                 castEvent.onNext(t);
                 event = pollNextEvent();
@@ -172,7 +172,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             }
         } else if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
-            final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
+            final OnNextAggregateEvent<T> castEvent = (OnNextAggregateEvent<T>) event;
             assert currAggregateSignals != null;
             currAggregateSignals.add(t);
             if (currAggregateSignals.size() == castEvent.maxOnNext()) {
@@ -274,7 +274,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     private PublisherEvent checkOnNextEventsFromTerminal(String signalName, @Nullable PublisherEvent event) {
         if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
-            final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
+            final OnNextAggregateEvent<T> castEvent = (OnNextAggregateEvent<T>) event;
             assert currAggregateSignals != null;
             if (currAggregateSignals.size() >= castEvent.minOnNext()) {
                 try {
