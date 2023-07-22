@@ -45,9 +45,12 @@
     <exclude name="UseProperClassLoader"/>
   </rule>
 
-  <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
-  <rule ref="category/java/multithreading.xml/DontCallThreadRun"/>
-  <rule ref="category/java/multithreading.xml/DoubleCheckedLocking"/>
+  <rule ref="category/java/multithreading.xml">
+    <exclude name="AvoidSynchronizedAtMethodLevel"/>
+    <exclude name="AvoidUsingVolatile"/>
+    <exclude name="DoNotUseThreads"/>
+    <exclude name="UseConcurrentHashMap"/>
+  </rule>
 
   <rule ref="category/java/bestpractices.xml">
     <exclude name="AbstractClassWithoutAbstractMethod"/>
