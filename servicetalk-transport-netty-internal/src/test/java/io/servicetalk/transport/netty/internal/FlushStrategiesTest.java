@@ -38,7 +38,7 @@ class FlushStrategiesTest {
     private FlushSender flushSender;
     private TestPublisher<String> durationSource;
     private WriteEventsListener listener;
-    private TestSubscription subscription = new TestSubscription();
+    private final TestSubscription subscription = new TestSubscription();
 
     @BeforeEach
     public void setUp() {

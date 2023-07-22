@@ -110,9 +110,33 @@
     <exclude name="InsufficientStringBufferDeclaration"/>
   </rule>
 
-  <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
-  <rule ref="category/java/design.xml/MutableStaticState" />
-  <rule ref="category/java/design.xml/SimplifiedTernary"/>
+  <rule ref="category/java/design.xml">
+    <exclude name="AbstractClassWithoutAnyMethod"/>
+    <exclude name="AvoidCatchingGenericException"/>
+    <exclude name="AvoidDeeplyNestedIfStmts"/>
+    <exclude name="AvoidRethrowingException"/>
+    <exclude name="AvoidThrowingNullPointerException"/>
+    <exclude name="AvoidThrowingRawExceptionTypes"/>
+    <exclude name="AvoidUncheckedExceptionsInSignatures"/>
+    <exclude name="CognitiveComplexity"/>
+    <exclude name="CouplingBetweenObjects"/>
+    <exclude name="CyclomaticComplexity"/>
+    <exclude name="DataClass"/>
+    <exclude name="DoNotExtendJavaLangError"/>
+    <exclude name="ExcessiveImports"/>
+    <exclude name="ExcessiveParameterList"/>
+    <exclude name="ExcessivePublicCount"/>
+    <exclude name="GodClass"/>
+    <exclude name="LawOfDemeter"/>
+    <exclude name="NPathComplexity"/>
+    <exclude name="NcssCount"/>
+    <exclude name="SignatureDeclareThrowsException"/>
+    <exclude name="SingularField"/>
+    <exclude name="SwitchDensity"/>
+    <exclude name="TooManyFields"/>
+    <exclude name="TooManyMethods"/>
+    <exclude name="UseUtilityClass"/>
+  </rule>
 
   <!-- generated -->
   <exclude-pattern>.*/generated/source/proto/.*</exclude-pattern>

@@ -35,8 +35,8 @@ class ConcatWithCompletableTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
-    private LegacyTestSingle<String> single = new LegacyTestSingle<>();
-    private LegacyTestCompletable completable = new LegacyTestCompletable();
+    private final LegacyTestSingle<String> single = new LegacyTestSingle<>();
+    private final LegacyTestCompletable completable = new LegacyTestCompletable();
 
     @Test
     void concatWaitsForCompletableSuccess() {

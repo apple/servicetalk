@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.sameInstance;
 @Timeout(60)
 class MulticastExactlyPublisherTest {
     private TestPublisher<Integer> source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
-    private TestSubscription subscription = new TestSubscription();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     void emitItemsAndThenError() {

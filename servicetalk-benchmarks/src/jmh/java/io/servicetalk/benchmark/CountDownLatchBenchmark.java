@@ -44,7 +44,7 @@ public class CountDownLatchBenchmark {
 
     private static final Object NULL = new Object();
 
-    private CountDownLatch latch = new CountDownLatch(0);
+    private final CountDownLatch latch = new CountDownLatch(0);
 
     @Nullable
     private volatile Object value = NULL;
