@@ -106,7 +106,7 @@ public final class TimeoutTracingInfoExtension implements AfterEachCallback {
         }
     }
 
-    @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
+    @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln", "PMD.ConsecutiveLiteralAppends"})
     static void dumpAllStacks() {
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         List<ThreadInfo> threadInfos = Stream.of(bean.getThreadInfo(bean.getAllThreadIds(),

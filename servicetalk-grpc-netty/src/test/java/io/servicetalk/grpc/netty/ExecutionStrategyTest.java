@@ -87,12 +87,10 @@ class ExecutionStrategyTest {
 
         @Override
         public GrpcExecutionStrategy get(final String id) {
-            switch (id) {
-                case "route":
-                    return defaultStrategy();
-                default:
-                    throw new IllegalArgumentException("Unknown id: " + id);
+            if ("route".equals(id)) {
+                return defaultStrategy();
             }
+            throw new IllegalArgumentException("Unknown id: " + id);
         }
     }
 

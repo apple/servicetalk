@@ -318,9 +318,9 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
             Object item;
             while ((item = items.poll()) != null) {
                 ++itemCount;
-                b.append("[").append(TestPublisherSubscriber.<T>unwrapNull(item)).append("] ");
+                b.append('[').append(TestPublisherSubscriber.<T>unwrapNull(item)).append("] ");
             }
-            throw new IllegalStateException(itemCount + " onNext items were not processed: " + b.toString());
+            throw new IllegalStateException(itemCount + " onNext items were not processed: " + b);
         }
     }
 

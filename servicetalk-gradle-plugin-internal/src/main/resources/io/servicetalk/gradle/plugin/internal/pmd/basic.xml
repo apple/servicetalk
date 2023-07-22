@@ -79,7 +79,10 @@
   <rule ref="category/java/codestyle.xml/ExtendsObject"/>
   <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>
 
-  <rule ref="category/java/performance.xml/BigIntegerInstantiation"/>
+  <rule ref="category/java/performance.xml">
+    <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    <exclude name="InsufficientStringBufferDeclaration"/>
+  </rule>
 
   <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
   <rule ref="category/java/design.xml/MutableStaticState" />

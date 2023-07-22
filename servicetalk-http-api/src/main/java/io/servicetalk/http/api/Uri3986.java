@@ -36,7 +36,7 @@ import static io.servicetalk.http.api.UriUtils.parsePort;
  * also lazy parses some components which may not be as commonly used (e.g. query, fragment).
  */
 final class Uri3986 implements Uri {
-    @SuppressWarnings("StringOperationCanBeSimplified")
+    @SuppressWarnings({"StringOperationCanBeSimplified", "PMD.StringInstantiation"})
     private static final String NULL_COMPONENT = new String(""); // instance equality required!
     private final String uri;
     @Nullable
