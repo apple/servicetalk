@@ -45,5 +45,5 @@
   <suppress checks="LineLength" files="docs[\\/]generation[\\/]site-remote.yml"/>
 
   <!-- generated -->
-  <suppress checks="." files=".*[\\/]build[\\/]generated[\\/]source[\\/]proto[\\/].*"/>
+  <suppress checks="." files=".*[\\/]generated[\\/]source[\\/]proto[\\/].*"/>
 </suppressions>
