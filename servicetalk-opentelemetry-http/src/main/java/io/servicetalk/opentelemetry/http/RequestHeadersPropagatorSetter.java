@@ -16,15 +16,23 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpRequestMetaData;
 
-import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.propagation.TextMapSetter;
 
-final class ResponseTagExtractor {
+import javax.annotation.Nullable;
 
-    public static final ResponseTagExtractor INSTANCE = new ResponseTagExtractor();
+final class RequestHeadersPropagatorSetter implements TextMapSetter<HttpRequestMetaData> {
 
-    void extract(HttpResponseMetaData responseMetaData, Span span) {
-        span.setAttribute("http.status_code", responseMetaData.status().code());
+    static final TextMapSetter<HttpRequestMetaData> INSTANCE = new RequestHeadersPropagatorSetter();
+
+    private RequestHeadersPropagatorSetter() {
+    }
+
+    @Override
+    public void set(@Nullable final HttpRequestMetaData headers, final String key, final String value) {
+        if (headers != null) {
+            HeadersPropagatorSetter.INSTANCE.set(headers.headers(), key, value);
+        }
     }
 }

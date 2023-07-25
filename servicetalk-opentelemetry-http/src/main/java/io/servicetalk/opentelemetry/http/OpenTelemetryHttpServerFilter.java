@@ -19,6 +19,7 @@ package io.servicetalk.opentelemetry.http;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,10 +31,16 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerMetrics;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
 
 import java.util.function.UnaryOperator;
 
@@ -52,6 +59,54 @@ import java.util.function.UnaryOperator;
  */
 public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpServiceFilterFactory {
+    private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
+
+    /**
+     * Create a new instance.
+     *
+     * @param openTelemetry          the {@link OpenTelemetry}.
+     * @param opentelemetryOptions extra options to create the opentelemetry filter.
+     */
+    public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry, OpentelemetryOptions opentelemetryOptions) {
+        super(openTelemetry);
+        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
+            HttpSpanNameExtractor.create(ServicetalkHttpServerCommonAttributesGetter.INSTANCE);
+        InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> serverInstrumenterBuilder =
+            Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+        serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
+
+        serverInstrumenterBuilder
+            .addAttributesExtractor(HttpServerAttributesExtractor
+                .builder(ServicetalkHttpServerCommonAttributesGetter.INSTANCE,
+                    ServicetalkNetServerAttributesGetter.INSTANCE)
+                .setCapturedRequestHeaders(opentelemetryOptions.getCaptureRequestHeaders())
+                .setCapturedResponseHeaders(opentelemetryOptions.getCaptureResponseHeaders())
+                .build())
+            .addAttributesExtractor(
+                NetServerAttributesExtractor.create(ServicetalkNetServerAttributesGetter.INSTANCE));
+        if (opentelemetryOptions.isEnableMetrics()) {
+            serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
+        }
+
+        instrumenter =
+            serverInstrumenterBuilder.buildServerInstrumenter(RequestHeadersPropagatorGetter.INSTANCE);
+    }
+
+    /**
+     * Create a new Instance, searching for any instance of an opentelemetry available.
+     */
+    public OpenTelemetryHttpServerFilter() {
+        this(GlobalOpenTelemetry.get(), OpentelemetryOptions.newBuilder().build());
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param opentelemetryOptions extra options to create the opentelemetry filter
+     */
+    public OpenTelemetryHttpServerFilter(OpentelemetryOptions opentelemetryOptions) {
+        this(GlobalOpenTelemetry.get(), opentelemetryOptions);
+    }
 
     /**
      * Create a new instance.
@@ -59,14 +114,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
      * @param openTelemetry the {@link OpenTelemetry}.
      */
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        super(openTelemetry);
-    }
-
-    /**
-     * Create a new Instance, searching for any instance of an opentelemetry available.
-     */
-    public OpenTelemetryHttpServerFilter() {
-        this(GlobalOpenTelemetry.get());
+        this(openTelemetry, OpentelemetryOptions.newBuilder().build());
     }
 
     @Override
@@ -85,26 +133,15 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
-        final Context context = Context.root();
-        io.opentelemetry.context.Context tracingContext =
-            propagators.getTextMapPropagator().extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
 
-        final Span span = RequestTagExtractor.reportTagsAndStart(tracer
-            .spanBuilder(getOperationName(request))
-            .setParent(tracingContext)
-            .setSpanKind(SpanKind.SERVER), request);
+        final Context parentContext = Context.current();
+        if (!instrumenter.shouldStart(parentContext, request)) {
+            return delegate.handle(ctx, request, responseFactory);
+        }
+        Context context = instrumenter.start(parentContext, request);
 
-        final Scope scope = span.makeCurrent();
-        final ScopeTracker tracker = new ScopeTracker(scope, span) {
-            @Override
-            protected void tagStatusCode() {
-                super.tagStatusCode();
-                if (metaData != null) {
-                    propagators.getTextMapPropagator().inject(Context.current(), metaData.headers(),
-                            HeadersPropagatorSetter.INSTANCE);
-                }
-            }
-        };
+        final Scope scope = context.makeCurrent();
+        final ScopeTracker tracker = new ScopeTracker(scope, context, request, instrumenter);
         Single<StreamingHttpResponse> response;
         try {
             response = delegate.handle(ctx, request, responseFactory);
@@ -113,15 +150,5 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
             return Single.failed(t);
         }
         return tracker.track(response);
-    }
-
-    /**
-     * Get the operation name to build the span with.
-     *
-     * @param metaData The {@link HttpRequestMetaData}.
-     * @return the operation name to build the span with.
-     */
-    private static String getOperationName(HttpRequestMetaData metaData) {
-        return metaData.method().name() + ' ' + metaData.path();
     }
 }
