@@ -493,9 +493,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 final DelayedCancellable delayedCancellable;
                 try {
                     delayedCancellable = new DelayedCancellable();
+
+                    SSLSession existingSSLSession = extractSslSessionAndReport(channel.pipeline(),
+                            SslHandshakeCompletionEvent.SUCCESS, $ -> { }, false);
+
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, null,
-                            executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, null,
-                            null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
+                            executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol,
+                            sslConfig, existingSSLSession,
+                            null, NoopDataObserver.INSTANCE, isClient, shouldWait,
+                            identity());
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
