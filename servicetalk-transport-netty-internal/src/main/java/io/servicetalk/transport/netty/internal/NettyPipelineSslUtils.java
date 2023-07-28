@@ -18,10 +18,12 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +47,34 @@ public final class NettyPipelineSslUtils {
      *
      * @param pipeline The pipeline to check.
      * @return {@code true} if the pipeline is configured to use SSL/TLS.
+     *
+     * @deprecated Use {@link #hasPendingSslHandshake(ChannelPipeline)} instead
      */
+    @Deprecated
     public static boolean isSslEnabled(ChannelPipeline pipeline) {
         return pipeline.get(SslHandler.class) != null || pipeline.get(SniHandler.class) != null;
+    }
+
+    /**
+     * Determine if the {@link ChannelPipeline} has a pending SSL/TLS handshake.
+     *
+     * @param pipeline The pipeline to check.
+     * @return {@code true} if the pipeline is configured to use SSL/TLS, but the handshake has not completed yet.
+     * @throws Throwable Handshake exception, if the handshake failed.
+     */
+    public static boolean hasPendingSslHandshake(ChannelPipeline pipeline) throws Throwable {
+        final SslHandler sslHandler = pipeline.get(SslHandler.class);
+        if (sslHandler != null) {
+            final Future<Channel> handshakeFuture = sslHandler.handshakeFuture();
+            if (handshakeFuture.isDone()) {
+                if (handshakeFuture.cause() != null) {
+                    throw handshakeFuture.cause();
+                }
+                return false;
+            }
+            return true;
+        }
+        return pipeline.get(SniHandler.class) != null;
     }
 
     /**

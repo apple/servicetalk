@@ -506,7 +506,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     initializer.init(channel);
                     ChannelPipeline pipeline = connection.channel().pipeline();
                     nettyInboundHandler = new NettyToStChannelHandler<>(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), observer);
+                            delayedCancellable, NettyPipelineSslUtils.hasPendingSslHandshake(pipeline), observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);

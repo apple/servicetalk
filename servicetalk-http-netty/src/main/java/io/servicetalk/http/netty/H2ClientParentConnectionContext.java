@@ -142,7 +142,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     initializer.init(channel);
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
+                            delayedCancellable, NettyPipelineSslUtils.hasPendingSslHandshake(pipeline),
                             allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);

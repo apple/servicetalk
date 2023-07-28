@@ -147,7 +147,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     pipeline = channel.pipeline();
 
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), observer);
+                            delayedCancellable, NettyPipelineSslUtils.hasPendingSslHandshake(pipeline), observer);
 
                     new H2ServerParentChannelInitializer(h2ServerConfig,
                         new io.netty.channel.ChannelInitializer<Http2StreamChannel>() {
