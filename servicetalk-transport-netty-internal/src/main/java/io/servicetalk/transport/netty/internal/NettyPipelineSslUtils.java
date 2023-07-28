@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
 /**
@@ -60,15 +61,19 @@ public final class NettyPipelineSslUtils {
      *
      * @param pipeline The pipeline to check.
      * @return {@code true} if the pipeline is configured to use SSL/TLS, but the handshake has not completed yet.
-     * @throws Throwable Handshake exception, if the handshake failed.
+     * @throws SSLException Handshake exception, if the handshake failed.
      */
-    public static boolean hasPendingSslHandshake(ChannelPipeline pipeline) throws Throwable {
+    public static boolean hasPendingSslHandshake(ChannelPipeline pipeline) throws SSLException {
         final SslHandler sslHandler = pipeline.get(SslHandler.class);
         if (sslHandler != null) {
             final Future<Channel> handshakeFuture = sslHandler.handshakeFuture();
             if (handshakeFuture.isDone()) {
                 if (handshakeFuture.cause() != null) {
-                    throw handshakeFuture.cause();
+                    if (handshakeFuture.cause() instanceof SSLException) {
+                        throw (SSLException) handshakeFuture.cause();
+                    } else {
+                        throw new SSLException(handshakeFuture.cause());
+                    }
                 }
                 return false;
             }
