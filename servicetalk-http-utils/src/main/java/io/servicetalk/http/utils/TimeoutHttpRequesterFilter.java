@@ -55,7 +55,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
     /**
      * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      */
     public TimeoutHttpRequesterFilter(final Duration duration) {
         this(new FixedDuration(duration), false);
@@ -64,7 +64,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
     /**
      * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpRequesterFilter(final Duration duration, final Executor timeoutExecutor) {
@@ -74,7 +74,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
     /**
      * Creates a new instance.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
      */
@@ -85,7 +85,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
     /**
      * Creates a new instance.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must arrive before the timeout
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
@@ -105,7 +105,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
      * the response metadata must arrive before the timeout
      * @deprecated Use {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean)}.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
         super(timeoutForRequest, fullRequestResponse);
     }
@@ -133,7 +133,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      * @deprecated Use {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean, Executor)}.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
                                       final boolean fullRequestResponse,
                                       final Executor timeoutExecutor) {

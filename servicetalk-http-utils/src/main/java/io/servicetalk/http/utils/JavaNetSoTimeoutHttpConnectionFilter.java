@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A filter to mimics {@link SocketOptions#SO_TIMEOUT} behavior on the client-side.
+ * A filter that mimics {@link SocketOptions#SO_TIMEOUT} behavior on the client-side.
  * <p>
  * While {@link TimeoutHttpRequesterFilter} applies a timeout for the overall duration to receive either the response
  * metadata (headers) or the complete reception of the response (including headers, payload body, optional trailers, as
@@ -68,6 +68,8 @@ import static java.util.Objects.requireNonNull;
  * {@link SocketTimeoutException} (or its subtype) will be propagated when the timeout is reached.
  *
  * @see TimeoutHttpRequesterFilter
+ * @see SocketOptions#SO_TIMEOUT
+ * @see java.net.Socket#setSoTimeout(int)
  */
 public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttpConnectionFilterFactory {
 
@@ -78,7 +80,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
     /**
      * Creates a new instance.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      */
     public JavaNetSoTimeoutHttpConnectionFilter(final Duration duration) {
         this(new FixedDuration(duration));
@@ -87,7 +89,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
     /**
      * Creates a new instance.
      *
-     * @param duration the timeout {@link Duration}
+     * @param duration the timeout {@link Duration}, must be {@code > 0}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public JavaNetSoTimeoutHttpConnectionFilter(final Duration duration, final Executor timeoutExecutor) {
@@ -97,8 +99,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
     /**
      * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
-     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param timeoutForRequest function for extracting timeout value from a request or other runtime sources.
+     * A timeout of {@code null} or {@link Duration#ZERO zero (0)} is interpreted as an infinite timeout, all other
+     * values must be {@code > 0}
      */
     public JavaNetSoTimeoutHttpConnectionFilter(
             final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest) {
@@ -109,8 +112,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
     /**
      * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
-     * other sources. If no timeout is to be applied then the function should return {@code null}
+     * @param timeoutForRequest function for extracting timeout value from a request or other runtime sources.
+     * A timeout of {@code null} or {@link Duration#ZERO zero (0)} is interpreted as an infinite timeout, all other
+     * values must be {@code > 0}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public JavaNetSoTimeoutHttpConnectionFilter(
@@ -129,8 +133,14 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                     final Executor timeoutExecutor = contextExecutor(request, executionContext());
                     @Nullable
                     final Duration timeout = timeoutForRequest.apply(request, timeoutExecutor);
-                    if (timeout == null) {
+                    if (timeout == null || timeout.isZero()) {
                         return delegate().request(request).shareContextOnSubscribe();
+                    }
+
+                    if (timeout.isNegative()) {
+                        return Single.<StreamingHttpResponse>failed(
+                                        new IllegalArgumentException("timeout: " + timeout + " (expected > 0)"))
+                                .shareContextOnSubscribe();
                     }
 
                     final CompletableSource.Processor requestProcessor = Processors.newCompletableProcessor();

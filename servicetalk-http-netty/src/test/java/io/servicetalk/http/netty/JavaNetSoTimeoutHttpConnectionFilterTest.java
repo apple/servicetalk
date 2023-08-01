@@ -64,6 +64,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JavaNetSoTimeoutHttpConnectionFilterTest {
@@ -139,9 +140,18 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: expectContinue={0} withServerDelays={1}")
-    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
-    void noTimeout(boolean expectContinue, boolean withServerDelays) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: expectContinue={0} withServerDelays={1} withZeroTimeout={2}")
+    @CsvSource({
+            "false,false,false",
+            "false,false,true",
+            "false,true,false",
+            "false,true,true",
+            "true,false,false",
+            "true,false,true",
+            "true,true,false",
+            "true,true,true",
+    })
+    void noTimeout(boolean expectContinue, boolean withServerDelays, boolean withZeroTimeout) throws Exception {
         HttpRequest request = newRequest();
         if (expectContinue) {
             request.addHeader(EXPECT, CONTINUE);
@@ -150,6 +160,9 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
             request.addHeader(READ_REQUEST_DELAY_MS, "20")
                     .addHeader(RETURN_RESPONSE_DELAY_MS, "20")
                     .addHeader(RESPONSE_PAYLOAD_DELAY_MS, "20");
+        }
+        if (withZeroTimeout) {
+            request.context().put(READ_TIMEOUT_KEY, Duration.ZERO);
         }
         HttpResponse response = client().request(request);
         assertThat(response.status(), is(OK));
@@ -260,6 +273,16 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
         });
         assertThat(e.getMessage(), endsWith("100 (Continue) response"));
         assertThat(e.getCause(), is(nullValue()));
+    }
+
+    @Test
+    void negativeTimeout() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> {
+            HttpRequest request = newRequest();
+            request.context().put(READ_TIMEOUT_KEY, Duration.ofMillis(-1));
+            client().request(request);
+        });
+        assertThat(e.getMessage(), startsWith("timeout"));
     }
 
     private static BlockingHttpClient client() {

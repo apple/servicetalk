@@ -57,6 +57,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
     @Nullable
     private final Executor timeoutExecutor;
 
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     AbstractTimeoutHttpFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
         requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.timeoutForRequest = (request, timeSource) -> timeoutForRequest.apply(request);
@@ -71,6 +72,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         this.timeoutExecutor = null;
     }
 
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     AbstractTimeoutHttpFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse,
                               final Executor timeoutExecutor) {
         requireNonNull(timeoutForRequest, "timeoutForRequest");
