@@ -31,9 +31,8 @@ final class StreamingHttpServiceToHttpService implements HttpService {
     public Single<HttpResponse> handle(final HttpServiceContext ctx,
                                        final HttpRequest request,
                                        final HttpResponseFactory responseFactory) {
-
         return original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
-                .flatMap(StreamingHttpResponse::toResponse);
+                .flatMap(resp -> resp.toResponse().shareContextOnSubscribe());
     }
 
     @Override

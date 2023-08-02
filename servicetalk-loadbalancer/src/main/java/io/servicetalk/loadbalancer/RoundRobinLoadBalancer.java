@@ -572,10 +572,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         return establishConnection
                 .flatMap(newCnx -> {
                     if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
-                        return newCnx.closeAsync().concat(failed(StacklessConnectionRejectedException.newInstance(
+                        return newCnx.closeAsync().<C>concat(failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " could not be reserved.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)")));
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                                .shareContextOnSubscribe();
                     }
 
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
@@ -593,16 +594,17 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
                         // Just in case the connection is not closed add it to the host so we don't lose track,
                         // duplicates will be filtered out.
-                        return host.addConnection(newCnx, null) ?
-                                failedSingle : newCnx.closeAsync().concat(failedSingle);
+                        return (host.addConnection(newCnx, null) ?
+                                failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
                     }
                     if (host.addConnection(newCnx, null)) {
-                        return succeeded(newCnx);
+                        return succeeded(newCnx).shareContextOnSubscribe();
                     }
-                    return newCnx.closeAsync().concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
+                    return newCnx.closeAsync().<C>concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
                             failed(StacklessConnectionRejectedException.newInstance(
                                     "Failed to add newly created connection " + newCnx + " for " + targetResource
-                                            + " for " + host, RoundRobinLoadBalancer.class, "selectConnection0(...)")));
+                                            + " for " + host, RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                            .shareContextOnSubscribe();
                 });
     }
 

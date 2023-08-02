@@ -21,24 +21,31 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.RequestRejectedException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -53,6 +60,8 @@ import io.servicetalk.transport.api.TransportObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -62,10 +71,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffFullJitter;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediateBounded;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
@@ -76,6 +87,7 @@ import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Duration.ofNanos;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
@@ -274,6 +286,102 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter(new Builder().build())
                 .appendClientFilter(new Builder().build())
                 .build());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void requestPublisherTransformNoStackOverflow(boolean mayReplayRequestPayload) throws Exception {
+        final int serverRequestsBeforeSucceed = 10000;
+        final RetryingHttpRequesterFilter retryFilter;
+        final RetryingHttpRequesterFilter.Builder builder = new Builder()
+                .waitForLoadBalancer(true)
+                .maxTotalRetries(Integer.MAX_VALUE);
+        if (mayReplayRequestPayload) {
+            builder.responseMapper(resp -> resp.status().statusClass().equals(SERVER_ERROR_5XX) ?
+                            new HttpResponseException("failed", resp) : null)
+                    .retryResponses((req, throwable) -> ofImmediate(Integer.MAX_VALUE - 1));
+        } else {
+            builder.retryRetryableExceptions((req, throwable) ->
+                            ofConstantBackoffFullJitter(ofNanos(1), Integer.MAX_VALUE - 1, Executors.global()));
+        }
+        retryFilter = builder.build();
+
+        try (ServerContext serverCtx = forAddress(localAddress(0))
+                .listenBlockingAndAwait(new BlockingHttpService() {
+                    private final AtomicInteger reqCount = new AtomicInteger();
+                    @Override
+                    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                                               final HttpResponseFactory responseFactory) {
+                        if (mayReplayRequestPayload) {
+                            final int count = reqCount.incrementAndGet();
+                            return count >= serverRequestsBeforeSucceed ?
+                                    responseFactory.ok() : responseFactory.serviceUnavailable();
+                        } else {
+                            return responseFactory.ok();
+                        }
+                    }
+                });
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverCtx))
+                     .appendClientFilter(retryFilter)
+                     .appendClientFilter(new StreamingHttpClientFilterFactory() {
+                         @Override
+                         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                             return new StreamingHttpClientFilter(client) {
+                                 @Override
+                                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                                 final StreamingHttpRequest request) {
+                                     return Single.defer(() -> delegate.request(request.transformMessageBody(pub ->
+                                             // Just apply any operators, the goal is to verify we don't get stack
+                                             // overflow because the operators shouldn't be chained for each retry
+                                             // attempt.
+                                             pub.map(x -> x)
+                                                     .whenOnNext(x -> { })
+                                                     .whenRequest(r -> { })
+                                                     .whenCancel(() -> { })
+                                                     .whenFinally(() -> { })
+                                                     .whenOnSubscribe(s -> { })
+                                                     .whenOnError(e -> { })
+                                                     .whenOnComplete(() -> { })
+                                                     .shareContextOnSubscribe())));
+                                 }
+                             };
+                         }
+
+                         @Override
+                         public HttpExecutionStrategy requiredOffloads() {
+                             return offloadNone();
+                         }
+                     })
+                     .appendClientFilter(new StreamingHttpClientFilterFactory() {
+                         @Override
+                         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                             return new StreamingHttpClientFilter(client) {
+                                 private final AtomicInteger reqCount = new AtomicInteger();
+                                 @Override
+                                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                                 final StreamingHttpRequest request) {
+                                     if (!mayReplayRequestPayload) {
+                                         // Any RetryableException
+                                         final int count = reqCount.incrementAndGet();
+                                         if (count < serverRequestsBeforeSucceed) {
+                                             return Single.failed(new RequestRejectedException("intentional fail"));
+                                         }
+                                     }
+                                     return delegate.request(request);
+                                 }
+                             };
+                         }
+
+                         @Override
+                         public HttpExecutionStrategy requiredOffloads() {
+                             return offloadNone();
+                         }
+                     })
+                     .buildBlocking()) {
+            HttpResponse response = client.request(client.post("/").payloadBody(
+                    client.executionContext().bufferAllocator().wrap("hello".getBytes(UTF_8))));
+            assertThat(response.status(), equalTo(HttpResponseStatus.OK));
+        }
     }
 
     private final class InspectingLoadBalancerFactory<C extends LoadBalancedConnection>

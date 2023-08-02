@@ -3767,6 +3767,19 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Specify the {@link ContextMap} to use for {@link AsyncContext} when the returned {@link Publisher} is
+     * subscribed to.
+     * <p>
+     * This operator only impacts behavior if the returned {@link Publisher} is subscribed directly after this
+     * operator, that means this must be the "last operator" in the chain for this to have an impact.
+     * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
+     * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     */
+    public final Publisher<T> shareContextOnSubscribe(ContextMap context) {
+        return new PublisherSetContextOnSubscribe<>(this, context);
+    }
+
+    /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
      * <p>

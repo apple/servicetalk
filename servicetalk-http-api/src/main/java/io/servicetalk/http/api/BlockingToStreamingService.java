@@ -37,7 +37,7 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         return request.toRequest().flatMap(req -> fromCallable(() -> original.handle(
-                ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse));
+                ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse).shareContextOnSubscribe());
     }
 
     @Override

@@ -19,6 +19,7 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -46,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -54,6 +56,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -65,9 +68,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.Mockito.mock;
 
 class LoadBalancerReadyHttpClientTest {
+    private static final ContextMap.Key<Integer> REQUEST_COUNT_KEY = newKey("request-count", Integer.class);
     private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
             new UnknownHostException("deliberate exception");
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
@@ -87,18 +91,23 @@ class LoadBalancerReadyHttpClientTest {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            return defer(new DeferredSuccessSupplier<>(newOkResponse()));
+            return defer(new DeferredSuccessSupplier<>(newOkResponse(), requestCounter(request.context())));
         }
 
         @Override
         public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-            return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
+            return defer(new DeferredSuccessSupplier<>(mockReservedConnection, requestCounter(metaData.context())));
         }
     };
 
+    private static IntSupplier requestCounter(ContextMap map) {
+        return () -> map.put(REQUEST_COUNT_KEY, map.computeIfAbsent(REQUEST_COUNT_KEY, key -> 0) + 1);
+    }
+
     @BeforeEach
     void setup() {
-        initMocks(this);
+        mockExecutionCtx = mock(HttpExecutionContext.class);
+        mockReservedConnection = mock(ReservedStreamingHttpConnection.class);
         doAnswer((Answer<StreamingHttpRequest>) invocation ->
                 reqRespFactory.newRequest(invocation.getArgument(0), invocation.getArgument(1)))
             .when(mockReservedConnection).newRequest(any(), any());
@@ -217,15 +226,17 @@ class LoadBalancerReadyHttpClientTest {
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {
         private final T value;
-        private int count;
+        private final IntSupplier countSupplier;
 
-        DeferredSuccessSupplier(T value) {
+        DeferredSuccessSupplier(T value, final IntSupplier countSupplier) {
             this.value = value;
+            this.countSupplier = countSupplier;
         }
 
         @Override
         public Single<T> get() {
-            return ++count == 1 ? failed(new NoAvailableHostException("deliberate testing")) : succeeded(value);
+            return countSupplier.getAsInt() == 0 ? failed(new NoAvailableHostException("deliberate testing")) :
+                    succeeded(value);
         }
     }
 

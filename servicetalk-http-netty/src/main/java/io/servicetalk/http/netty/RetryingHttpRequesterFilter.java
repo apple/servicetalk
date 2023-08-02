@@ -21,12 +21,14 @@ import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -46,6 +48,7 @@ import io.servicetalk.transport.api.RetryableException;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -226,9 +229,20 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            final StreamingHttpRequest duplicatedRequest = mayReplayRequestPayload ?
-                    request.transformMessageBody(messageBodyDuplicator()) : request;
-            Single<StreamingHttpResponse> single = delegate.request(duplicatedRequest);
+            // State intentionally outside the defer because the request state is shared across subscribes. If
+            // re-applying operators duplicates logic that isn't desirable and lead to StackOverflowException.
+            final Publisher<Object> originalMessageBody = request.messageBody();
+            final AtomicReference<ContextMap> contextRef = new AtomicReference<>();
+            Single<StreamingHttpResponse> single = Single.defer(() -> {
+                final Single<StreamingHttpResponse> reqSingle = delegate.request(
+                        request.transformMessageBody(mayReplayRequestPayload ?
+                                messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody));
+                final ContextMap map = contextRef.get();
+                return map == null && contextRef.compareAndSet(null, AsyncContext.context()) ?
+                        reqSingle.shareContextOnSubscribe() :
+                        reqSingle.shareContextOnSubscribe(contextRef.get());
+            });
+
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
@@ -241,7 +255,10 @@ public final class RetryingHttpRequesterFilter
                 });
             }
 
-            return single.retryWhen(retryStrategy(duplicatedRequest, executionContext()));
+            // 1. Metadata is shared across retries
+            // 2. Publisher state is restored to original state for each retry
+            // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
+            return single.retryWhen(retryStrategy(request, executionContext()));
         }
 
         @Override
@@ -345,8 +362,8 @@ public final class RetryingHttpRequesterFilter
         }
     }
 
-    private static UnaryOperator<Publisher<?>> messageBodyDuplicator() {
-        return p -> p.map(item -> {
+    private static UnaryOperator<Publisher<?>> messageBodyDuplicator(Publisher<?> originalPublisher) {
+        return p -> originalPublisher.map(item -> {
             if (item instanceof Buffer) {
                 return ((Buffer) item).duplicate();
             }
