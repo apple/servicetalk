@@ -88,7 +88,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         // The classpath field must be non-null, but could be empty because it's not required for this task:
         classpath = project.files([])
         source = fileTree(".") {
-          includes = ["docker/**", "gradle/**", "*.gradle", "*.properties", "scripts/**", "buildSrc/**", "docs/**"]
+          includes = ["gradle/**", "*.gradle", "*.properties", "scripts/**", "buildSrc/**", "docs/**"]
           excludes = ["**/gradle/wrapper/**", "**/build/**", "**/.gradle/**", "**/gradlew*", "**/.cache/**",
                       "**/.out/**", "**/node_modules/**", "**/*.png", "**/*.zip"]
         }
