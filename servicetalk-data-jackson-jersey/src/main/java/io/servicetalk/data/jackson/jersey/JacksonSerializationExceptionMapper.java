@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.serializer.api.SerializationException;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
@@ -34,6 +35,18 @@ final class JacksonSerializationExceptionMapper implements ExceptionMapper<Seria
     }
 
     private static boolean isDueToBadUserData(final SerializationException e) {
-        return e.getCause() instanceof JsonMappingException || e.getCause() instanceof JsonParseException;
+        if (e.getCause() instanceof JsonParseException) {
+            return true;
+        }
+
+        if (e.getCause() instanceof JsonMappingException) {
+            // Mapping exceptions can happen from both parsing and writing. We attempt to
+            // distinguish between the two by the processor type which should be either a
+            // JsonGenerator or a JsonParser.
+            JsonMappingException ex = (JsonMappingException) e.getCause();
+            return !(ex.getProcessor() instanceof JsonGenerator);
+        }
+
+        return false;
     }
 }
