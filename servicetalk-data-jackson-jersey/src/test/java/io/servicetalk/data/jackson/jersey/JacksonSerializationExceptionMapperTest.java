@@ -15,6 +15,7 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.serializer.api.SerializationException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
+import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -40,7 +43,7 @@ class JacksonSerializationExceptionMapperTest {
             new ObjectMapper().readValue("{bad json}".getBytes(StandardCharsets.UTF_8), Object.class);
             Assertions.fail("shouldn't get here.");
         } catch (JsonParseException ex) {
-            assertUnderlyingException(415, ex);
+            assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
         }
     }
 
@@ -50,7 +53,7 @@ class JacksonSerializationExceptionMapperTest {
             new ObjectMapper().readValue("{\"i\": \"foo\"}".getBytes(StandardCharsets.UTF_8), Pojo.class);
             Assertions.fail("shouldn't get here.");
         } catch (JsonMappingException ex) {
-            assertUnderlyingException(415, ex);
+            assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
         }
     }
 
@@ -58,7 +61,7 @@ class JacksonSerializationExceptionMapperTest {
     void jsonMappingExceptionWithoutProcessorConvertsTo415() {
         JsonMappingException ex = new JsonMappingException("");
         assertNull(ex.getProcessor());
-        assertUnderlyingException(415, ex);
+        assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
     }
 
     @Test
@@ -67,12 +70,12 @@ class JacksonSerializationExceptionMapperTest {
             new ObjectMapper().writeValueAsString(new Object());
             Assertions.fail("shouldn't get here.");
         } catch (Exception ex) {
-            assertUnderlyingException(500, ex);
+            assertUnderlyingException(INTERNAL_SERVER_ERROR, ex);
         }
     }
 
-    void assertUnderlyingException(int expectedStatusCode, Throwable ex) {
+    void assertUnderlyingException(HttpResponseStatus status, Throwable ex) {
         int observed = new JacksonSerializationExceptionMapper().toResponse(new SerializationException(ex)).getStatus();
-        assertEquals(expectedStatusCode, observed);
+        assertEquals(status.code(), observed);
     }
 }
