@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -38,7 +38,7 @@ class JacksonSerializationExceptionMapperTest {
     }
 
     @Test
-    void mapsInvalidJsonExceptionsTo415() throws Exception {
+    void mapsInvalidJsonExceptionsToUnsupportedMediaType() throws Exception {
         try {
             new ObjectMapper().readValue("{bad json}".getBytes(StandardCharsets.UTF_8), Object.class);
             Assertions.fail("shouldn't get here.");
@@ -48,7 +48,7 @@ class JacksonSerializationExceptionMapperTest {
     }
 
     @Test
-    void mapsParsingStructureExceptionsTo415() throws Exception {
+    void mapsParsingStructureExceptionsToUnsupportedMediaType() throws Exception {
         try {
             new ObjectMapper().readValue("{\"i\": \"foo\"}".getBytes(StandardCharsets.UTF_8), Pojo.class);
             Assertions.fail("shouldn't get here.");
@@ -58,14 +58,14 @@ class JacksonSerializationExceptionMapperTest {
     }
 
     @Test
-    void jsonMappingExceptionWithoutProcessorConvertsTo415() {
+    void jsonMappingExceptionWithoutProcessorConvertsToUnsupportedMediaType() {
         JsonMappingException ex = new JsonMappingException("");
         assertNull(ex.getProcessor());
         assertUnderlyingException(UNSUPPORTED_MEDIA_TYPE, ex);
     }
 
     @Test
-    void mapsSerializationExceptionsTo500() {
+    void mapsSerializationExceptionsToInternalServerError() {
         try {
             new ObjectMapper().writeValueAsString(new Object());
             Assertions.fail("shouldn't get here.");
