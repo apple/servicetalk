@@ -31,7 +31,6 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of result of this {@link Single}.
  */
 final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
-
     private final Single<T> original;
     private final BiIntFunction<Throwable, ? extends Completable> shouldRetry;
 
@@ -44,9 +43,9 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     void handleSubscribe(final Subscriber<? super T> subscriber,
                          final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
-        // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
-        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber,
-                contextMap, contextProvider, this), contextMap, contextProvider);
+        // operation occurs we want to restore the original state of the AsyncContext map.
+        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber, contextMap,
+                contextProvider, this), contextMap, contextProvider);
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
