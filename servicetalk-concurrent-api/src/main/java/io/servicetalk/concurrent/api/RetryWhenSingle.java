@@ -31,7 +31,6 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of result of this {@link Single}.
  */
 final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
-
     private final Single<T> original;
     private final BiIntFunction<Throwable, ? extends Completable> shouldRetry;
 
@@ -43,10 +42,12 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
                          final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
-        // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
-        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber,
-                contextMap, contextProvider, this), contextMap, contextProvider);
+        // Current expected behavior is to capture the context on the first subscribe, save it, and re-use it on each
+        // resubscribe. This allows for async context to be shared across each request retry, and follows the same
+        // shared state model as the request object on the client. If copy-on-each-resubscribe is desired this could
+        // be provided by an independent operator, or manually cleared/overwritten.
+        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber, contextMap,
+                contextProvider, this), contextMap, contextProvider);
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
