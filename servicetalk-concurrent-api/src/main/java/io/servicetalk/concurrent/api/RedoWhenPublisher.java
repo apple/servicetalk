@@ -64,8 +64,10 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber,
                          ContextMap contextMap, AsyncContextProvider contextProvider) {
-        // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
-        // operation occurs we want to restore the original state of the AsyncContext map.
+        // Current expected behavior is to capture the context on the first subscribe, save it, and re-use it on each
+        // resubscribe. This allows for async context to be shared across each request retry, and follows the same
+        // shared state model as the request object on the client. If copy-on-each-resubscribe is desired this could
+        // be provided by an independent operator, or manually cleared/overwritten.
         original.delegateSubscribe(new RedoSubscriber<>(terminateOnNextException, new SequentialSubscription(), 0,
                         subscriber, contextMap, contextProvider, this), contextMap, contextProvider);
     }
