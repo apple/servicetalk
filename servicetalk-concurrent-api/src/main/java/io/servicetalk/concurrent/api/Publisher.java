@@ -3775,7 +3775,7 @@ public abstract class Publisher<T> {
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
      */
-    public final Publisher<T> shareContextOnSubscribe(ContextMap context) {
+    public final Publisher<T> setContextOnSubscribe(ContextMap context) {
         return new PublisherSetContextOnSubscribe<>(this, context);
     }
 

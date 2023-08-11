@@ -1641,7 +1641,7 @@ public abstract class Completable {
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
      */
-    public final Completable shareContextOnSubscribe(ContextMap context) {
+    public final Completable setContextOnSubscribe(ContextMap context) {
         return new CompletableSetContextOnSubscribe(this, context);
     }
 

@@ -237,10 +237,14 @@ public final class RetryingHttpRequesterFilter
                 final Single<StreamingHttpResponse> reqSingle = delegate.request(
                         request.transformMessageBody(mayReplayRequestPayload ?
                                 messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody));
+                // A retryWhen filter is applied outside this scope and although retryWhen will preserve the context
+                // at that scope, since we are introducing a defer boundary the original context won't be preserved
+                // across the async boundary. Otherwise, the context wouldn't be shared when processing the response
+                // payload body and state would be dropped.
                 final ContextMap map = contextRef.get();
                 return map == null && contextRef.compareAndSet(null, AsyncContext.context()) ?
                         reqSingle.shareContextOnSubscribe() :
-                        reqSingle.shareContextOnSubscribe(contextRef.get());
+                        reqSingle.setContextOnSubscribe(contextRef.get());
             });
 
             if (responseMapper != null) {
