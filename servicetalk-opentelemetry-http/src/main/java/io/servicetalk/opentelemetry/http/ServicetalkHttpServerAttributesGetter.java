@@ -18,21 +18,36 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.transport.api.HostAndPort;
 
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
-final class ServicetalkHttpClientCommonAttributesGetter
-    implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+final class ServicetalkHttpServerAttributesGetter
+    implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
-    static final ServicetalkHttpClientCommonAttributesGetter INSTANCE =
-        new ServicetalkHttpClientCommonAttributesGetter();
+    static final ServicetalkHttpServerAttributesGetter INSTANCE =
+        new ServicetalkHttpServerAttributesGetter();
 
-    private ServicetalkHttpClientCommonAttributesGetter() {
+    private ServicetalkHttpServerAttributesGetter() {
+    }
+
+    @Nullable
+    @Override
+    public String getUrlScheme(HttpRequestMetaData httpRequestMetaData) {
+        return httpRequestMetaData.scheme();
+    }
+
+    @Override
+    public String getUrlPath(HttpRequestMetaData httpRequestMetaData) {
+        return httpRequestMetaData.path();
+    }
+
+    @Override
+    public String getUrlQuery(HttpRequestMetaData httpRequestMetaData) {
+        return httpRequestMetaData.query();
     }
 
     @Override
@@ -67,16 +82,8 @@ final class ServicetalkHttpClientCommonAttributesGetter
         return Collections.emptyList();
     }
 
-    @Nullable
     @Override
-    public String getUrlFull(HttpRequestMetaData request) {
-        HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
-        String requestScheme = request.scheme() != null ? request.scheme()
-            : "http";
-        CharSequence hostAndPort = request.headers().contains("host") ? request.headers().get("host")
-            : effectiveHostAndPort != null ?
-            String.format("%s:%d", effectiveHostAndPort.hostName(), effectiveHostAndPort.port()) : null;
-        return hostAndPort != null ? String.format("%s://%s%s", requestScheme, hostAndPort, request.path()) :
-            request.path();
+    public String getHttpRoute(HttpRequestMetaData httpRequestMetaData) {
+        return httpRequestMetaData.path();
     }
 }

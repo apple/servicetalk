@@ -47,22 +47,11 @@ final class ServicetalkNetServerAttributesGetter
     return "http";
   }
 
-  @Nullable
   @Override
   public String getNetworkProtocolVersion(HttpRequestMetaData request,
                                           @Nullable HttpResponseMetaData response) {
     HttpProtocolVersion version = request.version();
-    if (version.major() == 1) {
-      if (version.minor() == 1) {
-        return "1.1";
-      }
-      if (version.minor() == 0) {
-        return "1.0";
-      }
-    } else if (version.major() == 2 && version.minor() == 0) {
-      return "2.0";
-    }
-    return version.major() + "." + version.minor();
+    return version.fullVersion();
   }
 
   @Override
@@ -73,6 +62,7 @@ final class ServicetalkNetServerAttributesGetter
   }
 
   @Override
+  @Nullable
   public Integer getServerPort(HttpRequestMetaData request) {
     HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
     return effectiveHostAndPort != null ? effectiveHostAndPort.port() : null;

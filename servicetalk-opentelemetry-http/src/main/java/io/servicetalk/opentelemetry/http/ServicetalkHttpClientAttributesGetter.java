@@ -18,41 +18,23 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.transport.api.HostAndPort;
 
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
-final class ServicetalkHttpServerCommonAttributesGetter
-    implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+final class ServicetalkHttpClientAttributesGetter
+    implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
-    static final ServicetalkHttpServerCommonAttributesGetter INSTANCE =
-        new ServicetalkHttpServerCommonAttributesGetter();
+    static final ServicetalkHttpClientAttributesGetter INSTANCE =
+        new ServicetalkHttpClientAttributesGetter();
 
-    private ServicetalkHttpServerCommonAttributesGetter() {
+    private ServicetalkHttpClientAttributesGetter() {
     }
 
-    @Nullable
-    @Override
-    public String getUrlScheme(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.scheme();
-    }
-
-    @Nullable
-    @Override
-    public String getUrlPath(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.path();
-    }
-
-    @Nullable
-    @Override
-    public String getUrlQuery(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.query();
-    }
-
-    @Nullable
     @Override
     public String getHttpRequestMethod(HttpRequestMetaData httpRequestMetaData) {
         return httpRequestMetaData.method().name();
@@ -67,7 +49,6 @@ final class ServicetalkHttpServerCommonAttributesGetter
         return Collections.emptyList();
     }
 
-    @Nullable
     @Override
     public Integer getHttpResponseStatusCode(HttpRequestMetaData httpRequestMetaData,
                                              HttpResponseMetaData httpResponseMetaData,
@@ -88,7 +69,14 @@ final class ServicetalkHttpServerCommonAttributesGetter
 
     @Nullable
     @Override
-    public String getHttpRoute(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.path();
+    public String getUrlFull(HttpRequestMetaData request) {
+        HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+        String requestScheme = request.scheme() != null ? request.scheme()
+            : "http";
+        CharSequence hostAndPort = request.headers().contains("host") ? request.headers().get("host")
+            : effectiveHostAndPort != null ?
+            String.format("%s:%d", effectiveHostAndPort.hostName(), effectiveHostAndPort.port()) : null;
+        return hostAndPort != null ? String.format("%s://%s%s", requestScheme, hostAndPort, request.path()) :
+            request.path();
     }
 }

@@ -41,42 +41,45 @@ public final class OpentelemetryOptions {
         return new Builder();
     }
 
-    public List<String> getCaptureRequestHeaders() {
+    public List<String> captureRequestHeaders() {
         return Collections.unmodifiableList(captureRequestHeaders);
     }
 
-    public List<String> getCaptureResponseHeaders() {
+    public List<String> captureResponseHeaders() {
         return Collections.unmodifiableList(captureResponseHeaders);
     }
 
-    public boolean isEnableMetrics() {
+    public boolean enableMetrics() {
         return enableMetrics;
     }
 
     /**
      * a Builder of {@link OpentelemetryOptions}.
      */
-    public static class Builder {
-        private List<String> captureRequestHeaders = new ArrayList<>();
-        private List<String> captureResponseHeaders = new ArrayList<>();
+    public static final class Builder {
+        private final List<String> captureRequestHeaders = new ArrayList<>();
+        private final List<String> captureResponseHeaders = new ArrayList<>();
         private boolean enableMetrics;
 
+        private Builder() {
+        }
+
         /**
-         * set the headers to be captured as extra tags.
+         * add the headers to be captured as extra tags.
          * @param captureRequestHeaders extra headers to be captured in client/server requests and added as tags.
          * @return an instance of itself
          */
-        public OpentelemetryOptions.Builder captureRequestHeaders(List<String> captureRequestHeaders) {
+        public OpentelemetryOptions.Builder addCaptureRequestHeaders(List<String> captureRequestHeaders) {
             this.captureRequestHeaders.addAll(Objects.requireNonNull(captureRequestHeaders));
             return this;
         }
 
         /**
-         * set the headers to be captured as extra tags.
+         * add the headers to be captured as extra tags.
          * @param captureResponseHeaders extra headers to be captured in client/server response and added as tags.
          * @return an instance of itself
          */
-        public OpentelemetryOptions.Builder captureResponseHeaders(List<String> captureResponseHeaders) {
+        public OpentelemetryOptions.Builder addCaptureResponseHeaders(List<String> captureResponseHeaders) {
             this.captureResponseHeaders.addAll(Objects.requireNonNull(captureResponseHeaders));
             return this;
         }

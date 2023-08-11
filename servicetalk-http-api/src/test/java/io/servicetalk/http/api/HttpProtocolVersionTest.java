@@ -39,6 +39,7 @@ class HttpProtocolVersionTest {
     void testHttp11Constant() {
         assertEquals(1, HTTP_1_1.major());
         assertEquals(1, HTTP_1_1.minor());
+        assertEquals("1.1", HTTP_1_1.fullVersion());
         assertEquals("HTTP/1.1", HTTP_1_1.toString());
         assertWriteToBuffer("HTTP/1.1", HTTP_1_1);
     }
@@ -47,6 +48,7 @@ class HttpProtocolVersionTest {
     void testHttp10Constant() {
         assertEquals(1, HTTP_1_0.major());
         assertEquals(0, HTTP_1_0.minor());
+        assertEquals("1.0", HTTP_1_0.fullVersion());
         assertEquals("HTTP/1.0", HTTP_1_0.toString());
         assertWriteToBuffer("HTTP/1.0", HTTP_1_0);
     }
@@ -63,6 +65,7 @@ class HttpProtocolVersionTest {
         assertEquals(9, version98.major());
         assertEquals(8, version98.minor());
         assertEquals("HTTP/9.8", version98.toString());
+        assertEquals("9.8", version98.fullVersion());
         assertWriteToBuffer("HTTP/9.8", version98);
     }
 

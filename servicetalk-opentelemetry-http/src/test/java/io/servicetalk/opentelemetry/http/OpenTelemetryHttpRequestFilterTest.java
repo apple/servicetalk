@@ -213,8 +213,8 @@ class OpenTelemetryHttpRequestFilterTest {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient",
                     OpentelemetryOptions.newBuilder()
-                        .captureResponseHeaders(Collections.singletonList("my-header"))
-                        .captureRequestHeaders(Collections.singletonList("some-request-header"))
+                        .addCaptureResponseHeaders(Collections.singletonList("my-header"))
+                        .addCaptureRequestHeaders(Collections.singletonList("some-request-header"))
                         .build()))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)

@@ -200,8 +200,8 @@ class OpenTelemetryHttpServerFilterTest {
         final String requestUrl = "/path";
         try (ServerContext context = buildServer(otelTesting.getOpenTelemetry(),
             OpentelemetryOptions.newBuilder()
-                .captureResponseHeaders(Collections.singletonList("my-header"))
-                .captureRequestHeaders(Collections.singletonList("some-request-header"))
+                .addCaptureResponseHeaders(Collections.singletonList("my-header"))
+                .addCaptureRequestHeaders(Collections.singletonList("some-request-header"))
                 .build())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)

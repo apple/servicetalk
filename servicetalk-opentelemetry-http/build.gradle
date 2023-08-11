@@ -24,7 +24,8 @@ dependencies {
 
   api project(":servicetalk-http-api")
   api "io.opentelemetry:opentelemetry-api:$opentelemetryVersion"
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:$opentelemetryApiVersion")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:" +
+          "$opentelemetryInstrumentationVersion")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
@@ -38,7 +39,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing:$opentelemetryVersion"
   testRuntimeOnly("io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure:" +
-          "$opentelemetryApiVersion")
+          "$opentelemetryInstrumentationVersion")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

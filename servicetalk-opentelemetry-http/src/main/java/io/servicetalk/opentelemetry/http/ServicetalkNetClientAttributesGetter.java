@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.HostAndPort;
@@ -52,18 +51,7 @@ final class ServicetalkNetClientAttributesGetter
     if (response == null) {
       return null;
     }
-    HttpProtocolVersion version = response.version();
-    if (version.major() == 1) {
-      if (version.minor() == 1) {
-        return "1.1";
-      }
-      if (version.minor() == 0) {
-        return "1.0";
-      }
-    } else if (version.major() == 2 && version.minor() == 0) {
-      return "2.0";
-    }
-    return version.major() + "." + version.minor();
+    return response.version().fullVersion();
   }
 
   @Override
@@ -73,6 +61,7 @@ final class ServicetalkNetClientAttributesGetter
     return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
   }
 
+  @Nullable
   @Override
   public Integer getServerPort(HttpRequestMetaData request) {
     HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();

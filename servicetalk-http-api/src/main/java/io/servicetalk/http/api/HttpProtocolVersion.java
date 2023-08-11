@@ -150,6 +150,24 @@ public final class HttpProtocolVersion implements Protocol, Comparable<HttpProto
     }
 
     /**
+     * Resolves and return the http version number as a String. e.g. : 1.1 or 2.0.
+     * @return the http version number string.
+     */
+    public String fullVersion() {
+        if (major == 1) {
+            if (minor == 1) {
+                return "1.1";
+            }
+            if (minor == 0) {
+                return "1.0";
+            }
+        } else if (major == 2 && minor == 0) {
+            return "2.0";
+        }
+        return major + "." + minor;
+    }
+
+    /**
      * Determine if the protocol version is {@link #major()} is {@code 1} and trailers are supported.
      * @param version The version to check.
      * @return {@code true} if the protocol version is {@link #major()} is {@code 1} and trailers are supported.
