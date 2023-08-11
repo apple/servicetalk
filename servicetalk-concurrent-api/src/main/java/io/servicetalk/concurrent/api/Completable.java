@@ -1633,6 +1633,19 @@ public abstract class Completable {
     }
 
     /**
+     * Specify the {@link ContextMap} to use for {@link AsyncContext} when the returned {@link Completable} is
+     * subscribed to.
+     * <p>
+     * This operator only impacts behavior if the returned {@link Completable} is subscribed directly after this
+     * operator, that means this must be the "last operator" in the chain for this to have an impact.
+     * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
+     * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     */
+    public final Completable setContextOnSubscribe(ContextMap context) {
+        return new CompletableSetContextOnSubscribe(this, context);
+    }
+
+    /**
      * Creates a new {@link Completable} that terminates with the result (either success or error) of either this
      * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
      * result is said to be <strong>ambiguous</strong> relative to which source it originated from. After the first
