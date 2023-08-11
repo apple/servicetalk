@@ -343,8 +343,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         final StreamingHttpService filteredService;
         final HttpExecutionContext executionContext;
 
+        serviceFilters.add(HttpPayloadDiscardWatchdogServiceFilter.INSTANCE);
+
         if (noOffloadServiceFilters.isEmpty()) {
-            filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
+            filteredService = buildService(serviceFilters.stream(), rawService);
             executionContext = buildExecutionContext(computedStrategy);
         } else {
             Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
@@ -470,6 +472,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
+        service = HttpPayloadDiscardCleanerServiceFilter.INSTANCE.create(service);
         service = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
         service = KeepAliveServiceFilter.INSTANCE.create(service);
         if (lifecycleObserver != null) {
