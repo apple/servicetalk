@@ -35,23 +35,15 @@ final class ServicetalkNetClientAttributesGetter
   private ServicetalkNetClientAttributesGetter() {
   }
 
-  @Nullable
   @Override
   public String getNetworkProtocolName(HttpRequestMetaData request, @Nullable HttpResponseMetaData response) {
-    if (response == null) {
-      return null;
-    }
     return "http";
   }
 
-  @Nullable
   @Override
   public String getNetworkProtocolVersion(HttpRequestMetaData request,
                                           @Nullable HttpResponseMetaData response) {
-    if (response == null) {
-      return null;
-    }
-    return response.version().fullVersion();
+    return request.version().fullVersion();
   }
 
   @Override
