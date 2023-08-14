@@ -54,6 +54,10 @@ import static java.net.InetAddress.getLoopbackAddress;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -269,17 +273,17 @@ class SniTest {
 
     private static BlockingHttpService newSslVerifyService() {
         return (ctx, request, responseFactory) -> {
+            assertThat(ctx.sslConfig(), is(notNullValue()));
             SSLSession session = ctx.sslSession();
-            if (!(session instanceof ExtendedSSLSession)) {
-                return responseFactory.internalServerError();
-            }
-            long matched = ((ExtendedSSLSession) session).getRequestedServerNames().stream()
+            assertThat(session, is(notNullValue()));
+            assertThat(session, is(instanceOf(ExtendedSSLSession.class)));
+            assertThat(((ExtendedSSLSession) session).getRequestedServerNames().stream()
                     .filter(sni -> sni instanceof SNIHostName)
                     .map(SNIHostName.class::cast)
                     .map(SNIHostName::getAsciiName)
                     .filter(SNI_HOSTNAME::equals)
-                    .count();
-            return matched == 1 ? responseFactory.ok() : responseFactory.internalServerError();
+                    .count(), is(1L));
+            return responseFactory.ok();
         };
     }
 }

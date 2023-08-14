@@ -51,7 +51,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import io.netty.channel.Channel;
@@ -92,6 +92,8 @@ import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.noSslHandlers;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -103,9 +105,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
     private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
                                             FlushStrategy flushStrategy, long idleTimeoutMs,
-                                            @Nullable final SslConfig sslConfig,
+                                            @Nullable final SslConfig sslConfig, @Nullable final SSLSession sslSession,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, keepAliveManager);
+        super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, sslSession, keepAliveManager);
     }
 
     interface H2ClientParentConnection extends FilterableStreamingHttpConnection, NettyConnectionContext {
@@ -127,12 +129,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 final DelayedCancellable delayedCancellable;
                 final ChannelPipeline pipeline;
                 try {
-                    delayedCancellable = new DelayedCancellable();
-                    KeepAliveManager keepAliveManager = new KeepAliveManager(channel, config.keepAlivePolicy());
-                    H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            executionContext, parentFlushStrategy, idleTimeoutMs, sslConfig,
-                            keepAliveManager);
-                    channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
                     // This could mean if there are any synchronous events generated via ChannelInitializer handlers
@@ -140,9 +136,25 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // require some pipeline modifications if we wanted to insert NettyToStChannelInboundHandler first,
                     // but not allow any other handlers to be after it.
                     initializer.init(channel);
+
                     pipeline = channel.pipeline();
+                    final SSLSession sslSession;
+                    final boolean waitForSslHandshake;
+                    if (sslConfig != null) {
+                        sslSession = extractSslSessionAndReport(pipeline, observer != NoopConnectionObserver.INSTANCE);
+                        waitForSslHandshake = sslSession == null;
+                    } else {
+                        assert noSslHandlers(pipeline);
+                        sslSession = null;
+                        waitForSslHandshake = false;
+                    }
+                    H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
+                            executionContext, parentFlushStrategy, idleTimeoutMs, sslConfig, sslSession,
+                            new KeepAliveManager(channel, config.keepAlivePolicy()));
+                    channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
+                    delayedCancellable = new DelayedCancellable();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
+                            delayedCancellable, waitForSslHandshake,
                             allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);

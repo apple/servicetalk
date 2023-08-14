@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -45,12 +46,10 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,6 +58,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 class AlpnClientAndServerTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private static final String PAYLOAD_BODY = "Hello World!";
 
@@ -72,7 +80,7 @@ class AlpnClientAndServerTest {
                        List<String> clientSideProtocols,
                        @Nullable HttpProtocolVersion expectedProtocol) throws Exception {
         serverContext = startServer(serverSideProtocols);
-        client = startClient(serverHostAndPort(serverContext), clientSideProtocols);
+        client = startClient(serverContext, clientSideProtocols);
         this.expectedProtocol = expectedProtocol;
     }
 
@@ -123,7 +131,7 @@ class AlpnClientAndServerTest {
     }
 
     private ServerContext startServer(List<String> supportedProtocols) throws Exception {
-        return HttpServers.forAddress(localAddress(0))
+        return newServerBuilder(SERVER_CTX)
                 .protocols(toProtocolConfigs(supportedProtocols))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).provider(OPENSSL).build())
@@ -135,8 +143,8 @@ class AlpnClientAndServerTest {
                 .toFuture().get();
     }
 
-    private static BlockingHttpClient startClient(HostAndPort hostAndPort, List<String> supportedProtocols) {
-        return HttpClients.forSingleAddress(hostAndPort)
+    private static BlockingHttpClient startClient(ServerContext serverContext, List<String> supportedProtocols) {
+        return newClientBuilder(serverContext, CLIENT_CTX)
                 .protocols(toProtocolConfigs(supportedProtocols))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).provider(OPENSSL).build())
@@ -148,9 +156,9 @@ class AlpnClientAndServerTest {
                 .map(id -> {
                     switch (id) {
                         case HTTP_1_1:
-                            return h1Default();
+                            return HttpProtocol.HTTP_1.config;
                         case HTTP_2:
-                            return h2Default();
+                            return HttpProtocol.HTTP_2.config;
                         default:
                             throw new IllegalArgumentException("Unsupported protocol: " + id);
                     }
@@ -217,7 +225,7 @@ class AlpnClientAndServerTest {
         HttpServiceContext serviceCtx = serviceContext.take();
         assertThat(serviceCtx.protocol(), is(expectedProtocol));
         assertThat(serviceCtx.sslSession(), is(notNullValue()));
-        assertThat(serviceCtx.sslSession(), is(notNullValue()));
+        assertThat(serviceCtx.sslConfig(), is(notNullValue()));
         assertThat(requestVersion.take(), is(expectedProtocol));
 
         assertThat(serviceContext, is(empty()));

@@ -23,6 +23,7 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -42,6 +43,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -52,6 +54,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpsProxyTest {
@@ -122,9 +125,24 @@ class HttpsProxyTest {
     }
 
     @Test
-    void testRequest() throws Exception {
+    void testClientRequest() throws Exception {
         assert client != null;
-        final HttpResponse httpResponse = client.request(client.get("/path"));
+        assertResponse(client.request(client.get("/path")));
+    }
+
+    @Test
+    void testConnectionRequest() throws Exception {
+        assert client != null;
+        try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
+            assertThat(connection.connectionContext().protocol(), is(HTTP_1_1));
+            assertThat(connection.connectionContext().sslConfig(), is(notNullValue()));
+            assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
+
+            assertResponse(connection.request(connection.get("/path")));
+        }
+    }
+
+    private void assertResponse(HttpResponse httpResponse) {
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyTunnel.connectCount(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
