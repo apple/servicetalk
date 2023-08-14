@@ -51,7 +51,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import io.netty.channel.Channel;
@@ -93,7 +92,6 @@ import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.noSslHandlers;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -138,23 +136,15 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     initializer.init(channel);
 
                     pipeline = channel.pipeline();
-                    final SSLSession sslSession;
-                    final boolean waitForSslHandshake;
-                    if (sslConfig != null) {
-                        sslSession = extractSslSessionAndReport(pipeline, observer != NoopConnectionObserver.INSTANCE);
-                        waitForSslHandshake = sslSession == null;
-                    } else {
-                        assert noSslHandlers(pipeline);
-                        sslSession = null;
-                        waitForSslHandshake = false;
-                    }
+                    @Nullable
+                    final SSLSession sslSession = extractSslSessionAndReport(sslConfig, pipeline, observer);
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
                             executionContext, parentFlushStrategy, idleTimeoutMs, sslConfig, sslSession,
                             new KeepAliveManager(channel, config.keepAlivePolicy()));
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
-                            delayedCancellable, waitForSslHandshake,
+                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig),
                             allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);

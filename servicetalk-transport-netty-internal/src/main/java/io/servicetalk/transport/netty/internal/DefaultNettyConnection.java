@@ -87,7 +87,6 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.noSslHandlers;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -348,7 +347,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);
         channel.pipeline().addLast(new NettyToStChannelHandler<>(connection, null,
-                null, false, false, NoopConnectionObserver.INSTANCE));
+                null, false, NoopConnectionObserver.INSTANCE));
         return connection;
     }
 
@@ -503,25 +502,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     initializer.init(channel);
 
                     pipeline = channel.pipeline();
-                    final SSLSession sslSession;
-                    final boolean waitForSslHandshake;
-                    if (sslConfig != null) {
-                        sslSession = extractSslSessionAndReport(pipeline, observer != NoopConnectionObserver.INSTANCE);
-                        waitForSslHandshake = sslSession == null && pipeline.get(DeferSslHandler.class) == null;
-                    } else {
-                        assert noSslHandlers(pipeline);
-                        sslSession = null;
-                        waitForSslHandshake = false;
-                    }
+                    @Nullable
+                    final SSLSession sslSession = extractSslSessionAndReport(sslConfig, pipeline, observer);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, null,
                             executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig,
                             sslSession, null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
-                    final boolean reportSslHandshake = observer != NoopConnectionObserver.INSTANCE &&
-                            (waitForSslHandshake || pipeline.get(DeferSslHandler.class) != null);
                     nettyInboundHandler = new NettyToStChannelHandler<>(connection, subscriber,
-                            delayedCancellable, waitForSslHandshake, reportSslHandshake, observer);
+                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig, pipeline), observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -533,6 +522,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 pipeline.addLast(nettyInboundHandler);
             }
         };
+    }
+
+    private static boolean shouldWaitForSslHandshake(@Nullable final SSLSession sslSession,
+                                                     @Nullable final SslConfig sslConfig,
+                                                     final ChannelPipeline pipeline) {
+        return sslConfig != null && sslSession == null && pipeline.get(DeferSslHandler.class) == null;
     }
 
     private Publisher<Read> registerReadObserver(final Publisher<Read> readPublisher) {
@@ -834,7 +829,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private static final class NettyToStChannelHandler<Read, Write> extends ChannelDuplexHandler {
         private final DefaultNettyConnection<Read, Write> connection;
         private final boolean waitForSslHandshake;
-        private final boolean reportSslHandshake;
         @Nullable
         private final DelayedCancellable delayedCancellable;
         @Nullable
@@ -845,13 +839,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                 @Nullable
                                 SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
                                 @Nullable DelayedCancellable delayedCancellable,
-                                boolean waitForSslHandshake, boolean reportSslHandshake,
+                                boolean waitForSslHandshake,
                                 ConnectionObserver observer) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
-            this.reportSslHandshake = reportSslHandshake;
             this.observer = observer;
         }
 
@@ -945,7 +938,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                         DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber, reportSslHandshake);
+                        this::tryFailSubscriber,
+                        observer != NoopConnectionObserver.INSTANCE && connection.sslSession == null);
                 if (subscriber != null && waitForSslHandshake) {
                     completeSubscriber();
                 }

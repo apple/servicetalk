@@ -170,6 +170,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         keepAliveManager.trackActiveStream(streamChannel);
     }
 
+    static boolean shouldWaitForSslHandshake(@Nullable final SSLSession sslSession,
+                                             @Nullable final SslConfig sslConfig) {
+        return sslConfig != null && sslSession == null;
+    }
+
     abstract static class AbstractH2ParentConnection extends ChannelInboundHandlerAdapter {
         final H2ParentConnectionContext parentContext;
         final boolean waitForSslHandshake;

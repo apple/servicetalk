@@ -15,8 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
@@ -51,36 +54,30 @@ public final class NettyPipelineSslUtils {
      * @return {@code true} if the pipeline is configured to use SSL/TLS.
      *
      * @deprecated not required anymore, will be removed in the future releases, see
-     * {@link #extractSslSessionAndReport(ChannelPipeline, boolean)}
+     * {@link #extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)} for an alternative approach
      */
     @Deprecated
-    public static boolean isSslEnabled(ChannelPipeline pipeline) {
+    public static boolean isSslEnabled(ChannelPipeline pipeline) {  // FIXME: 0.43 - remove deprecated method
         return pipeline.get(SslHandler.class) != null || pipeline.get(SniHandler.class) != null;
-    }
-
-    /**
-     * Verifies that {@link ChannelPipeline} does not have any known SSL/TLS related handlers.
-     *
-     * @param pipeline {@link ChannelPipeline} to verify
-     * @return {@code true} if {@link ChannelPipeline} does not have any known SSL/TLS related handlers, {@code false}
-     * otherwise
-     */
-    public static boolean noSslHandlers(final ChannelPipeline pipeline) {
-        return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
-                pipeline.get(SniHandler.class) == null;
     }
 
     /**
      * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the handshake is already done
      * and reports the result to {@link SecurityHandshakeObserver} if available.
      *
-     * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
-     * @param shouldReport {@code true} if the handshake status should be reported to {@link SecurityHandshakeObserver}.
-     * @return The {@link SSLSession} or {@code null} if none can be found.
+     * @param sslConfig {@link SslConfig} if SSL/TLS is expected
+     * @param pipeline {@link ChannelPipeline} which contains a handler containing the {@link SSLSession}
+     * @param connectionObserver {@link ConnectionObserver} in case the handshake status should be reported
+     * @return The {@link SSLSession} or {@code null} if none can be found
      */
     @Nullable
-    public static SSLSession extractSslSessionAndReport(final ChannelPipeline pipeline,
-                                                        final boolean shouldReport) {
+    public static SSLSession extractSslSessionAndReport(@Nullable final SslConfig sslConfig,
+                                                        final ChannelPipeline pipeline,
+                                                        final ConnectionObserver connectionObserver) {
+        if (sslConfig == null) {
+            assert noSslHandlers(pipeline);
+            return null;
+        }
         final SslHandler sslHandler = pipeline.get(SslHandler.class);
         if (sslHandler == null) {
             if (pipeline.get(DeferSslHandler.class) != null) {
@@ -90,7 +87,8 @@ public final class NettyPipelineSslUtils {
         }
         final Future<Channel> handshakeFuture = sslHandler.handshakeFuture();
         if (handshakeFuture.isDone()) {
-            final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline, shouldReport);
+            final SecurityHandshakeObserver observer = lookForHandshakeObserver(pipeline,
+                    connectionObserver != NoopConnectionObserver.INSTANCE);
             final Throwable cause = handshakeFuture.cause();
             if (cause != null) {
                 if (observer != null) {
@@ -130,6 +128,11 @@ public final class NettyPipelineSslUtils {
             deliverFailureCause(failureConsumer, sslEvent.cause(), observer);
         }
         return null;
+    }
+
+    private static boolean noSslHandlers(final ChannelPipeline pipeline) {
+        return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
+                pipeline.get(SniHandler.class) == null;
     }
 
     private static SSLSession getSslSession(final SslHandler sslHandler,
