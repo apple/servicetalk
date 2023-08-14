@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -28,18 +29,17 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/**
+ * Filter which tracks HTTP payloads sent by the service so it can be freed if discarded in the pipeline.
+ */
 final class HttpPayloadDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
     /**
      * Instance of {@link HttpPayloadDiscardWatchdogServiceFilter}.
      */
-    public static final StreamingHttpServiceFilterFactory INSTANCE = new HttpPayloadDiscardWatchdogServiceFilter();
+    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpPayloadDiscardWatchdogServiceFilter();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpPayloadDiscardWatchdogServiceFilter.class);
-
+    @SuppressWarnings("rawtypes")
     static final ContextMap.Key<Publisher> payloadPublisherKey = ContextMap.Key
             .newKey("io.servicetalk.http.netty.payloadPublisher", Publisher.class);
 
@@ -61,10 +61,17 @@ final class HttpPayloadDiscardWatchdogServiceFilter implements StreamingHttpServ
                 return delegate()
                         .handle(ctx, request, responseFactory)
                         .map(response -> {
-                            request.context().put(payloadPublisherKey, response.payloadBody());
-                            return response.transformPayloadBody(bufferPublisher ->
-                                    bufferPublisher.beforeOnSubscribe(subscription ->
-                                            request.context().put(payloadSubscribedKey, true)));
+                            if (!HttpApiConversions.isPayloadEmpty(response)) {
+                                // If the payload is not empty, always write the buffer publisher into the
+                                // request context. When a downstream subscriber arrives, mark the payload
+                                // as subscribed explicitly (having a payload present and no subscription is
+                                // an indicator that it must be freed later on).
+                                request.context().put(payloadPublisherKey, response.payloadBody());
+                                return response.transformPayloadBody(bufferPublisher ->
+                                        bufferPublisher.beforeOnSubscribe(subscription ->
+                                                request.context().put(payloadSubscribedKey, true)));
+                            }
+                            return response;
                         });
             }
 

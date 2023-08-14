@@ -48,10 +48,43 @@ final class HttpServicePayloadDiscardWatchdogTest {
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                 final StreamingHttpRequest request,
                                                                 final StreamingHttpResponseFactory responseFactory) {
-                        return delegate().handle(ctx, request, responseFactory).beforeOnSuccess(response -> {
-                            response.transformPayloadBody(payload -> Publisher.empty());
-                        });
+                        return delegate()
+                                .handle(ctx, request, responseFactory)
+                                .beforeOnSuccess(res -> res.transformPayloadBody(payload -> Publisher.empty()));
                     }
+                })
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> {
+                    final Publisher<Buffer> buffer = Publisher
+                            .from(ctx.executionContext().bufferAllocator().fromUtf8("Hello, World!"))
+                            .beforeOnSubscribe(subscription -> payloadSubscribed.set(true));
+                    return Single.succeeded(responseFactory.ok().payloadBody(buffer));
+                })) {
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(
+                    HostAndPort.of((InetSocketAddress) serverContext.listenAddress())).buildBlocking()) {
+                HttpResponse response = client.request(client.get("/"));
+                assertEquals(0, response.payloadBody().readableBytes());
+            }
+
+            assertTrue(payloadSubscribed.get());
+        }
+    }
+
+    @Test
+    void cleansPayloadBodyIfErrorInFilter() throws Exception {
+        final AtomicBoolean payloadSubscribed = new AtomicBoolean(false);
+        try (HttpServerContext serverContext = HttpServers
+                .forPort(0)
+                .appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory responseFactory) {
+                        return delegate()
+                                .handle(ctx, request, responseFactory)
+                                .map(res -> {
+                                    throw new IllegalStateException("I don't like this response!");
+                                });
+                    };
                 })
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     final Publisher<Buffer> buffer = Publisher

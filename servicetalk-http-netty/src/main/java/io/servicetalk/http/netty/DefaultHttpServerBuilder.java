@@ -343,6 +343,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         final StreamingHttpService filteredService;
         final HttpExecutionContext executionContext;
 
+        // The watchdog sits at the very beginning of the filter pipeline so that any payload coming from
+        // the service is ensured to be tracked before subsequent filters get a chance to drop it without
+        // being accounted for.
         serviceFilters.add(HttpPayloadDiscardWatchdogServiceFilter.INSTANCE);
 
         if (noOffloadServiceFilters.isEmpty()) {
@@ -472,7 +475,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
+        // This filter is placed at the end to make sure that the end of the response lifecycle any discarded payloads
+        // coming from the service are cleaned up.
         service = HttpPayloadDiscardCleanerServiceFilter.INSTANCE.create(service);
+
         service = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
         service = KeepAliveServiceFilter.INSTANCE.create(service);
         if (lifecycleObserver != null) {

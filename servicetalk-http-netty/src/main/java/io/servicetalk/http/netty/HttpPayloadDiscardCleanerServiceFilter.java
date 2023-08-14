@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLifecycleObserver;
@@ -44,7 +45,7 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
     /**
      * Instance of {@link HttpPayloadDiscardCleanerServiceFilter}.
      */
-    public static final StreamingHttpServiceFilterFactory INSTANCE = new HttpPayloadDiscardCleanerServiceFilter();
+    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpPayloadDiscardCleanerServiceFilter();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpPayloadDiscardCleanerServiceFilter.class);
 
@@ -86,9 +87,6 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
             @Nullable
             private HttpRequestMetaData requestMetaData;
 
-            @Nullable
-            private HttpResponseMetaData responseMetaData;
-
             @Override
             public HttpRequestObserver onRequest(final HttpRequestMetaData requestMetaData) {
                 this.requestMetaData = requestMetaData;
@@ -97,18 +95,21 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
 
             @Override
             public HttpResponseObserver onResponse(final HttpResponseMetaData responseMetaData) {
-                this.responseMetaData = responseMetaData;
                 return NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE;
             }
 
             @Override
             public void onExchangeFinally() {
-                if (requestMetaData != null && responseMetaData != null) {
-                    Boolean subscribed = requestMetaData.context().get(payloadSubscribedKey);
-                    if (subscribed == null) {
-                        // Not subscribed to payload, and also not empty
-                        Publisher<?> payload = requestMetaData.context().get(payloadPublisherKey);
+                if (requestMetaData != null) {
+                    final ContextMap requestContext = requestMetaData.context();
+                    if (requestContext.get(payloadSubscribedKey) == null) {
+                        // No-one subscribed to the payload (or there is none), so if there is a payload
+                        // proactively clean it up.
+                        Publisher<?> payload = requestContext.get(payloadPublisherKey);
                         if (payload != null) {
+                            LOGGER.debug("Proactively cleaning up HTTP response payload which has been dropped - " +
+                                            "this is a strong indication of a bug in a filter. Request: {}",
+                                    requestMetaData);
                             payload.ignoreElements().subscribe();
                         }
                     }
@@ -125,6 +126,10 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
 
             @Override
             public void onResponseCancel() {
+            }
+
+            private void tryCleanPayload() {
+
             }
         };
     }
