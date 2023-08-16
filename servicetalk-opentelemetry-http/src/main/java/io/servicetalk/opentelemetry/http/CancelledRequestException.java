@@ -16,23 +16,10 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
+class CancelledRequestException extends Exception {
+    static final CancelledRequestException INSTANCE = new CancelledRequestException();
 
-import io.opentelemetry.context.propagation.TextMapSetter;
-
-import javax.annotation.Nullable;
-
-final class RequestHeadersPropagatorSetter implements TextMapSetter<HttpRequestMetaData> {
-
-    static final TextMapSetter<HttpRequestMetaData> INSTANCE = new RequestHeadersPropagatorSetter();
-
-    private RequestHeadersPropagatorSetter() {
-    }
-
-    @Override
-    public void set(@Nullable final HttpRequestMetaData headers, final String key, final String value) {
-        if (headers != null) {
-            HeadersPropagatorSetter.INSTANCE.set(headers.headers(), key, value);
-        }
+    CancelledRequestException() {
+        super("canceled", null, false, false);
     }
 }

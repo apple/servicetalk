@@ -42,13 +42,13 @@ final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<HttpRe
             spanStatusBuilder.setStatus(StatusCode.ERROR);
         } else if (status != null) {
             switch (status.status().statusClass()) {
-                case INFORMATIONAL_1XX:
-                case SUCCESSFUL_2XX:
-                case REDIRECTION_3XX:
-                    spanStatusBuilder.setStatus(StatusCode.OK);
+                case CLIENT_ERROR_4XX:
+                case SERVER_ERROR_5XX:
+                    spanStatusBuilder.setStatus(StatusCode.ERROR);
                     break;
                 default:
-                    spanStatusBuilder.setStatus(StatusCode.ERROR);
+                    spanStatusBuilder.setStatus(StatusCode.OK);
+                    break;
             }
         } else {
             SpanStatusExtractor.getDefault().extract(spanStatusBuilder, request, null, null);

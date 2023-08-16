@@ -43,7 +43,10 @@ final class ServicetalkNetClientAttributesGetter
   @Override
   public String getNetworkProtocolVersion(HttpRequestMetaData request,
                                           @Nullable HttpResponseMetaData response) {
-    return request.version().fullVersion();
+    if (response == null) {
+      return request.version().fullVersion();
+    }
+    return response.version().fullVersion();
   }
 
   @Override

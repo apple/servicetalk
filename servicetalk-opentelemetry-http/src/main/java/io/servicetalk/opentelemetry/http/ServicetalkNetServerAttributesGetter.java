@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.HostAndPort;
@@ -37,21 +36,18 @@ final class ServicetalkNetServerAttributesGetter
   private ServicetalkNetServerAttributesGetter() {
   }
 
-  @Nullable
   @Override
   public String getNetworkProtocolName(HttpRequestMetaData request, @Nullable HttpResponseMetaData response) {
-
-    if (response == null) {
-      return null;
-    }
     return "http";
   }
 
   @Override
   public String getNetworkProtocolVersion(HttpRequestMetaData request,
                                           @Nullable HttpResponseMetaData response) {
-    HttpProtocolVersion version = request.version();
-    return version.fullVersion();
+    if (response != null) {
+      return response.version().fullVersion();
+    }
+    return request.version().fullVersion();
   }
 
   @Override

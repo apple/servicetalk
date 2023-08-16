@@ -102,7 +102,7 @@ class OpenTelemetryHttpServerFilterTest {
                             .isEqualTo("1.1");
                         assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
                             .isEqualTo("GET");
-                        assertThat(span.getName()).isEqualTo("GET /path");
+                        assertThat(span.getName()).isEqualTo("GET");
                         assertThat(span.getAttributes()
                             .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
                             .isNull();
@@ -138,8 +138,8 @@ class OpenTelemetryHttpServerFilterTest {
 
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/path");
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http");
                         assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
                     });

@@ -63,6 +63,7 @@ import java.util.function.UnaryOperator;
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
+    public static final OpentelemetryOptions DEFAULT_OPTIONS = OpentelemetryOptions.newBuilder().build();
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     /**
@@ -72,7 +73,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * @param componentName        The component name used during building new spans.
      * @param opentelemetryOptions extra options to create the opentelemetry filter.
      */
-    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
+    OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
                                           OpentelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
@@ -107,7 +108,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * @param componentName The component name used during building new spans.
      */
     public OpenTelemetryHttpRequestFilter(String componentName) {
-        this(GlobalOpenTelemetry.get(), componentName, OpentelemetryOptions.newBuilder().build());
+        this(componentName, DEFAULT_OPTIONS);
     }
 
     /**
@@ -115,9 +116,15 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      *
      * @param openTelemetry the {@link OpenTelemetry}.
      * @param componentName The component name used during building new spans.
+     * @deprecated this method is internal, no client should be setting the Opentelemetry as it is obtained by using
+     * * {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
+     * * the classpath, this constructor will be removed.
+     *  Use {@link #OpenTelemetryHttpRequestFilter(String)} instead.
      */
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        this(openTelemetry, componentName, OpentelemetryOptions.newBuilder().build());
+        this(openTelemetry, componentName, DEFAULT_OPTIONS);
     }
 
     /**
@@ -135,7 +142,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * using the hostname as the component name.
      */
     public OpenTelemetryHttpRequestFilter() {
-        this(GlobalOpenTelemetry.get(), "", OpentelemetryOptions.newBuilder().build());
+        this("");
     }
 
     @Override

@@ -59,6 +59,7 @@ import java.util.function.UnaryOperator;
  */
 public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpServiceFilterFactory {
+    public static final OpentelemetryOptions DEFAULT_OPTIONS = OpentelemetryOptions.newBuilder().build();
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     /**
@@ -67,7 +68,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
      * @param openTelemetry          the {@link OpenTelemetry}.
      * @param opentelemetryOptions extra options to create the opentelemetry filter.
      */
-    public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry, OpentelemetryOptions opentelemetryOptions) {
+    OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry, OpentelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
             HttpSpanNameExtractor.create(ServicetalkHttpServerAttributesGetter.INSTANCE);
@@ -96,7 +97,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
      * Create a new Instance, searching for any instance of an opentelemetry available.
      */
     public OpenTelemetryHttpServerFilter() {
-        this(GlobalOpenTelemetry.get(), OpentelemetryOptions.newBuilder().build());
+        this(DEFAULT_OPTIONS);
     }
 
     /**
@@ -112,9 +113,16 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
      * Create a new instance.
      *
      * @param openTelemetry the {@link OpenTelemetry}.
+     * @deprecated this method is internal, no client should be setting the Opentelemetry as it is obtained by using
+     * {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
+     * the classpath, this constructor will be removed.
+     * Use {@link #OpenTelemetryHttpServerFilter(OpentelemetryOptions)} or {@link #OpenTelemetryHttpServerFilter()}
+     * instead.
      */
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        this(openTelemetry, OpentelemetryOptions.newBuilder().build());
+        this(openTelemetry, DEFAULT_OPTIONS);
     }
 
     @Override

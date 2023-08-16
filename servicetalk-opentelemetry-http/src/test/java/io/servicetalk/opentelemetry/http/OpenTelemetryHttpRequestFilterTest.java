@@ -99,8 +99,8 @@ class OpenTelemetryHttpRequestFilterTest {
 
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/"));
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http"));
             }
         }
     }
@@ -131,8 +131,6 @@ class OpenTelemetryHttpRequestFilterTest {
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
                         SpanData span = ta.getSpan(0);
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/path");
                         assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
                             .isEqualTo("GET");
                         assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
@@ -190,8 +188,8 @@ class OpenTelemetryHttpRequestFilterTest {
 
                     otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
-                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_URL))
-                                .isEqualTo("/path/to/resource"));
+                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                                .isEqualTo("http"));
                         otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))

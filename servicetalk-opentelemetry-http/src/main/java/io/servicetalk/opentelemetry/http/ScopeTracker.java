@@ -36,17 +36,17 @@ class ScopeTracker implements TerminalSignalConsumer {
 
     private final Scope currentScope;
     private final Context context;
-    private final StreamingHttpRequest request;
+    private final StreamingHttpRequest requestMetaData;
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     @Nullable
-    protected HttpResponseMetaData metaData;
+    private HttpResponseMetaData metaData;
 
-    ScopeTracker(Scope currentScope, Context context, StreamingHttpRequest request,
+    ScopeTracker(Scope currentScope, Context context, StreamingHttpRequest requestMetaData,
                  Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
         this.currentScope = requireNonNull(currentScope);
         this.context = requireNonNull(context);
-        this.request = requireNonNull(request);
+        this.requestMetaData = requireNonNull(requestMetaData);
         this.instrumenter = requireNonNull(instrumenter);
     }
 
@@ -58,7 +58,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     public void onComplete() {
         assert metaData != null : "can't have succeeded without capturing metadata first";
         try {
-            instrumenter.end(context, request, metaData, null);
+            instrumenter.end(context, requestMetaData, metaData, null);
         } finally {
             closeAll();
         }
@@ -67,7 +67,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void onError(final Throwable throwable) {
         try {
-            instrumenter.end(context, request, metaData, throwable);
+            instrumenter.end(context, requestMetaData, metaData, throwable);
         } finally {
             closeAll();
         }
@@ -76,7 +76,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void cancel() {
         try {
-            instrumenter.end(context, request, metaData, null);
+            instrumenter.end(context, requestMetaData, metaData, CancelledRequestException.INSTANCE);
         } finally {
             closeAll();
         }

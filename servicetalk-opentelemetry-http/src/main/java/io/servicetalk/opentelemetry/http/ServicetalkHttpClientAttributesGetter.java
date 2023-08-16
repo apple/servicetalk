@@ -22,7 +22,6 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -42,11 +41,7 @@ final class ServicetalkHttpClientAttributesGetter
 
     @Override
     public List<String> getHttpRequestHeader(HttpRequestMetaData httpRequestMetaData, String name) {
-        CharSequence value = httpRequestMetaData.headers().get(name);
-        if (value != null) {
-            return Collections.singletonList(value.toString());
-        }
-        return Collections.emptyList();
+        return HeadersPropagatorGetter.getHeadersValue(name, httpRequestMetaData.headers());
     }
 
     @Override
@@ -60,23 +55,18 @@ final class ServicetalkHttpClientAttributesGetter
     public List<String> getHttpResponseHeader(HttpRequestMetaData httpRequestMetaData,
                                               HttpResponseMetaData httpResponseMetaData,
                                               String name) {
-        CharSequence value = httpResponseMetaData.headers().get(name);
-        if (value != null) {
-            return Collections.singletonList(value.toString());
-        }
-        return Collections.emptyList();
+        return HeadersPropagatorGetter.getHeadersValue(name, httpResponseMetaData.headers());
     }
 
     @Nullable
     @Override
     public String getUrlFull(HttpRequestMetaData request) {
         HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
-        String requestScheme = request.scheme() != null ? request.scheme()
-            : "http";
-        CharSequence hostAndPort = request.headers().contains("host") ? request.headers().get("host")
-            : effectiveHostAndPort != null ?
-            String.format("%s:%d", effectiveHostAndPort.hostName(), effectiveHostAndPort.port()) : null;
-        return hostAndPort != null ? String.format("%s://%s%s", requestScheme, hostAndPort, request.path()) :
-            request.path();
+        if (effectiveHostAndPort == null) {
+            return null;
+        }
+        String requestScheme = request.scheme() == null ? "http" : request.scheme();
+        String hostAndPort = effectiveHostAndPort.hostName() + ":" + effectiveHostAndPort.port();
+        return requestScheme + "://" + hostAndPort + "/" + request.requestTarget();
     }
 }

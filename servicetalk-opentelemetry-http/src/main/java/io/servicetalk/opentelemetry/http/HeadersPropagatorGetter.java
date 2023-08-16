@@ -21,7 +21,10 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
@@ -66,5 +69,12 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         }
         final CharSequence value = carrier.get(key);
         return value == null ? null : value.toString();
+    }
+
+    static List<String> getHeadersValue(String name, HttpHeaders headers) {
+        Iterable<? extends CharSequence> value = headers.values(name);
+        return StreamSupport.stream(value.spliterator(), false)
+            .map(CharSequence::toString)
+            .collect(Collectors.toList());
     }
 }

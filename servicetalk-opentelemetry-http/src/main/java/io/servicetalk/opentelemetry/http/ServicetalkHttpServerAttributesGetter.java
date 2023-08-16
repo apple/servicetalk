@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -37,7 +36,7 @@ final class ServicetalkHttpServerAttributesGetter
     @Nullable
     @Override
     public String getUrlScheme(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.scheme();
+        return httpRequestMetaData.scheme() == null ? "http" : httpRequestMetaData.scheme();
     }
 
     @Override
@@ -57,11 +56,7 @@ final class ServicetalkHttpServerAttributesGetter
 
     @Override
     public List<String> getHttpRequestHeader(HttpRequestMetaData httpRequestMetaData, String name) {
-        CharSequence value = httpRequestMetaData.headers().get(name);
-        if (value != null) {
-            return Collections.singletonList(value.toString());
-        }
-        return Collections.emptyList();
+        return HeadersPropagatorGetter.getHeadersValue(name, httpRequestMetaData.headers());
     }
 
     @Override
@@ -75,15 +70,6 @@ final class ServicetalkHttpServerAttributesGetter
     public List<String> getHttpResponseHeader(HttpRequestMetaData httpRequestMetaData,
                                               HttpResponseMetaData httpResponseMetaData,
                                               String name) {
-        CharSequence value = httpResponseMetaData.headers().get(name);
-        if (value != null) {
-            return Collections.singletonList(value.toString());
-        }
-        return Collections.emptyList();
-    }
-
-    @Override
-    public String getHttpRoute(HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.path();
+        return HeadersPropagatorGetter.getHeadersValue(name, httpResponseMetaData.headers());
     }
 }
