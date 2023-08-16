@@ -69,13 +69,14 @@ public final class NettyPipelineSslUtils {
      * @param pipeline {@link ChannelPipeline} which contains a handler containing the {@link SSLSession}
      * @param connectionObserver {@link ConnectionObserver} in case the handshake status should be reported
      * @return The {@link SSLSession} or {@code null} if none can be found
+     * @throws IllegalStateException if {@link SslHandler} can not be found in the {@link ChannelPipeline}
      */
     @Nullable
     public static SSLSession extractSslSessionAndReport(@Nullable final SslConfig sslConfig,
                                                         final ChannelPipeline pipeline,
                                                         final ConnectionObserver connectionObserver) {
         if (sslConfig == null) {
-            assert noSslHandlers(pipeline);
+            assert noSslHandlers(pipeline) : "No SslConfig configured but SSL-related handler found in the pipeline";
             return null;
         }
         final SslHandler sslHandler = pipeline.get(SslHandler.class);
