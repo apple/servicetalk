@@ -16,19 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionInfo;
 
@@ -40,14 +31,15 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_PUBLISHER_KEY;
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_SUBSCRIBED_KEY;
 
-final class HttpMessageDiscardCleanerServiceFilter implements StreamingHttpServiceFilterFactory, HttpLifecycleObserver {
+final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLifecycleObserver {
 
     /**
-     * Instance of {@link HttpMessageDiscardCleanerServiceFilter}.
+     * Instance of {@link HttpMessageDiscardCleanerServiceLifecycleObserver}.
      */
-    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpMessageDiscardCleanerServiceFilter();
+    static final StreamingHttpServiceFilterFactory FILTER =
+            new HttpLifecycleObserverServiceFilter(new HttpMessageDiscardCleanerServiceLifecycleObserver());
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardCleanerServiceFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardCleanerServiceLifecycleObserver.class);
 
     /**
      * Helps to remember if we logged an error for user-defined filters already to not spam the logs.
@@ -57,34 +49,8 @@ final class HttpMessageDiscardCleanerServiceFilter implements StreamingHttpServi
      */
     private static boolean loggedError = false;
 
-    private HttpMessageDiscardCleanerServiceFilter() {
+    private HttpMessageDiscardCleanerServiceLifecycleObserver() {
         // Singleton
-    }
-
-    @Override
-    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-
-        final WatchdogHttpLifecycleObserver observer = new WatchdogHttpLifecycleObserver(this, false);
-
-        return new StreamingHttpServiceFilter(service) {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                return observer.trackLifecycle(ctx, request, r -> delegate().handle(ctx, r, responseFactory));
-            }
-        };
-    }
-
-    @Override
-    public HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.offloadNone();
-    }
-
-    private static class WatchdogHttpLifecycleObserver extends AbstractLifecycleObserverHttpFilter {
-        WatchdogHttpLifecycleObserver(final HttpLifecycleObserver observer, final boolean client) {
-            super(observer, client);
-        }
     }
 
     @Override
