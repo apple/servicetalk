@@ -91,7 +91,9 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     @Override
                     public Single<StreamingHttpResponse> apply(final Single<StreamingHttpResponse> response,
                                                                final StreamingHttpResponseFactory responseFactory) {
-                        return response.map(r -> {throw new DeliberateException();});
+                        return response.map(r -> {
+                            throw new DeliberateException();
+                        });
                     }
 
                     @Override
@@ -141,5 +143,4 @@ final class HttpMessageDiscardWatchdogServiceTest {
     interface ResponseTransformer extends BiFunction<
             Single<StreamingHttpResponse>, StreamingHttpResponseFactory, Single<StreamingHttpResponse>> {
     }
-
 }

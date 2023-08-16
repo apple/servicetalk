@@ -33,13 +33,14 @@ import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.
 
 final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLifecycleObserver {
 
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(HttpMessageDiscardCleanerServiceLifecycleObserver.class);
+
     /**
      * Instance of {@link HttpMessageDiscardCleanerServiceLifecycleObserver}.
      */
     static final StreamingHttpServiceFilterFactory FILTER =
             new HttpLifecycleObserverServiceFilter(new HttpMessageDiscardCleanerServiceLifecycleObserver());
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardCleanerServiceLifecycleObserver.class);
 
     /**
      * Helps to remember if we logged an error for user-defined filters already to not spam the logs.
@@ -47,7 +48,7 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
      * NOTE: this variable is intentionally not volatile since thread visibility is not a concern, but repeated
      * volatile accesses are.
      */
-    private static boolean loggedError = false;
+    private static boolean loggedError;
 
     private HttpMessageDiscardCleanerServiceLifecycleObserver() {
         // Singleton
@@ -82,8 +83,9 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
                         Publisher<?> message = requestContext.get(MESSAGE_PUBLISHER_KEY);
                         if (message != null) {
                             if (!loggedError) {
-                                LOGGER.error("Proactively cleaning up HTTP response message which has been dropped - " +
-                                                "this is a strong indication of a bug in a user-defined filter. Request: {}",
+                                LOGGER.error("Proactively cleaning up HTTP response message which has been " +
+                                                "dropped - this is a strong indication of a bug in a user-defined " +
+                                                "filter. Request: {}",
                                         requestMetaData);
                                 loggedError = true;
                             }
