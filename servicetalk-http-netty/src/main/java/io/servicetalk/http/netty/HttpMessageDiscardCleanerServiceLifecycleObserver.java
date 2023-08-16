@@ -31,6 +31,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_PUBLISHER_KEY;
 
+/**
+ * This {@link HttpLifecycleObserver} works in combination with the {@link HttpMessageDiscardWatchdogServiceFilter} to
+ * track and clean up message bodies which have been discarded by user filters.
+ *
+ * @see HttpMessageDiscardWatchdogServiceFilter
+ */
 final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLifecycleObserver {
 
     private static final Logger LOGGER = LoggerFactory

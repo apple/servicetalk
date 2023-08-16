@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
 
 /**
  * Filter which tracks HTTP messages sent by the service, so it can be freed if discarded in the pipeline.
+ *
+ * @see HttpMessageDiscardCleanerServiceLifecycleObserver
  */
 final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
