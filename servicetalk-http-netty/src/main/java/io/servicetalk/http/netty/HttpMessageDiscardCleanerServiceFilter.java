@@ -37,19 +37,27 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.HttpPayloadDiscardWatchdogServiceFilter.payloadPublisherKey;
-import static io.servicetalk.http.netty.HttpPayloadDiscardWatchdogServiceFilter.payloadSubscribedKey;
+import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_PUBLISHER_KEY;
+import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_SUBSCRIBED_KEY;
 
-final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServiceFilterFactory, HttpLifecycleObserver {
+final class HttpMessageDiscardCleanerServiceFilter implements StreamingHttpServiceFilterFactory, HttpLifecycleObserver {
 
     /**
-     * Instance of {@link HttpPayloadDiscardCleanerServiceFilter}.
+     * Instance of {@link HttpMessageDiscardCleanerServiceFilter}.
      */
-    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpPayloadDiscardCleanerServiceFilter();
+    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpMessageDiscardCleanerServiceFilter();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpPayloadDiscardCleanerServiceFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardCleanerServiceFilter.class);
 
-    private HttpPayloadDiscardCleanerServiceFilter() {
+    /**
+     * Helps to remember if we logged an error for user-defined filters already to not spam the logs.
+     * <p>
+     * NOTE: this variable is intentionally not volatile since thread visibility is not a concern, but repeated
+     * volatile accesses are.
+     */
+    private static boolean loggedError = false;
+
+    private HttpMessageDiscardCleanerServiceFilter() {
         // Singleton
     }
 
@@ -65,12 +73,12 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return observer.trackLifecycle(ctx, request, r -> delegate().handle(ctx, r, responseFactory));
             }
-
-            @Override
-            public HttpExecutionStrategy requiredOffloads() {
-                return HttpExecutionStrategies.offloadNone();
-            }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static class WatchdogHttpLifecycleObserver extends AbstractLifecycleObserverHttpFilter {
@@ -102,15 +110,18 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
             public void onExchangeFinally() {
                 if (requestMetaData != null) {
                     final ContextMap requestContext = requestMetaData.context();
-                    if (requestContext.get(payloadSubscribedKey) == null) {
-                        // No-one subscribed to the payload (or there is none), so if there is a payload
+                    if (requestContext.get(MESSAGE_SUBSCRIBED_KEY) == null) {
+                        // No-one subscribed to the message (or there is none), so if there is a message
                         // proactively clean it up.
-                        Publisher<?> payload = requestContext.get(payloadPublisherKey);
-                        if (payload != null) {
-                            LOGGER.debug("Proactively cleaning up HTTP response payload which has been dropped - " +
-                                            "this is a strong indication of a bug in a filter. Request: {}",
-                                    requestMetaData);
-                            payload.ignoreElements().subscribe();
+                        Publisher<?> message = requestContext.get(MESSAGE_PUBLISHER_KEY);
+                        if (message != null) {
+                            if (!loggedError) {
+                                LOGGER.error("Proactively cleaning up HTTP response message which has been dropped - " +
+                                                "this is a strong indication of a bug in a user-defined filter. Request: {}",
+                                        requestMetaData);
+                                loggedError = true;
+                            }
+                            message.ignoreElements().subscribe();
                         }
                     }
                 }
@@ -126,10 +137,6 @@ final class HttpPayloadDiscardCleanerServiceFilter implements StreamingHttpServi
 
             @Override
             public void onResponseCancel() {
-            }
-
-            private void tryCleanPayload() {
-
             }
         };
     }
