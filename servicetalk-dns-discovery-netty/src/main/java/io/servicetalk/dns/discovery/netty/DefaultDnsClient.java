@@ -68,6 +68,7 @@ import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -846,6 +847,10 @@ final class DefaultDnsClient implements DnsClient {
                             cancellableForQuery = null;
                         }
                         try {
+                            // Shuffle events to avoid multiple clients connecting to the same upstream IP address if
+                            // they receive identical result set from DNS.
+                            Collections.shuffle(events);
+
                             LOGGER.debug("{} sending events for {} (size={}, TTL={}s): {}.",
                                     DefaultDnsClient.this, AbstractDnsPublisher.this, events.size(),
                                     NANOSECONDS.toSeconds(ttlNanos), events);
