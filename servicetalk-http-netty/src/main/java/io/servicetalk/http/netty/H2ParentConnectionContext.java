@@ -74,12 +74,13 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                               final FlushStrategy flushStrategy, final long idleTimeoutMs,
-                              @Nullable final SslConfig sslConfig,
+                              @Nullable final SslConfig sslConfig, @Nullable final SSLSession sslSession,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
         this.executionContext = channelExecutionContext(channel, executionContext);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.sslConfig = sslConfig;
+        this.sslSession = sslSession;
         this.idleTimeoutMs = idleTimeoutMs;
         this.keepAliveManager = keepAliveManager;
     }
@@ -169,6 +170,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         keepAliveManager.trackActiveStream(streamChannel);
     }
 
+    static boolean shouldWaitForSslHandshake(@Nullable final SSLSession sslSession,
+                                             @Nullable final SslConfig sslConfig) {
+        return sslConfig != null && sslSession == null;
+    }
+
     abstract static class AbstractH2ParentConnection extends ChannelInboundHandlerAdapter {
         final H2ParentConnectionContext parentContext;
         final boolean waitForSslHandshake;
@@ -253,7 +259,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 if (evt instanceof SslHandshakeCompletionEvent) {
                     parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
                             (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
-                            observer != NoopConnectionObserver.INSTANCE);
+                            waitForSslHandshake && observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
                 } else if (evt == ChannelInputShutdownReadComplete.INSTANCE || evt == SslCloseCompletionEvent.SUCCESS) {
                     parentContext.keepAliveManager.channelInputShutdown();
