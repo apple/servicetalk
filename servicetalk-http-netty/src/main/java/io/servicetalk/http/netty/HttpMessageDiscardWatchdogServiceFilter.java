@@ -29,6 +29,10 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 /**
@@ -36,17 +40,16 @@ import javax.annotation.Nullable;
  */
 final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilter.class);
+
     /**
      * Instance of {@link HttpMessageDiscardWatchdogServiceFilter}.
      */
     static final StreamingHttpServiceFilterFactory INSTANCE = new HttpMessageDiscardWatchdogServiceFilter();
 
     @SuppressWarnings("rawtypes")
-    static final ContextMap.Key<Publisher> MESSAGE_PUBLISHER_KEY = ContextMap.Key
-            .newKey("io.servicetalk.http.netty.messagePublisher", Publisher.class);
-
-    static final ContextMap.Key<Boolean> MESSAGE_SUBSCRIBED_KEY = ContextMap.Key
-            .newKey("io.servicetalk.http.netty.messageSubscribed", Boolean.class);
+    static final ContextMap.Key<AtomicReference> MESSAGE_PUBLISHER_KEY = ContextMap.Key
+            .newKey("io.servicetalk.http.netty.messagePublisher", AtomicReference.class);
 
     private HttpMessageDiscardWatchdogServiceFilter() {
         // Singleton
@@ -66,9 +69,23 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                             // always write the buffer publisher into the request context. When a downstream subscriber
                             // arrives, mark the message as subscribed explicitly (having a message present and no
                             // subscription is an indicator that it must be freed later on).
-                            request.context().put(MESSAGE_PUBLISHER_KEY, response.messageBody());
+                            final AtomicReference<?> previous = request.context()
+                                    .put(MESSAGE_PUBLISHER_KEY, new AtomicReference<>(response.messageBody()));
+                            if (previous != null) {
+                                // If a previous message exists, the response publisher got resubscribed to (i.e.
+                                // during a retry) and so also needs to be cleaned up.
+                                Publisher<?> message = (Publisher<?>) previous.get();
+                                if (message != null) {
+                                    LOGGER.debug("Cleaning up HTTP response message which has been resubscribed to - " +
+                                            "likely during a retry in a user filter.");
+                                    message.ignoreElements().subscribe();
+                                }
+                            }
                             return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
-                                request.context().put(MESSAGE_SUBSCRIBED_KEY, true);
+                                final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
+                                if (maybePublisher != null) {
+                                    maybePublisher.set(null);
+                                }
                                 return NoopSubscriber.INSTANCE;
                             }));
                         });

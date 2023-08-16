@@ -26,10 +26,10 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_PUBLISHER_KEY;
-import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.MESSAGE_SUBSCRIBED_KEY;
 
 final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLifecycleObserver {
 
@@ -77,11 +77,12 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
             public void onExchangeFinally() {
                 if (requestMetaData != null) {
                     final ContextMap requestContext = requestMetaData.context();
-                    if (requestContext.get(MESSAGE_SUBSCRIBED_KEY) == null) {
-                        // No-one subscribed to the message (or there is none), so if there is a message
-                        // proactively clean it up.
-                        Publisher<?> message = requestContext.get(MESSAGE_PUBLISHER_KEY);
+                    final AtomicReference<?> maybePublisher = requestContext.get(MESSAGE_PUBLISHER_KEY);
+                    if (maybePublisher != null) {
+                        Publisher<?> message = (Publisher<?>) maybePublisher.get();
                         if (message != null) {
+                            // No-one subscribed to the message (or there is none), so if there is a message
+                            // proactively clean it up.
                             if (!loggedError) {
                                 LOGGER.error("Proactively cleaning up HTTP response message which has been " +
                                                 "dropped - this is a strong indication of a bug in a user-defined " +
