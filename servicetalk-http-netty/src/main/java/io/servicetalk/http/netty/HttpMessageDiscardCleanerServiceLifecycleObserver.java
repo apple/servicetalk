@@ -66,11 +66,11 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
         return new HttpExchangeObserver() {
 
             @Nullable
-            private HttpRequestMetaData requestMetaData;
+            private ContextMap requestContext;
 
             @Override
             public HttpRequestObserver onRequest(final HttpRequestMetaData requestMetaData) {
-                this.requestMetaData = requestMetaData;
+                this.requestContext = requestMetaData.context();
                 return NoopHttpLifecycleObserver.NoopHttpRequestObserver.INSTANCE;
             }
 
@@ -81,8 +81,7 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
 
             @Override
             public void onExchangeFinally() {
-                if (requestMetaData != null) {
-                    final ContextMap requestContext = requestMetaData.context();
+                if (requestContext != null) {
                     final AtomicReference<?> maybePublisher = requestContext.get(MESSAGE_PUBLISHER_KEY);
                     if (maybePublisher != null) {
                         Publisher<?> message = (Publisher<?>) maybePublisher.get();
@@ -92,8 +91,8 @@ final class HttpMessageDiscardCleanerServiceLifecycleObserver implements HttpLif
                             if (!loggedError) {
                                 LOGGER.error("Proactively cleaning up HTTP response message which has been " +
                                                 "dropped - this is a strong indication of a bug in a user-defined " +
-                                                "filter. Request: {}",
-                                        requestMetaData);
+                                                "filter. Request Context: {}",
+                                        requestContext);
                                 loggedError = true;
                             }
                             message.ignoreElements().subscribe();
