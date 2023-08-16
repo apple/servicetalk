@@ -34,6 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -54,11 +56,11 @@ final class HttpMessageDiscardWatchdogServiceTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
-    @ParameterizedTest(name = "{displayName} [{index}] transformer={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] transformer={0} expectedSubscriptions={1}")
     @MethodSource("responseTransformers")
-    void cleansPayloadBodyIfDiscardedInFilter(final ResponseTransformer transformer) throws Exception {
-        final AtomicInteger serviceCallCounter = new AtomicInteger();
-        final AtomicInteger payloadSubscriptionCounter = new AtomicInteger();
+    void cleansPayloadBodyIfDiscardedInFilter(final ResponseTransformer transformer,
+                                              final int expectedSubscriptions) throws Exception {
+        final CountDownLatch payloadSubscriptionCounter = new CountDownLatch(expectedSubscriptions);
 
         try (HttpServerContext serverContext = newServerBuilder(SERVER_CTX)
                 .appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
@@ -70,10 +72,9 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     }
                 })
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> Single.fromSupplier(() -> {
-                    serviceCallCounter.incrementAndGet();
                     final Publisher<Buffer> buffer = Publisher
                             .from(ctx.executionContext().bufferAllocator().fromUtf8("Hello, World!"))
-                            .beforeOnSubscribe(subscription -> payloadSubscriptionCounter.incrementAndGet());
+                            .beforeOnSubscribe(subscription -> payloadSubscriptionCounter.countDown());
                     return responseFactory.ok().payloadBody(buffer);
                 }))) {
 
@@ -83,8 +84,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                 assertEquals(0, response.payloadBody().readableBytes());
             }
 
-            assertTrue(serviceCallCounter.get() > 0);
-            assertEquals(serviceCallCounter.get(), payloadSubscriptionCounter.get());
+            assertTrue(payloadSubscriptionCounter.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -103,7 +103,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     public String toString() {
                         return "Throws Exception";
                     }
-                }),
+                }, 1),
                 Arguments.of(new ResponseTransformer() {
                     @Override
                     public Single<StreamingHttpResponse> apply(final Single<StreamingHttpResponse> response,
@@ -115,7 +115,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     public String toString() {
                         return "Drops payload body while transforming";
                     }
-                }),
+                }, 1),
                 Arguments.of(new ResponseTransformer() {
                     @Override
                     public Single<StreamingHttpResponse> apply(final Single<StreamingHttpResponse> response,
@@ -127,7 +127,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     public String toString() {
                         return "Drops message body while transforming";
                     }
-                }),
+                }, 1),
                 Arguments.of(new ResponseTransformer() {
                     @Override
                     public Single<StreamingHttpResponse> apply(final Single<StreamingHttpResponse> response,
@@ -139,7 +139,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     public String toString() {
                         return "Drops response and creates new one";
                     }
-                }),
+                }, 1),
                 Arguments.of(new ResponseTransformer() {
 
                     private final AtomicInteger retryCounter = new AtomicInteger();
@@ -160,7 +160,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                     public String toString() {
                         return "Retries and drops again";
                     }
-                })
+                }, 2)
         );
     }
 
