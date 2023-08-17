@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
     @Override
     @Nullable
-    public String get(@Nullable HttpHeaders carrier, final String key) {
+    public String get(@Nullable final HttpHeaders carrier, final String key) {
         if (carrier == null) {
             return null;
         }

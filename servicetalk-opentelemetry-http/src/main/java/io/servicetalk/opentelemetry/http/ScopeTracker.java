@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,44 +18,47 @@ package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static java.util.Objects.requireNonNull;
 
 class ScopeTracker implements TerminalSignalConsumer {
 
     private final Scope currentScope;
-    private final Span span;
+    private final Context context;
+    private final HttpRequestMetaData requestMetaData;
+    private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     @Nullable
-    protected HttpResponseMetaData metaData;
+    private HttpResponseMetaData responseMetaData;
 
-    ScopeTracker(Scope currentScope, final Span span) {
+    ScopeTracker(Scope currentScope, Context context, StreamingHttpRequest requestMetaData,
+                 Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
         this.currentScope = requireNonNull(currentScope);
-        this.span = requireNonNull(span);
+        this.context = requireNonNull(context);
+        this.requestMetaData = requireNonNull(requestMetaData);
+        this.instrumenter = requireNonNull(instrumenter);
     }
 
     void onResponseMeta(final HttpResponseMetaData metaData) {
-        this.metaData = metaData;
+        this.responseMetaData = metaData;
     }
 
     @Override
     public void onComplete() {
-        assert metaData != null : "can't have succeeded without capturing metadata first";
-        tagStatusCode();
+        assert responseMetaData != null : "can't have succeeded without capturing metadata first";
         try {
-            if (isError(metaData)) {
-                span.setStatus(StatusCode.ERROR);
-            }
+            instrumenter.end(context, requestMetaData, responseMetaData, null);
         } finally {
             closeAll();
         }
@@ -64,8 +67,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void onError(final Throwable throwable) {
         try {
-            tagStatusCode();
-            span.setStatus(StatusCode.ERROR);
+            instrumenter.end(context, requestMetaData, responseMetaData, throwable);
         } finally {
             closeAll();
         }
@@ -74,21 +76,10 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void cancel() {
         try {
-            tagStatusCode();
-            span.setStatus(StatusCode.ERROR);
+            instrumenter.end(context, requestMetaData, responseMetaData, CancelledRequestException.INSTANCE);
         } finally {
             closeAll();
         }
-    }
-
-    /**
-     * Determine if a {@link HttpResponseMetaData} should be considered an error from a tracing perspective.
-     *
-     * @param metaData The {@link HttpResponseMetaData} to test.
-     * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
-     */
-    private static boolean isError(final HttpResponseMetaData metaData) {
-        return metaData.status().statusClass() == SERVER_ERROR_5XX;
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
@@ -100,17 +91,16 @@ class ScopeTracker implements TerminalSignalConsumer {
             .beforeOnSuccess(this::onResponseMeta);
     }
 
-    void tagStatusCode() {
-        if (metaData != null) {
-            ResponseTagExtractor.INSTANCE.extract(metaData, span);
-        }
+    private void closeAll() {
+        currentScope.close();
     }
 
-    private void closeAll() {
-        try {
-            currentScope.close();
-        } finally {
-            span.end();
+    private static final class CancelledRequestException extends Exception {
+        private static final long serialVersionUID = 6357694797622093267L;
+        static final CancelledRequestException INSTANCE = new CancelledRequestException();
+
+        CancelledRequestException() {
+            super("canceled", null, false, false);
         }
     }
 }

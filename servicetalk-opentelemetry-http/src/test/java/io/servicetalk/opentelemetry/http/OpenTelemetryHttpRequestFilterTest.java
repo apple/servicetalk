@@ -53,6 +53,7 @@ import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,7 +63,7 @@ class OpenTelemetryHttpRequestFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @RegisterExtension
-    private final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+    static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
     @BeforeEach
     public void setup() {
@@ -98,8 +99,8 @@ class OpenTelemetryHttpRequestFilterTest {
 
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/"));
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http"));
             }
         }
     }
@@ -128,9 +129,25 @@ class OpenTelemetryHttpRequestFilterTest {
                         ta.hasTraceId(serverSpanState.getTraceId()));
 
                 otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/path"));
+                    .hasTracesSatisfyingExactly(ta -> {
+                        SpanData span = ta.getSpan(0);
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
+                            .isEqualTo("GET");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
+                            .isGreaterThan(0);
+                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_VERSION))
+                            .isEqualTo("1.1");
+                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http");
+                        assertThat(span.getAttributes().get(SemanticAttributes.PEER_SERVICE))
+                            .isEqualTo("testClient");
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
+                            .isNull();
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
+                            .isNull();
+                    });
             }
         }
     }
@@ -171,8 +188,8 @@ class OpenTelemetryHttpRequestFilterTest {
 
                     otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
-                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_URL))
-                                .isEqualTo("/path/to/resource"));
+                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                                .isEqualTo("http"));
                         otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
@@ -182,6 +199,47 @@ class OpenTelemetryHttpRequestFilterTest {
                 SpanData thirdSpan = otelTesting.getSpans().get(2);
                 assertThat(firstSpan.getParentSpanId()).isEqualTo(secondSpan.getSpanId());
                 assertThat(secondSpan.getParentSpanId()).isEqualTo(thirdSpan.getSpanId());
+            }
+        }
+    }
+
+    @Test
+    void testCaptureHeader() throws Exception {
+        final String requestUrl = "/";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        try (ServerContext context = buildServer(openTelemetry, false)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient",
+                    new OpenTelemetryOptions.Builder()
+                        .capturedResponseHeaders(singletonList("my-header"))
+                        .capturedRequestHeaders(singletonList("some-request-header"))
+                        .build()))
+                .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
+                HttpResponse response = client.request(client.get(requestUrl)
+                    .addHeader("some-request-header", "request-header-value")).toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl,
+                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                    TRACING_TEST_LOG_LINE_PREFIX);
+                assertThat(otelTesting.getSpans()).hasSize(1);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                    .containsExactly(serverSpanState.getTraceId());
+                assertThat(otelTesting.getSpans()).extracting("spanId")
+                    .containsAnyOf(serverSpanState.getSpanId());
+                otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
+
+                otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> {
+                        SpanData span = ta.getSpan(0);
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
+                            .isEqualTo(singletonList("header-value"));
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
+                            .isEqualTo(singletonList("request-header-value"));
+                    });
             }
         }
     }
@@ -196,11 +254,12 @@ class OpenTelemetryHttpRequestFilterTest {
             .listenAndAwait((ctx, request, responseFactory) -> {
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
-                io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator()
+                Context tracingContext = propagators.getTextMapPropagator()
                     .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
                 Span span = Span.fromContext(tracingContext);
                 return succeeded(
-                    responseFactory.ok().payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));
+                    responseFactory.ok().addHeader("my-header", "header-value")
+                        .payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));
             });
     }
 

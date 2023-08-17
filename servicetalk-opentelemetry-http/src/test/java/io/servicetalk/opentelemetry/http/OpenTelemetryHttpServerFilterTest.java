@@ -52,12 +52,13 @@ import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OpenTelemetryHttpServerFilterTest {
 
     @RegisterExtension
-    final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+    static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
     @BeforeEach
     public void setup() {
@@ -91,17 +92,23 @@ class OpenTelemetryHttpServerFilterTest {
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
                         SpanData span = ta.getSpan(0);
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/path");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_STATUS_CODE))
+                            .isEqualTo(200);
                         assertThat(span.getAttributes().get(SemanticAttributes.HTTP_TARGET))
                             .isEqualTo("/path");
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_ROUTE))
-                            .isEqualTo("/path");
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_FLAVOR))
+                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http");
+                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
                         assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
                             .isEqualTo("GET");
-                        assertThat(span.getName()).isEqualTo("GET /path");
+                        assertThat(span.getName()).isEqualTo("GET");
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
+                            .isNull();
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
+                            .isNull();
                     });
             }
         }
@@ -131,9 +138,9 @@ class OpenTelemetryHttpServerFilterTest {
 
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .isEqualTo("/path");
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_FLAVOR))
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                            .isEqualTo("http");
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
                     });
             }
@@ -158,7 +165,7 @@ class OpenTelemetryHttpServerFilterTest {
                     .setAttribute(SemanticAttributes.HTTP_URL, url.toString());
 
                 HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                textMapPropagator.inject(io.opentelemetry.context.Context.root().with(span), con, setter);
+                textMapPropagator.inject(Context.root().with(span), con, setter);
                 con.setRequestMethod("GET");
 
                 int responseCode = con.getResponseCode();
@@ -169,40 +176,86 @@ class OpenTelemetryHttpServerFilterTest {
             } finally {
                 span.end();
             }
-                verifyTraceIdPresentInLogs(stableAccumulated(1000), "/",
-                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
-                    TRACING_TEST_LOG_LINE_PREFIX);
-                assertThat(otelTesting.getSpans()).hasSize(2);
-                assertThat(otelTesting.getSpans()).extracting("traceId")
-                    .containsExactly(serverSpanState.getTraceId(), serverSpanState.getTraceId());
+            verifyTraceIdPresentInLogs(stableAccumulated(1000), "/",
+                serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                TRACING_TEST_LOG_LINE_PREFIX);
+            assertThat(otelTesting.getSpans()).hasSize(2);
+            assertThat(otelTesting.getSpans()).extracting("traceId")
+                .containsExactly(serverSpanState.getTraceId(), serverSpanState.getTraceId());
 
             otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta -> {
                     assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                        .startsWith(url.toString());
-                    assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_URL))
-                        .isEqualTo("/path?query=this&foo=bar");
+                        .endsWith(url.toString());
+                    assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_METHOD))
+                        .isEqualTo("GET");
                     assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
                         .isEqualTo("serviceTalk");
                 });
         }
     }
 
-    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry) throws Exception {
+    @Test
+    void testCaptureHeaders() throws Exception {
+        final String requestUrl = "/path";
+        try (ServerContext context = buildServer(otelTesting.getOpenTelemetry(),
+            new OpenTelemetryOptions.Builder()
+                .capturedResponseHeaders(singletonList("my-header"))
+                .capturedRequestHeaders(singletonList("some-request-header"))
+                .build())) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+                HttpResponse response = client.request(client.get(requestUrl)
+                        .addHeader("some-request-header", "request-header-value"))
+                    .toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl,
+                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                    TRACING_TEST_LOG_LINE_PREFIX);
+                assertThat(otelTesting.getSpans()).hasSize(1);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                    .containsExactly(serverSpanState.getTraceId());
+                assertThat(otelTesting.getSpans()).extracting("spanId")
+                    .containsAnyOf(serverSpanState.getSpanId());
+                otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
+
+                otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> {
+                        SpanData span = ta.getSpan(0);
+                        assertThat(
+                            span.getAttributes().get(AttributeKey.stringArrayKey("http.response.header.my_header")))
+                            .isEqualTo(singletonList("header-value"));
+                        assertThat(span.getAttributes()
+                            .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
+                            .isEqualTo(singletonList("request-header-value"));
+                    });
+            }
+        }
+    }
+
+    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
+                                             OpenTelemetryOptions opentelemetryOptions) throws Exception {
         return HttpServers.forAddress(localAddress(0))
-            .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry))
+            .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
-                io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator()
+                Context tracingContext = propagators.getTextMapPropagator()
                     .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
                 Span span = Span.current();
                 if (!span.getSpanContext().isValid()) {
                     span = Span.fromContext(tracingContext);
                 }
                 return succeeded(
-                    responseFactory.ok().payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));
+                    responseFactory.ok()
+                        .addHeader("my-header", "header-value")
+                        .payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));
             });
+    }
+
+    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry) throws Exception {
+        return buildServer(givenOpentelemetry, new OpenTelemetryOptions.Builder().build());
     }
 }

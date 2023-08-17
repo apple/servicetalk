@@ -45,6 +45,7 @@ public final class HttpProtocolVersion implements Protocol, Comparable<HttpProto
     private final int minor;
     private final String httpVersion;
     private final Buffer encodedAsBuffer;
+    private final String fullVersion;
 
     private HttpProtocolVersion(final int major, final int minor) {
         if (major < 0 || major > 9) {
@@ -56,8 +57,8 @@ public final class HttpProtocolVersion implements Protocol, Comparable<HttpProto
             throw new IllegalArgumentException("Illegal minor version: " + minor + ", expected [0-9]");
         }
         this.minor = minor;
-
-        httpVersion = "HTTP/" + major + '.' + minor;
+        this.fullVersion = major + "." + minor;
+        httpVersion = "HTTP/" + fullVersion;
         encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(httpVersion);
     }
 
@@ -147,6 +148,14 @@ public final class HttpProtocolVersion implements Protocol, Comparable<HttpProto
     @Override
     public String name() {
         return httpVersion;
+    }
+
+    /**
+     * Resolves and return the http version number as a String. e.g. : 1.1 or 2.0.
+     * @return the http version number string.
+     */
+    public String fullVersion() {
+        return fullVersion;
     }
 
     /**
