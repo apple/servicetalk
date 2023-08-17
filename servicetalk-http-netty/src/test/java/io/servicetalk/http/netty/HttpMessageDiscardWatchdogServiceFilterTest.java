@@ -35,7 +35,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -43,9 +42,8 @@ import java.util.stream.Stream;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class HttpMessageDiscardWatchdogServiceTest {
+final class HttpMessageDiscardWatchdogServiceFilterTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -84,7 +82,7 @@ final class HttpMessageDiscardWatchdogServiceTest {
                 assertEquals(0, response.payloadBody().readableBytes());
             }
 
-            assertTrue(payloadSubscriptionCounter.await(5, TimeUnit.SECONDS));
+            payloadSubscriptionCounter.await();
         }
     }
 

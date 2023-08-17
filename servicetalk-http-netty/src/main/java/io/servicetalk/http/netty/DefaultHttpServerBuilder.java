@@ -477,7 +477,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
         // This filter is placed at the end of the response lifecycle (so beginning of the filter pipeline) to ensure
         // that any discarded payloads coming from the service are cleaned up.
-        service = HttpMessageDiscardCleanerServiceLifecycleObserver.FILTER.create(service);
+        service = HttpMessageDiscardWatchdogServiceFilter.CLEANER.create(service);
 
         service = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
         service = KeepAliveServiceFilter.INSTANCE.create(service);
