@@ -187,10 +187,10 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                                 // No-one subscribed to the message (or there is none), so if there is a message
                                 // proactively clean it up.
                                 if (!loggedError) {
-                                    LOGGER.error("Automatically draining HTTP response message body which has been " +
-                                            "dropped by user code - this is a strong indication of a bug in a user-defined " +
-                                            "filter. Responses (or their message body) must be fully consumed before " +
-                                            "discarding.");
+                                    LOGGER.error("Automatically draining HTTP response message body which has " +
+                                            "been dropped by user code - this is a strong indication of a bug " +
+                                            "in a user-defined filter. Responses (or their message body) must " +
+                                            "be fully consumed before discarding.");
                                     loggedError = true;
                                 }
                                 message.ignoreElements().subscribe();
