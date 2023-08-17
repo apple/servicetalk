@@ -24,6 +24,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttribut
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.opentelemetry.http.HeadersPropagatorGetter.getHeaderValues;
+
 final class ServicetalkHttpServerAttributesGetter
     implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
@@ -56,7 +58,7 @@ final class ServicetalkHttpServerAttributesGetter
 
     @Override
     public List<String> getHttpRequestHeader(HttpRequestMetaData httpRequestMetaData, String name) {
-        return HeadersPropagatorGetter.getHeadersValue(name, httpRequestMetaData.headers());
+        return getHeaderValues(httpRequestMetaData.headers(), name);
     }
 
     @Override
@@ -70,6 +72,6 @@ final class ServicetalkHttpServerAttributesGetter
     public List<String> getHttpResponseHeader(HttpRequestMetaData httpRequestMetaData,
                                               HttpResponseMetaData httpResponseMetaData,
                                               String name) {
-        return HeadersPropagatorGetter.getHeadersValue(name, httpResponseMetaData.headers());
+        return getHeaderValues(httpResponseMetaData.headers(), name);
     }
 }

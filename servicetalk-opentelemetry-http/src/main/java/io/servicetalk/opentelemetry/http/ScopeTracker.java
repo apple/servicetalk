@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ class ScopeTracker implements TerminalSignalConsumer {
 
     private final Scope currentScope;
     private final Context context;
-    private final StreamingHttpRequest requestMetaData;
+    private final HttpRequestMetaData requestMetaData;
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     @Nullable
-    private HttpResponseMetaData metaData;
+    private HttpResponseMetaData responseMetaData;
 
     ScopeTracker(Scope currentScope, Context context, StreamingHttpRequest requestMetaData,
                  Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
@@ -51,14 +51,14 @@ class ScopeTracker implements TerminalSignalConsumer {
     }
 
     void onResponseMeta(final HttpResponseMetaData metaData) {
-        this.metaData = metaData;
+        this.responseMetaData = metaData;
     }
 
     @Override
     public void onComplete() {
-        assert metaData != null : "can't have succeeded without capturing metadata first";
+        assert responseMetaData != null : "can't have succeeded without capturing metadata first";
         try {
-            instrumenter.end(context, requestMetaData, metaData, null);
+            instrumenter.end(context, requestMetaData, responseMetaData, null);
         } finally {
             closeAll();
         }
@@ -67,7 +67,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void onError(final Throwable throwable) {
         try {
-            instrumenter.end(context, requestMetaData, metaData, throwable);
+            instrumenter.end(context, requestMetaData, responseMetaData, throwable);
         } finally {
             closeAll();
         }
@@ -76,7 +76,7 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void cancel() {
         try {
-            instrumenter.end(context, requestMetaData, metaData, CancelledRequestException.INSTANCE);
+            instrumenter.end(context, requestMetaData, responseMetaData, CancelledRequestException.INSTANCE);
         } finally {
             closeAll();
         }
@@ -93,5 +93,14 @@ class ScopeTracker implements TerminalSignalConsumer {
 
     private void closeAll() {
         currentScope.close();
+    }
+
+    private static final class CancelledRequestException extends Exception {
+        private static final long serialVersionUID = 6357694797622093267L;
+        static final CancelledRequestException INSTANCE = new CancelledRequestException();
+
+        CancelledRequestException() {
+            super("canceled", null, false, false);
+        }
     }
 }

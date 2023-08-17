@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -54,6 +53,7 @@ import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,7 +63,7 @@ class OpenTelemetryHttpRequestFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @RegisterExtension
-    private final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
+    static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
     @BeforeEach
     public void setup() {
@@ -210,9 +210,9 @@ class OpenTelemetryHttpRequestFilterTest {
         try (ServerContext context = buildServer(openTelemetry, false)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient",
-                    OpentelemetryOptions.newBuilder()
-                        .addCaptureResponseHeaders(Collections.singletonList("my-header"))
-                        .addCaptureRequestHeaders(Collections.singletonList("some-request-header"))
+                    new OpenTelemetryOptions.Builder()
+                        .capturedResponseHeaders(singletonList("my-header"))
+                        .capturedRequestHeaders(singletonList("some-request-header"))
                         .build()))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)
@@ -235,10 +235,10 @@ class OpenTelemetryHttpRequestFilterTest {
                         SpanData span = ta.getSpan(0);
                         assertThat(span.getAttributes()
                             .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
-                            .isEqualTo(Collections.singletonList("header-value"));
+                            .isEqualTo(singletonList("header-value"));
                         assertThat(span.getAttributes()
                             .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
-                            .isEqualTo(Collections.singletonList("request-header-value"));
+                            .isEqualTo(singletonList("request-header-value"));
                     });
             }
         }
@@ -254,7 +254,7 @@ class OpenTelemetryHttpRequestFilterTest {
             .listenAndAwait((ctx, request, responseFactory) -> {
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
-                io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator()
+                Context tracingContext = propagators.getTextMapPropagator()
                     .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
                 Span span = Span.fromContext(tracingContext);
                 return succeeded(

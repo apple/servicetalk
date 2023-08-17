@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import io.servicetalk.http.api.HttpHeaders;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 
 final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
@@ -63,7 +66,7 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
     @Override
     @Nullable
-    public String get(@Nullable HttpHeaders carrier, final String key) {
+    public String get(@Nullable final HttpHeaders carrier, final String key) {
         if (carrier == null) {
             return null;
         }
@@ -71,10 +74,21 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         return value == null ? null : value.toString();
     }
 
-    static List<String> getHeadersValue(String name, HttpHeaders headers) {
-        Iterable<? extends CharSequence> value = headers.values(name);
-        return StreamSupport.stream(value.spliterator(), false)
-            .map(CharSequence::toString)
-            .collect(Collectors.toList());
+    static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
+        final Iterator<? extends CharSequence> iterator = headers.valuesIterator(name);
+        if (!iterator.hasNext()) {
+            return emptyList();
+        }
+        final CharSequence firstValue = iterator.next();
+        if (!iterator.hasNext()) {
+            return singletonList(firstValue.toString());
+        }
+        final List<String> result = new ArrayList<>(2);
+        result.add(firstValue.toString());
+        result.add(iterator.next().toString());
+        while (iterator.hasNext()) {
+            result.add(iterator.next().toString());
+        }
+        return unmodifiableList(result);
     }
 }

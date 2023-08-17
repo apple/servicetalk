@@ -25,6 +25,8 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.opentelemetry.http.HeadersPropagatorGetter.getHeaderValues;
+
 final class ServicetalkHttpClientAttributesGetter
     implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
@@ -41,7 +43,7 @@ final class ServicetalkHttpClientAttributesGetter
 
     @Override
     public List<String> getHttpRequestHeader(HttpRequestMetaData httpRequestMetaData, String name) {
-        return HeadersPropagatorGetter.getHeadersValue(name, httpRequestMetaData.headers());
+        return getHeaderValues(httpRequestMetaData.headers(), name);
     }
 
     @Override
@@ -55,7 +57,7 @@ final class ServicetalkHttpClientAttributesGetter
     public List<String> getHttpResponseHeader(HttpRequestMetaData httpRequestMetaData,
                                               HttpResponseMetaData httpResponseMetaData,
                                               String name) {
-        return HeadersPropagatorGetter.getHeadersValue(name, httpResponseMetaData.headers());
+        return getHeaderValues(httpResponseMetaData.headers(), name);
     }
 
     @Nullable
@@ -66,7 +68,7 @@ final class ServicetalkHttpClientAttributesGetter
             return null;
         }
         String requestScheme = request.scheme() == null ? "http" : request.scheme();
-        String hostAndPort = effectiveHostAndPort.hostName() + ":" + effectiveHostAndPort.port();
-        return requestScheme + "://" + hostAndPort + "/" + request.requestTarget();
+        String hostAndPort = effectiveHostAndPort.hostName() + ':' + effectiveHostAndPort.port();
+        return requestScheme + "://" + hostAndPort + '/' + request.requestTarget();
     }
 }

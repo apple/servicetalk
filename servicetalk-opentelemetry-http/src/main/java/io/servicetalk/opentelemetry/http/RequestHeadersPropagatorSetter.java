@@ -30,9 +30,9 @@ final class RequestHeadersPropagatorSetter implements TextMapSetter<HttpRequestM
     }
 
     @Override
-    public void set(@Nullable final HttpRequestMetaData headers, final String key, final String value) {
-        if (headers != null) {
-            HeadersPropagatorSetter.INSTANCE.set(headers.headers(), key, value);
+    public void set(@Nullable final HttpRequestMetaData carrier, final String key, final String value) {
+        if (carrier != null) {
+            HeadersPropagatorSetter.INSTANCE.set(carrier.headers(), key, value);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,65 +63,20 @@ import java.util.function.UnaryOperator;
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
-    public static final OpentelemetryOptions DEFAULT_OPTIONS = OpentelemetryOptions.newBuilder().build();
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     /**
      * Create a new instance.
      *
-     * @param openTelemetry        the {@link OpenTelemetry}.
-     * @param componentName        The component name used during building new spans.
-     * @param opentelemetryOptions extra options to create the opentelemetry filter.
-     */
-    OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
-                                          OpentelemetryOptions opentelemetryOptions) {
-        super(openTelemetry);
-        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-            HttpSpanNameExtractor.create(ServicetalkHttpClientAttributesGetter.INSTANCE);
-        InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
-            Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
-
-        clientInstrumenterBuilder
-            .addAttributesExtractor(HttpClientAttributesExtractor
-                .builder(ServicetalkHttpClientAttributesGetter.INSTANCE,
-                    ServicetalkNetClientAttributesGetter.INSTANCE)
-                .setCapturedRequestHeaders(opentelemetryOptions.captureRequestHeaders())
-                .setCapturedResponseHeaders(opentelemetryOptions.captureResponseHeaders())
-                .build())
-            .addAttributesExtractor(
-                NetClientAttributesExtractor.create(ServicetalkNetClientAttributesGetter.INSTANCE));
-        if (opentelemetryOptions.enableMetrics()) {
-            clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
-        }
-        if (!componentName.trim().isEmpty()) {
-            clientInstrumenterBuilder.addAttributesExtractor(
-                AttributesExtractor.constant(SemanticAttributes.PEER_SERVICE, componentName));
-        }
-        instrumenter =
-            clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
-    }
-
-    /**
-     * Create a new instance, searching for any instance of an opentelemetry available.
-     *
-     * @param componentName The component name used during building new spans.
-     */
-    public OpenTelemetryHttpRequestFilter(String componentName) {
-        this(componentName, DEFAULT_OPTIONS);
-    }
-
-    /**
-     * Create a new instance, searching for any instance of an opentelemetry available.
-     *
      * @param openTelemetry the {@link OpenTelemetry}.
      * @param componentName The component name used during building new spans.
-     * @deprecated this method is internal, no client should be setting the Opentelemetry as it is obtained by using
-     * * {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
-     * * the classpath, this constructor will be removed.
-     *  Use {@link #OpenTelemetryHttpRequestFilter(String)} instead.
+     * @deprecated this method is internal, no user should be setting the {@link OpenTelemetry} as it is obtained by
+     * using {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
+     * the classpath, this constructor will be removed in the future releases.
+     * Use {@link #OpenTelemetryHttpRequestFilter(String, OpenTelemetryOptions)} or
+     * {@link #OpenTelemetryHttpRequestFilter()} instead.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     @SuppressWarnings("DeprecatedIsStillUsed")
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
         this(openTelemetry, componentName, DEFAULT_OPTIONS);
@@ -130,10 +85,19 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     /**
      * Create a new instance, searching for any instance of an opentelemetry available.
      *
+     * @param componentName The component name used during building new spans.
+     */
+    public OpenTelemetryHttpRequestFilter(final String componentName) {
+        this(componentName, DEFAULT_OPTIONS);
+    }
+
+    /**
+     * Create a new instance, searching for any instance of an opentelemetry available.
+     *
      * @param componentName        The component name used during building new spans.
      * @param opentelemetryOptions extra options to create the opentelemetry filter
      */
-    public OpenTelemetryHttpRequestFilter(String componentName, OpentelemetryOptions opentelemetryOptions) {
+    public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions) {
         this(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
     }
 
@@ -143,6 +107,43 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      */
     public OpenTelemetryHttpRequestFilter() {
         this("");
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param openTelemetry        the {@link OpenTelemetry}.
+     * @param componentName        The component name used during building new spans.
+     * @param opentelemetryOptions extra options to create the opentelemetry filter.
+     */
+    OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
+                                   final OpenTelemetryOptions opentelemetryOptions) {
+        super(openTelemetry);
+        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
+                HttpSpanNameExtractor.create(ServicetalkHttpClientAttributesGetter.INSTANCE);
+        InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
+                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+        clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
+
+        clientInstrumenterBuilder
+                .addAttributesExtractor(HttpClientAttributesExtractor
+                        .builder(ServicetalkHttpClientAttributesGetter.INSTANCE,
+                                ServicetalkNetClientAttributesGetter.INSTANCE)
+                        .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
+                        .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
+                        .build())
+                .addAttributesExtractor(
+                        NetClientAttributesExtractor.create(ServicetalkNetClientAttributesGetter.INSTANCE));
+        if (opentelemetryOptions.enableMetrics()) {
+            clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
+        }
+        componentName = componentName.trim();
+        if (!componentName.isEmpty()) {
+            clientInstrumenterBuilder.addAttributesExtractor(
+                    AttributesExtractor.constant(SemanticAttributes.PEER_SERVICE, componentName));
+        }
+        instrumenter =
+                clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
     }
 
     @Override
@@ -170,7 +171,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
                                                        final StreamingHttpRequest request) {
         final Context parentContext = Context.current();
-        Context context = instrumenter.start(parentContext, request);
+        final Context context = instrumenter.start(parentContext, request);
 
         final Scope scope = context.makeCurrent();
         final ScopeTracker tracker = new ScopeTracker(scope, context, request, instrumenter);
