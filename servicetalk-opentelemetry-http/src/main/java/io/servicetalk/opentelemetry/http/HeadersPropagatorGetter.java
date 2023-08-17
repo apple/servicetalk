@@ -20,15 +20,9 @@ import io.servicetalk.http.api.HttpHeaders;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
 
 final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
@@ -72,23 +66,5 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         }
         final CharSequence value = carrier.get(key);
         return value == null ? null : value.toString();
-    }
-
-    static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
-        final Iterator<? extends CharSequence> iterator = headers.valuesIterator(name);
-        if (!iterator.hasNext()) {
-            return emptyList();
-        }
-        final CharSequence firstValue = iterator.next();
-        if (!iterator.hasNext()) {
-            return singletonList(firstValue.toString());
-        }
-        final List<String> result = new ArrayList<>(2);
-        result.add(firstValue.toString());
-        result.add(iterator.next().toString());
-        while (iterator.hasNext()) {
-            result.add(iterator.next().toString());
-        }
-        return unmodifiableList(result);
     }
 }

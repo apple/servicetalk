@@ -120,20 +120,18 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
                                    final OpenTelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServicetalkHttpClientAttributesGetter.INSTANCE);
+                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
 
         clientInstrumenterBuilder
                 .addAttributesExtractor(HttpClientAttributesExtractor
-                        .builder(ServicetalkHttpClientAttributesGetter.INSTANCE,
-                                ServicetalkNetClientAttributesGetter.INSTANCE)
+                        .builder(ServiceTalkHttpAttributesGetter.INSTANCE, ServiceTalkNetAttributesGetter.INSTANCE)
                         .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
                         .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
                         .build())
-                .addAttributesExtractor(
-                        NetClientAttributesExtractor.create(ServicetalkNetClientAttributesGetter.INSTANCE));
+                .addAttributesExtractor(NetClientAttributesExtractor.create(ServiceTalkNetAttributesGetter.INSTANCE));
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
