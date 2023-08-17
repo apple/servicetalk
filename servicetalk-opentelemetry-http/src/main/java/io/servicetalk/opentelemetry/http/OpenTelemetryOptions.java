@@ -28,7 +28,6 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A set of options for configuring OpenTelemetry filters.
@@ -42,8 +41,8 @@ public final class OpenTelemetryOptions {
     OpenTelemetryOptions(final List<String> capturedRequestHeaders,
                          final List<String> capturedResponseHeaders,
                          final boolean enableMetrics) {
-        this.capturedRequestHeaders = unmodifiableList(new ArrayList<>(capturedRequestHeaders));
-        this.capturedResponseHeaders = unmodifiableList(new ArrayList<>(capturedResponseHeaders));
+        this.capturedRequestHeaders = capturedRequestHeaders;
+        this.capturedResponseHeaders = capturedResponseHeaders;
         this.enableMetrics = enableMetrics;
     }
 
@@ -136,7 +135,8 @@ public final class OpenTelemetryOptions {
          * @see HttpServerAttributesExtractorBuilder#setCapturedRequestHeaders(List)
          */
         public Builder capturedRequestHeaders(final List<String> capturedRequestHeaders) {
-            this.capturedRequestHeaders = requireNonNull(capturedRequestHeaders);
+            this.capturedRequestHeaders = capturedRequestHeaders.isEmpty() ? emptyList() :
+                    unmodifiableList(new ArrayList<>(capturedRequestHeaders));
             return this;
         }
 
@@ -151,7 +151,8 @@ public final class OpenTelemetryOptions {
          * @see HttpServerAttributesExtractorBuilder#setCapturedResponseHeaders(List)
          */
         public Builder capturedResponseHeaders(final List<String> capturedResponseHeaders) {
-            this.capturedResponseHeaders = requireNonNull(capturedResponseHeaders);
+            this.capturedResponseHeaders = capturedResponseHeaders.isEmpty() ? emptyList() :
+                    unmodifiableList(new ArrayList<>(capturedResponseHeaders));
             return this;
         }
 

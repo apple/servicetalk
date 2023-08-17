@@ -15,9 +15,9 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
+  <!-- List is copied at the builder level -->
   <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    <Class name="io.servicetalk.opentelemetry.http.OpenTelemetryOptions"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
 </FindBugsFilter>
