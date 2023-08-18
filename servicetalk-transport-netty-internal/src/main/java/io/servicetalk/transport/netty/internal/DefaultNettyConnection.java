@@ -886,6 +886,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            // NettyChannelPublisher will force closure of the channel in case of exception after the cause is
+            // propagated to users. In case users don't have offloading, there is a risk to retry on the same IO thread.
+            // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
+            connection.notifyOnClosing();
             connection.nettyChannelPublisher.channelOnError(unwrapThrowable(cause));
         }
 

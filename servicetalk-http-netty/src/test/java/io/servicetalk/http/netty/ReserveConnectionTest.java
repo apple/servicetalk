@@ -16,44 +16,62 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ReserveConnectionTest {
 
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     private HttpServerContext serverContext;
     private BlockingHttpClient httpClient;
-    private AtomicInteger createdConnections;
+    private final AtomicInteger createdConnections = new AtomicInteger(0);
 
-    @BeforeEach
-    void setup() throws Exception {
-        createdConnections = new AtomicInteger(0);
+    private void setup(HttpProtocol protocol, boolean reject) throws Exception {
+        HttpServerBuilder serverBuilder = BuilderUtils.newServerBuilder(SERVER_CTX, protocol);
+        if (reject) {
+            serverBuilder.appendEarlyConnectionAcceptor(conn -> Completable.failed(DELIBERATE_EXCEPTION));
+        }
+        serverContext = serverBuilder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
 
-        serverContext = HttpServers
-                .forAddress(localAddress(0))
-                .listenBlocking((ctx1, request, responseFactory) -> responseFactory.ok()).toFuture().get();
-
-        InetSocketAddress listenAddress = (InetSocketAddress) serverContext.listenAddress();
-        httpClient = HttpClients
-                .forSingleAddress(listenAddress.getHostName(), listenAddress.getPort())
+        httpClient = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX, protocol)
                 .appendConnectionFactoryFilter(o ->
                         new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(o) {
                             @Override
@@ -71,12 +89,14 @@ class ReserveConnectionTest {
 
     @AfterEach
     void cleanup() throws Exception {
-        httpClient.close();
-        serverContext.close();
+        safeClose(httpClient);
+        safeClose(serverContext);
     }
 
-    @Test
-    void reusesConnectionOnReserve() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void reusesConnectionOnReserve(HttpProtocol protocol) throws Exception {
+        setup(protocol, false);
         HttpRequest metaData = httpClient.get("/");
 
         ReservedBlockingHttpConnection connection = httpClient.reserveConnection(metaData);
@@ -86,11 +106,13 @@ class ReserveConnectionTest {
         connection = httpClient.reserveConnection(metaData);
         connection.release();
 
-        assertEquals(1, createdConnections.get());
+        assertThat(createdConnections.get(), is(1));
     }
 
-    @Test
-    void canForceNewConnection() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void canForceNewConnection(HttpProtocol protocol) throws Exception {
+        setup(protocol, false);
         HttpRequest metaData = httpClient.get("/");
         metaData.context().put(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION, true);
 
@@ -101,6 +123,22 @@ class ReserveConnectionTest {
         connection = httpClient.reserveConnection(metaData);
         connection.release();
 
-        assertEquals(3, createdConnections.get());
+        assertThat(createdConnections.get(), is(3));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void reservedConnectionClosesOnExceptionCaught(HttpProtocol protocol) throws Exception {
+        setup(protocol, true);
+        HttpRequest metaData = httpClient.get("/");
+
+        ReservedHttpConnection connection = httpClient.reserveConnection(metaData).asConnection();
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> connection.request(connection.get("/")).toFuture().get());
+        assertThat(e.getCause(), is(instanceOf(IOException.class)));
+        connection.onClose().toFuture().get();
+
+        // Connection can be closed before it goes back through LB. In this case, selection will fail and retried.
+        assertThat(createdConnections.get(), is(greaterThanOrEqualTo(1)));
     }
 }
