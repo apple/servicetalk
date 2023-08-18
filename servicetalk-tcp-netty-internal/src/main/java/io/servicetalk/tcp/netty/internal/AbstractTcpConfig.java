@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
+import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -53,6 +54,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     private SslConfigType sslConfig;
 
     protected AbstractTcpConfig() {
+        socketOption(SO_KEEPALIVE, true);
     }
 
     protected AbstractTcpConfig(final AbstractTcpConfig<SslConfigType> from) {
