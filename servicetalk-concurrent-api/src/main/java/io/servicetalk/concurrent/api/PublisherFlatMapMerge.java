@@ -622,8 +622,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     SubscriberUtils.logDuplicateTerminal(this, t);
                     return;
                 }
-                Throwable currPendingError = parent.pendingError;
+
                 if (parent.source.maxDelayedErrors == 0) {
+                    final Throwable currPendingError = parent.pendingError;
                     if (currPendingError == null && pendingErrorUpdater.compareAndSet(parent, null, t)) {
                         try {
                             parent.doCancel(true);
@@ -633,19 +634,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         }
                     }
                 } else {
-                    if (currPendingError == null) {
-                        if (pendingErrorUpdater.compareAndSet(parent, null, t)) {
-                            currPendingError = t;
-                        } else {
-                            currPendingError = parent.pendingError;
-                            assert currPendingError != null;
-                            addPendingError(pendingErrorCountUpdater, parent,
-                                    parent.source.maxDelayedErrors, currPendingError, t);
-                        }
-                    } else {
-                        addPendingError(pendingErrorCountUpdater, parent,
-                                parent.source.maxDelayedErrors, currPendingError, t);
-                    }
+                    final Throwable currPendingError = addPendingError(pendingErrorUpdater, pendingErrorCountUpdater,
+                            parent, parent.source.maxDelayedErrors, t);
                     if (parent.removeSubscriber(this, unusedDemand)) {
                         parent.enqueueAndDrain(error(currPendingError));
                     } else {

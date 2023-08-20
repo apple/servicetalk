@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 final class CompositeExceptionUtils {
     /**
@@ -26,17 +27,37 @@ final class CompositeExceptionUtils {
     private CompositeExceptionUtils() {
     }
 
-    static <T> void addPendingError(AtomicIntegerFieldUpdater<T> updater, T owner, int maxDelayedErrors,
-                                    Throwable original, Throwable causeToAdd) {
-        // optimistically increment, recover after the fact if necessary.
-        final int newSize = updater.incrementAndGet(owner);
-        if (newSize < 0) {
-            updater.set(owner, Integer.MAX_VALUE);
-        } else if (newSize < maxDelayedErrors && original != causeToAdd) {
-            // We ensure original is not equal to causeToAdd, safe to add suppressed.
-            original.addSuppressed(causeToAdd);
+    static <T> Throwable addPendingError(AtomicReferenceFieldUpdater<T, Throwable> causeUpdater,
+                                         AtomicIntegerFieldUpdater<T> countUpdater, T owner, int maxDelayedErrors,
+                                         Throwable causeToAdd) {
+        Throwable currPendingError = causeUpdater.get(owner);
+        if (currPendingError == null) {
+            if (causeUpdater.compareAndSet(owner, null, causeToAdd)) {
+                currPendingError = causeToAdd;
+            } else {
+                currPendingError = causeUpdater.get(owner);
+                assert currPendingError != null;
+                addPendingError(countUpdater, owner, maxDelayedErrors, currPendingError, causeToAdd);
+            }
         } else {
-            updater.decrementAndGet(owner);
+            addPendingError(countUpdater, owner, maxDelayedErrors, currPendingError, causeToAdd);
+        }
+        return currPendingError;
+    }
+
+    private static <T> void addPendingError(AtomicIntegerFieldUpdater<T> updater, T owner, int maxDelayedErrors,
+                                            Throwable original, Throwable causeToAdd) {
+        if (original == causeToAdd) {
+            return;
+        }
+        for (;;) {
+            final int size = updater.get(owner);
+            if (size >= maxDelayedErrors) {
+                break;
+            } else if (updater.compareAndSet(owner, size, size + 1)) {
+                original.addSuppressed(causeToAdd); // original is not equal to causeToAdd, safe to add suppressed.
+                break;
+            }
         }
     }
 
