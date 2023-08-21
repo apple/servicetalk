@@ -196,7 +196,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
         private final class RSubscriber implements Subscriber<R> {
             volatile int state;
             @Nullable
-            private final RSubscriber prevPublisher;
+            private RSubscriber prevPublisher;
             @Nullable
             private Subscription localSubscription;
             @Nullable
@@ -210,7 +210,9 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
             public void onSubscribe(Subscription subscription) {
                 localSubscription = requireNonNull(subscription);
                 if (prevPublisher != null) {
-                    prevPublisher.dispose(subscription);
+                    final RSubscriber localPrev = prevPublisher;
+                    prevPublisher = null; // Set the reference to null to avoid memory leak.
+                    localPrev.dispose(subscription);
                 } else {
                     switchTo(subscription);
                 }
