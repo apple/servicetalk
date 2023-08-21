@@ -331,7 +331,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    private Single<HttpServerContext> listenForService(final StreamingHttpService rawService,
+    private Single<HttpServerContext> listenForService(StreamingHttpService rawService,
                                                        final HttpExecutionStrategy computedStrategy) {
         InfluencerConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 InfluencerConnectionAcceptor.withStrategy(connectionAcceptorFactory.create(ACCEPT_ALL),
@@ -342,6 +342,11 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
         final StreamingHttpService filteredService;
         final HttpExecutionContext executionContext;
+
+        // The watchdog sits at the very beginning of the response flow (the end of the filter pipeline) so that any
+        // payload coming from the service is ensured to be tracked before subsequent filters get a chance to drop it
+        // without being accounted for.
+        rawService = HttpMessageDiscardWatchdogServiceFilter.INSTANCE.create(rawService);
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
@@ -470,6 +475,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
+        // This filter is placed at the end of the response lifecycle (so beginning of the filter pipeline) to ensure
+        // that any discarded payloads coming from the service are cleaned up.
+        service = HttpMessageDiscardWatchdogServiceFilter.CLEANER.create(service);
+
         service = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
         service = KeepAliveServiceFilter.INSTANCE.create(service);
         if (lifecycleObserver != null) {
