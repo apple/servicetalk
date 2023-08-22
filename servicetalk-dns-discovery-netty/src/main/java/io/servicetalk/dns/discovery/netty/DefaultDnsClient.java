@@ -42,10 +42,12 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
 import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
+import io.netty.handler.codec.dns.DnsResponseCode;
 import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
+import io.netty.resolver.dns.DnsErrorCauseException;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.NameServerComparator;
@@ -955,7 +957,7 @@ final class DefaultDnsClient implements DnsClient {
             AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
         return pub.onErrorResume(cause -> {
             AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
-            if (subscription != null) {
+            if (subscription != null && !isServFailCaused(cause)) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
                 if (!events.isEmpty()) {
                     return (generateAggregateEvent ? Publisher.<List<ServiceDiscovererEvent<T>>>from(
@@ -966,6 +968,11 @@ final class DefaultDnsClient implements DnsClient {
             }
             return failed(cause);
         });
+    }
+
+    private static boolean isServFailCaused(final Throwable t) {
+        return t.getCause() != null && t.getCause() instanceof DnsErrorCauseException &&
+                DnsResponseCode.SERVFAIL.equals(((DnsErrorCauseException) t.getCause()).getCode());
     }
 
     private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {

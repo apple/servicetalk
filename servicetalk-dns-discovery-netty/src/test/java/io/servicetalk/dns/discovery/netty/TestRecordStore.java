@@ -15,6 +15,7 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import org.apache.directory.server.dns.DnsException;
 import org.apache.directory.server.dns.messages.QuestionRecord;
 import org.apache.directory.server.dns.messages.RecordClass;
 import org.apache.directory.server.dns.messages.RecordType;
@@ -32,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.emptySet;
@@ -39,6 +41,7 @@ import static org.apache.directory.server.dns.messages.RecordType.A;
 import static org.apache.directory.server.dns.messages.RecordType.AAAA;
 import static org.apache.directory.server.dns.messages.RecordType.CNAME;
 import static org.apache.directory.server.dns.messages.RecordType.SRV;
+import static org.apache.directory.server.dns.messages.ResponseCode.SERVER_FAILURE;
 
 final class TestRecordStore implements RecordStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
@@ -46,6 +49,18 @@ final class TestRecordStore implements RecordStore {
     private static final int SRV_DEFAULT_PRIORITY = 10;
     private final Map<String, Map<RecordType, List<ResourceRecord>>> recordsToReturnByDomain =
             new ConcurrentHashMap<>();
+
+    static class ServFail {
+        private final String name;
+        private final RecordType type;
+
+        ServFail(final String name, final RecordType type) {
+            this.name = name;
+            this.type = type;
+        }
+    }
+
+    public final AtomicReference<ServFail> servFail = new AtomicReference<>(null);
 
     public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
         addSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
@@ -168,8 +183,12 @@ final class TestRecordStore implements RecordStore {
 
     @Nullable
     @Override
-    public synchronized Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) {
+    public synchronized Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) throws DnsException {
         final String domain = questionRecord.getDomainName();
+        final ServFail fail = servFail.get();
+        if (fail != null && domain.contains(fail.name) && fail.type.convert() >= questionRecord.getRecordType().convert()) {
+            throw new DnsException(SERVER_FAILURE);
+        }
         final Map<RecordType, List<ResourceRecord>> recordsToReturn = recordsToReturnByDomain.get(domain);
         LOGGER.debug("Getting {} records for {}", questionRecord.getRecordType(), domain);
         if (recordsToReturn != null) {

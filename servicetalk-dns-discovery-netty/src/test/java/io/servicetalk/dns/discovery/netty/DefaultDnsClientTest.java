@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020,2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import io.netty.channel.EventLoopGroup;
+import org.apache.directory.server.dns.messages.RecordType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -444,6 +445,37 @@ class DefaultDnsClientTest {
         advanceTime();
         assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    void srvFailResumesCorrectly() throws Exception {
+        setup();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQueryWithInfRetry(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(1);
+        assertHasEvent(signals, ip1, targetPort, AVAILABLE);
+
+        // Fail subsequent A queries with SERVFAIL
+        recordStore.servFail.set(new TestRecordStore.ServFail("target1", RecordType.A));
+        advanceTime();
+        // Expect no changes (SERVFAIL should be retried indefinitely)
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+
+        // Restore functionality for A queries
+        recordStore.servFail.set(null);
+        advanceTime();
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> resumeSignals = subscriber.takeOnNext(1);
+        assertHasEvent(resumeSignals, ip1, targetPort, AVAILABLE);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] srvFilterDuplicateEvents={0}")
@@ -1148,6 +1180,19 @@ class DefaultDnsClientTest {
 
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(String domain) {
         Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
+                .flatMapConcatIterable(identity());
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber =
+                new TestPublisherSubscriber<>();
+        toSource(publisher).subscribe(subscriber);
+        return subscriber;
+    }
+
+    private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQueryWithInfRetry(String domain) {
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
+                .retry((__, err) -> {
+                    err.printStackTrace();
+                    return true;
+                })
                 .flatMapConcatIterable(identity());
         TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber =
                 new TestPublisherSubscriber<>();
