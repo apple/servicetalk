@@ -133,7 +133,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
 
-        final Context parentContext = Context.current();
+        final Context parentContext = Context.root();
         if (!instrumenter.shouldStart(parentContext, request)) {
             return delegate.handle(ctx, request, responseFactory);
         }
