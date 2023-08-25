@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.poll;
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.take;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 

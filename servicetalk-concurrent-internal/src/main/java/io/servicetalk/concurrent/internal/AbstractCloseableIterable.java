@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.CloseableIterator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * An abstract implementation of {@link CloseableIterable} that wraps an {@link Iterable}.

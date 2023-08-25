@@ -30,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
-import io.servicetalk.utils.internal.PlatformDependent;
 
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +47,7 @@ import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -92,7 +92,7 @@ class ConsumeRequestPayloadOnResponsePathTest {
                     try {
                         consumePayloadBody(request).toFuture().get();
                     } catch (Exception e) {
-                        PlatformDependent.throwException(e);
+                        throwException(e);
                     }
                     return trailers;
                 }))));

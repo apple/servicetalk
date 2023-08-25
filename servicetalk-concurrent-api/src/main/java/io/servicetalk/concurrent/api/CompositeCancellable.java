@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**

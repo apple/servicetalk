@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**

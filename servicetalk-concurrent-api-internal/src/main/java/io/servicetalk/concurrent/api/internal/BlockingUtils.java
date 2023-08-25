@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.

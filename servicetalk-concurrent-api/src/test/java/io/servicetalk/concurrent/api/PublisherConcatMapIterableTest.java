@@ -41,7 +41,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -344,8 +344,7 @@ class PublisherConcatMapIterableTest {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         subscriber.awaitSubscription();
-        DeliberateException exception = assertThrows(DeliberateException.class,
-                                                     () -> publisher.onComplete());
+        DeliberateException exception = assertThrows(DeliberateException.class, publisher::onComplete);
         assertThat(exception, is(DELIBERATE_EXCEPTION));
     }
 

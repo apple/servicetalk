@@ -16,11 +16,12 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
-import io.servicetalk.utils.internal.PlatformDependent;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * A utility class for methods related to {@link AutoCloseable}.
@@ -50,7 +51,7 @@ public final class AutoCloseables {
             try {
                 closable.closeGracefully();
             } catch (Exception e) {
-                PlatformDependent.throwException(e);
+                throwException(e);
             }
         }).toFuture();
         try {

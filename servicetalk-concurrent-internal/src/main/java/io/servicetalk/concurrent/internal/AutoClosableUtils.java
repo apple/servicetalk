@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * Utilities for {@link AutoCloseable}.

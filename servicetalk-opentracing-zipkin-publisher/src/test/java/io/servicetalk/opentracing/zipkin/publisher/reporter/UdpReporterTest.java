@@ -43,7 +43,7 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.newSpan;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.verifySpan;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
