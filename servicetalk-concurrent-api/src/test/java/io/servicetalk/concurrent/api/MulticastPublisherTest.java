@@ -40,6 +40,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -65,11 +66,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class MulticastPublisherTest {
-    private TestPublisher<Integer> source;
-    private TestPublisherSubscriber<Integer> subscriber1;
-    private TestPublisherSubscriber<Integer> subscriber2;
-    private TestPublisherSubscriber<Integer> subscriber3;
-    private TestSubscription subscription;
+    TestPublisher<Integer> source;
+    TestPublisherSubscriber<Integer> subscriber1;
+    TestPublisherSubscriber<Integer> subscriber2;
+    TestPublisherSubscriber<Integer> subscriber3;
+    TestSubscription subscription;
 
     @BeforeEach
     void setUp() {
@@ -83,10 +84,31 @@ class MulticastPublisherTest {
         subscriber3 = new TestPublisherSubscriber<>();
     }
 
+    <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers) {
+        return source.multicast(minSubscribers);
+    }
+
+    <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers, boolean cancelUpstream) {
+        return source.multicast(minSubscribers, cancelUpstream);
+    }
+
+    <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers, int queueLimit,
+                                   Function<Throwable, Completable> terminalResubscribe) {
+        return source.multicast(minSubscribers, queueLimit, terminalResubscribe);
+    }
+
+    <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers, int queueLimit) {
+        return source.multicast(minSubscribers, queueLimit);
+    }
+
+    <T> Publisher<T> applyOperator(Publisher<T> source, int minSubscribers, int queueLimit, boolean cancelUpstream) {
+        return source.multicast(minSubscribers, queueLimit, cancelUpstream);
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void singleSubscriber(boolean onError) {
-        toSource(source.multicast(1)).subscribe(subscriber1);
+        toSource(applyOperator(source, 1)).subscribe(subscriber1);
         subscriber1.awaitSubscription();
         singleSourceTerminate(onError);
     }
@@ -94,7 +116,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void singleSubscriberData(boolean onError) throws InterruptedException {
-        toSource(source.multicast(1)).subscribe(subscriber1);
+        toSource(applyOperator(source, 1)).subscribe(subscriber1);
         subscriber1.awaitSubscription().request(1);
         subscription.awaitRequestN(1);
         source.onNext(1);
@@ -105,7 +127,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void singleSubscriberMultipleData(boolean onError) throws InterruptedException {
-        toSource(source.multicast(1)).subscribe(subscriber1);
+        toSource(applyOperator(source, 1)).subscribe(subscriber1);
         Subscription localSubscription = subscriber1.awaitSubscription();
         localSubscription.request(1);
         subscription.awaitRequestN(1);
@@ -131,7 +153,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void singleSubscriberCancel(boolean cancelUpstream) throws InterruptedException {
-        toSource(source.multicast(1, cancelUpstream)).subscribe(subscriber1);
+        toSource(applyOperator(source, 1, cancelUpstream)).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.cancel();
         subscription1.cancel(); // multiple cancels should be safe.
@@ -145,7 +167,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void twoSubscribersOneCancelsMultipleTimes(boolean cancelUpstream) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
+        Publisher<Integer> publisher = applyOperator(source, 2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         toSource(publisher).subscribe(subscriber2);
         Cancellable subscription1 = subscriber1.awaitSubscription();
@@ -163,7 +185,7 @@ class MulticastPublisherTest {
 
     @Test
     void singleSubscriberCancelStillDeliversData() throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(1, false);
+        Publisher<Integer> publisher = applyOperator(source, 1, false);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.request(1);
@@ -188,7 +210,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void subscriberCancelThenRequestIsNoop(boolean cancelUpstream) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
+        Publisher<Integer> publisher = applyOperator(source, 2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         assertThat(subscription.requested(), is(0L));
@@ -224,7 +246,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void twoSubscribersNoData(boolean onError) {
-        Publisher<Integer> publisher = source.multicast(2);
+        Publisher<Integer> publisher = applyOperator(source, 2);
         toSource(publisher).subscribe(subscriber1);
         subscriber1.awaitSubscription();
         assertThat(subscription.requested(), is(0L));
@@ -236,7 +258,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void twoSubscribersData(boolean onError) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+        Publisher<Integer> publisher = applyOperator(source, 2);
         toSource(publisher).subscribe(subscriber1);
         subscriber1.awaitSubscription().request(1);
         assertThat(subscription.requested(), is(0L));
@@ -252,7 +274,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void twoSubscribersMultipleData(boolean onError) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+        Publisher<Integer> publisher = applyOperator(source, 2);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         localSubscription1.request(1);
@@ -273,7 +295,7 @@ class MulticastPublisherTest {
         twoSubscribersTerminate(onError);
     }
 
-    private void twoSubscribersTerminate(boolean onError) {
+    void twoSubscribersTerminate(boolean onError) {
         if (onError) {
             source.onError(DELIBERATE_EXCEPTION);
             assertThat(subscriber1.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -288,7 +310,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void twoSubscribersAfterTerminalData(boolean onError) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(1, 10, t -> never());
+        Publisher<Integer> publisher = applyOperator(source, 1, 10, t -> never());
         toSource(publisher).subscribe(subscriber1);
         subscriber1.awaitSubscription().request(1);
         subscription.awaitRequestN(1);
@@ -313,7 +335,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @MethodSource("twoSubscribersInvalidRequestNParams")
     void twoSubscribersInvalidRequestN(long invalidN, boolean firstSubscription) {
-        Publisher<Integer> publisher = Publisher.from(1).multicast(2);
+        Publisher<Integer> publisher = applyOperator(Publisher.from(1), 2);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
@@ -340,7 +362,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @MethodSource("trueFalseStream")
     void twoSubscribersCancel(boolean firstSubscription, boolean cancelUpstream) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
+        Publisher<Integer> publisher = applyOperator(source, 2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
@@ -392,7 +414,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void threeSubscribersOneLateNoQueueData(boolean onError) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+        Publisher<Integer> publisher = applyOperator(source, 2);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         localSubscription1.request(1);
@@ -420,7 +442,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void threeSubscribersOneLateQueueData(boolean onError) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+        Publisher<Integer> publisher = applyOperator(source, 2);
         toSource(publisher).subscribe(subscriber1);
         toSource(publisher).subscribe(subscriber2);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
@@ -444,7 +466,7 @@ class MulticastPublisherTest {
 
     @Test
     void cancelMinSubscriberRequestsMore() throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(1);
+        Publisher<Integer> publisher = applyOperator(source, 1);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
@@ -458,7 +480,7 @@ class MulticastPublisherTest {
     @Test
     void cancelMinSubscriberRespectsQueueLimit() throws InterruptedException {
         final int queueLimit = 64;
-        Publisher<Integer> publisher = source.multicast(2, queueLimit);
+        Publisher<Integer> publisher = applyOperator(source, 2, queueLimit);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         localSubscription1.request(10);
@@ -521,7 +543,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @MethodSource("trueFalseStream")
     void threeSubscribersOneLateAfterCancel(boolean cancelMax, boolean cancelUpstream) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
+        Publisher<Integer> publisher = applyOperator(source, 2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         localSubscription1.request(5);
@@ -560,7 +582,7 @@ class MulticastPublisherTest {
         subscriber3.awaitOnComplete();
     }
 
-    private void threeSubscribersTerminate(boolean onError) {
+    void threeSubscribersTerminate(boolean onError) {
         if (onError) {
             source.onError(DELIBERATE_EXCEPTION);
             assertThat(subscriber1.awaitOnError(), is(DELIBERATE_EXCEPTION));
@@ -576,7 +598,7 @@ class MulticastPublisherTest {
 
     @Test
     void inlineRequestFromOnSubscribeToMultipleSubscribers() {
-        Publisher<Integer> publisher = Publisher.from(1).multicast(2);
+        Publisher<Integer> publisher = applyOperator(Publisher.from(1), 2);
         @SuppressWarnings("unchecked")
         Subscriber<Integer> sub1 = mock(Subscriber.class);
         @SuppressWarnings("unchecked")
@@ -603,8 +625,8 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void onErrorFromSubscriptionRequestToMultipleSubscribers(boolean onError) {
-        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(onError ?
-                error(DELIBERATE_EXCEPTION) : complete()).multicast(2);
+        Publisher<Integer> multicast = applyOperator(new TerminateFromOnSubscribePublisher(onError ?
+                error(DELIBERATE_EXCEPTION) : complete()), 2);
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
         subscriber1.awaitSubscription().request(1);
@@ -621,7 +643,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @MethodSource("reentrySubscriberRequestCountIsCorrectParams")
     void reentrySubscriberOrderingCorrect(boolean firstReentry, boolean secondReentry) {
-        Publisher<Integer> multicast = fromSource(new ReentryPublisher(0, 4)).multicast(2);
+        Publisher<Integer> multicast = applyOperator(fromSource(new ReentryPublisher(0, 4)), 2);
         toSource(multicast.beforeOnNext(n -> {
             if (firstReentry) {
                 subscriber1.awaitSubscription().request(1);
@@ -654,7 +676,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @MethodSource("reentrySubscriberRequestCountIsCorrectParams")
     void reentrySubscriberRequestCountIsCorrect(boolean firstReentry, boolean secondReentry) {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = applyOperator(source, 2);
         toSource(multicast.whenOnNext(n -> {
             if (firstReentry) {
                 subscriber1.awaitSubscription().request(1);
@@ -697,7 +719,7 @@ class MulticastPublisherTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void reentryAndMultiQueueSupportsNull(boolean requestReentry) throws InterruptedException {
-        Publisher<Integer> multicast = source.multicast(1);
+        Publisher<Integer> multicast = applyOperator(source, 1);
         AtomicBoolean onNextCalled = new AtomicBoolean();
         toSource(multicast).subscribe(subscriber1);
         subscriber1.awaitSubscription().request(3);
@@ -726,7 +748,7 @@ class MulticastPublisherTest {
     void reentryAsyncData() throws Exception {
         Executor executor = Executors.newCachedThreadExecutor();
         try {
-            Publisher<Integer> multicast = Publisher.from(1, 2, 3).publishOn(executor).multicast(2);
+            Publisher<Integer> multicast = applyOperator(Publisher.from(1, 2, 3).publishOn(executor), 2);
             AtomicBoolean onNextCalled = new AtomicBoolean();
             toSource(multicast.afterOnNext(n -> {
                 if (onNextCalled.compareAndSet(false, true)) {
@@ -749,7 +771,7 @@ class MulticastPublisherTest {
 
     @Test
     void replenishRequestNInMaxQueueIncrementsLongMax() {
-        Publisher<Integer> multicast = source.multicast(2, 3);
+        Publisher<Integer> multicast = applyOperator(source, 2, 3);
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
 
@@ -770,7 +792,7 @@ class MulticastPublisherTest {
             return list;
         }).toFuture().get();
 
-        Publisher<Integer> multi = original.multicast(2, 5);
+        Publisher<Integer> multi = applyOperator(original, 2, 5);
         List<Integer> first = new ArrayList<>();
         List<Integer> second = new ArrayList<>();
         multi.forEach(first::add);
@@ -783,7 +805,7 @@ class MulticastPublisherTest {
     @Test
     void concurrentRequestN() throws InterruptedException {
         final int expectedSubscribers = 50;
-        Publisher<Integer> multicast = source.multicast(expectedSubscribers);
+        Publisher<Integer> multicast = applyOperator(source, expectedSubscribers);
         @SuppressWarnings("unchecked")
         TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
                 new TestPublisherSubscriber[expectedSubscribers];
@@ -821,7 +843,7 @@ class MulticastPublisherTest {
     @Test
     void concurrentRequestNAndOnNext() throws BrokenBarrierException, InterruptedException {
         final int expectedSubscribers = 400;
-        Publisher<Integer> multicast = source.multicast(expectedSubscribers);
+        Publisher<Integer> multicast = applyOperator(source, expectedSubscribers);
         @SuppressWarnings("unchecked")
         TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
                 new TestPublisherSubscriber[expectedSubscribers];
@@ -881,7 +903,7 @@ class MulticastPublisherTest {
     @MethodSource("trueFalseStream")
     void threeConcurrentLateSubscriber(boolean cancelEarlySub, boolean cancelUpstream) throws Exception {
         final int expectedSignals = 1000;
-        Publisher<Integer> publisher = source.multicast(2, expectedSignals, cancelUpstream);
+        Publisher<Integer> publisher = applyOperator(source, 2, expectedSignals, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.request(expectedSignals);
@@ -943,7 +965,7 @@ class MulticastPublisherTest {
     @Test
     void twoConcurrentSubscriptions() throws Exception {
         final int expectedSignals = 1000;
-        Publisher<Integer> publisher = source.multicast(2, expectedSignals);
+        Publisher<Integer> publisher = applyOperator(source, 2, expectedSignals);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
