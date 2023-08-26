@@ -73,7 +73,7 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNone;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
@@ -422,7 +422,7 @@ class ErrorHandlingTest {
 
     static Collection<Arguments> data() {
         GrpcExecutionStrategy[] strategies =
-                new GrpcExecutionStrategy[]{offloadNever(), defaultStrategy()};
+                new GrpcExecutionStrategy[]{offloadNone(), defaultStrategy()};
         List<Arguments> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
         for (GrpcExecutionStrategy serverStrategy : strategies) {
             for (GrpcExecutionStrategy clientStrategy : strategies) {
