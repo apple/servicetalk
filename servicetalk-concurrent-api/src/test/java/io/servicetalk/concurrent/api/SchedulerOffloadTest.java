@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 

@@ -59,7 +59,7 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_BEFORE_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;

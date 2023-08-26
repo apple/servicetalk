@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 final class RequestResponseFactories {
 

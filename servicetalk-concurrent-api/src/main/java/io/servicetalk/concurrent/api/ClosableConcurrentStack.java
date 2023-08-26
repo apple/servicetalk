@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 

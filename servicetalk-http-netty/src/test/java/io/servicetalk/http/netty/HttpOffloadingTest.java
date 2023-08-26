@@ -80,7 +80,7 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.api.IoThreadFactory.IoThread.currentThreadIsIoThread;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 

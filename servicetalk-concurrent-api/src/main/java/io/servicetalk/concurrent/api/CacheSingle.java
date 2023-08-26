@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverSuccessFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.logDuplicateTerminal;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 

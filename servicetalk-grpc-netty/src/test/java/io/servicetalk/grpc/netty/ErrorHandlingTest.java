@@ -76,7 +76,7 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -314,8 +314,8 @@ class ErrorHandlingTest {
         doAnswer((Answer<Publisher<TestResponse>>) invocation -> {
             Publisher<TestRequest> request = invocation.getArgument(1);
             return request.map(req -> {
-               throwException(toThrow);
-               return null;
+                throwException(toThrow);
+                return null;
             });
         }).when(service).testBiDiStream(any(), any());
         doAnswer(invocation -> {

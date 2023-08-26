@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.utils.internal.PlatformDependent;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * Utilities to await results of an asynchronous computation either by blocking the calling thread.
@@ -213,7 +212,7 @@ public final class BlockingTestUtils {
         try {
             awaitIndefinitely(source);
         } catch (ExecutionException | InterruptedException e) {
-            PlatformDependent.throwException(e);
+            throwException(e);
         }
     }
 

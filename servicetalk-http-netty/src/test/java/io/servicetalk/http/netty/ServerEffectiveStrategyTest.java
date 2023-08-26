@@ -48,7 +48,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Character.isDigit;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
