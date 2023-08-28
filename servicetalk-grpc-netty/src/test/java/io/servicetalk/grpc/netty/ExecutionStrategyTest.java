@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNone;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE;
@@ -126,7 +126,7 @@ class ExecutionStrategyTest {
         NO_OFFLOADS {
             @Override
             void configureContextExecutionStrategy(GrpcServerBuilder builder) {
-                builder.initializeHttp(b -> b.executionStrategy(offloadNever()));
+                builder.initializeHttp(b -> b.executionStrategy(offloadNone()));
             }
         };
 
@@ -173,10 +173,10 @@ class ExecutionStrategyTest {
             ServiceFactory getServiceFactory() {
                 return new ServiceFactory.Builder()
                         .routeExecutionStrategyFactory(STRATEGY_FACTORY)
-                        .test(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testBiDiStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testResponseStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
-                        .testRequestStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .test(offloadNone(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testBiDiStream(offloadNone(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testResponseStream(offloadNone(), DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .testRequestStream(offloadNone(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .build();
             }
         },
@@ -219,10 +219,10 @@ class ExecutionStrategyTest {
             ServiceFactory getServiceFactory() {
                 return new ServiceFactory.Builder()
                         .routeExecutionStrategyFactory(STRATEGY_FACTORY)
-                        .testBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testBiDiStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testResponseStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
-                        .testRequestStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testBlocking(offloadNone(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testBiDiStreamBlocking(offloadNone(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testResponseStreamBlocking(offloadNone(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .testRequestStreamBlocking(offloadNone(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .build();
             }
         };

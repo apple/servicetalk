@@ -159,7 +159,7 @@ public final class DebuggingExampleServer {
                  * most useful for being able to directly trace through situations that would normally involve a
                  * thread handoff.
                  */
-                // .executionStrategy(HttpExecutionStrategies.offloadNever())
+                // .executionStrategy(HttpExecutionStrategies.offloadNone())
 
                 /*
                  * 3. Enables detailed logging of I/O events and I/O states.

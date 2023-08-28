@@ -27,7 +27,6 @@ import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
-import io.servicetalk.grpc.api.GrpcExecutionStrategies;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.MethodDescriptor;
@@ -58,6 +57,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNone;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -97,7 +97,7 @@ final class Utils {
 
         @Override
         public GrpcExecutionStrategy executionStrategy() {
-            return GrpcExecutionStrategies.offloadNever();
+            return offloadNone();
         }
     }
 
