@@ -90,7 +90,8 @@ Extends the async "Hello World" example to demonstrate some useful features avai
 
 * link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleServer.java[DebuggingExampleServer] - the async `Hello World!`
  server enhanced with debugging capabilities.
-* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java[DebuggingExampleClient.java] - the async `Hello World!` client enhanced with debugging capabilities.
+* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java[DebuggingExampleClient.java] - the async `Hello World!` single-address client enhanced with debugging capabilities.
+* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleUrlClient.java[DebuggingExampleUrlClient.java] - the async `Hello World!` multi-address client enhanced with debugging capabilities.
 
 [#Timeout]
 == Timeout
