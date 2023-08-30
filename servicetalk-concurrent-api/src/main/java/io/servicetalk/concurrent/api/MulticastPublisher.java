@@ -153,7 +153,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 // processSubscribeEvent sets the initial value of new subscribers to the value of the current minimum.
                 // We need to subtract the initial value to request the delta between the old min.
                 return min == null ? 0 : min.priorityQueueValue - min.initPriorityQueueValue -
-                        subscriber.priorityQueueValue;
+                        (subscriber.priorityQueueValue - subscriber.initPriorityQueueValue);
             }
             return 0;
         }

@@ -482,6 +482,43 @@ class MulticastPublisherTest {
     }
 
     @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void threeSubscribersOneCancelRequestsUpstream(boolean cancel2First) throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(1, true);
+        toSource(publisher).subscribe(subscriber1);
+        Subscription localSubscription1 = subscriber1.awaitSubscription();
+        localSubscription1.request(1);
+        subscription.awaitRequestN(1);
+        toSource(publisher).subscribe(subscriber2);
+        Subscription localSubscription2 = subscriber2.awaitSubscription();
+        source.onNext(1);
+        assertThat(subscriber1.takeOnNext(), is(1));
+
+        toSource(publisher).subscribe(subscriber3);
+        Subscription localSubscription3 = subscriber3.awaitSubscription();
+
+        localSubscription1.request(1);
+        assertThat(subscription.requested(), is(1L));
+        if (cancel2First) {
+            localSubscription2.cancel();
+            localSubscription3.request(1);
+        } else {
+            localSubscription3.request(1);
+            assertThat(subscription.requested(), is(1L));
+            localSubscription2.cancel();
+        }
+        subscription.awaitRequestN(2);
+        source.onNext(2);
+        assertThat(subscriber1.takeOnNext(), is(2));
+        assertThat(subscriber3.takeOnNext(), is(2));
+        source.onComplete();
+        subscriber1.awaitOnComplete();
+        subscriber3.awaitOnComplete();
+        assertThat(subscriber2.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
+    }
+
+    @ParameterizedTest
     @MethodSource("trueFalseStream")
     void threeSubscribersOneLateAfterCancel(boolean cancelMax, boolean cancelUpstream) throws InterruptedException {
         Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
