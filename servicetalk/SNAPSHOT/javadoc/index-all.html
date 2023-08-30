@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -2621,6 +2621,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 &nbsp;</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a></dt>
+<dd>
+<div class="block">Builds a new <a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.opentracing.inmemory.<a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer.Builder</a></dt>
 <dd>
 <div class="block">Builds the <a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory"><code>DefaultInMemoryTracer</code></a>.</div>
@@ -2754,6 +2758,8 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancers.html#builder(java.lang.String)"><code>RoundRobinLoadBalancers.builder(String)</code></a> instead.</div>
 </div>
 </dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html#%3Cinit%3E()" class="member-name-link">Builder()</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.Builder.html#%3Cinit%3E(io.servicetalk.http.api.SingleAddressHttpClientBuilder)" class="member-name-link">Builder(SingleAddressHttpClientBuilder&lt;?, ?&gt;)</a> - Constructor for class io.servicetalk.opentracing.zipkin.publisher.reporter.<a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter"><code>HttpReporter.Builder</code></a> using the passed <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a>.</div>
@@ -3049,6 +3055,22 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/EmptyBuffer.html#capacity(int)" class="member-name-link">capacity(int)</a> - Method in class io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/EmptyBuffer.html" title="class in io.servicetalk.buffer.api">EmptyBuffer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#capturedRequestHeaders()" class="member-name-link">capturedRequestHeaders()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
+<dd>
+<div class="block">List of request headers to be captured as extra span attributes.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html#capturedRequestHeaders(java.util.List)" class="member-name-link">capturedRequestHeaders(List&lt;String&gt;)</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a></dt>
+<dd>
+<div class="block">Add the headers to be captured as extra span attributes.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#capturedResponseHeaders()" class="member-name-link">capturedResponseHeaders()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
+<dd>
+<div class="block">List of response headers to be captured as extra span attributes.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html#capturedResponseHeaders(java.util.List)" class="member-name-link">capturedResponseHeaders(List&lt;String&gt;)</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a></dt>
+<dd>
+<div class="block">Add the headers to be captured as extra span attributes.</div>
+</dd>
 <dt><a href="io/servicetalk/buffer/api/CharSequences.html#caseInsensitiveHashCode(java.lang.CharSequence)" class="member-name-link">caseInsensitiveHashCode(CharSequence)</a> - Static method in class io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/CharSequences.html" title="class in io.servicetalk.buffer.api">CharSequences</a></dt>
 <dd>
 <div class="block">Calculate a hash code of a byte array assuming ASCII character encoding.</div>
@@ -6331,6 +6353,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Enables a logger for HTTP/2 frames.</div>
 </dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#enableMetrics()" class="member-name-link">enableMetrics()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
+<dd>
+<div class="block">Whether to enable operation metrics or not.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html#enableMetrics(boolean)" class="member-name-link">enableMetrics(boolean)</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a></dt>
+<dd>
+<div class="block">Whether to enable operation metrics or not.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)" class="member-name-link">enableWireLogging(String, LogLevel, BooleanSupplier)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)" class="member-name-link">enableWireLogging(String, LogLevel, BooleanSupplier)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
@@ -6550,6 +6580,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthPrincipal.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class io.servicetalk.http.security.auth.basic.jersey.<a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthPrincipal.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthPrincipal</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class io.servicetalk.logging.slf4j.internal.<a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html" title="class in io.servicetalk.logging.slf4j.internal">DefaultUserDataLoggerConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/DefaultExecutionContext.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a></dt>
 <dd>&nbsp;</dd>
@@ -7061,6 +7093,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the <code>SslHandshakeCompletionEvent</code>
  is successful and reports the result to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> if available.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
+<dd>
+<div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the handshake is already done
+ and reports the result to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> if available.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:F">F</h2>
@@ -8078,6 +8115,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a> from the given <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a> using UTF-8 encoding.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/HttpProtocolVersion.html#fullVersion()" class="member-name-link">fullVersion()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a></dt>
+<dd>
+<div class="block">Resolves and return the http version number as a String.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Function3.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">Function3</a>&lt;<a href="io/servicetalk/concurrent/api/Function3.html" title="type parameter in Function3">T1</a>,<wbr><a href="io/servicetalk/concurrent/api/Function3.html" title="type parameter in Function3">T2</a>,<wbr><a href="io/servicetalk/concurrent/api/Function3.html" title="type parameter in Function3">T3</a>,<wbr><a href="io/servicetalk/concurrent/api/Function3.html" title="type parameter in Function3">R</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
 <div class="block">A functional interface that accepts 3 arguments and generates a return value.</div>
@@ -8673,10 +8714,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/router/jersey/internal/SourceWrappers.PublisherSource.html#getSystemId()" class="member-name-link">getSystemId()</a> - Method in class io.servicetalk.http.router.jersey.internal.<a href="io/servicetalk/http/router/jersey/internal/SourceWrappers.PublisherSource.html" title="class in io.servicetalk.http.router.jersey.internal">SourceWrappers.PublisherSource</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/router/jersey/internal/SourceWrappers.SingleSource.html#getSystemId()" class="member-name-link">getSystemId()</a> - Method in class io.servicetalk.http.router.jersey.internal.<a href="io/servicetalk/http/router/jersey/internal/SourceWrappers.SingleSource.html" title="class in io.servicetalk.http.router.jersey.internal">SourceWrappers.SingleSource</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/health/v1/HealthCheckRequest.html#getUnknownFields()" class="member-name-link">getUnknownFields()</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/health/v1/HealthCheckResponse.html#getUnknownFields()" class="member-name-link">getUnknownFields()</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#getUnsignedByte(int)" class="member-name-link">getUnsignedByte(int)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -9484,6 +9521,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class io.servicetalk.logging.slf4j.internal.<a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html" title="class in io.servicetalk.logging.slf4j.internal">DefaultUserDataLoggerConfig</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/DefaultExecutionContext.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/DomainSocketAddress.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DomainSocketAddress.html" title="class in io.servicetalk.transport.api">DomainSocketAddress</a></dt>
@@ -9781,14 +9820,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/api/ClientSslConfig.html#hostnameVerificationAlgorithm()" class="member-name-link">hostnameVerificationAlgorithm()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></dt>
 <dd>
 <div class="block">Get the algorithm to use for hostname verification to verify the
- <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.</div>
+ <a href="https://tools.ietf.org/html/rfc2818#section-3.1">server identity</a>.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/DelegatingClientSslConfig.html#hostnameVerificationAlgorithm()" class="member-name-link">hostnameVerificationAlgorithm()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingClientSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingClientSslConfig</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html#hostnameVerificationAlgorithm(java.lang.String)" class="member-name-link">hostnameVerificationAlgorithm(String)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></dt>
 <dd>
 <div class="block">Set the algorithm to use for hostname verification to verify the
- <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.</div>
+ <a href="https://tools.ietf.org/html/rfc2818#section-3.1">server identity</a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpProtocolVersion.html#HTTP_1_0" class="member-name-link">HTTP_1_0</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a></dt>
 <dd>
@@ -11409,7 +11448,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#isSslEnabled(io.netty.channel.ChannelPipeline)" class="member-name-link">isSslEnabled(ChannelPipeline)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
 <dd>
-<div class="block">Determine if the <code>ChannelPipeline</code> is configured for SSL/TLS.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">not required anymore, will be removed in the future releases, see
+ <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)"><code>NettyPipelineSslUtils.extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)</code></a> for an alternative approach</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/ParameterDescriptor.html#isStreaming()" class="member-name-link">isStreaming()</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/ParameterDescriptor.html" title="interface in io.servicetalk.grpc.api">ParameterDescriptor</a></dt>
 <dd>
@@ -11541,7 +11583,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" class="type-name-link" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a> - Class in <a href="io/servicetalk/http/utils/package-summary.html">io.servicetalk.http.utils</a></dt>
 <dd>
-<div class="block">A filter to mimics <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> behavior on the client-side.</div>
+<div class="block">A filter that mimics <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> behavior on the client-side.</div>
 </dd>
 <dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#%3Cinit%3E(java.time.Duration)" class="member-name-link">JavaNetSoTimeoutHttpConnectionFilter(Duration)</a> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
 <dd>
@@ -14741,9 +14783,19 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry,java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter(OpenTelemetry, String)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a></dt>
 <dd>
-<div class="block">Create a new instance.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this method is internal, no user should be setting the <code>OpenTelemetry</code> as it is obtained by
+ using <code>GlobalOpenTelemetry.get()</code> and there should be no other implementations but the one available in
+ the classpath, this constructor will be removed in the future releases.
+ Use <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)"><code>OpenTelemetryHttpRequestFilter(String, OpenTelemetryOptions)</code></a> or
+ <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E()"><code>OpenTelemetryHttpRequestFilter()</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E(java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter(String)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a></dt>
+<dd>
+<div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E(java.lang.String,io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpRequestFilter(String, OpenTelemetryOptions)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a></dt>
 <dd>
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 </dd>
@@ -14758,7 +14810,25 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry)" class="member-name-link">OpenTelemetryHttpServerFilter(OpenTelemetry)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpServerFilter</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this method is internal, no user should be setting the <code>OpenTelemetry</code> as it is obtained by
+ using <code>GlobalOpenTelemetry.get()</code> and there should be no other implementations but the one available in
+ the classpath, this constructor will be removed in the future releases.
+ Use <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)"><code>OpenTelemetryHttpServerFilter(OpenTelemetryOptions)</code></a> or <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E()"><code>OpenTelemetryHttpServerFilter()</code></a>
+ instead.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpServerFilter(OpenTelemetryOptions)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpServerFilter</a></dt>
+<dd>
 <div class="block">Create a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" class="type-name-link" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a> - Class in <a href="io/servicetalk/opentelemetry/http/package-summary.html">io.servicetalk.opentelemetry.http</a></dt>
+<dd>
+<div class="block">A set of options for configuring OpenTelemetry filters.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.Builder.html" class="type-name-link" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions.Builder</a> - Class in <a href="io/servicetalk/opentelemetry/http/package-summary.html">io.servicetalk.opentelemetry.http</a></dt>
+<dd>
+<div class="block">A builder for <a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#operationName()" class="member-name-link">operationName()</a> - Method in interface io.servicetalk.opentracing.inmemory.api.<a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemorySpan</a></dt>
 <dd>
@@ -18615,6 +18685,20 @@ loadScripts(document, 'script');</script>
 <div class="block">Sets an advice for a user agent to use <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/charset/StandardCharsets.html#UTF_8" title="class or interface in java.nio.charset" class="external-link"><code>UTF-8</code></a> charset when it generates
  <code>user-id:password</code> pair.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Completable.html#setContextOnSubscribe(io.servicetalk.context.api.ContextMap)" class="member-name-link">setContextOnSubscribe(ContextMap)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
+<dd>
+<div class="block">Specify the <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="io/servicetalk/concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when the returned <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> is
+ subscribed to.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#setContextOnSubscribe(io.servicetalk.context.api.ContextMap)" class="member-name-link">setContextOnSubscribe(ContextMap)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Specify the <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="io/servicetalk/concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when the returned <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is
+ subscribed to.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#setContextOnSubscribe(io.servicetalk.context.api.ContextMap)" class="member-name-link">setContextOnSubscribe(ContextMap)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Specify the <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="io/servicetalk/concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when the returned <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html#setDone()" class="member-name-link">setDone()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html" title="class in io.servicetalk.concurrent.internal">ThreadInterruptingCancellable</a></dt>
 <dd>
 <div class="block">Indicates the operation associated with this <a href="io/servicetalk/concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> is done and future calls to <a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html#cancel()"><code>ThreadInterruptingCancellable.cancel()</code></a>
@@ -20986,6 +21070,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html" title="class in io.servicetalk.http.utils">IdleTimeoutConnectionFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.logging.slf4j.internal.<a href="io/servicetalk/logging/slf4j/internal/DefaultUserDataLoggerConfig.html" title="class in io.servicetalk.logging.slf4j.internal">DefaultUserDataLoggerConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/DefaultInMemorySpanContext.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.opentracing.inmemory.<a href="io/servicetalk/opentracing/inmemory/DefaultInMemorySpanContext.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemorySpanContext</a></dt>
 <dd>&nbsp;</dd>

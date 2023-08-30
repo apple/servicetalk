@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -209,7 +209,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 </dl>
 </section>
 </li>
@@ -221,7 +221,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 <dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </section>
@@ -234,7 +234,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 <dd><code>fullRequestResponse</code> - if <code>true</code> then timeout is for full request/response transaction otherwise only
  the response metadata must arrive before the timeout</dd>
 </dl>
@@ -249,7 +249,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 <dd><code>fullRequestResponse</code> - if <code>true</code> then timeout is for full request/response transaction otherwise only
  the response metadata must arrive before the timeout</dd>
 <dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>

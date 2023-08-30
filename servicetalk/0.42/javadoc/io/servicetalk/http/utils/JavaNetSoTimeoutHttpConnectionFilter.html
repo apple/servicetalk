@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -83,7 +83,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">JavaNetSoTimeoutHttpConnectionFilter</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a></span></div>
-<div class="block">A filter to mimics <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> behavior on the client-side.
+<div class="block">A filter that mimics <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> behavior on the client-side.
  <p>
  While <a href="TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a> applies a timeout for the overall duration to receive either the response
  metadata (headers) or the complete reception of the response (including headers, payload body, optional trailers, as
@@ -106,6 +106,8 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
 <dd>
 <ul class="see-list">
 <li><a href="TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/Socket.html#setSoTimeout(int)" title="class or interface in java.net" class="external-link"><code>Socket.setSoTimeout(int)</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -189,7 +191,7 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 </dl>
 </section>
 </li>
@@ -201,7 +203,7 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a></dd>
+<dd><code>duration</code> - the timeout <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>, must be <code>&gt; 0</code></dd>
 <dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </section>
@@ -213,8 +215,9 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>timeoutForRequest</code> - function for extracting timeout from request which may also determine the timeout using
- other sources. If no timeout is to be applied then the function should return <code>null</code></dd>
+<dd><code>timeoutForRequest</code> - function for extracting timeout value from a request or other runtime sources.
+ A timeout of <code>null</code> or <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>zero (0)</code></a> is interpreted as an infinite timeout, all other
+ values must be <code>&gt; 0</code></dd>
 </dl>
 </section>
 </li>
@@ -226,8 +229,9 @@ implements <a href="../api/StreamingHttpConnectionFilterFactory.html" title="int
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>timeoutForRequest</code> - function for extracting timeout from request which may also determine the timeout using
- other sources. If no timeout is to be applied then the function should return <code>null</code></dd>
+<dd><code>timeoutForRequest</code> - function for extracting timeout value from a request or other runtime sources.
+ A timeout of <code>null</code> or <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>zero (0)</code></a> is interpreted as an infinite timeout, all other
+ values must be <code>&gt; 0</code></dd>
 <dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </section>

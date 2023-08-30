@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -598,26 +598,31 @@ loadScripts(document, 'script');</script>
  <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shareContextOnSubscribe()" class="member-name-link">shareContextOnSubscribe</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setContextOnSubscribe(io.servicetalk.context.api.ContextMap)" class="member-name-link">setContextOnSubscribe</a><wbr>(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Specify the <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shareContextOnSubscribe()" class="member-name-link">shareContextOnSubscribe</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Signifies that when the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
  instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(java.util.function.Consumer)" class="member-name-link">subscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;resultConsumer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(java.util.function.Consumer)" class="member-name-link">subscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;resultConsumer)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Subscribe to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, emits the result to the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> and log any
  <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeInternal(io.servicetalk.concurrent.SingleSource.Subscriber)" class="member-name-link">subscribeInternal</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;subscriber)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeInternal(io.servicetalk.concurrent.SingleSource.Subscriber)" class="member-name-link">subscribeInternal</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;subscriber)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A internal subscribe method similar to <a href="../SingleSource.html#subscribe(io.servicetalk.concurrent.SingleSource.Subscriber)"><code>SingleSource.subscribe(Subscriber)</code></a> which can be used by
  different implementations to subscribe.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke the
  following methods:
  
@@ -627,10 +632,10 @@ loadScripts(document, 'script');</script>
  This method does <strong>not</strong> override preceding <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a>s, if any,
  specified for <code>this</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BooleanSupplier.html" title="class or interface in java.util.function" class="external-link">BooleanSupplier</a>&nbsp;shouldOffload)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that may use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke the
  following methods:
  
@@ -640,72 +645,72 @@ loadScripts(document, 'script');</script>
  This method does <strong>not</strong> override preceding <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a>s, if any,
  specified for <code>this</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#succeeded(T)" class="member-name-link">succeeded</a><wbr>(T&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#succeeded(T)" class="member-name-link">succeeded</a><wbr>(T&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a realized <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which always completes successfully with the provided <code>value</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will mimic the signals of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> but will terminate
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and
  termination.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit,
  <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will mimic the signals of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> but will terminate
- with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and
- termination.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will mimic the signals of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> but will terminate
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and
  termination.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration,
- <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will mimic the signals of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> but will terminate
+ with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and
+ termination.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration,
+ <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will mimic the signals of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> but will terminate with a
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletable()" class="member-name-link">toCompletable</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletable()" class="member-name-link">toCompletable</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Ignores the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and forwards the termination signal to the returned
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletionStage()" class="member-name-link">toCompletionStage</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletionStage()" class="member-name-link">toCompletionStage</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Convert this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link"><code>CompletionStage</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toFuture()" class="member-name-link">toFuture</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toFuture()" class="member-name-link">toFuture</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Convert this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link"><code>Future</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toPublisher()" class="member-name-link">toPublisher</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toPublisher()" class="member-name-link">toPublisher</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts this <code>Single</code> to a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenCancel(java.lang.Runnable)" class="member-name-link">whenCancel</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onCancel)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenCancel(java.lang.Runnable)" class="member-name-link">whenCancel</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onCancel)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onCancel</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument when <a href="../Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> is called for
  Subscriptions of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.SingleTerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;doFinally)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.SingleTerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;doFinally)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the corresponding method on <code>whenFinally</code> <a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api"><code>SingleTerminalSignalConsumer</code></a> argument when any
  of the following terminal methods are called:
  
@@ -717,9 +722,9 @@ loadScripts(document, 'script');</script>
  
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.TerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;doFinally)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.TerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;doFinally)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the corresponding method on <code>whenFinally</code> <a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api"><code>TerminalSignalConsumer</code></a> argument when any
  of the following terminal methods are called:
  
@@ -731,9 +736,9 @@ loadScripts(document, 'script');</script>
  
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(java.lang.Runnable)" class="member-name-link">whenFinally</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;doFinally)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(java.lang.Runnable)" class="member-name-link">whenFinally</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;doFinally)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>whenFinally</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument exactly once, when any of the following terminal
  methods are called:
  
@@ -743,130 +748,130 @@ loadScripts(document, 'script');</script>
  
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnError(java.util.function.Consumer)" class="member-name-link">whenOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnError(java.util.function.Consumer)" class="member-name-link">whenOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onError</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> argument when <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a> is called for
  <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSubscribe(java.util.function.Consumer)" class="member-name-link">whenOnSubscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&gt;&nbsp;onSubscribe)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSubscribe(java.util.function.Consumer)" class="member-name-link">whenOnSubscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&gt;&nbsp;onSubscribe)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onSubscribe</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> argument when
  <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> is called for <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSuccess(java.util.function.Consumer)" class="member-name-link">whenOnSuccess</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;onSuccess)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSuccess(java.util.function.Consumer)" class="member-name-link">whenOnSuccess</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;onSuccess)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onSuccess</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> argument when <a href="../SingleSource.Subscriber.html#onSuccess(T)"><code>SingleSource.Subscriber.onSuccess(Object)</code></a> is called for
  <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenSubscriber(java.util.function.Supplier)" class="member-name-link">whenSubscriber</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;subscriberSupplier)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenSubscriber(java.util.function.Supplier)" class="member-name-link">whenSubscriber</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;subscriberSupplier)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> (via the <code>subscriberSupplier</code> argument) for each new subscribe and
  invokes methods on that <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> when the corresponding methods are called for <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of
  the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
 T2,<wbr>
 T3,<wbr>
 R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T3&gt;&nbsp;s3,
  <a href="Function3.html" title="interface in io.servicetalk.concurrent.api">Function3</a>&lt;? super T1,<wbr>? super T2,<wbr>? super T3,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="Function3.html" title="interface in io.servicetalk.concurrent.api"><code>Function3</code></a> to items emitted by
  <code>s1</code>, <code>s2</code>, and <code>s3</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
 T2,<wbr>
 T3,<wbr>
 T4,<wbr>
 R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T3&gt;&nbsp;s3,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T4&gt;&nbsp;s4,
  <a href="Function4.html" title="interface in io.servicetalk.concurrent.api">Function4</a>&lt;? super T1,<wbr>? super T2,<wbr>? super T3,<wbr>? super T4,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="Function4.html" title="interface in io.servicetalk.concurrent.api"><code>Function4</code></a> to items emitted by
  <code>s1</code>, <code>s2</code>, <code>s3</code>, and <code>s4</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
 T2,<wbr>
 R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zip</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super T1,<wbr>? super T2,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted
  by <code>s1</code> and <code>s2</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(java.util.function.Function,io.servicetalk.concurrent.api.Single...)" class="member-name-link">zip</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[],<wbr>? extends R&gt;&nbsp;zipper,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zip(java.util.function.Function,io.servicetalk.concurrent.api.Single...)" class="member-name-link">zip</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[],<wbr>? extends R&gt;&nbsp;zipper,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;?&gt;...&nbsp;singles)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> to items emitted by
  <code>singles</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
-T2,<wbr>
-T3,<wbr>
-R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
- <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
- <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T3&gt;&nbsp;s3,
- <a href="Function3.html" title="interface in io.servicetalk.concurrent.api">Function3</a>&lt;? super T1,<wbr>? super T2,<wbr>? super T3,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="Function3.html" title="interface in io.servicetalk.concurrent.api"><code>Function3</code></a> to items emitted by
- <code>s1</code>, <code>s2</code>, and <code>s3</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
 T2,<wbr>
 T3,<wbr>
+R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T3&gt;&nbsp;s3,
+ <a href="Function3.html" title="interface in io.servicetalk.concurrent.api">Function3</a>&lt;? super T1,<wbr>? super T2,<wbr>? super T3,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="Function3.html" title="interface in io.servicetalk.concurrent.api"><code>Function3</code></a> to items emitted by
+ <code>s1</code>, <code>s2</code>, and <code>s3</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
+T2,<wbr>
+T3,<wbr>
 T4,<wbr>
 R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T3&gt;&nbsp;s3,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T4&gt;&nbsp;s4,
  <a href="Function4.html" title="interface in io.servicetalk.concurrent.api">Function4</a>&lt;? super T1,<wbr>? super T2,<wbr>? super T3,<wbr>? super T4,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="Function4.html" title="interface in io.servicetalk.concurrent.api"><code>Function4</code></a> to items emitted by
  <code>s1</code>, <code>s2</code>, <code>s3</code>, and <code>s4</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T1,<wbr>
 T2,<wbr>
 R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super T1,<wbr>? super T2,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted
  by <code>s1</code> and <code>s2</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(java.util.function.Function,io.servicetalk.concurrent.api.Single...)" class="member-name-link">zipDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[],<wbr>? extends R&gt;&nbsp;zipper,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#zipDelayError(java.util.function.Function,io.servicetalk.concurrent.api.Single...)" class="member-name-link">zipDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>[],<wbr>? extends R&gt;&nbsp;zipper,
  <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;?&gt;...&nbsp;singles)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> to items emitted by
  <code>singles</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T2,<wbr>
-R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#zipWith(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipWith</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,<wbr>? super T2,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted by
- <code>this</code> and <code>other</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T2,<wbr>
 R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#zipWithDelayError(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipWithDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#zipWith(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipWith</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,<wbr>? super T2,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted by
+ <code>this</code> and <code>other</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T2,<wbr>
+R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#zipWithDelayError(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)" class="member-name-link">zipWithDelayError</a><wbr>(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,<wbr>? super T2,<wbr>? extends R&gt;&nbsp;zipper)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Create a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted by
  <code>this</code> and <code>other</code>.</div>
 </div>
@@ -2984,6 +2989,22 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dt>Returns:</dt>
 <dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will share the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> instead of making a
  <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a> when subscribed to.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="setContextOnSubscribe(io.servicetalk.context.api.ContextMap)">
+<h3>setContextOnSubscribe</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</span>&nbsp;<span class="element-name">setContextOnSubscribe</span><wbr><span class="parameters">(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</span></div>
+<div class="block">Specify the <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to.
+ <p>
+ This operator only impacts behavior if the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed directly after this operator,
+ that means this must be the "last operator" in the chain for this to have an impact.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>context</code> - The <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> to use for <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when subscribed.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will use the <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> for <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> when subscribed.</dd>
 </dl>
 </section>
 </li>
