@@ -282,7 +282,9 @@ link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 transport with Prior
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java[Http2PriorKnowledgeServer] -
 A server that uses HTTP/2 with Prior Knowledge.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java[Http2PriorKnowledgeClient] -
-A client that uses HTTP/2 with Prior Knowledge.
+A single-address client that uses HTTP/2 with Prior Knowledge.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeUrlClient.java[Http2PriorKnowledgeUrlClient] -
+A multi-address client that conditionally uses HTTP/2 with Prior Knowledge.
 
 === HTTP/2 via ALPN for secure connections
 
@@ -292,7 +294,9 @@ communication protocol:
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java[HttpServerWithAlpn] -
 A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java[HttpClientWithAlpn] -
-A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
+A single-address client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpUrlClientWithAlpn.java[HttpUrlClientWithAlpn] -
+A multi-address client that conditionally negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 
 If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it if the peer does not support ALPN extension.
 
