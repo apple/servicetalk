@@ -198,7 +198,8 @@ This example demonstrates how client and server can be configured to do mutual a
 Using the following classes:
 
 - link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpServerMutualTLS] - A server that sets the trust manager and key manager, and requires client authentication.
-- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java[HttpClientMutualTLS] - A client that sets the trust manager and key manager.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java[HttpClientMutualTLS] - A single-address client that sets the trust manager and key manager.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpUrlClientMutualTLS.java[HttpUrlClientMutualTLS] - A multi-address client that sets the trust manager and key manager when needed.
 
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.
