@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
         return new SwitchSubscriber<>(subscriber, this);
     }
 
-    private static final class SwitchSubscriber<T, R> implements Subscriber<T> {
+    private static final class SwitchSubscriber<T, R> implements Subscriber<T>, Subscription {
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<SwitchSubscriber.RSubscriber> stateUpdater =
                 newUpdater(SwitchSubscriber.RSubscriber.class, "state");
@@ -101,11 +102,25 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
         }
 
         @Override
+        public void cancel() {
+            try {
+                rSubscription.cancel();
+            } finally {
+                assert tSubscription != null;
+                tSubscription.cancel();
+            }
+        }
+
+        @Override
+        public void request(final long n) {
+            rSubscription.request(n);
+        }
+
+        @Override
         public void onSubscribe(Subscription subscription) {
-            // No need to wrap in ConcurrentSubscription because only the latest RSubscriber interacts with the
-            // tSubscription which is atomically protected by the state variable.
-            tSubscription = requireNonNull(subscription);
-            target.onSubscribe(rSubscription);
+            // Concurrent subscription because target can cancel and RSubscriber can request/cancel.
+            tSubscription = ConcurrentSubscription.wrap(subscription);
+            target.onSubscribe(this);
             tSubscription.request(1);
         }
 

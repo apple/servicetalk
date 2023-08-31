@@ -57,6 +57,31 @@ final class PublisherSwitchMapTest {
     private final TestPublisherSubscriber<SwitchMapSignal<String>> subscriber =
             new TestPublisherSubscriber<>();
 
+    @ParameterizedTest(name = "delayError={0}")
+    @ValueSource(booleans = {true, false})
+    void cancelPropagatedMappedAndUpstream(boolean delayError) throws InterruptedException {
+        final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        final TestSubscription testSubscription2 = new TestSubscription();
+        final TestPublisher<String> publisher2 = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(testSubscription2);
+                    return sub;
+                });
+        toSource((delayError ?
+                publisher.<String>switchMapDelayError(i -> publisher2) : publisher.switchMap(i -> publisher2)))
+                .subscribe(subscriber);
+
+        PublisherSource.Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+        testSubscription.awaitRequestN(1);
+        publisher.onNext(1);
+
+        publisher2.awaitSubscribed();
+        subscription.cancel();
+        testSubscription2.awaitCancelled();
+        testSubscription.awaitCancelled();
+    }
+
     @ParameterizedTest(name = "onError={0}, delayError={1}")
     @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void noSignalsTerminal(boolean onError, boolean delayError) {
