@@ -28,6 +28,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -37,6 +38,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -71,9 +73,11 @@ class ConnectionClosedAfterIoExceptionTest {
     void test(HttpProtocol protocol) throws Exception {
         AtomicReference<FilterableStreamingHttpConnection> firstConnection = new AtomicReference<>();
         BlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
+        AtomicBoolean firstAttempt = new AtomicBoolean(true);
         try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX, protocol)
                 // Fail only the first connect attempt
-                .appendEarlyConnectionAcceptor(conn -> errors.isEmpty() ? failed(DELIBERATE_EXCEPTION) : completed())
+                .appendEarlyConnectionAcceptor(conn -> firstAttempt.compareAndSet(true, false) ?
+                        failed(DELIBERATE_EXCEPTION) : completed())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX, protocol)
                      .appendConnectionFactoryFilter(original -> new DelegatingConnectionFactory<InetSocketAddress,
@@ -86,6 +90,10 @@ class ConnectionClosedAfterIoExceptionTest {
                          }
                      })
                      .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                             .retryRetryableExceptions((metaData, t) -> {
+                                 errors.add((Throwable) t);
+                                 return BackOffPolicy.ofImmediateBounded();
+                             })
                              .retryOther((metaData, t) -> {
                                  errors.add(t);
                                  return BackOffPolicy.ofImmediateBounded();
@@ -93,8 +101,10 @@ class ConnectionClosedAfterIoExceptionTest {
                              .build())
                      .buildBlocking()) {
 
-            HttpResponse response = client.request(client.get("/"));
-            assertThat(response.status(), is(OK));
+            Assertions.assertDoesNotThrow(() -> {
+                HttpResponse response = client.request(client.get("/"));
+                assertThat(response.status(), is(OK));
+            });
 
             assertThat("Unexpected number of errors, likely retried more than expected", errors, hasSize(1));
             assertThat("Did not propagate original IoException", errors.poll(),

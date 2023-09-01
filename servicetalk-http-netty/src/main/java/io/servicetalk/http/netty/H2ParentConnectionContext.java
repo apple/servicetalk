@@ -25,11 +25,11 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
@@ -44,6 +44,8 @@ import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -56,12 +58,14 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.wrapIfNecessary;
-import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
+
     final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
@@ -162,10 +166,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }, true);
     }
 
-    private void notifyOnClosingImpl() {    // For access from AbstractH2ParentConnection
-        notifyOnClosing();
-    }
-
     final void trackActiveStream(Http2StreamChannel streamChannel) {
         keepAliveManager.trackActiveStream(streamChannel);
     }
@@ -195,7 +195,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         abstract void tryCompleteSubscriber();
 
-        abstract void tryFailSubscriber(Throwable cause);
+        abstract boolean tryFailSubscriber(Throwable cause);
 
         /**
          * Receive a settings frame and optionally handle the acknowledgement of the frame.
@@ -236,7 +236,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
 
         private void doChannelClosed(final String method) {
-            parentContext.notifyOnClosingImpl();
+            parentContext.notifyOnClosing();
 
             if (hasSubscriber()) {
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
@@ -246,11 +246,16 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            // The parent channel will be closed in case of exception after the cause is propagated to subscriber.
+            // In case users don't have offloading, there is a risk to retry on the same IO thread.
+            // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
+            parentContext.notifyOnClosing();
             cause = wrapIfNecessary(cause);
-            if (observer != NoopConnectionObserver.INSTANCE) {
-                assignConnectionError(ctx.channel(), cause);
-            }
             parentContext.transportError.onSuccess(cause);
+            if (!tryFailSubscriber(cause)) {
+                LOGGER.debug("{} closing h2 parent channel on exception caught", parentContext.nettyChannel(), cause);
+                ChannelCloseUtils.close(ctx, cause);
+            }
         }
 
         @Override
@@ -283,7 +288,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosingImpl, false);
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosing, false);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)

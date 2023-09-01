@@ -1350,7 +1350,7 @@ class H2PriorKnowledgeFeatureParityTest {
         }
 
         // We expect this to timeout, because we have not completed the outstanding request.
-        assertFalse(onServerCloseLatch.await(30, MILLISECONDS));
+        assertFalse(onServerCloseLatch.await(300, MILLISECONDS));
 
         requestBody.onComplete();
 
