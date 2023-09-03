@@ -15,16 +15,22 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -46,6 +52,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 final class PublisherSwitchMapTest {
     private final TestSubscription testSubscription = new TestSubscription();
@@ -56,6 +68,135 @@ final class PublisherSwitchMapTest {
             });
     private final TestPublisherSubscriber<SwitchMapSignal<String>> subscriber =
             new TestPublisherSubscriber<>();
+
+    @Test
+    void concurrentTerminalDelayed() throws ExecutionException, InterruptedException {
+        final TestSubscription testSubscription2 = new TestSubscription();
+        final TestPublisher<String> publisher2 = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(testSubscription2);
+                    return sub;
+                });
+        CountDownLatch step1Latch = new CountDownLatch(1);
+        CountDownLatch step2Latch = new CountDownLatch(1);
+        @SuppressWarnings("unchecked")
+        final Subscriber<String> subscriber = mock(Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            step1Latch.countDown();
+            step2Latch.await();
+            return null;
+        }).when(subscriber).onNext(any());
+        doAnswer((Answer<Void>) invocation -> {
+            invocation.getArgument(0, Subscription.class).request(Long.MAX_VALUE);
+            return null;
+        }).when(subscriber).onSubscribe(any());
+
+        toSource(publisher.switchMap(i -> publisher2))
+                .subscribe(subscriber);
+
+        Executor executor = Executors.newCachedThreadExecutor();
+        try {
+            testSubscription.awaitRequestN(1);
+            verify(subscriber).onSubscribe(any());
+            publisher.onNext(1);
+
+            Future<?> future = executor.submit((Callable<?>) () -> {
+                testSubscription2.awaitRequestN(1);
+                publisher2.onNext("one");
+                return null;
+            }).toFuture();
+
+            // The goal is to deliver concurrently to outer publisher while inner publisher is delivering. The latches
+            // ensure concurrency deliver happens.
+            step1Latch.await();
+            publisher.onError(DELIBERATE_EXCEPTION);
+            step2Latch.countDown();
+            future.get();
+
+            verify(subscriber).onNext("one");
+            verify(subscriber).onError(same(DELIBERATE_EXCEPTION));
+            testSubscription2.awaitCancelled();
+
+            testSubscription2.awaitRequestN(2);
+            publisher2.onNext("two"); // this shouldn't be emitted because we have already terminated!
+            publisher2.onComplete();
+            verifyNoMoreInteractions(subscriber);
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
+    }
+
+    @ParameterizedTest(name = "delayError={0}")
+    @ValueSource(booleans = {true, false})
+    void concurrentSwitchDelayed(boolean delayError) throws ExecutionException, InterruptedException {
+        final TestSubscription testSubscription2 = new TestSubscription();
+        final TestPublisher<String> publisher2 = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(testSubscription2);
+                    return sub;
+                });
+        final TestSubscription testSubscription3 = new TestSubscription();
+        final TestPublisher<String> publisher3 = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(testSubscription3);
+                    return sub;
+                });
+        CountDownLatch step1Latch = new CountDownLatch(1);
+        CountDownLatch step2Latch = new CountDownLatch(1);
+        @SuppressWarnings("unchecked")
+        final Subscriber<String> subscriber = mock(Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            step1Latch.countDown();
+            step2Latch.await();
+            return null;
+        }).when(subscriber).onNext(any());
+        doAnswer((Answer<Void>) invocation -> {
+            invocation.getArgument(0, Subscription.class).request(Long.MAX_VALUE);
+            return null;
+        }).when(subscriber).onSubscribe(any());
+
+        Function<Integer, Publisher<String>> func = i -> i == 1 ? publisher2 : i == 2 ? publisher3 : never();
+        toSource((delayError ? publisher.switchMapDelayError(func) : publisher.switchMap(func)))
+                .subscribe(subscriber);
+
+        Executor executor = Executors.newCachedThreadExecutor();
+        try {
+            testSubscription.awaitRequestN(1);
+            verify(subscriber).onSubscribe(any());
+            publisher.onNext(1);
+
+            Future<?> future = executor.submit((Callable<?>) () -> {
+                testSubscription2.awaitRequestN(1);
+                publisher2.onNext("one");
+                return null;
+            }).toFuture();
+
+            // The goal is to deliver concurrently to outer publisher while inner publisher is delivering. The latches
+            // ensure concurrency deliver happens.
+            step1Latch.await();
+            publisher.onNext(2);
+            step2Latch.countDown();
+            future.get();
+
+            // future emissions on publisher2 should be ignored because we switched to publisher3
+            testSubscription2.awaitRequestN(2);
+            publisher2.onNext("ignored");
+
+            verify(subscriber).onNext("one");
+            testSubscription2.awaitCancelled();
+
+            testSubscription3.awaitRequestN(1);
+            publisher3.onNext("two");
+
+            verify(subscriber).onNext("two");
+            DeliberateException de = new DeliberateException();
+            publisher3.onError(de);
+            publisher.onError(DELIBERATE_EXCEPTION);
+            verify(subscriber).onError(same(de));
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
+    }
 
     @ParameterizedTest(name = "delayError={0}")
     @ValueSource(booleans = {true, false})
@@ -71,7 +212,7 @@ final class PublisherSwitchMapTest {
                 publisher.<String>switchMapDelayError(i -> publisher2) : publisher.switchMap(i -> publisher2)))
                 .subscribe(subscriber);
 
-        PublisherSource.Subscription subscription = subscriber.awaitSubscription();
+        Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
         testSubscription.awaitRequestN(1);
         publisher.onNext(1);
@@ -240,13 +381,13 @@ final class PublisherSwitchMapTest {
                     fromSource(new ReentryPublisher(100, 103)) : never());
             Publisher<Integer> pub = from(1);
             toSource(delayError ? pub.switchMapDelayError(func) : pub.switchMap(func)
-            ).subscribe(new PublisherSource.Subscriber<SwitchMapSignal<Integer>>() {
+            ).subscribe(new Subscriber<SwitchMapSignal<Integer>>() {
                 @Nullable
-                private PublisherSource.Subscription subscription;
+                private Subscription subscription;
                 private boolean seenOnNext;
 
                 @Override
-                public void onSubscribe(PublisherSource.Subscription s) {
+                public void onSubscribe(Subscription s) {
                     subscription = s;
                     subscription.request(1);
                 }

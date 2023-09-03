@@ -137,7 +137,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
             if (currPublisher != null) {
                 try {
                     if (parent.maxDelayedErrors <= 0) {
-                        currPublisher.dispose(EMPTY_SUBSCRIPTION);
+                        currPublisher.dispose(EMPTY_SUBSCRIPTION, false);
                     }
                 } finally {
                     final Throwable cause = outerErrorUpdateState(t);
@@ -167,7 +167,8 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                 final int cState = currPublisher.state;
                 if (stateUpdater.compareAndSet(currPublisher, cState, setOuterState(cState, OUTER_STATE_ERROR))) {
                     final int innerState = getInnerState(cState);
-                    return parent.maxDelayedErrors <= 0 && innerState != INNER_STATE_ERROR ||
+                    return (parent.maxDelayedErrors <= 0 &&
+                            innerState != INNER_STATE_ERROR && innerState != INNER_STATE_EMITTING) ||
                             (parent.maxDelayedErrors > 0 &&
                             (innerState == INNER_STATE_ERROR || innerState == INNER_STATE_COMPLETE)) ? t : null;
                 }
@@ -223,13 +224,15 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
 
             @Override
             public void onSubscribe(Subscription subscription) {
-                localSubscription = requireNonNull(subscription);
+                // make concurrent safe because we may cancel the subscription if outer terminates in error or if we
+                // switch to the next publisher.
+                localSubscription = ConcurrentSubscription.wrap(subscription);
                 if (prevPublisher != null) {
-                    final RSubscriber localPrev = prevPublisher;
+                    final RSubscriber prevPub = prevPublisher;
                     prevPublisher = null; // Set the reference to null to avoid memory leak.
-                    localPrev.dispose(subscription);
+                    prevPub.dispose(localSubscription, true);
                 } else {
-                    switchTo(subscription);
+                    switchTo(localSubscription);
                 }
             }
 
@@ -239,10 +242,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                 for (;;) {
                     final int cState = state;
                     innerState = getInnerState(cState);
-                    final int outerState = getOuterState(cState);
-                    if (outerState == OUTER_STATE_ERROR && parent.maxDelayedErrors <= 0) {
-                        return;
-                    } else if (innerState == INNER_STATE_IDLE) {
+                    if (innerState == INNER_STATE_IDLE) {
                         if (stateUpdater.compareAndSet(this, cState, setInnerState(cState, INNER_STATE_EMITTING))) {
                             break;
                         }
@@ -276,10 +276,24 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                         for (;;) {
                             final int cState = state;
                             innerState = getInnerState(cState);
-                            if (innerState == INNER_STATE_DISPOSED) {
+                            final int outerState = getOuterState(cState);
+                            if (outerState == OUTER_STATE_ERROR && parent.maxDelayedErrors <= 0) {
+                                // this subscriber checks outer state before terminating downstream, there is no
+                                // more concurrency from outer (no need for atomics), and we are safe to terminate.
+                                state = setInnerState(cState, INNER_STATE_ERROR);
+                                try {
+                                    if (innerState != INNER_STATE_ERROR && innerState != INNER_STATE_COMPLETE) {
+                                        rSubscription.cancel(); // only need to cancel if inner not terminated.
+                                    }
+                                } finally {
+                                    terminateTargetWithPendingError();
+                                }
+                                break;
+                            } else if (innerState == INNER_STATE_DISPOSED) {
                                 assert nextSubscriptionIfDisposePending != null;
                                 assert localSubscription != null;
                                 switchWhenDisposed(localSubscription, nextSubscriptionIfDisposePending);
+                                break;
                             } else if (innerState == INNER_STATE_ERROR || innerState == INNER_STATE_COMPLETE ||
                                     stateUpdater.compareAndSet(this, cState, setInnerState(cState, INNER_STATE_IDLE))) {
                                 break;
@@ -303,8 +317,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                             if (outerState != OUTER_STATE_ERROR) {
                                 try {
                                     if (outerState != OUTER_STATE_COMPLETE) {
-                                        assert tSubscription != null;
-                                        tSubscription.cancel();
+                                        cancelTSubscription();
                                     }
                                 } finally {
                                     target.onError(t);
@@ -326,8 +339,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                                 // It is possible the outer Publisher will concurrently terminate with this method and
                                 // requesting more is not necessary, but still safe (e.g. no concurrent invocation on
                                 // tSubscription or target).
-                                assert tSubscription != null;
-                                tSubscription.request(1);
+                                requestTSubscription();
                             }
                             break;
                         }
@@ -347,22 +359,19 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                         if (outerState == OUTER_STATE_COMPLETE) {
                             target.onComplete();
                         } else if (outerState == OUTER_STATE_ERROR && parent.maxDelayedErrors > 0) {
-                            final Throwable cause = pendingError;
-                            assert cause != null;
-                            target.onError(cause);
+                            terminateTargetWithPendingError();
                         } else if (outerState != OUTER_STATE_ERROR) {
                             // It is possible the outer Publisher will concurrently terminate with this method and
                             // requesting more is not necessary, but still safe (e.g. no concurrent invocation on
                             // tSubscription or target).
-                            assert tSubscription != null;
-                            tSubscription.request(1);
+                            requestTSubscription();
                         }
                         break;
                     }
                 }
             }
 
-            void dispose(Subscription nextSubscription) {
+            void dispose(Subscription nextSubscription, boolean disposeIfEmitting) {
                 nextSubscriptionIfDisposePending = nextSubscription;
                 for (;;) {
                     final int cState = state;
@@ -370,7 +379,8 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                     if (innerState == INNER_STATE_DISPOSED ||
                             // Don't change state if no delayedErrors, and we have already terminated downstream with an
                             // error. This prevents duplicated termination if upstream terminates with an error later.
-                            (innerState == INNER_STATE_ERROR && parent.maxDelayedErrors <= 0)) {
+                            (innerState == INNER_STATE_ERROR && parent.maxDelayedErrors <= 0) ||
+                            (innerState == INNER_STATE_EMITTING && !disposeIfEmitting)) {
                         break;
                     } else if (stateUpdater.compareAndSet(this, cState, setInnerState(cState, INNER_STATE_DISPOSED))) {
                         // if emitting -> onNext will handle after it is done to avoid concurrency
@@ -397,9 +407,24 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                 try {
                     rSubscription.switchTo(nextSubscription);
                 } finally {
-                    assert tSubscription != null;
-                    tSubscription.request(1);
+                    requestTSubscription();
                 }
+            }
+
+            private void cancelTSubscription() {
+                assert tSubscription != null;
+                tSubscription.cancel();
+            }
+
+            private void requestTSubscription() {
+                assert tSubscription != null;
+                tSubscription.request(1);
+            }
+
+            private void terminateTargetWithPendingError() {
+                final Throwable cause = pendingError;
+                assert cause != null;
+                target.onError(cause);
             }
         }
     }
