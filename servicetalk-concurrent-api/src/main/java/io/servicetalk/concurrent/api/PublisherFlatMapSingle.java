@@ -417,26 +417,15 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 cancellableSet.remove(singleCancellable);
                 singleCancellable = null;
 
-                Throwable currPendingError = pendingError;
                 if (source.maxDelayedErrors == 0) {
+                    final Throwable currPendingError = pendingError;
                     if (currPendingError == null &&
                             pendingErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, t)) {
                         onError0(t, true);
                     }
                 } else {
-                    if (currPendingError == null) {
-                        if (pendingErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, t)) {
-                            currPendingError = t;
-                        } else {
-                            currPendingError = pendingError;
-                            assert currPendingError != null;
-                            addPendingError(pendingErrorCountUpdater, FlatMapSubscriber.this, source.maxDelayedErrors,
-                                    currPendingError, t);
-                        }
-                    } else {
-                        addPendingError(pendingErrorCountUpdater, FlatMapSubscriber.this, source.maxDelayedErrors,
-                                currPendingError, t);
-                    }
+                    final Throwable currPendingError = addPendingError(pendingErrorUpdater, pendingErrorCountUpdater,
+                            FlatMapSubscriber.this, source.maxDelayedErrors, t);
                     if (decrementActiveMappedSources()) {
                         enqueueAndDrain(error(currPendingError));
                     } else {
