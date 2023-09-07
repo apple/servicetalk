@@ -186,9 +186,7 @@ public class DebuggingExampleUrlClient {
     public static void main(String... args) throws Exception {
         final HostAndPort debuggingExampleServerAddress = HostAndPort.of("localhost", 8080);
         try (HttpClient client = buildHttpClient(debuggingExampleServerAddress)) {
-            final String requestTarget = String.format("http://%s:%d/sayHello",
-                    debuggingExampleServerAddress.hostName(),
-                    debuggingExampleServerAddress.port());
+            final String requestTarget = String.format("http://%s/sayHello", debuggingExampleServerAddress);
             client.request(client.post(requestTarget).payloadBody("George", textSerializerUtf8()))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));

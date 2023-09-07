@@ -20,7 +20,6 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.HostAndPort;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
@@ -30,11 +29,12 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 public class HttpUrlClientMutualTLS {
 
     public static void main(String[] args) throws Exception {
-        final HostAndPort serverAddress = HostAndPort.of("localhost", 8080);
         // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
-            if (scheme.equals("https") && address.equals(serverAddress)) {
+            // If necessary, users can also take `address` into account for setting distinct TLS configurations for
+            // various server addresses.
+            if (scheme.equals("https")) {
                 // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
                 // or demonstration purposes. Never use those for real use-cases.
                 builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
@@ -42,9 +42,7 @@ public class HttpUrlClientMutualTLS {
                         .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build());
             }
         }).buildBlocking()) {
-            final String requestTarget =
-                    String.format("https://%s:%d/", serverAddress.hostName(), serverAddress.port());
-            final HttpResponse response = client.request(client.get(requestTarget));
+            final HttpResponse response = client.request(client.get("https://localhost:8080/"));
             System.out.println(response.toString((name, value) -> value));
             System.out.println(response.payloadBody(textSerializerUtf8()));
         }

@@ -38,9 +38,7 @@ public final class Http2PriorKnowledgeUrlClient {
                 builder.protocols(h2Default()); // Configure HTTP/2 Prior-Knowledge
             }
         }).buildBlocking()) {
-            final String requestTarget =
-                    String.format("http://%s:%d/", serverAddress.hostName(), serverAddress.port());
-            final HttpResponse response = client.request(client.get(requestTarget));
+            final HttpResponse response = client.request(client.get(String.format("http://%s/", serverAddress)));
             System.out.println(response.toString((name, value) -> value));
             System.out.println(response.payloadBody(textSerializerUtf8()));
         }
