@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.http2.priorknowledge;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
-import io.servicetalk.transport.api.HostAndPort;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -30,15 +29,13 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 public final class Http2PriorKnowledgeUrlClient {
 
     public static void main(String[] args) throws Exception {
-        final HostAndPort serverAddress = HostAndPort.of("localhost", 8080);
         // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
-            if (address.equals(serverAddress)) {
-                builder.protocols(h2Default()); // Configure HTTP/2 Prior-Knowledge
-            }
+            // If necessary, users can conditionally set protocols based on `scheme` and/or `address`.
+            builder.protocols(h2Default()); // Configure HTTP/2 Prior-Knowledge
         }).buildBlocking()) {
-            final HttpResponse response = client.request(client.get(String.format("http://%s/", serverAddress)));
+            final HttpResponse response = client.request(client.get("http://localhost:8080/"));
             System.out.println(response.toString((name, value) -> value));
             System.out.println(response.payloadBody(textSerializerUtf8()));
         }

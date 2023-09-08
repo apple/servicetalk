@@ -19,7 +19,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.HostAndPort;
 
 import java.util.function.BooleanSupplier;
 
@@ -184,24 +183,8 @@ public class DebuggingExampleUrlClient {
     static final BooleanSupplier LOG_USER_DATA = Boolean.TRUE::booleanValue;
 
     public static void main(String... args) throws Exception {
-        final HostAndPort debuggingExampleServerAddress = HostAndPort.of("localhost", 8080);
-        try (HttpClient client = buildHttpClient(debuggingExampleServerAddress)) {
-            final String requestTarget = String.format("http://%s/sayHello", debuggingExampleServerAddress);
-            client.request(client.post(requestTarget).payloadBody("George", textSerializerUtf8()))
-                    .whenOnSuccess(resp -> {
-                        System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textSerializerUtf8()));
-                    })
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-            // for demonstration purposes.
-                    .toFuture().get();
-        }
-    }
-
-    private static HttpClient buildHttpClient(final HostAndPort debuggingExampleServerAddress) {
-        return HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
-            if (debuggingExampleServerAddress.equals(address)) {
+        try (HttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
+                // If necessary, users can conditionally set below features based on `scheme` and/or `address`.
                 builder
                 /*
                  * 2. (optional) Disables most asynchronous offloading to simplify execution tracing. Changing
@@ -249,7 +232,16 @@ public class DebuggingExampleUrlClient {
                 //         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                 //         .build(),
                 //         HttpProtocolConfigs.h1Default())
-            }
-        }).build();
+        }).build()) {
+            client.request(client.post("http://localhost:8080/sayHello").payloadBody("George", textSerializerUtf8()))
+                    .whenOnSuccess(resp -> {
+                        System.out.println(resp.toString((name, value) -> value));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
+                    })
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
+                    .toFuture().get();
+        }
     }
 }
