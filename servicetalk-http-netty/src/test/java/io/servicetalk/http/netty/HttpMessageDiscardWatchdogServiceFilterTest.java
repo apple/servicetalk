@@ -69,7 +69,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] transformer={0}")
     @MethodSource("responseTransformers")
-    void cleansPayloadBodyIfDiscardedInFilter(final ResponseTransformer transformer) throws Exception {
+    void cleansServiceResponseMessageBodyIfDiscarded(final ResponseTransformer transformer) throws Exception {
         try (HttpServerContext serverContext = newServerBuilder(SERVER_CTX)
                 .appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override

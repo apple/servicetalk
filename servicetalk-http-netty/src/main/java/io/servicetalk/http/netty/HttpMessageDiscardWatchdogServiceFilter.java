@@ -57,9 +57,9 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
     static final StreamingHttpServiceFilterFactory CLEANER =
             new HttpLifecycleObserverServiceFilter(new CleanerHttpLifecycleObserver());
 
-    static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
+    private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
             .newKey(HttpMessageDiscardWatchdogServiceFilter.class.getName() + ".messagePublisher",
-                    generify(AtomicReference.class));
+                    generifyAtomicReference());
 
     private HttpMessageDiscardWatchdogServiceFilter() {
         // Singleton
@@ -110,11 +110,11 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> generify(final Class<?> clazz) {
-        return (Class<T>) clazz;
+    static <T> Class<T> generifyAtomicReference() {
+        return (Class<T>) AtomicReference.class;
     }
 
-    private static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
+    static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
 
         static final NoopSubscriber INSTANCE = new NoopSubscriber();
 
