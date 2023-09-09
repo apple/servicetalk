@@ -39,7 +39,7 @@ public final class HttpUrlClientWithAlpn {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
             // If necessary, users can also take `address` into account for setting distinct protocols or TLS
             // configurations for various server addresses.
-            if (scheme.equals("https")) {
+            if ("https".equalsIgnoreCase(scheme)) {
                 builder.protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
                 // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
                 // or demonstration purposes. Never use those for real use-cases.
