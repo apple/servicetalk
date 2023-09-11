@@ -90,7 +90,8 @@ Extends the async "Hello World" example to demonstrate some useful features avai
 
 * link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleServer.java[DebuggingExampleServer] - the async `Hello World!`
  server enhanced with debugging capabilities.
-* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java[DebuggingExampleClient.java] - the async `Hello World!` client enhanced with debugging capabilities.
+* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java[DebuggingExampleClient.java] - the async `Hello World!` single-address client enhanced with debugging capabilities.
+* link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleUrlClient.java[DebuggingExampleUrlClient.java] - the async `Hello World!` multi-address client enhanced with debugging capabilities.
 
 [#Timeout]
 == Timeout
@@ -197,7 +198,8 @@ This example demonstrates how client and server can be configured to do mutual a
 Using the following classes:
 
 - link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpServerMutualTLS] - A server that sets the trust manager and key manager, and requires client authentication.
-- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java[HttpClientMutualTLS] - A client that sets the trust manager and key manager.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java[HttpClientMutualTLS] - A single-address client that sets the trust manager and key manager.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpUrlClientMutualTLS.java[HttpUrlClientMutualTLS] - A multi-address client that sets the trust manager and key manager when needed.
 
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.
@@ -280,7 +282,9 @@ link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 transport with Prior
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java[Http2PriorKnowledgeServer] -
 A server that uses HTTP/2 with Prior Knowledge.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java[Http2PriorKnowledgeClient] -
-A client that uses HTTP/2 with Prior Knowledge.
+A single-address client that uses HTTP/2 with Prior Knowledge.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeUrlClient.java[Http2PriorKnowledgeUrlClient] -
+A multi-address client that conditionally uses HTTP/2 with Prior Knowledge.
 
 === HTTP/2 via ALPN for secure connections
 
@@ -290,7 +294,9 @@ communication protocol:
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java[HttpServerWithAlpn] -
 A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java[HttpClientWithAlpn] -
-A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
+A single-address client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpUrlClientWithAlpn.java[HttpUrlClientWithAlpn] -
+A multi-address client that conditionally negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 
 If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it if the peer does not support ALPN extension.
 
