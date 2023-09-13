@@ -62,9 +62,9 @@ public class TimeoutUrlClient {
 
             // Issue the requests in parallel.
             collectUnorderedDelayError(respSingle1, respSingle2)
-                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-                    // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
-                    // for demonstration purposes.
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
+            // for demonstration purposes.
                     .toFuture().get();
         }
     }
