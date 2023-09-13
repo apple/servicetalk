@@ -44,8 +44,7 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
 /**
@@ -86,7 +85,13 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                         connectAddress, LOGGER);
                 return delegate().newConnection(resolvedAddress, contextMap, observer).flatMap(c -> {
                     try {
-                        return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                        // Send CONNECT request: https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6
+                        // Host header value must be equal to CONNECT request target, see
+                        // https://github.com/haproxy/haproxy/issues/1159
+                        // https://datatracker.ietf.org/doc/html/rfc7230#section-5.4:
+                        //   If the target URI includes an authority component, then a client MUST send a field-value
+                        //   for Host that is identical to that authority component
+                        return c.request(c.connect(connectAddress).setHeader(HOST, connectAddress))
                                 .flatMap(response -> handleConnectResponse(c, response).shareContextOnSubscribe())
                                 // Close recently created connection in case of any error while it connects to the
                                 // proxy:

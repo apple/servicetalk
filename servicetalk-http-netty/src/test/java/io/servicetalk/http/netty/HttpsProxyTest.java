@@ -31,10 +31,12 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,7 +50,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,6 +59,15 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpsProxyTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private final ProxyTunnel proxyTunnel = new ProxyTunnel();
     private final AtomicReference<Object> targetAddress = new AtomicReference<>();
@@ -104,7 +114,7 @@ class HttpsProxyTest {
     }
 
     void startServer() throws Exception {
-        serverContext = HttpServers.forAddress(localAddress(0))
+        serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
                 .ioExecutor(serverIoExecutor = createIoExecutor("server-io-executor"))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
@@ -114,9 +124,8 @@ class HttpsProxyTest {
     }
 
     void createClient() {
-        assert serverAddress != null && proxyAddress != null;
-        client = HttpClients
-                .forSingleAddress(serverAddress)
+        assert serverContext != null && proxyAddress != null;
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
                 .proxyAddress(proxyAddress)
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
