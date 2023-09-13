@@ -28,10 +28,17 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -42,7 +49,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public final class ProxyTunnel implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyTunnel.class);
-    private static final String CONNECT_PREFIX = "CONNECT ";
+    private static final String CONNECT_PREFIX = CONNECT + " ";
 
     private final ExecutorService executor = newCachedThreadPool(new DefaultThreadFactory("proxy-tunnel"));
     private final AtomicInteger connectCount = new AtomicInteger();
@@ -79,12 +86,41 @@ public final class ProxyTunnel implements AutoCloseable {
                 executor.submit(() -> {
                     try {
                         final InputStream in = socket.getInputStream();
-                        final String initialLine = readLine(in);
-                        while (readLine(in).length() > 0) {
-                            // Ignore headers.
-                        }
+                        final String host;
+                        final int port;
+                        final String protocol;
+                        try {
+                            final String initialLine = readLine(in);
+                            if (!initialLine.startsWith(CONNECT_PREFIX)) {
+                                throw new IllegalArgumentException("Expected " + CONNECT + " request, but found: " +
+                                        initialLine);
+                            }
+                            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+                            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+                            final int colon = authority.indexOf(':');
+                            host = authority.substring(0, colon);
+                            port = Integer.parseInt(authority.substring(colon + 1));
+                            protocol = initialLine.substring(end + 1);
 
-                        handler.handle(socket, initialLine);
+                            final String hostHeader = readLine(in);
+                            if (!hostHeader.toLowerCase(Locale.ROOT).startsWith(HOST.toString())) {
+                                throw new IllegalArgumentException("Expected " + HOST + " header, but found: " +
+                                        hostHeader);
+                            }
+                            final String hostHeaderValue = hostHeader.substring(HOST.length() + 2 /* colon & space */);
+                            if (!(host + ':' + port).equalsIgnoreCase(hostHeaderValue)) {
+                                throw new IllegalArgumentException(
+                                        "Host header value must be identical to authority component");
+                            }
+
+                            while (readLine(in).length() > 0) {
+                                // Ignore any other headers.
+                            }
+                        } catch (Exception e) {
+                            badRequest(socket, e.getMessage());
+                            return;
+                        }
+                        handler.handle(socket, host, port, protocol);
                     } catch (Exception e) {
                         LOGGER.debug("Error from proxy socket={}", socket, e);
                     } finally {
@@ -102,13 +138,21 @@ public final class ProxyTunnel implements AutoCloseable {
         return HostAndPort.of(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
     }
 
+    private static void badRequest(final Socket socket, final String cause) throws IOException {
+        final OutputStream os = socket.getOutputStream();
+        os.write((HTTP_1_1 + " " + BAD_REQUEST + "\r\n" +
+                CONTENT_LENGTH + ": " + cause.length() + "\r\n" +
+                "\r\n" + cause).getBytes(UTF_8));
+        os.flush();
+    }
+
     /**
      * Changes the proxy handler to return 500 instead of 200.
      */
     public void badResponseProxy() {
-        handler = (socket, initialLine) -> {
+        handler = (socket, host, port, protocol) -> {
             final OutputStream os = socket.getOutputStream();
-            os.write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
+            os.write((protocol + ' ' + INTERNAL_SERVER_ERROR + "\r\n\r\n").getBytes(UTF_8));
             os.flush();
         };
     }
@@ -137,48 +181,38 @@ public final class ProxyTunnel implements AutoCloseable {
         }
     }
 
-    private void handleRequest(final Socket serverSocket, final String initialLine) throws IOException {
-        if (initialLine.startsWith(CONNECT_PREFIX)) {
-            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-            final String protocol = initialLine.substring(end + 1);
-            final int colon = authority.indexOf(':');
-            final String host = authority.substring(0, colon);
-            final int port = Integer.parseInt(authority.substring(colon + 1));
+    private void handleRequest(final Socket serverSocket, final String host, final int port,
+                               final String protocol) throws IOException {
+        try (Socket clientSocket = new Socket(host, port)) {
+            connectCount.incrementAndGet();
+            final OutputStream out = serverSocket.getOutputStream();
+            out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
+            out.flush();
 
-            try (Socket clientSocket = new Socket(host, port)) {
-                connectCount.incrementAndGet();
-                final OutputStream out = serverSocket.getOutputStream();
-                out.write((protocol + " 200 Connection established\r\n\r\n").getBytes(UTF_8));
-                out.flush();
-
-                executor.submit(() -> {
+            executor.submit(() -> {
+                try {
+                    copyStream(out, clientSocket.getInputStream());
+                } catch (IOException e) {
+                    LOGGER.debug("Error copying clientSocket input to serverSocket output " +
+                            "clientSocket={} serverSocket={}", clientSocket, serverSocket, e);
+                } finally {
                     try {
-                        copyStream(out, clientSocket.getInputStream());
+                        // We are simulating a proxy that doesn't do half closure. The proxy should close the server
+                        // socket as soon as the server read is done. ServiceTalk's CloseHandler is expected to
+                        // handle this gracefully (and delay FIN/RST until requests/responses complete).
+                        // See GracefulConnectionClosureHandlingTest and ConnectionCloseHeaderHandlingTest.
+                        serverSocket.close();
                     } catch (IOException e) {
-                        LOGGER.debug("Error copying clientSocket input to serverSocket output " +
-                                "clientSocket={} serverSocket={}", clientSocket, serverSocket, e);
-                    } finally {
-                        try {
-                            // We are simulating a proxy that doesn't do half closure. The proxy should close the server
-                            // socket as soon as the server read is done. ServiceTalk's CloseHandler is expected to
-                            // handle this gracefully (and delay FIN/RST until requests/responses complete).
-                            // See GracefulConnectionClosureHandlingTest and ConnectionCloseHeaderHandlingTest.
-                            serverSocket.close();
-                        } catch (IOException e) {
-                            LOGGER.debug("Error closing serverSocket={}", serverSocket, e);
-                        }
+                        LOGGER.debug("Error closing serverSocket={}", serverSocket, e);
                     }
-                });
-                copyStream(clientSocket.getOutputStream(), serverSocket.getInputStream());
+                }
+            });
+            copyStream(clientSocket.getOutputStream(), serverSocket.getInputStream());
 
-                // Don't wait on the clientSocket input to serverSocket output copy to complete. We want to simulate a
-                // proxy that doesn't do half closure and that means we should close as soon as possible. ServiceTalk's
-                // CloseHandler should handle this gracefully (and delay FIN/RST until requests/responses complete).
-                // See GracefulConnectionClosureHandlingTest and ConnectionCloseHeaderHandlingTest.
-            }
-        } else {
-            throw new IllegalArgumentException("Unrecognized initial line: " + initialLine);
+            // Don't wait on the clientSocket input to serverSocket output copy to complete. We want to simulate a
+            // proxy that doesn't do half closure and that means we should close as soon as possible. ServiceTalk's
+            // CloseHandler should handle this gracefully (and delay FIN/RST until requests/responses complete).
+            // See GracefulConnectionClosureHandlingTest and ConnectionCloseHeaderHandlingTest.
         }
         // serverSocket is closed outside the scope of this method.
     }
@@ -196,6 +230,6 @@ public final class ProxyTunnel implements AutoCloseable {
 
     @FunctionalInterface
     private interface ProxyRequestHandler {
-        void handle(Socket socket, String initialLine) throws IOException;
+        void handle(Socket socket, String host, int port, String protocol) throws IOException;
     }
 }
