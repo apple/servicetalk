@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,19 +24,19 @@ import io.servicetalk.http.utils.HttpLifecycleObservers;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
- * An example singl-address client that shows {@link HttpLifecycleObserver} usage.
+ * An example multi-address client that shows {@link HttpLifecycleObserver} usage.
  */
-public final class LifecycleObserverClient {
+public class LifecycleObserverUrlClient {
     public static void main(String[] args) throws Exception {
         // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
         // streaming API see helloworld examples.
-        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                // Append this filter first for most cases to maximize visibility!
-                // See javadocs on HttpLifecycleObserverRequesterFilter for more details on filter ordering.
-                .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
-                        HttpLifecycleObservers.logging("servicetalk-examples-http-observer-logger", TRACE)))
-                .buildBlocking()) {
-            client.request(client.get("/"));
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
+            // Append this filter first for most cases to maximize visibility!
+            // See javadocs on HttpLifecycleObserverRequesterFilter for more details on filter ordering.
+            builder.appendClientFilter(new HttpLifecycleObserverRequesterFilter(
+                    HttpLifecycleObservers.logging("servicetalk-examples-http-observer-logger", TRACE)));
+        }).buildBlocking()) {
+            client.request(client.get("http://localhost:8080/"));
             // Ignore the response for this example. See logs for HttpLifecycleObserver results.
         }
     }
