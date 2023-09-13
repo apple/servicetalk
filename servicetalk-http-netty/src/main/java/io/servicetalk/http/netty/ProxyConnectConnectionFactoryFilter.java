@@ -26,6 +26,9 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -60,9 +63,12 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyConnectConnectionFactoryFilter.class);
 
     private final String connectAddress;
+    private final boolean isConnectOffloaded;
 
-    ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress) {
+    ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress, final ExecutionStrategy connectStrategy) {
         this.connectAddress = connectAddress.toString();
+        this.isConnectOffloaded = connectStrategy instanceof ConnectExecutionStrategy &&
+                ((ConnectExecutionStrategy) connectStrategy).isConnectOffloaded();
     }
 
     @Override
@@ -87,7 +93,13 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                 return delegate().newConnection(resolvedAddress, contextMap, observer).flatMap(c -> {
                     try {
                         return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
-                                .flatMap(response -> handleConnectResponse(c, response).shareContextOnSubscribe())
+                                // Successful response to CONNECT never has a message body, and we are not interested in
+                                // payload body for any non-200 status code. Drain it asap to free connection and RS
+                                // resources before starting TLS handshake.
+                                .flatMap(response -> response.messageBody().ignoreElements()
+                                        .concat(Single.defer(() -> handleConnectResponse(c, response)
+                                                .shareContextOnSubscribe()))
+                                        .shareContextOnSubscribe())
                                 // Close recently created connection in case of any error while it connects to the
                                 // proxy:
                                 .onErrorResume(t -> c.closeAsync().concat(failed(t)));
@@ -137,9 +149,11 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
             }
             deferSslHandler.ready();
 
-            // There is no need to apply offloading explicitly (despite completing `processor` on the EventLoop)
-            // because `payloadBody()` will be offloaded according to the strategy for the request.
-            return response.messageBody().ignoreElements().concat(fromSource(processor));
+            // processor completes on EventLoop thread, apply offloading if required:
+            return isConnectOffloaded ?
+                    fromSource(processor).publishOn(connection.executionContext().executor(),
+                            IoThreadFactory.IoThread::currentThreadIsIoThread) :
+                    fromSource(processor);
         }
     }
 
