@@ -30,6 +30,7 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -170,7 +171,8 @@ class ProxyConnectConnectionFactoryFilterTest {
         @SuppressWarnings("unchecked")
         ConnectionFactory<String, FilterableStreamingHttpConnection> original = mock(ConnectionFactory.class);
         when(original.newConnection(any(), any(), any())).thenReturn(succeeded(connection));
-        toSource(new ProxyConnectConnectionFactoryFilter<String, FilterableStreamingHttpConnection>(CONNECT_ADDRESS)
+        toSource(new ProxyConnectConnectionFactoryFilter<String, FilterableStreamingHttpConnection>(
+                CONNECT_ADDRESS, ConnectExecutionStrategy.offloadNone())
                 .create(original).newConnection(RESOLVED_ADDRESS, null, null).afterOnSuccess(onSuccess))
                 .subscribe(subscriber);
     }
@@ -212,7 +214,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         Throwable error = subscriber.awaitOnError();
         assertThat(error, instanceOf(ProxyResponseException.class));
         assertThat(((ProxyResponseException) error).status(), is(INTERNAL_SERVER_ERROR));
-        assertConnectPayloadConsumed(false);
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
@@ -231,7 +233,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         subscribeToProxyConnectionFactory();
 
         assertThat(subscriber.awaitOnError(), instanceOf(ClassCastException.class));
-        assertConnectPayloadConsumed(false);
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
@@ -255,7 +257,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         } else {
             assertThat(error, instanceOf(ClosedChannelException.class));
         }
-        assertConnectPayloadConsumed(false);
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
@@ -270,7 +272,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         subscribeToProxyConnectionFactory();
 
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        assertConnectPayloadConsumed(false);
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
