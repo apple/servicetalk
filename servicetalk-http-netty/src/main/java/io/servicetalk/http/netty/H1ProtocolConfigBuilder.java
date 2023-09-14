@@ -55,7 +55,8 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the maximum number of pipelined HTTP requests to queue up.
+     * Sets the maximum number of <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-6.3.2">pipelined</a>
+     * HTTP requests to queue up.
      * <p>
      * Anything above this value will be rejected, {@code 1} means pipelining is disabled and requests/responses are
      * processed sequentially.

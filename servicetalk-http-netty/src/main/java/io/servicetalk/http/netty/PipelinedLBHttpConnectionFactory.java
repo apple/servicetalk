@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -28,7 +27,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
@@ -50,12 +48,5 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                         reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport()));
-    }
-
-    @Override
-    ReservableRequestConcurrencyController newConcurrencyController(
-            final FilterableStreamingHttpConnection connection) {
-        assert config.h1Config() != null;
-        return newController(connection, config.h1Config().maxPipelinedRequests());
     }
 }

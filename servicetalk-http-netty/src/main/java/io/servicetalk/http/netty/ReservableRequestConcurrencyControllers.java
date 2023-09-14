@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -52,7 +53,10 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
+import static io.servicetalk.http.netty.H2ClientParentConnectionContext.DEFAULT_H2_MAX_CONCURRENCY_EVENT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -70,13 +74,14 @@ final class ReservableRequestConcurrencyControllers {
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
      *
      * @param connection {@link FilterableStreamingHttpConnection} for which the controller is required.
-     * @param initialConcurrency The initial maximum value for concurrency, until {@code connection} provides data.
+     * @param config {@link ReadOnlyHttpClientConfig} to access protocols' configurations in order to determine the
+     * initial concurrency.
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
-    static ReservableRequestConcurrencyController newController(
+    static ReservableRequestConcurrencyController newConcurrencyController(
             final FilterableStreamingHttpConnection connection,
-            final int initialConcurrency) {
-        return new ReservableRequestConcurrencyControllerMulti(connection, initialConcurrency);
+            final ReadOnlyHttpClientConfig config) {
+        return new ReservableRequestConcurrencyControllerMulti(connection, config);
     }
 
     /**
@@ -135,8 +140,8 @@ final class ReservableRequestConcurrencyControllers {
 
         AbstractReservableRequestConcurrencyController(
                 final FilterableStreamingHttpConnection connection,
-                final int initialConcurrency) {
-            lastMaxConcurrency = initialConcurrency;
+                final ReadOnlyHttpClientConfig config) {
+            lastMaxConcurrency = initialConcurrency(connection.connectionContext().protocol(), config);
             // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the
             // STATE_QUIT before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency
             // error messages for the users on connection tear-down.
@@ -222,6 +227,24 @@ final class ReservableRequestConcurrencyControllers {
             });
         }
 
+        private static int initialConcurrency(final HttpProtocolVersion protocol,
+                                              final ReadOnlyHttpClientConfig config) {
+            if (protocol.major() == HTTP_2_0.major()) {
+                assert config.h2Config() != null;
+                return DEFAULT_H2_MAX_CONCURRENCY_EVENT.event();
+            } else if (protocol.major() == HTTP_1_1.major()) {
+                if (protocol.minor() >= HTTP_1_1.minor()) {
+                    assert config.h1Config() != null;
+                    return config.h1Config().maxPipelinedRequests();
+                } else {
+                    return 1;   // Versions prior HTTP/1.1 support only a single request-response at a time
+                }
+            } else {
+                throw new IllegalStateException("Cannot infer initialConcurrency value for unknown protocol: " +
+                        protocol);
+            }
+        }
+
         @Override
         public final void requestFinished() {
             pendingRequestsUpdater.decrementAndGet(this);
@@ -279,8 +302,8 @@ final class ReservableRequestConcurrencyControllers {
     private static final class ReservableRequestConcurrencyControllerMulti
             extends AbstractReservableRequestConcurrencyController {
         ReservableRequestConcurrencyControllerMulti(final FilterableStreamingHttpConnection connection,
-                                                    final int initialConcurrency) {
-            super(connection, initialConcurrency);
+                                                    final ReadOnlyHttpClientConfig config) {
+            super(connection, config);
         }
 
         @Override

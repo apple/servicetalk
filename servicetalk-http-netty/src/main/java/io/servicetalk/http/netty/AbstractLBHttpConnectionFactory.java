@@ -41,6 +41,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newConcurrencyController;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
@@ -116,10 +117,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         return filterableConnectionFactory.newConnection(resolvedAddress, context, observer)
                 .map(conn -> {
                     // Apply connection filters:
-                    FilterableStreamingHttpConnection filteredConnection =
+                    final FilterableStreamingHttpConnection filteredConn =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.bind(filteredConnection, newConcurrencyController(filteredConnection),
-                            context);
+                    return protocolBinding.bind(filteredConn, newConcurrencyController(filteredConn, config), context);
                 });
     }
 
@@ -132,15 +132,6 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
      */
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
             ResolvedAddress resolvedAddress, TransportObserver observer);
-
-    /**
-     * Create a new instance of {@link ReservableRequestConcurrencyController}.
-     *
-     * @param connection {@link FilterableStreamingHttpConnection} for which the controller is required.
-     * @return a new instance of {@link ReservableRequestConcurrencyController}.
-     */
-    abstract ReservableRequestConcurrencyController newConcurrencyController(
-            FilterableStreamingHttpConnection connection);
 
     @Override
     public final Completable onClose() {

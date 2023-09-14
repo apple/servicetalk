@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -39,7 +38,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
-import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
@@ -94,14 +92,5 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }
         });
-    }
-
-    @Override
-    ReservableRequestConcurrencyController newConcurrencyController(
-            final FilterableStreamingHttpConnection connection) {
-        // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
-        // ALPN completes. The actual maxConcurrency value will be updated by the MAX_CONCURRENCY stream,
-        // when we create a connection.
-        return newController(connection, 1);
     }
 }

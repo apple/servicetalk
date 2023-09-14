@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,9 @@ import static io.servicetalk.client.api.RequestConcurrencyController.Result.Reje
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
-import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
+import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newConcurrencyController;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,8 +50,8 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void maxConcurrencyRequestAtTime() {
         final int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(
-                newConnection(from(new IgnoreConsumedEvent<>(maxRequestCount)), never()), maxRequestCount);
+        RequestConcurrencyController controller = newConcurrencyController(
+                newConnection(from(new IgnoreConsumedEvent<>(maxRequestCount)), never()), newConfig(maxRequestCount));
         for (int i = 0; i < 100; ++i) {
             for (int j = 0; j < maxRequestCount; ++j) {
                 assertThat(controller.tryRequest(), is(Accepted));
@@ -63,7 +65,8 @@ class ReservableRequestConcurrencyControllersTest {
 
     @Test
     void limitIsAllowedToIncrease() {
-        RequestConcurrencyController controller = newController(newConnection(limitPublisher, never()), 10);
+        RequestConcurrencyController controller = newConcurrencyController(newConnection(limitPublisher, never()),
+                newConfig(10));
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(new IgnoreConsumedEvent<>(i));
             for (int j = 0; j < i; ++j) {
@@ -79,7 +82,8 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void limitIsAllowedToDecrease() {
         int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(newConnection(limitPublisher, never()), 10);
+        RequestConcurrencyController controller = newConcurrencyController(newConnection(limitPublisher, never()),
+                newConfig(10));
 
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
@@ -96,15 +100,16 @@ class ReservableRequestConcurrencyControllersTest {
 
     @Test
     void noMoreRequestsAfterClose() {
-        RequestConcurrencyController controller = newController(
-                newConnection(from(new IgnoreConsumedEvent<>(1)), completed()), 10);
+        RequestConcurrencyController controller = newConcurrencyController(
+                newConnection(from(new IgnoreConsumedEvent<>(1)), completed()), newConfig(10));
         assertThat(controller.tryRequest(), is(RejectedPermanently));
     }
 
     @Test
     void defaultValueIsUsed() {
         final int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(newConnection(limitPublisher, never()), 10);
+        RequestConcurrencyController controller = newConcurrencyController(newConnection(limitPublisher, never()),
+                newConfig(10));
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
         }
@@ -117,7 +122,7 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void reserveWithNoRequests() throws Exception {
         ReservableRequestConcurrencyController controller =
-                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), 10);
+                newConcurrencyController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), newConfig(10));
         for (int i = 0; i < 10; ++i) {
             assertTrue(controller.tryReserve());
             assertFalse(controller.tryReserve());
@@ -134,16 +139,26 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void reserveFailsWhenPendingRequest() {
         ReservableRequestConcurrencyController controller =
-                newController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), 10);
+                newConcurrencyController(newConnection(from(new IgnoreConsumedEvent<>(10)), never()), newConfig(10));
         assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
     }
 
     private static FilterableStreamingHttpConnection newConnection(
             Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, Completable onClosing) {
+        final HttpConnectionContext ctx = mock(HttpConnectionContext.class);
+        doReturn(HTTP_1_1).when(ctx).protocol();
+
         final FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
         doReturn(maxConcurrency).when(connection).transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING);
         doReturn(onClosing).when(connection).onClosing();
+        doReturn(ctx).when(connection).connectionContext();
         return connection;
+    }
+
+    private static ReadOnlyHttpClientConfig newConfig(int initialConcurrency) {
+        final HttpClientConfig config = new HttpClientConfig();
+        config.protocolConfigs().protocols(HttpProtocolConfigs.h1().maxPipelinedRequests(initialConcurrency).build());
+        return config.asReadOnly();
     }
 }
