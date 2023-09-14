@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newConcurrencyController;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.H2ClientParentConnectionContext.DEFAULT_H2_MAX_CONCURRENCY_EVENT;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
@@ -117,9 +119,10 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         return filterableConnectionFactory.newConnection(resolvedAddress, context, observer)
                 .map(conn -> {
                     // Apply connection filters:
-                    final FilterableStreamingHttpConnection filteredConn =
+                    FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.bind(filteredConn, newConcurrencyController(filteredConn, config), context);
+                    return protocolBinding.bind(filteredConnection, newConcurrencyController(filteredConnection),
+                            context);
                 });
     }
 
@@ -132,6 +135,33 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
      */
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
             ResolvedAddress resolvedAddress, TransportObserver observer);
+
+    /**
+     * Create a new instance of {@link ReservableRequestConcurrencyController}.
+     *
+     * @param connection {@link FilterableStreamingHttpConnection} for which the controller is required.
+     * @return a new instance of {@link ReservableRequestConcurrencyController}.
+     */
+    private ReservableRequestConcurrencyController newConcurrencyController(
+            FilterableStreamingHttpConnection connection) {
+        final HttpProtocolVersion protocol = connection.connectionContext().protocol();
+        final int initialConcurrency;
+        if (protocol.major() == HTTP_2_0.major()) {
+            assert config.h2Config() != null;
+            initialConcurrency = DEFAULT_H2_MAX_CONCURRENCY_EVENT.event();
+        } else if (protocol.major() == HTTP_1_1.major()) {
+            if (protocol.minor() >= HTTP_1_1.minor()) {
+                assert config.h1Config() != null;
+                initialConcurrency = config.h1Config().maxPipelinedRequests();
+            } else {
+                initialConcurrency = 1;   // Versions prior HTTP/1.1 support only a single request-response at a time
+            }
+        } else {
+            throw new IllegalStateException("Cannot infer initialConcurrency value for unknown protocol: " +
+                    protocol);
+        }
+        return ReservableRequestConcurrencyControllers.newController(connection, initialConcurrency);
+    }
 
     @Override
     public final Completable onClose() {
