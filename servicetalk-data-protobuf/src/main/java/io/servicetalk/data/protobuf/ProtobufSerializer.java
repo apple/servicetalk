@@ -70,7 +70,7 @@ final class ProtobufSerializer<T extends MessageLite> implements SerializerDeser
         }
 
         // Forward write index of our buffer
-        buffer.writerIndex(writerIdx + toSerialize.getSerializedSize());
+        buffer.writerIndex(writerIdx + out.getTotalBytesWritten());
     }
 
     @Override
@@ -92,7 +92,7 @@ final class ProtobufSerializer<T extends MessageLite> implements SerializerDeser
             }
 
             T result = parser.parseFrom(in);
-            serializedData.skipBytes(result.getSerializedSize());
+            serializedData.skipBytes(in.getTotalBytesRead());
             return result;
         } catch (InvalidProtocolBufferException e) {
             throw new SerializationException(e);
