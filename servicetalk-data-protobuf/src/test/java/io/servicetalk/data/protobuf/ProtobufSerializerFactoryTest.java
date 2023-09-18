@@ -16,10 +16,13 @@
 package io.servicetalk.data.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
+import io.servicetalk.data.protobuf.test.TestProtos.MapMessage;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,6 +70,20 @@ class ProtobufSerializerFactoryTest {
     void serializeDeserializeClass() {
         final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
         serializeDeserialize(testMessage, PROTOBUF.serializerDeserializer(DummyMessage.class));
+    }
+
+    @Test
+    void serializeEmptyMap() throws InvalidProtocolBufferException {
+        // These bytes were serialized from scala protobuf and don't include the trailing empty map value.
+        final byte[] emptyMessageMapEmptyValueBytes = {0xa, 0x5, 0xa, 0x3, 0x66, 0x6f, 0x6f};
+        final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+        final Buffer buffer = allocator.wrap(emptyMessageMapEmptyValueBytes);
+        final MapMessage mapMessage = MapMessage.parseFrom(emptyMessageMapEmptyValueBytes);
+        SerializerDeserializer<MapMessage> serializer = PROTOBUF.serializerDeserializer(MapMessage.class);
+        assertThat(serializer.deserialize(buffer, allocator), equalTo(mapMessage));
+        // Serializing in java currently writes "0x12, 0x0" for "map value tag, empty string" so we can't compare number
+        // of bytes directly, but we can ensure it deserializes back to an equal object.
+        assertThat(serializer.deserialize(serializer.serialize(mapMessage, allocator), allocator), equalTo(mapMessage));
     }
 
     private static void serializeDeserialize(final DummyMessage testMessage,
