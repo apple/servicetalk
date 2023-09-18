@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -33,27 +35,31 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
+import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -86,11 +92,14 @@ class HttpsProxyTest {
     @Nullable
     private BlockingHttpClient client;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    private static List<List<HttpProtocol>> protocols() {
+        return asList(asList(HTTP_1), asList(HTTP_2), asList(HTTP_2, HTTP_1), asList(HTTP_1, HTTP_2));
+    }
+
+    void setUp(List<HttpProtocol> protocols) throws Exception {
         proxyAddress = proxyTunnel.startProxy();
-        startServer();
-        createClient();
+        startServer(protocols);
+        createClient(protocols);
     }
 
     @AfterEach
@@ -110,52 +119,64 @@ class HttpsProxyTest {
         }
     }
 
-    void startServer() throws Exception {
+    void startServer(List<HttpProtocol> protocols) throws Exception {
         serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
+                .protocols(toConfigs(protocols))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    void createClient() {
+    void createClient(List<HttpProtocol> protocols) {
         assert serverContext != null && proxyAddress != null;
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
                 .proxyAddress(proxyAddress)
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
+                .protocols(toConfigs(protocols))
                 .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, true))
                 .buildBlocking();
     }
 
-    @Test
-    void testClientRequest() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("protocols")
+    void testClientRequest(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols);
         assert client != null;
-        assertResponse(client.request(client.get("/path")));
+        assertResponse(client.request(client.get("/path")), protocols.get(0).version);
     }
 
-    @Test
-    void testConnectionRequest() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("protocols")
+    void testConnectionRequest(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols);
         assert client != null;
+        HttpProtocolVersion expectedVersion = protocols.get(0).version;
         try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
-            assertThat(connection.connectionContext().protocol(), is(HTTP_1_1));
+            assertThat(connection.connectionContext().protocol(), is(expectedVersion));
             assertThat(connection.connectionContext().sslConfig(), is(notNullValue()));
             assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
 
-            assertResponse(connection.request(connection.get("/path")));
+            HttpRequest request = connection.get("/path");
+            assertThat(request.version(), is(expectedVersion));
+            assertResponse(connection.request(request), expectedVersion);
         }
     }
 
-    private void assertResponse(HttpResponse httpResponse) {
+    private void assertResponse(HttpResponse httpResponse, HttpProtocolVersion expectedVersion) {
         assertThat(httpResponse.status(), is(OK));
+        assertThat(httpResponse.version(), is(expectedVersion));
         assertThat(proxyTunnel.connectCount(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
         assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
     }
 
-    @Test
-    void testProxyAuthRequired() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("protocols")
+    void testProxyAuthRequired(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
         assert client != null;
         ProxyResponseException e = assertThrows(ProxyResponseException.class,
@@ -164,8 +185,10 @@ class HttpsProxyTest {
         assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
     }
 
-    @Test
-    void testBadProxyResponse() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("protocols")
+    void testBadProxyResponse(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols);
         proxyTunnel.badResponseProxy();
         assert client != null;
         ProxyResponseException e = assertThrows(ProxyResponseException.class,

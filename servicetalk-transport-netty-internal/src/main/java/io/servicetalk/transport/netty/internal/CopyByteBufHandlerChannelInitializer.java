@@ -56,6 +56,17 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
     }
 
     /**
+     * Return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * {@link ChannelPipeline}.
+     *
+     * @return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * {@link ChannelPipeline}.
+     */
+    public static Class<? extends ChannelInboundHandler> handlerClass() {
+        return CopyByteBufHandler.class;
+    }
+
+    /**
      * This handler has to be added to the {@link ChannelPipeline} when {@link PooledByteBufAllocator} is used for
      * reading data from the socket. The allocated {@link ByteBuf}s must be copied and released before handed over to
      * the user.

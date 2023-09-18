@@ -31,6 +31,7 @@ import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,8 +91,11 @@ final class DeferredServerChannelBinder {
                                                                   final StreamingHttpService service,
                                                                   final boolean drainRequestPayloadBody,
                                                                   final ConnectionObserver observer) {
-        return new AlpnChannelSingle(channel,
-                new TcpServerChannelInitializer(config.tcpConfig(), observer), true).flatMap(protocol -> {
+        return new AlpnChannelSingle(channel, new TcpServerChannelInitializer(config.tcpConfig(), observer),
+                // Force a read to get the SSL handshake started. We initialize pipeline before
+                // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
+                // initialization.
+                ChannelHandlerContext::read).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     return NettyHttpServer.initChannel(channel, httpExecutionContext, config,

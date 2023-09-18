@@ -63,7 +63,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -126,7 +125,6 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         HttpClientConfig config = new HttpClientConfig();
         config.connectAddress(CONNECT_ADDRESS);
         config.tcpConfig().sslConfig(DEFAULT_SSL_CONFIG);
-        config.protocolConfigs().protocols(h1Default());
         connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(config.asReadOnly(),
                 executionContext, null, REQ_RES_FACTORY, ConnectExecutionStrategy.offloadNone(),
                 ConnectionFactoryFilter.identity(), mock(ProtocolBinding.class));

@@ -53,6 +53,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
@@ -522,6 +523,17 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 pipeline.addLast(nettyInboundHandler);
             }
         };
+    }
+
+    /**
+     * Return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * {@link ChannelPipeline}.
+     *
+     * @return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * {@link ChannelPipeline}.
+     */
+    public static Class<? extends ChannelInboundHandler> handlerClass() {
+        return NettyToStChannelHandler.class;
     }
 
     private static boolean shouldWaitForSslHandshake(@Nullable final SSLSession sslSession,

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,12 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * If the client talks to a proxy over http (not https, {@link #sslConfig(ClientSslConfig) ClientSslConfig} is NOT
      * configured), it will rewrite the request-target to
      * <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form</a>, as specified by the RFC.
+     * <p>
+     * For secure proxy tunnels (when {@link #sslConfig(ClientSslConfig) ClientSslConfig} is configured) the tunnel is
+     * always initialized using
+     * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request. The actual
+     * protocol will be negotiated via <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> of TLS protocol,
+     * taking into account HTTP protocols configured via {@link #protocols(HttpProtocolConfig...)} method.
      *
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
