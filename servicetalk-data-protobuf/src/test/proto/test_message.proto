@@ -25,3 +25,7 @@ option java_outer_classname = "TestProtos";
 message DummyMessage {
     string message = 1;
 }
+
+message MapMessage {
+    map<string, string> attributes = 1;
+}
