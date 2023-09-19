@@ -31,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.AbstractLBHttpConnectionFactory.ProtocolBinding;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -301,9 +300,5 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
     private void assertConnectionClosed() {
         assertThat("Closure of the connection was not triggered", connectionClose.isSubscribed(), is(true));
-    }
-
-    private interface NettyHttpConnectionContext extends HttpConnectionContext, NettyConnectionContext {
-        // no methods
     }
 }
