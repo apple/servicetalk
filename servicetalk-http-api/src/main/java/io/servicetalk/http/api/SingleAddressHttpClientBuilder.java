@@ -73,13 +73,13 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      *
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
-     * @param requestInitializer {@link Consumer} of {@link StreamingHttpRequest} that can be used to add additional
-     * info to <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.
-     * It can be used to add headers, like {@link HttpHeaderNames#PROXY_AUTHORIZATION}, debugging information, etc.
+     * @param connectRequestInitializer {@link Consumer} of {@link StreamingHttpRequest} that can be used to add
+     * additional info to <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a>
+     * request. It can be used to add headers, like {@link HttpHeaderNames#PROXY_AUTHORIZATION}, debugging info, etc.
      * @return {@code this}.
      */
-    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress,   // FIXME: 0.43 - remove default impl
-                                                              Consumer<StreamingHttpRequest> requestInitializer) {
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(  // FIXME: 0.43 - remove default impl
+            U proxyAddress, Consumer<StreamingHttpRequest> connectRequestInitializer) {
         throw new UnsupportedOperationException(
                 "Setting proxy address with request initializer is not yet supported by " + getClass().getName());
     }

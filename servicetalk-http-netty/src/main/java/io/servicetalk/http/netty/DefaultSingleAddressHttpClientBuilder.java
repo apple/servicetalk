@@ -455,9 +455,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(
-            final U proxyAddress, final Consumer<StreamingHttpRequest> requestInitializer) {
+            final U proxyAddress, final Consumer<StreamingHttpRequest> connectRequestInitializer) {
         this.proxyAddress(proxyAddress);
-        this.proxyConnectRequestInitializer = requireNonNull(requestInitializer);
+        this.proxyConnectRequestInitializer = requireNonNull(connectRequestInitializer);
         return this;
     }
 

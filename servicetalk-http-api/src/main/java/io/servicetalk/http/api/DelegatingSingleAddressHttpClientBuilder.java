@@ -76,8 +76,8 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(
-            final U proxyAddress, final Consumer<StreamingHttpRequest> requestInitializer) {
-        delegate = delegate.proxyAddress(proxyAddress, requestInitializer);
+            final U proxyAddress, final Consumer<StreamingHttpRequest> connectRequestInitializer) {
+        delegate = delegate.proxyAddress(proxyAddress, connectRequestInitializer);
         return this;
     }
 
