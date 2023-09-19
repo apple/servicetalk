@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020, 2022-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,31 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategy;
-import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.DeferSslHandler;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
 /**
- * A connection factory filter that sends a `CONNECT` request for https proxying.
+ * A {@link ConnectionFactoryFilter} that is prepended before any user-defined filters for the purpose of setting a
+ * {@link HttpContextKeys#HTTP_TARGET_ADDRESS_BEHIND_PROXY} key.
+ * <p>
+ * The actual logic to do a proxy connect was moved to {@link ProxyConnectLBHttpConnectionFactory}.
+ * <p>
+ * This filter can be removed when {@link HttpContextKeys#HTTP_TARGET_ADDRESS_BEHIND_PROXY} key is deprecated and
+ * removed.
  *
  * @param <ResolvedAddress> The type of resolved addresses that can be used for connecting.
  * @param <C> The type of connections created by this factory.
@@ -62,12 +53,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyConnectConnectionFactoryFilter.class);
 
     private final String connectAddress;
-    private final boolean isConnectOffloaded;
 
     ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress, final ExecutionStrategy connectStrategy) {
         this.connectAddress = connectAddress.toString();
-        this.isConnectOffloaded = connectStrategy instanceof ConnectExecutionStrategy &&
-                ((ConnectExecutionStrategy) connectStrategy).isConnectOffloaded();
     }
 
     @Override
@@ -89,76 +77,10 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                 final ContextMap contextMap = context != null ? context : new DefaultContextMap();
                 logUnexpectedAddress(contextMap.put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, connectAddress),
                         connectAddress, LOGGER);
-                return delegate().newConnection(resolvedAddress, contextMap, observer).flatMap(c -> {
-                    try {
-                        // Send CONNECT request: https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6
-                        // Host header value must be equal to CONNECT request target, see
-                        // https://github.com/haproxy/haproxy/issues/1159
-                        // https://datatracker.ietf.org/doc/html/rfc7230#section-5.4:
-                        //   If the target URI includes an authority component, then a client MUST send a field-value
-                        //   for Host that is identical to that authority component
-                        return c.request(c.connect(connectAddress).setHeader(HOST, connectAddress))
-                                // Successful response to CONNECT never has a message body, and we are not interested in
-                                // payload body for any non-200 status code. Drain it asap to free connection and RS
-                                // resources before starting TLS handshake.
-                                .flatMap(response -> response.messageBody().ignoreElements()
-                                        .concat(Single.defer(() -> handleConnectResponse(c, response)
-                                                .shareContextOnSubscribe()))
-                                        .shareContextOnSubscribe())
-                                // Close recently created connection in case of any error while it connects to the
-                                // proxy:
-                                .onErrorResume(t -> c.closeAsync().concat(failed(t)));
-                        // We do not apply shareContextOnSubscribe() here to isolate a context for `CONNECT` request.
-                    } catch (Throwable t) {
-                        return c.closeAsync().concat(failed(t));
-                    }
-                }).shareContextOnSubscribe();
+                // The rest of the logic was moved to ProxyConnectLBHttpConnectionFactory
+                return delegate().newConnection(resolvedAddress, contextMap, observer)
+                        .shareContextOnSubscribe();
             });
-        }
-
-        private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
-            if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                return failed(new ProxyResponseException(connection + " Non-successful response from proxy CONNECT " +
-                        connectAddress, response.status()));
-            }
-
-            final Channel channel = ((NettyConnectionContext) connection.connectionContext()).nettyChannel();
-            final SingleSource.Processor<C, C> processor = newSingleProcessor();
-            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                    if (evt instanceof SslHandshakeCompletionEvent) {
-                        SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
-                        if (event.isSuccess()) {
-                            processor.onSuccess(connection);
-                        } else {
-                            processor.onError(event.cause());
-                        }
-                    }
-                    ctx.fireUserEventTriggered(evt);
-                }
-            });
-
-            final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
-            if (deferSslHandler == null) {
-                if (!channel.isActive()) {
-                    LOGGER.info("{} is unexpectedly closed after receiving response: {}. " +
-                                    "Investigate logs on a proxy side to identify the cause.",
-                            connection, response.toString((name, value) -> value));
-                    return failed(StacklessClosedChannelException.newInstance(
-                            ProxyConnectConnectionFactoryFilter.class, "handleConnectResponse: " +
-                                    connection + " is unexpectedly closed. Check logs for more info."));
-                }
-                return failed(new IllegalStateException(connection + " Failed to find a handler of type " +
-                        DeferSslHandler.class + " in channel pipeline."));
-            }
-            deferSslHandler.ready();
-
-            // processor completes on EventLoop thread, apply offloading if required:
-            return isConnectOffloaded ?
-                    fromSource(processor).publishOn(connection.executionContext().executor(),
-                            IoThreadFactory.IoThread::currentThreadIsIoThread) :
-                    fromSource(processor);
         }
     }
 

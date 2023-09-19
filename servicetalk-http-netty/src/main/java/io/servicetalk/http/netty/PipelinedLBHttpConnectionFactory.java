@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
+import static java.util.Objects.requireNonNull;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     PipelinedLBHttpConnectionFactory(
@@ -39,6 +40,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
             final ProtocolBinding protocolBinding) {
         super(config, executionContext, version -> reqRespFactory, connectStrategy, connectionFactoryFilter,
                 connectionFilterFunction, protocolBinding);
+        requireNonNull(config.h1Config(), "H1ProtocolConfig is required");
     }
 
     @Override
