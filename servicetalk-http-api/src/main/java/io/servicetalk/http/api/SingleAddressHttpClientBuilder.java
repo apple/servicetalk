@@ -49,11 +49,16 @@ import java.util.function.Predicate;
 public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Configure proxy to serve as an intermediary for requests.
+     * <p>
+     * If the client talks to a proxy over http (not https, {@link #sslConfig(ClientSslConfig) ClientSslConfig} is NOT
+     * configured), it will rewrite the request-target to
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form</a>, as specified by the RFC.
+     *
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
      * @return {@code this}.
      */
-    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) { // FIXME: 0.43 - remove default impl
         throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
                 + getClass().getName());
     }
