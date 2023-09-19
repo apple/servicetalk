@@ -90,7 +90,9 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing())
                 .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT))
-                .multicast(1); // Allows multiple Subscribers to consume the event stream.
+                .replay(1); // Allow multiple Subscribers to consume, new Subscribers get last signal.
+        // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
+        maxConcurrencySetting.ignoreElements().subscribe();
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
