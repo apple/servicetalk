@@ -77,7 +77,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 .flatMap(this::processConnect);
     }
 
-    private Single<FilterableStreamingHttpConnection> processConnect(final NettyFilterableStreamingHttpConnection c) {
+    // Visible for testing
+    Single<FilterableStreamingHttpConnection> processConnect(final NettyFilterableStreamingHttpConnection c) {
         try {
             // Send CONNECT request: https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6
             // Host header value must be equal to CONNECT request target, see
