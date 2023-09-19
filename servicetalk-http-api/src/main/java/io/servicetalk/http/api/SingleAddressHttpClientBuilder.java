@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -61,6 +62,26 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) { // FIXME: 0.43 - remove default impl
         throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
                 + getClass().getName());
+    }
+
+    /**
+     * Configure proxy to serve as an intermediary for requests.
+     * <p>
+     * If the client talks to a proxy over http (not https, {@link #sslConfig(ClientSslConfig) ClientSslConfig} is NOT
+     * configured), it will rewrite the request-target to
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form</a>, as specified by the RFC.
+     *
+     * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
+     * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
+     * @param requestInitializer {@link Consumer} of {@link StreamingHttpRequest} that can be used to add additional
+     * info to <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.
+     * It can be used to add headers, like {@link HttpHeaderNames#PROXY_AUTHORIZATION}, debugging information, etc.
+     * @return {@code this}.
+     */
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress,   // FIXME: 0.43 - remove default impl
+                                                              Consumer<StreamingHttpRequest> requestInitializer) {
+        throw new UnsupportedOperationException(
+                "Setting proxy address with request initializer is not yet supported by " + getClass().getName());
     }
 
     /**

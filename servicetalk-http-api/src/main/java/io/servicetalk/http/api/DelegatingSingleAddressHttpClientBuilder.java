@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -70,6 +71,13 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
     @Override
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
         delegate = delegate.proxyAddress(proxyAddress);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(
+            final U proxyAddress, final Consumer<StreamingHttpRequest> requestInitializer) {
+        delegate = delegate.proxyAddress(proxyAddress, requestInitializer);
         return this;
     }
 

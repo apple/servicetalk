@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,18 @@ import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,11 +47,13 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,6 +63,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpsProxyTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpsProxyTest.class);
+    private static final String AUTH_TOKEN = "aGVsbG86d29ybGQ=";
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -75,32 +82,26 @@ class HttpsProxyTest {
     @Nullable
     private HostAndPort proxyAddress;
     @Nullable
-    private IoExecutor serverIoExecutor;
-    @Nullable
     private ServerContext serverContext;
     @Nullable
     private HostAndPort serverAddress;
     @Nullable
     private BlockingHttpClient client;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    void setUp(boolean withAuth) throws Exception {
+        if (withAuth) {
+            proxyTunnel.basicAuthToken(AUTH_TOKEN);
+        }
         proxyAddress = proxyTunnel.startProxy();
         startServer();
-        createClient();
+        createClient(withAuth);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        try {
-            safeClose(client);
-            safeClose(serverContext);
-            safeClose(proxyTunnel);
-        } finally {
-            if (serverIoExecutor != null) {
-                serverIoExecutor.closeAsync().toFuture().get();
-            }
-        }
+        safeClose(client);
+        safeClose(serverContext);
+        safeClose(proxyTunnel);
     }
 
     static void safeClose(@Nullable AutoCloseable closeable) {
@@ -108,14 +109,13 @@ class HttpsProxyTest {
             try {
                 closeable.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Unexpected exception while closing", e);
             }
         }
     }
 
     void startServer() throws Exception {
         serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
-                .ioExecutor(serverIoExecutor = createIoExecutor("server-io-executor"))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
@@ -123,24 +123,30 @@ class HttpsProxyTest {
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    void createClient() {
+    void createClient(boolean withAuth) {
         assert serverContext != null && proxyAddress != null;
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
-                .proxyAddress(proxyAddress)
+                .proxyAddress(proxyAddress, withAuth ?
+                        request -> request.setHeader(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN) :
+                        __ -> { })
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, true))
                 .buildBlocking();
     }
 
-    @Test
-    void testClientRequest() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] withAuth={0}")
+    @ValueSource(booleans = {false, true})
+    void testClientRequest(boolean withAuth) throws Exception {
+        setUp(withAuth);
         assert client != null;
         assertResponse(client.request(client.get("/path")));
     }
 
-    @Test
-    void testConnectionRequest() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] withAuth={0}")
+    @ValueSource(booleans = {false, true})
+    void testConnectionRequest(boolean withAuth) throws Exception {
+        setUp(withAuth);
         assert client != null;
         try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
             assertThat(connection.connectionContext().protocol(), is(HTTP_1_1));
@@ -159,10 +165,24 @@ class HttpsProxyTest {
     }
 
     @Test
-    void testBadProxyResponse() {
+    void testProxyAuthRequired() throws Exception {
+        setUp(false);
+        proxyTunnel.basicAuthToken(AUTH_TOKEN);
+        assert client != null;
+        ProxyResponseException e = assertThrows(ProxyResponseException.class,
+                () -> client.request(client.get("/path")));
+        assertThat(e.status(), is(PROXY_AUTHENTICATION_REQUIRED));
+        assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
+    }
+
+    @Test
+    void testBadProxyResponse() throws Exception {
+        setUp(false);
         proxyTunnel.badResponseProxy();
         assert client != null;
-        assertThrows(ProxyResponseException.class, () -> client.request(client.get("/path")));
+        ProxyResponseException e = assertThrows(ProxyResponseException.class,
+                () -> client.request(client.get("/path")));
+        assertThat(e.status(), is(INTERNAL_SERVER_ERROR));
         assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
     }
 

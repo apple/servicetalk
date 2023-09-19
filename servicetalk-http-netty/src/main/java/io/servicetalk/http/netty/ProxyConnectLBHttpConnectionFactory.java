@@ -18,9 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -35,11 +37,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -56,7 +61,10 @@ import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
+    private static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend().build();
+
     private final String connectAddress;
+    private final Consumer<StreamingHttpRequest> connectRequestInitializer;
 
     ProxyConnectLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -64,13 +72,15 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final ProtocolBinding protocolBinding) {
+            final ProtocolBinding protocolBinding,
+            final Consumer<StreamingHttpRequest> connectRequestInitializer) {
         super(config, executionContext, version -> reqRespFactory, connectStrategy, connectionFactoryFilter,
                 connectionFilterFunction, protocolBinding);
         assert config.h1Config() != null : "H1ProtocolConfig is required";
         assert config.tcpConfig().sslContext() != null : "Proxy CONNECT works only for TLS connections";
         assert config.connectAddress() != null : "Address (authority) for CONNECT request is required";
-        connectAddress = config.connectAddress().toString();
+        this.connectAddress = config.connectAddress().toString();
+        this.connectRequestInitializer = connectRequestInitializer;
     }
 
     @Override
@@ -93,8 +103,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             //   If the target URI includes an authority component, then a client MUST send a field-value
             //   for Host that is identical to that authority component
             final StreamingHttpRequest request = c.connect(connectAddress).setHeader(HOST, connectAddress);
-            // No need to offload because there is no user code involved
-            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, offloadNone());
+            connectRequestInitializer.accept(request);
+            configureOffloading(request);
             return c.request(request)
                     .flatMap(response -> {
                         // Successful response to CONNECT never has a message body, and we are not interested in payload
@@ -116,6 +126,19 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         } catch (Throwable t) {
             return closePropagateError(c, t);
         }
+    }
+
+    private static void configureOffloading(final StreamingHttpRequest request) {
+        final HttpExecutionStrategy strategy;
+        if (isPayloadEmpty(request) || request.messageBody() == Publisher.empty()) {
+            // No need to offload because there is no user code involved
+            strategy = offloadNone();
+        } else {
+            // Users added a custom request payload body Publisher, offload send for safety
+            strategy = OFFLOAD_SEND_STRATEGY;
+        }
+        // Put only if users didn't set their own strategy via connectRequestInitializer
+        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
     }
 
     private Single<FilterableStreamingHttpConnection> handshake(

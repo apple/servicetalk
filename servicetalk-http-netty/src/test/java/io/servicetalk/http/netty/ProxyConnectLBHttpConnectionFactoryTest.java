@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
@@ -26,6 +27,8 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.AbstractLBHttpConnectionFactory.ProtocolBinding;
@@ -44,9 +47,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -55,6 +60,9 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -67,7 +75,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -85,8 +95,10 @@ class ProxyConnectLBHttpConnectionFactoryTest {
     private final TestCompletable connectionClose;
     private final TestPublisher<Object> messageBody;
     private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
+    private final Consumer<StreamingHttpRequest> connectRequestInitializer;
     private final ProxyConnectLBHttpConnectionFactory<String> connectionFactory;
 
+    @SuppressWarnings("unchecked")
     ProxyConnectLBHttpConnectionFactoryTest() {
         HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
         HttpConnectionContext connectionContext = mock(HttpConnectionContext.class);
@@ -117,13 +129,14 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
         subscriber = new TestSingleSubscriber<>();
 
+        connectRequestInitializer = mock(Consumer.class);
         HttpClientConfig config = new HttpClientConfig();
         config.connectAddress(CONNECT_ADDRESS);
         config.tcpConfig().sslConfig(DEFAULT_SSL_CONFIG);
         config.protocolConfigs().protocols(h1Default());
         connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(config.asReadOnly(),
                 executionContext, null, REQ_RES_FACTORY, ConnectExecutionStrategy.offloadNone(),
-                ConnectionFactoryFilter.identity(), mock(ProtocolBinding.class));
+                ConnectionFactoryFilter.identity(), mock(ProtocolBinding.class), connectRequestInitializer);
     }
 
     private static ChannelPipeline configurePipeline(@Nullable SslHandshakeCompletionEvent event) {
@@ -175,6 +188,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(connection).connect(any());
         verify(connection, never()).request(any());
+        verify(connectRequestInitializer, never()).accept(any());
         assertConnectionClosed();
     }
 
@@ -185,6 +199,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         Throwable error = subscriber.awaitOnError();
         assertThat("Unexpected error: " + error, error, is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(false);
@@ -201,6 +216,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         Throwable error = subscriber.awaitOnError();
         assertThat(error, instanceOf(ProxyResponseException.class));
         assertThat(((ProxyResponseException) error).status(), is(INTERNAL_SERVER_ERROR));
@@ -220,6 +236,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         Throwable error = subscriber.awaitOnError();
         assertThat(error, is(notNullValue()));
         if (channelActive) {
@@ -242,6 +259,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(true);
         assertConnectionClosed();
@@ -257,6 +275,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(true);
         assertConnectionClosed();
@@ -273,6 +292,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
+        verify(connectRequestInitializer).accept(any());
         Cancellable cancellable = subscriber.awaitSubscription();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat(connectionClose.isSubscribed(), is(false));
@@ -283,26 +303,77 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
     @Test
     void successfulConnect() {
+        prepareForSuccess();
+        subscribeToProxyConnectionFactory();
+
+        verify(connectRequestInitializer).accept(any());
+        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
+        StreamingHttpRequest request = assertConnectPayloadConsumed(true);
+        assertExecutionStrategy(request, offloadNone());
+        assertConnectionClosed(false);
+    }
+
+    @Test
+    void connectPayloadBodyChangesExecutionStrategy() {
+        prepareForSuccess();
+        doAnswer(invocation -> {
+            StreamingHttpRequest request = invocation.getArgument(0);
+            request.payloadBody(Publisher.from());
+            return null;
+        }).when(connectRequestInitializer).accept(any());
+        subscribeToProxyConnectionFactory();
+
+        verify(connectRequestInitializer).accept(any());
+        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
+        StreamingHttpRequest request = assertConnectPayloadConsumed(true);
+        assertExecutionStrategy(request, customStrategyBuilder().offloadSend().build());
+        assertConnectionClosed(false);
+    }
+
+    @Test
+    void usersCanOverrideExecutionStrategy() {
+        prepareForSuccess();
+        HttpExecutionStrategy customStrategy = customStrategyBuilder().offloadReceiveData().build();
+        doAnswer(invocation -> {
+            StreamingHttpRequest request = invocation.getArgument(0);
+            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, customStrategy);
+            return null;
+        }).when(connectRequestInitializer).accept(any());
+        subscribeToProxyConnectionFactory();
+
+        verify(connectRequestInitializer).accept(any());
+        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
+        StreamingHttpRequest request = assertConnectPayloadConsumed(true);
+        assertExecutionStrategy(request, customStrategy);
+        assertConnectionClosed(false);
+    }
+
+    private void prepareForSuccess() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         configureDeferSslHandler(pipeline);
         configureConnectionNettyChannel(pipeline);
         configureRequestSend();
         configureConnectRequest();
-        subscribeToProxyConnectionFactory();
-
-        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
-        assertConnectPayloadConsumed(true);
-        assertThat("Connection closed", connectionClose.isSubscribed(), is(false));
     }
 
-    private void assertConnectPayloadConsumed(boolean expected) {
+    private StreamingHttpRequest assertConnectPayloadConsumed(boolean expected) {
+        ArgumentCaptor<StreamingHttpRequest> requestCaptor = forClass(StreamingHttpRequest.class);
         verify(connection).connect(any());
-        verify(connection).request(any());
+        verify(connection).request(requestCaptor.capture());
         assertThat("CONNECT response payload body was " + (expected ? "was" : "unnecessarily") + " consumed",
                 messageBody.isSubscribed(), is(expected));
+        return requestCaptor.getValue();
+    }
+
+    private static void assertExecutionStrategy(StreamingHttpRequest request, HttpExecutionStrategy expectedStrategy) {
+        assertThat(request.context().get(HTTP_EXECUTION_STRATEGY_KEY), is(expectedStrategy));
     }
 
     private void assertConnectionClosed() {
-        assertThat("Closure of the connection was not triggered", connectionClose.isSubscribed(), is(true));
+        assertConnectionClosed(true);
+    }
+
+    private void assertConnectionClosed(boolean closed) {
+        assertThat("Closure of the connection was not triggered", connectionClose.isSubscribed(), is(closed));
     }
 }

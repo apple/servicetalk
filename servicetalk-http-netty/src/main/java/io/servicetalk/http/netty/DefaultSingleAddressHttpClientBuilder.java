@@ -65,6 +65,7 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -109,6 +110,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private final U address;
     @Nullable
     private U proxyAddress;
+    private Consumer<StreamingHttpRequest> proxyConnectRequestInitializer = __ -> { };
     private final HttpClientConfig config;
     final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
@@ -146,6 +148,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
         proxyAddress = from.proxyAddress;
+        proxyConnectRequestInitializer = from.proxyConnectRequestInitializer;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         strategyComputation = from.strategyComputation.copy();
@@ -287,7 +290,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(roConfig, executionContext,
                         connectionFilterFactory, reqRespFactory,
                         connectionFactoryStrategy, connectionFactoryFilter,
-                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
+                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection,
+                        ctx.builder.proxyConnectRequestInitializer);
             } else {
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext,
                         connectionFilterFactory, reqRespFactory,
@@ -446,6 +450,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
         this.proxyAddress = requireNonNull(proxyAddress);
         config.connectAddress(hostToCharSequenceFunction.apply(address));
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> proxyAddress(
+            final U proxyAddress, final Consumer<StreamingHttpRequest> requestInitializer) {
+        this.proxyAddress(proxyAddress);
+        this.proxyConnectRequestInitializer = requireNonNull(requestInitializer);
         return this;
     }
 
