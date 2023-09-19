@@ -78,7 +78,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * request. It can be used to add headers, like {@link HttpHeaderNames#PROXY_AUTHORIZATION}, debugging info, etc.
      * @return {@code this}.
      */
-    default SingleAddressHttpClientBuilder<U, R> proxyAddress(  // FIXME: 0.43 - remove default impl
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(// FIXME: 0.43 - remove default impl
             U proxyAddress, Consumer<StreamingHttpRequest> connectRequestInitializer) {
         throw new UnsupportedOperationException(
                 "Setting proxy address with request initializer is not yet supported by " + getClass().getName());
