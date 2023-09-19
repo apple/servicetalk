@@ -46,8 +46,13 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
-import static java.util.Objects.requireNonNull;
 
+/**
+ * {@link AbstractLBHttpConnectionFactory} implementation that handles HTTP/1.1 CONNECT when a client is configured to
+ * talk over HTTPS Proxy Tunnel.
+ *
+ * @param <ResolvedAddress> The type of resolved address.
+ */
 final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -62,8 +67,9 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             final ProtocolBinding protocolBinding) {
         super(config, executionContext, version -> reqRespFactory, connectStrategy, connectionFactoryFilter,
                 connectionFilterFunction, protocolBinding);
-        requireNonNull(config.h1Config(), "H1ProtocolConfig is required");
-        assert config.connectAddress() != null;
+        assert config.h1Config() != null : "H1ProtocolConfig is required";
+        assert config.tcpConfig().sslContext() != null : "Proxy CONNECT works only for TLS connections";
+        assert config.connectAddress() != null : "Address (authority) for CONNECT request is required";
         connectAddress = config.connectAddress().toString();
     }
 
@@ -93,7 +99,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                     .flatMap(response -> {
                         // Successful response to CONNECT never has a message body, and we are not interested in payload
                         // body for any non-200 status code. Drain it asap to free connection and RS resources before
-                        // starting TLS handshake or propagating an error.
+                        // starting TLS handshake or propagating an error. We do this after verifying the status to
+                        // preserve ProxyResponseException even if draining fails with an exception.
                         if (response.status().statusClass() != SUCCESSFUL_2XX) {
                             return drainPropagateError(response, new ProxyResponseException(c +
                                     " Non-successful response from proxy CONNECT " + connectAddress, response.status()))
@@ -168,7 +175,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
     private static Single<FilterableStreamingHttpConnection> safeCompletePropagateError(
             final Completable completable, final Throwable error) {
         return completable
-                .onErrorResume(closeError -> Completable.failed(addSuppressed(error, closeError)))
+                .onErrorResume(completableError -> Completable.failed(addSuppressed(error, completableError)))
                 .concat(Single.failed(error));
     }
 }

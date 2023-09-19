@@ -29,6 +29,8 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.AbstractLBHttpConnectionFactory.ProtocolBinding;
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 
@@ -73,6 +75,7 @@ import static org.mockito.Mockito.when;
 
 class ProxyConnectLBHttpConnectionFactoryTest {
 
+    private static final ClientSslConfig DEFAULT_SSL_CONFIG = new ClientSslConfigBuilder().build();
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
@@ -116,6 +119,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
         HttpClientConfig config = new HttpClientConfig();
         config.connectAddress(CONNECT_ADDRESS);
+        config.tcpConfig().sslConfig(DEFAULT_SSL_CONFIG);
         config.protocolConfigs().protocols(h1Default());
         connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(config.asReadOnly(),
                 executionContext, null, REQ_RES_FACTORY, ConnectExecutionStrategy.offloadNone(),
