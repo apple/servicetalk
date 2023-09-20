@@ -280,6 +280,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           xml.enabled = project.ext.isCiBuild
           html.enabled = !project.ext.isCiBuild
         }
+        // https://github.com/spotbugs/spotbugs/issues/2567
+        enabled = JavaVersion.current() < JavaVersion.VERSION_21
       }
 
       tasks.withType(SpotBugsTask).all {
