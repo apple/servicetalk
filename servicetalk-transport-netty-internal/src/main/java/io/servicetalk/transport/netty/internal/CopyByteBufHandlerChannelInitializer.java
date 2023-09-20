@@ -19,6 +19,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -56,13 +57,13 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
     }
 
     /**
-     * Return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * Return {@link Class} of the {@link ChannelHandler} in case there is a need to remove the handler from the
      * {@link ChannelPipeline}.
      *
-     * @return {@link Class} of the {@link ChannelInboundHandler} in case there is a need to remove the handler from the
+     * @return {@link Class} of the {@link ChannelHandler} in case there is a need to remove the handler from the
      * {@link ChannelPipeline}.
      */
-    public static Class<? extends ChannelInboundHandler> handlerClass() {
+    public static Class<? extends ChannelHandler> handlerClass() {
         return CopyByteBufHandler.class;
     }
 

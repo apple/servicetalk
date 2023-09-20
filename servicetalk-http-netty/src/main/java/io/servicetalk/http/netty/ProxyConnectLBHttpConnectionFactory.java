@@ -28,13 +28,14 @@ import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 
 import javax.annotation.Nullable;
 
@@ -147,7 +148,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             }
             return result.shareContextOnSubscribe();
         }).flatMap(protocol -> {
-            final Single<FilterableStreamingHttpConnection> result;
+            final Single<? extends FilterableStreamingHttpConnection> result;
             switch (protocol) {
                 case AlpnIds.HTTP_1_1:
                     // Nothing to do, HTTP/1.1 pipeline is already initialized
@@ -156,22 +157,8 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 case AlpnIds.HTTP_2:
                     final Channel channel = connection.nettyChannel();
                     assert channel.eventLoop().inEventLoop();
-                    // Remove HTTP/1.1 handlers:
-                    channel.pipeline().remove(HttpRequestEncoder.class);
-                    channel.pipeline().remove(HttpResponseDecoder.class);
-                    channel.pipeline().remove(CopyByteBufHandlerChannelInitializer.handlerClass());
-                    channel.pipeline().remove(DefaultNettyConnection.handlerClass());
-                    // Initialize HTTP/2:
-                    final H2ProtocolConfig h2Config = config.h2Config();
-                    assert h2Config != null;
-                    final ReadOnlyTcpClientConfig tcpConfig = config.tcpConfig();
-                    result = H2ClientParentConnectionContext.initChannel(channel, executionContext,
-                            h2Config, reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(),
-                            tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
-                            new H2ClientParentChannelInitializer(h2Config),
-                            // FIXME: propagate real observer
-                            NoopConnectionObserver.INSTANCE, config.allowDropTrailersReadFromTransport())
-                            .cast(FilterableStreamingHttpConnection.class);
+                    removeH1Handlers(channel);
+                    result = initializeH2Connection(channel);
                     break;
                 default:
                     result = unknownAlpnProtocol(protocol);
@@ -179,6 +166,25 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             }
             return result.shareContextOnSubscribe();
         });
+    }
+
+    private static void removeH1Handlers(final Channel channel) {
+        final ChannelPipeline pipeline = channel.pipeline();
+        pipeline.remove(DefaultNettyConnection.handlerClass());
+        for (Class<? extends ChannelHandler> handlerClass : HttpClientChannelInitializer.handlers()) {
+            pipeline.remove(handlerClass);
+        }
+    }
+
+    private Single<? extends FilterableStreamingHttpConnection> initializeH2Connection(final Channel channel) {
+        final H2ProtocolConfig h2Config = config.h2Config();
+        assert h2Config != null;
+        final ReadOnlyTcpClientConfig tcpConfig = config.tcpConfig();
+        return H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
+                reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
+                tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config),
+                // FIXME: propagate real observer
+                NoopConnectionObserver.INSTANCE, config.allowDropTrailersReadFromTransport());
     }
 
     private static Single<FilterableStreamingHttpConnection> drainPropagateError(

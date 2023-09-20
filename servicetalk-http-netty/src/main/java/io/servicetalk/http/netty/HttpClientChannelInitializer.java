@@ -23,14 +23,21 @@ import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitiali
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 
 import static java.lang.Math.min;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 final class HttpClientChannelInitializer implements ChannelInitializer {
+
+    private static final List<Class<? extends ChannelHandler>> HANDLERS = unmodifiableList(asList(
+            HttpRequestEncoder.class, HttpResponseDecoder.class, CopyByteBufHandlerChannelInitializer.handlerClass()));
 
     private final ChannelInitializer delegate;
 
@@ -60,5 +67,16 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
     @Override
     public void init(final Channel channel) {
         delegate.init(channel);
+    }
+
+    /**
+     * A list of {@link ChannelHandler} classes added to the {@link ChannelPipeline} in reverse order
+     * (from last to first).
+     *
+     * @return A list of {@link ChannelHandler} classes added to the {@link ChannelPipeline} in reverse order
+     * (from last to first).
+     */
+    static List<Class<? extends ChannelHandler>> handlers() {
+        return HANDLERS;
     }
 }
