@@ -41,7 +41,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import io.netty.util.Attribute;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +52,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -73,6 +75,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -91,6 +96,7 @@ class ProxyConnectLBHttpConnectionFactoryTest {
     private final TestPublisher<Object> messageBody;
     private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
     private final ProxyConnectLBHttpConnectionFactory<String> connectionFactory;
+    private final ChannelHandlerContext ctx;
 
     ProxyConnectLBHttpConnectionFactoryTest() {
         HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
@@ -128,32 +134,54 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(config.asReadOnly(),
                 executionContext, null, REQ_RES_FACTORY, ConnectExecutionStrategy.offloadNone(),
                 ConnectionFactoryFilter.identity(), mock(ProtocolBinding.class));
+
+        ctx = mock(ChannelHandlerContext.class);
     }
 
-    private static ChannelPipeline configurePipeline(@Nullable SslHandshakeCompletionEvent event) {
+    private ChannelPipeline configurePipeline() {
+        return configurePipeline(new AtomicReference<>());
+    }
+
+    private ChannelPipeline configurePipeline(AtomicReference<ChannelInboundHandler> handlerCaptor) {
         ChannelPipeline pipeline = mock(ChannelPipeline.class);
+        configureConnectionNettyChannel(pipeline);
         when(pipeline.addLast(any())).then((Answer<ChannelPipeline>) invocation -> {
             ChannelInboundHandler handshakeAwait = invocation.getArgument(0);
-            if (event != null) {
-                handshakeAwait.userEventTriggered(mock(ChannelHandlerContext.class), event);
-            }
+            handlerCaptor.set(handshakeAwait);
+            handshakeAwait.handlerAdded(ctx);
             return pipeline;
         });
         return pipeline;
     }
 
-    private static void configureDeferSslHandler(ChannelPipeline pipeline) {
-        when(pipeline.get(DeferSslHandler.class)).thenReturn(mock(DeferSslHandler.class));
+    private void configureDeferSslHandler(ChannelPipeline pipeline,
+                                          AtomicReference<ChannelInboundHandler> handlerCaptor,
+                                          SslHandshakeCompletionEvent event) {
+        DeferSslHandler deferSslHandler = mock(DeferSslHandler.class);
+        when(pipeline.get(DeferSslHandler.class)).thenReturn(deferSslHandler);
+        doAnswer(invocation -> {
+            final ChannelInboundHandler handler = handlerCaptor.get();
+            handler.userEventTriggered(ctx, event);
+            if (!event.isSuccess()) {
+                handler.exceptionCaught(ctx, event.cause());
+            }
+            return null;
+        }).when(deferSslHandler).ready();
+        when(pipeline.get(SslHandler.class)).thenReturn(mock(SslHandler.class));
     }
 
+    @SuppressWarnings("unchecked")
     private void configureConnectionNettyChannel(final ChannelPipeline pipeline) {
         Channel channel = mock(Channel.class);
         EventLoop eventLoop = mock(EventLoop.class);
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
         when(channel.pipeline()).thenReturn(pipeline);
+        when(channel.attr(any())).thenReturn(mock(Attribute.class));
         when(pipeline.channel()).thenReturn(channel);
         when(connection.nettyChannel()).thenReturn(channel);
+        when(ctx.channel()).thenReturn(channel);
+        when(ctx.pipeline()).thenReturn(pipeline);
     }
 
     private void configureRequestSend() {
@@ -215,9 +243,8 @@ class ProxyConnectLBHttpConnectionFactoryTest {
     @ParameterizedTest(name = "{displayName} [{index}] ttl={0}")
     @ValueSource(booleans = {true, false})
     void noDeferSslHandler(boolean channelActive) {
-        ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
+        ChannelPipeline pipeline = configurePipeline();
         // Do not configureDeferSslHandler(pipeline);
-        configureConnectionNettyChannel(pipeline);
         Channel channel = pipeline.channel();
         when(channel.isActive()).thenReturn(channelActive);
         configureRequestSend();
@@ -237,11 +264,26 @@ class ProxyConnectLBHttpConnectionFactoryTest {
     }
 
     @Test
-    void deferSslHandlerReadyThrows() {
-        ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
+    void getDeferSslHandlerThrows() {
+        ChannelPipeline pipeline = configurePipeline();
         when(pipeline.get(DeferSslHandler.class)).thenThrow(DELIBERATE_EXCEPTION);
 
-        configureConnectionNettyChannel(pipeline);
+        configureRequestSend();
+        configureConnectRequest();
+        subscribeToProxyConnectionFactory();
+
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertConnectPayloadConsumed(true);
+        assertConnectionClosed();
+    }
+
+    @Test
+    void deferSslHandlerReadyThrows() {
+        ChannelPipeline pipeline = configurePipeline();
+        DeferSslHandler deferSslHandler = mock(DeferSslHandler.class);
+        when(pipeline.get(DeferSslHandler.class)).thenReturn(deferSslHandler);
+        doThrow(DELIBERATE_EXCEPTION).when(deferSslHandler).ready();
+
         configureRequestSend();
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
@@ -253,10 +295,10 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
     @Test
     void sslHandshakeFailure() {
-        ChannelPipeline pipeline = configurePipeline(new SslHandshakeCompletionEvent(DELIBERATE_EXCEPTION));
+        AtomicReference<ChannelInboundHandler> handlerCaptor = new AtomicReference<>();
+        ChannelPipeline pipeline = configurePipeline(handlerCaptor);
+        configureDeferSslHandler(pipeline, handlerCaptor, new SslHandshakeCompletionEvent(DELIBERATE_EXCEPTION));
 
-        configureDeferSslHandler(pipeline);
-        configureConnectionNettyChannel(pipeline);
         configureRequestSend();
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
@@ -269,10 +311,11 @@ class ProxyConnectLBHttpConnectionFactoryTest {
     @Test
     @Disabled("https://github.com/apple/servicetalk/issues/1010")
     void cancelledBeforeSslHandshakeCompletionEvent() {
-        ChannelPipeline pipeline = configurePipeline(null); // Do not generate any SslHandshakeCompletionEvent
+        ChannelPipeline pipeline = configurePipeline();
+        DeferSslHandler handler = mock(DeferSslHandler.class);
+        when(pipeline.get(DeferSslHandler.class)).thenReturn(handler);
+        doNothing().when(handler).ready();  // Do not generate any SslHandshakeCompletionEvent
 
-        configureDeferSslHandler(pipeline);
-        configureConnectionNettyChannel(pipeline);
         configureRequestSend();
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
@@ -287,9 +330,9 @@ class ProxyConnectLBHttpConnectionFactoryTest {
 
     @Test
     void successfulConnect() {
-        ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
-        configureDeferSslHandler(pipeline);
-        configureConnectionNettyChannel(pipeline);
+        AtomicReference<ChannelInboundHandler> handlerCaptor = new AtomicReference<>();
+        ChannelPipeline pipeline = configurePipeline(handlerCaptor);
+        configureDeferSslHandler(pipeline, handlerCaptor, SslHandshakeCompletionEvent.SUCCESS);
         configureRequestSend();
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
