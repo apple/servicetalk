@@ -103,6 +103,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private HttpHeadersFactory headersFactory;
     @Nullable
     private RedirectConfig redirectConfig;
+    private int defaultHttpPort = HTTP.port();
+    private int defaultHttpsPort = HTTPS.port();
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
@@ -118,7 +120,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpExecutionContext executionContext = executionContextBuilder.build();
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
-            final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
+            final CachingKeyFactory keyFactory = closeables.prepend(
+                    new CachingKeyFactory(defaultHttpPort, defaultHttpsPort));
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
@@ -144,6 +147,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private static final class CachingKeyFactory implements AsyncCloseable {
 
         private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
+        private final int defaultHttpPort;
+        private final int defaultHttpsPort;
+
+        CachingKeyFactory(final int defaultHttpPort, final int defaultHttpsPort) {
+            this.defaultHttpPort = defaultHttpPort;
+            this.defaultHttpsPort = defaultHttpsPort;
+        }
 
         public UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String host = metaData.host();
@@ -161,7 +171,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
-                    (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? HTTPS : HTTP).port();
+                    (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
 
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
@@ -452,5 +462,30 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             @Nullable final RedirectConfig config) {
         this.redirectConfig = config;
         return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> defaultHttpPort(final int port) {
+        this.defaultHttpPort = verifyPortRange(port);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> defaultHttpsPort(final int port) {
+        this.defaultHttpsPort = verifyPortRange(port);
+        return this;
+    }
+
+    /**
+     * Verifies that the given port number is within the allowed range.
+     *
+     * @param port the port number to verify.
+     * @return the port number if in range.
+     */
+    private static int verifyPortRange(final int port) {
+        if (port < 1 || port > 0xFFFF) {
+            throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
+        }
+        return port;
     }
 }

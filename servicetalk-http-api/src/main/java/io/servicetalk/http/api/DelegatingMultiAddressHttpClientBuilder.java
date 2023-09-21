@@ -97,6 +97,18 @@ public class DelegatingMultiAddressHttpClientBuilder<U, R> implements MultiAddre
     }
 
     @Override
+    public MultiAddressHttpClientBuilder<U, R> defaultHttpPort(final int port) {
+        delegate = delegate.defaultHttpPort(port);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<U, R> defaultHttpsPort(final int port) {
+        delegate = delegate.defaultHttpsPort(port);
+        return this;
+    }
+
+    @Override
     public HttpClient build() {
         return delegate.build();
     }
