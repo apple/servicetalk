@@ -1447,7 +1447,8 @@ class H2PriorKnowledgeFeatureParityTest {
                         ch.pipeline().addLast(new EchoHttp2Handler());
                     }
                 }, __ -> { }, identity());
-        try (BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverAcceptorChannel.localAddress()))
+        InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(useOtherHeadersFactory ?
                         HttpProtocol.HTTP_2.configOtherHeadersFactory : HttpProtocol.HTTP_2.config)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
@@ -1625,7 +1626,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 super.channelRead(ctx, msg);
             }
         }), identity());
-        try (StreamingHttpClient client = forSingleAddress(serverHostAndPort(serverAcceptorChannel.localAddress()))
+        InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
+        try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
                 .appendConnectionFilter(conn -> new TestConnectionFilter(conn, connectionQueue, maxConcurrentPubQueue))
