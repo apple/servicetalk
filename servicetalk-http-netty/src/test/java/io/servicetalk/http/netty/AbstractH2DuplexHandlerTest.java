@@ -84,8 +84,8 @@ class AbstractH2DuplexHandlerTest {
         CLIENT_HANDLER {
             @Override
             ChannelDuplexHandler handler(CloseHandler closeHandler) {
-                return new H2ToStH1ClientDuplexHandler(DEFAULT_ALLOCATOR, HEADERS_FACTORY,
-                        closeHandler, NoopStreamObserver.INSTANCE, null);
+                return new H2ToStH1ClientDuplexHandler(false, DEFAULT_ALLOCATOR, HEADERS_FACTORY,
+                        closeHandler, NoopStreamObserver.INSTANCE);
             }
 
             @Override
@@ -103,7 +103,7 @@ class AbstractH2DuplexHandlerTest {
             @Override
             ChannelDuplexHandler handler(CloseHandler closeHandler) {
                 return new H2ToStH1ServerDuplexHandler(DEFAULT_ALLOCATOR, HEADERS_FACTORY, closeHandler,
-                        NoopStreamObserver.INSTANCE, null);
+                        NoopStreamObserver.INSTANCE);
             }
 
             @Override

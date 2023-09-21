@@ -169,8 +169,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 final CloseHandler closeHandler = forNonPipelined(false, streamChannel.config());
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
-                                        h2ServerConfig.headersFactory(), closeHandler, streamObserver,
-                                        connection.sslConfig()));
+                                        h2ServerConfig.headersFactory(), closeHandler, streamObserver));
 
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =

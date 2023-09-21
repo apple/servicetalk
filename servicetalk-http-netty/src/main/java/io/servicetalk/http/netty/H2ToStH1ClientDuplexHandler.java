@@ -24,13 +24,13 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
@@ -55,13 +55,15 @@ import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
+    private final HttpScheme scheme;
     @Nullable
     private HttpRequestMethod method;
     private boolean waitForContinuation;
 
-    H2ToStH1ClientDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler, StreamObserver observer, @Nullable SslConfig sslConfig) {
-        super(allocator, headersFactory, closeHandler, observer, sslConfig);
+    H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
+                                CloseHandler closeHandler, StreamObserver observer) {
+        super(allocator, headersFactory, closeHandler, observer);
+        this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
     }
 
     @Override

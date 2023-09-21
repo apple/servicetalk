@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -76,7 +75,7 @@ class AlpnClientAndServerTest {
     @Nullable
     private HttpProtocolVersion expectedProtocol;
     private BlockingQueue<HttpServiceContext> serviceContext;
-    private BlockingQueue<HttpRequestMetaData> serviceRequest;
+    private BlockingQueue<HttpProtocolVersion> requestVersion;
     private void setUp(List<String> serverSideProtocols,
                        List<String> clientSideProtocols,
                        @Nullable HttpProtocolVersion expectedProtocol) throws Exception {
@@ -88,7 +87,7 @@ class AlpnClientAndServerTest {
     @BeforeEach
     void beforeEach() {
         serviceContext = new LinkedBlockingDeque<>();
-        serviceRequest = new LinkedBlockingDeque<>();
+        requestVersion = new LinkedBlockingDeque<>();
     }
 
     @SuppressWarnings("unused")
@@ -138,7 +137,7 @@ class AlpnClientAndServerTest {
                         DefaultTestCerts::loadServerKey).provider(OPENSSL).build())
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
-                    serviceRequest.put(request);
+                    requestVersion.put(request.version());
                     return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializerUtf8());
                 })
                 .toFuture().get();
@@ -227,11 +226,9 @@ class AlpnClientAndServerTest {
         assertThat(serviceCtx.protocol(), is(expectedProtocol));
         assertThat(serviceCtx.sslSession(), is(notNullValue()));
         assertThat(serviceCtx.sslConfig(), is(notNullValue()));
-
-        HttpRequestMetaData serviceReq = serviceRequest.take();
-        assertThat(serviceReq.version(), is(expectedProtocol));
+        assertThat(requestVersion.take(), is(expectedProtocol));
 
         assertThat(serviceContext, is(empty()));
-        assertThat(serviceRequest, is(empty()));
+        assertThat(requestVersion, is(empty()));
     }
 }

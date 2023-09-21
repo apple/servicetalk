@@ -22,14 +22,12 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
@@ -54,15 +52,13 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
     final StreamObserver observer;
-    final HttpScheme scheme;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
-                            StreamObserver observer, @Nullable SslConfig sslConfig) {
+                            StreamObserver observer) {
         this.allocator = allocator;
         this.headersFactory = headersFactory;
         this.closeHandler = closeHandler;
         this.observer = observer;
-        this.scheme = sslConfig != null ? HttpScheme.HTTPS : HttpScheme.HTTP;
     }
 
     @Override
