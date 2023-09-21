@@ -23,10 +23,12 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
@@ -53,8 +55,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean responseSent;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler, StreamObserver observer) {
-        super(allocator, headersFactory, closeHandler, observer);
+                                CloseHandler closeHandler, StreamObserver observer, @Nullable SslConfig sslConfig) {
+        super(allocator, headersFactory, closeHandler, observer, sslConfig);
     }
 
     @Override
@@ -113,7 +115,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
             if (headersFrame.isEndStream()) {
                 if (httpMethod != null) {
-                    fireFullRequest(ctx, h2Headers, httpMethod, path, streamId);
+                    fireFullRequest(ctx, h2Headers, httpMethod, path, streamId, scheme);
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
@@ -123,7 +125,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                         "Incoming request must have '" + METHOD.value() + "' header");
             } else {
                 ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                        h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, false, streamId)));
+                        h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, false, streamId, scheme)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -134,21 +136,22 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
     private void fireFullRequest(final ChannelHandlerContext ctx, final Http2Headers h2Headers,
                                  final HttpRequestMethod httpMethod, final String path,
-                                 final int streamId) throws Http2Exception {
+                                 final int streamId, final HttpScheme expectedScheme) throws Http2Exception {
         ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId)));
+                h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId, expectedScheme)));
     }
 
-    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(final ChannelHandlerContext ctx,
-                                                                   final Http2Headers h2Headers,
-                                                                   @Nullable final HttpRequestMethod httpMethod,
-                                                                   final boolean fullRequest,
-                                                                   final int streamId) throws Http2Exception {
+    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(
+            final ChannelHandlerContext ctx, final Http2Headers h2Headers,
+            @Nullable final HttpRequestMethod httpMethod, final boolean fullRequest, final int streamId,
+            final HttpScheme expectedScheme) throws Http2Exception {
+
         CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
         if (value != null) {
             h2Headers.set(HOST, value);
         }
-        h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
+        CharSequence scheme = h2Headers.getAndRemove(Http2Headers.PseudoHeaderName.SCHEME.value());
+        assert expectedScheme.name().equals(scheme);
         h2HeadersSanitizeForH1(h2Headers);
         if (httpMethod != null) {
             final boolean containsContentLength = h2Headers.contains(CONTENT_LENGTH);
