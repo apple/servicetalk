@@ -19,7 +19,6 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -47,6 +46,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -90,7 +90,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
             serverAcceptorChannel = sb.bind(localAddress(0)).sync().channel();
 
             try (BlockingHttpClient client = HttpClients.forSingleAddress(
-                    HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
+                    serverHostAndPort(serverAcceptorChannel.localAddress()))
                     .protocols(protocol.config)
                     .appendClientFilter(new ContentEncodingHttpRequesterFilter(clientDecoder.group))
                     .buildBlocking()) {

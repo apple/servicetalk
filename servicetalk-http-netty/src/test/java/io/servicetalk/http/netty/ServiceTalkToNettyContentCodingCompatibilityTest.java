@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -46,6 +45,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -63,8 +63,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     void start() throws Exception {
         serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
-        InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
-        client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
+        client = newServiceTalkClient(serverHostAndPort(serverAcceptorChannel.localAddress()), scenario, errors);
     }
 
     @Override

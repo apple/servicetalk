@@ -29,7 +29,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy;
 import io.servicetalk.http.netty.StreamObserverTest.MulticastTransportEventsStreamingHttpConnectionFilter;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.netty.channel.Channel;
@@ -50,7 +49,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -75,7 +73,7 @@ import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.http.netty.StreamObserverTest.safeSync;
-import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofMillis;
@@ -107,8 +105,6 @@ class H2ConcurrencyControllerTest {
     private EventLoopGroup serverEventLoopGroup;
     @Nullable
     private Channel serverAcceptorChannel;
-    @Nullable
-    private HostAndPort serverAddress;
 
     private void setUp(long maxConcurrentStreams) throws Exception {
         serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
@@ -141,8 +137,6 @@ class H2ConcurrencyControllerTest {
             h2Builder.initialSettings().maxConcurrentStreams(maxConcurrentStreams);
             return h2Builder;
         });
-
-        serverAddress = of((InetSocketAddress) serverAcceptorChannel.localAddress());
     }
 
     @AfterEach
@@ -159,8 +153,9 @@ class H2ConcurrencyControllerTest {
     void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception {
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
-        assert serverAddress != null;
-        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+        assert serverAcceptorChannel != null;
+        try (HttpClient client = newClientBuilder(serverHostAndPort(serverAcceptorChannel.localAddress()), CLIENT_CTX,
+                HTTP_2)
                 .appendClientFilter(disableAutoRetries())   // All exceptions should be propagated
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
@@ -249,8 +244,9 @@ class H2ConcurrencyControllerTest {
         int serverMaxConcurrentStreams = 1;
         setUp(serverMaxConcurrentStreams);
         alwaysEcho.set(true);   // server should always respond
-        assert serverAddress != null;
-        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+        assert serverAcceptorChannel != null;
+        try (HttpClient client = newClientBuilder(serverHostAndPort(serverAcceptorChannel.localAddress()), CLIENT_CTX,
+                HTTP_2)
                 .executionStrategy(strategy)
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 // Don't allow more than 1 connection:
@@ -321,9 +317,10 @@ class H2ConcurrencyControllerTest {
     @Test
     void maxActiveStreamsOutsideIntRange() throws Exception {
         setUp(MAX_UNSIGNED_INT);
-        assert serverAddress != null;
         assertThat(MAX_UNSIGNED_INT, is(greaterThan((long) Integer.MAX_VALUE)));
-        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+        assert serverAcceptorChannel != null;
+        try (HttpClient client = newClientBuilder(serverHostAndPort(serverAcceptorChannel.localAddress()), CLIENT_CTX,
+                HTTP_2)
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 .protocols(HTTP_2.config)
                 .build()) {
