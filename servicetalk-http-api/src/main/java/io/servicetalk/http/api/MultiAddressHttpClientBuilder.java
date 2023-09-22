@@ -147,4 +147,28 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * @see RedirectConfigBuilder
      */
     MultiAddressHttpClientBuilder<U, R> followRedirects(@Nullable RedirectConfig config);
+
+    /**
+     * Configures the default port for the HTTP scheme if not explicitly provided as part of the
+     * {@link HttpRequestMetaData#requestTarget()}.
+     *
+     * @param port the port that should be used if not explicitly provided for HTTP requests.
+     * @return {@code this}.
+     */
+    default MultiAddressHttpClientBuilder<U, R> defaultHttpPort(int port) { // FIXME: 0.43 - remove default impl
+        throw new UnsupportedOperationException("Setting defaultHttpPort is not yet supported by "
+                + getClass().getName());
+    }
+
+    /**
+     * Configures the default port for the HTTPS scheme if not explicitly provided as part of the
+     * {@link HttpRequestMetaData#requestTarget()}.
+     *
+     * @param port the port that should be used if not explicitly provided for HTTPS requests.
+     * @return {@code this}.
+     */
+    default MultiAddressHttpClientBuilder<U, R> defaultHttpsPort(int port) { // FIXME: 0.43 - remove default impl
+        throw new UnsupportedOperationException("Setting defaultHttpsPort is not yet supported by "
+                + getClass().getName());
+    }
 }
