@@ -1189,7 +1189,12 @@ needed for the other API variants as the usage of content encoding filters is th
 the asynchronous API and responds with a simple <code>Hello World!</code> response body, optionally customized for a specific name for <code>POST</code> requests, as a <code>text/plain</code>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a client that
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a single-address client that
+sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
+receives a response greeting the posted name as a single content.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleUrlClient.java">CompressionFilterExampleUrlClient.java</a> - a multi-address client that
 sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
 receives a response greeting the posted name as a single content.</p>
 </li>
@@ -1214,7 +1219,10 @@ receives a response greeting the posted name as a single content.</p>
 server enhanced with debugging capabilities.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java">DebuggingExampleClient.java</a> - the async <code>Hello World!</code> client enhanced with debugging capabilities.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java">DebuggingExampleClient.java</a> - the async <code>Hello World!</code> single-address client enhanced with debugging capabilities.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleUrlClient.java">DebuggingExampleUrlClient.java</a> - the async <code>Hello World!</code> multi-address client enhanced with debugging capabilities.</p>
 </li>
 </ul>
 </div>
@@ -1234,7 +1242,10 @@ server enhanced with debugging capabilities.</p>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java">TimeoutServer</a> - the async <code>Hello World!</code> server client enhanced to use timeout capabilities.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java">TimeoutClient.java</a> - the async <code>Hello World!</code> client enhanced to use timeout capabilities.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java">TimeoutClient.java</a> - the async <code>Hello World!</code> single-address client enhanced to use timeout capabilities.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutUrlClient.java">TimeoutUrlClient.java</a> - the async <code>Hello World!</code> multi-address client enhanced to use timeout capabilities.</p>
 </li>
 </ul>
 </div>
@@ -1402,7 +1413,10 @@ across all the HTTP APIs.
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A single-address client that sets the trust manager and key manager.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpUrlClientMutualTLS.java">HttpUrlClientMutualTLS</a> - A multi-address client that sets the trust manager and key manager when needed.</p>
 </li>
 </ul>
 </div>
@@ -1440,7 +1454,12 @@ the same across all the HTTP APIs.
 on the server builder.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A single-address client that installs a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
+on via a client filter on the client builder.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverUrlClient.java">LifecycleObserverUrlClient</a> - A multi-address client that installs a
 <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
 on via a client filter on the client builder.</p>
 </li>
@@ -1540,6 +1559,10 @@ requests to demonstrate client retry.</p>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryClient.java">RetryClient.java</a> -
 Async <code>Hello World</code> example that demonstrates how retry can be requested for a single-address client.</p>
 </li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryUrlClient.java">RetryUrlClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how retry can be requested for a multi-address client.</p>
+</li>
 </ul>
 </div>
 </div>
@@ -1565,7 +1588,11 @@ A server that uses HTTP/2 with Prior Knowledge.</p>
 </li>
 <li>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java">Http2PriorKnowledgeClient</a> -
-A client that uses HTTP/2 with Prior Knowledge.</p>
+A single-address client that uses HTTP/2 with Prior Knowledge.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeUrlClient.java">Http2PriorKnowledgeUrlClient</a> -
+A multi-address client that conditionally uses HTTP/2 with Prior Knowledge.</p>
 </li>
 </ul>
 </div>
@@ -1584,7 +1611,11 @@ A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connect
 </li>
 <li>
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java">HttpClientWithAlpn</a> -
-A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
+A single-address client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpUrlClientWithAlpn.java">HttpUrlClientWithAlpn</a> -
+A multi-address client that conditionally negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
 </li>
 </ul>
 </div>

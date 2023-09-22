@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -142,6 +142,18 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#buildStreaming()" class="member-name-link">buildStreaming</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#defaultHttpPort(int)" class="member-name-link">defaultHttpPort</a><wbr>(int&nbsp;port)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Configures the default port for the HTTP scheme if not explicitly provided as part of the
+ <a href="HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#defaultHttpsPort(int)" class="member-name-link">defaultHttpsPort</a><wbr>(int&nbsp;port)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Configures the default port for the HTTPS scheme if not explicitly provided as part of the
+ <a href="HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a>.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -373,6 +385,40 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <li><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api"><code>RedirectConfigBuilder</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="defaultHttpPort(int)">
+<h3>defaultHttpPort</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">defaultHttpPort</span><wbr><span class="parameters">(int&nbsp;port)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#defaultHttpPort(int)">MultiAddressHttpClientBuilder</a></code></span></div>
+<div class="block">Configures the default port for the HTTP scheme if not explicitly provided as part of the
+ <a href="HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="MultiAddressHttpClientBuilder.html#defaultHttpPort(int)">defaultHttpPort</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>port</code> - the port that should be used if not explicitly provided for HTTP requests.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="defaultHttpsPort(int)">
+<h3>defaultHttpsPort</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">defaultHttpsPort</span><wbr><span class="parameters">(int&nbsp;port)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#defaultHttpsPort(int)">MultiAddressHttpClientBuilder</a></code></span></div>
+<div class="block">Configures the default port for the HTTPS scheme if not explicitly provided as part of the
+ <a href="HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="MultiAddressHttpClientBuilder.html#defaultHttpsPort(int)">defaultHttpsPort</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>port</code> - the port that should be used if not explicitly provided for HTTPS requests.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
 </dl>
 </section>
 </li>
