@@ -36,6 +36,7 @@ public class CompressionFilterExampleUrlClient {
         try (HttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
             // Adds filter that provides compression for the request body when a request sets the encoding.
             // Also sets the accept encoding header for the server's response.
+            // If necessary, users can set different filters based on `scheme` and/or `address`.
             builder.appendClientFilter(new ContentEncodingHttpRequesterFilter(new BufferDecoderGroupBuilder()
                     // For the purposes of this example we disable GZip compression and use the
                     // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is

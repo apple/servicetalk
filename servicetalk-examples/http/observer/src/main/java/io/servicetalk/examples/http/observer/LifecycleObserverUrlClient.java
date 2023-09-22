@@ -33,6 +33,7 @@ public class LifecycleObserverUrlClient {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
             // Append this filter first for most cases to maximize visibility!
             // See javadocs on HttpLifecycleObserverRequesterFilter for more details on filter ordering.
+            // If necessary, users can set different filters based on `scheme` and/or `address`.
             builder.appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                     HttpLifecycleObservers.logging("servicetalk-examples-http-observer-logger", TRACE)));
         }).buildBlocking()) {

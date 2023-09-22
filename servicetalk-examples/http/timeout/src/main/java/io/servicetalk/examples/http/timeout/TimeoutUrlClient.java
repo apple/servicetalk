@@ -40,6 +40,7 @@ public class TimeoutUrlClient {
         try (HttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
             // Filter enforces that requests made with this client must fully complete
             // within 10 seconds or will be cancelled.
+            // If necessary, users can set different timeout filters based on `scheme` and/or `address`.
             builder.appendClientFilter(new TimeoutHttpRequesterFilter(ofSeconds(10), true));
         }).build()) {
             // first request, with default timeout from HttpClient (this will succeed)
