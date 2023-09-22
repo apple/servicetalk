@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,23 +29,24 @@ import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
- * Extends the async "Hello World" single-address example to include compression of the request and response bodies.
+ * Extends the async "Hello World" multi-address example to include compression of the request and response bodies.
  */
-public final class CompressionFilterExampleClient {
+public class CompressionFilterExampleUrlClient {
     public static void main(String... args) throws Exception {
-        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                // Adds filter that provides compression for the request body when a request sets the encoding.
-                // Also sets the accept encoding header for the server's response.
-                .appendClientFilter(new ContentEncodingHttpRequesterFilter(new BufferDecoderGroupBuilder()
-                        // For the purposes of this example we disable GZip compression and use the
-                        // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
-                        // handled correctly.
-                        // .add(NettyBufferEncoders.gzipDefault())
-                        .add(deflateDefault())
-                        .add(identityEncoder(), false).build()))
-                .build()) {
+        try (HttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
+            // Adds filter that provides compression for the request body when a request sets the encoding.
+            // Also sets the accept encoding header for the server's response.
+            // If necessary, users can set different filters based on `scheme` and/or `address`.
+            builder.appendClientFilter(new ContentEncodingHttpRequesterFilter(new BufferDecoderGroupBuilder()
+                    // For the purposes of this example we disable GZip compression and use the
+                    // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
+                    // handled correctly.
+                    // .add(NettyBufferEncoders.gzipDefault())
+                    .add(deflateDefault())
+                    .add(identityEncoder(), false).build()));
+        }).build()) {
             // Make a request with an uncompressed payload.
-            HttpRequest request = client.post("/sayHello1")
+            HttpRequest request = client.post("http://localhost:8080/sayHello1")
                     // Request will be sent with no compression, same effect as setting encoding to identity
                     .contentEncoding(identityEncoder())
                     .payloadBody("World1", textSerializerUtf8());
@@ -56,7 +57,7 @@ public final class CompressionFilterExampleClient {
                     });
 
             // Make a request with an gzip compressed payload.
-            request = client.post("/sayHello2")
+            request = client.post("http://localhost:8080/sayHello2")
                     // Encode the request using gzip.
                     .contentEncoding(gzipDefault())
                     .payloadBody("World2", textSerializerUtf8());

@@ -75,7 +75,10 @@ needed for the other API variants as the usage of content encoding filters is th
 
 * link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java[CompressionFilterExampleServer] - a server that demonstrates
 the asynchronous API and responds with a simple `Hello World!` response body, optionally customized for a specific name for `POST` requests, as a `text/plain`.
-* link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java[CompressionFilterExampleClient.java] - a client that
+* link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java[CompressionFilterExampleClient.java] - a single-address client that
+sends a `POST` request containing a name to the link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java[server] and
+receives a response greeting the posted name as a single content.
+* link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleUrlClient.java[CompressionFilterExampleUrlClient.java] - a multi-address client that
 sends a `POST` request containing a name to the link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java[server] and
 receives a response greeting the posted name as a single content.
 
@@ -101,7 +104,8 @@ Extends the async "Hello World" example to demonstrate the use of timeout filter
  needed for the other API variants as the usage of the timeout features are the same for all API styles.
 
 * link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java[TimeoutServer] - the async `Hello World!` server client enhanced to use timeout capabilities.
-* link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java[TimeoutClient.java] - the async `Hello World!` client enhanced to use timeout capabilities.
+* link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java[TimeoutClient.java] - the async `Hello World!` single-address client enhanced to use timeout capabilities.
+* link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutUrlClient.java[TimeoutUrlClient.java] - the async `Hello World!` multi-address client enhanced to use timeout capabilities.
 
 [#SerializationJson]
 == Serialization: JSON
@@ -215,7 +219,10 @@ Using the following classes:
 - link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverServer.java[LifecycleObserverServer] - A server that installs a
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
 on the server builder.
-- link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java[LifecycleObserverClient] - A client that installs a
+- link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java[LifecycleObserverClient] - A single-address client that installs a
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
+on via a client filter on the client builder.
+- link:{source-root}/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverUrlClient.java[LifecycleObserverUrlClient] - A multi-address client that installs a
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
 on via a client filter on the client builder.
 
@@ -266,6 +273,8 @@ A special "flaky" `Hello World` server that alternates "509" Gateway Timeout and
 requests to demonstrate client retry.
 * link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryClient.java[RetryClient.java] -
 Async `Hello World` example that demonstrates how retry can be requested for a single-address client.
+* link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryUrlClient.java[RetryUrlClient.java] -
+Async `Hello World` example that demonstrates how retry can be requested for a multi-address client.
 
 
 [#HTTP2]
