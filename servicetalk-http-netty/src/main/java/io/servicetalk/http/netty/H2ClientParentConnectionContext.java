@@ -363,7 +363,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     parentContext.trackActiveStream(streamChannel);
 
                     final CloseHandler closeHandler = forNonPipelined(true, streamChannel.config());
-                    streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
+                    streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(parentContext.sslConfig() != null,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
                             closeHandler, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
