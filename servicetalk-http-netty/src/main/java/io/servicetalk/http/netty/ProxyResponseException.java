@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,5 @@ public final class ProxyResponseException extends IOException implements Retryab
      */
     public HttpResponseStatus status() {
         return status;
-    }
-
-    @Override
-    public String toString() {
-        return super.toString() + ": " + status;
     }
 }

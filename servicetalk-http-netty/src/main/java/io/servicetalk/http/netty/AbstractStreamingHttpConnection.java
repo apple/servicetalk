@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -38,7 +39,6 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
-        implements NettyFilterableStreamingHttpConnection {
+        implements FilterableStreamingHttpConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamingHttpConnection.class);
     static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
@@ -168,7 +168,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return defer(() -> {
             Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
@@ -258,11 +258,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public final StreamingHttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
-    }
-
-    @Override
-    public Channel nettyChannel() {
-        return connection.nettyChannel();
     }
 
     @Override

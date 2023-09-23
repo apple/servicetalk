@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -78,6 +79,11 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
+            return new BiProxyConnectObserver(first.onProxyConnect(connectMsg), second.onProxyConnect(connectMsg));
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return new BiSecurityHandshakeObserver(first.onSecurityHandshake(), second.onSecurityHandshake());
         }
@@ -109,6 +115,29 @@ final class BiTransportObserver implements TransportObserver {
         public void connectionClosed() {
             first.connectionClosed();
             second.connectionClosed();
+        }
+    }
+
+    private static final class BiProxyConnectObserver implements ProxyConnectObserver {
+
+        private final ProxyConnectObserver first;
+        private final ProxyConnectObserver second;
+
+        private BiProxyConnectObserver(final ProxyConnectObserver first, final ProxyConnectObserver second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public void proxyConnectFailed(final Throwable cause) {
+            first.proxyConnectFailed(cause);
+            second.proxyConnectFailed(cause);
+        }
+
+        @Override
+        public void proxyConnectComplete(final Object responseMsg) {
+            first.proxyConnectComplete(responseMsg);
+            second.proxyConnectComplete(responseMsg);
         }
     }
 

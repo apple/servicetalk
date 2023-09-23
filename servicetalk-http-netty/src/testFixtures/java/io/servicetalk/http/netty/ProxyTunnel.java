@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Locale;
@@ -43,6 +42,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -85,7 +85,6 @@ public final class ProxyTunnel implements AutoCloseable {
      */
     public HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
-        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
         executor.submit(() -> {
             while (!executor.isShutdown()) {
                 final Socket socket = serverSocket.accept();
@@ -112,7 +111,7 @@ public final class ProxyTunnel implements AutoCloseable {
                         }
                         final String authToken = this.authToken;
                         if (authToken != null && !("basic " + authToken).equals(headers.proxyAuthorization)) {
-                            proxyAuthRequired(socket);
+                            proxyAuthRequired(socket, protocol);
                             return;
                         }
                         handler.handle(socket, host, port, protocol);
@@ -130,7 +129,7 @@ public final class ProxyTunnel implements AutoCloseable {
             return null;
         });
 
-        return HostAndPort.of(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
+        return serverHostAndPort(serverSocket.getLocalSocketAddress());
     }
 
     private static void badRequest(final Socket socket, final String cause) throws IOException {
@@ -141,9 +140,9 @@ public final class ProxyTunnel implements AutoCloseable {
         os.flush();
     }
 
-    private static void proxyAuthRequired(final Socket socket) throws IOException {
+    private static void proxyAuthRequired(final Socket socket, final String protocol) throws IOException {
         final OutputStream os = socket.getOutputStream();
-        os.write((HTTP_1_1 + " " + PROXY_AUTHENTICATION_REQUIRED + "\r\n" +
+        os.write((protocol + ' ' + PROXY_AUTHENTICATION_REQUIRED + "\r\n" +
                 PROXY_AUTHENTICATE + ": Basic realm=\"simple\"" + "\r\n" +
                 "\r\n").getBytes(UTF_8));
         os.flush();
@@ -158,6 +157,15 @@ public final class ProxyTunnel implements AutoCloseable {
             os.write((protocol + ' ' + INTERNAL_SERVER_ERROR + "\r\n\r\n").getBytes(UTF_8));
             os.flush();
         };
+    }
+
+    /**
+     * Override the default handler to the passed {@link ProxyRequestHandler}.
+     *
+     * @param handler {@link ProxyRequestHandler} to use
+     */
+    public void proxyRequestHandler(final ProxyRequestHandler handler) {
+        this.handler = handler;
     }
 
     /**
@@ -257,8 +265,21 @@ public final class ProxyTunnel implements AutoCloseable {
         // Don't close either Stream! We close the socket outside the scope of this method (in a specific sequence).
     }
 
+    /**
+     * A handler that processes a parsed CONNECT request.
+     */
     @FunctionalInterface
-    private interface ProxyRequestHandler {
+    public interface ProxyRequestHandler {
+
+        /**
+         * Handle the parsed CONNECT request.
+         *
+         * @param socket {@link Socket} from a client to a proxy
+         * @param host Host to connect to
+         * @param port Port to connect to
+         * @param protocol String representation of a protocol used for incoming CONNECT request
+         * @throws IOException if any exception happens while working with I/O
+         */
         void handle(Socket socket, String host, int port, String protocol) throws IOException;
     }
 

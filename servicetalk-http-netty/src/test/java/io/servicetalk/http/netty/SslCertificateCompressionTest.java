@@ -178,6 +178,11 @@ class SslCertificateCompressionTest {
                 }
 
                 @Override
+                public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
+                    return NoopTransportObserver.NoopProxyConnectObserver.INSTANCE;
+                }
+
+                @Override
                 public DataObserver connectionEstablished(final ConnectionInfo info) {
                     return NoopTransportObserver.NoopDataObserver.INSTANCE;
                 }
@@ -185,6 +190,10 @@ class SslCertificateCompressionTest {
                 @Override
                 public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
                     return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+                }
+
+                @Override
+                public void connectionWritabilityChanged(final boolean isWritable) {
                 }
 
                 @Override

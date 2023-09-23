@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.transport.api.NoopTransportObserver.NoopProxyConnectObserver;
+
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -54,6 +56,18 @@ public interface ConnectionObserver {
     void onTransportHandshakeComplete();
 
     /**
+     * Callback when a proxy connect is initiated.
+     * <p>
+     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete()}.
+     *
+     * @param connectMsg a message sent to a proxy in request to establish a connection to the target server
+     * @return a new {@link ProxyConnectObserver} that provides visibility into proxy connect events.
+     */
+    default ProxyConnectObserver onProxyConnect(Object connectMsg) {    // FIXME: 0.43 - consider removing default impl
+        return NoopProxyConnectObserver.INSTANCE;
+    }
+
+    /**
      * Callback when a security handshake is initiated.
      * <p>
      * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete()}. There are may
@@ -64,8 +78,8 @@ public interface ConnectionObserver {
      *     Open is available and configured, it may not actually happen if the
      *     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is {@code null} or
      *     rejected by the server.</li>
-     *     <li>For a proxy connections, the handshake may happen after the
-     *     {@link #connectionEstablished(ConnectionInfo)}.</li>
+     *     <li>For a proxy connections, the handshake may happen after an observer returned by
+     *     {@link #onProxyConnect(Object)} completes successfully.</li>
      * </ol>
      *
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
@@ -110,6 +124,31 @@ public interface ConnectionObserver {
      * Callback when the connection is closed.
      */
     void connectionClosed();
+
+    /**
+     * An observer interface that provides visibility into proxy connect events for establishing a tunnel.
+     * <p>
+     * Either {@link #proxyConnectComplete(Object)} or {@link #proxyConnectFailed(Throwable)} will be invoked to signal
+     * successful or failed connection via proxy tunnel.
+     */
+    interface ProxyConnectObserver {
+
+        /**
+         * Callback when the proxy connect attempt is failed.
+         *
+         * @param cause the cause of proxy connect failure
+         */
+        void proxyConnectFailed(Throwable cause);
+
+        /**
+         * Callback when the proxy connect attempt is complete successfully.
+         *
+         * @param responseMsg an object that represents a response message. The actual message type depends upon proxy
+         * protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
+         * <a href="https://en.wikipedia.org/wiki/SOCKS">SOCKS</a>, etc.)
+         */
+        void proxyConnectComplete(Object responseMsg);
+    }
 
     /**
      * An observer interface that provides visibility into security handshake events.

@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopProxyConnectObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopSecurityHandshakeObserver;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -196,6 +197,12 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             @Override
             public void onTransportHandshakeComplete() {
                 // AsyncContext is unknown at this point because this event is triggered by network
+            }
+
+            @Override
+            public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
+                // AsyncContext is unknown at this point because this event is triggered by network
+                return NoopProxyConnectObserver.INSTANCE;
             }
 
             @Override

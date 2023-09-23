@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 
 import java.nio.channels.ClosedChannelException;
-import javax.annotation.Nullable;
 
 /**
  * {@link ClosedChannelException} that will not not fill in the stacktrace but use a cheaper way of producing
@@ -27,22 +26,7 @@ import javax.annotation.Nullable;
 public final class StacklessClosedChannelException extends ClosedChannelException {
     private static final long serialVersionUID = -5021225720136487769L;
 
-    @Nullable
-    private final String message;
-
-    private StacklessClosedChannelException() {
-        this(null);
-    }
-
-    private StacklessClosedChannelException(@Nullable final String message) {
-        this.message = message;
-    }
-
-    @Nullable
-    @Override
-    public String getMessage() {
-        return message;
-    }
+    private StacklessClosedChannelException() { }
 
     @Override
     public Throwable fillInStackTrace() {
@@ -57,21 +41,7 @@ public final class StacklessClosedChannelException extends ClosedChannelExceptio
      * @param method The method from which it will be thrown.
      * @return a new instance.
      */
-    public static StacklessClosedChannelException newInstance(final Class<?> clazz, final String method) {
+    public static StacklessClosedChannelException newInstance(Class<?> clazz, String method) {
         return ThrowableUtils.unknownStackTrace(new StacklessClosedChannelException(), clazz, method);
-    }
-
-    /**
-     * Creates a new {@link StacklessClosedChannelException} instance.
-     *
-     * @param message The description message for more information.
-     * @param clazz The class in which this {@link StacklessClosedChannelException} will be used.
-     * @param method The method from which it will be thrown.
-     * @return a new instance.
-     */
-    public static StacklessClosedChannelException newInstance(final String message,
-                                                              final Class<?> clazz,
-                                                              final String method) {
-        return ThrowableUtils.unknownStackTrace(new StacklessClosedChannelException(message), clazz, method);
     }
 }

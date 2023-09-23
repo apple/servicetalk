@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -24,6 +25,7 @@ import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopDataObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopMultiplexedObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopProxyConnectObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopReadObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopSecurityHandshakeObserver;
 import io.servicetalk.transport.api.NoopTransportObserver.NoopStreamObserver;
@@ -88,6 +90,12 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
+            return safeReport(() -> observer.onProxyConnect(connectMsg), observer, "proxy connect",
+                    CatchAllProxyConnectObserver::new, NoopProxyConnectObserver.INSTANCE);
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return safeReport(observer::onSecurityHandshake, observer, "security handshake",
                     CatchAllSecurityHandshakeObserver::new, NoopSecurityHandshakeObserver.INSTANCE);
@@ -120,6 +128,25 @@ final class CatchAllTransportObserver implements TransportObserver {
         @Override
         public void connectionClosed() {
             safeReport(observer::connectionClosed, observer, "connection closed");
+        }
+    }
+
+    private static final class CatchAllProxyConnectObserver implements ProxyConnectObserver {
+
+        private final ProxyConnectObserver observer;
+
+        private CatchAllProxyConnectObserver(final ProxyConnectObserver observer) {
+            this.observer = observer;
+        }
+
+        @Override
+        public void proxyConnectFailed(final Throwable cause) {
+            safeReport(() -> observer.proxyConnectFailed(cause), observer, "proxy connect failed", cause);
+        }
+
+        @Override
+        public void proxyConnectComplete(final Object responseMsg) {
+            safeReport(() -> observer.proxyConnectComplete(responseMsg), observer, "proxy connect complete");
         }
     }
 

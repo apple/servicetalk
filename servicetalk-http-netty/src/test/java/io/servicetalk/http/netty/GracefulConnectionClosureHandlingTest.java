@@ -178,7 +178,6 @@ class GracefulConnectionClosureHandlingTest {
         }
         if (viaProxy) {
             assumeTrue(secure, "Proxy tunnel works only with secure connections");
-            assumeTrue(protocol != HTTP_2, "Proxy is not supported with HTTP/2");
         }
 
         HttpServerBuilder serverBuilder = forAddress(useUds ? newSocketAddress() : localAddress(0))
@@ -292,9 +291,8 @@ class GracefulConnectionClosureHandlingTest {
                 for (boolean initiateClosureFromClient : TRUE_FALSE) {
                     for (boolean useUds : TRUE_FALSE) {
                         for (boolean viaProxy : TRUE_FALSE) {
-                            if (viaProxy && (useUds || protocol == HTTP_2 || !secure)) {
+                            if (viaProxy && (useUds || !secure)) {
                                 // UDS cannot be used via proxy
-                                // Proxy is not supported with HTTP/2
                                 // Proxy tunnel works only with secure connections
                                 continue;
                             }

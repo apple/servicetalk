@@ -376,8 +376,11 @@ public abstract class CloseHandler {
     /**
      * {@link NettyUserEvent} to indicate the end of inbound data was observed at the transport.
      */
-    static final class InboundDataEndEvent extends NettyUserEvent {
-        static final InboundDataEndEvent INSTANCE = new InboundDataEndEvent();
+    public static final class InboundDataEndEvent extends NettyUserEvent {
+        /**
+         * {@link NettyUserEvent} instance to indicate an inbound end of data.
+         */
+        public static final InboundDataEndEvent INSTANCE = new InboundDataEndEvent();
 
         /**
          * {@link NettyUserEvent} to indicate the end of inbound data was observed at the transport.
