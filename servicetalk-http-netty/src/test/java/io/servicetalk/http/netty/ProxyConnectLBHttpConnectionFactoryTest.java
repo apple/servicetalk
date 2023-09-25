@@ -26,6 +26,8 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.AbstractLBHttpConnectionFactory.ProtocolBinding;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
@@ -55,6 +58,8 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -67,6 +72,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -291,18 +297,29 @@ class ProxyConnectLBHttpConnectionFactoryTest {
         subscribeToProxyConnectionFactory();
 
         assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
-        assertConnectPayloadConsumed(true);
-        assertThat("Connection closed", connectionClose.isSubscribed(), is(false));
+        StreamingHttpRequest request = assertConnectPayloadConsumed(true);
+        assertExecutionStrategy(request, offloadNone());
+        assertConnectionClosed(false);
     }
 
-    private void assertConnectPayloadConsumed(boolean expected) {
+    private StreamingHttpRequest assertConnectPayloadConsumed(boolean expected) {
+        ArgumentCaptor<StreamingHttpRequest> requestCaptor = forClass(StreamingHttpRequest.class);
         verify(connection).connect(any());
-        verify(connection).request(any());
+        verify(connection).request(requestCaptor.capture());
         assertThat("CONNECT response payload body was " + (expected ? "was" : "unnecessarily") + " consumed",
                 messageBody.isSubscribed(), is(expected));
+        return requestCaptor.getValue();
+    }
+
+    private static void assertExecutionStrategy(StreamingHttpRequest request, HttpExecutionStrategy expectedStrategy) {
+        assertThat(request.context().get(HTTP_EXECUTION_STRATEGY_KEY), is(expectedStrategy));
     }
 
     private void assertConnectionClosed() {
-        assertThat("Closure of the connection was not triggered", connectionClose.isSubscribed(), is(true));
+        assertConnectionClosed(true);
+    }
+
+    private void assertConnectionClosed(boolean closed) {
+        assertThat("Closure of the connection was not triggered", connectionClose.isSubscribed(), is(closed));
     }
 }
