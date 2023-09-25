@@ -153,11 +153,14 @@ class HttpsProxyTest {
     void testConnectionRequest(List<HttpProtocol> protocols) throws Exception {
         setUp(protocols);
         assert client != null;
+        assert proxyAddress != null;
         HttpProtocolVersion expectedVersion = protocols.get(0).version;
         try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
             assertThat(connection.connectionContext().protocol(), is(expectedVersion));
             assertThat(connection.connectionContext().sslConfig(), is(notNullValue()));
             assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
+            assertThat(((InetSocketAddress) connection.connectionContext().remoteAddress()).getPort(),
+                    is(proxyAddress.port()));
 
             HttpRequest request = connection.get("/path");
             assertThat(request.version(), is(expectedVersion));
