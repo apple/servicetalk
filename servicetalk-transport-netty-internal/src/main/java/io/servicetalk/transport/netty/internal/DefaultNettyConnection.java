@@ -86,7 +86,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -503,7 +503,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
                     pipeline = channel.pipeline();
                     @Nullable
-                    final SSLSession sslSession = extractSslSessionAndReport(sslConfig, pipeline, observer);
+                    final SSLSession sslSession = extractSslSession(sslConfig, pipeline);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, null,
                             executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig,
                             sslSession, null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
@@ -941,9 +941,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.nettyChannelPublisher.channelOnError(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
             } else if (evt instanceof SslHandshakeCompletionEvent) {
-                connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber,
-                        observer != NoopConnectionObserver.INSTANCE && connection.sslSession == null);
+                connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
+                        this::tryFailSubscriber);
                 if (subscriber != null && waitForSslHandshake) {
                     completeSubscriber();
                 }

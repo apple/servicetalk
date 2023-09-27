@@ -57,7 +57,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.wrapIfNecessary;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
@@ -257,9 +257,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             try {
                 if (evt instanceof SslHandshakeCompletionEvent) {
-                    parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
-                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
-                            waitForSslHandshake && observer != NoopConnectionObserver.INSTANCE);
+                    parentContext.sslSession = extractSslSession(ctx.pipeline(),
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber);
                     tryCompleteSubscriber();
                 } else if (evt == ChannelInputShutdownReadComplete.INSTANCE || evt == SslCloseCompletionEvent.SUCCESS) {
                     parentContext.keepAliveManager.channelInputShutdown();

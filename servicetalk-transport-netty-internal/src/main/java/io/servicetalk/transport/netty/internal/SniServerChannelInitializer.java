@@ -100,8 +100,8 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
     @Override
     public void init(final Channel channel) {
         channel.pipeline().addLast(CAN_SET_ALL_SETTINGS ?
-                new SniHandlerWithAllSettings(sniMapping, maxClientHelloLength, clientHelloTimeoutMillis) :
-                new SniHandlerWithPooledAllocator(sniMapping));
+                new SniHandlerWithAllSettings(sniMapping, maxClientHelloLength, clientHelloTimeoutMillis, channel) :
+                new SniHandlerWithPooledAllocator(sniMapping, channel));
     }
 
     /**
@@ -109,26 +109,35 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
      * required by {@link SSLEngine}. {@link SslHandler} releases allocated direct {@link ByteBuf}s after processing.
      */
     private static final class SniHandlerWithPooledAllocator extends SniHandler {
-        SniHandlerWithPooledAllocator(final Mapping<String, SslContext> mapping) {
+
+        private final Channel channel;
+
+        SniHandlerWithPooledAllocator(final Mapping<String, SslContext> mapping, final Channel channel) {
             super(mapping);
+            this.channel = channel;
         }
 
         @Override
         protected SslHandler newSslHandler(final SslContext context, final ByteBufAllocator ignore) {
-            return newServerSslHandler(context);
+            return newServerSslHandler(context, channel);
         }
     }
 
     private static final class SniHandlerWithAllSettings extends SniHandler {
+
+        private final Channel channel;
+
         SniHandlerWithAllSettings(final Mapping<String, SslContext> mapping,
                                   final int maxClientHelloLength,
-                                  final long clientHelloTimeoutMillis) {
+                                  final long clientHelloTimeoutMillis,
+                                  final Channel channel) {
             super(mapping, maxClientHelloLength, clientHelloTimeoutMillis);
+            this.channel = channel;
         }
 
         @Override
         protected SslHandler newSslHandler(final SslContext context, final ByteBufAllocator ignore) {
-            return newServerSslHandler(context);
+            return newServerSslHandler(context, channel);
         }
     }
 }

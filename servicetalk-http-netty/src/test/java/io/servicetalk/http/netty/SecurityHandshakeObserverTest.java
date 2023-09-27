@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,50 +17,47 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
-import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
-import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
-import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
-import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.function.Function;
+import java.util.List;
+import java.util.function.UnaryOperator;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
+import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class SecurityHandshakeObserverTest {
@@ -77,115 +74,121 @@ class SecurityHandshakeObserverTest {
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
     private final SecurityHandshakeObserver clientSecurityHandshakeObserver;
+    private final InOrder clientOrder;
 
     private final TransportObserver serverTransportObserver;
     private final ConnectionObserver serverConnectionObserver;
     private final SecurityHandshakeObserver serverSecurityHandshakeObserver;
+    private final InOrder serverOrder;
 
     SecurityHandshakeObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "clientSecurityHandshakeObserver");
-        DataObserver clientDataObserver = mock(DataObserver.class, "clientDataObserver");
-        MultiplexedObserver clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");
-        StreamObserver clientStreamObserver = mock(StreamObserver.class, "clientStreamObserver");
-        ReadObserver clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
-        WriteObserver clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
         when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
-        when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
+        when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
+                .thenReturn(NoopDataObserver.INSTANCE);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-            .thenReturn(clientMultiplexedObserver);
-        when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
-        when(clientStreamObserver.streamEstablished()).thenReturn(clientDataObserver);
-        when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
-        when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
+            .thenReturn(NoopMultiplexedObserver.INSTANCE);
+        clientOrder = inOrder(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver);
 
         serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
         serverConnectionObserver = mock(ConnectionObserver.class, "serverConnectionObserver");
         serverSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "serverSecurityHandshakeObserver");
-        DataObserver serverDataObserver = mock(DataObserver.class, "serverDataObserver");
-        MultiplexedObserver serverMultiplexedObserver = mock(MultiplexedObserver.class, "serverMultiplexedObserver");
-        StreamObserver serverStreamObserver = mock(StreamObserver.class, "serverStreamObserver");
-        ReadObserver serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
-        WriteObserver serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
         when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
-        when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
+        when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
+                .thenReturn(NoopDataObserver.INSTANCE);
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-            .thenReturn(serverMultiplexedObserver);
-        when(serverMultiplexedObserver.onNewStream()).thenReturn(serverStreamObserver);
-        when(serverStreamObserver.streamEstablished()).thenReturn(serverDataObserver);
-        when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
-        when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
+            .thenReturn(NoopMultiplexedObserver.INSTANCE);
+        serverOrder = inOrder(serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);
     }
 
-    @Test
-    void withH1() throws Exception {
-        verifyHandshakeObserved(address -> forAddress(address).protocols(h1Default()),
-                                address -> forSingleAddress(address).protocols(h1Default()));
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void verifyHandshakeComplete(List<HttpProtocol> protocols) throws Exception {
+        verifyHandshakeObserved(protocols, false);
     }
 
-    @Test
-    void withH2() throws Exception {
-        verifyHandshakeObserved(address -> forAddress(address).protocols(h2Default()),
-                                address -> forSingleAddress(address).protocols(h2Default()));
-    }
-
-    @Test
-    void withAlpnPreferH1() throws Exception {
-        verifyHandshakeObserved(address -> forAddress(address).protocols(h1Default(), h2Default()),
-                                address -> forSingleAddress(address).protocols(h1Default(), h2Default()));
-    }
-
-    @Test
-    void withAlpnPreferH2() throws Exception {
-        verifyHandshakeObserved(address -> forAddress(address).protocols(h2Default(), h1Default()),
-                                address -> forSingleAddress(address).protocols(h2Default(), h1Default()));
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void verifyHandshakeFailed(List<HttpProtocol> protocols) throws Exception {
+        verifyHandshakeObserved(protocols, true);
     }
 
     @Test
     void withProxyTunnel() throws Exception {
         try (ProxyTunnel proxyTunnel = new ProxyTunnel()) {
             HostAndPort proxyAddress = proxyTunnel.startProxy();
-            verifyHandshakeObserved(HttpServers::forAddress,
-                                    address -> forSingleAddress(address).proxyAddress(proxyAddress));
+            verifyHandshakeObserved(singletonList(HTTP_1), false, true,
+                    builder -> builder.proxyAddress(proxyAddress));
         }
     }
 
-    private void verifyHandshakeObserved(Function<SocketAddress, HttpServerBuilder> serverBuilderFactory,
-                                         Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort,
-                                             InetSocketAddress>> clientBuilderFactory) throws Exception {
+    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
+        verifyHandshakeObserved(protocols, failHandshake, false, UnaryOperator.identity());
+    }
 
-        try (ServerContext serverContext = serverBuilderFactory.apply(localAddress(0))
-            .ioExecutor(SERVER_CTX.ioExecutor())
-            .executor(SERVER_CTX.executor())
-            .executionStrategy(defaultStrategy())
+    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake, boolean hasProxy,
+            UnaryOperator<SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientBuilderFunction)
+            throws Exception {
+
+        try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
+            .protocols(toConfigs(protocols))
             .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
             .transportObserver(serverTransportObserver)
             .listenStreamingAndAwait(new TestServiceStreaming());
 
-             BlockingHttpClient client = clientBuilderFactory.apply(serverHostAndPort(serverContext))
-                 .ioExecutor(CLIENT_CTX.ioExecutor())
-                 .executor(CLIENT_CTX.executor())
-                 .executionStrategy(defaultStrategy())
+             BlockingHttpClient client = clientBuilderFunction.apply(
+                     BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX))
+                 .protocols(toConfigs(protocols))
                  .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                             .peerHost(serverPemHostname()).build())
+                             .peerHost(failHandshake ? "unknown" : serverPemHostname()).build())
                  .appendConnectionFactoryFilter(
                      new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                  .buildBlocking()) {
 
-            String content = "payload_body";
-            HttpResponse response = client.request(client.post(SVC_ECHO).payloadBody(content, textSerializerUtf8()));
-            assertThat(response.status(), is(OK));
-            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(content));
+            if (failHandshake) {
+                assertThrows(SSLHandshakeException.class, () -> client.request(client.get(SVC_ECHO)));
+            } else {
+                assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
+            }
 
-            verify(clientConnectionObserver).onSecurityHandshake();
-            verify(clientSecurityHandshakeObserver).handshakeComplete(any(SSLSession.class));
-
-            verify(serverConnectionObserver).onSecurityHandshake();
-            verify(serverSecurityHandshakeObserver).handshakeComplete(any(SSLSession.class));
+            HttpProtocol expectedProtocol = protocols.get(0);
+            verifyObservers(clientOrder, clientTransportObserver, clientConnectionObserver,
+                    clientSecurityHandshakeObserver, expectedProtocol, failHandshake, hasProxy);
+            verifyObservers(serverOrder, serverTransportObserver, serverConnectionObserver,
+                    serverSecurityHandshakeObserver, expectedProtocol, failHandshake, false);
         }
+    }
+
+    private static void verifyObservers(InOrder order, TransportObserver transportObserver,
+            ConnectionObserver connectionObserver, SecurityHandshakeObserver securityHandshakeObserver,
+            HttpProtocol expectedProtocol, boolean failHandshake, boolean hasProxy) {
+        order.verify(transportObserver).onNewConnection(any(), any());
+        order.verify(connectionObserver).onTransportHandshakeComplete();
+        if (hasProxy) {
+            order.verify(connectionObserver).connectionEstablished(any());
+        }
+        order.verify(connectionObserver).onSecurityHandshake();
+        if (failHandshake) {
+            ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+            order.verify(securityHandshakeObserver).handshakeFailed(exceptionCaptor.capture());
+            Throwable exception = exceptionCaptor.getValue();
+            assertThat(exception, is(instanceOf(SSLHandshakeException.class)));
+            order.verify(connectionObserver).connectionClosed(exception);
+        } else {
+            order.verify(securityHandshakeObserver).handshakeComplete(any(SSLSession.class));
+            if (!hasProxy) {
+                if (expectedProtocol.version.major() > 1) {
+                    order.verify(connectionObserver).multiplexedConnectionEstablished(any());
+                } else {
+                    order.verify(connectionObserver).connectionEstablished(any());
+                }
+            }
+        }
+        verifyNoMoreInteractions(transportObserver, securityHandshakeObserver);
     }
 }
