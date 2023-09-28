@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
@@ -75,7 +76,7 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
             } else {
                 // Propagate exception in the pipeline if subscriber is already complete
                 ctx.fireExceptionCaught(cause);
-                ctx.close();
+                ChannelCloseUtils.close(ctx, cause);
             }
         }
 
