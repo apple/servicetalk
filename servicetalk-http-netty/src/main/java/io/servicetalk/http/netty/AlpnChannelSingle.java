@@ -46,11 +46,6 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
     private final Consumer<ChannelHandlerContext> onHandlerAdded;
 
     AlpnChannelSingle(final Channel channel,
-                      final ChannelInitializer channelInitializer) {
-        this(channel, channelInitializer, __ -> { });
-    }
-
-    AlpnChannelSingle(final Channel channel,
                       final ChannelInitializer channelInitializer,
                       final Consumer<ChannelHandlerContext> onHandlerAdded) {
         super(channel, channelInitializer);
