@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
