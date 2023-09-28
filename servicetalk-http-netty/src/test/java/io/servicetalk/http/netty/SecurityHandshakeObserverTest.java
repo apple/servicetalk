@@ -39,6 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.UnaryOperator;
@@ -52,6 +53,8 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,6 +86,7 @@ class SecurityHandshakeObserverTest {
     private final SecurityHandshakeObserver serverSecurityHandshakeObserver;
     private final InOrder serverOrder;
 
+    private final CountDownLatch bothHandshakeFinished = new CountDownLatch(2);
     private final CountDownLatch bothClosed = new CountDownLatch(2);
 
     SecurityHandshakeObserverTest() {
@@ -96,6 +100,7 @@ class SecurityHandshakeObserverTest {
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
             .thenReturn(NoopMultiplexedObserver.INSTANCE);
         countDownOnClosed(clientConnectionObserver, bothClosed);
+        countDownOnHandshakeTermination(clientSecurityHandshakeObserver, bothHandshakeFinished);
         clientOrder = inOrder(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver);
 
         serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
@@ -108,7 +113,19 @@ class SecurityHandshakeObserverTest {
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
             .thenReturn(NoopMultiplexedObserver.INSTANCE);
         countDownOnClosed(serverConnectionObserver, bothClosed);
+        countDownOnHandshakeTermination(serverSecurityHandshakeObserver, bothHandshakeFinished);
         serverOrder = inOrder(serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);
+    }
+
+    private static void countDownOnHandshakeTermination(SecurityHandshakeObserver observer, CountDownLatch latch) {
+        doAnswer(__ -> {
+            latch.countDown();
+            return null;
+        }).when(observer).handshakeComplete(any(SSLSession.class));
+        doAnswer(__ -> {
+            latch.countDown();
+            return null;
+        }).when(observer).handshakeFailed(any(Throwable.class));
     }
 
     private static void countDownOnClosed(ConnectionObserver observer, CountDownLatch latch) {
@@ -172,6 +189,8 @@ class SecurityHandshakeObserverTest {
             } else {
                 assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
             }
+
+            bothHandshakeFinished.await();
         }
 
         bothClosed.await();
@@ -195,7 +214,12 @@ class SecurityHandshakeObserverTest {
             ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
             order.verify(securityHandshakeObserver).handshakeFailed(exceptionCaptor.capture());
             Throwable exception = exceptionCaptor.getValue();
-            assertThat(exception, is(instanceOf(SSLHandshakeException.class)));
+            assertThat(exception, is(anyOf(
+                    instanceOf(SSLHandshakeException.class),
+                    instanceOf(ClosedChannelException.class))));
+            if (exception instanceof ClosedChannelException) {
+                assertThat(exception.getSuppressed(), hasItemInArray(instanceOf(SSLHandshakeException.class)));
+            }
             order.verify(connectionObserver).connectionClosed(exception);
         } else {
             order.verify(securityHandshakeObserver).handshakeComplete(any(SSLSession.class));
