@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
@@ -23,8 +25,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -32,6 +39,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -209,6 +217,69 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         threeSubscribersTerminate(onError);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void concurrentTTL(boolean onError) throws Exception {
+        final Duration ttl = ofNanos(1);
+        final int queueLimit = Integer.MAX_VALUE;
+        Executor executor2 = Executors.newCachedThreadExecutor();
+        ScheduleQueueExecutor queueExecutor = new ScheduleQueueExecutor(executor2);
+        Publisher<Integer> publisher = source.replay(
+                ReplayStrategies.<Integer>historyTtlBuilder(2, ttl, queueExecutor)
+                .queueLimitHint(queueLimit).build());
+        try {
+            toSource(publisher).subscribe(subscriber1);
+            toSource(publisher).subscribe(subscriber2);
+            subscriber1.awaitSubscription().request(Long.MAX_VALUE);
+            subscriber2.awaitSubscription().request(Long.MAX_VALUE);
+            subscription.awaitRequestN(queueLimit);
+            // The goal is to race onNext (which calls accumulate) with the timer expiration. We don't verify all the
+            // signals are delivered but instead verify that the timer and max elements are always enforced even after
+            // the concurrent operations.
+            for (int i = 0; i < 10000; ++i) {
+                source.onNext(1);
+                Thread.yield(); // Increase likelihood that timer expires some signals.
+            }
+
+            // Wait for the timer to expire all signals.
+            waitForReplayQueueToDrain(publisher);
+
+            queueExecutor.enableScheduleQueue();
+            source.onNext(2, 3);
+            toSource(publisher).subscribe(subscriber3);
+            subscriber3.awaitSubscription().request(Long.MAX_VALUE);
+            assertThat(subscriber3.takeOnNext(2), contains(2, 3));
+
+            // Test that advancing the timer past expiration still expires events and there were no race conditions
+            queueExecutor.drainScheduleQueue();
+            waitForReplayQueueToDrain(publisher);
+
+            // We don't consume signals for subscriber1 and subscriber2, so just test termination of subscriber3.
+            if (onError) {
+                source.onError(DELIBERATE_EXCEPTION);
+                assertThat(subscriber3.awaitOnError(), is(DELIBERATE_EXCEPTION));
+            } else {
+                source.onComplete();
+                subscriber3.awaitOnComplete();
+            }
+        } finally {
+            executor2.closeAsync().toFuture().get();
+        }
+    }
+
+    private void waitForReplayQueueToDrain(Publisher<Integer> publisher) throws InterruptedException {
+        boolean waitForAccumulatorToDrain;
+        do {
+            Thread.sleep(1);
+            TestPublisherSubscriber<Integer> subscriber5 = new TestPublisherSubscriber<>();
+            toSource(publisher).subscribe(subscriber5);
+            PublisherSource.Subscription subscription5 = subscriber5.awaitSubscription();
+            subscription5.request(Long.MAX_VALUE);
+            waitForAccumulatorToDrain = subscriber5.pollOnNext(10, MILLISECONDS) != null;
+            subscription5.cancel();
+        } while (waitForAccumulatorToDrain);
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] expectedSubscribers={0} expectedSum={1}")
     @CsvSource(value = {"500,500", "50,50", "50,500", "500,50"})
     void concurrentSubscribes(final int expectedSubscribers, final long expectedSum) throws Exception {
@@ -303,6 +374,84 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         public void deliverAccumulation(final Consumer<Integer> consumer) {
             if (sum != 0) {
                 consumer.accept(sum);
+            }
+        }
+    }
+
+    private static final class ScheduleHolder implements Cancellable {
+        final Duration duration;
+        final Runnable task;
+        final AtomicBoolean isCancelled = new AtomicBoolean();
+
+        ScheduleHolder(final long duration, final TimeUnit unit, final Runnable task) {
+            this(Duration.ofNanos(unit.toNanos(duration)), task);
+        }
+
+        ScheduleHolder(final Duration duration, final Runnable task) {
+            this.duration = duration;
+            this.task = task;
+        }
+
+        @Override
+        public void cancel() {
+            isCancelled.set(true);
+        }
+    }
+
+    private static final class ScheduleQueueExecutor implements io.servicetalk.concurrent.Executor {
+        private final io.servicetalk.concurrent.Executor executor;
+        private final AtomicBoolean enableScheduleQueue = new AtomicBoolean();
+        private final Queue<ScheduleHolder> scheduleQueue = new ConcurrentLinkedQueue<>();
+
+        private ScheduleQueueExecutor(final io.servicetalk.concurrent.Executor executor) {
+            this.executor = executor;
+        }
+
+        void enableScheduleQueue() {
+            enableScheduleQueue.set(true);
+        }
+
+        void drainScheduleQueue() {
+            if (enableScheduleQueue.compareAndSet(true, false)) {
+                ScheduleHolder item;
+                while ((item = scheduleQueue.poll()) != null) {
+                    if (item.isCancelled.compareAndSet(false, true)) {
+                        executor.schedule(item.task, item.duration);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public long currentTime(final TimeUnit unit) {
+            return executor.currentTime(unit);
+        }
+
+        @Override
+        public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+            return executor.execute(task);
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+                throws RejectedExecutionException {
+            if (enableScheduleQueue.get()) {
+                ScheduleHolder holder = new ScheduleHolder(delay, unit, task);
+                scheduleQueue.add(holder);
+                return holder;
+            } else {
+                return executor.schedule(task, delay, unit);
+            }
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
+            if (enableScheduleQueue.get()) {
+                ScheduleHolder holder = new ScheduleHolder(delay, task);
+                scheduleQueue.add(holder);
+                return holder;
+            } else {
+                return executor.schedule(task, delay);
             }
         }
     }
