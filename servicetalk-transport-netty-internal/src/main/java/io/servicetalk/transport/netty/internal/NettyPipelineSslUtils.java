@@ -76,11 +76,10 @@ public final class NettyPipelineSslUtils {
      * by {@link SslClientChannelInitializer} or {@link SslServerChannelInitializer}
      */
     @Nullable
-    @Deprecated
-    public static SSLSession extractSslSessionAndReport(// FIXME: 0.43 - remove deprecated method
-            @Nullable final SslConfig sslConfig,
-            final ChannelPipeline pipeline,
-            final ConnectionObserver connectionObserver) {
+    @Deprecated // FIXME: 0.43 - remove deprecated method
+    public static SSLSession extractSslSessionAndReport(@Nullable final SslConfig sslConfig,
+                                                        final ChannelPipeline pipeline,
+                                                        final ConnectionObserver connectionObserver) {
         if (sslConfig == null) {
             assert noSslHandlers(pipeline) : "No SslConfig configured but SSL-related handler found in the pipeline";
             return null;
@@ -177,7 +176,7 @@ public final class NettyPipelineSslUtils {
                 pipeline.get(SniHandler.class) == null;
     }
 
-    // FIXME: 0.43 - remove method that won't be used
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     private static SSLSession getSslSession(final SslHandler sslHandler,
                                             @Nullable final SecurityHandshakeObserver observer) {
         final SSLSession session = sslHandler.engine().getSession();
@@ -187,7 +186,7 @@ public final class NettyPipelineSslUtils {
         return session;
     }
 
-    // FIXME: 0.43 - remove method that won't be used
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     private static void deliverFailureCause(final Consumer<Throwable> failureConsumer, final Throwable cause,
                                             @Nullable final SecurityHandshakeObserver securityObserver) {
         if (securityObserver != null) {
@@ -196,7 +195,7 @@ public final class NettyPipelineSslUtils {
         failureConsumer.accept(cause);
     }
 
-    // FIXME: 0.43 - remove method that won't be used
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     @Nullable
     private static SecurityHandshakeObserver lookForHandshakeObserver(final ChannelPipeline pipeline,
                                                                       final boolean shouldReport) {
