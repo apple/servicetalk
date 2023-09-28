@@ -91,7 +91,7 @@ import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -137,7 +137,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
                     pipeline = channel.pipeline();
                     @Nullable
-                    final SSLSession sslSession = extractSslSessionAndReport(sslConfig, pipeline, observer);
+                    final SSLSession sslSession = extractSslSession(sslConfig, pipeline);
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
                             executionContext, parentFlushStrategy, idleTimeoutMs, sslConfig, sslSession,
                             new KeepAliveManager(channel, config.keepAlivePolicy()));

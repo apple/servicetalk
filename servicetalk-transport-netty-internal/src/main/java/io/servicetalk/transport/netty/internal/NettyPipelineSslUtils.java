@@ -63,15 +63,20 @@ public final class NettyPipelineSslUtils {
 
     /**
      * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the handshake is already done
-     * and reports the result to {@link SecurityHandshakeObserver} if available.
+     * and reports the result to {@link SecurityHandshakeObserver} if available. If it's done but failed,
+     * it rethrows the result.
      *
      * @param sslConfig {@link SslConfig} if SSL/TLS is expected
      * @param pipeline {@link ChannelPipeline} which contains a handler containing the {@link SSLSession}
      * @param connectionObserver {@link ConnectionObserver} in case the handshake status should be reported
      * @return The {@link SSLSession} or {@code null} if none can be found
      * @throws IllegalStateException if {@link SslHandler} can not be found in the {@link ChannelPipeline}
+     * @deprecated Use {@link #extractSslSession(SslConfig, ChannelPipeline)} instead,
+     * reporting to {@link SecurityHandshakeObserver} is handled automatically for all {@link SslHandler}s initialized
+     * by {@link SslClientChannelInitializer} or {@link SslServerChannelInitializer}
      */
     @Nullable
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static SSLSession extractSslSessionAndReport(@Nullable final SslConfig sslConfig,
                                                         final ChannelPipeline pipeline,
                                                         final ConnectionObserver connectionObserver) {
@@ -103,6 +108,21 @@ public final class NettyPipelineSslUtils {
     }
 
     /**
+     * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the handshake is already done. If it's done
+     * but failed, it rethrows the result.
+     *
+     * @param sslConfig {@link SslConfig} if SSL/TLS is expected
+     * @param pipeline {@link ChannelPipeline} which contains a handler containing the {@link SSLSession}
+     * @return The {@link SSLSession} or {@code null} if none can be found
+     * @throws IllegalStateException if {@link SslHandler} can not be found in the {@link ChannelPipeline}
+     */
+    @Nullable
+    public static SSLSession extractSslSession(@Nullable final SslConfig sslConfig,
+                                               final ChannelPipeline pipeline) {
+        return extractSslSessionAndReport(sslConfig, pipeline, NoopConnectionObserver.INSTANCE);
+    }
+
+    /**
      * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the {@link SslHandshakeCompletionEvent}
      * is successful and reports the result to {@link SecurityHandshakeObserver} if available.
      *
@@ -111,8 +131,12 @@ public final class NettyPipelineSslUtils {
      * @param failureConsumer invoked if a failure is encountered.
      * @param shouldReport {@code true} if the handshake status should be reported to {@link SecurityHandshakeObserver}.
      * @return The {@link SSLSession} or {@code null} if none can be found.
+     * @deprecated Use {@link #extractSslSession(ChannelPipeline, SslHandshakeCompletionEvent, Consumer)} instead,
+     * reporting to {@link SecurityHandshakeObserver} is handled automatically for all {@link SslHandler}s initialized
+     * by {@link SslClientChannelInitializer} or {@link SslServerChannelInitializer}.
      */
     @Nullable
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
                                                         SslHandshakeCompletionEvent sslEvent,
                                                         Consumer<Throwable> failureConsumer,
@@ -131,11 +155,28 @@ public final class NettyPipelineSslUtils {
         return null;
     }
 
+    /**
+     * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the {@link SslHandshakeCompletionEvent}
+     * is successful or propagate the failure to {@code failureConsumer}.
+     *
+     * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
+     * @param sslEvent the event indicating a SSL/TLS handshake completed.
+     * @param failureConsumer invoked if a failure is encountered.
+     * @return The {@link SSLSession} or {@code null} if none can be found.
+     */
+    @Nullable
+    public static SSLSession extractSslSession(final ChannelPipeline pipeline,
+                                               final SslHandshakeCompletionEvent sslEvent,
+                                               final Consumer<Throwable> failureConsumer) {
+        return extractSslSessionAndReport(pipeline, sslEvent, failureConsumer, false);
+    }
+
     private static boolean noSslHandlers(final ChannelPipeline pipeline) {
         return pipeline.get(SslHandler.class) == null && pipeline.get(DeferSslHandler.class) == null &&
                 pipeline.get(SniHandler.class) == null;
     }
 
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     private static SSLSession getSslSession(final SslHandler sslHandler,
                                             @Nullable final SecurityHandshakeObserver observer) {
         final SSLSession session = sslHandler.engine().getSession();
@@ -145,6 +186,7 @@ public final class NettyPipelineSslUtils {
         return session;
     }
 
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     private static void deliverFailureCause(final Consumer<Throwable> failureConsumer, final Throwable cause,
                                             @Nullable final SecurityHandshakeObserver securityObserver) {
         if (securityObserver != null) {
@@ -153,6 +195,7 @@ public final class NettyPipelineSslUtils {
         failureConsumer.accept(cause);
     }
 
+    // FIXME: 0.43 - remove method that won't be used after deprecations removed
     @Nullable
     private static SecurityHandshakeObserver lookForHandshakeObserver(final ChannelPipeline pipeline,
                                                                       final boolean shouldReport) {

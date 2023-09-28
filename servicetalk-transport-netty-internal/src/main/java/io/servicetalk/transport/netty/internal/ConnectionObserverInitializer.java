@@ -110,7 +110,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             ctx.fireChannelActive();
         }
 
-        void reportTcpHandshakeComplete() {
+        private void reportTcpHandshakeComplete() {
             if (!tcpHandshakeComplete) {
                 tcpHandshakeComplete = true;
                 observer.onTransportHandshakeComplete();

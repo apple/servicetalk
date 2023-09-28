@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -28,6 +29,8 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 enum HttpProtocol {
     HTTP_1(h1Default(), h1().headersFactory(H2HeadersFactory.INSTANCE).build(), HTTP_1_1),
@@ -54,5 +57,9 @@ enum HttpProtocol {
 
     static H2ProtocolConfigBuilder applyFrameLogger(H2ProtocolConfigBuilder builder) {
         return builder.enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true);
+    }
+
+    static List<List<HttpProtocol>> allCombinations() {
+        return asList(singletonList(HTTP_1), singletonList(HTTP_2), asList(HTTP_2, HTTP_1), asList(HTTP_1, HTTP_2));
     }
 }
