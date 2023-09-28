@@ -51,6 +51,7 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
+            assert ctx.channel().isActive();
             // Force a read to get the SSL handshake started. We initialize pipeline before
             // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
             // initialization.

@@ -981,9 +981,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         private void doChannelActive(ChannelHandlerContext ctx) {
             if (waitForSslHandshake) {
-                // Force a read to get the SSL handshake started, any application data that makes it past the SslHandler
-                // will be queued in the NettyChannelPublisher.
-                ctx.read();
+                if (!connection.isClient) {
+                    // Force a read to get the SSL handshake started, any application data that makes it past the
+                    // SslHandler will be queued in the NettyChannelPublisher.
+                    ctx.read();
+                }
             } else if (subscriber != null) {
                 completeSubscriber();
             }
