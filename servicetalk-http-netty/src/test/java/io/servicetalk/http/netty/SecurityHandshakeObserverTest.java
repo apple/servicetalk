@@ -40,6 +40,7 @@ import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.UnaryOperator;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -55,6 +56,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -81,6 +83,8 @@ class SecurityHandshakeObserverTest {
     private final SecurityHandshakeObserver serverSecurityHandshakeObserver;
     private final InOrder serverOrder;
 
+    private final CountDownLatch bothClosed = new CountDownLatch(2);
+
     SecurityHandshakeObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
@@ -91,6 +95,7 @@ class SecurityHandshakeObserverTest {
                 .thenReturn(NoopDataObserver.INSTANCE);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
             .thenReturn(NoopMultiplexedObserver.INSTANCE);
+        countDownOnClosed(clientConnectionObserver, bothClosed);
         clientOrder = inOrder(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver);
 
         serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
@@ -102,7 +107,19 @@ class SecurityHandshakeObserverTest {
                 .thenReturn(NoopDataObserver.INSTANCE);
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
             .thenReturn(NoopMultiplexedObserver.INSTANCE);
+        countDownOnClosed(serverConnectionObserver, bothClosed);
         serverOrder = inOrder(serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);
+    }
+
+    private static void countDownOnClosed(ConnectionObserver observer, CountDownLatch latch) {
+        doAnswer(__ -> {
+            latch.countDown();
+            return null;
+        }).when(observer).connectionClosed();
+        doAnswer(__ -> {
+            latch.countDown();
+            return null;
+        }).when(observer).connectionClosed(any(Throwable.class));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
@@ -155,13 +172,14 @@ class SecurityHandshakeObserverTest {
             } else {
                 assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
             }
-
-            HttpProtocol expectedProtocol = protocols.get(0);
-            verifyObservers(clientOrder, clientTransportObserver, clientConnectionObserver,
-                    clientSecurityHandshakeObserver, expectedProtocol, failHandshake, hasProxy);
-            verifyObservers(serverOrder, serverTransportObserver, serverConnectionObserver,
-                    serverSecurityHandshakeObserver, expectedProtocol, failHandshake, false);
         }
+
+        bothClosed.await();
+        HttpProtocol expectedProtocol = protocols.get(0);
+        verifyObservers(clientOrder, clientTransportObserver, clientConnectionObserver,
+                clientSecurityHandshakeObserver, expectedProtocol, failHandshake, hasProxy);
+        verifyObservers(serverOrder, serverTransportObserver, serverConnectionObserver,
+                serverSecurityHandshakeObserver, expectedProtocol, failHandshake, false);
     }
 
     private static void verifyObservers(InOrder order, TransportObserver transportObserver,
