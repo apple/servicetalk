@@ -17,13 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
@@ -31,27 +29,22 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.UnaryOperator;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.hasItemInArray;
@@ -151,23 +144,7 @@ class SecurityHandshakeObserverTest {
         verifyHandshakeObserved(protocols, true);
     }
 
-    @Test
-    void withProxyTunnel() throws Exception {
-        try (ProxyTunnel proxyTunnel = new ProxyTunnel()) {
-            HostAndPort proxyAddress = proxyTunnel.startProxy();
-            verifyHandshakeObserved(singletonList(HTTP_1), false, true,
-                    builder -> builder.proxyAddress(proxyAddress));
-        }
-    }
-
     private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
-        verifyHandshakeObserved(protocols, failHandshake, false, UnaryOperator.identity());
-    }
-
-    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake, boolean hasProxy,
-            UnaryOperator<SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientBuilderFunction)
-            throws Exception {
-
         try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
             .protocols(toConfigs(protocols))
             .sslConfig(new ServerSslConfigBuilder(
@@ -175,8 +152,7 @@ class SecurityHandshakeObserverTest {
             .transportObserver(serverTransportObserver)
             .listenStreamingAndAwait(new TestServiceStreaming());
 
-             BlockingHttpClient client = clientBuilderFunction.apply(
-                     BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX))
+             BlockingHttpClient client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
                  .protocols(toConfigs(protocols))
                  .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .peerHost(failHandshake ? "unknown" : serverPemHostname()).build())
@@ -196,19 +172,16 @@ class SecurityHandshakeObserverTest {
         bothClosed.await();
         HttpProtocol expectedProtocol = protocols.get(0);
         verifyObservers(clientOrder, clientTransportObserver, clientConnectionObserver,
-                clientSecurityHandshakeObserver, expectedProtocol, failHandshake, hasProxy);
+                clientSecurityHandshakeObserver, expectedProtocol, failHandshake);
         verifyObservers(serverOrder, serverTransportObserver, serverConnectionObserver,
-                serverSecurityHandshakeObserver, expectedProtocol, failHandshake, false);
+                serverSecurityHandshakeObserver, expectedProtocol, failHandshake);
     }
 
     private static void verifyObservers(InOrder order, TransportObserver transportObserver,
             ConnectionObserver connectionObserver, SecurityHandshakeObserver securityHandshakeObserver,
-            HttpProtocol expectedProtocol, boolean failHandshake, boolean hasProxy) {
+            HttpProtocol expectedProtocol, boolean failHandshake) {
         order.verify(transportObserver).onNewConnection(any(), any());
         order.verify(connectionObserver).onTransportHandshakeComplete();
-        if (hasProxy) {
-            order.verify(connectionObserver).connectionEstablished(any());
-        }
         order.verify(connectionObserver).onSecurityHandshake();
         if (failHandshake) {
             ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
@@ -223,12 +196,10 @@ class SecurityHandshakeObserverTest {
             order.verify(connectionObserver).connectionClosed(exception);
         } else {
             order.verify(securityHandshakeObserver).handshakeComplete(any(SSLSession.class));
-            if (!hasProxy) {
-                if (expectedProtocol.version.major() > 1) {
-                    order.verify(connectionObserver).multiplexedConnectionEstablished(any());
-                } else {
-                    order.verify(connectionObserver).connectionEstablished(any());
-                }
+            if (expectedProtocol.version.major() > 1) {
+                order.verify(connectionObserver).multiplexedConnectionEstablished(any());
+            } else {
+                order.verify(connectionObserver).connectionEstablished(any());
             }
         }
         verifyNoMoreInteractions(transportObserver, securityHandshakeObserver);

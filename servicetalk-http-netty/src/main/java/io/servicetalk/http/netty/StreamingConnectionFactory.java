@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,16 @@ final class StreamingConnectionFactory {
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
-            final ReadOnlyTcpClientConfig originalTcpConfig, final H1ProtocolConfig h1Config, boolean hasProxy,
-            final TransportObserver observer) {
-        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, originalTcpConfig);
+            final ReadOnlyHttpClientConfig roConfig, final TransportObserver observer) {
+        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, roConfig.tcpConfig());
+        final H1ProtocolConfig h1Config = roConfig.h1Config();
+        assert h1Config != null;
+        assert !roConfig.hasProxy() || tcpConfig.sslContext() == null :
+                "This factory can be used only for non-proxied connections or for non-secure proxies";
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, tcpConfig, false, executionContext,
                 (channel, connectionObserver) -> createConnection(channel, executionContext, h1Config, tcpConfig,
-                        new TcpClientChannelInitializer(tcpConfig, connectionObserver, hasProxy),
+                        new TcpClientChannelInitializer(tcpConfig, connectionObserver, false),
                         connectionObserver),
                 observer);
     }

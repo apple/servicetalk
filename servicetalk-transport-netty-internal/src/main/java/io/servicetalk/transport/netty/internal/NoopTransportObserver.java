@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -72,6 +73,11 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
+            return NoopProxyConnectObserver.INSTANCE;
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return NoopSecurityHandshakeObserver.INSTANCE;
         }
@@ -96,6 +102,26 @@ public final class NoopTransportObserver implements TransportObserver {
 
         @Override
         public void connectionClosed() {
+        }
+    }
+
+    /**
+     * Noop version of {@link ProxyConnectObserver}.
+     */
+    public static final class NoopProxyConnectObserver implements ProxyConnectObserver {
+
+        public static final ProxyConnectObserver INSTANCE = new NoopProxyConnectObserver();
+
+        private NoopProxyConnectObserver() {
+            // Singleton
+        }
+
+        @Override
+        public void proxyConnectFailed(final Throwable cause) {
+        }
+
+        @Override
+        public void proxyConnectComplete(final Object responseMsg) {
         }
     }
 

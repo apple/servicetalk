@@ -47,8 +47,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
                                                                       final TransportObserver observer) {
         assert config.h1Config() != null;
-        return buildStreaming(executionContext, resolvedAddress, config.tcpConfig(), config.h1Config(),
-                config.hasProxy(), observer)
+        return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(),
                         reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport()));
     }
