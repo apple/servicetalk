@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
@@ -35,10 +36,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
+import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -56,7 +60,9 @@ public final class ProxyTunnel implements AutoCloseable {
 
     @Nullable
     private ServerSocket serverSocket;
-    private ProxyRequestHandler handler = this::handleRequest;
+    @Nullable
+    private volatile String authToken;
+    private volatile ProxyRequestHandler handler = this::handleRequest;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
@@ -86,38 +92,27 @@ public final class ProxyTunnel implements AutoCloseable {
                 executor.submit(() -> {
                     try {
                         final InputStream in = socket.getInputStream();
-                        final String host;
-                        final int port;
-                        final String protocol;
-                        try {
-                            final String initialLine = readLine(in);
-                            if (!initialLine.startsWith(CONNECT_PREFIX)) {
-                                throw new IllegalArgumentException("Expected " + CONNECT + " request, but found: " +
-                                        initialLine);
-                            }
-                            final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
-                            final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
-                            final int colon = authority.indexOf(':');
-                            host = authority.substring(0, colon);
-                            port = Integer.parseInt(authority.substring(colon + 1));
-                            protocol = initialLine.substring(end + 1);
+                        final String initialLine = readLine(in);
+                        if (!initialLine.startsWith(CONNECT_PREFIX)) {
+                            throw new IllegalArgumentException("Expected " + CONNECT + " request, but found: " +
+                                    initialLine);
+                        }
+                        final int end = initialLine.indexOf(' ', CONNECT_PREFIX.length());
+                        final String authority = initialLine.substring(CONNECT_PREFIX.length(), end);
+                        final int colon = authority.indexOf(':');
+                        final String host = authority.substring(0, colon);
+                        final int port = Integer.parseInt(authority.substring(colon + 1));
+                        final String protocol = initialLine.substring(end + 1);
 
-                            final String hostHeader = readLine(in);
-                            if (!hostHeader.toLowerCase(Locale.ROOT).startsWith(HOST.toString())) {
-                                throw new IllegalArgumentException("Expected " + HOST + " header, but found: " +
-                                        hostHeader);
-                            }
-                            final String hostHeaderValue = hostHeader.substring(HOST.length() + 2 /* colon & space */);
-                            if (!(host + ':' + port).equalsIgnoreCase(hostHeaderValue)) {
-                                throw new IllegalArgumentException(
-                                        "Host header value must be identical to authority component");
-                            }
-
-                            while (readLine(in).length() > 0) {
-                                // Ignore any other headers.
-                            }
-                        } catch (Exception e) {
-                            badRequest(socket, e.getMessage());
+                        final Headers headers = readHeaders(in);
+                        if (!authority.equalsIgnoreCase(headers.host)) {
+                            badRequest(socket, "Host header value must be identical to authority " +
+                                    "component. Expected: " + authority + ", found: " + headers.host);
+                            return;
+                        }
+                        final String authToken = this.authToken;
+                        if (authToken != null && !("basic " + authToken).equals(headers.proxyAuthorization)) {
+                            proxyAuthRequired(socket);
                             return;
                         }
                         handler.handle(socket, host, port, protocol);
@@ -146,6 +141,14 @@ public final class ProxyTunnel implements AutoCloseable {
         os.flush();
     }
 
+    private static void proxyAuthRequired(final Socket socket) throws IOException {
+        final OutputStream os = socket.getOutputStream();
+        os.write((HTTP_1_1 + " " + PROXY_AUTHENTICATION_REQUIRED + "\r\n" +
+                PROXY_AUTHENTICATE + ": Basic realm=\"simple\"" + "\r\n" +
+                "\r\n").getBytes(UTF_8));
+        os.flush();
+    }
+
     /**
      * Changes the proxy handler to return 500 instead of 200.
      */
@@ -155,6 +158,16 @@ public final class ProxyTunnel implements AutoCloseable {
             os.write((protocol + ' ' + INTERNAL_SERVER_ERROR + "\r\n\r\n").getBytes(UTF_8));
             os.flush();
         };
+    }
+
+    /**
+     * Sets a required {@link HttpHeaderNames#PROXY_AUTHORIZATION} header value for "Basic" scheme to validate before
+     * accepting a {@code CONNECT} request.
+     *
+     * @param authToken the auth token to validate
+     */
+    public void basicAuthToken(@Nullable String authToken) {
+        this.authToken = authToken;
     }
 
     /**
@@ -179,6 +192,22 @@ public final class ProxyTunnel implements AutoCloseable {
             }
             return bos.toString(UTF_8.name());
         }
+    }
+
+    private static Headers readHeaders(final InputStream in) throws IOException {
+        String host = null;
+        String proxyAuthorization = null;
+        String line;
+        while ((line = readLine(in)).length() > 0) {
+            final String lowerCaseLine = line.toLowerCase(Locale.ROOT);
+            if (lowerCaseLine.startsWith(HOST.toString())) {
+                host = line.substring(HOST.length() + 2 /* colon & space */);
+            } else if (lowerCaseLine.startsWith(PROXY_AUTHORIZATION.toString())) {
+                proxyAuthorization = line.substring(PROXY_AUTHORIZATION.length() + 2 /* colon & space */);
+            }
+            // Ignore any other headers.
+        }
+        return new Headers(host, proxyAuthorization);
     }
 
     private void handleRequest(final Socket serverSocket, final String host, final int port,
@@ -231,5 +260,17 @@ public final class ProxyTunnel implements AutoCloseable {
     @FunctionalInterface
     private interface ProxyRequestHandler {
         void handle(Socket socket, String host, int port, String protocol) throws IOException;
+    }
+
+    private static final class Headers {
+        @Nullable
+        final String host;
+        @Nullable
+        final String proxyAuthorization;
+
+        Headers(@Nullable final String host, @Nullable final String proxyAuthorization) {
+            this.host = host;
+            this.proxyAuthorization = proxyAuthorization;
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,14 +278,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, executionContext,
                         connectionFilterFactory, new AlpnReqRespFactoryFunc(
-                                executionContext.bufferAllocator(),
-                                h1Config == null ? null : h1Config.headersFactory(),
-                                h2Config == null ? null : h2Config.headersFactory()),
+                        executionContext.bufferAllocator(),
+                        h1Config == null ? null : h1Config.headersFactory(),
+                        h2Config == null ? null : h2Config.headersFactory()),
+                        connectionFactoryStrategy, connectionFactoryFilter,
+                        ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
+            } else if (roConfig.hasProxy() && sslContext != null) {
+                connectionFactory = new ProxyConnectLBHttpConnectionFactory<>(roConfig, executionContext,
+                        connectionFilterFactory, reqRespFactory,
                         connectionFactoryStrategy, connectionFactoryFilter,
                         ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else {
-                H1ProtocolConfig h1Config = roConfig.h1Config();
-                assert h1Config != null;
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext,
                         connectionFilterFactory, reqRespFactory,
                         connectionFactoryStrategy, connectionFactoryFilter,
