@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -25,25 +24,29 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.netty.AlpnLBHttpConnectionFactory.unknownAlpnProtocol;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
@@ -67,7 +70,6 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             final ProtocolBinding protocolBinding) {
         super(config, executionContext, version -> reqRespFactory, connectStrategy, connectionFactoryFilter,
                 connectionFilterFunction, protocolBinding);
-        assert config.h1Config() != null : "H1ProtocolConfig is required";
         assert config.tcpConfig().sslContext() != null : "Proxy CONNECT works only for TLS connections";
         assert config.connectAddress() != null : "Address (authority) for CONNECT request is required";
         connectAddress = config.connectAddress().toString();
@@ -76,9 +78,13 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
                                                                       final TransportObserver observer) {
-        assert config.h1Config() != null;
-        return buildStreaming(executionContext, resolvedAddress, config, observer)
-                .map(c -> new PipelinedStreamingHttpConnection(c, config.h1Config(),
+        final H1ProtocolConfig h1Config = config.h1Config() != null ? config.h1Config() : h1Default();
+        return buildStreaming(executionContext, resolvedAddress, config.tcpConfig(), h1Config, config.hasProxy(),
+                observer)
+                // Always create PipelinedStreamingHttpConnection because:
+                // 1. buildStreaming creates a CloseHandler for pipelined request-response
+                // 2. in case ALPN negotiates HTTP/1.x we won't need to change the connection
+                .map(c -> new PipelinedStreamingHttpConnection(c, h1Config,
                         reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport()))
                 .flatMap(this::processConnect);
     }
@@ -121,27 +127,10 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
     private Single<FilterableStreamingHttpConnection> handshake(
             final NettyFilterableStreamingHttpConnection connection) {
         return Single.defer(() -> {
-            final SingleSource.Processor<FilterableStreamingHttpConnection, FilterableStreamingHttpConnection>
-                    processor = newSingleProcessor();
             final Channel channel = connection.nettyChannel();
             assert channel.eventLoop().inEventLoop();
-            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                    if (evt instanceof SslHandshakeCompletionEvent) {
-                        SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
-                        if (event.isSuccess()) {
-                            processor.onSuccess(connection);
-                        } else {
-                            processor.onError(event.cause());
-                        }
-                        channel.pipeline().remove(this);
-                    }
-                    ctx.fireUserEventTriggered(evt);
-                }
-            });
 
-            final Single<FilterableStreamingHttpConnection> result;
+            final Single<String> result;
             final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
             if (deferSslHandler == null) {
                 if (!channel.isActive()) {
@@ -155,11 +144,47 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                             DeferSslHandler.class + " in the channel pipeline."));
                 }
             } else {
-                deferSslHandler.ready();
-                result = fromSource(processor);
+                result = new AlpnChannelSingle(channel, NoopChannelInitializer.INSTANCE, __ -> deferSslHandler.ready());
+            }
+            return result.shareContextOnSubscribe();
+        }).flatMap(protocol -> {
+            final Single<? extends FilterableStreamingHttpConnection> result;
+            switch (protocol) {
+                case AlpnIds.HTTP_1_1:
+                    // Nothing to do, HTTP/1.1 pipeline is already initialized
+                    result = Single.succeeded(connection);
+                    break;
+                case AlpnIds.HTTP_2:
+                    final Channel channel = connection.nettyChannel();
+                    assert channel.eventLoop().inEventLoop();
+                    removeH1Handlers(channel);
+                    result = initializeH2Connection(channel);
+                    break;
+                default:
+                    result = unknownAlpnProtocol(protocol);
+                    break;
             }
             return result.shareContextOnSubscribe();
         });
+    }
+
+    private static void removeH1Handlers(final Channel channel) {
+        final ChannelPipeline pipeline = channel.pipeline();
+        pipeline.remove(DefaultNettyConnection.handlerClass());
+        for (Class<? extends ChannelHandler> handlerClass : HttpClientChannelInitializer.handlers()) {
+            pipeline.remove(handlerClass);
+        }
+    }
+
+    private Single<? extends FilterableStreamingHttpConnection> initializeH2Connection(final Channel channel) {
+        final H2ProtocolConfig h2Config = config.h2Config();
+        assert h2Config != null;
+        final ReadOnlyTcpClientConfig tcpConfig = config.tcpConfig();
+        return H2ClientParentConnectionContext.initChannel(channel, executionContext, h2Config,
+                reqRespFactoryFunc.apply(HTTP_2_0), tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
+                tcpConfig.sslConfig(), new H2ClientParentChannelInitializer(h2Config),
+                // FIXME: propagate real observer
+                NoopConnectionObserver.INSTANCE, config.allowDropTrailersReadFromTransport());
     }
 
     private static Single<FilterableStreamingHttpConnection> drainPropagateError(

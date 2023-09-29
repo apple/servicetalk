@@ -31,28 +31,30 @@ import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
  */
 final class AlpnChannelSingle extends ChannelInitSingle<String> {
-    private final boolean forceChannelRead;
+    private final Consumer<ChannelHandlerContext> onHandlerAdded;
 
     AlpnChannelSingle(final Channel channel,
                       final ChannelInitializer channelInitializer,
-                      final boolean forceChannelRead) {
+                      final Consumer<ChannelHandlerContext> onHandlerAdded) {
         super(channel, channelInitializer);
-        this.forceChannelRead = forceChannelRead;
+        this.onHandlerAdded = requireNonNull(onHandlerAdded);
     }
 
     @Override
     protected ChannelHandler newChannelHandler(final Subscriber<? super String> subscriber) {
-        return new AlpnChannelHandler(subscriber, forceChannelRead);
+        return new AlpnChannelHandler(subscriber, onHandlerAdded);
     }
 
     /**
@@ -65,24 +67,19 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
 
         @Nullable
         private SingleSource.Subscriber<? super String> subscriber;
-        private final boolean forceRead;
+        private final Consumer<ChannelHandlerContext> onHandlerAdded;
 
         AlpnChannelHandler(final SingleSource.Subscriber<? super String> subscriber,
-                           final boolean forceRead) {
+                           final Consumer<ChannelHandlerContext> onHandlerAdded) {
             super(HTTP_1_1);
             this.subscriber = subscriber;
-            this.forceRead = forceRead;
+            this.onHandlerAdded = onHandlerAdded;
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
-            if (forceRead) {
-                // Force a read to get the SSL handshake started. We initialize pipeline before
-                // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
-                // initialization.
-                ctx.read();
-            }
+            onHandlerAdded.accept(ctx);
         }
 
         @Override

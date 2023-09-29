@@ -50,14 +50,13 @@ final class StreamingConnectionFactory {
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
-            final ReadOnlyHttpClientConfig roConfig, final TransportObserver observer) {
-        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, roConfig.tcpConfig());
-        final H1ProtocolConfig h1Config = roConfig.h1Config();
-        assert h1Config != null;
+            final ReadOnlyTcpClientConfig originalTcpConfig, final H1ProtocolConfig h1Config, boolean hasProxy,
+            final TransportObserver observer) {
+        final ReadOnlyTcpClientConfig tcpConfig = withSslConfigPeerHost(resolvedAddress, originalTcpConfig);
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, tcpConfig, false, executionContext,
                 (channel, connectionObserver) -> createConnection(channel, executionContext, h1Config, tcpConfig,
-                        new TcpClientChannelInitializer(tcpConfig, connectionObserver, roConfig.hasProxy()),
+                        new TcpClientChannelInitializer(tcpConfig, connectionObserver, hasProxy),
                         connectionObserver),
                 observer);
     }
