@@ -17,10 +17,12 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -45,7 +47,8 @@ public final class ReplayStrategies {
 
     /**
      * Create a {@link ReplayStrategyBuilder} using the history strategy.
-     * @param history max number of items to retain which can be delivered to new subscribers.
+     * @param history max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain.
      * @param <T> The type of {@link ReplayStrategyBuilder}.
      * @return a {@link ReplayStrategyBuilder} using the history strategy.
      */
@@ -54,20 +57,49 @@ public final class ReplayStrategies {
     }
 
     /**
-     * Create a {@link ReplayStrategyBuilder} using the history and TTL strategy.
-     * @param history max number of items to retain which can be delivered to new subscribers.
+     * Create a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
+     * @param historyHint hint for max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain. Due to concurrency between threads (timer, accumulation,
+     * subscribe) the maximum number of signals delivered to new subscribers may potentially be more but this hint
+     * provides a general bound for memory when concurrency subsides.
      * @param ttl duration each element will be retained before being removed.
      * @param executor used to enforce the {@code ttl} argument.
      * @param <T> The type of {@link ReplayStrategyBuilder}.
-     * @return a {@link ReplayStrategyBuilder} using the history and TTL strategy.
+     * @return a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
      */
-    public static <T> ReplayStrategyBuilder<T> historyTtlBuilder(int history, Duration ttl, Executor executor) {
-        return new ReplayStrategyBuilder<>(() -> new MostRecentTimeLimitedReplayAccumulator<>(history, ttl, executor));
+    public static <T> ReplayStrategyBuilder<T> historyTtlBuilder(int historyHint, Duration ttl, Executor executor) {
+        return historyTtlBuilder(historyHint, ttl, executor, false);
+    }
+
+    /**
+     * Create a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
+     * @param historyHint hint for max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain. Due to concurrency between threads (timer, accumulation,
+     * subscribe) the maximum number of signals delivered to new subscribers may potentially be more but this hint
+     * provides a general bound for memory when concurrency subsides.
+     * @param ttl duration each element will be retained before being removed.
+     * @param executor used to enforce the {@code ttl} argument.
+     * @param lazyEviction
+     * <ul>
+     *     <li>{@code true} will evict expired items in a lazy fashion when new subscribers arrive. This approach
+     *     is more likely to retain {@code historyHint} elements in memory in steady state, but avoids cost of
+     *     scheduling timer tasks.</li>
+     *     <li>{@code false} will evict expired items eagerly when they expire. If {@code ttl} is lower that
+     *     {@code historyHint} relative to signal arrival rate this can use less memory but schedules time tasks.</li>
+     * </ul>
+     * @param <T> The type of {@link ReplayStrategyBuilder}.
+     * @return a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
+     */
+    public static <T> ReplayStrategyBuilder<T> historyTtlBuilder(int historyHint, Duration ttl, Executor executor,
+                                                                 boolean lazyEviction) {
+        return new ReplayStrategyBuilder<>(lazyEviction ?
+                () -> new LazyTimeLimitedReplayAccumulator<>(historyHint, ttl, executor) :
+                () -> new EagerTimeLimitedReplayAccumulator<>(historyHint, ttl, executor));
     }
 
     private static final class MostRecentReplayAccumulator<T> implements ReplayAccumulator<T> {
         private final int maxItems;
-        private final Deque<Object> list = new ArrayDeque<>();
+        private final Deque<Object> queue = new ArrayDeque<>();
 
         MostRecentReplayAccumulator(final int maxItems) {
             if (maxItems <= 0) {
@@ -78,32 +110,89 @@ public final class ReplayStrategies {
 
         @Override
         public void accumulate(@Nullable final T t) {
-            if (list.size() >= maxItems) {
-                list.pop();
+            if (queue.size() >= maxItems) {
+                queue.poll();
             }
-            list.add(wrapNull(t));
+            queue.add(wrapNull(t));
         }
 
         @Override
         public void deliverAccumulation(final Consumer<T> consumer) {
-            for (Object item : list) {
+            for (Object item : queue) {
                 consumer.accept(unwrapNullUnchecked(item));
             }
         }
     }
 
-    private static final class MostRecentTimeLimitedReplayAccumulator<T> implements ReplayAccumulator<T> {
+    private static final class LazyTimeLimitedReplayAccumulator<T> implements ReplayAccumulator<T> {
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<LazyTimeLimitedReplayAccumulator> queueSizeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(LazyTimeLimitedReplayAccumulator.class, "queueSize");
+        private final Executor executor;
+        private final Queue<TimeStampSignal<T>> items;
+        private final long ttlNanos;
+        private final int maxItems;
+        private volatile int queueSize;
+
+        LazyTimeLimitedReplayAccumulator(final int maxItems, final Duration ttl, final Executor executor) {
+            if (ttl.isNegative()) {
+                throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
+            }
+            if (maxItems <= 0) {
+                throw new IllegalArgumentException("maxItems: " + maxItems + "(expected >0)");
+            }
+            this.executor = requireNonNull(executor);
+            this.ttlNanos = ttl.toNanos();
+            this.maxItems = maxItems;
+            items = new ConcurrentLinkedQueue<>(); // SpMc
+        }
+
+        @Override
+        public void accumulate(@Nullable final T t) {
+            final TimeStampSignal<T> signal = new TimeStampSignal<>(executor.currentTime(NANOSECONDS), t);
+            for (;;) {
+                final int qSize = queueSize;
+                if (qSize < maxItems) {
+                    if (queueSizeUpdater.compareAndSet(this, qSize, qSize + 1)) {
+                        items.add(signal);
+                        break;
+                    }
+                } else if (queueSizeUpdater.compareAndSet(this, qSize, qSize)) {
+                    items.poll();
+                    items.add(signal);
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void deliverAccumulation(final Consumer<T> consumer) {
+            final Iterator<TimeStampSignal<T>> itr = items.iterator();
+            final long nanoTime = executor.currentTime(NANOSECONDS);
+            while (itr.hasNext()) {
+                final TimeStampSignal<T> next = itr.next();
+                if (nanoTime - next.timeStamp >= ttlNanos) {
+                    queueSizeUpdater.decrementAndGet(this);
+                    itr.remove();
+                } else {
+                    consumer.accept(next.signal);
+                }
+            }
+        }
+    }
+
+    private static final class EagerTimeLimitedReplayAccumulator<T> implements ReplayAccumulator<T> {
         private static final Cancellable CANCELLED = () -> { };
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<MostRecentTimeLimitedReplayAccumulator, Cancellable>
-                timerCancellableUpdater = newUpdater(MostRecentTimeLimitedReplayAccumulator.class, Cancellable.class,
+        private static final AtomicReferenceFieldUpdater<EagerTimeLimitedReplayAccumulator, Cancellable>
+                timerCancellableUpdater = newUpdater(EagerTimeLimitedReplayAccumulator.class, Cancellable.class,
                 "timerCancellable");
         @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<MostRecentTimeLimitedReplayAccumulator> queueLockUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(MostRecentTimeLimitedReplayAccumulator.class, "queueLock");
+        private static final AtomicIntegerFieldUpdater<EagerTimeLimitedReplayAccumulator> queueLockUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(EagerTimeLimitedReplayAccumulator.class, "queueLock");
         @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<MostRecentTimeLimitedReplayAccumulator> queueSizeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(MostRecentTimeLimitedReplayAccumulator.class, "queueSize");
+        private static final AtomicIntegerFieldUpdater<EagerTimeLimitedReplayAccumulator> queueSizeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(EagerTimeLimitedReplayAccumulator.class, "queueSize");
         private final Executor executor;
         private final Queue<TimeStampSignal<T>> items;
         private final long ttlNanos;
@@ -114,7 +203,7 @@ public final class ReplayStrategies {
         @Nullable
         private volatile Cancellable timerCancellable;
 
-        MostRecentTimeLimitedReplayAccumulator(final int maxItems, final Duration ttl, final Executor executor) {
+        EagerTimeLimitedReplayAccumulator(final int maxItems, final Duration ttl, final Executor executor) {
             if (ttl.isNegative()) {
                 throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
             }
@@ -124,9 +213,11 @@ public final class ReplayStrategies {
             this.executor = requireNonNull(executor);
             this.ttlNanos = ttl.toNanos();
             this.maxItems = maxItems;
-            // SpSc, but needs iterator.
-            // accumulate is called on one thread (no concurrent access on this method).
-            // timerFire maybe called on another thread
+            // SpMc
+            // producer = accumulate (no concurrent access on this method)
+            // consumer = accumulate (may poll from queue due to capacity)
+            // consumer = timerFire (removal via poll)
+            // consumer = deliverAccumulation (iterator over collection)
             items = new ConcurrentLinkedQueue<>();
         }
 
@@ -169,15 +260,8 @@ public final class ReplayStrategies {
 
         @Override
         public void deliverAccumulation(final Consumer<T> consumer) {
-            int i = 0;
             for (TimeStampSignal<T> timeStampSignal : items) {
                 consumer.accept(timeStampSignal.signal);
-                // The queue size maybe larger than maxItems if we weren't able to acquire the queueLock while adding.
-                // This is only a temporary condition while there is concurrent access between timer and accumulator.
-                // Guard against it here to preserve the invariant that we shouldn't deliver more than maxItems.
-                if (++i >= maxItems) {
-                    break;
-                }
             }
         }
 
@@ -252,7 +336,7 @@ public final class ReplayStrategies {
                 } else {
                     // elements sorted in increasing time, break when first non-expired entry found.
                     // delta maybe negative if ttlNanos is small and this method sees newly added items while looping.
-                    return delta <= 0 ? ttlNanos : ttlNanos - (nanoTime - item.timeStamp);
+                    return delta <= 0 ? ttlNanos : ttlNanos - delta;
                 }
             }
         }

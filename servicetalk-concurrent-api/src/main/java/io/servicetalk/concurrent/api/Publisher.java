@@ -3236,7 +3236,8 @@ Kotlin flatMapLatest</a>
      * {@link Publisher} but also retains {@code history} of the most recently emitted signals from
      * {@link Subscriber#onNext(Object)} which are emitted to new downstream {@link Subscriber}s before emitting new
      * signals.
-     * @param history max number of items to retain which can be delivered to new subscribers.
+     * @param history max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain.
      * @return A {@link Publisher} that allows for multiple downstream subscribers and emits the previous
      * {@code history} {@link Subscriber#onNext(Object)} signals to each new subscriber.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
@@ -3249,20 +3250,24 @@ Kotlin flatMapLatest</a>
 
     /**
      * Similar to {@link #multicast(int)} in that multiple downstream {@link Subscriber}s are enabled on the returned
-     * {@link Publisher} but also retains {@code history} of the most recently emitted signals
+     * {@link Publisher} but also retains {@code historyHint} of the most recently emitted signals
      * from {@link Subscriber#onNext(Object)} which are emitted to new downstream {@link Subscriber}s before emitting
      * new signals. Each item is only retained for {@code ttl} duration of time.
-     * @param history max number of items to retain which can be delivered to new subscribers.
+     * @param historyHint hint for max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain. Due to concurrency between threads (timer, accumulation,
+     * subscribe) the maximum number of signals delivered to new subscribers may potentially be more but this hint
+     * provides a general bound for memory when concurrency subsides.
      * @param ttl duration each element will be retained before being removed.
      * @param executor used to enforce the {@code ttl} argument.
      * @return A {@link Publisher} that allows for multiple downstream subscribers and emits the previous
-     * {@code history} {@link Subscriber#onNext(Object)} signals to each new subscriber.
+     * {@code historyHint} {@link Subscriber#onNext(Object)} signals to each new subscriber.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
      * @see ReplayStrategies#historyTtlBuilder(int, Duration, io.servicetalk.concurrent.Executor)
+     * @see ReplayStrategies#historyTtlBuilder(int, Duration, io.servicetalk.concurrent.Executor, boolean)
      * @see #replay(ReplayStrategy)
      */
-    public final Publisher<T> replay(int history, Duration ttl, io.servicetalk.concurrent.Executor executor) {
-        return replay(ReplayStrategies.<T>historyTtlBuilder(history, ttl, executor).build());
+    public final Publisher<T> replay(int historyHint, Duration ttl, io.servicetalk.concurrent.Executor executor) {
+        return replay(ReplayStrategies.<T>historyTtlBuilder(historyHint, ttl, executor).build());
     }
 
     /**

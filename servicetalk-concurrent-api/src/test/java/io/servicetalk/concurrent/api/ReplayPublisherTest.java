@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -41,6 +42,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -179,11 +181,12 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         threeSubscribersTerminate(onError);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void threeSubscribersTTL(boolean onError) {
+    @ParameterizedTest(name = "{displayName} [{index}] onError={0} lazy={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void threeSubscribersTTL(boolean onError, boolean lazy) {
         final Duration ttl = ofMillis(2);
-        Publisher<Integer> publisher = source.replay(2, ttl, executor);
+        Publisher<Integer> publisher = source.replay(
+                ReplayStrategies.<Integer>historyTtlBuilder(2, ttl, executor, lazy).build());
         toSource(publisher).subscribe(subscriber1);
         subscriber1.awaitSubscription().request(4);
         assertThat(subscription.requested(), is(4L));
@@ -217,15 +220,15 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         threeSubscribersTerminate(onError);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void concurrentTTL(boolean onError) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] onError={0} lazy={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void concurrentTTL(boolean onError, boolean lazy) throws Exception {
         final Duration ttl = ofNanos(1);
         final int queueLimit = Integer.MAX_VALUE;
         Executor executor2 = Executors.newCachedThreadExecutor();
         ScheduleQueueExecutor queueExecutor = new ScheduleQueueExecutor(executor2);
         Publisher<Integer> publisher = source.replay(
-                ReplayStrategies.<Integer>historyTtlBuilder(2, ttl, queueExecutor)
+                ReplayStrategies.<Integer>historyTtlBuilder(2, ttl, queueExecutor, lazy)
                 .queueLimitHint(queueLimit).build());
         try {
             toSource(publisher).subscribe(subscriber1);
@@ -401,6 +404,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     private static final class ScheduleQueueExecutor implements io.servicetalk.concurrent.Executor {
         private final io.servicetalk.concurrent.Executor executor;
         private final AtomicBoolean enableScheduleQueue = new AtomicBoolean();
+        private final AtomicLong queueTime = new AtomicLong();
         private final Queue<ScheduleHolder> scheduleQueue = new ConcurrentLinkedQueue<>();
 
         private ScheduleQueueExecutor(final io.servicetalk.concurrent.Executor executor) {
@@ -408,7 +412,9 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
         }
 
         void enableScheduleQueue() {
-            enableScheduleQueue.set(true);
+            if (enableScheduleQueue.compareAndSet(false, true)) {
+                queueTime.set(executor.currentTime(NANOSECONDS));
+            }
         }
 
         void drainScheduleQueue() {
@@ -424,7 +430,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
 
         @Override
         public long currentTime(final TimeUnit unit) {
-            return executor.currentTime(unit);
+            return enableScheduleQueue.get() ? NANOSECONDS.convert(queueTime.get(), unit) : executor.currentTime(unit);
         }
 
         @Override
