@@ -41,6 +41,10 @@ task validateLocalDocSite(type: Exec) {
 quality.dependsOn validateLocalDocSite
 
 subprojects {
+  // mockito 5 only supports jdk11+
+  if (JavaVersion.current() < JavaVersion.VERSION_11) {
+    project.setProperty("mockitoCoreVersion", mockitoCorePreJdk11Version)
+  }
   // Used by ci-release.yaml to determine which modules need to be built/released with JDK11.
   task printJavaTargetCompatibility {
     doLast {
