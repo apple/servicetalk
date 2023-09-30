@@ -34,9 +34,6 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -49,7 +46,6 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLBHttpConnectionFactory.class);
     @Nullable
     private final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final ReadOnlyHttpClientConfig config;
