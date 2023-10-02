@@ -176,26 +176,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         @Nullable
         private final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
-        @Nullable
-        private final U proxyAddress;
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder,
                 final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
-                @Nullable final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy,
-                @Nullable final U proxyAddress) {
+                @Nullable final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy) {
             this.builder = builder;
             this.serviceDiscovererRetryStrategy = serviceDiscovererRetryStrategy;
-            this.proxyAddress = proxyAddress;
             this.sd = sd;
             this.sdStatus = new SdStatusCompletable();
         }
 
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return proxyAddress != null ? proxyAddress :
-                    // the builder can be modified post-context creation, therefore proxy can be set
-                    (builder.proxyAddress != null ? builder.proxyAddress : builder.address);
+            return builder.proxyAddress != null ? builder.proxyAddress : builder.address;
         }
 
         HttpClientConfig httpConfig() {
@@ -383,8 +377,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private static <U, R> String targetAddress(final HttpClientBuildContext<U, R> ctx) {
-        return ctx.proxyAddress == null ?
-                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
+        assert ctx.builder.address != null;
+        return ctx.builder.proxyAddress == null ?
+                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.builder.proxyAddress + ")";
     }
 
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
@@ -433,7 +428,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
      */
     private HttpClientBuildContext<U, R> copyBuildCtx() {
         return new HttpClientBuildContext<>(new DefaultSingleAddressHttpClientBuilder<>(address, this),
-                this.serviceDiscoverer, this.serviceDiscovererRetryStrategy, this.proxyAddress);
+                this.serviceDiscoverer, this.serviceDiscovererRetryStrategy);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
