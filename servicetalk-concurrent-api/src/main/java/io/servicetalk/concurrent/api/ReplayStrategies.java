@@ -34,6 +34,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -110,13 +111,14 @@ public final class ReplayStrategies {
 
     private static final class MostRecentReplayAccumulator<T> implements ReplayAccumulator<T> {
         private final int maxItems;
-        private final Deque<Object> items = new ArrayDeque<>();
+        private final Deque<Object> items;
 
         MostRecentReplayAccumulator(final int maxItems) {
             if (maxItems <= 0) {
                 throw new IllegalArgumentException("maxItems: " + maxItems + "(expected >0)");
             }
             this.maxItems = maxItems;
+            items = new ArrayDeque<>(min(maxItems, 16));
         }
 
         @Override
@@ -151,7 +153,7 @@ public final class ReplayStrategies {
             this.maxItems = maxItems;
             this.executor = requireNonNull(executor);
             this.ttlNanos = ttl.toNanos();
-            items = new ArrayDeque<>();
+            items = new ArrayDeque<>(min(maxItems, 16));
         }
 
         @Override
