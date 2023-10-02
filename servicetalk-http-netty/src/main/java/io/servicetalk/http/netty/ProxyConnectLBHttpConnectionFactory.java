@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
@@ -47,7 +46,6 @@ import javax.net.ssl.SSLException;
 
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
-import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnLBHttpConnectionFactory.unknownAlpnProtocol;
@@ -67,9 +65,6 @@ import static java.lang.Boolean.TRUE;
  */
 final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-
-    private static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend().build();
-
     private final String connectAddress;
 
     ProxyConnectLBHttpConnectionFactory(
@@ -107,12 +102,12 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                         .andThen(new HttpClientChannelInitializer(
                                 getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
                 observer, h1Config.headersFactory(), connectAddress)
-                .flatMap(ch -> handshake(ch, observer))
+                .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
                 .onErrorMap(cause -> handleException(cause, channel));
     }
 
-    private static Single<String> handshake(final Channel channel, final ConnectionObserver connectionObserver) {
+    private static Single<String> handshake(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
 
         final Single<String> result;
