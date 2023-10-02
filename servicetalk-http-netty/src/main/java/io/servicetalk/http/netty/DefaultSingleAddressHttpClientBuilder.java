@@ -233,9 +233,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
         };
         final SslContext sslContext = roConfig.tcpConfig().sslContext();
-        if (roConfig.hasProxy() && sslContext == null && roConfig.h2Config() != null) {
-            throw new IllegalStateException("Proxying is not yet supported with plaintext HTTP/2");
-        }
 
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
@@ -266,7 +263,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     ctx.builder.addIdleTimeoutConnectionFilter ?
                             appendConnectionFilter(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
                             ctx.builder.connectionFilterFactory;
-            if (!roConfig.hasProxy() && roConfig.isH2PriorKnowledge()) {
+            if (roConfig.isH2PriorKnowledge() &&
+                    // Direct connection or HTTP proxy
+                    (!roConfig.hasProxy() || sslContext == null)) {
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 assert h2Config != null;
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, executionContext,
