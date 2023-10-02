@@ -56,6 +56,9 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.FilterPublisher.newDistinctSupplier;
+import static io.servicetalk.concurrent.api.MulticastPublisher.DEFAULT_MULTICAST_QUEUE_LIMIT;
+import static io.servicetalk.concurrent.api.MulticastPublisher.DEFAULT_MULTICAST_TERM_RESUB;
+import static io.servicetalk.concurrent.api.MulticastPublisher.newMulticastPublisher;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCancelSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCompleteSupplier;
@@ -63,6 +66,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
+import static io.servicetalk.concurrent.api.ReplayPublisher.newReplayPublisher;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
@@ -2991,7 +2995,7 @@ Kotlin flatMapLatest</a>
      */
     @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers) {
-        return multicastToExactly(expectedSubscribers, 64);
+        return multicastToExactly(expectedSubscribers, DEFAULT_MULTICAST_QUEUE_LIMIT);
     }
 
     /**
@@ -3023,7 +3027,7 @@ Kotlin flatMapLatest</a>
      */
     @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers, int queueLimit) {
-        return new MulticastPublisher<>(this, expectedSubscribers, true, true, queueLimit, t -> completed());
+        return newMulticastPublisher(this, expectedSubscribers, true, true, queueLimit, t -> completed());
     }
 
     /**
@@ -3082,7 +3086,7 @@ Kotlin flatMapLatest</a>
      * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, boolean cancelUpstream) {
-        return multicast(minSubscribers, 64, cancelUpstream);
+        return multicast(minSubscribers, DEFAULT_MULTICAST_QUEUE_LIMIT, cancelUpstream);
     }
 
     /**
@@ -3145,7 +3149,7 @@ Kotlin flatMapLatest</a>
      * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream) {
-        return multicast(minSubscribers, queueLimit, cancelUpstream, t -> completed());
+        return multicast(minSubscribers, queueLimit, cancelUpstream, DEFAULT_MULTICAST_TERM_RESUB);
     }
 
     /**
@@ -3224,7 +3228,78 @@ Kotlin flatMapLatest</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream,
                                         Function<Throwable, Completable> terminalResubscribe) {
-        return new MulticastPublisher<>(this, minSubscribers, false, cancelUpstream, queueLimit, terminalResubscribe);
+        return newMulticastPublisher(this, minSubscribers, false, cancelUpstream, queueLimit, terminalResubscribe);
+    }
+
+    /**
+     * Similar to {@link #multicast(int)} in that multiple downstream {@link Subscriber}s are enabled on the returned
+     * {@link Publisher} but also retains {@code history} of the most recently emitted signals from
+     * {@link Subscriber#onNext(Object)} which are emitted to new downstream {@link Subscriber}s before emitting new
+     * signals.
+     * @param history max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain.
+     * @return A {@link Publisher} that allows for multiple downstream subscribers and emits the previous
+     * {@code history} {@link Subscriber#onNext(Object)} signals to each new subscriber.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
+     * @see ReplayStrategies#historyBuilder(int)
+     * @see #replay(ReplayStrategy)
+     */
+    public final Publisher<T> replay(int history) {
+        return replay(ReplayStrategies.<T>historyBuilder(history).build());
+    }
+
+    /**
+     * Similar to {@link #multicast(int)} in that multiple downstream {@link Subscriber}s are enabled on the returned
+     * {@link Publisher} but also retains {@code historyHint} of the most recently emitted signals
+     * from {@link Subscriber#onNext(Object)} which are emitted to new downstream {@link Subscriber}s before emitting
+     * new signals. Each item is only retained for {@code ttl} duration of time.
+     * @param historyHint hint for max number of signals (excluding {@link Subscriber#onComplete()} and
+     * {@link Subscriber#onError(Throwable)}) to retain. Due to concurrency between threads (timer, accumulation,
+     * subscribe) the maximum number of signals delivered to new subscribers may potentially be more but this hint
+     * provides a general bound for memory when concurrency subsides.
+     * @param ttl duration each element will be retained before being removed.
+     * @param executor used to enforce the {@code ttl} argument.
+     * @return A {@link Publisher} that allows for multiple downstream subscribers and emits the previous
+     * {@code historyHint} {@link Subscriber#onNext(Object)} signals to each new subscriber.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
+     * @see ReplayStrategies#historyTtlBuilder(int, Duration, io.servicetalk.concurrent.Executor)
+     * @see ReplayStrategies#historyTtlBuilder(int, Duration, io.servicetalk.concurrent.Executor, boolean)
+     * @see #replay(ReplayStrategy)
+     */
+    public final Publisher<T> replay(int historyHint, Duration ttl, io.servicetalk.concurrent.Executor executor) {
+        return replay(ReplayStrategies.<T>historyTtlBuilder(historyHint, ttl, executor).build());
+    }
+
+    /**
+     * Similar to {@link #multicast(int)} in that multiple downstream {@link Subscriber}s are enabled on the returned
+     * {@link Publisher} but will also retain some history of {@link Subscriber#onNext(Object)} signals
+     * according to the {@link ReplayAccumulator} {@code accumulatorSupplier}.
+     * @param accumulatorSupplier supplies a {@link ReplayAccumulator} on each subscribe to upstream that can retain
+     * history of {@link Subscriber#onNext(Object)} signals to deliver to new downstream subscribers.
+     * @return A {@link Publisher} that allows for multiple downstream subscribers that can retain
+     * history of {@link Subscriber#onNext(Object)} signals to deliver to new downstream subscribers.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
+     * @see #replay(ReplayStrategy)
+     */
+    public final Publisher<T> replay(Supplier<ReplayAccumulator<T>> accumulatorSupplier) {
+        return replay(new ReplayStrategyBuilder<>(accumulatorSupplier).build());
+    }
+
+    /**
+     * Similar to {@link #multicast(int)} in that multiple downstream {@link Subscriber}s are enabled on the returned
+     * {@link Publisher} but will also retain some history of {@link Subscriber#onNext(Object)} signals
+     * according to the {@link ReplayStrategy} {@code replayStrategy}.
+     * @param replayStrategy a {@link ReplayStrategy} that determines the replay behavior and history retention logic.
+     * @return A {@link Publisher} that allows for multiple downstream subscribers that can retain
+     * history of {@link Subscriber#onNext(Object)} signals to deliver to new downstream subscribers.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX replay operator</a>
+     * @see ReplayStrategyBuilder
+     * @see ReplayStrategies
+     */
+    public final Publisher<T> replay(ReplayStrategy<T> replayStrategy) {
+        return newReplayPublisher(this, replayStrategy.accumulatorSupplier(), replayStrategy.minSubscribers(),
+                replayStrategy.cancelUpstream(), replayStrategy.queueLimitHint(),
+                replayStrategy.terminalResubscribe());
     }
 
     /**
