@@ -273,7 +273,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     private void waitForReplayQueueToDrain(Publisher<Integer> publisher) throws InterruptedException {
         boolean waitForAccumulatorToDrain;
         do {
-            Thread.sleep(1);
+            Thread.sleep(1); // Give the timer task a chance to expire signals.
             TestPublisherSubscriber<Integer> subscriber5 = new TestPublisherSubscriber<>();
             toSource(publisher).subscribe(subscriber5);
             PublisherSource.Subscription subscription5 = subscriber5.awaitSubscription();

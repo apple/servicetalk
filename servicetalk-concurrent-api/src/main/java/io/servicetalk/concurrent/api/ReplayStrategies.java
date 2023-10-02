@@ -68,7 +68,7 @@ public final class ReplayStrategies {
      * @return a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
      */
     public static <T> ReplayStrategyBuilder<T> historyTtlBuilder(int historyHint, Duration ttl, Executor executor) {
-        return historyTtlBuilder(historyHint, ttl, executor, false);
+        return historyTtlBuilder(historyHint, ttl, executor, true);
     }
 
     /**
@@ -85,7 +85,18 @@ public final class ReplayStrategies {
      *     is more likely to retain {@code historyHint} elements in memory in steady state, but avoids cost of
      *     scheduling timer tasks.</li>
      *     <li>{@code false} will evict expired items eagerly when they expire. If {@code ttl} is lower that
-     *     {@code historyHint} relative to signal arrival rate this can use less memory but schedules time tasks.</li>
+     *     {@code historyHint} relative to signal arrival rate this can use less memory but schedules time tasks.
+     *     <p>
+     *     Note that timer expiration is done concurrently which may cause gaps in signal delivery to new subscribers.
+     *     For example:
+     *       <pre>
+     *         initial accumulation state: [onNext1, onNext2, onNext3, onNext4]
+     *         Thread1: add new subscriber, subscriber does request(4), deliver onNext1
+     *         Thread2: expire onNext1, onNext2, onNext3
+     *         Thread1: [deliver onNext2,] deliver onNext4
+     *           Note that onNext2 may or may not be delivered, and onNext3 was not delivered.
+     *       </pre>
+     *     </li>
      * </ul>
      * @param <T> The type of {@link ReplayStrategyBuilder}.
      * @return a {@link ReplayStrategyBuilder} using the historyHint and TTL strategy.
