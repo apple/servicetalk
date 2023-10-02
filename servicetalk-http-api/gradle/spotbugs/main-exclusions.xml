@@ -314,4 +314,13 @@
     <Method name="catchPayloadFailure"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+
+  <!-- Parameters/state is intentional -->
+  <Match>
+    <Class name="io.servicetalk.http.api.ProxyConnectResponseException"/>
+    <Or>
+      <Bug pattern="EI_EXPOSE_REP"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+    </Or>
+  </Match>
 </FindBugsFilter>

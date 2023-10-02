@@ -127,12 +127,14 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
@@ -541,6 +543,9 @@ class ProtocolCompatibilityTest {
                     // this exception differently internally.
                     assertThat("h2 response code: " + httpCode, stCode, equalTo(UNKNOWN.value()));
                     assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(INTERNAL.value()));
+                } else if (httpCode == PROXY_AUTHENTICATION_REQUIRED.code()) {
+                    assertThat("h2 response code: " + httpCode, stCode, equalTo(UNAUTHENTICATED.value()));
+                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
                 } else if (httpCode == REQUEST_TIMEOUT.code()) {
                     assertThat("h2 response code: " + httpCode, stCode, equalTo(DEADLINE_EXCEEDED.value()));
                     assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
