@@ -93,10 +93,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                             }
 
                             return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
-                                final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
-                                if (maybePublisher != null) {
-                                    maybePublisher.set(null);
-                                }
+                                reference.set(null);
                                 return NoopSubscriber.INSTANCE;
                             }));
                         });

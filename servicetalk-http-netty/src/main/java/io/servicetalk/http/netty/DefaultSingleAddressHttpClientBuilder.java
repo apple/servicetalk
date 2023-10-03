@@ -256,10 +256,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
                     executionContext.bufferAllocator());
 
-            final StreamingHttpConnectionFilterFactory connectionFilterFactory =
+            StreamingHttpConnectionFilterFactory connectionFilterFactory =
                     ctx.builder.addIdleTimeoutConnectionFilter ?
                             appendConnectionFilter(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
                             ctx.builder.connectionFilterFactory;
+
+            connectionFilterFactory = appendConnectionFilter(connectionFilterFactory,
+                    HttpMessageDiscardWatchdogClientFilter.INSTANCE);
+
             if (roConfig.isH2PriorKnowledge() &&
                     // Direct connection or HTTP proxy
                     (!roConfig.hasProxy() || sslContext == null)) {
@@ -317,10 +321,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-
-            // This filter cleans up tracked and discarded message payloads.
-            currClientFilterFactory = appendFilter(currClientFilterFactory,
-                    HttpMessageDiscardWatchdogClientFilter.INSTANCE);
 
             // Internal retries must be one of the last filters in the chain.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);

@@ -144,6 +144,20 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                     public String toString() {
                         return "Throws exception in filter which drops message";
                     }
+                }, DeliberateException.class),
+                Arguments.of(new ResponseTransformer() {
+                    @Override
+                    public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
+                                                               final StreamingHttpRequest request) {
+                        return requester
+                                .request(request)
+                                .flatMap(dropped -> Single.failed(new DeliberateException()));
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Returns a failed Single which drops message";
+                    }
                 }, DeliberateException.class)
         );
     }
