@@ -46,7 +46,10 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND
  *
  * @param <ResolvedAddress> The type of resolved addresses that can be used for connecting.
  * @param <C> The type of connections created by this factory.
+ * @deprecated This filter won't be required after {@link HttpContextKeys#HTTP_TARGET_ADDRESS_BEHIND_PROXY} is removed.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
+@SuppressWarnings("DeprecatedIsStillUsed")
 final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends FilterableStreamingHttpConnection>
         implements ConnectionFactoryFilter<ResolvedAddress, C> {
 
@@ -70,6 +73,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public Single<C> newConnection(final ResolvedAddress resolvedAddress,
                                        @Nullable ContextMap context,
                                        @Nullable final TransportObserver observer) {
@@ -84,6 +88,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         }
     }
 
+    @SuppressWarnings("deprecation")
     static void logUnexpectedAddress(@Nullable final Object current, final Object expected, final Logger logger) {
         if (current != null && !expected.equals(current)) {
             logger.info("Observed unexpected value for {}: {}, overridden with: {}",

@@ -89,6 +89,7 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
         return HttpExecutionStrategies.offloadNone();
     }
 
+    @SuppressWarnings("deprecation")
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final StreamingHttpRequest request) {
         return defer(() -> {

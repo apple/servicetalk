@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.TransportObserver;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
@@ -43,8 +46,15 @@ public final class HttpContextKeys {
      * HTTP proxy tunneling</a> and a clear text HTTP proxy, check presence of {@link ConnectionInfo#sslConfig()}.
      *
      * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
+     * @deprecated Use {@link TransportObserverConnectionFactoryFilter} to configure {@link TransportObserver} and then
+     * listen {@link ConnectionObserver#onProxyConnect(Object)} callback to distinguish between a regular connection and
+     * a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client
+     * filter that will populate {@link HttpRequestMetaData#context()} with a similar key or reach out to the
+     * ServiceTalk developers to discuss ideas.
      */
-    public static final Key<Object> HTTP_TARGET_ADDRESS_BEHIND_PROXY =
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    public static final Key<Object> HTTP_TARGET_ADDRESS_BEHIND_PROXY =  // FIXME: 0.43 - remove deprecated constant
             newKey("HTTP_TARGET_ADDRESS_BEHIND_PROXY", Object.class);
 
     /**
