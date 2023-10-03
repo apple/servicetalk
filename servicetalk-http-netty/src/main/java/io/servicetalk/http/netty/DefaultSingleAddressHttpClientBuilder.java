@@ -247,6 +247,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
+                @SuppressWarnings("deprecation")
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress(), connectionFactoryStrategy);
                 assert !proxy.requiredOffloads().hasOffloads();

@@ -49,8 +49,8 @@ public final class HttpContextKeys {
      * @deprecated Use {@link TransportObserverConnectionFactoryFilter} to configure {@link TransportObserver} and then
      * listen {@link ConnectionObserver#onProxyConnect(Object)} callback to distinguish between a regular connection and
      * a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client
-     * filter that will populate {@link HttpRequestMetaData#context()} with a similar key or reach out to us to discuss
-     * ideas.
+     * filter that will populate {@link HttpRequestMetaData#context()} with a similar key or reach out to the
+     * ServiceTalk developers to discuss ideas.
      */
     @Deprecated
     @SuppressWarnings("DeprecatedIsStillUsed")
