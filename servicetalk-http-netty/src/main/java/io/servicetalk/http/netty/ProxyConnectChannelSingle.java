@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ProxyConnectException;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.transport.api.ConnectionObserver;
@@ -42,8 +43,12 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
+import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 
 /**
@@ -152,9 +157,21 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
                                                                           final String connectAddress) {
             final String message = channel + " Non-successful response '" + response.status() +
                     "' from proxy on CONNECT " + connectAddress;
-            return response.status().statusClass() == SERVER_ERROR_5XX ?
+            return isRetryable(response.status()) ?
                     new RetryableProxyConnectResponseException(message, response) :
                     new ProxyConnectResponseException(message, response);
+        }
+
+        /**
+         * Determines what response status codes are retryable.
+         * It recognizes all the same status codes as GrpcUtils.fromHttpStatus(...) that result in "UNAVAILABLE",
+         * plus INTERNAL_SERVER_ERROR (500) with an assumption that it will be retries on a different host. In general,
+         * CONNECT request is simple, and it's not expected that proxy servers can consistently respond with 500.
+         */
+        private static boolean isRetryable(final HttpResponseStatus status) {
+            return INTERNAL_SERVER_ERROR.equals(status) || BAD_GATEWAY.equals(status) ||
+                    SERVICE_UNAVAILABLE.equals(status) || GATEWAY_TIMEOUT.equals(status) ||
+                    TOO_MANY_REQUESTS.equals(status);
         }
 
         @Override
