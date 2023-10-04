@@ -87,12 +87,12 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn);
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        // This Publisher currently provides replay() semantics in that all sources support multiple subscribers and
+        // from(..)/succeeded(..) will provide the same state to every subscriber. If these semantics change the
+        // replay() operator should be used to preserve these semantics.
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing())
-                .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT))
-                .replay(1); // Allow multiple Subscribers to consume, new Subscribers get last signal.
-        // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
-        maxConcurrencySetting.ignoreElements().subscribe();
+                .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT));
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
