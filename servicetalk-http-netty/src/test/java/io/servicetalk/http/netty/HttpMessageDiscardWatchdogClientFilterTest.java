@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -37,6 +38,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -64,10 +68,11 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
      * Asserts that the response message payload is cleaned up properly if discarded in a filter and not
      * properly cleaned up by the filter body.
      */
-    @ParameterizedTest(name = "{displayName} [{index}] transformer={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] filterType={0} expectedException={1} transformer={2}")
     @MethodSource("responseTransformers")
-    void cleansClientResponseMessageBodyIfDiscarded(ResponseTransformer transformer,
-                                                    @Nullable Class<?> expectedException)
+    void cleansClientResponseMessageBodyIfDiscarded(final FilterType filterType,
+                                                    final @Nullable Class<?> expectedException,
+                                                    ResponseTransformer transformer)
             throws Exception {
         final AtomicLong numConnectionsOpened = new AtomicLong(0);
 
@@ -88,11 +93,25 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                             return delegate().newConnection(inetSocketAddress, context, observer);
                         }
                     })
+                    .appendConnectionFilter(c -> new StreamingHttpConnectionFilter(c) {
+                        @Override
+                        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                            if (filterType.equals(FilterType.CONNECTION)) {
+                                return transformer.apply(delegate(), request);
+                            } else {
+                                return delegate().request(request);
+                            }
+                        }
+                    })
                     .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
                         @Override
                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                         final StreamingHttpRequest request) {
-                            return transformer.apply(delegate(), request);
+                            if (filterType.equals(FilterType.CLIENT)) {
+                                return transformer.apply(delegate, request);
+                            } else {
+                                return delegate.request(request);
+                            }
                         }
                     })
                     .buildStreaming()) {
@@ -115,51 +134,62 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
         }
     }
 
+    private enum FilterType {
+        CLIENT,
+        CONNECTION
+    }
+
     private static Stream<Arguments> responseTransformers() {
-        return Stream.of(
-                Arguments.of(new ResponseTransformer() {
-                    @Override
-                    public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
-                                                               final StreamingHttpRequest request) {
-                        return requester.request(request);
-                    }
+        final List<Arguments> arguments = new ArrayList<>();
 
-                    @Override
-                    public String toString() {
-                        return "Just delegation, no failure";
-                    }
-                }, null),
-                Arguments.of(new ResponseTransformer() {
-                    @Override
-                    public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
-                                                               final StreamingHttpRequest request) {
-                        return requester
-                                .request(request)
-                                .map(dropped -> {
-                                    throw new DeliberateException();
-                                });
-                    }
+        for (FilterType filterType : FilterType.values()) {
+            arguments.addAll(Arrays.asList(
+                    Arguments.of(filterType, null, new ResponseTransformer() {
+                        @Override
+                        public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
+                                                                   final StreamingHttpRequest request) {
+                            return requester.request(request);
+                        }
 
-                    @Override
-                    public String toString() {
-                        return "Throws exception in filter which drops message";
-                    }
-                }, DeliberateException.class),
-                Arguments.of(new ResponseTransformer() {
-                    @Override
-                    public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
-                                                               final StreamingHttpRequest request) {
-                        return requester
-                                .request(request)
-                                .flatMap(dropped -> Single.failed(new DeliberateException()));
-                    }
+                        @Override
+                        public String toString() {
+                            return "Just delegation, no failure";
+                        }
+                    }),
+                    Arguments.of(filterType, DeliberateException.class, new ResponseTransformer() {
+                        @Override
+                        public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
+                                                                   final StreamingHttpRequest request) {
+                            return requester
+                                    .request(request)
+                                    .map(dropped -> {
+                                        throw new DeliberateException();
+                                    });
+                        }
 
-                    @Override
-                    public String toString() {
-                        return "Returns a failed Single which drops message";
-                    }
-                }, DeliberateException.class)
-        );
+                        @Override
+                        public String toString() {
+                            return "Throws exception in filter which drops message";
+                        }
+                    }),
+                    Arguments.of(filterType, DeliberateException.class, new ResponseTransformer() {
+                        @Override
+                        public Single<StreamingHttpResponse> apply(final StreamingHttpRequester requester,
+                                                                   final StreamingHttpRequest request) {
+                            return requester
+                                    .request(request)
+                                    .flatMap(dropped -> Single.failed(new DeliberateException()));
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "Returns a failed Single which drops message";
+                        }
+                    })
+            ));
+        }
+
+        return arguments.stream();
     }
 
     interface ResponseTransformer

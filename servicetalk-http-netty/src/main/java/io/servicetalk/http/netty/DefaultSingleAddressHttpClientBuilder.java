@@ -322,6 +322,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.retryingHttpRequesterFilter);
             }
 
+            currClientFilterFactory = appendFilter(currClientFilterFactory,
+                    HttpMessageDiscardWatchdogClientFilter.INSTANCE);
+
             // Internal retries must be one of the last filters in the chain.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);
             FilterableStreamingHttpClient wrappedClient =
