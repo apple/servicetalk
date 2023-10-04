@@ -20,8 +20,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
@@ -170,29 +168,9 @@ public final class RetryingHttpRequesterFilter
                 if (lbEventStream != null && t instanceof NoAvailableHostException) {
                     ++lbNotReadyCount;
                     final Completable onHostsAvailable = lbEventStream
-                            .liftSync(subscriber -> new Subscriber<Object>() {
-                                @Override
-                                public void onSubscribe(final Subscription subscription) {
-                                    subscriber.onSubscribe(subscription);
-                                }
-
-                                @Override
-                                public void onNext(@Nullable final Object o) {
-                                    subscriber.onNext(o);
-                                }
-
-                                @Override
-                                public void onError(final Throwable t1) {
-                                    subscriber.onError(t1);
-                                }
-
-                                @Override
-                                public void onComplete() {
-                                    subscriber.onError(new IllegalStateException("Subscriber listening for " +
-                                            LoadBalancerReadyEvent.class.getSimpleName() +
-                                            " completed unexpectedly"));
-                                }
-                            })
+                            .onCompleteError(() -> new IllegalStateException("Subscriber listening for " +
+                                    LoadBalancerReadyEvent.class.getSimpleName() +
+                                    " completed unexpectedly"))
                             .takeWhile(lbEvent ->
                                     // Don't complete until we get a LoadBalancerReadyEvent that is ready.
                                     !(lbEvent instanceof LoadBalancerReadyEvent) ||
