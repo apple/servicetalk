@@ -173,8 +173,8 @@ public final class RetryingHttpRequesterFilter
                                     " completed unexpectedly"))
                             .takeWhile(lbEvent ->
                                     // Don't complete until we get a LoadBalancerReadyEvent that is ready.
-                                    !(lbEvent instanceof LoadBalancerReadyEvent) ||
-                                        !((LoadBalancerReadyEvent) lbEvent).isReady())
+                                    !(lbEvent instanceof LoadBalancerReadyEvent &&
+                                            ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }
