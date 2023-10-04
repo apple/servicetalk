@@ -96,8 +96,8 @@ public interface LoadBalancer<C extends LoadBalancedConnection> extends Listenab
      * A {@link Publisher} of events provided by this {@link LoadBalancer}. This maybe used to broadcast internal state
      * of this {@link LoadBalancer} to provide hints/visibility for external usage.
      * <p>
-     * Note the {@link Publisher} maybe subscribed to multiple times. Using operators such as
-     * {@link Publisher#replay(int)} is recommended.
+     * Note the {@link Publisher} maybe subscribed to multiple times. Implementations are recommended to use operators
+     * such as {@link Publisher#replay(int)}.
      * @return A {@link Publisher} of events provided by this {@link LoadBalancer}.
      */
     Publisher<Object> eventStream();
