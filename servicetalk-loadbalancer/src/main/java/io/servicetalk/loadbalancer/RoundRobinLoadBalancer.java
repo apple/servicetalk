@@ -16,11 +16,8 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.NoActiveHostException;
-import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -31,8 +28,10 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.loadbalancer.Exceptions.StacklessConnectionRejectedException;
+import io.servicetalk.loadbalancer.Exceptions.StacklessNoActiveHostException;
+import io.servicetalk.loadbalancer.Exceptions.StacklessNoAvailableHostException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -620,58 +619,6 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     // Visible for testing
     List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
         return usedHosts.stream().map(Host::asEntry).collect(toList());
-    }
-
-    private static final class StacklessNoAvailableHostException extends NoAvailableHostException {
-        private static final long serialVersionUID = 5942960040738091793L;
-
-        private StacklessNoAvailableHostException(final String message) {
-            super(message);
-        }
-
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
-        }
-
-        public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
-        }
-    }
-
-    private static final class StacklessNoActiveHostException extends NoActiveHostException {
-
-        private static final long serialVersionUID = 7500474499335155869L;
-
-        private StacklessNoActiveHostException(final String message) {
-            super(message);
-        }
-
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
-        }
-
-        public static StacklessNoActiveHostException newInstance(String message, Class<?> clazz, String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessNoActiveHostException(message), clazz, method);
-        }
-    }
-
-    private static final class StacklessConnectionRejectedException extends ConnectionRejectedException {
-        private static final long serialVersionUID = -4940708893680455819L;
-
-        private StacklessConnectionRejectedException(final String message) {
-            super(message);
-        }
-
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
-        }
-
-        public static StacklessConnectionRejectedException newInstance(String message, Class<?> clazz, String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessConnectionRejectedException(message), clazz, method);
-        }
     }
 
     private static boolean isClosedList(List<?> list) {
