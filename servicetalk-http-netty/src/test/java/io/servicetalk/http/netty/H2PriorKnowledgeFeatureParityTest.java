@@ -31,7 +31,6 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
-import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -1636,12 +1635,13 @@ class H2PriorKnowledgeFeatureParityTest {
             Processor<Buffer, Buffer> requestPayload = newProcessor();
             client.request(client.post("/0").payloadBody(fromSource(requestPayload))).toFuture().get();
 
+            Iterator<? extends ConsumableEvent<Integer>> maxItr = maxConcurrentPubQueue.take().toIterable().iterator();
+
             serverChannelLatch.await();
             Channel serverParentChannel = serverParentChannelRef.get();
             serverParentChannel.writeAndFlush(new DefaultHttp2SettingsFrame(
                     new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).sync();
 
-            Iterator<? extends ConsumableEvent<Integer>> maxItr = maxConcurrentPubQueue.take().toIterable().iterator();
             // Verify that the initial maxConcurrency value is the default number
             assertThat("No initial maxConcurrency value", maxItr.hasNext(), is(true));
             ConsumableEvent<Integer> next = maxItr.next();
@@ -2011,22 +2011,12 @@ class H2PriorKnowledgeFeatureParityTest {
     }
 
     private static final class TestConnectionFilter extends StreamingHttpConnectionFilter {
-        private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrent;
-
         TestConnectionFilter(final FilterableStreamingHttpConnection delegate,
                              Queue<FilterableStreamingHttpConnection> connectionQueue,
                              Queue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue) {
             super(delegate);
-            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).multicast(2);
             connectionQueue.add(delegate);
-            maxConcurrentPubQueue.add(maxConcurrent);
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return eventKey == MAX_CONCURRENCY_NO_OFFLOADING ? (Publisher<? extends T>) maxConcurrent :
-                    super.transportEventStream(eventKey);
+            maxConcurrentPubQueue.add(delegate.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING));
         }
     }
 

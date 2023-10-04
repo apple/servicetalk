@@ -75,7 +75,7 @@ public final class DefaultHealthService implements Health.HealthService {
      */
     public DefaultHealthService(Predicate<String> watchAllowed) {
         this.watchAllowed = requireNonNull(watchAllowed);
-        serviceToStatusMap.put(OVERALL_SERVICE_NAME, new HealthValue(SERVING));
+        serviceToStatusMap.put(OVERALL_SERVICE_NAME, HealthValue.newInstance(SERVING));
     }
 
     @Override
@@ -85,7 +85,7 @@ public final class DefaultHealthService implements Health.HealthService {
             return Single.failed(new GrpcStatusException(
                     new GrpcStatus(NOT_FOUND, "unknown service: " + request.getService())));
         }
-        return Single.succeeded(health.last);
+        return health.publisher.takeAtMost(1).firstOrError();
     }
 
     @Override
@@ -103,13 +103,13 @@ public final class DefaultHealthService implements Health.HealthService {
                     return Publisher.from(newBuilder().setStatus(NOT_SERVING).build());
                 }
                 healthValue = serviceToStatusMap.computeIfAbsent(request.getService(),
-                        __ -> new HealthValue(SERVICE_UNKNOWN));
+                        __ -> HealthValue.newInstance(SERVICE_UNKNOWN));
             } finally {
                 lock.unlock();
             }
         }
 
-        return Publisher.from(healthValue.last).concat(healthValue.publisher);
+        return healthValue.publisher;
     }
 
     /**
@@ -130,7 +130,7 @@ public final class DefaultHealthService implements Health.HealthService {
                 return false;
             }
             resp = newBuilder().setStatus(status).build();
-            healthValue = serviceToStatusMap.computeIfAbsent(service, __ -> new HealthValue(resp));
+            healthValue = serviceToStatusMap.computeIfAbsent(service, __ -> new HealthValue());
         } finally {
             lock.unlock();
         }
@@ -181,24 +181,29 @@ public final class DefaultHealthService implements Health.HealthService {
     private static final class HealthValue {
         private final Processor<HealthCheckResponse, HealthCheckResponse> processor;
         private final Publisher<HealthCheckResponse> publisher;
-        private volatile HealthCheckResponse last;
 
-        private HealthValue(final HealthCheckResponse initialState) {
+        HealthValue() {
             this.processor = newPublisherProcessorDropHeadOnOverflow(4);
             this.publisher = fromSource(processor)
-                    // Allow multiple subscribers to Subscribe to the resulting Publisher.
-                    .multicast(1, false);
-            this.last = initialState;
+                    // Allow multiple subscribers to Subscribe to the resulting Publisher, use a history of 1
+                    // so each new subscriber gets the latest state.
+                    .replay(1);
+            // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest
+            // signal.
+            publisher.ignoreElements().subscribe();
         }
 
-        private HealthValue(final ServingStatus status) {
-            this(newBuilder().setStatus(status).build());
+        static HealthValue newInstance(final HealthCheckResponse initialState) {
+            HealthValue value = new HealthValue();
+            value.next(initialState);
+            return value;
+        }
+
+        static HealthValue newInstance(final ServingStatus status) {
+            return newInstance(newBuilder().setStatus(status).build());
         }
 
         void next(HealthCheckResponse response) {
-            // Set the status here instead of in an operator because we need the status to be updated regardless if
-            // anyone is consuming the status.
-            last = response;
             processor.onNext(response);
         }
 
@@ -208,7 +213,12 @@ public final class DefaultHealthService implements Health.HealthService {
          * @param status The last status to set.
          */
         void completeMultipleTerminalSafe(ServingStatus status) {
-            next(newBuilder().setStatus(status).build());
+            try {
+                next(newBuilder().setStatus(status).build());
+            } catch (Throwable cause) {
+                processor.onError(cause);
+                return;
+            }
             processor.onComplete();
         }
     }

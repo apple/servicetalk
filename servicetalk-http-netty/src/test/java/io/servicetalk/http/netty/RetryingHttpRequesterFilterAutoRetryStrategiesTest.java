@@ -21,6 +21,7 @@ import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
@@ -305,7 +306,10 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         when(client.executionContext()).then(__ -> executionContext);
         final ContextAwareRetryingHttpClientFilter f =
                 (ContextAwareRetryingHttpClientFilter) filter.create(client);
-        f.inject(lbEvents, sdStatus);
+        Publisher<Object> replayLBEvents = lbEvents.replay(1);
+        // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
+        replayLBEvents.ignoreElements().subscribe();
+        f.inject(replayLBEvents, sdStatus);
         return f;
     }
 
