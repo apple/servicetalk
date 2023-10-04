@@ -19,11 +19,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcClientMetadata;
+import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.netty.ProxyResponseException;
 import io.servicetalk.http.netty.ProxyTunnel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
@@ -41,16 +43,23 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -125,24 +134,44 @@ class GrpcProxyTunnelTest {
     }
 
     @Test
-    void testProxyAuthRequired() throws Exception {
+    void testProxyAuthRequired() {
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
-        GrpcStatusException e = assertThrows(GrpcStatusException.class,
-                () -> client.sayHello(HelloRequest.newBuilder().setName("foo").build()));
-        assertThat(e.status().code(), is(UNKNOWN));
-        Throwable cause = e.getCause();
-        assertThat(cause, is(instanceOf(ProxyResponseException.class)));
-        assertThat(((ProxyResponseException) cause).status(), is(PROXY_AUTHENTICATION_REQUIRED));
+        assertProxyConnectResponseException(UNAUTHENTICATED, PROXY_AUTHENTICATION_REQUIRED);
     }
 
     @Test
-    void testBadProxyResponse() throws Exception {
+    void testInternalServerError() {
         proxyTunnel.badResponseProxy();
+        assertProxyConnectResponseException(UNKNOWN, INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void testServiceUnavailable() {
+        proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
+            final OutputStream os = socket.getOutputStream();
+            os.write((protocol + ' ' + SERVICE_UNAVAILABLE + "\r\n\r\n").getBytes(UTF_8));
+            os.flush();
+        });
+        assertProxyConnectResponseException(UNAVAILABLE, SERVICE_UNAVAILABLE);
+    }
+
+    @Test
+    void testClientError() {
+        proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
+            final OutputStream os = socket.getOutputStream();
+            os.write((protocol + ' ' + BAD_REQUEST + "\r\n\r\n").getBytes(UTF_8));
+            os.flush();
+        });
+        assertProxyConnectResponseException(INVALID_ARGUMENT, BAD_REQUEST);
+    }
+
+    private void assertProxyConnectResponseException(GrpcStatusCode grpcStatusCode,
+                                                     HttpResponseStatus httpResponseStatus) {
         GrpcStatusException e = assertThrows(GrpcStatusException.class,
                 () -> client.sayHello(HelloRequest.newBuilder().setName("foo").build()));
-        assertThat(e.status().code(), is(UNKNOWN));
+        assertThat(e.status().code(), is(grpcStatusCode));
         Throwable cause = e.getCause();
-        assertThat(cause, is(instanceOf(ProxyResponseException.class)));
-        assertThat(((ProxyResponseException) cause).status(), is(INTERNAL_SERVER_ERROR));
+        assertThat(cause, is(instanceOf(ProxyConnectResponseException.class)));
+        assertThat(((ProxyConnectResponseException) cause).response().status(), is(httpResponseStatus));
     }
 }

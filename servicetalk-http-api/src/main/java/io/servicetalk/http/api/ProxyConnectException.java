@@ -13,39 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
-
-import io.servicetalk.transport.api.RetryableException;
+package io.servicetalk.http.api;
 
 import java.io.IOException;
 
 /**
  * An exception while processing
  * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.
+ *
+ * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
  */
 public class ProxyConnectException extends IOException {
 
     private static final long serialVersionUID = 4453075928788773272L;
 
-    ProxyConnectException(final String message) {
+    /**
+     * Creates a new instance.
+     *
+     * @param message the detail message
+     */
+    public ProxyConnectException(final String message) {
         super(message);
     }
 
-    ProxyConnectException(final String message, final Throwable cause) {
+    /**
+     * Creates a new instance.
+     *
+     * @param message the detail message
+     * @param cause the original cause
+     */
+    public ProxyConnectException(final String message, final Throwable cause) {
         super(message, cause);
-    }
-
-    static final class RetryableProxyConnectException extends ProxyConnectException
-            implements RetryableException {
-
-        private static final long serialVersionUID = 5118637083568536242L;
-
-        RetryableProxyConnectException(final String message) {
-            super(message);
-        }
-
-        RetryableProxyConnectException(final String message, final Throwable cause) {
-            super(message, cause);
-        }
     }
 }

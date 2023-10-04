@@ -104,6 +104,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_IMPLEMENTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
@@ -275,15 +276,20 @@ final class GrpcUtils {
     }
 
     private static void validateStatusCode(HttpResponseStatus status) {
-        final int statusCode = status.code();
-        if (statusCode == OK.code()) {
+        if (status.code() == OK.code()) {
             return;
         }
+        throw GrpcStatusException.of(Status.newBuilder().setCode(fromHttpStatus(status).value())
+                .setMessage("HTTP status code: " + status).build());
+    }
+
+    static GrpcStatusCode fromHttpStatus(final HttpResponseStatus status) {
+        final int statusCode = status.code();
         final GrpcStatusCode grpcStatusCode;
         if (statusCode == BAD_GATEWAY.code() || statusCode == SERVICE_UNAVAILABLE.code() ||
                 statusCode == GATEWAY_TIMEOUT.code() || statusCode == TOO_MANY_REQUESTS.code()) {
             grpcStatusCode = UNAVAILABLE;
-        } else if (statusCode == UNAUTHORIZED.code()) {
+        } else if (statusCode == UNAUTHORIZED.code() || statusCode == PROXY_AUTHENTICATION_REQUIRED.code()) {
             grpcStatusCode = UNAUTHENTICATED;
         } else if (statusCode == FORBIDDEN.code()) {
             grpcStatusCode = PERMISSION_DENIED;
@@ -298,8 +304,7 @@ final class GrpcUtils {
         } else {
             grpcStatusCode = UNKNOWN;
         }
-        throw GrpcStatusException.of(Status.newBuilder().setCode(grpcStatusCode.value())
-                .setMessage("HTTP status code: " + status).build());
+        return grpcStatusCode;
     }
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,

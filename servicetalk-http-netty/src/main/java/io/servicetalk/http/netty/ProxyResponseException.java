@@ -15,22 +15,22 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.transport.api.RetryableException;
-
-import java.io.IOException;
 
 /**
  * A proxy response exception, that indicates an unexpected response status from a proxy.
+ *
+ * @deprecated Use {@link ProxyConnectResponseException} instead
  */
-public final class ProxyResponseException extends IOException implements RetryableException {
+@Deprecated // FIXME: 0.43 - remove deprecated class
+public class ProxyResponseException extends ProxyConnectResponseException implements RetryableException {
     private static final long serialVersionUID = -1021287419155443499L;
 
-    private final HttpResponseStatus status;
-
-    ProxyResponseException(final String message, final HttpResponseStatus status) {
-        super(message);
-        this.status = status;
+    ProxyResponseException(final String message, final HttpResponseMetaData response) {
+        super(message, response);
     }
 
     /**
@@ -39,6 +39,6 @@ public final class ProxyResponseException extends IOException implements Retryab
      * @return the {@link HttpResponseStatus} that was received.
      */
     public HttpResponseStatus status() {
-        return status;
+        return response().status();
     }
 }

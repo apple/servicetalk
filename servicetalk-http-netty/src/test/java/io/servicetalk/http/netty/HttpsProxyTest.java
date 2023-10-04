@@ -27,6 +27,8 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.ProxyConnectException;
+import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
@@ -65,6 +67,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
@@ -239,9 +242,10 @@ class HttpsProxyTest {
         setUp(protocols);
         proxyTunnel.basicAuthToken(AUTH_TOKEN);
         assert client != null;
-        ProxyResponseException e = assertThrows(ProxyResponseException.class,
+        ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
                 () -> client.request(client.get("/path")));
-        assertThat(e.status(), is(PROXY_AUTHENTICATION_REQUIRED));
+        assertThat(e, is(not(instanceOf(RetryableException.class))));
+        assertThat(e.response().status(), is(PROXY_AUTHENTICATION_REQUIRED));
         assertTargetAddress();
         verifyProxyConnectFailed(e);
     }
@@ -252,10 +256,28 @@ class HttpsProxyTest {
         setUp(protocols);
         proxyTunnel.badResponseProxy();
         assert client != null;
-        ProxyResponseException e = assertThrows(ProxyResponseException.class,
+        ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
                 () -> client.request(client.get("/path")));
         assertThat(e, is(instanceOf(RetryableException.class)));
-        assertThat(e.status(), is(INTERNAL_SERVER_ERROR));
+        assertThat(e.response().status(), is(INTERNAL_SERVER_ERROR));
+        assertTargetAddress();
+        verifyProxyConnectFailed(e);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void testBadRequest(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols);
+        proxyTunnel.proxyRequestHandler((socket, host, port, protocol) -> {
+            final OutputStream os = socket.getOutputStream();
+            os.write((protocol + ' ' + BAD_REQUEST + "\r\n\r\n").getBytes(UTF_8));
+            os.flush();
+        });
+        assert client != null;
+        ProxyConnectResponseException e = assertThrows(ProxyConnectResponseException.class,
+                () -> client.request(client.get("/path")));
+        assertThat(e, is(not(instanceOf(RetryableException.class))));
+        assertThat(e.response().status(), is(BAD_REQUEST));
         assertTargetAddress();
         verifyProxyConnectFailed(e);
     }

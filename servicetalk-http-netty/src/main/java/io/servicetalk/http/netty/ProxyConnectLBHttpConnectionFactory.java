@@ -19,10 +19,11 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.ProxyConnectException;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
-import io.servicetalk.http.netty.ProxyConnectException.RetryableProxyConnectException;
+import io.servicetalk.http.netty.ProxyConnectChannelSingle.RetryableProxyConnectException;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -184,7 +185,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
             return new RetryableProxyConnectException(channel + " Connection is closed, either received a " +
                     "'Connection: closed' header or closed by the proxy", cause);
         }
-        if (!(cause instanceof ProxyConnectException || cause instanceof ProxyResponseException)) {
+        if (!(cause instanceof ProxyConnectException)) {
             return new RetryableProxyConnectException(channel +
                     " Unexpected exception during an attempt to connect to a proxy", cause);
         }
