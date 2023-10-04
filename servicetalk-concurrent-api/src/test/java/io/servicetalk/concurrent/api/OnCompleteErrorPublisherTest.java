@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
@@ -50,16 +51,17 @@ final class OnCompleteErrorPublisherTest {
     @ParameterizedTest(name = "{displayName} [{index}] shouldThrow={0}")
     @ValueSource(booleans = {false, true})
     void completeToError(boolean shouldThrow) {
+        final DeliberateException thrown = new DeliberateException();
         toSource(from(1)
                 .onCompleteError(() -> {
                     if (shouldThrow) {
-                        throw DELIBERATE_EXCEPTION;
+                        throw thrown;
                     }
                     return DELIBERATE_EXCEPTION;
                 })
         ).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), equalTo(1));
-        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), shouldThrow ? sameInstance(thrown) : sameInstance(DELIBERATE_EXCEPTION));
     }
 }
