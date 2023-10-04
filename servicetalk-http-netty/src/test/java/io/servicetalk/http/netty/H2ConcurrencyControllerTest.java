@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy;
-import io.servicetalk.http.netty.StreamObserverTest.MulticastTransportEventsStreamingHttpConnectionFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -135,9 +134,9 @@ class H2ConcurrencyControllerTest {
                     });
                 }
             }
-        }, parentPipeline -> {
-            serverParentChannel.set(parentPipeline.channel());
-        }, h2Builder -> {
+        },
+        parentPipeline -> serverParentChannel.set(parentPipeline.channel()),
+        h2Builder -> {
             h2Builder.initialSettings().maxConcurrentStreams(maxConcurrentStreams);
             return h2Builder;
         });
@@ -162,7 +161,6 @@ class H2ConcurrencyControllerTest {
         assert serverAddress != null;
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .appendClientFilter(disableAutoRetries())   // All exceptions should be propagated
-                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
@@ -252,7 +250,6 @@ class H2ConcurrencyControllerTest {
         assert serverAddress != null;
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .executionStrategy(strategy)
-                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 // Don't allow more than 1 connection:
                 .appendConnectionFactoryFilter(LimitingConnectionFactoryFilter.withMax(1))
                 // Retry all ConnectionLimitReachedException(s), don't retry RetryableException(s):
@@ -324,7 +321,6 @@ class H2ConcurrencyControllerTest {
         assert serverAddress != null;
         assertThat(MAX_UNSIGNED_INT, is(greaterThan((long) Integer.MAX_VALUE)));
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
-                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 .protocols(HTTP_2.config)
                 .build()) {
 

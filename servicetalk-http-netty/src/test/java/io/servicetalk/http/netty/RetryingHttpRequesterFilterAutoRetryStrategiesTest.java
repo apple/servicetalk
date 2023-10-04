@@ -307,6 +307,7 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         final ContextAwareRetryingHttpClientFilter f =
                 (ContextAwareRetryingHttpClientFilter) filter.create(client);
         Publisher<Object> replayLBEvents = lbEvents.replay(1);
+        // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         replayLBEvents.ignoreElements().subscribe();
         f.inject(replayLBEvents, sdStatus);
         return f;

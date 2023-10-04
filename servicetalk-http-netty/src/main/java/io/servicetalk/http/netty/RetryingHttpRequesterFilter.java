@@ -196,7 +196,7 @@ public final class RetryingHttpRequesterFilter
                             .takeWhile(lbEvent ->
                                     // Don't complete until we get a LoadBalancerReadyEvent that is ready.
                                     !(lbEvent instanceof LoadBalancerReadyEvent) ||
-                                    !((LoadBalancerReadyEvent) lbEvent).isReady())
+                                        !((LoadBalancerReadyEvent) lbEvent).isReady())
                             .ignoreElements();
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }
