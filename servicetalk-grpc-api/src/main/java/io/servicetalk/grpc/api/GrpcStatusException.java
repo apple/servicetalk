@@ -16,6 +16,8 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.http.api.Http2Exception;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.serializer.api.SerializationException;
 
 import java.util.concurrent.CancellationException;
@@ -28,6 +30,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
+import static io.servicetalk.grpc.api.GrpcUtils.fromHttpStatus;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -140,6 +143,9 @@ public final class GrpcStatusException extends RuntimeException {
             status = new GrpcStatus(CANCELLED, cause);
         } else if (cause instanceof TimeoutException) {
             status = new GrpcStatus(DEADLINE_EXCEEDED, cause);
+        } else if (cause instanceof ProxyConnectResponseException) {
+            final HttpResponseMetaData response = ((ProxyConnectResponseException) cause).response();
+            status = new GrpcStatus(fromHttpStatus(response.status()), cause);
         } else {
             // Initialize detail because cause is often lost
             status = new GrpcStatus(UNKNOWN, cause, cause.toString());

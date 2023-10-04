@@ -58,7 +58,9 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * always initialized using
      * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request. The actual
      * protocol will be negotiated via <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> of TLS protocol,
-     * taking into account HTTP protocols configured via {@link #protocols(HttpProtocolConfig...)} method.
+     * taking into account HTTP protocols configured via {@link #protocols(HttpProtocolConfig...)} method. In case of
+     * any error during {@code CONNECT} process, {@link ProxyConnectException} or {@link ProxyConnectResponseException}
+     * will be thrown when a request attempt is made through the constructed client instance.
      *
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.

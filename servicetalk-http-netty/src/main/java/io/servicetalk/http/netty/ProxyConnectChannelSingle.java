@@ -20,9 +20,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.netty.ProxyConnectException.RetryableProxyConnectException;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ProxyConnectException;
+import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ProxyConnectObserver;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler.InboundDataEndEvent;
 
@@ -40,7 +43,12 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
+import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 
 /**
@@ -115,8 +123,8 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
                 if (f.isSuccess()) {
                     ctx.read();
                 } else {
-                    failSubscriber(ctx, new RetryableProxyConnectException(
-                            "Failed to write CONNECT request", f.cause()));
+                    failSubscriber(ctx, new RetryableProxyConnectException(ctx.channel() +
+                            " Failed to write CONNECT request", f.cause()));
                 }
             });
         }
@@ -125,14 +133,13 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
             if (msg instanceof HttpResponseMetaData) {
                 if (response != null) {
-                    failSubscriber(ctx, new RetryableProxyConnectException(
-                            "Received two responses for a single CONNECT request"));
+                    failSubscriber(ctx, new RetryableProxyConnectException(ctx.channel() +
+                            " Received two responses for a single CONNECT request"));
                     return;
                 }
                 response = (HttpResponseMetaData) msg;
                 if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                    failSubscriber(ctx, new ProxyResponseException("Non-successful response '" + response.status() +
-                            "' from proxy on CONNECT " + connectAddress, response.status()));
+                    failSubscriber(ctx, unsuccessfulResponse(ctx.channel(), response, connectAddress));
                 }
                 // We do not complete subscriber here because we need to wait for the HttpResponseDecoder state machine
                 // to complete. Completion will be signalled by InboundDataEndEvent. Any other messages before that are
@@ -140,9 +147,31 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
                 // It also helps to make sure we do not propagate InboundDataEndEvent after the next handlers are added
                 // to the pipeline, potentially causing changes in their state machine.
             } else {
-                failSubscriber(ctx, new RetryableProxyConnectException(
-                        "Received unexpected message in the pipeline of type: " + msg.getClass().getName()));
+                failSubscriber(ctx, new RetryableProxyConnectException(ctx.channel() +
+                        " Received unexpected message in the pipeline of type: " + msg.getClass().getName()));
             }
+        }
+
+        private static ProxyConnectResponseException unsuccessfulResponse(final Channel channel,
+                                                                          final HttpResponseMetaData response,
+                                                                          final String connectAddress) {
+            final String message = channel + " Non-successful response '" + response.status() +
+                    "' from proxy on CONNECT " + connectAddress;
+            return isRetryable(response.status()) ?
+                    new RetryableProxyConnectResponseException(message, response) :
+                    new ProxyConnectResponseException(message, response);
+        }
+
+        /**
+         * Determines what response status codes are retryable.
+         * It recognizes all the same status codes as GrpcUtils.fromHttpStatus(...) that result in "UNAVAILABLE",
+         * plus INTERNAL_SERVER_ERROR (500) with an assumption that it will be retries on a different host. In general,
+         * CONNECT request is simple, and it's not expected that proxy servers can consistently respond with 500.
+         */
+        private static boolean isRetryable(final HttpResponseStatus status) {
+            return INTERNAL_SERVER_ERROR.equals(status) || BAD_GATEWAY.equals(status) ||
+                    SERVICE_UNAVAILABLE.equals(status) || GATEWAY_TIMEOUT.equals(status) ||
+                    TOO_MANY_REQUESTS.equals(status);
         }
 
         @Override
@@ -173,8 +202,8 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         @Override
         public void channelInactive(final ChannelHandlerContext ctx) {
             if (subscriber != null) {
-                failSubscriber(ctx, new RetryableProxyConnectException(
-                        "Connection closed before proxy CONNECT finished"));
+                failSubscriber(ctx, new RetryableProxyConnectException(ctx.channel() +
+                        " Connection closed before proxy CONNECT finished"));
                 return;
             }
             ctx.fireChannelInactive();
@@ -183,8 +212,8 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
             if (subscriber != null) {
-                failSubscriber(ctx, new ProxyConnectException(
-                        "Unexpected exception before proxy CONNECT finished", cause));
+                failSubscriber(ctx, new ProxyConnectException(ctx.channel() +
+                        " Unexpected exception before proxy CONNECT finished", cause));
                 return;
             }
             ctx.fireExceptionCaught(cause);
@@ -201,6 +230,30 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
                 subscriberCopy.onError(cause);
             }
             ctx.close();
+        }
+    }
+
+    static final class RetryableProxyConnectException extends ProxyConnectException
+            implements RetryableException {
+
+        private static final long serialVersionUID = 5118637083568536242L;
+
+        RetryableProxyConnectException(final String message) {
+            super(message);
+        }
+
+        RetryableProxyConnectException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    private static final class RetryableProxyConnectResponseException extends ProxyResponseException
+            implements RetryableException {
+
+        private static final long serialVersionUID = -4572727779387205399L;
+
+        RetryableProxyConnectResponseException(final String message, final HttpResponseMetaData response) {
+            super(message, response);
         }
     }
 }

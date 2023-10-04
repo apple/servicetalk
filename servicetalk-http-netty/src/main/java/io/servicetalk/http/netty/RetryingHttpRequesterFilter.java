@@ -20,7 +20,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
@@ -54,15 +53,12 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
@@ -129,15 +125,10 @@ public final class RetryingHttpRequesterFilter
     }
 
     final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
-
         @Nullable
         private Completable sdStatus;
-
         @Nullable
-        private AsyncCloseable closeAsync;
-
-        @Nullable
-        private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
+        private Publisher<Object> lbEventStream;
 
         /**
          * Create a new instance.
@@ -150,21 +141,8 @@ public final class RetryingHttpRequesterFilter
 
         void inject(@Nullable final Publisher<Object> lbEventStream,
                     @Nullable final Completable sdStatus) {
-            assert lbEventStream != null;
-            assert sdStatus != null;
-            this.sdStatus = ignoreSdErrors ? null : sdStatus;
-
-            if (waitForLb) {
-                loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
-                closeAsync = toAsyncCloseable(__ -> {
-                    loadBalancerReadySubscriber.cancel();
-                    return completed();
-                });
-                toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
-            } else {
-                loadBalancerReadySubscriber = null;
-                closeAsync = emptyAsyncCloseable();
-            }
+            this.sdStatus = ignoreSdErrors ? null : requireNonNull(sdStatus);
+            this.lbEventStream = waitForLb ? requireNonNull(lbEventStream) : null;
         }
 
         private final class OuterRetryStrategy implements BiIntFunction<Throwable, Completable> {
@@ -187,9 +165,17 @@ public final class RetryingHttpRequesterFilter
                     return failed(t);
                 }
 
-                if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
+                if (lbEventStream != null && t instanceof NoAvailableHostException) {
                     ++lbNotReadyCount;
-                    final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                    final Completable onHostsAvailable = lbEventStream
+                            .onCompleteError(() -> new IllegalStateException("Subscriber listening for " +
+                                    LoadBalancerReadyEvent.class.getSimpleName() +
+                                    " completed unexpectedly"))
+                            .takeWhile(lbEvent ->
+                                    // Don't complete until we get a LoadBalancerReadyEvent that is ready.
+                                    !(lbEvent instanceof LoadBalancerReadyEvent &&
+                                            ((LoadBalancerReadyEvent) lbEvent).isReady()))
+                            .ignoreElements();
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }
 
@@ -263,22 +249,6 @@ public final class RetryingHttpRequesterFilter
             // 2. Publisher state is restored to original state for each retry
             // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
             return single.retryWhen(retryStrategy(request, executionContext()));
-        }
-
-        @Override
-        public Completable closeAsync() {
-            if (closeAsync != null) {
-                closeAsync.closeAsync();
-            }
-            return super.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            if (closeAsync != null) {
-                closeAsync.closeAsyncGracefully();
-            }
-            return super.closeAsyncGracefully();
         }
     }
 

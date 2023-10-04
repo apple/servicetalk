@@ -562,6 +562,28 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Transform this {@link Publisher}s {@link Subscriber#onComplete()} signal into
+     * {@link Subscriber#onError(Throwable)} signal (unless {@code null} error returned from {@code errorSupplier}).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     terminalOfThisPublisher();
+     *     Throwable cause = errorSupplier.get()
+     *     if (cause != null) {
+     *       throw cause;
+     *     }
+     * }</pre>
+     * @param errorSupplier returns the error to emit to {@link Subscriber#onError(Throwable)}. if the return value
+     * is {@code null} then complete with {@link Subscriber#onComplete()}.
+     * @return A {@link Publisher} which transform this {@link Publisher}s {@link Subscriber#onComplete()} signal into
+     * {@link Subscriber#onError(Throwable)} signal (unless {@code null} error returned from {@code errorSupplier}).
+     */
+    public final Publisher<T> onCompleteError(final Supplier<? extends Throwable> errorSupplier) {
+        return new OnCompleteErrorPublisher<>(this, errorSupplier);
+    }
+
+    /**
      * Transform errors emitted on this {@link Publisher} which match {@code predicate} into
      * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
      * <p>

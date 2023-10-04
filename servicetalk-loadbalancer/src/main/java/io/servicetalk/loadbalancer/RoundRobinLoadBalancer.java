@@ -157,7 +157,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         this.id = id + '@' + toHexString(identityHashCode(this));
         this.targetResource = requireNonNull(targetResourceName);
         this.eventPublisher = requireNonNull(eventPublisher);
-        this.eventStream = fromSource(eventStreamProcessor);
+        this.eventStream = fromSource(eventStreamProcessor)
+                .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
@@ -183,6 +184,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     })
                     .beforeOnComplete(() -> usedHosts = new ClosedList<>(emptyList()));
         });
+        // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
+        eventStream.ignoreElements().subscribe();
         subscribeToEvents(false);
     }
 

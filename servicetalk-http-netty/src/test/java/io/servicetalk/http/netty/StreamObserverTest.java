@@ -15,17 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
@@ -54,7 +47,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
@@ -121,7 +113,6 @@ class StreamObserverTest {
         });
         client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
                 .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build())
-                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
                 .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                 .build();
     }
@@ -182,45 +173,5 @@ class StreamObserverTest {
 
         verifyNoMoreInteractions(clientTransportObserver, clientMultiplexedObserver, clientStreamObserver,
                 clientDataObserver);
-    }
-
-    /**
-     * Filter that allows tests to subscribe to
-     * {@link FilterableStreamingHttpConnection#transportEventStream(HttpEventKey)} without loosing already delivered
-     * events.
-     */
-    static final class MulticastTransportEventsStreamingHttpConnectionFilter
-            implements StreamingHttpConnectionFilterFactory {
-
-        static final StreamingHttpConnectionFilterFactory INSTANCE =
-                new MulticastTransportEventsStreamingHttpConnectionFilter();
-
-        private MulticastTransportEventsStreamingHttpConnectionFilter() {
-            // Singleton.
-        }
-
-        @Override
-        public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection) {
-            Publisher<? extends ConsumableEvent<Integer>> maxConcurrency = connection
-                    .transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).multicast(2);
-            return new StreamingHttpConnectionFilter(connection) {
-                @Override
-                @SuppressWarnings("unchecked")
-                public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-                    return eventKey == MAX_CONCURRENCY_NO_OFFLOADING ? (Publisher<? extends T>) maxConcurrency :
-                            delegate().transportEventStream(eventKey);
-                }
-
-                @Override
-                public String toString() {
-                    return delegate().toString();
-                }
-            };
-        }
-
-        @Override
-        public HttpExecutionStrategy requiredOffloads() {
-            return offloadNone();
-        }
     }
 }
