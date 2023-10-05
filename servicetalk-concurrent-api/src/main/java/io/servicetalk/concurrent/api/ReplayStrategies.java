@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -158,23 +157,30 @@ public final class ReplayStrategies {
 
         @Override
         public void accumulate(@Nullable final T t) {
+            final long nanoTime = executor.currentTime(NANOSECONDS);
+            trimExpired(nanoTime);
             if (items.size() >= maxItems) {
                 items.poll();
             }
-            items.add(new TimeStampSignal<>(executor.currentTime(NANOSECONDS), t));
+            items.add(new TimeStampSignal<>(nanoTime, t));
         }
 
         @Override
         public void deliverAccumulation(final Consumer<T> consumer) {
-            final Iterator<TimeStampSignal<T>> itr = items.iterator();
-            final long nanoTime = executor.currentTime(NANOSECONDS);
-            while (itr.hasNext()) {
-                final TimeStampSignal<T> next = itr.next();
-                if (nanoTime - next.timeStamp >= ttlNanos) {
-                    itr.remove();
-                } else {
-                    consumer.accept(next.signal);
-                }
+            if (items.isEmpty()) {
+                return;
+            }
+            trimExpired(executor.currentTime(NANOSECONDS));
+            for (TimeStampSignal<T> next : items) {
+                consumer.accept(next.signal);
+            }
+        }
+
+        private void trimExpired(long nanoTime) {
+            // Entry time stamps are monotonically increasing, so we only need to trim until the first non-stale entry.
+            TimeStampSignal<T> next;
+            while ((next = items.peek()) != null && nanoTime - next.timeStamp >= ttlNanos) {
+                items.poll();
             }
         }
     }
