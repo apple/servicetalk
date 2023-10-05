@@ -177,6 +177,7 @@ public final class ReplayStrategies {
         }
 
         private void trimExpired(long nanoTime) {
+            // Entry time stamps are monotonically increasing, so we only need to trim until the first non-stale entry.
             TimeStampSignal<T> next;
             while ((next = items.peek()) != null && nanoTime - next.timeStamp >= ttlNanos) {
                 items.poll();
