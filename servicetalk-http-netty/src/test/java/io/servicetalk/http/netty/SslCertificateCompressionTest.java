@@ -139,6 +139,7 @@ class SslCertificateCompressionTest {
         @Override
         public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
             return new ConnectionObserver() {
+
                 @Override
                 public void onDataRead(final int size) {
                     if (inHandshake) {
@@ -174,7 +175,7 @@ class SslCertificateCompressionTest {
                 }
 
                 @Override
-                public void onTransportHandshakeComplete() {
+                public void onTransportHandshakeComplete(final ConnectionInfo info) {
                 }
 
                 @Override

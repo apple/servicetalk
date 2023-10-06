@@ -99,7 +99,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         // Disable half-closure to simplify ProxyConnectHandler implementation
         channelConfig.setOption(ALLOW_HALF_CLOSURE, FALSE);
         return new ProxyConnectChannelSingle(channel,
-                new TcpClientChannelInitializer(config.tcpConfig(), observer, config.hasProxy())
+                new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
                                 getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
                 observer, h1Config.headersFactory(), connectAddress)

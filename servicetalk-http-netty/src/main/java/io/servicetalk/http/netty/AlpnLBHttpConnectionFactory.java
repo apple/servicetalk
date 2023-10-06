@@ -69,7 +69,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     private Single<FilterableStreamingHttpConnection> createConnection(
             final Channel channel, final ConnectionObserver connectionObserver,
             final ReadOnlyTcpClientConfig tcpConfig) {
-        return new AlpnChannelSingle(channel, new TcpClientChannelInitializer(tcpConfig, connectionObserver),
+        return new AlpnChannelSingle(channel,
+                new TcpClientChannelInitializer(tcpConfig, connectionObserver, executionContext, false),
                 ctx -> { /* SslHandler will automatically start handshake on channelActive */ }).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:

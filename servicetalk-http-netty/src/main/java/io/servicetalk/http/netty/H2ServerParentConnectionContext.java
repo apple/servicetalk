@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(listenAddress, channel, executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
+                        new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
                         drainRequestPayloadBody, connectionObserver),
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ },
                         earlyConnectionAcceptor, lateConnectionAcceptor)

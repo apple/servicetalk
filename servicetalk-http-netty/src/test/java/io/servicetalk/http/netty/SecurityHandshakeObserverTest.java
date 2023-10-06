@@ -181,7 +181,7 @@ class SecurityHandshakeObserverTest {
             ConnectionObserver connectionObserver, SecurityHandshakeObserver securityHandshakeObserver,
             HttpProtocol expectedProtocol, boolean failHandshake) {
         order.verify(transportObserver).onNewConnection(any(), any());
-        order.verify(connectionObserver).onTransportHandshakeComplete();
+        order.verify(connectionObserver).onTransportHandshakeComplete(any());
         order.verify(connectionObserver).onSecurityHandshake();
         if (failHandshake) {
             ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);

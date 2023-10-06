@@ -21,14 +21,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -49,12 +47,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.net.SocketOption;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -64,7 +60,6 @@ import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.ExecutionContextUtils.channelExecutionContext;
-import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -229,51 +224,12 @@ public final class TcpServerBinder {
         if (earlyConnectionAcceptor != null) {
             final ExecutionContext<?> channelExecutionContext = channelExecutionContext(channel, executionContext);
 
-            ConnectionInfo info = new ConnectionInfo() {
-                @Override
-                public SocketAddress localAddress() {
-                    return channel.localAddress();
-                }
-
-                @Override
-                public SocketAddress remoteAddress() {
-                    return channel.remoteAddress();
-                }
-
-                @Override
-                public ExecutionContext<?> executionContext() {
-                    return channelExecutionContext;
-                }
-
-                @Nullable
-                @Override
-                public SslConfig sslConfig() {
-                    return config.sslConfig();
-                }
-
-                @Nullable
-                @Override
-                public SSLSession sslSession() {
-                    return null;
-                }
-
-                @Nullable
-                @Override
-                public <T> T socketOption(final SocketOption<T> option) {
-                    return getOption(option, channel.config(), config.idleTimeoutMs());
-                }
-
-                @Override
-                public Protocol protocol() {
-                    return () -> "TCP";
-                }
-            };
-
             final EarlyConnectionAcceptorHandler acceptorHandler = new EarlyConnectionAcceptorHandler();
             channel.pipeline().addLast(acceptorHandler);
 
             // Defer is required to isolate the context between the user accept callback and the rest of the connection
-            Completable earlyCompletable = Completable.defer(() -> earlyConnectionAcceptor.accept(info));
+            Completable earlyCompletable = Completable.defer(() -> earlyConnectionAcceptor.accept(new TcpConnectionInfo(
+                    channel, channelExecutionContext, config.sslConfig(), config.idleTimeoutMs())));
 
             if (earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {
                 earlyCompletable = earlyCompletable.subscribeOn(offloadExecutor);
