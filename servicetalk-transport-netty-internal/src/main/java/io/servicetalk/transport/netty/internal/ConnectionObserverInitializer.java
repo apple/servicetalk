@@ -97,7 +97,12 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             }
         });
         channel.pipeline().addLast(
-                new ConnectionObserverHandler(observer, connectionInfoFactory, handshakeOnActive, client, channel));
+                new ConnectionObserverHandler(observer, connectionInfoFactory, handshakeOnActive, isFastOpen(channel)));
+    }
+
+    private boolean isFastOpen(final Channel channel) {
+        return client && handshakeOnActive && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+                (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
     }
 
     static final class ConnectionObserverHandler extends ChannelDuplexHandler {
@@ -112,20 +117,13 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         ConnectionObserverHandler(final ConnectionObserver observer,
                                   final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                   final boolean handshakeOnActive,
-                                  final boolean client,
-                                  final Channel channel) {
+                                  final boolean fastOpen) {
             this.observer = observer;
             this.connectionInfoFactory = connectionInfoFactory;
             this.handshakeOnActive = handshakeOnActive;
-            if (isFastOpen(client, channel)) {
+            if (fastOpen) {
                 reportSecurityHandshakeStarting();
             }
-        }
-
-        private boolean isFastOpen(final boolean client, final Channel channel) {
-            return client && handshakeOnActive &&
-                    Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
-                    (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
         }
 
         @Override
