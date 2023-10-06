@@ -29,21 +29,6 @@ import javax.net.ssl.SSLSession;
 public interface ConnectionObserver {
 
     /**
-     * Callback when a connection starts initialization and {@link ConnectionInfo} becomes available.
-     * <p>
-     * This callback is invoked before any other callback on this observer.
-     *
-     * @param info {@link ConnectionInfo} for the connection that starts initialization. Note that the
-     * {@link ConnectionInfo#sslSession()} will always return {@code null} since it is called before the
-     * {@link ConnectionObserver#onSecurityHandshake() security handshake} is performed (and as a result no SSL session
-     * has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport) protocol.
-     * Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)} or
-     * {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
-     */
-    default void onConnectionInitialization(ConnectionInfo info) {  // FIXME: 0.43 - consider removing default impl
-    }
-
-    /**
      * Callback when {@code size} bytes are read from the connection.
      *
      * @param size size of the data chunk read
@@ -67,13 +52,34 @@ public interface ConnectionObserver {
      * <p>
      * Transport protocols that require a handshake in order to connect. Example:
      * <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+     *
+     * @deprecated Use {@link #onTransportHandshakeComplete(ConnectionInfo)}
      */
-    void onTransportHandshakeComplete();
+    @Deprecated
+    default void onTransportHandshakeComplete() {
+    }
+
+    /**
+     * Callback when a transport handshake completes.
+     * <p>
+     * Transport protocols that require a handshake in order to connect. Example:
+     * <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.
+     *
+     * @param info {@link ConnectionInfo} for the connection after transport handshake completes. Note that the
+     * {@link ConnectionInfo#sslSession()} will always return {@code null} since it is called before the
+     * {@link ConnectionObserver#onSecurityHandshake() security handshake} is performed (and as a result no SSL session
+     * has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport) protocol.
+     * Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)} or
+     * {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
+     */
+    default void onTransportHandshakeComplete(ConnectionInfo info) {
+        onTransportHandshakeComplete();
+    }
 
     /**
      * Callback when a proxy connect is initiated.
      * <p>
-     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete()}.
+     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
      *
      * @param connectMsg a message sent to a proxy in request to establish a connection to the target server
      * @return a new {@link ProxyConnectObserver} that provides visibility into proxy connect events.
@@ -85,8 +91,8 @@ public interface ConnectionObserver {
     /**
      * Callback when a security handshake is initiated.
      * <p>
-     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete()}. There are may
-     * be exceptions:
+     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
+     * There are may be exceptions:
      * <ol>
      *     <li>For a TCP connection, when {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is configured and
      *     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast

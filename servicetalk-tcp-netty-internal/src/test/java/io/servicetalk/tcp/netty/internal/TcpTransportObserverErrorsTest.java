@@ -142,11 +142,9 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         if (errorSource != ErrorSource.CONNECTION_REFUSED) {
             assertThat(connection, is(notNullValue()));
             verify(serverTransportObserver, await()).onNewConnection(any(), any());
-            verify(clientConnectionObserver).onConnectionInitialization(any());
-            verify(clientConnectionObserver).onTransportHandshakeComplete();
+            verify(clientConnectionObserver).onTransportHandshakeComplete(any());
             verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
-            verify(serverConnectionObserver, await()).onConnectionInitialization(any());
-            verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
+            verify(serverConnectionObserver, await()).onTransportHandshakeComplete(any());
             verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
         } else {
             assertThat(connection, is(nullValue()));
@@ -188,7 +186,6 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         }
         switch (errorSource) {
             case CONNECTION_REFUSED:
-                verify(clientConnectionObserver).onConnectionInitialization(any());
                 break;
             case CONNECTION_ACCEPTOR:
             case PIPELINE:

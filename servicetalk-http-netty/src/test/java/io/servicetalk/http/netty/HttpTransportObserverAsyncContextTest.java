@@ -180,11 +180,6 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
         private class AsyncContextCaptureConnectionObserver implements ConnectionObserver {
 
             @Override
-            public void onConnectionInitialization(final ConnectionInfo info) {
-                // AsyncContext is unknown at this point because this event is triggered by network
-            }
-
-            @Override
             public void onDataRead(final int size) {
                 // AsyncContext is unknown at this point because this event is triggered by network
             }
@@ -200,7 +195,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void onTransportHandshakeComplete() {
+            public void onTransportHandshakeComplete(final ConnectionInfo info) {
                 // AsyncContext is unknown at this point because this event is triggered by network
             }
 

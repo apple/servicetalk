@@ -64,10 +64,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
     public ConnectionObserverInitializer(final ConnectionObserver observer,
                                          final boolean handshakeOnActive,
                                          final boolean client) {
-        this.observer = requireNonNull(observer);
-        this.connectionInfoFactory = PartialConnectionInfo::new;
-        this.handshakeOnActive = handshakeOnActive;
-        this.client = client;
+        this(observer, PartialConnectionInfo::new, handshakeOnActive, client);
     }
 
     /**
@@ -75,7 +72,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      *
      * @param observer {@link ConnectionObserver} to report network events
      * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
-     * {@link Channel} to report {@link ConnectionObserver#onConnectionInitialization(ConnectionInfo)}
+     * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
      * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
      */
@@ -91,7 +88,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
-        observer.onConnectionInitialization(connectionInfoFactory.apply(channel));
         channel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = channelError(channel);
             if (t == null) {
@@ -100,36 +96,43 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 observer.connectionClosed(t);
             }
         });
-        channel.pipeline().addLast(new ConnectionObserverHandler(observer, handshakeOnActive, isFastOpen(channel)));
-    }
-
-    private boolean isFastOpen(final Channel channel) {
-        return client && handshakeOnActive && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
-                (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
+        channel.pipeline().addLast(
+                new ConnectionObserverHandler(observer, connectionInfoFactory, handshakeOnActive, client, channel));
     }
 
     static final class ConnectionObserverHandler extends ChannelDuplexHandler {
 
         private final ConnectionObserver observer;
+        private final Function<Channel, ConnectionInfo> connectionInfoFactory;
         private final boolean handshakeOnActive;
         private boolean tcpHandshakeComplete;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
 
         ConnectionObserverHandler(final ConnectionObserver observer,
+                                  final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                   final boolean handshakeOnActive,
-                                  final boolean fastOpen) {
+                                  final boolean client,
+                                  final Channel channel) {
             this.observer = observer;
+            this.connectionInfoFactory = connectionInfoFactory;
             this.handshakeOnActive = handshakeOnActive;
-            if (fastOpen) {
+            if (isFastOpen(client, channel)) {
                 reportSecurityHandshakeStarting();
             }
         }
 
+        private boolean isFastOpen(final boolean client, final Channel channel) {
+            return client && handshakeOnActive &&
+                    Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+                    (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
+        }
+
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            if (ctx.channel().isActive()) {
-                reportTcpHandshakeComplete();
+            final Channel channel = ctx.channel();
+            if (channel.isActive()) {
+                reportTcpHandshakeComplete(channel);
                 if (handshakeOnActive) {
                     reportSecurityHandshakeStarting();
                 }
@@ -138,17 +141,17 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            reportTcpHandshakeComplete();
+            reportTcpHandshakeComplete(ctx.channel());
             if (handshakeOnActive) {
                 reportSecurityHandshakeStarting();
             }
             ctx.fireChannelActive();
         }
 
-        private void reportTcpHandshakeComplete() {
+        private void reportTcpHandshakeComplete(final Channel channel) {
             if (!tcpHandshakeComplete) {
                 tcpHandshakeComplete = true;
-                observer.onTransportHandshakeComplete();
+                observer.onTransportHandshakeComplete(connectionInfoFactory.apply(channel));
             }
         }
 

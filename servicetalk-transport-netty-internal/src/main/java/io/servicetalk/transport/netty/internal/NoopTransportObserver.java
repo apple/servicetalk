@@ -57,10 +57,6 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void onConnectionInitialization(final ConnectionInfo info) {
-        }
-
-        @Override
         public void onDataRead(final int size) {
         }
 
@@ -73,7 +69,7 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void onTransportHandshakeComplete() {
+        public void onTransportHandshakeComplete(final ConnectionInfo info) {
         }
 
         @Override
