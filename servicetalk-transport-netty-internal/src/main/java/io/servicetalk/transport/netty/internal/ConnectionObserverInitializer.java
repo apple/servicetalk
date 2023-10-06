@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.SslConfig;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -28,10 +31,15 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.kqueue.KQueue;
 
+import java.net.SocketAddress;
+import java.net.SocketOption;
+import java.util.function.Function;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
 import static io.netty.channel.ChannelOption.TCP_FASTOPEN_CONNECT;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,25 +48,50 @@ import static java.util.Objects.requireNonNull;
 public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     private final ConnectionObserver observer;
-    private final boolean secure;
+    private final Function<Channel, ConnectionInfo> connectionInfoFactory;
+    private final boolean handshakeOnActive;
     private final boolean client;
 
     /**
      * Creates a new instance.
      *
      * @param observer {@link ConnectionObserver} to report network events.
-     * @param secure {@code true} if the observed connection is secure
+     * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)} instead
      */
-    public ConnectionObserverInitializer(final ConnectionObserver observer, final boolean secure,
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
+    public ConnectionObserverInitializer(final ConnectionObserver observer,
+                                         final boolean handshakeOnActive,
                                          final boolean client) {
         this.observer = requireNonNull(observer);
-        this.secure = secure;
+        this.connectionInfoFactory = PartialConnectionInfo::new;
+        this.handshakeOnActive = handshakeOnActive;
+        this.client = client;
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param observer {@link ConnectionObserver} to report network events
+     * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
+     * {@link Channel} to report {@link ConnectionObserver#onConnectionInitialization(ConnectionInfo)}
+     * @param handshakeOnActive {@code true} if the observed connection is secure
+     * @param client {@code true} if this initializer is used on the client-side
+     */
+    public ConnectionObserverInitializer(final ConnectionObserver observer,
+                                         final Function<Channel, ConnectionInfo> connectionInfoFactory,
+                                         final boolean handshakeOnActive,
+                                         final boolean client) {
+        this.observer = requireNonNull(observer);
+        this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
+        this.handshakeOnActive = handshakeOnActive;
         this.client = client;
     }
 
     @Override
     public void init(final Channel channel) {
+        observer.onConnectionInitialization(connectionInfoFactory.apply(channel));
         channel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = channelError(channel);
             if (t == null) {
@@ -67,25 +100,27 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 observer.connectionClosed(t);
             }
         });
-        channel.pipeline().addLast(new ConnectionObserverHandler(observer, secure, isFastOpen(channel)));
+        channel.pipeline().addLast(new ConnectionObserverHandler(observer, handshakeOnActive, isFastOpen(channel)));
     }
 
     private boolean isFastOpen(final Channel channel) {
-        return client && secure && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+        return client && handshakeOnActive && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
                 (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
     }
 
     static final class ConnectionObserverHandler extends ChannelDuplexHandler {
 
         private final ConnectionObserver observer;
-        private final boolean secure;
+        private final boolean handshakeOnActive;
         private boolean tcpHandshakeComplete;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
 
-        ConnectionObserverHandler(final ConnectionObserver observer, final boolean secure, final boolean fastOpen) {
+        ConnectionObserverHandler(final ConnectionObserver observer,
+                                  final boolean handshakeOnActive,
+                                  final boolean fastOpen) {
             this.observer = observer;
-            this.secure = secure;
+            this.handshakeOnActive = handshakeOnActive;
             if (fastOpen) {
                 reportSecurityHandshakeStarting();
             }
@@ -95,7 +130,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void handlerAdded(final ChannelHandlerContext ctx) {
             if (ctx.channel().isActive()) {
                 reportTcpHandshakeComplete();
-                if (secure) {
+                if (handshakeOnActive) {
                     reportSecurityHandshakeStarting();
                 }
             }
@@ -104,7 +139,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             reportTcpHandshakeComplete();
-            if (secure) {
+            if (handshakeOnActive) {
                 reportSecurityHandshakeStarting();
             }
             ctx.fireChannelActive();
@@ -158,6 +193,66 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
             observer.connectionWritabilityChanged(ctx.channel().isWritable());
             ctx.fireChannelWritabilityChanged();
+        }
+    }
+
+    /**
+     * Implementation of {@link ConnectionInfo} that will be used only if users use our deprecated internal API.
+     * It's not used for regular users or if users of internal API migrate to recommended constructors.
+     */
+    // FIXME: 0.43 - remove this class after deprecated public constructors removed
+    private static final class PartialConnectionInfo implements ConnectionInfo {
+
+        private static final Protocol TCP_PROTOCOL = () -> "TCP";
+
+        private final Channel channel;
+
+        PartialConnectionInfo(final Channel channel) {
+            this.channel = channel;
+        }
+
+        @Override
+        public SocketAddress localAddress() {
+            return channel.localAddress();
+        }
+
+        @Override
+        public SocketAddress remoteAddress() {
+            return channel.remoteAddress();
+        }
+
+        @Override
+        @SuppressWarnings("DataFlowIssue")
+        public ExecutionContext<?> executionContext() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public SslConfig sslConfig() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public SSLSession sslSession() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public <T> T socketOption(final SocketOption<T> option) {
+            return getOption(option, channel.config(), 0L);
+        }
+
+        @Override
+        public Protocol protocol() {
+            return TCP_PROTOCOL;
+        }
+
+        @Override
+        public String toString() {
+            return channel.toString();
         }
     }
 }

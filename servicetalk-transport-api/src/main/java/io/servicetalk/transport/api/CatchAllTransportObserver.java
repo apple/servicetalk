@@ -70,6 +70,11 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onConnectionInitialization(final ConnectionInfo info) {
+            safeReport(() -> observer.onConnectionInitialization(info), observer, "connection initialization");
+        }
+
+        @Override
         public void onDataRead(final int size) {
             safeReport(() -> observer.onDataRead(size), observer, "data read");
         }

@@ -140,6 +140,10 @@ class SslCertificateCompressionTest {
         public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
             return new ConnectionObserver() {
                 @Override
+                public void onConnectionInitialization(final ConnectionInfo info) {
+                }
+
+                @Override
                 public void onDataRead(final int size) {
                     if (inHandshake) {
                         handshakeBytesRead += size;

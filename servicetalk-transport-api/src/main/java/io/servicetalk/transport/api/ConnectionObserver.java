@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,21 @@ import javax.net.ssl.SSLSession;
  * is closed.
  */
 public interface ConnectionObserver {
+
+    /**
+     * Callback when a connection starts initialization and {@link ConnectionInfo} becomes available.
+     * <p>
+     * This callback is invoked before any other callback on this observer.
+     *
+     * @param info {@link ConnectionInfo} for the connection that starts initialization. Note that the
+     * {@link ConnectionInfo#sslSession()} will always return {@code null} since it is called before the
+     * {@link ConnectionObserver#onSecurityHandshake() security handshake} is performed (and as a result no SSL session
+     * has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport) protocol.
+     * Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)} or
+     * {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
+     */
+    default void onConnectionInitialization(ConnectionInfo info) {  // FIXME: 0.43 - consider removing default impl
+    }
 
     /**
      * Callback when {@code size} bytes are read from the connection.

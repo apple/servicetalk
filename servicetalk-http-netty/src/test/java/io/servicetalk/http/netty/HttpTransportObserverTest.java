@@ -170,6 +170,8 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         verify(clientTransportObserver).onNewConnection(any(), any());
         verify(serverTransportObserver, await()).onNewConnection(any(), any());
+        verify(clientConnectionObserver).onConnectionInitialization(any());
+        verify(serverConnectionObserver, await()).onConnectionInitialization(any());
         verify(clientConnectionObserver).onTransportHandshakeComplete();
         verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
         if (protocol == HTTP_1) {

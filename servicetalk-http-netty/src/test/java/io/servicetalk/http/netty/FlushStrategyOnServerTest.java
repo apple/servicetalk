@@ -121,7 +121,7 @@ class FlushStrategyOnServerTest {
                     (channel, observer) -> {
                         channel.config().setAutoRead(true);
                         return initChannel(channel, httpExecutionContext, config,
-                                new TcpServerChannelInitializer(tcpReadOnly, observer)
+                                new TcpServerChannelInitializer(tcpReadOnly, observer, httpExecutionContext)
                                         .andThen(channel1 -> channel1.pipeline().addLast(interceptor)), service,
                                 true, observer);
                     },

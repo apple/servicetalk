@@ -55,6 +55,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onConnectionInitialization(final ConnectionInfo info) {
+            first.onConnectionInitialization(info);
+            second.onConnectionInitialization(info);
+        }
+
+        @Override
         public void onDataRead(final int size) {
             first.onDataRead(size);
             second.onDataRead(size);

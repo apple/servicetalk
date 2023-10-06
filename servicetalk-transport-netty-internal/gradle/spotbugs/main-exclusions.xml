@@ -97,4 +97,11 @@
     <Method name="lambda$static$0"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+
+  <!-- FIXME: 0.43 - Remove temporary suppression after we can remove deprecated constructors -->
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ConnectionObserverInitializer$PartialConnectionInfo"/>
+    <Method name="executionContext"/>
+    <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+  </Match>
 </FindBugsFilter>

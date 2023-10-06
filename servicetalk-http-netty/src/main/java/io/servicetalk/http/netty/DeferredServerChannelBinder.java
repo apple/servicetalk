@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,8 @@ final class DeferredServerChannelBinder {
                                                                   final StreamingHttpService service,
                                                                   final boolean drainRequestPayloadBody,
                                                                   final ConnectionObserver observer) {
-        return new AlpnChannelSingle(channel, new TcpServerChannelInitializer(config.tcpConfig(), observer),
+        return new AlpnChannelSingle(channel,
+                new TcpServerChannelInitializer(config.tcpConfig(), observer, httpExecutionContext),
                 // Force a read to get the SSL handshake started. We initialize pipeline before
                 // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
                 // initialization.
@@ -117,7 +118,7 @@ final class DeferredServerChannelBinder {
                                                                  final boolean drainRequestPayloadBody,
                                                                  final ConnectionObserver observer) {
         return new SniCompleteChannelSingle(channel,
-                new TcpServerChannelInitializer(config.tcpConfig(), observer)).flatMap(sniEvt -> {
+                new TcpServerChannelInitializer(config.tcpConfig(), observer, httpExecutionContext)).flatMap(sniEvt -> {
             Throwable failureCause = sniEvt.cause();
             if (failureCause != null) {
                 return failed(failureCause);
