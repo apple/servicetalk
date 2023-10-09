@@ -141,7 +141,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
 
-        clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLEANER);
+        connectionFilterFactory = HttpMessageDiscardWatchdogClientFilter.CONNECTION_CLEANER;
+        clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,

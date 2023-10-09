@@ -41,8 +41,8 @@ import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.
  * Filter which tracks HTTP responses and makes sure that if an exception is raised during filter pipeline
  * processing message payload bodies are cleaned up.
  */
-final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConnectionFilterFactory,
-                                                              StreamingHttpClientFilterFactory {
+final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClientFilterFactory,
+                                                              StreamingHttpConnectionFilterFactory {
 
     private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
             .newKey(HttpMessageDiscardWatchdogClientFilter.class.getName() + ".messagePublisher",
@@ -56,9 +56,15 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
     static final HttpMessageDiscardWatchdogClientFilter INSTANCE = new HttpMessageDiscardWatchdogClientFilter();
 
     /**
-     * Instance of {@link HttpLifecycleObserverRequesterFilter} with the cleaner implementation.
+     * Instance of {@link StreamingHttpClientFilterFactory} with the cleaner implementation.
      */
-    static final StreamingHttpClientFilterFactory CLEANER = new CleanerStreamingHttpClientFilterFactory();
+    static final StreamingHttpClientFilterFactory CLIENT_CLEANER = new CleanerStreamingHttpClientFilterFactory();
+
+    /**
+     * Instance of {@link StreamingHttpConnectionFilterFactory} with cleaner implementation.
+     */
+    static final StreamingHttpConnectionFilterFactory CONNECTION_CLEANER =
+            new CleanerStreamingHttpConnectionFilterFactory();
 
     private HttpMessageDiscardWatchdogClientFilter() {
         // Singleton
@@ -69,7 +75,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return delegate().request(request).map(response -> watchResponse(request, response));
+                return delegate().request(request).map(response -> trackResponsePayload(request, response));
             }
         };
     }
@@ -80,20 +86,25 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                return delegate.request(request).map(response -> watchResponse(request, response));
+                return delegate.request(request).map(response -> trackResponsePayload(request, response));
             }
         };
     }
 
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return HttpExecutionStrategies.offloadNone();
+    }
+
     /**
-     * Sets up the message body watcher and cleans up any previous leftovers if needed.
+     * Tracks the response message payload for potential clean-up.
      *
-     * @param request the outgoing request.
-     * @param response the incoming response.
-     * @return the input response modified to pass along.
+     * @param request the original request.
+     * @param response the response on which the payload is tracked.
+     * @return the transformed response passed to upstream filters.
      */
-    private StreamingHttpResponse watchResponse(final StreamingHttpRequest request,
-                                                final StreamingHttpResponse response) {
+    private StreamingHttpResponse trackResponsePayload(final StreamingHttpRequest request,
+                                                       final StreamingHttpResponse response) {
         // always write the buffer publisher into the request context. When a downstream subscriber
         // arrives, mark the message as subscribed explicitly (having a message present and no
         // subscription is an indicator that it must be freed later on).
@@ -117,9 +128,28 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
         }));
     }
 
-    @Override
-    public HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.offloadNone();
+    /**
+     * Cleans the message publisher for both client and connection cleaners.
+     *
+     * @param request the original request.
+     * @param cause the cause of the error.
+     * @return the (failed) response.
+     */
+    private static Single<StreamingHttpResponse> cleanMessagePublisher(final StreamingHttpRequest request,
+                                                                       final Throwable cause) {
+        final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
+        if (maybePublisher != null) {
+            Publisher<?> message = (Publisher<?>) maybePublisher.getAndSet(null);
+            if (message != null) {
+                // No-one subscribed to the message (or there is none), so if there is a message
+                // proactively clean it up.
+                return message
+                        .ignoreElements()
+                        .concat(Single.<StreamingHttpResponse>failed(cause))
+                        .shareContextOnSubscribe();
+            }
+        }
+        return Single.<StreamingHttpResponse>failed(cause).shareContextOnSubscribe();
     }
 
     private static final class CleanerStreamingHttpClientFilterFactory implements StreamingHttpClientFilterFactory {
@@ -129,21 +159,9 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
-                    return delegate.request(request).onErrorResume(originalThrowable -> {
-                        final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
-                        if (maybePublisher != null) {
-                            Publisher<?> message = (Publisher<?>) maybePublisher.get();
-                            if (message != null) {
-                                // No-one subscribed to the message (or there is none), so if there is a message
-                                // proactively clean it up.
-                                return message
-                                        .ignoreElements()
-                                        .concat(Single.<StreamingHttpResponse>failed(originalThrowable))
-                                        .shareContextOnSubscribe();
-                            }
-                        }
-                        return Single.<StreamingHttpResponse>failed(originalThrowable).shareContextOnSubscribe();
-                    });
+                    return delegate
+                            .request(request)
+                            .onErrorResume(cause -> cleanMessagePublisher(request, cause));
                 }
             };
         }
@@ -153,4 +171,31 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
             return HttpExecutionStrategies.offloadNone();
         }
     }
+
+    private static final class CleanerStreamingHttpConnectionFilterFactory implements StreamingHttpConnectionFilterFactory {
+        @Override
+        public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
+            return new StreamingHttpConnectionFilter(connection) {
+                @Override
+                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                    return delegate()
+                            .request(request)
+                            .map(response -> {
+                                final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
+                                if (maybePublisher != null) {
+                                    maybePublisher.set(null);
+                                }
+                                return response;
+                            })
+                            .onErrorResume(cause -> cleanMessagePublisher(request, cause));
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.offloadNone();
+        }
+    }
+
 }
