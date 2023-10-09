@@ -172,7 +172,8 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
         }
     }
 
-    private static final class CleanerStreamingHttpConnectionFilterFactory implements StreamingHttpConnectionFilterFactory {
+    private static final class CleanerStreamingHttpConnectionFilterFactory
+            implements StreamingHttpConnectionFilterFactory {
         @Override
         public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
             return new StreamingHttpConnectionFilter(connection) {
@@ -197,5 +198,4 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
             return HttpExecutionStrategies.offloadNone();
         }
     }
-
 }
