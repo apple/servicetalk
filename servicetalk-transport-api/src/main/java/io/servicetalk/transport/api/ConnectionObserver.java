@@ -56,7 +56,7 @@ public interface ConnectionObserver {
      * @deprecated Use {@link #onTransportHandshakeComplete(ConnectionInfo)}
      */
     @Deprecated
-    default void onTransportHandshakeComplete() {
+    default void onTransportHandshakeComplete() {   // FIXME: 0.43 - remove deprecated method
     }
 
     /**

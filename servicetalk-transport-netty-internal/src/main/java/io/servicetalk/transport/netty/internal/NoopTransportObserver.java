@@ -69,6 +69,11 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
+        public void onTransportHandshakeComplete() {
+        }
+
+        @Override
         public void onTransportHandshakeComplete(final ConnectionInfo info) {
         }
 
