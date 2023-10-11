@@ -39,10 +39,26 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OptimizedHttp2FrameCodecBuilder.class);
 
+    // FIXME: 0.43 - reconsider system properties for netty-codec-http2
+    // These properties are introduced temporarily in case users need to disable or re-configure default values set by
+    // Netty. For the next major release we should either remove these properties or promote them to public API.
+    private static final String MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME =
+            "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.maxConsecutiveEmptyFrames";
+    private static final String SECONDS_PER_WINDOW_PROPERTY_NAME =
+            "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.secondsPerWindow";
+
+    private static final int MAX_CONSECUTIVE_EMPTY_FRAMES;
+    private static final int SECONDS_PER_WINDOW;
+
     @Nullable
     private static final MethodHandle FLUSH_PREFACE;
 
+    @Nullable
+    private static final MethodHandle DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW;
+
     static {
+        final Http2FrameCodecBuilder builder = Http2FrameCodecBuilder.forServer();
+
         MethodHandle flushPreface;
         try {
             // Find a new method that exists only in Netty starting from 4.1.78.Final:
@@ -50,7 +66,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                     .findVirtual(Http2FrameCodecBuilder.class, "flushPreface",
                             methodType(Http2FrameCodecBuilder.class, boolean.class));
             // Verify the method is working as expected:
-            disableFlushPreface(flushPreface, Http2FrameCodecBuilder.forClient());
+            disableFlushPreface(flushPreface, builder);
         } catch (Throwable cause) {
             LOGGER.debug("Http2FrameCodecBuilder#flushPreface(boolean) is available only starting from " +
                             "Netty 4.1.78.Final. Detected Netty version: {}",
@@ -58,6 +74,26 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
             flushPreface = null;
         }
         FLUSH_PREFACE = flushPreface;
+
+        // Default values are taken from Netty's AbstractHttp2ConnectionHandlerBuilder
+        MAX_CONSECUTIVE_EMPTY_FRAMES = parseProperty(MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME, 200);
+        SECONDS_PER_WINDOW = parseProperty(SECONDS_PER_WINDOW_PROPERTY_NAME, 30);
+
+        MethodHandle decoderEnforceMaxRstFramesPerWindow;
+        try {
+            // Find a new method that exists only in Netty starting from 4.1.100.Final:
+            decoderEnforceMaxRstFramesPerWindow = MethodHandles.publicLookup()
+                    .findVirtual(Http2FrameCodecBuilder.class, "decoderEnforceMaxRstFramesPerWindow",
+                            methodType(Http2FrameCodecBuilder.class, int.class, int.class));
+            // Verify the method is working as expected:
+            decoderEnforceMaxRstFramesPerWindow(decoderEnforceMaxRstFramesPerWindow, builder);
+        } catch (Throwable cause) {
+            LOGGER.debug("Http2FrameCodecBuilder#decoderEnforceMaxRstFramesPerWindow(int, int) is available only " +
+                            "starting from Netty 4.1.100.Final. Detected Netty version: {}",
+                    Http2FrameCodecBuilder.class.getPackage().getImplementationVersion(), cause);
+            decoderEnforceMaxRstFramesPerWindow = null;
+        }
+        DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW = decoderEnforceMaxRstFramesPerWindow;
     }
 
     private final boolean server;
@@ -74,6 +110,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         this.server = server;
         this.flowControlQuantum = flowControlQuantum;
         disableFlushPreface(FLUSH_PREFACE, this);
+        decoderEnforceMaxRstFramesPerWindow(DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW, this);
     }
 
     @Override
@@ -114,5 +151,45 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
             throwException(t);
             return builderInstance;
         }
+    }
+
+    // To avoid a strict dependency on Netty 4.1.100.Final in the classpath, we use {@link MethodHandle} to check if
+    // the new method is available or not.
+    private static Http2FrameCodecBuilder decoderEnforceMaxRstFramesPerWindow(
+            @Nullable final MethodHandle methodHandle, final Http2FrameCodecBuilder builderInstance) {
+        if (methodHandle == null) {
+            return builderInstance;
+        }
+        try {
+            // invokeExact requires return type cast to match the type signature
+            return (Http2FrameCodecBuilder) methodHandle.invokeExact(builderInstance,
+                    MAX_CONSECUTIVE_EMPTY_FRAMES, SECONDS_PER_WINDOW);
+        } catch (Throwable t) {
+            throwException(t);
+            return builderInstance;
+        }
+    }
+
+    private static int parseProperty(final String name, final int defaultValue) {
+        final String value = System.getProperty(name);
+        final int intValue;
+        if (value == null || value.isEmpty()) {
+            intValue = defaultValue;
+        } else {
+            try {
+                intValue = Integer.parseInt(value);
+                if (intValue < 0) {
+                    LOGGER.error("Found invalid value -D{}={} (expected >= 0), using fallback value={}",
+                            name, value, defaultValue);
+                    return defaultValue;
+                }
+            } catch (NumberFormatException e) {
+                LOGGER.error("Could not parse -D{}={} (expected int >= 0), using fallback value={}",
+                        name, value, defaultValue, e);
+                return defaultValue;
+            }
+        }
+        LOGGER.debug("-D{}={}", name, intValue);
+        return intValue;
     }
 }
