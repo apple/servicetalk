@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -207,6 +207,15 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/api/BufferStrategy.Accumulator.html#accumulate(T)" class="member-name-link">accumulate(T)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/BufferStrategy.Accumulator.html" title="interface in io.servicetalk.concurrent.api">BufferStrategy.Accumulator</a></dt>
 <dd>
 <div class="block">Adds the passed <code>item</code> to this <a href="io/servicetalk/concurrent/api/BufferStrategy.Accumulator.html" title="interface in io.servicetalk.concurrent.api"><code>BufferStrategy.Accumulator</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayAccumulator.html#accumulate(T)" class="member-name-link">accumulate(T)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="interface in io.servicetalk.concurrent.api">ReplayAccumulator</a></dt>
+<dd>
+<div class="block">Called on each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> and intended to accumulate the signal so that new
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s will see this value via <a href="io/servicetalk/concurrent/api/ReplayAccumulator.html#deliverAccumulation(java.util.function.Consumer)"><code>ReplayAccumulator.deliverAccumulation(Consumer)</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html#accumulatorSupplier()" class="member-name-link">accumulatorSupplier()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a></dt>
+<dd>
+<div class="block">Get a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link"><code>Supplier</code></a> that provides the <a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayAccumulator</code></a> on each upstream subscribe.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html#ackTimeout()" class="member-name-link">ackTimeout()</a> - Method in interface io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a></dt>
 <dd>
@@ -2528,6 +2537,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Build a <a href="io/servicetalk/client/api/partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionAttributes</code></a> corresponding to the previous <a href="io/servicetalk/client/api/partition/PartitionAttributesBuilder.html#add(io.servicetalk.client.api.partition.PartitionAttributes.Key,T)"><code>PartitionAttributesBuilder.add(PartitionAttributes.Key, Object)</code></a>
  calls.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Build the <a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayStrategy</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/encoding/api/BufferDecoderGroupBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.encoding.api.<a href="io/servicetalk/encoding/api/BufferDecoderGroupBuilder.html" title="class in io.servicetalk.encoding.api">BufferDecoderGroupBuilder</a></dt>
 <dd>
 <div class="block">Build a new <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
@@ -3023,6 +3036,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block"><a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">CANCEL</a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayAccumulator.html#cancelAccumulation()" class="member-name-link">cancelAccumulation()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="interface in io.servicetalk.concurrent.api">ReplayAccumulator</a></dt>
+<dd>
+<div class="block">Called if the accumulation can be cancelled and any asynchronous resources can be cleaned up (e.g.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/SequentialCancellable.html#cancelCurrent()" class="member-name-link">cancelCurrent()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/SequentialCancellable.html" title="class in io.servicetalk.concurrent.internal">SequentialCancellable</a></dt>
 <dd>
 <div class="block">Cancels only the <a href="io/servicetalk/concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that is currently held without side effect for any
@@ -3040,6 +3057,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/grpc/api/GrpcStatusCode.html#CANCELLED" class="member-name-link">CANCELLED</a> - Enum constant in enum class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></dt>
 <dd>
 <div class="block">Cancelled (typically by caller).</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html#cancelUpstream()" class="member-name-link">cancelUpstream()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a></dt>
+<dd>
+<div class="block">Determine if all the downstream subscribers cancel, should upstream be cancelled.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#cancelUpstream(boolean)" class="member-name-link">cancelUpstream(boolean)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Determine if all the downstream subscribers cancel, should upstream be cancelled.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#capacity()" class="member-name-link">capacity()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -3740,6 +3765,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Netty UserEvent to indicate the further inbound data should be discarded.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/CloseHandler.InboundDataEndEvent.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">CloseHandler.InboundDataEndEvent</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block"><code>CloseHandler.NettyUserEvent</code> to indicate the end of inbound data was observed at the transport.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/AbstractCloseableIterable.html#closeIterator(java.util.Iterator)" class="member-name-link">closeIterator(Iterator&lt;T&gt;)</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/AbstractCloseableIterable.html" title="class in io.servicetalk.concurrent.internal">AbstractCloseableIterable</a></dt>
 <dd>
 <div class="block">Closes an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link"><code>Iterator</code></a> as returned by <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#iterator()" title="class or interface in java.lang" class="external-link"><code>Iterable.iterator()</code></a> of the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> that is wrapped by
@@ -4271,6 +4300,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">An observer interface that provides visibility into new streams created by a multiplexed connection.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">An observer interface that provides visibility into proxy connect events for establishing a tunnel.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
 <div class="block">An observer interface that provides visibility into <strong>read</strong> events.</div>
@@ -4292,6 +4325,12 @@ loadScripts(document, 'script');</script>
 <div class="block">A <a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> that registers a <a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> for all channels.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)" class="member-name-link">ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)</code></a> instead</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)" class="member-name-link">ConnectionObserverInitializer(ConnectionObserver, Function&lt;Channel, ConnectionInfo&gt;, boolean, boolean)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
@@ -5845,6 +5884,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.5">DELETE</a> method.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayAccumulator.html#deliverAccumulation(java.util.function.Consumer)" class="member-name-link">deliverAccumulation(Consumer&lt;T&gt;)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="interface in io.servicetalk.concurrent.api">ReplayAccumulator</a></dt>
+<dd>
+<div class="block">Called to deliver the signals from <a href="io/servicetalk/concurrent/api/ReplayAccumulator.html#accumulate(T)"><code>ReplayAccumulator.accumulate(Object)</code></a> to new <code>consumer</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/SubscriberUtils.html#deliverCompleteFromSource(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">deliverCompleteFromSource(CompletableSource.Subscriber)</a> - Static method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/SubscriberUtils.html" title="class in io.servicetalk.concurrent.internal">SubscriberUtils</a></dt>
 <dd>
 <div class="block">Deliver a terminal complete to a <a href="io/servicetalk/concurrent/CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> that has not yet had
@@ -7103,15 +7146,30 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Converts the passed <code>buffer</code> to <code>ByteBuf</code>, creating a new <code>ByteBuf</code> instance if required.</div>
 </dd>
-<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer,boolean)" class="member-name-link">extractSslSessionAndReport(ChannelPipeline, SslHandshakeCompletionEvent, Consumer&lt;Throwable&gt;, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)" class="member-name-link">extractSslSession(ChannelPipeline, SslHandshakeCompletionEvent, Consumer&lt;Throwable&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
 <dd>
 <div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the <code>SslHandshakeCompletionEvent</code>
- is successful and reports the result to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> if available.</div>
+ is successful or propagate the failure to <code>failureConsumer</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)" class="member-name-link">extractSslSession(SslConfig, ChannelPipeline)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
+<dd>
+<div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the handshake is already done.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer,boolean)" class="member-name-link">extractSslSessionAndReport(ChannelPipeline, SslHandshakeCompletionEvent, Consumer&lt;Throwable&gt;, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)"><code>NettyPipelineSslUtils.extractSslSession(ChannelPipeline, SslHandshakeCompletionEvent, Consumer)</code></a> instead,
+ reporting to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
+ by <a href="io/servicetalk/transport/netty/internal/SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="io/servicetalk/transport/netty/internal/SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></dt>
 <dd>
-<div class="block">Extracts the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> from the <code>ChannelPipeline</code> if the handshake is already done
- and reports the result to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> if available.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)"><code>NettyPipelineSslUtils.extractSslSession(SslConfig, ChannelPipeline)</code></a> instead,
+ reporting to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
+ by <a href="io/servicetalk/transport/netty/internal/SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="io/servicetalk/transport/netty/internal/SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a></div>
+</div>
 </dd>
 </dl>
 <h2 class="title" id="I:F">F</h2>
@@ -9418,6 +9476,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Handle the case when a call to <a href="io/servicetalk/concurrent/SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> throws from a source.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/CopyByteBufHandlerChannelInitializer.html#handlerClass()" class="member-name-link">handlerClass()</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/CopyByteBufHandlerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">CopyByteBufHandlerChannelInitializer</a></dt>
+<dd>
+<div class="block">Return <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link"><code>Class</code></a> of the <code>ChannelHandler</code> in case there is a need to remove the handler from the
+ <code>ChannelPipeline</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html#handlerRemoved(io.netty.channel.ChannelHandlerContext)" class="member-name-link">handlerRemoved(ChannelHandlerContext)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html" title="class in io.servicetalk.transport.netty.internal">ByteToMessageDecoder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html#handlerRemoved0(io.netty.channel.ChannelHandlerContext)" class="member-name-link">handlerRemoved0(ChannelHandlerContext)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html" title="class in io.servicetalk.transport.netty.internal">ByteToMessageDecoder</a></dt>
@@ -9799,6 +9862,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Utilities for hex strings.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategies.html#historyBuilder(int)" class="member-name-link">historyBuilder(int)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategies.html" title="class in io.servicetalk.concurrent.api">ReplayStrategies</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api"><code>ReplayStrategyBuilder</code></a> using the history strategy.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategies.html#historyTtlBuilder(int,java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">historyTtlBuilder(int, Duration, Executor)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategies.html" title="class in io.servicetalk.concurrent.api">ReplayStrategies</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api"><code>ReplayStrategyBuilder</code></a> using the historyHint and TTL strategy.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategies.html#historyTtlBuilder(int,java.time.Duration,io.servicetalk.concurrent.Executor,boolean)" class="member-name-link">historyTtlBuilder(int, Duration, Executor, boolean)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategies.html" title="class in io.servicetalk.concurrent.api">ReplayStrategies</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api"><code>ReplayStrategyBuilder</code></a> using the historyHint and TTL strategy.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/HttpRequestMetaData.html#host()" class="member-name-link">host()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></dt>
 <dd>
 <div class="block">The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
@@ -9870,8 +9945,13 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpContextKeys.html" title="class in io.servicetalk.http.api">HttpContextKeys</a></dt>
 <dd>
-<div class="block">When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
- proxy this connection will be established to.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>TransportObserverConnectionFactoryFilter</code></a> to configure <a href="io/servicetalk/transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> and then
+ listen <a href="io/servicetalk/transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> callback to distinguish between a regular connection and
+ a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client
+ filter that will populate <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a> with a similar key or reach out to the
+ ServiceTalk developers to discuss ideas.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpResponseStatus.html#HTTP_VERSION_NOT_SUPPORTED" class="member-name-link">HTTP_VERSION_NOT_SUPPORTED</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a></dt>
 <dd>
@@ -10848,6 +10928,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 &nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/CloseHandler.InboundDataEndEvent.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/CloseHandler.InboundDataEndEvent.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler.InboundDataEndEvent</a></dt>
+<dd>
+<div class="block"><code>CloseHandler.NettyUserEvent</code> instance to indicate an inbound end of data.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.CancelWriteUserEvent</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.ContinueUserEvent</a></dt>
@@ -10859,6 +10943,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopDataObserver.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopDataObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopDataObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopMultiplexedObserver.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopMultiplexedObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopMultiplexedObserver</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopReadObserver.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopReadObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopReadObserver</a></dt>
 <dd>&nbsp;</dd>
@@ -12751,6 +12837,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Get the <strong>&lt;minor&gt;</strong> portion of the
  <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">http protocol version</a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html#minSubscribers()" class="member-name-link">minSubscribers()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a></dt>
+<dd>
+<div class="block">Get the minimum number of downstream subscribers before subscribing upstream.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#minSubscribers(int)" class="member-name-link">minSubscribers(int)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Set the minimum number of downstream subscribers before subscribing upstream.</div>
+</dd>
 <dt><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html#minTTL(int)" class="member-name-link">minTTL(int)</a> - Method in class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
@@ -13852,6 +13946,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Noop version of <a href="io/servicetalk/transport/api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.MultiplexedObserver</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block">Noop version of <a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopReadObserver.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopReadObserver</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
 <div class="block">Noop version of <a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ReadObserver</code></a>.</div>
@@ -14332,6 +14430,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/test/internal/TestPublisherSubscriber.html#onComplete()" class="member-name-link">onComplete()</a> - Method in class io.servicetalk.concurrent.test.internal.<a href="io/servicetalk/concurrent/test/internal/TestPublisherSubscriber.html" title="class in io.servicetalk.concurrent.test.internal">TestPublisherSubscriber</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#onCompleteError(java.util.function.Supplier)" class="member-name-link">onCompleteError(Supplier&lt;? extends Throwable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Transform this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> signal into
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> signal (unless <code>null</code> error returned from <code>errorSupplier</code>).</div>
+</dd>
 <dt><a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.ConnectionLimiter.html#onConnectionClose(ResolvedAddress)" class="member-name-link">onConnectionClose(ResolvedAddress)</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="interface in io.servicetalk.client.api">LimitingConnectionFactoryFilter.ConnectionLimiter</a></dt>
 <dd>
 <div class="block">Callback invoked when a connection created after getting permission from
@@ -14654,6 +14757,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Determine if <a href="io/servicetalk/concurrent/api/ScanMapper.MappedTerminal.html#onNext()"><code>ScanMapper.MappedTerminal.onNext()</code></a> is valid and should be propagated downstream.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)" class="member-name-link">onProxyConnect(Object)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
+<dd>
+<div class="block">Callback when a proxy connect is initiated.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#onProxyConnect(java.lang.Object)" class="member-name-link">onProxyConnect(Object)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html#onRequest(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">onRequest(HttpRequestMetaData)</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcExchangeObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onRequest(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">onRequest(HttpRequestMetaData)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpExchangeObserver</a></dt>
@@ -14787,9 +14896,17 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#onTransportHandshakeComplete()" class="member-name-link">onTransportHandshakeComplete()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
 <dd>
-<div class="block">Callback when a transport handshake completes.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#onTransportHandshakeComplete()" class="member-name-link">onTransportHandshakeComplete()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">onTransportHandshakeComplete(ConnectionInfo)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
+<dd>
+<div class="block">Callback when a transport handshake completes.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">onTransportHandshakeComplete(ConnectionInfo)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/SslProvider.html#OPENSSL" class="member-name-link">OPENSSL</a> - Enum constant in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></dt>
 <dd>
@@ -15863,9 +15980,45 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#PROXY_AUTHENTICATION_REQUIRED"><code>HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED</code></a> response.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)" class="member-name-link">proxyConnectComplete(Object)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></dt>
+<dd>
+<div class="block">Callback when the proxy connect attempt is complete successfully.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)" class="member-name-link">proxyConnectComplete(Object)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectException.html" class="type-name-link" title="class in io.servicetalk.http.api">ProxyConnectException</a> - Exception in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">An exception while processing
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">ProxyConnectException(String)</a> - Constructor for exception io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConnectException.html" title="class in io.servicetalk.http.api">ProxyConnectException</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectException.html#%3Cinit%3E(java.lang.String,java.lang.Throwable)" class="member-name-link">ProxyConnectException(String, Throwable)</a> - Constructor for exception io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConnectException.html" title="class in io.servicetalk.http.api">ProxyConnectException</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectFailed(java.lang.Throwable)" class="member-name-link">proxyConnectFailed(Throwable)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></dt>
+<dd>
+<div class="block">Callback when the proxy connect attempt is failed.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html#proxyConnectFailed(java.lang.Throwable)" class="member-name-link">proxyConnectFailed(Throwable)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopProxyConnectObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectResponseException.html" class="type-name-link" title="class in io.servicetalk.http.api">ProxyConnectResponseException</a> - Exception in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">A subclass of <a href="io/servicetalk/http/api/ProxyConnectException.html" title="class in io.servicetalk.http.api"><code>ProxyConnectException</code></a> that indicates an unexpected response status from a proxy received for
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectResponseException.html#%3Cinit%3E(java.lang.String,io.servicetalk.http.api.HttpResponseMetaData)" class="member-name-link">ProxyConnectResponseException(String, HttpResponseMetaData)</a> - Constructor for exception io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api">ProxyConnectResponseException</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
 <dt><a href="io/servicetalk/http/netty/ProxyResponseException.html" class="type-name-link" title="class in io.servicetalk.http.netty">ProxyResponseException</a> - Exception in <a href="io/servicetalk/http/netty/package-summary.html">io.servicetalk.http.netty</a></dt>
 <dd>
-<div class="block">A proxy response exception, that indicates an unexpected response status from a proxy.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api"><code>ProxyConnectResponseException</code></a> instead</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaderValues.html#PUBLIC" class="member-name-link">PUBLIC</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderValues.html" title="class in io.servicetalk.http.api">HttpHeaderValues</a></dt>
 <dd>
@@ -16113,6 +16266,16 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/QueueFullException.html#%3Cinit%3E(java.lang.String,int)" class="member-name-link">QueueFullException(String, int)</a> - Constructor for exception io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/QueueFullException.html" title="class in io.servicetalk.concurrent.internal">QueueFullException</a></dt>
 <dd>
 <div class="block">Create a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html#queueLimitHint()" class="member-name-link">queueLimitHint()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a></dt>
+<dd>
+<div class="block">Get a hint to limit the number of elements which will be queued for each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> in order to
+ compensate for unequal demand and late subscribers.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#queueLimitHint(int)" class="member-name-link">queueLimitHint(int)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Set a hint to limit the number of elements which will be queued for each <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> in order to
+ compensate for unequal demand and late subscribers.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaderValues.html#QUOTED_PRINTABLE" class="member-name-link">QUOTED_PRINTABLE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderValues.html" title="class in io.servicetalk.http.api">HttpHeaderValues</a></dt>
 <dd>
@@ -16855,6 +17018,52 @@ loadScripts(document, 'script');</script>
 <div class="block">Removes all header names contained in <code>headers</code> from this object, and then adds all headers contained in
  <code>headers</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#replay(int)" class="member-name-link">replay(int)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Similar to <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int)"><code>Publisher.multicast(int)</code></a> in that multiple downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s are enabled on the returned
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> but also retains <code>history</code> of the most recently emitted signals from
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> which are emitted to new downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s before emitting new
+ signals.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#replay(int,java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">replay(int, Duration, Executor)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Similar to <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int)"><code>Publisher.multicast(int)</code></a> in that multiple downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s are enabled on the returned
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> but also retains <code>historyHint</code> of the most recently emitted signals
+ from <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> which are emitted to new downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s before emitting
+ new signals.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#replay(io.servicetalk.concurrent.api.ReplayStrategy)" class="member-name-link">replay(ReplayStrategy&lt;T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Similar to <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int)"><code>Publisher.multicast(int)</code></a> in that multiple downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s are enabled on the returned
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> but will also retain some history of <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signals
+ according to the <a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayStrategy</code></a> <code>replayStrategy</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#replay(java.util.function.Supplier)" class="member-name-link">replay(Supplier&lt;ReplayAccumulator&lt;T&gt;&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Similar to <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int)"><code>Publisher.multicast(int)</code></a> in that multiple downstream <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s are enabled on the returned
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> but will also retain some history of <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> signals
+ according to the <a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayAccumulator</code></a> <code>accumulatorSupplier</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ReplayAccumulator</a>&lt;<a href="io/servicetalk/concurrent/api/ReplayAccumulator.html" title="type parameter in ReplayAccumulator">T</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Accumulates signals for the <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> replay operator.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategies.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">ReplayStrategies</a> - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Utilities to customize <a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayStrategy</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a>&lt;<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="type parameter in ReplayStrategy">T</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">Used to customize the strategy for the <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> replay operator.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a>&lt;<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="type parameter in ReplayStrategyBuilder">T</a>&gt; - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">A builder of <a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api"><code>ReplayStrategy</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#%3Cinit%3E(java.util.function.Supplier)" class="member-name-link">ReplayStrategyBuilder(Supplier&lt;ReplayAccumulator&lt;T&gt;&gt;)</a> - Constructor for class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Create a new instance.</div>
+</dd>
 <dt><a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.html#report(zipkin2.Span)" class="member-name-link">report(Span)</a> - Method in class io.servicetalk.opentracing.zipkin.publisher.reporter.<a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/zipkin/publisher/reporter/LoggingReporter.html#report(zipkin2.Span)" class="member-name-link">report(Span)</a> - Method in class io.servicetalk.opentracing.zipkin.publisher.reporter.<a href="io/servicetalk/opentracing/zipkin/publisher/reporter/LoggingReporter.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">LoggingReporter</a></dt>
@@ -17362,6 +17571,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/grpc/api/GrpcStatusCode.html#RESOURCE_EXHAUSTED" class="member-name-link">RESOURCE_EXHAUSTED</a> - Enum constant in enum class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></dt>
 <dd>
 <div class="block">Resource exhausted.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConnectResponseException.html#response()" class="member-name-link">response()</a> - Method in exception io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api">ProxyConnectResponseException</a></dt>
+<dd>
+<div class="block">Returns <a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> that was received in response to
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html#responseContext()" class="member-name-link">responseContext()</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a></dt>
 <dd>&nbsp;</dd>
@@ -19434,6 +19648,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/ProxyResponseException.html#status()" class="member-name-link">status()</a> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">ProxyResponseException</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns the <a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a> that was received.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#status(io.servicetalk.http.api.HttpResponseStatus)" class="member-name-link">status(HttpResponseStatus)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponse</a></dt>
@@ -19986,9 +20201,19 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver)</a> - Constructor for class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html" title="class in io.servicetalk.tcp.netty.internal">TcpClientChannelInitializer</a></dt>
 <dd>
-<div class="block">Creates a <a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> for the <code>config</code>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext,boolean)"><code>TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)</code></a></div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,boolean)" class="member-name-link">TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, boolean)</a> - Constructor for class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html" title="class in io.servicetalk.tcp.netty.internal">TcpClientChannelInitializer</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext,boolean)"><code>TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)</code></a></div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext,boolean)" class="member-name-link">TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext&lt;?&gt;, boolean)</a> - Constructor for class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html" title="class in io.servicetalk.tcp.netty.internal">TcpClientChannelInitializer</a></dt>
 <dd>
 <div class="block">Creates a <a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> for the <code>config</code>.</div>
 </dd>
@@ -20017,6 +20242,13 @@ loadScripts(document, 'script');</script>
 <div class="block"><a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> for TCP.</div>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ConnectionObserver)" class="member-name-link">TcpServerChannelInitializer(ReadOnlyTcpServerConfig, ConnectionObserver)</a> - Constructor for class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerChannelInitializer</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext)"><code>TcpServerChannelInitializer(ReadOnlyTcpServerConfig, ConnectionObserver, ExecutionContext)</code></a></div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext)" class="member-name-link">TcpServerChannelInitializer(ReadOnlyTcpServerConfig, ConnectionObserver, ExecutionContext&lt;?&gt;)</a> - Constructor for class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerChannelInitializer</a></dt>
 <dd>
 <div class="block">Creates a <a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> for the <code>config</code>.</div>
 </dd>
@@ -20053,6 +20285,16 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/internal/TerminalNotification.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">TerminalNotification</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
 <div class="block">Holder of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategy.html#terminalResubscribe()" class="member-name-link">terminalResubscribe()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategy.html" title="interface in io.servicetalk.concurrent.api">ReplayStrategy</a></dt>
+<dd>
+<div class="block">Get a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that is invoked when a terminal signal arrives from upstream and determines when state
+ is reset to allow for upstream resubscribe.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html#terminalResubscribe(java.util.function.Function)" class="member-name-link">terminalResubscribe(Function&lt;Throwable, Completable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ReplayStrategyBuilder.html" title="class in io.servicetalk.concurrent.api">ReplayStrategyBuilder</a></dt>
+<dd>
+<div class="block">Set a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that is invoked when a terminal signal arrives from upstream and determines when state
+ is reset to allow for upstream resubscribe.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/TerminalSignalConsumer.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a> - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
@@ -21104,7 +21346,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/netty/ProxyResponseException.html#toString()" class="member-name-link">toString()</a> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">ProxyResponseException</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#toString()" class="member-name-link">toString()</a> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthPrincipal.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.security.auth.basic.jersey.<a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthPrincipal.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthPrincipal</a></dt>

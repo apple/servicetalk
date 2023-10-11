@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -128,144 +128,152 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Netty UserEvent to indicate the further inbound data should be discarded.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="CloseHandler.InboundDataEndEvent.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler.InboundDataEndEvent</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block"><code>CloseHandler.NettyUserEvent</code> to indicate the end of inbound data was observed at the transport.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> that registers a <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> for all channels.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ContextFilterSuccessful.html" title="class in io.servicetalk.transport.netty.internal">ContextFilterSuccessful</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ContextFilterSuccessful.html" title="class in io.servicetalk.transport.netty.internal">ContextFilterSuccessful</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Netty pipeline event that represents the successful completion of the <a href="../../api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="CopyByteBufHandlerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">CopyByteBufHandlerChannelInitializer</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="CopyByteBufHandlerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">CopyByteBufHandlerChannelInitializer</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Initializer to configure <code>ChannelInboundHandler</code> that will ensure no pooled <code>ByteBuf</code>s are passed to
  the user and so no leaks are produced if the user does not call <code>ReferenceCountUtil.release(Object)</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Implementation of <a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> backed by a netty <code>Channel</code>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.CancelWriteUserEvent</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.CancelWriteUserEvent</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Netty UserEvent to signal cancellation of the write stream.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.ContinueUserEvent</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.ContinueUserEvent</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Netty UserEvent to signal continuation.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DeferSslHandler.html" title="class in io.servicetalk.transport.netty.internal">DeferSslHandler</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DeferSslHandler.html" title="class in io.servicetalk.transport.netty.internal">DeferSslHandler</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <code>ChannelHandler</code> that holds a place in a pipeline, allowing us to defer adding the <code>SslHandler</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">DelegatingFlushStrategy</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">DelegatingFlushStrategy</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> implementation that delegates all calls to another <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="EventLoopAwareNettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">EventLoopAwareNettyIoExecutor</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="EventLoopAwareNettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">EventLoopAwareNettyIoExecutor</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A special <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a> that exposes the underlying netty <code>EventLoopGroup</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="EventLoopAwareNettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">EventLoopAwareNettyIoExecutors</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="EventLoopAwareNettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">EventLoopAwareNettyIoExecutors</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A static factory to create or convert to <a href="EventLoopAwareNettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>EventLoopAwareNettyIoExecutor</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExecutionContextBuilder.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextBuilder</a>&lt;ES extends <a href="../../api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ExecutionContextBuilder.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextBuilder</a>&lt;ES extends <a href="../../api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A builder of <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ExecutionContextUtils.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExecutionContextUtils.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Provides utilities around Executors, ExecutionContexts and how they interact with netty Channels.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FlushStrategies.html" title="class in io.servicetalk.transport.netty.internal">FlushStrategies</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FlushStrategies.html" title="class in io.servicetalk.transport.netty.internal">FlushStrategies</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A factory for creating <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A strategy that defines how to flush writes on a connection.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.FlushSender</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.FlushSender</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An abstraction for a <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> to flush writes by calling <a href="FlushStrategy.FlushSender.html#flush()"><code>FlushStrategy.FlushSender.flush()</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.WriteEventsListener</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.WriteEventsListener</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A listener of write events from the connection on which the related <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> is
  <a href="FlushStrategy.html#apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)"><code>applied</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FlushStrategyHolder.html" title="class in io.servicetalk.transport.netty.internal">FlushStrategyHolder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FlushStrategyHolder.html" title="class in io.servicetalk.transport.netty.internal">FlushStrategyHolder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A utility class to hold a <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> and allow it to be updated atomically using
  <a href="FlushStrategyHolder.html#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)"><code>FlushStrategyHolder.updateFlushStrategy(NettyConnectionContext.FlushStrategyProvider)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GlobalExecutionContext.html" title="class in io.servicetalk.transport.netty.internal">GlobalExecutionContext</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GlobalExecutionContext.html" title="class in io.servicetalk.transport.netty.internal">GlobalExecutionContext</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">ServiceTalk's shared <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> with reasonable defaults for APIs when a user doesn't provide one.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdleTimeoutInitializer.html" title="class in io.servicetalk.transport.netty.internal">IdleTimeoutInitializer</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdleTimeoutInitializer.html" title="class in io.servicetalk.transport.netty.internal">IdleTimeoutInitializer</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Initializes the channel with idle timeout handling.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="InfluencerConnectionAcceptor.html" title="interface in io.servicetalk.transport.netty.internal">InfluencerConnectionAcceptor</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="InfluencerConnectionAcceptor.html" title="interface in io.servicetalk.transport.netty.internal">InfluencerConnectionAcceptor</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A contract that defines the connection acceptance criterion.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Implements <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> using a netty <code>Channel</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnection</a>&lt;Read,<wbr>Write&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnection</a>&lt;Read,<wbr>Write&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A wrapper over a physical connection providing a way to read/write as a <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A specialized <a href="../../api/ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> for netty based transports.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="NettyConnectionContext.FlushStrategyProvider.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="NettyConnectionContext.FlushStrategyProvider.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A provider of <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> to update the <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> for a <a href="NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnectionContext</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyFutureCompletable.html" title="class in io.servicetalk.transport.netty.internal">NettyFutureCompletable</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyFutureCompletable.html" title="class in io.servicetalk.transport.netty.internal">NettyFutureCompletable</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that wraps a netty <code>Future</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block"><a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> for Netty.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A static factory to create or convert to <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Default <a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to create IO <code>NettyIoThreadFactory.NettyIoThread</code>s.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyPipelineSslUtils.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Utilities for <code>ChannelPipeline</code> and SSL/TLS.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block"><a href="../../api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> implementation using a netty <code>Channel</code>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Noop version of <a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopDataObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopDataObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopDataObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopDataObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopMultiplexedObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopMultiplexedObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopMultiplexedObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopMultiplexedObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Noop version of <a href="../../api/ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.MultiplexedObserver</code></a>.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopProxyConnectObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopProxyConnectObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Noop version of <a href="../../api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.ProxyConnectObserver</code></a>.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopTransportObserver.NoopReadObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopReadObserver</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">

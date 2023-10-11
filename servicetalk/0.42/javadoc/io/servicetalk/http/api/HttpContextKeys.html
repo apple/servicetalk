@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -101,8 +101,11 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
 <div class="col-second even-row-color"><code><a href="#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
- proxy this connection will be established to.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="../../client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>TransportObserverConnectionFactoryFilter</code></a> to configure <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> and then
+ listen <a href="../../transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> callback to distinguish between a regular connection and
+ a connection to the secure HTTP proxy tunnel.</div>
+</div>
 </div>
 </div>
 </section>
@@ -137,7 +140,15 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="HTTP_TARGET_ADDRESS_BEHIND_PROXY">
 <h3>HTTP_TARGET_ADDRESS_BEHIND_PROXY</h3>
-<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</span>&nbsp;<span class="element-name">HTTP_TARGET_ADDRESS_BEHIND_PROXY</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</span>&nbsp;<span class="element-name">HTTP_TARGET_ADDRESS_BEHIND_PROXY</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="../../client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>TransportObserverConnectionFactoryFilter</code></a> to configure <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> and then
+ listen <a href="../../transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> callback to distinguish between a regular connection and
+ a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client
+ filter that will populate <a href="HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a> with a similar key or reach out to the
+ ServiceTalk developers to discuss ideas.</div>
+</div>
 <div class="block">When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
  proxy this connection will be established to.
  <p>

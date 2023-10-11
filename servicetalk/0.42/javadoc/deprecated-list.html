@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="deprecated-list-page">
@@ -439,8 +439,12 @@ loadScripts(document, 'script');</script>
  and will be removed in future releases. Use <a href="io/servicetalk/serializer/api/SerializationException.html" title="class in io.servicetalk.serializer.api"><code>SerializationException</code></a> instead that can be thrown by a new
  implementation.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/SerializationException.html" title="class in io.servicetalk.serialization.api">io.servicetalk.serialization.api.SerializationException</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">io.servicetalk.http.netty.ProxyResponseException</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api"><code>ProxyConnectResponseException</code></a> instead</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/SerializationException.html" title="class in io.servicetalk.serialization.api">io.servicetalk.serialization.api.SerializationException</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/SerializationException.html" title="class in io.servicetalk.serializer.api"><code>SerializationException</code></a>.</div>
 </div>
 </div>
@@ -485,17 +489,25 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.WatchRpc.html#methodDescriptor()"><code>Health.WatchRpc.methodDescriptor()</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES">io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_TARGET_ADDRESS_BEHIND_PROXY">io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>TransportObserverConnectionFactoryFilter</code></a> to configure <a href="io/servicetalk/transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> and then
+ listen <a href="io/servicetalk/transport/api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> callback to distinguish between a regular connection and
+ a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client
+ filter that will populate <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a> with a similar key or reach out to the
+ ServiceTalk developers to discuss ideas.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES">io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">This will be removed in a future release of ST. Alternative offering here
  <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#message">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.message</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#message">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.message</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html#getMessage()" title="class or interface in java.lang" class="external-link"><code>Throwable.getMessage()</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.metaData</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.metaData</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData()"><code>RetryingHttpRequesterFilter.HttpResponseException.metaData()</code></a>.</div>
 </div>
 </div>
@@ -1327,79 +1339,95 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">use the bind method with early and late acceptors instead.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead()">io.servicetalk.transport.api.ConnectionObserver.ReadObserver.itemRead()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.html#onTransportHandshakeComplete()">io.servicetalk.transport.api.ConnectionObserver.onTransportHandshakeComplete()</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead()">io.servicetalk.transport.api.ConnectionObserver.ReadObserver.itemRead()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead(java.lang.Object)"><code>ConnectionObserver.ReadObserver.itemRead(Object)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemReceived()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemReceived()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use {<a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemReceived(Object)</code></a>}</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemWritten()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemWritten()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemWritten(Object)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)"><code>TransportObserver.onNewConnection(Object, Object)</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, long, SslConfig, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
- ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, long, SslConfig, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
  ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
  ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.SslConfig,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, long, ConnectionInfo.Protocol, SslConfig, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
 <div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
- ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.SslConfig,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, long, ConnectionInfo.Protocol, SslConfig, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
  ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, UnaryOperator&lt;Throwable&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
  ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">io.servicetalk.transport.netty.internal.NettyIoExecutor.asExecutor()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, UnaryOperator&lt;Throwable&gt;)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
+ ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">io.servicetalk.transport.netty.internal.NettyIoExecutor.asExecutor()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">IoExecutor now implements <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> so this method is redundant.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop)">io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop<wbr>(EventLoop)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop)">io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop<wbr>(EventLoop)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop,boolean)"><code>NettyIoExecutors.fromNettyEventLoop(EventLoop, boolean)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup)">io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoopGroup<wbr>(EventLoopGroup)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup)">io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoopGroup<wbr>(EventLoopGroup)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup,boolean)"><code>NettyIoExecutors.fromNettyEventLoopGroup(EventLoopGroup, boolean)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#toNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)">io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor<wbr>(IoExecutor)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#toNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)">io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor<wbr>(IoExecutor)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/EventLoopAwareNettyIoExecutors.html#toEventLoopAwareNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)"><code>EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor(IoExecutor)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#isSslEnabled(io.netty.channel.ChannelPipeline)">io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.isSslEnabled<wbr>(ChannelPipeline)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer,boolean)">io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport<wbr>(ChannelPipeline, SslHandshakeCompletionEvent, Consumer&lt;Throwable&gt;, boolean)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.netty.channel.ChannelPipeline,io.netty.handler.ssl.SslHandshakeCompletionEvent,java.util.function.Consumer)"><code>NettyPipelineSslUtils.extractSslSession(ChannelPipeline, SslHandshakeCompletionEvent, Consumer)</code></a> instead,
+ reporting to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
+ by <a href="io/servicetalk/transport/netty/internal/SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="io/servicetalk/transport/netty/internal/SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)">io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport<wbr>(SslConfig, ChannelPipeline, ConnectionObserver)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSession(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline)"><code>NettyPipelineSslUtils.extractSslSession(SslConfig, ChannelPipeline)</code></a> instead,
+ reporting to <a href="io/servicetalk/transport/api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> is handled automatically for all <code>SslHandler</code>s initialized
+ by <a href="io/servicetalk/transport/netty/internal/SslClientChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslClientChannelInitializer</code></a> or <a href="io/servicetalk/transport/netty/internal/SslServerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal"><code>SslServerChannelInitializer</code></a></div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#isSslEnabled(io.netty.channel.ChannelPipeline)">io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.isSslEnabled<wbr>(ChannelPipeline)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">not required anymore, will be removed in the future releases, see
  <a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html#extractSslSessionAndReport(io.servicetalk.transport.api.SslConfig,io.netty.channel.ChannelPipeline,io.servicetalk.transport.api.ConnectionObserver)"><code>NettyPipelineSslUtils.extractSslSessionAndReport(SslConfig, ChannelPipeline, ConnectionObserver)</code></a> for an alternative approach</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/utils/internal/PlatformDependent.html#hasUnsafe()">io.servicetalk.utils.internal.PlatformDependent.hasUnsafe()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/utils/internal/PlatformDependent.html#hasUnsafe()">io.servicetalk.utils.internal.PlatformDependent.hasUnsafe()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">This method is not used by internal ServiceTalk code anymore and will be removed in future releases.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/utils/internal/PlatformDependent.html#throwException(java.lang.Throwable)">io.servicetalk.utils.internal.PlatformDependent.throwException<wbr>(Throwable)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/utils/internal/PlatformDependent.html#throwException(java.lang.Throwable)">io.servicetalk.utils.internal.PlatformDependent.throwException<wbr>(Throwable)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/utils/internal/ThrowableUtils.html#throwException(java.lang.Throwable)"><code>ThrowableUtils.throwException(Throwable)</code></a>.</div>
 </div>
 </div>
@@ -1539,6 +1567,25 @@ loadScripts(document, 'script');</script>
  the classpath, this constructor will be removed in the future releases.
  Use <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)"><code>OpenTelemetryHttpServerFilter(OpenTelemetryOptions)</code></a> or <a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpServerFilter.html#%3Cinit%3E()"><code>OpenTelemetryHttpServerFilter()</code></a>
  instead.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver)">io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer<wbr>(ReadOnlyTcpClientConfig, ConnectionObserver)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext,boolean)"><code>TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)</code></a></div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer<wbr>(ReadOnlyTcpClientConfig, ConnectionObserver, boolean)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpClientChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext,boolean)"><code>TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)</code></a></div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ConnectionObserver)">io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer<wbr>(ReadOnlyTcpServerConfig, ConnectionObserver)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/tcp/netty/internal/TcpServerChannelInitializer.html#%3Cinit%3E(io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ConnectionObserver,io.servicetalk.transport.api.ExecutionContext)"><code>TcpServerChannelInitializer(ReadOnlyTcpServerConfig, ConnectionObserver, ExecutionContext)</code></a></div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)">io.servicetalk.transport.netty.internal.ConnectionObserverInitializer<wbr>(ConnectionObserver, boolean, boolean)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)</code></a> instead</div>
 </div>
 <div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/IdleTimeoutInitializer.html#%3Cinit%3E(java.time.Duration)">io.servicetalk.transport.netty.internal.IdleTimeoutInitializer<wbr>(Duration)</a></div>
 <div class="col-last even-row-color">

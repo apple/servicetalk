@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="serialized-form-page">
@@ -496,6 +496,39 @@ loadScripts(document, 'script');</script>
 </dl>
 </section>
 </li>
+<li>
+<section class="serialized-class-details" id="io.servicetalk.http.api.ProxyConnectException">
+<h3>Exception&nbsp;<a href="io/servicetalk/http/api/ProxyConnectException.html" title="class in io.servicetalk.http.api">io.servicetalk.http.api.ProxyConnectException</a></h3>
+<div class="type-signature">class ProxyConnectException extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a> implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a></div>
+<dl class="name-value">
+<dt>serialVersionUID:</dt>
+<dd>4453075928788773272L</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="serialized-class-details" id="io.servicetalk.http.api.ProxyConnectResponseException">
+<h3>Exception&nbsp;<a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api">io.servicetalk.http.api.ProxyConnectResponseException</a></h3>
+<div class="type-signature">class ProxyConnectResponseException extends <a href="io/servicetalk/http/api/ProxyConnectException.html" title="class in io.servicetalk.http.api">ProxyConnectException</a> implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a></div>
+<dl class="name-value">
+<dt>serialVersionUID:</dt>
+<dd>5117046591069113007L</dd>
+</dl>
+<ul class="block-list">
+<li>
+<section class="detail">
+<h4>Serialized Fields</h4>
+<ul class="block-list">
+<li class="block-list">
+<h5>response</h5>
+<pre><a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a> response</pre>
+</li>
+</ul>
+</section>
+</li>
+</ul>
+</section>
+</li>
 </ul>
 </section>
 </li>
@@ -516,24 +549,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="serialized-class-details" id="io.servicetalk.http.netty.ProxyResponseException">
 <h3>Exception&nbsp;<a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">io.servicetalk.http.netty.ProxyResponseException</a></h3>
-<div class="type-signature">class ProxyResponseException extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a> implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a></div>
+<div class="type-signature">class ProxyResponseException extends <a href="io/servicetalk/http/api/ProxyConnectResponseException.html" title="class in io.servicetalk.http.api">ProxyConnectResponseException</a> implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a></div>
 <dl class="name-value">
 <dt>serialVersionUID:</dt>
 <dd>-1021287419155443499L</dd>
 </dl>
-<ul class="block-list">
-<li>
-<section class="detail">
-<h4>Serialized Fields</h4>
-<ul class="block-list">
-<li class="block-list">
-<h5>status</h5>
-<pre><a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a> status</pre>
-</li>
-</ul>
-</section>
-</li>
-</ul>
 </section>
 </li>
 <li>
