@@ -108,3 +108,9 @@ task testProps(type: Test) {
 test.dependsOn testProps
 // ServiceTalkLibraryPlugin adds a spotbugs task for each sourceSet, we don't need it.
 spotbugsTestProps.enabled = false
+
+tasks.withType(Test).all {
+  testLogging {
+    showStandardStreams = true
+  }
+}

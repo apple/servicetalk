@@ -253,7 +253,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             cause = wrapIfNecessary(cause);
             parentContext.transportError.onSuccess(cause);
             if (!tryFailSubscriber(cause)) {
-                LOGGER.debug("{} closing h2 parent channel on exception caught", parentContext.nettyChannel(), cause);
+                LOGGER.error("{} closing h2 parent channel on exception caught", parentContext.nettyChannel(), cause);
                 ChannelCloseUtils.close(ctx, cause);
             }
         }
