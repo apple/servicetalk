@@ -166,6 +166,14 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }, true);
     }
 
+    /**
+     * This method is required to access notifyOnClosing() from AbstractH2ParentConnection, because usage of
+     * {@code parentContext.notifyOnClosing()} directly triggers {@link java.lang.IllegalAccessError}.
+     */
+    private void notifyOnClosingImpl() {
+        notifyOnClosing();
+    }
+
     final void trackActiveStream(Http2StreamChannel streamChannel) {
         keepAliveManager.trackActiveStream(streamChannel);
     }
@@ -236,7 +244,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
 
         private void doChannelClosed(final String method) {
-            parentContext.notifyOnClosing();
+            parentContext.notifyOnClosingImpl();
 
             if (hasSubscriber()) {
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
@@ -249,7 +257,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             // The parent channel will be closed in case of exception after the cause is propagated to subscriber.
             // In case users don't have offloading, there is a risk to retry on the same IO thread.
             // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
-            parentContext.notifyOnClosing();
+            parentContext.notifyOnClosingImpl();
             cause = wrapIfNecessary(cause);
             parentContext.transportError.onSuccess(cause);
             if (!tryFailSubscriber(cause)) {
@@ -288,7 +296,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosing, false);
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosingImpl, false);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)
