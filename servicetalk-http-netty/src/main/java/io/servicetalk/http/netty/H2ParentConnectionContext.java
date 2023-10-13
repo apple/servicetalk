@@ -199,8 +199,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             this.observer = observer;
         }
 
-        abstract boolean hasSubscriber();
-
         abstract void tryCompleteSubscriber();
 
         abstract boolean tryFailSubscriber(Throwable cause);
@@ -246,9 +244,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         private void doChannelClosed(final String method) {
             parentContext.notifyOnClosingImpl();
 
-            if (hasSubscriber()) {
-                tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
-            }
+            tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
             parentContext.keepAliveManager.channelClosed();
         }
 

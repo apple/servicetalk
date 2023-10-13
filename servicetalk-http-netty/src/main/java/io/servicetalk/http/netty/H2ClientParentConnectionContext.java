@@ -199,11 +199,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
 
         @Override
-        boolean hasSubscriber() {
-            return subscriber != null;
-        }
-
-        @Override
         void tryCompleteSubscriber() {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
