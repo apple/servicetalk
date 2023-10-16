@@ -325,7 +325,7 @@ final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAs
                 Stream.of(connState.connections).map(conn -> (C) conn).collect(toList()));
     }
 
-    public Object[] connections() {
+    Object[] connections() {
         return connState.connections;
     }
 

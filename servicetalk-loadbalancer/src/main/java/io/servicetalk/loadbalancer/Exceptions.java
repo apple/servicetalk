@@ -34,7 +34,7 @@ final class Exceptions {
             return this;
         }
 
-        public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
+        static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
         }
     }
@@ -52,7 +52,7 @@ final class Exceptions {
             return this;
         }
 
-        public static StacklessNoActiveHostException newInstance(String message, Class<?> clazz, String method) {
+        static StacklessNoActiveHostException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessNoActiveHostException(message), clazz, method);
         }
     }
@@ -69,7 +69,7 @@ final class Exceptions {
             return this;
         }
 
-        public static StacklessConnectionRejectedException newInstance(String message, Class<?> clazz, String method) {
+        static StacklessConnectionRejectedException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessConnectionRejectedException(message), clazz, method);
         }
     }
