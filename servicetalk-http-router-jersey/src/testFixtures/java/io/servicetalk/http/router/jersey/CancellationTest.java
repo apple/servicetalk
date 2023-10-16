@@ -94,7 +94,7 @@ class CancellationTest {
     private static final CharSequence TEST_DATA = newLargePayload();
 
     @RegisterExtension
-    final ExecutorExtension<Executor> execRule = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> execRule = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     @Mock
     private HttpServiceContext ctx;
@@ -224,8 +224,13 @@ class CancellationTest {
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
                     .beforeOnError((err) -> {
+                        // If subscription cancellation arrives after the resource started to sleep, the cancellation
+                        // will interrupt the sleep which is OK.
+                        boolean sleepInterrupted = err instanceof InterruptedException && err.getMessage()
+                                .contains("sleep interrupted");
+
                         // Ignore racy cancellation, it's ordered safely.
-                        if (!(err instanceof IllegalStateException)) {
+                        if (!(err instanceof IllegalStateException || sleepInterrupted)) {
                             errorRef.compareAndSet(null, err);
                         }
                     })
@@ -249,8 +254,13 @@ class CancellationTest {
 
                 @Override
                 public void onError(final Throwable t) {
+                    // If subscription cancellation arrives after the resource started to sleep, the cancellation
+                    // will interrupt the sleep which is OK.
+                    boolean sleepInterrupted = t instanceof InterruptedException && t.getMessage()
+                            .contains("sleep interrupted");
+
                     // Ignore racy cancellation, it's ordered safely.
-                    if (!(t instanceof IllegalStateException)) {
+                    if (!(t instanceof IllegalStateException || sleepInterrupted)) {
                         errorRef.compareAndSet(null, t);
                     }
                     cancelledLatch.countDown();
