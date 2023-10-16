@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <SslConfigType> type of {@link SslConfig}.
  */
-abstract class AbstractTcpConfig<SslConfigType> {
+abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
 
     @Nullable
     @SuppressWarnings("rawtypes")

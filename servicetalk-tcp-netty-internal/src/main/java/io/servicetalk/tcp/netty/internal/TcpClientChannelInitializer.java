@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
@@ -29,6 +31,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import static io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer.initWireLogger;
+import static io.servicetalk.transport.netty.internal.ExecutionContextUtils.channelExecutionContext;
 
 /**
  * {@link ChannelInitializer} for TCP client.
@@ -42,7 +45,10 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
      *
      * @param config to use for initialization.
      * @param observer {@link ConnectionObserver} to report network events.
+     * @deprecated Use
+     * {@link #TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)}
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config,
                                        final ConnectionObserver observer) {
         this(config, observer, false);
@@ -54,25 +60,49 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
      * @param config to use for initialization.
      * @param observer {@link ConnectionObserver} to report network events.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
+     * @deprecated Use
+     * {@link #TcpClientChannelInitializer(ReadOnlyTcpClientConfig, ConnectionObserver, ExecutionContext, boolean)}
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
+    @SuppressWarnings("DataFlowIssue")
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config,
                                        final ConnectionObserver observer,
                                        final boolean deferSslHandler) {
+        this(config, observer, null, deferSslHandler);
+    }
+
+    /**
+     * Creates a {@link ChannelInitializer} for the {@code config}.
+     *
+     * @param config to use for initialization.
+     * @param observer {@link ConnectionObserver} to report network events.
+     * @param executionContext {@link ExecutionContext} to use for {@link ConnectionInfo} reporting.
+     * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
+     */
+    @SuppressWarnings("ConstantValue")
+    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config,
+                                       final ConnectionObserver observer,
+                                       final ExecutionContext<?> executionContext,
+                                       final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        final SslContext sslContext = config.sslContext();
+        final ClientSslConfig sslConfig = config.sslConfig();
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
-                    sslContext != null && !deferSslHandler, true));
+                    channel -> new TcpConnectionInfo(channel,
+                            // ExecutionContext can be null if users used deprecated ctor
+                            executionContext == null ? null : channelExecutionContext(channel, executionContext),
+                            sslConfig, config.idleTimeoutMs()),
+                    sslConfig != null && !deferSslHandler, true));
         }
 
         if (config.idleTimeoutMs() > 0L) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
-        if (sslContext != null) {
-            ClientSslConfig sslConfig = config.sslConfig();
-            assert sslConfig != null;
+        if (sslConfig != null) {
+            final SslContext sslContext = config.sslContext();
+            assert sslContext != null;
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext, sslConfig, deferSslHandler));
         }
 

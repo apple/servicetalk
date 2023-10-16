@@ -60,7 +60,7 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void onTransportHandshakeComplete() {
+        public void onTransportHandshakeComplete(final ConnectionInfo info) {
         }
 
         @Override

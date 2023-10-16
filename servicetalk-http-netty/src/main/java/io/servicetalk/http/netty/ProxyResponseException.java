@@ -41,4 +41,9 @@ public class ProxyResponseException extends ProxyConnectResponseException implem
     public HttpResponseStatus status() {
         return response().status();
     }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
 }

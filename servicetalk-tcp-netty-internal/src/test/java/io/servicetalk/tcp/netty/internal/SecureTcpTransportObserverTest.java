@@ -76,9 +76,9 @@ class SecureTcpTransportObserverTest extends AbstractTransportObserverTest {
         verify(clientTransportObserver).onNewConnection(any(), any());
         verify(serverTransportObserver, await()).onNewConnection(any(), any());
 
-        verify(clientConnectionObserver).onTransportHandshakeComplete();
+        verify(clientConnectionObserver).onTransportHandshakeComplete(any());
         verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
-        verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
+        verify(serverConnectionObserver, await()).onTransportHandshakeComplete(any());
         verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
 
         // handshake starts

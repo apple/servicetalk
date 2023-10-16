@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -34,7 +35,7 @@ import static java.util.Collections.unmodifiableMap;
  *
  * @param <SecurityConfig> type of security configuration
  */
-abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
+abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
     private final long idleTimeoutMs;
@@ -106,4 +107,12 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
      */
     @Nullable
     public abstract SslContext sslContext();
+
+    /**
+     * Get the {@link SslConfig}.
+     *
+     * @return the {@link SslConfig}, or {@code null} if SSL/TLS is not configured.
+     */
+    @Nullable
+    public abstract SecurityConfig sslConfig();
 }

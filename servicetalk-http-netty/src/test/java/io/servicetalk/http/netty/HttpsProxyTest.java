@@ -378,14 +378,14 @@ class HttpsProxyTest {
 
     private void verifyProxyConnectFailed(Throwable cause) {
         order.verify(transportObserver).onNewConnection(any(), any());
-        order.verify(connectionObserver).onTransportHandshakeComplete();
+        order.verify(connectionObserver).onTransportHandshakeComplete(any());
         order.verify(connectionObserver).onProxyConnect(any());
         order.verify(proxyConnectObserver).proxyConnectFailed(cause);
     }
 
     private void verifyProxyConnectComplete() {
         order.verify(transportObserver).onNewConnection(any(), any());
-        order.verify(connectionObserver).onTransportHandshakeComplete();
+        order.verify(connectionObserver).onTransportHandshakeComplete(any());
         order.verify(connectionObserver).onProxyConnect(any());
         order.verify(proxyConnectObserver).proxyConnectComplete(any());
     }

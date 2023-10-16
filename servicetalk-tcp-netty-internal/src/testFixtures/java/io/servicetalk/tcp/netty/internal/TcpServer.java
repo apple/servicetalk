@@ -87,7 +87,7 @@ public class TcpServer {
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                         config.sslConfig(),
-                        new TcpServerChannelInitializer(config, connectionObserver)
+                        new TcpServerChannelInitializer(config, connectionObserver, executionContext)
                                 .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
                         connectionObserver, false, __ -> false),
                 serverConnection -> service.apply(serverConnection)

@@ -73,9 +73,9 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void onTransportHandshakeComplete() {
-            first.onTransportHandshakeComplete();
-            second.onTransportHandshakeComplete();
+        public void onTransportHandshakeComplete(final ConnectionInfo info) {
+            first.onTransportHandshakeComplete(info);
+            second.onTransportHandshakeComplete(info);
         }
 
         @Override

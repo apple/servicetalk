@@ -87,7 +87,7 @@ class ServerRespondsOnClosingTest {
             return fromSource(responseProcessor);
         };
         serverConnection = initChannel(channel, httpExecutionContext, config, new TcpServerChannelInitializer(
-                config.tcpConfig(), connectionObserver),
+                config.tcpConfig(), connectionObserver, httpExecutionContext),
                 toStreamingHttpService(offloadNone(), service), true,
                 connectionObserver).toFuture().get();
     }
