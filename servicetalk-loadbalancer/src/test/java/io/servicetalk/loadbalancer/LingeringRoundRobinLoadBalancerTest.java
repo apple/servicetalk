@@ -135,6 +135,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
                 return null;
             }).toFuture();
 
+            // Note that this will send a `EXPIRED` event and the host will remain, but be marked unhealthy.
             sendServiceDiscoveryEvents(downEvent("address-1"));
             f.get();
 
@@ -157,7 +158,10 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
                 // Confirm host is expired:
                 ExecutionException ex = assertThrows(ExecutionException.class,
                         () -> lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get());
-                assertThat(ex.getCause(), instanceOf(NoAvailableHostException.class));
+
+                // We expect a `NoActiveHostException` because the host exists, but was marked
+                // as unhealthy because it is expired.
+                assertThat(ex.getCause(), instanceOf(NoActiveHostException.class));
 
                 lb.closeAsyncGracefully().toFuture().get();
                 verify(connection.get(), times(1)).closeAsyncGracefully();
