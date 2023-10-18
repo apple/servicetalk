@@ -224,13 +224,8 @@ class CancellationTest {
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
                     .beforeOnError((err) -> {
-                        // If subscription cancellation arrives after the resource started to sleep, the cancellation
-                        // will interrupt the sleep which is OK.
-                        boolean sleepInterrupted = err instanceof InterruptedException && err.getMessage()
-                                .contains("sleep interrupted");
-
                         // Ignore racy cancellation, it's ordered safely.
-                        if (!(err instanceof IllegalStateException || sleepInterrupted)) {
+                        if (!(err instanceof IllegalStateException || err instanceof InterruptedException)) {
                             errorRef.compareAndSet(null, err);
                         }
                     })
@@ -254,13 +249,8 @@ class CancellationTest {
 
                 @Override
                 public void onError(final Throwable t) {
-                    // If subscription cancellation arrives after the resource started to sleep, the cancellation
-                    // will interrupt the sleep which is OK.
-                    boolean sleepInterrupted = t instanceof InterruptedException && t.getMessage()
-                            .contains("sleep interrupted");
-
                     // Ignore racy cancellation, it's ordered safely.
-                    if (!(t instanceof IllegalStateException || sleepInterrupted)) {
+                    if (!(t instanceof IllegalStateException || t instanceof InterruptedException)) {
                         errorRef.compareAndSet(null, t);
                     }
                     cancelledLatch.countDown();
