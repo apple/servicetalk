@@ -221,11 +221,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         }
 
         @Override
-        boolean hasSubscriber() {
-            return subscriber != null;
-        }
-
-        @Override
         void tryCompleteSubscriber() {
             if (subscriber != null) {
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
@@ -236,12 +231,15 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         }
 
         @Override
-        void tryFailSubscriber(Throwable cause) {
+        boolean tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
                 ChannelCloseUtils.close(parentContext.nettyChannel(), cause);
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
+                return true;
+            } else {
+                return false;
             }
         }
 
