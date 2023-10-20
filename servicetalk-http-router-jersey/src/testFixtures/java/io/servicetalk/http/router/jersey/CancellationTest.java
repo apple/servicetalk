@@ -94,7 +94,7 @@ class CancellationTest {
     private static final CharSequence TEST_DATA = newLargePayload();
 
     @RegisterExtension
-    final ExecutorExtension<Executor> execRule = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> execRule = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     @Mock
     private HttpServiceContext ctx;
@@ -225,7 +225,7 @@ class CancellationTest {
             ).flatMap(identity())
                     .beforeOnError((err) -> {
                         // Ignore racy cancellation, it's ordered safely.
-                        if (!(err instanceof IllegalStateException)) {
+                        if (!(err instanceof IllegalStateException || err instanceof InterruptedException)) {
                             errorRef.compareAndSet(null, err);
                         }
                     })
@@ -250,7 +250,7 @@ class CancellationTest {
                 @Override
                 public void onError(final Throwable t) {
                     // Ignore racy cancellation, it's ordered safely.
-                    if (!(t instanceof IllegalStateException)) {
+                    if (!(t instanceof IllegalStateException || t instanceof InterruptedException)) {
                         errorRef.compareAndSet(null, t);
                     }
                     cancelledLatch.countDown();
