@@ -82,14 +82,14 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                             final AtomicReference<Publisher<?>> reference = request.context()
                                     .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
                             assert reference != null;
-                            final Publisher<?> previous = reference.getAndSet(response.messageBody());
-                            if (previous != null) {
+                            if (reference.getAndSet(response.messageBody()) != null) {
                                 // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
-                                // (i.e. during a retry) and so previous message body needs to be cleaned up.
-                                LOGGER.warn("Automatically draining previous HTTP response message body that was " +
-                                        "not consumed. Users-defined retry logic must drain response payload before " +
-                                        "retrying.");
-                                previous.ignoreElements().subscribe();
+                                // (i.e. during a retry) and so previous message body needs to be cleaned up by the
+                                // user.
+                                LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                        "been dropped by user code - this is a strong indication of a bug " +
+                                        "in a user-defined filter. Responses (or their message body) must " +
+                                        "be fully consumed before retrying.");
                             }
 
                             return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
@@ -146,14 +146,6 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
      */
     private static final class CleanerHttpLifecycleObserver implements HttpLifecycleObserver {
 
-        /**
-         * Helps to remember if we logged an error for user-defined filters already to not spam the logs.
-         * <p>
-         * NOTE: this variable is intentionally not volatile since thread visibility is not a concern, but repeated
-         * volatile accesses are.
-         */
-        private static boolean loggedError;
-
         private CleanerHttpLifecycleObserver() {
             // Singleton
         }
@@ -181,20 +173,13 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                 public void onExchangeFinally() {
                     if (requestContext != null) {
                         final AtomicReference<?> maybePublisher = requestContext.get(MESSAGE_PUBLISHER_KEY);
-                        if (maybePublisher != null) {
-                            Publisher<?> message = (Publisher<?>) maybePublisher.get();
-                            if (message != null) {
-                                // No-one subscribed to the message (or there is none), so if there is a message
-                                // proactively clean it up.
-                                if (!loggedError) {
-                                    LOGGER.error("Automatically draining HTTP response message body which has " +
-                                            "been dropped by user code - this is a strong indication of a bug " +
-                                            "in a user-defined filter. Responses (or their message body) must " +
-                                            "be fully consumed before discarding.");
-                                    loggedError = true;
-                                }
-                                message.ignoreElements().subscribe();
-                            }
+                        if (maybePublisher != null && maybePublisher.get() != null) {
+                            // No-one subscribed to the message (or there is none), so if there is a message
+                            // tell the user to clean it up.
+                            LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                    "been dropped by user code - this is a strong indication of a bug " +
+                                    "in a user-defined filter. Responses (or their message body) must " +
+                                    "be fully consumed before discarding.");
                         }
                     }
                 }
