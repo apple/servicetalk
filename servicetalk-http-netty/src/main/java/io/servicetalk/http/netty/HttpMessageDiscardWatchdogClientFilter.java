@@ -41,8 +41,7 @@ import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.
  * Filter which tracks HTTP responses and makes sure that if an exception is raised during filter pipeline
  * processing message payload bodies are cleaned up.
  */
-final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClientFilterFactory,
-                                                              StreamingHttpConnectionFilterFactory {
+final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConnectionFilterFactory {
 
     private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
             .newKey(HttpMessageDiscardWatchdogClientFilter.class.getName() + ".messagePublisher",
@@ -60,12 +59,6 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
      */
     static final StreamingHttpClientFilterFactory CLIENT_CLEANER = new CleanerStreamingHttpClientFilterFactory();
 
-    /**
-     * Instance of {@link StreamingHttpConnectionFilterFactory} with cleaner implementation.
-     */
-    static final StreamingHttpConnectionFilterFactory CONNECTION_CLEANER =
-            new CleanerStreamingHttpConnectionFilterFactory();
-
     private HttpMessageDiscardWatchdogClientFilter() {
         // Singleton
     }
@@ -75,18 +68,28 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return delegate().request(request).map(response -> trackResponsePayload(request, response));
-            }
-        };
-    }
+                return delegate().request(request).map(response -> {
+                    // always write the buffer publisher into the request context. When a downstream subscriber
+                    // arrives, mark the message as subscribed explicitly (having a message present and no
+                    // subscription is an indicator that it must be freed later on).
+                    final AtomicReference<Publisher<?>> reference = request.context()
+                            .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
+                    assert reference != null;
+                    if (reference.getAndSet(response.messageBody()) != null) {
+                        // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
+                        // (i.e. during a retry) and so previous message body needs to be cleaned up by the
+                        // user.
+                        LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                "been dropped by user code - this is a strong indication of a bug " +
+                                "in a user-defined filter. Responses (or their message body) must " +
+                                "be fully consumed before retrying.");
+                    }
 
-    @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        return new StreamingHttpClientFilter(client) {
-            @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final StreamingHttpRequest request) {
-                return delegate.request(request).map(response -> trackResponsePayload(request, response));
+                    return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
+                        reference.set(null);
+                        return HttpMessageDiscardWatchdogServiceFilter.NoopSubscriber.INSTANCE;
+                    }));
+                });
             }
         };
     }
@@ -94,62 +97,6 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return HttpExecutionStrategies.offloadNone();
-    }
-
-    /**
-     * Tracks the response message payload for potential clean-up.
-     *
-     * @param request the original request.
-     * @param response the response on which the payload is tracked.
-     * @return the transformed response passed to upstream filters.
-     */
-    private StreamingHttpResponse trackResponsePayload(final StreamingHttpRequest request,
-                                                       final StreamingHttpResponse response) {
-        // always write the buffer publisher into the request context. When a downstream subscriber
-        // arrives, mark the message as subscribed explicitly (having a message present and no
-        // subscription is an indicator that it must be freed later on).
-        final AtomicReference<Publisher<?>> reference = request.context()
-                .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
-        assert reference != null;
-        final Publisher<?> previous = reference.getAndSet(response.messageBody());
-        if (previous != null) {
-            // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
-            // (i.e. during a retry) and so previous message body needs to be cleaned up.
-            LOGGER.warn("Automatically draining previous HTTP response message body that was " +
-                    "not consumed. Users-defined retry logic must drain response payload before " +
-                    "retrying.");
-
-            previous.ignoreElements().subscribe();
-        }
-
-        return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
-            reference.set(null);
-            return HttpMessageDiscardWatchdogServiceFilter.NoopSubscriber.INSTANCE;
-        }));
-    }
-
-    /**
-     * Cleans the message publisher for both client and connection cleaners.
-     *
-     * @param request the original request.
-     * @param cause the cause of the error.
-     * @return the (failed) response.
-     */
-    private static Single<StreamingHttpResponse> cleanMessagePublisher(final StreamingHttpRequest request,
-                                                                       final Throwable cause) {
-        final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
-        if (maybePublisher != null) {
-            Publisher<?> message = (Publisher<?>) maybePublisher.getAndSet(null);
-            if (message != null) {
-                // No-one subscribed to the message (or there is none), so if there is a message
-                // proactively clean it up.
-                return message
-                        .ignoreElements()
-                        .concat(Single.<StreamingHttpResponse>failed(cause))
-                        .shareContextOnSubscribe();
-            }
-        }
-        return Single.<StreamingHttpResponse>failed(cause).shareContextOnSubscribe();
     }
 
     private static final class CleanerStreamingHttpClientFilterFactory implements StreamingHttpClientFilterFactory {
@@ -161,34 +108,18 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpClien
                                                                 final StreamingHttpRequest request) {
                     return delegate
                             .request(request)
-                            .onErrorResume(cause -> cleanMessagePublisher(request, cause));
-                }
-            };
-        }
-
-        @Override
-        public HttpExecutionStrategy requiredOffloads() {
-            return HttpExecutionStrategies.offloadNone();
-        }
-    }
-
-    private static final class CleanerStreamingHttpConnectionFilterFactory
-            implements StreamingHttpConnectionFilterFactory {
-        @Override
-        public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
-            return new StreamingHttpConnectionFilter(connection) {
-                @Override
-                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                    return delegate()
-                            .request(request)
-                            .map(response -> {
+                            .onErrorResume(cause -> {
                                 final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
-                                if (maybePublisher != null) {
-                                    maybePublisher.set(null);
+                                if (maybePublisher != null && maybePublisher.getAndSet(null) != null) {
+                                    // No-one subscribed to the message (or there is none), so if there is a message
+                                    // tell the user to clean it up.
+                                    LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                            "been dropped by user code - this is a strong indication of a bug " +
+                                            "in a user-defined filter. Responses (or their message body) must " +
+                                            "be fully consumed before discarding.");
                                 }
-                                return response;
-                            })
-                            .onErrorResume(cause -> cleanMessagePublisher(request, cause));
+                                return Single.<StreamingHttpResponse>failed(cause).shareContextOnSubscribe();
+                            });
                 }
             };
         }

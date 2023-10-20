@@ -141,7 +141,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
 
-        connectionFilterFactory = HttpMessageDiscardWatchdogClientFilter.CONNECTION_CLEANER;
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
@@ -322,9 +321,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-
-            currClientFilterFactory = appendFilter(currClientFilterFactory,
-                    HttpMessageDiscardWatchdogClientFilter.INSTANCE);
 
             // Internal retries must be one of the last filters in the chain.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);

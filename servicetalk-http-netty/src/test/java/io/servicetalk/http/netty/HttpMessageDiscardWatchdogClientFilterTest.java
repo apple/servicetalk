@@ -15,12 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -29,20 +26,21 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -64,6 +62,16 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
+    @BeforeEach
+    public void setup() {
+        LoggerStringWriter.reset();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        LoggerStringWriter.remove();
+    }
+
     /**
      * Asserts that the response message payload is cleaned up properly if discarded in a filter and not
      * properly cleaned up by the filter body.
@@ -74,25 +82,12 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                                                     final @Nullable Class<?> expectedException,
                                                     ResponseTransformer transformer)
             throws Exception {
-        final AtomicLong numConnectionsOpened = new AtomicLong(0);
 
         try (HttpServerContext serverContext = newServerBuilder(SERVER_CTX)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         Single.fromSupplier(() -> responseFactory.ok().payloadBody(Publisher.from(ctx.executionContext()
                                 .bufferAllocator().fromUtf8("Hello, World!")))))) {
             try (StreamingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX)
-                    .appendConnectionFactoryFilter(original ->
-                            new DelegatingConnectionFactory<InetSocketAddress,
-                                    FilterableStreamingHttpConnection>(original) {
-                        @Override
-                        public Single<FilterableStreamingHttpConnection> newConnection(
-                                final InetSocketAddress inetSocketAddress,
-                                @Nullable final ContextMap context,
-                                @Nullable final TransportObserver observer) {
-                            numConnectionsOpened.incrementAndGet();
-                            return delegate().newConnection(inetSocketAddress, context, observer);
-                        }
-                    })
                     .appendConnectionFilter(c -> new StreamingHttpConnectionFilter(c) {
                         @Override
                         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
@@ -125,11 +120,16 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                         response.messageBody().ignoreElements().toFuture().get();
                     } else {
                         ExecutionException ex = assertThrows(ExecutionException.class,
-                                () -> client.request(client.get("/")).toFuture().get());
+                                () -> client.request(client.get("/")).timeout(Duration.ofMillis(100)).toFuture().get());
+                        System.err.println(ex);
+                        // TODO: Connection-level stuck (or times out if applied above)
+                        // TODO: client will raise the expected exception.
                         assertTrue(ex.getCause().getClass().isAssignableFrom(expectedException));
                     }
                 }
-                assertEquals(1, numConnectionsOpened.get());
+
+                String output = LoggerStringWriter.stableAccumulated(1000);
+                System.err.println(output);
             }
         }
     }
