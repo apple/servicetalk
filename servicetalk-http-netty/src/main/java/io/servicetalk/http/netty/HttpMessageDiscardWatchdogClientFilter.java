@@ -38,8 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.generifyAtomicReference;
 
 /**
- * Filter which tracks HTTP responses and makes sure that if an exception is raised during filter pipeline
- * processing message payload bodies are cleaned up.
+ * Filter which tracks message bodies and warns if they are not discarded properly.
  */
 final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConnectionFilterFactory {
 

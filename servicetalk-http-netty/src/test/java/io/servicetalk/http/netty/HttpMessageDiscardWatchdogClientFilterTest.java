@@ -78,7 +78,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
      */
     @ParameterizedTest(name = "{displayName} [{index}] filterType={0} expectedException={1} transformer={2}")
     @MethodSource("responseTransformers")
-    void cleansClientResponseMessageBodyIfDiscarded(final FilterType filterType,
+    void warnsIfDiscarded(final FilterType filterType,
                                                     final @Nullable Class<?> expectedException,
                                                     ResponseTransformer transformer)
             throws Exception {

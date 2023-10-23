@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 /**
- * Filter which tracks HTTP messages sent by the service, so it can be freed if discarded in the pipeline.
+ * Filter which tracks message bodies and warns if they are not discarded properly.
  */
 final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
