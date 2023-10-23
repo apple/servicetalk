@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
@@ -25,11 +25,6 @@ import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
-import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
 import io.netty.channel.Channel;
 
@@ -58,7 +53,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * @param <Req> Type of requests sent on this connection.
  * @param <Resp> Type of responses read from this connection.
  */
-final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContext {
+public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContext {
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> writeQueueLockUpdater =
             newUpdater(NettyPipelinedConnection.class, "writeQueueLock");
@@ -80,8 +75,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      * @param connection {@link NettyConnection} requests to which are to be pipelined.
      * @param maxPipelinedRequests The maximum number of pipelined requests.
      */
-    NettyPipelinedConnection(NettyConnection<Resp, Req> connection,
-                             int maxPipelinedRequests) {
+    public NettyPipelinedConnection(final NettyConnection<Resp, Req> connection, int maxPipelinedRequests) {
         this.connection = requireNonNull(connection);
         writeQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
         readQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
@@ -93,7 +87,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      * impacts how many elements are requested from the {@code requestPublisher} depending upon channel writability.
      * @return Response {@link Publisher} for this request.
      */
-    Publisher<Resp> write(final Publisher<Req> requestPublisher) {
+    public Publisher<Resp> write(final Publisher<Req> requestPublisher) {
         return write(requestPublisher, connection::defaultFlushStrategy, WriteDemandEstimators::newDefaultEstimator);
     }
 
@@ -105,7 +99,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      * impacts how many elements are requested from the {@code requestPublisher} depending upon channel writability.
      * @return Response {@link Publisher} for this request.
      */
-    Publisher<Resp> write(final Publisher<Req> requestPublisher,
+    public Publisher<Resp> write(final Publisher<Req> requestPublisher,
                           final Supplier<FlushStrategy> flushStrategySupplier,
                           final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier) {
         // Lazy modification of local state required (e.g. nodes, delayed subscriber, queue modifications)
@@ -209,7 +203,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     }
 
     @Override
-    public Cancellable updateFlushStrategy(final NettyConnectionContext.FlushStrategyProvider strategyProvider) {
+    public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
         return connection.updateFlushStrategy(strategyProvider);
     }
 

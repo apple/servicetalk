@@ -30,6 +30,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 
 import io.netty.channel.Channel;
