@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
@@ -29,16 +29,9 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.RetryableException;
-import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
-import io.servicetalk.transport.netty.internal.ExecutionContextUtils;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
-import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
-import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -64,7 +57,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -104,8 +96,9 @@ class NettyPipelinedConnectionTest {
         writePublisher2 = new TestPublisher<>();
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> MAX_VALUE);
         CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+        ExecutionStrategy executionStrategy = () -> true;
         ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
-                fromNettyEventLoop(channel.eventLoop(), false), immediate(), defaultStrategy());
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(), executionStrategy);
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, executionContext,
                 closeHandler, defaultFlushStrategy(), 0L, null, channel2 -> {
