@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 /**
- * Filter which tracks HTTP messages sent by the service, so it can be freed if discarded in the pipeline.
+ * Filter which tracks message bodies and warns if they are not discarded properly.
  */
 final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
@@ -57,9 +57,9 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
     static final StreamingHttpServiceFilterFactory CLEANER =
             new HttpLifecycleObserverServiceFilter(new CleanerHttpLifecycleObserver());
 
-    static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
+    private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
             .newKey(HttpMessageDiscardWatchdogServiceFilter.class.getName() + ".messagePublisher",
-                    generify(AtomicReference.class));
+                    generifyAtomicReference());
 
     private HttpMessageDiscardWatchdogServiceFilter() {
         // Singleton
@@ -93,10 +93,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                             }
 
                             return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
-                                final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
-                                if (maybePublisher != null) {
-                                    maybePublisher.set(null);
-                                }
+                                reference.set(null);
                                 return NoopSubscriber.INSTANCE;
                             }));
                         });
@@ -110,11 +107,11 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> generify(final Class<?> clazz) {
-        return (Class<T>) clazz;
+    static <T> Class<T> generifyAtomicReference() {
+        return (Class<T>) AtomicReference.class;
     }
 
-    private static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
+    static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
 
         static final NoopSubscriber INSTANCE = new NoopSubscriber();
 

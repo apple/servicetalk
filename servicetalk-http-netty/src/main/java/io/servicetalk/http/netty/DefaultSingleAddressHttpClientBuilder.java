@@ -140,6 +140,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+
+        clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
@@ -254,10 +256,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
                     executionContext.bufferAllocator());
 
-            final StreamingHttpConnectionFilterFactory connectionFilterFactory =
+            StreamingHttpConnectionFilterFactory connectionFilterFactory =
                     ctx.builder.addIdleTimeoutConnectionFilter ?
                             appendConnectionFilter(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
                             ctx.builder.connectionFilterFactory;
+
+            connectionFilterFactory = appendConnectionFilter(connectionFilterFactory,
+                    HttpMessageDiscardWatchdogClientFilter.INSTANCE);
+
             if (roConfig.isH2PriorKnowledge() &&
                     // Direct connection or HTTP proxy
                     (!roConfig.hasProxy() || sslContext == null)) {
@@ -296,6 +302,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                             targetAddress(ctx)));
 
             ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
+
             if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
@@ -314,7 +321,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-            // Internal retries must be the last filter in the chain, right before LoadBalancedStreamingHttpClient.
+
+            // Internal retries must be one of the last filters in the chain.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);
             FilterableStreamingHttpClient wrappedClient =
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus);
