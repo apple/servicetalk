@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-public class EagerNewRoundRobinLoadBalancerTest extends EagerRoundRobinLoadBalancerTest {
+class EagerNewRoundRobinLoadBalancerTest extends EagerRoundRobinLoadBalancerTest {
     @Override
     protected RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return ((RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>)
