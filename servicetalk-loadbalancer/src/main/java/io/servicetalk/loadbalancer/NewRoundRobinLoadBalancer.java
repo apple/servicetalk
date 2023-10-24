@@ -42,7 +42,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
@@ -83,20 +82,20 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
+final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements TestableLoadBalancer<ResolvedAddress, C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NewRoundRobinLoadBalancer.class);
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> usedHostsUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, List.class, "usedHosts");
+    private static final AtomicReferenceFieldUpdater<NewRoundRobinLoadBalancer, List> usedHostsUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, List.class, "usedHosts");
     @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, "index");
+    private static final AtomicIntegerFieldUpdater<NewRoundRobinLoadBalancer> indexUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "index");
     @SuppressWarnings("rawtypes")
-    private static final AtomicLongFieldUpdater<RoundRobinLoadBalancer> nextResubscribeTimeUpdater =
-            AtomicLongFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, "nextResubscribeTime");
+    private static final AtomicLongFieldUpdater<NewRoundRobinLoadBalancer> nextResubscribeTimeUpdater =
+            AtomicLongFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "nextResubscribeTime");
 
     private static final long RESUBSCRIBING = -1L;
 
@@ -137,7 +136,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     /**
      * Creates a new instance.
      *
-     * @param id a (unique) ID to identify the created {@link RoundRobinLoadBalancer}.
+     * @param id a (unique) ID to identify the created {@link NewRoundRobinLoadBalancer}.
      * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
@@ -147,7 +146,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
      * continues being eligible for connecting on the request path).
      * @see RoundRobinLoadBalancerFactory
      */
-    RoundRobinLoadBalancer(
+    NewRoundRobinLoadBalancer(
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
@@ -204,7 +203,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
-            final HealthCheckConfig config, final RoundRobinLoadBalancer<R, C> lb) {
+            final HealthCheckConfig config, final NewRoundRobinLoadBalancer<R, C> lb) {
         final long lower = config.healthCheckResubscribeLowerBound;
         final long upper = config.healthCheckResubscribeUpperBound;
         final long currentTime = config.executor.currentTime(NANOSECONDS);
@@ -273,17 +272,17 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         @Override
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
             if (events == null) {
-                LOGGER.debug("{}: unexpectedly received null instead of events.", RoundRobinLoadBalancer.this);
+                LOGGER.debug("{}: unexpectedly received null instead of events.", NewRoundRobinLoadBalancer.this);
                 return;
             }
             for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
                 final ServiceDiscovererEvent.Status eventStatus = event.status();
                 LOGGER.debug("{}: received new ServiceDiscoverer event {}. Inferred status: {}.",
-                        RoundRobinLoadBalancer.this, event, eventStatus);
+                        NewRoundRobinLoadBalancer.this, event, eventStatus);
 
                 @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> usedAddresses =
-                        usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
+                        usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, oldHosts -> {
                             if (isClosedList(oldHosts)) {
                                 return oldHosts;
                             }
@@ -311,13 +310,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                             } else {
                                 LOGGER.error("{}: Unexpected Status in event:" +
                                         " {} (mapped to {}). Leaving usedHosts unchanged: {}",
-                                        RoundRobinLoadBalancer.this, event, eventStatus, oldHosts);
+                                        NewRoundRobinLoadBalancer.this, event, eventStatus, oldHosts);
                                 return oldHosts;
                             }
                         });
 
                 LOGGER.debug("{}: now using addresses (size={}): {}.",
-                        RoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
+                        NewRoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
 
                 if (AVAILABLE.equals(eventStatus)) {
                     if (usedAddresses.size() == 1) {
@@ -368,9 +367,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new Host<>(RoundRobinLoadBalancer.this.toString(), addr, healthCheckConfig);
+            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr,
+                    healthCheckConfig);
             host.onClose().afterFinally(() ->
-                    usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, previousHosts -> {
+                    usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
                                 List<Host<ResolvedAddress, C>> previousHostsTyped =
                                         (List<Host<ResolvedAddress, C>>) previousHosts;
@@ -436,7 +436,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             }
             LOGGER.error(
                 "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
-                    RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+                    NewRoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
         }
 
         @Override
@@ -447,7 +447,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 eventStreamProcessor.onComplete();
             }
             LOGGER.error("{}: service discoverer completed. Last seen addresses (size={}): {}.",
-                    RoundRobinLoadBalancer.this, hosts.size(), hosts);
+                    NewRoundRobinLoadBalancer.this, hosts.size(), hosts);
         }
     }
 
@@ -486,7 +486,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 // This is the case when SD has emitted some items but none of the hosts are available.
                 failed(StacklessNoAvailableHostException.newInstance(
                         "No hosts are available to connect for " + targetResource + ".",
-                        RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                        NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
         // try one loop over hosts and if all are expired, give up
@@ -546,7 +546,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             }
             return failed(StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                             targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
-                    RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                    NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
         // No connection was selected: create a new one.
         final Host<ResolvedAddress, C> host = pickedHost;
@@ -559,41 +559,41 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(t, connectionFactory));
         }
         return establishConnection
-                .flatMap(newCnx -> {
-                    if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
-                        return newCnx.closeAsync().<C>concat(failed(StacklessConnectionRejectedException.newInstance(
-                                "Newly created connection " + newCnx + " for " + targetResource
-                                        + " could not be reserved.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)")))
-                                .shareContextOnSubscribe();
-                    }
-
-                    // Invoke the selector before adding the connection to the pool, otherwise, connection can be
-                    // used concurrently and hence a new connection can be rejected by the selector.
-                    if (!selector.test(newCnx)) {
-                        // Failure in selection could be the result of connection factory returning cached connection,
-                        // and not having visibility into max-concurrent-requests, or other threads already selected the
-                        // connection which uses all the max concurrent request count.
-
-                        // If there is caching Propagate the exception and rely upon retry strategy.
-                        Single<C> failedSingle = failed(StacklessConnectionRejectedException.newInstance(
-                                "Newly created connection " + newCnx + " for " + targetResource
-                                        + " was rejected by the selection filter.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)"));
-
-                        // Just in case the connection is not closed add it to the host so we don't lose track,
-                        // duplicates will be filtered out.
-                        return (host.addConnection(newCnx, null) ?
-                                failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
-                    }
-                    if (host.addConnection(newCnx, null)) {
-                        return succeeded(newCnx).shareContextOnSubscribe();
-                    }
-                    return newCnx.closeAsync().<C>concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
-                            failed(StacklessConnectionRejectedException.newInstance(
-                                    "Failed to add newly created connection " + newCnx + " for " + targetResource
-                                            + " for " + host, RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+            .flatMap(newCnx -> {
+                if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
+                    return newCnx.closeAsync().<C>concat(failed(StacklessConnectionRejectedException.newInstance(
+                            "Newly created connection " + newCnx + " for " + targetResource
+                                    + " could not be reserved.",
+                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)")))
                             .shareContextOnSubscribe();
+                }
+
+                // Invoke the selector before adding the connection to the pool, otherwise, connection can be
+                // used concurrently and hence a new connection can be rejected by the selector.
+                if (!selector.test(newCnx)) {
+                    // Failure in selection could be the result of connection factory returning cached connection,
+                    // and not having visibility into max-concurrent-requests, or other threads already selected the
+                    // connection which uses all the max concurrent request count.
+
+                    // If there is caching Propagate the exception and rely upon retry strategy.
+                    Single<C> failedSingle = failed(StacklessConnectionRejectedException.newInstance(
+                            "Newly created connection " + newCnx + " for " + targetResource
+                                    + " was rejected by the selection filter.",
+                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
+
+                    // Just in case the connection is not closed add it to the host so we don't lose track,
+                    // duplicates will be filtered out.
+                    return (host.addConnection(newCnx, null) ?
+                            failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
+                }
+                if (host.addConnection(newCnx, null)) {
+                    return succeeded(newCnx).shareContextOnSubscribe();
+                }
+                return newCnx.closeAsync().<C>concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
+                    failed(StacklessConnectionRejectedException.newInstance(
+                        "Failed to add newly created connection " + newCnx + " for " + targetResource
+                                + " for " + host, NewRoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                    .shareContextOnSubscribe();
                 });
     }
 
@@ -619,7 +619,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
     // Visible for testing
     @Override
-    public List<Map.Entry<ResolvedAddress, List<C>>> usedAddresses() {
+    public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
         return usedHosts.stream().map(Host::asEntry).collect(toList());
     }
 

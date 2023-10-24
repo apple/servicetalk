@@ -60,14 +60,17 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     private final String id;
     private final int linearSearchSpace;
+    private final boolean useNewRoundRobin;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
 
     private RoundRobinLoadBalancerFactory(final String id,
                                           final int linearSearchSpace,
+                                          final boolean useNewRoundRobin,
                                           @Nullable final HealthCheckConfig healthCheckConfig) {
         this.id = id;
         this.linearSearchSpace = linearSearchSpace;
+        this.useNewRoundRobin = useNewRoundRobin;
         this.healthCheckConfig = healthCheckConfig;
     }
 
@@ -77,7 +80,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+        return useNewRoundRobin ?
+                new NewRoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+                        linearSearchSpace, healthCheckConfig)
+        : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -86,7 +92,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+        return useNewRoundRobin ? new NewRoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+                linearSearchSpace, healthCheckConfig)
+                                : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -109,6 +117,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
         private final String id;
         private int linearSearchSpace = 16;
+        private boolean useNewRoundRobin;
         @Nullable
         private Executor backgroundExecutor;
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -142,6 +151,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                 throw new IllegalArgumentException("linearSearchSpace: " + linearSearchSpace + " (expected >=0)");
             }
             this.linearSearchSpace = linearSearchSpace;
+            return this;
+        }
+
+        // In the future we'll elevate this to the RoundRobinLoadBalancerBuilder interface.
+        public RoundRobinLoadBalancerBuilder<ResolvedAddress, C> useNewRoundRobin(boolean useNewRoundRobin) {
+            this.useNewRoundRobin = useNewRoundRobin;
             return this;
         }
 
@@ -217,15 +232,14 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Override
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {
-                return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, null);
+                return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, useNewRoundRobin, null);
             }
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
                     healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
-
-            return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, healthCheckConfig);
+            return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, useNewRoundRobin, healthCheckConfig);
         }
     }
 
