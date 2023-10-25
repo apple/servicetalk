@@ -617,7 +617,6 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         return asyncCloseable.closeAsyncGracefully();
     }
 
-    // Visible for testing
     @Override
     public List<Map.Entry<ResolvedAddress, List<C>>> usedAddresses() {
         return usedHosts.stream().map(Host::asEntry).collect(toList());
