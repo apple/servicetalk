@@ -154,8 +154,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             return this;
         }
 
-        // In the future we'll elevate this to the RoundRobinLoadBalancerBuilder interface.
-        public RoundRobinLoadBalancerBuilder<ResolvedAddress, C> useNewRoundRobin(boolean useNewRoundRobin) {
+        // In the future we may elevate this to the RoundRobinLoadBalancerBuilder interface or pick another
+        // route to transition to the new load balancer structure.
+        RoundRobinLoadBalancerBuilder<ResolvedAddress, C> useNewRoundRobin(boolean useNewRoundRobin) {
             this.useNewRoundRobin = useNewRoundRobin;
             return this;
         }
