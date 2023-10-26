@@ -29,9 +29,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.loadbalancer.Exceptions.StacklessConnectionRejectedException;
-import io.servicetalk.loadbalancer.Exceptions.StacklessNoActiveHostException;
-import io.servicetalk.loadbalancer.Exceptions.StacklessNoAvailableHostException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +39,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
@@ -68,7 +66,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Integer.toHexString;
-import static java.lang.Math.min;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -99,30 +96,13 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     private static final long RESUBSCRIBING = -1L;
 
-    /**
-     * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
-     * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
-     * selection attempt.
-     */
-    private static final int MIN_RANDOM_SEARCH_SPACE = 64;
-
-    /**
-     * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
-     * trying to locate an available connection when most connections are in use. This increases tail latencies, thus
-     * after some number of failed attempts it appears to be more beneficial to open a new connection instead.
-     * <p>
-     * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
-     * counts, larger connection counts, low connection churn, high connection churn.
-     */
-    private static final float RANDOM_SEARCH_FACTOR = 0.75f;
-
     private volatile long nextResubscribeTime = RESUBSCRIBING;
     @SuppressWarnings("unused")
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
 
-    private final String id;
     private final String targetResource;
+    private final String lbDescription;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
@@ -153,8 +133,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig) {
-        this.id = id + '@' + toHexString(identityHashCode(this));
         this.targetResource = requireNonNull(targetResourceName);
+        this.lbDescription = makeDescription(id, targetResource);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -367,8 +347,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr,
-                    healthCheckConfig);
+            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr, connectionFactory,
+                    linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
                     usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
@@ -408,7 +388,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
         private List<Host<ResolvedAddress, C>> listWithHostRemoved(
                 List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
             if (oldHostsTyped.isEmpty()) {
-                // this can happen when an expired host is removed during closing of the RoundRobinLoadBalancer,
+                // this can happen when an expired host is removed during closing of the NewRoundRobinLoadBalancer,
                 // but all of its connections have already been closed
                 return oldHostsTyped;
             }
@@ -472,10 +452,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     @Override
     public String toString() {
-        return "RoundRobinLoadBalancer{" +
-                "id=" + id +
-                ", targetResource=" + targetResource +
-                '}';
+        return lbDescription;
     }
 
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
@@ -484,14 +461,13 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
         if (usedHosts.isEmpty()) {
             return isClosedList(usedHosts) ? failedLBClosed(targetResource) :
                 // This is the case when SD has emitted some items but none of the hosts are available.
-                failed(StacklessNoAvailableHostException.newInstance(
+                failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                         "No hosts are available to connect for " + targetResource + ".",
                         NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
         // try one loop over hosts and if all are expired, give up
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % usedHosts.size();
-        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
         Host<ResolvedAddress, C> pickedHost = null;
         for (int i = 0; i < usedHosts.size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
@@ -500,31 +476,10 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             assert host != null : "Host can't be null.";
 
             if (!forceNewConnectionAndReserve) {
-                // Try first to see if an existing connection can be used
-                final Object[] connections = host.connections();
-                // Exhaust the linear search space first:
-                final int linearAttempts = min(connections.length, linearSearchSpace);
-                for (int j = 0; j < linearAttempts; ++j) {
-                    @SuppressWarnings("unchecked")
-                    final C connection = (C) connections[j];
-                    if (selector.test(connection)) {
-                        return succeeded(connection);
-                    }
-                }
-                // Try other connections randomly:
-                if (connections.length > linearAttempts) {
-                    final int diff = connections.length - linearAttempts;
-                    // With small enough search space, attempt number of times equal to number of remaining connections.
-                    // Back off after exploring most of the search space, it gives diminishing returns.
-                    final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
-                            (int) (diff * RANDOM_SEARCH_FACTOR);
-                    for (int j = 0; j < randomAttempts; ++j) {
-                        @SuppressWarnings("unchecked")
-                        final C connection = (C) connections[rnd.nextInt(linearAttempts, connections.length)];
-                        if (selector.test(connection)) {
-                            return succeeded(connection);
-                        }
-                    }
+                // First see if an existing connection can be used
+                C connection = host.pickConnection(selector, context);
+                if (connection != null) {
+                    return succeeded(connection);
                 }
             }
 
@@ -544,57 +499,12 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                     subscribeToEvents(true);
                 }
             }
-            return failed(StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
+            return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                             targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                     NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
         // No connection was selected: create a new one.
-        final Host<ResolvedAddress, C> host = pickedHost;
-
-        // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
-        // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
-        Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, context, null);
-        if (healthCheckConfig != null) {
-                // Schedule health check before returning
-                establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(t, connectionFactory));
-        }
-        return establishConnection
-            .flatMap(newCnx -> {
-                if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
-                    return newCnx.closeAsync().<C>concat(failed(StacklessConnectionRejectedException.newInstance(
-                            "Newly created connection " + newCnx + " for " + targetResource
-                                    + " could not be reserved.",
-                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)")))
-                            .shareContextOnSubscribe();
-                }
-
-                // Invoke the selector before adding the connection to the pool, otherwise, connection can be
-                // used concurrently and hence a new connection can be rejected by the selector.
-                if (!selector.test(newCnx)) {
-                    // Failure in selection could be the result of connection factory returning cached connection,
-                    // and not having visibility into max-concurrent-requests, or other threads already selected the
-                    // connection which uses all the max concurrent request count.
-
-                    // If there is caching Propagate the exception and rely upon retry strategy.
-                    Single<C> failedSingle = failed(StacklessConnectionRejectedException.newInstance(
-                            "Newly created connection " + newCnx + " for " + targetResource
-                                    + " was rejected by the selection filter.",
-                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
-
-                    // Just in case the connection is not closed add it to the host so we don't lose track,
-                    // duplicates will be filtered out.
-                    return (host.addConnection(newCnx, null) ?
-                            failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
-                }
-                if (host.addConnection(newCnx, null)) {
-                    return succeeded(newCnx).shareContextOnSubscribe();
-                }
-                return newCnx.closeAsync().<C>concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
-                    failed(StacklessConnectionRejectedException.newInstance(
-                        "Failed to add newly created connection " + newCnx + " for " + targetResource
-                                + " for " + host, NewRoundRobinLoadBalancer.class, "selectConnection0(...)")))
-                    .shareContextOnSubscribe();
-                });
+        return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);
     }
 
     @Override
@@ -617,7 +527,6 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
         return asyncCloseable.closeAsyncGracefully();
     }
 
-    // Visible for testing
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
         return usedHosts.stream().map(Host::asEntry).collect(toList());
@@ -625,6 +534,13 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     private static boolean isClosedList(List<?> list) {
         return list.getClass().equals(ClosedList.class);
+    }
+
+    private String makeDescription(String id, String targetResource) {
+        return "NewRoundRobinLoadBalancer{" +
+                "id=" + id + '@' + toHexString(identityHashCode(this)) +
+                ", targetResource=" + targetResource +
+                '}';
     }
 
     private static final class ClosedList<T> implements List<T> {
