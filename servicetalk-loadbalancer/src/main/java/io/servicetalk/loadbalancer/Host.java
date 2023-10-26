@@ -171,7 +171,6 @@ final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAs
 
     @Nullable
     C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
-        // TODO: what is the deal with not needing a context here? What is it used for in the factory?
         final Object[] connections = connState.connections;
         // Exhaust the linear search space first:
         final int linearAttempts = min(connections.length, linearSearchSpace);
