@@ -39,7 +39,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
@@ -347,8 +346,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr, connectionFactory,
-                    linearSearchSpace, healthCheckConfig);
+            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr,
+                    connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
                     usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
