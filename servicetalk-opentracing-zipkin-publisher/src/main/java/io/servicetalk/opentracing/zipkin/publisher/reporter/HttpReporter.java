@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,7 +127,12 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         if (!builder.batchingEnabled) {
             buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
             spans = fromSource(buffer)
-                    .map(span -> allocator.wrap(spanEncoder.encodeList(Collections.singletonList(span))));
+                    .map(span -> {
+                        // Always encode spans as list: https://github.com/apple/servicetalk/pull/2092
+                        final byte[] bytes = spanEncoder.encodeList(Collections.singletonList(span));
+                        LOGGER.trace("Encoded received span: {}, result={} bytes", span, bytes.length);
+                        return allocator.wrap(bytes);
+                    });
         } else {
             // As we send maxConcurrentReports number of parallel requests, each with roughly batchSizeHint number of
             // spans, we hold a maximum of that many Spans in-memory that we can send in parallel to the collector.
@@ -136,7 +141,12 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                     .buffer(forCountOrTime(builder.batchSizeHint, builder.maxBatchDuration,
                             () -> new ListAccumulator(builder.batchSizeHint), client.executionContext().executor()))
                     .filter(accumulate -> !accumulate.isEmpty())
-                    .map(bufferedSpans -> allocator.wrap(spanEncoder.encodeList(bufferedSpans)));
+                    .map(bufferedSpans -> {
+                        final byte[] bytes = spanEncoder.encodeList(bufferedSpans);
+                        LOGGER.trace("Encoded received list of spans (size={}): {}, result={} bytes",
+                                bufferedSpans.size(), bufferedSpans, bytes.length);
+                        return allocator.wrap(bytes);
+                    });
         }
 
         final CompletableSource.Processor spansTerminated = newCompletableProcessor();
@@ -287,6 +297,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
 
         @Override
         public void accumulate(@Nonnull final Span item) {
+            LOGGER.trace("Accumulating received span: {}", item);
             accumulate.add(requireNonNull(item));
         }
 
