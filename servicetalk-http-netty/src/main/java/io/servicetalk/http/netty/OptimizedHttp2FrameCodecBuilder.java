@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,15 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     // Netty. For the next major release we should either remove these properties or promote them to public API.
     private static final String MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME =
             "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.maxConsecutiveEmptyFrames";
+    private static final String MAX_RST_FRAMES_PER_WINDOW_PROPERTY_NAME =
+            "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.maxRstFramesPerWindow";
     private static final String SECONDS_PER_WINDOW_PROPERTY_NAME =
             "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.secondsPerWindow";
 
-    private static final int MAX_CONSECUTIVE_EMPTY_FRAMES;
-    private static final int SECONDS_PER_WINDOW;
+    // Default values are taken from Netty's AbstractHttp2ConnectionHandlerBuilder
+    private static final int MAX_RST_FRAMES_PER_WINDOW = parseProperty(MAX_RST_FRAMES_PER_WINDOW_PROPERTY_NAME,
+            parseProperty(MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME, 200));
+    private static final int SECONDS_PER_WINDOW = parseProperty(SECONDS_PER_WINDOW_PROPERTY_NAME, 30);
 
     @Nullable
     private static final MethodHandle FLUSH_PREFACE;
@@ -74,10 +78,6 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
             flushPreface = null;
         }
         FLUSH_PREFACE = flushPreface;
-
-        // Default values are taken from Netty's AbstractHttp2ConnectionHandlerBuilder
-        MAX_CONSECUTIVE_EMPTY_FRAMES = parseProperty(MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME, 200);
-        SECONDS_PER_WINDOW = parseProperty(SECONDS_PER_WINDOW_PROPERTY_NAME, 30);
 
         MethodHandle decoderEnforceMaxRstFramesPerWindow;
         try {
@@ -163,7 +163,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         try {
             // invokeExact requires return type cast to match the type signature
             return (Http2FrameCodecBuilder) methodHandle.invokeExact(builderInstance,
-                    MAX_CONSECUTIVE_EMPTY_FRAMES, SECONDS_PER_WINDOW);
+                    MAX_RST_FRAMES_PER_WINDOW, SECONDS_PER_WINDOW);
         } catch (Throwable t) {
             throwException(t);
             return builderInstance;
