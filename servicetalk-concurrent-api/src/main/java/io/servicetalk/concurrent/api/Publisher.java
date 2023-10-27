@@ -4058,6 +4058,11 @@ Kotlin flatMapLatest</a>
 
     /**
      * Converts this {@link Publisher} to a {@link Single}.
+     * <p>
+     * This operator is useful if the {@link Publisher} that is being converted is potentially empty (in which case
+     * the {@code defaultValueSupplier} will be triggered) or may emit multiple elements (in which case it will be
+     * cancelled after receiving the first element). If a conversion to {@link Single} is needed where it is expected
+     * that the {@link Publisher} returns exactly one element, consider using {@link #firstOrError()} instead.
      *
      * @param defaultValueSupplier A {@link Supplier} of default value if this {@link Publisher} did not emit any item.
      * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
@@ -4065,21 +4070,32 @@ Kotlin flatMapLatest</a>
      * as returned by the passed {@link Supplier}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
+     * @see #firstOrError()
      */
     public final Single<T> firstOrElse(Supplier<T> defaultValueSupplier) {
         return new PubToSingleFirstOrElse<>(this, defaultValueSupplier);
     }
 
     /**
-     * Ensures that this {@link Publisher} emits exactly a single {@link Subscriber#onNext(Object)} to its
+     * Converts this {@link Publisher} to a {@link Single} and ensures that it emits exactly a single
+     * {@link Subscriber#onNext(Object) element} before completion.
+     * <p>
+     * This operator ensures that the {@link Publisher} emits exactly a single {@link Subscriber#onNext(Object)} to its
      * {@link Subscriber}. If this {@link Publisher} terminates without emitting any
      * items a {@link NoSuchElementException} will be signaled and if this {@link Publisher} emits more than one item,
      * an {@link IllegalArgumentException} will be signaled. Any error emitted by this {@link Publisher} will be
      * forwarded to the returned {@link Single}.
+     * <p>
+     * To uphold the guarantees laid out in the previous paragraph, this operator requests two items from the
+     * {@link Publisher}. This means that if the {@link Publisher} does not complete after signaling one element, this
+     * operator will not complete. If "one element and then complete" semantics are desired, consider chaining the
+     * {@link #takeAtMost(long) takeAtMost(1)} operator beforehand. This will ensure a completion signal after one item
+     * is propagated from the {@link Publisher}.
      *
      * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
      * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
      * {@link NoSuchElementException}.
+     * @see #firstOrElse(Supplier)
      */
     public final Single<T> firstOrError() {
         return new PubFirstOrError<>(this);
