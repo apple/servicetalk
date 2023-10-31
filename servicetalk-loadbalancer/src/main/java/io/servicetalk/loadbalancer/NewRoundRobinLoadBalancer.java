@@ -42,7 +42,6 @@ import java.util.ListIterator;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
@@ -61,7 +60,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Integer.toHexString;
@@ -86,9 +84,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<NewRoundRobinLoadBalancer, List> usedHostsUpdater =
             AtomicReferenceFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, List.class, "usedHosts");
-    @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<NewRoundRobinLoadBalancer> indexUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "index");
+
     @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<NewRoundRobinLoadBalancer> nextResubscribeTimeUpdater =
             AtomicLongFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "nextResubscribeTime");
@@ -96,12 +92,11 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     private static final long RESUBSCRIBING = -1L;
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
-    @SuppressWarnings("unused")
-    private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
 
     private final String targetResource;
     private final String lbDescription;
+    private final RoundRobinSelector<ResolvedAddress, C> algorithm;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
@@ -134,6 +129,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
+        this.algorithm = new RoundRobinSelector<>(targetResource);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -444,6 +440,33 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
         return defer(() -> selectConnection0(c -> true, context, true).shareContextOnSubscribe());
     }
 
+    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
+                                        final boolean forceNewConnectionAndReserve) {
+        final List<Host<ResolvedAddress, C>> currentHosts = this.usedHosts;
+        if (currentHosts.isEmpty()) {
+            return isClosedList(currentHosts) ? failedLBClosed(targetResource) :
+                    // This is the case when SD has emitted some items but none of the hosts are available.
+                    failed(Exceptions.StacklessNoAvailableHostException.newInstance(
+                            "No hosts are available to connect for " + targetResource + ".",
+                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
+        }
+
+        Single<C> result = algorithm.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
+        if (healthCheckConfig != null) {
+            result = result.beforeOnError(exn -> {
+                if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {
+                    final long currNextResubscribeTime = nextResubscribeTime;
+                    if (currNextResubscribeTime >= 0 &&
+                            healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
+                            nextResubscribeTimeUpdater.compareAndSet(this, currNextResubscribeTime, RESUBSCRIBING)) {
+                            subscribeToEvents(true);
+                    }
+                }
+            });
+        }
+        return result;
+    }
+
     @Override
     public Publisher<Object> eventStream() {
         return eventStream;
@@ -452,58 +475,6 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     @Override
     public String toString() {
         return lbDescription;
-    }
-
-    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
-                                        final boolean forceNewConnectionAndReserve) {
-        final List<Host<ResolvedAddress, C>> usedHosts = this.usedHosts;
-        if (usedHosts.isEmpty()) {
-            return isClosedList(usedHosts) ? failedLBClosed(targetResource) :
-                // This is the case when SD has emitted some items but none of the hosts are available.
-                failed(Exceptions.StacklessNoAvailableHostException.newInstance(
-                        "No hosts are available to connect for " + targetResource + ".",
-                        NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
-        }
-
-        // try one loop over hosts and if all are expired, give up
-        final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % usedHosts.size();
-        Host<ResolvedAddress, C> pickedHost = null;
-        for (int i = 0; i < usedHosts.size(); ++i) {
-            // for a particular iteration we maintain a local cursor without contention with other requests
-            final int localCursor = (cursor + i) % usedHosts.size();
-            final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
-            assert host != null : "Host can't be null.";
-
-            if (!forceNewConnectionAndReserve) {
-                // First see if an existing connection can be used
-                C connection = host.pickConnection(selector, context);
-                if (connection != null) {
-                    return succeeded(connection);
-                }
-            }
-
-            // Don't open new connections for expired or unhealthy hosts, try a different one.
-            // Unhealthy hosts have no open connections – that's why we don't fail earlier, the loop will not progress.
-            if (host.isActiveAndHealthy()) {
-                pickedHost = host;
-                break;
-            }
-        }
-        if (pickedHost == null) {
-            if (healthCheckConfig != null && allUnhealthy(usedHosts)) {
-                final long currNextResubscribeTime = nextResubscribeTime;
-                if (currNextResubscribeTime >= 0 &&
-                        healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
-                        nextResubscribeTimeUpdater.compareAndSet(this, currNextResubscribeTime, RESUBSCRIBING)) {
-                    subscribeToEvents(true);
-                }
-            }
-            return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
-                            targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
-                    NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
-        }
-        // No connection was selected: create a new one.
-        return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);
     }
 
     @Override
