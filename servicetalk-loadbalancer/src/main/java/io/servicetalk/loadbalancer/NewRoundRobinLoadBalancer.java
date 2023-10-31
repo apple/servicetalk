@@ -96,7 +96,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     private final String targetResource;
     private final String lbDescription;
-    private final RoundRobinSelector<ResolvedAddress, C> algorithm;
+    private final HostSelector<ResolvedAddress, C> hostSelector;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
@@ -129,7 +129,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
-        this.algorithm = new RoundRobinSelector<>(targetResource);
+        this.hostSelector = new RoundRobinSelector<>(targetResource);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -302,6 +302,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 }
             }
 
+            final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
+            hostSelector.hostSetChanged(currentHosts);
             if (firstEventsAfterResubscribe) {
                 // We can enter this path only if we re-subscribed because all previous hosts were UNHEALTHY.
                 if (events.isEmpty()) {
@@ -319,7 +321,6 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 // starts from an empty state propagating only AVAILABLE events. To be in sync with the
                 // ServiceDiscoverer we should clean up and close gracefully all hosts that are not present in the
                 // initial collection of events, regardless of their current state.
-                final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
                 for (Host<ResolvedAddress, C> host : currentHosts) {
                     if (notAvailable(host, events)) {
                         host.closeAsyncGracefully().subscribe();
@@ -443,6 +444,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                         final boolean forceNewConnectionAndReserve) {
         final List<Host<ResolvedAddress, C>> currentHosts = this.usedHosts;
+        // It's possible that we're racing with updates from the `onNext` method but since it's intrinsically
+        // racy it's fine to do these 'are there any hosts at all' checks here using the total host set.
         if (currentHosts.isEmpty()) {
             return isClosedList(currentHosts) ? failedLBClosed(targetResource) :
                     // This is the case when SD has emitted some items but none of the hosts are available.
@@ -451,7 +454,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                             NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
-        Single<C> result = algorithm.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
+        Single<C> result = hostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         if (healthCheckConfig != null) {
             result = result.beforeOnError(exn -> {
                 if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {

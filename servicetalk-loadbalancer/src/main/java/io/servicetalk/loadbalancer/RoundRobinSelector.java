@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
@@ -27,24 +28,33 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
-final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection> {
+final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
+        implements HostSelector<ResolvedAddress, C> {
 
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<RoundRobinSelector> indexUpdater =
             AtomicIntegerFieldUpdater.newUpdater(RoundRobinSelector.class, "index");
 
     private final String targetResource;
+    private volatile List<Host<ResolvedAddress, C>> hosts;
     @SuppressWarnings("unused")
     private volatile int index;
 
     RoundRobinSelector(String targetResource) {
         this.targetResource = targetResource;
+        hosts = Collections.emptyList();
     }
 
-    Single<C> selectConnection(
-            final List<Host<ResolvedAddress, C>> usedHosts,
+    @Override
+    public void hostSetChanged(List<Host<ResolvedAddress, C>> hosts) {
+        this.hosts = hosts;
+    }
+
+    @Override
+    public Single<C> selectConnection(
             final Predicate<C> selector, @Nullable final ContextMap context,
             final boolean forceNewConnectionAndReserve) {
+        final List<Host<ResolvedAddress, C>> usedHosts = hosts;
         // try one loop over hosts and if all are expired, give up
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % usedHosts.size();
         Host<ResolvedAddress, C> pickedHost = null;
