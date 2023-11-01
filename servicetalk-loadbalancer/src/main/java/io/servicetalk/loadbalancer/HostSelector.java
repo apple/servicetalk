@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,35 +21,20 @@ import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
  * Interface abstracting away the method of host selection.
- *
- * This is useful for supporting multiple load balancing algorithms such as round-robin,
- * weighted round-robin, random, and least-loaded where each algorithm only needing to concern
- * itself with the data structures important to the algorithm itself.
  */
 interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
-     * Notify the selector that the set of available hosts has changed.
-     *
-     * This method gives the host selector the opportunity to modify or rebuild any
-     * internal data structures that it uses in it's job of distributing traffic amongst
-     * the hosts.
-     * This method will not be called concurrently.
-     *
-     * @param hosts the current set of available hosts.
-     */
-    void hostSetChanged(List<Host<ResolvedAddress, C>> hosts);
-
-    /**
-     * Select or establish a new connection from an exist Host.
+     * Select or establish a new connection from an existing Host.
      *
      * This method will be called concurrently with other selectConnection calls and
      * hostSetChanged calls and must be thread safe under those conditions.
      */
-    Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
-                               boolean forceNewConnectionAndReserve);
+    Single<C> selectConnection(@Nonnull List<Host<ResolvedAddress, C>> hosts, @Nonnull Predicate<C> selector,
+                               @Nullable ContextMap context, boolean forceNewConnectionAndReserve);
 }

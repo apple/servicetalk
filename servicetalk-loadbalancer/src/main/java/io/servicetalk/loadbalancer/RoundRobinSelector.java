@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
@@ -27,6 +26,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static java.util.Objects.requireNonNull;
 
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         implements HostSelector<ResolvedAddress, C> {
@@ -36,25 +36,18 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             AtomicIntegerFieldUpdater.newUpdater(RoundRobinSelector.class, "index");
 
     private final String targetResource;
-    private volatile List<Host<ResolvedAddress, C>> hosts;
     @SuppressWarnings("unused")
     private volatile int index;
 
-    RoundRobinSelector(String targetResource) {
-        this.targetResource = targetResource;
-        hosts = Collections.emptyList();
-    }
-
-    @Override
-    public void hostSetChanged(List<Host<ResolvedAddress, C>> hosts) {
-        this.hosts = hosts;
+    RoundRobinSelector(final String targetResource) {
+        this.targetResource = requireNonNull(targetResource);
     }
 
     @Override
     public Single<C> selectConnection(
+            final List<Host<ResolvedAddress, C>> usedHosts,
             final Predicate<C> selector, @Nullable final ContextMap context,
             final boolean forceNewConnectionAndReserve) {
-        final List<Host<ResolvedAddress, C>> usedHosts = hosts;
         // try one loop over hosts and if all are expired, give up
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % usedHosts.size();
         Host<ResolvedAddress, C> pickedHost = null;

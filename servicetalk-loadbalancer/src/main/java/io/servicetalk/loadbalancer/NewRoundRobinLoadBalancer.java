@@ -303,7 +303,6 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             }
 
             final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
-            hostSelector.hostSetChanged(currentHosts);
             if (firstEventsAfterResubscribe) {
                 // We can enter this path only if we re-subscribed because all previous hosts were UNHEALTHY.
                 if (events.isEmpty()) {
@@ -454,7 +453,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                             NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
-        Single<C> result = hostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
+        Single<C> result = hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
         if (healthCheckConfig != null) {
             result = result.beforeOnError(exn -> {
                 if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {
