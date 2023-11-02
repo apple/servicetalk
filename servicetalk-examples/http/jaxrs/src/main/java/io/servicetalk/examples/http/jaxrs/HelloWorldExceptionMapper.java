@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,13 @@
  */
 package io.servicetalk.examples.http.jaxrs;
 
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 
-import java.util.HashSet;
-import java.util.Set;
-import javax.ws.rs.core.Application;
-
-import static java.util.Arrays.asList;
-
-/**
- * JAX-RS Hello World {@link Application}.
- */
-public final class HelloWorldJaxRsApplication extends Application {
+public class HelloWorldExceptionMapper implements ExceptionMapper<Throwable> {
     @Override
-    public Set<Class<?>> getClasses() {
-        return new HashSet<>(asList(
-                MultiPartFeature.class,
-                HelloWorldJaxRsResource.class,
-                HelloWorldExceptionMapper.class
-            )
-        );
+    public Response toResponse(final Throwable exception) {
+        exception.printStackTrace();
+        return Response.serverError().build();
     }
 }
