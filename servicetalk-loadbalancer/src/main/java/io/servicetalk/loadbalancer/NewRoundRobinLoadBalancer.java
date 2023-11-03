@@ -450,7 +450,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                     // This is the case when SD has emitted some items but none of the hosts are available.
                     failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                             "No hosts are available to connect for " + targetResource + ".",
-                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                            this.getClass(), "selectConnection0(...)"));
         }
 
         Single<C> result = hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);

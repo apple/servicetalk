@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
@@ -51,7 +52,7 @@ import static java.lang.Math.min;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 import static java.util.stream.Collectors.toList;
 
-final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAsyncCloseable {
+final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAsyncCloseable, ScoreSupplier {
 
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
@@ -474,6 +475,12 @@ final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAs
             LOGGER.debug("{}: health check cancelled for {}.", lbDescription, healthCheck.host);
             healthCheck.cancel();
         }
+    }
+
+    @Override
+    public int score() {
+        // TODO: this is going to need some refinement but it's fine for now.
+        return 1;
     }
 
     @Override
