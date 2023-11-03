@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,6 +197,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
                                 if (msg instanceof Span) {
                                     byte[] bytes = codec.spanBytesEncoder().encode((Span) msg);
+                                    LOGGER.trace("Encoded received span={}, bytes={}", msg, bytes.length);
                                     ByteBuf buf = ctx.alloc().buffer(bytes.length).writeBytes(bytes);
                                     ctx.write(new DatagramPacket(buf, (InetSocketAddress) collectorAddress), promise);
                                 } else {
