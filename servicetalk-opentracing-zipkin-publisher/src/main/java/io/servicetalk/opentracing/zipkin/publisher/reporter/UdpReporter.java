@@ -197,7 +197,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
                                 if (msg instanceof Span) {
                                     byte[] bytes = codec.spanBytesEncoder().encode((Span) msg);
-                                    LOGGER.trace("Encoded received span: {}, result={} bytes", msg, bytes.length);
+                                    LOGGER.trace("Encoded received span={}, bytes={}", msg, bytes.length);
                                     ByteBuf buf = ctx.alloc().buffer(bytes.length).writeBytes(bytes);
                                     ctx.write(new DatagramPacket(buf, (InetSocketAddress) collectorAddress), promise);
                                 } else {

@@ -130,7 +130,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                     .map(span -> {
                         // Always encode spans as list: https://github.com/apple/servicetalk/pull/2092
                         final byte[] bytes = spanEncoder.encodeList(Collections.singletonList(span));
-                        LOGGER.trace("Encoded received span: {}, result={} bytes", span, bytes.length);
+                        LOGGER.trace("Encoded received span={}, bytes={}", span, bytes.length);
                         return allocator.wrap(bytes);
                     });
         } else {
@@ -143,8 +143,8 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                     .filter(accumulate -> !accumulate.isEmpty())
                     .map(bufferedSpans -> {
                         final byte[] bytes = spanEncoder.encodeList(bufferedSpans);
-                        LOGGER.trace("Encoded received list of spans (size={}): {}, result={} bytes",
-                                bufferedSpans.size(), bufferedSpans, bytes.length);
+                        LOGGER.trace("Encoded received list of spans (size={}, bytes={}): {}",
+                                bufferedSpans.size(), bytes.length, bufferedSpans);
                         return allocator.wrap(bytes);
                     });
         }
@@ -297,7 +297,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
 
         @Override
         public void accumulate(@Nonnull final Span item) {
-            LOGGER.trace("Accumulating received span: {}", item);
+            LOGGER.trace("Accumulating received span={}", item);
             accumulate.add(requireNonNull(item));
         }
 
