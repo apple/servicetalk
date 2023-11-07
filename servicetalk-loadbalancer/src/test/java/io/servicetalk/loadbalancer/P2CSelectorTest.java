@@ -17,18 +17,19 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.concurrent.api.Single;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
@@ -43,12 +44,11 @@ import static org.mockito.Mockito.when;
 class P2CSelectorTest {
 
     private static final Predicate<TestLoadBalancedConnection> PREDICATE = (ignored) -> true;
-    private Random random;
     private P2CSelector<String, TestLoadBalancedConnection> selector;
 
     @BeforeEach
     void init() {
-        init(5, random);
+        init(5, null);
     }
 
     void init(int maxEffort, @Nullable Random random) {

@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 /**
  * Representation of a concrete host that can provide connections.
@@ -37,7 +37,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      * Select an existing connection from the host.
      * @return the selected host, or null if a suitable host couldn't be found.
      */
-    @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context);
+    @Nullable
+    C pickConnection(Predicate<C> selector, @Nullable ContextMap context);
 
     /**
      * Create a new connection to the host.
@@ -45,8 +46,7 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      *                                     of the connection pool.
      * @return the selected host, or null if a suitable host couldn't be found.
      */
-    Single<C> newConnection(
-            Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable final ContextMap context);
+    Single<C> newConnection(Predicate<C> selector, boolean forceNewConnectionAndReserve, @Nullable ContextMap context);
 
     /**
      * The address of the host
