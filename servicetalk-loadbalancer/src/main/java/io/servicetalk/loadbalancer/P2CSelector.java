@@ -83,7 +83,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
     @Nullable
     private Single<C> p2c(int size, List<Host<ResolvedAddress, C>> hosts, Random random, Predicate<C> selector,
-            boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+                          boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         for (int j = maxEffort; j > 0; j--) {
             // Pick two random indexes that don't collide. Limit the range on the second index to 1 less than
             // the max value so that if there is a collision we can safety increment. We also increment if
@@ -103,25 +103,22 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             }
 
             if (!forceNewConnectionAndReserve) {
-                // First we're going to see if we can get an already active connection regardless of health status.
-                // Since t1 is 'better' we'll try it first but if it won't yield a connection, we'll try t2.
+                // First we're going to see if we can get an existing connection regardless of health status. Since t1
+                // is 'better' we'll try it first. If it doesn't have any existing connections we don't fall back to t2
+                // or else we would cause a bias toward hosts with existing connections which could ultimately drive all
+                // traffic to the first host to make a connection in the case of a multiplexed session.
                 C c = t1.pickConnection(selector, contextMap);
                 if (c != null) {
                     return succeeded(c);
                 }
-                // try t2
-                c = t2.pickConnection(selector, contextMap);
-                if (c != null) {
-                    return succeeded(c);
-                }
-                // Neither candidate yielded an existing connection. We now need to consider the health status
-                // and make a new connection if either host is considered healthy.
+                // We now need to consider the health status and make a new connection if either
+                // host is considered healthy.
             }
 
             // We either couldn't find a live connection or are being forced to make a new one. Either way we're
             // going to make a new connection which means we need to consider health.
             final boolean t1Healthy = t1.isActiveAndHealthy();
-            final boolean t2Healthy = t1.isActiveAndHealthy();
+            final boolean t2Healthy = t2.isActiveAndHealthy();
             if (t1Healthy) {
                 return t1.newConnection(selector, forceNewConnectionAndReserve, contextMap);
             } else if (t2Healthy) {
