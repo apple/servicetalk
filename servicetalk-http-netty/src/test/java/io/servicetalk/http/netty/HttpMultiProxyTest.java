@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -109,7 +110,7 @@ class HttpMultiProxyTest {
                 .forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) -> {
                     if (address.port() == serverBehindProxyAddress.port()) {
-                        builder.proxyAddress(proxyAddress);
+                        builder.proxyConfig(ProxyConfig.of(proxyAddress));
                     }
                 })
                 .buildBlocking();

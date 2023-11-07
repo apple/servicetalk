@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.Http2Settings;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DelegatingClientSslConfig;
@@ -27,11 +28,14 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
+import static java.util.Objects.requireNonNull;
 
 final class HttpClientConfig {
 
     private final TcpClientConfig tcpConfig;
     private final HttpConfig protocolConfigs;
+    @Nullable
+    private ProxyConfig<?> proxyConfig;
     @Nullable
     private CharSequence connectAddress;
     @Nullable
@@ -61,6 +65,7 @@ final class HttpClientConfig {
     HttpClientConfig(final HttpClientConfig from) {
         tcpConfig = new TcpClientConfig(from.tcpConfig());
         protocolConfigs = new HttpConfig(from.protocolConfigs());
+        proxyConfig = from.proxyConfig;
         connectAddress = from.connectAddress;
         fallbackPeerHost = from.fallbackPeerHost;
         fallbackPeerPort = from.fallbackPeerPort;
@@ -78,12 +83,18 @@ final class HttpClientConfig {
     }
 
     @Nullable
+    ProxyConfig<?> proxyConfig() {
+        return proxyConfig;
+    }
+
+    @Nullable
     CharSequence connectAddress() {
         return connectAddress;
     }
 
-    void connectAddress(@Nullable final CharSequence connectAddress) {
-        this.connectAddress = connectAddress;
+    void proxy(final ProxyConfig<?> proxyConfig, final CharSequence connectAddress) {
+        this.proxyConfig = requireNonNull(proxyConfig);
+        this.connectAddress = requireNonNull(connectAddress);
     }
 
     void fallbackPeerHost(@Nullable String fallbackPeerHost) {

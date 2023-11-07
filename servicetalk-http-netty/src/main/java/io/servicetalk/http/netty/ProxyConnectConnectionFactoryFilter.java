@@ -73,7 +73,6 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         }
 
         @Override
-        @SuppressWarnings("deprecation")
         public Single<C> newConnection(final ResolvedAddress resolvedAddress,
                                        @Nullable ContextMap context,
                                        @Nullable final TransportObserver observer) {
@@ -88,7 +87,6 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         }
     }
 
-    @SuppressWarnings("deprecation")
     static void logUnexpectedAddress(@Nullable final Object current, final Object expected, final Logger logger) {
         if (current != null && !expected.equals(current)) {
             logger.info("Observed unexpected value for {}: {}, overridden with: {}",

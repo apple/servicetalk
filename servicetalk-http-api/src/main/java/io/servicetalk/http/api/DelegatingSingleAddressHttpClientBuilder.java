@@ -68,8 +68,15 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
         delegate = delegate.proxyAddress(proxyAddress);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
+        delegate = delegate.proxyConfig(proxyConfig);
         return this;
     }
 

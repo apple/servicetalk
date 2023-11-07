@@ -79,6 +79,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 connectionFilterFunction, protocolBinding);
         assert config.hasProxy() : "Unexpected hasProxy flag";
         assert config.tcpConfig().sslContext() != null : "Proxy CONNECT works only for TLS connections";
+        assert config.proxyConfig() != null : "ProxyConfig is required";
         assert config.connectAddress() != null : "Address (authority) for CONNECT request is required";
         this.connectAddress = config.connectAddress().toString();
     }
@@ -102,7 +103,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
                                 getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
-                observer, h1Config.headersFactory(), connectAddress)
+                observer, h1Config.headersFactory(), connectAddress, config.proxyConfig())
                 .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
                 .onErrorMap(cause -> handleException(cause, channel));

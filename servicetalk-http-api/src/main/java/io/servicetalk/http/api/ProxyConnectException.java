@@ -21,7 +21,7 @@ import java.io.IOException;
  * An exception while processing
  * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.
  *
- * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
+ * @see SingleAddressHttpClientBuilder#proxyConfig(ProxyConfig)
  */
 public class ProxyConnectException extends IOException {
 

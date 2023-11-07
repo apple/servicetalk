@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.ProxyConnectException;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.transport.api.ConnectionObserver;
@@ -60,22 +61,25 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
     private final ConnectionObserver observer;
     private final HttpHeadersFactory headersFactory;
     private final String connectAddress;
+    private final ProxyConfig<?> proxyConfig;
 
     ProxyConnectChannelSingle(final Channel channel,
                               final ChannelInitializer channelInitializer,
                               final ConnectionObserver observer,
                               final HttpHeadersFactory headersFactory,
-                              final String connectAddress) {
+                              final String connectAddress,
+                              final ProxyConfig<?> proxyConfig) {
         super(channel, channelInitializer);
         this.observer = observer;
         this.headersFactory = headersFactory;
         this.connectAddress = connectAddress;
+        this.proxyConfig = proxyConfig;
         assert !channel.config().isAutoRead();
     }
 
     @Override
     protected ChannelHandler newChannelHandler(final Subscriber<? super Channel> subscriber) {
-        return new ProxyConnectHandler(observer, headersFactory, connectAddress, subscriber);
+        return new ProxyConnectHandler(observer, headersFactory, connectAddress, proxyConfig, subscriber);
     }
 
     private static final class ProxyConnectHandler extends ChannelDuplexHandler {
@@ -85,6 +89,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         private final ConnectionObserver observer;
         private final HttpHeadersFactory headersFactory;
         private final String connectAddress;
+        private final ProxyConfig<?> proxyConfig;
         @Nullable
         private Subscriber<? super Channel> subscriber;
         @Nullable
@@ -95,10 +100,12 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         private ProxyConnectHandler(final ConnectionObserver observer,
                                     final HttpHeadersFactory headersFactory,
                                     final String connectAddress,
+                                    final ProxyConfig<?> proxyConfig,
                                     final Subscriber<? super Channel> subscriber) {
             this.observer = observer;
             this.headersFactory = headersFactory;
             this.connectAddress = connectAddress;
+            this.proxyConfig = proxyConfig;
             this.subscriber = subscriber;
         }
 
@@ -118,6 +125,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         private void sendConnectRequest(final ChannelHandlerContext ctx) {
             final HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, CONNECT, connectAddress,
                     headersFactory.newHeaders()).addHeader(HOST, connectAddress);
+            proxyConfig.connectRequestHeadersInitializer().accept(request.headers());
             connectObserver = observer.onProxyConnect(request);
             ctx.writeAndFlush(request).addListener(f -> {
                 if (f.isSuccess()) {

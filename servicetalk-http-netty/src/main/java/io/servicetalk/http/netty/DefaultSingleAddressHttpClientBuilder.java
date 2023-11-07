@@ -40,6 +40,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -108,7 +109,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private final U address;
     @Nullable
-    private U proxyAddress;
+    private ProxyConfig<U> proxyConfig;
     private final HttpClientConfig config;
     final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
@@ -147,7 +148,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
-        proxyAddress = from.proxyAddress;
+        proxyConfig = from.proxyConfig;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         strategyComputation = from.strategyComputation.copy();
@@ -191,7 +192,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return builder.proxyAddress != null ? builder.proxyAddress : builder.address;
+            return builder.proxyConfig != null ? builder.proxyConfig.address() : builder.address;
         }
 
         HttpClientConfig httpConfig() {
@@ -387,8 +388,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> String targetAddress(final HttpClientBuildContext<U, R> ctx) {
         assert ctx.builder.address != null;
-        return ctx.builder.proxyAddress == null ?
-                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.builder.proxyAddress + ")";
+        return ctx.builder.proxyConfig == null ?
+                ctx.builder.address.toString() :
+                ctx.builder.address + " (via " + ctx.builder.proxyConfig.address() + ")";
     }
 
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
@@ -446,9 +448,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
-        this.proxyAddress = requireNonNull(proxyAddress);
-        config.connectAddress(hostToCharSequenceFunction.apply(address));
+    public DefaultSingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
+        this.proxyConfig = requireNonNull(proxyConfig);
+        config.proxy(proxyConfig, hostToCharSequenceFunction.apply(address));
         return this;
     }
 

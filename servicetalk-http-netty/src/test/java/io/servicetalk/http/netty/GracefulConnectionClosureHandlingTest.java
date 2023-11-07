@@ -30,6 +30,7 @@ import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpStreamingSerializer;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -245,7 +246,7 @@ class GracefulConnectionClosureHandlingTest {
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
 
         SingleAddressHttpClientBuilder<?, ? extends SocketAddress> clientBuilder = viaProxy ?
-                forSingleAddress(serverHostAndPort(serverContext)).proxyAddress(proxyAddress) :
+                forSingleAddress(serverHostAndPort(serverContext)).proxyConfig(ProxyConfig.of(proxyAddress)) :
                 forResolvedAddress(serverContext.listenAddress());
 
         if (secure) {

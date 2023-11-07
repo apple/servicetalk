@@ -22,6 +22,7 @@ import io.servicetalk.grpc.api.GrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -89,7 +90,7 @@ class GrpcProxyTunnelTest {
                 .listenAndAwait((Greeter.BlockingGreeterService) (ctx, request) ->
                         HelloReply.newBuilder().setMessage(GREETING_PREFIX + request.getName()).build());
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(httpBuilder -> httpBuilder.proxyAddress(proxyAddress)
+                .initializeHttp(httpBuilder -> httpBuilder.proxyConfig(ProxyConfig.of(proxyAddress))
                         .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build())
                         .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 
 import javax.annotation.Nullable;
@@ -26,6 +27,8 @@ final class ReadOnlyHttpClientConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     @Nullable
+    private final ProxyConfig<?> proxyConfig;
+    @Nullable
     private final CharSequence connectAddress;
     private final boolean allowDropTrailers;
 
@@ -34,6 +37,7 @@ final class ReadOnlyHttpClientConfig {
         tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
+        proxyConfig = from.proxyConfig();
         connectAddress = from.connectAddress();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
     }
@@ -58,6 +62,11 @@ final class ReadOnlyHttpClientConfig {
 
     boolean isH2PriorKnowledge() {
         return h2Config != null && h1Config == null;
+    }
+
+    @Nullable
+    ProxyConfig<?> proxyConfig() {
+        return proxyConfig;
     }
 
     @Nullable

@@ -36,6 +36,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
@@ -305,7 +306,7 @@ public final class HttpClients {
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)}
      * if you want to disable this behavior.
      * <p>
-     * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
+     * Note, if {@link SingleAddressHttpClientBuilder#proxyConfig(ProxyConfig) a proxy} is configured for this client,
      * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
      * the client is built.
      * <p>
@@ -328,7 +329,7 @@ public final class HttpClients {
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you
      * want to disable this behavior.
      * <p>
-     * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
+     * Note, if {@link SingleAddressHttpClientBuilder#proxyConfig(ProxyConfig) a proxy} is configured for this client,
      * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
      * the client is built.
      * <p>
