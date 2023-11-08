@@ -25,7 +25,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.Logger;
@@ -57,8 +56,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
     private final String connectAddress;
 
-    ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress, final ExecutionStrategy connectStrategy) {
-        this.connectAddress = connectAddress.toString();
+    ProxyConnectConnectionFactoryFilter(final String connectAddress) {
+        this.connectAddress = connectAddress;
     }
 
     @Override

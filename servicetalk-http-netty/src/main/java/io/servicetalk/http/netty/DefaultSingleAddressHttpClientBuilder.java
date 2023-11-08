@@ -109,7 +109,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private final U address;
     @Nullable
-    private ProxyConfig<U> proxyConfig;
+    private U proxyAddress;
     private final HttpClientConfig config;
     final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
@@ -148,7 +148,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
-        proxyConfig = from.proxyConfig;
+        proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         strategyComputation = from.strategyComputation.copy();
@@ -192,7 +192,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return builder.proxyConfig != null ? builder.proxyConfig.address() : builder.address;
+            return builder.proxyAddress != null ? builder.proxyAddress : builder.address;
         }
 
         HttpClientConfig httpConfig() {
@@ -243,10 +243,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     ctx.builder.strategyComputation.buildForConnectionFactory();
 
             if (roConfig.hasProxy() && sslContext != null) {
-                assert roConfig.connectAddress() != null;
+                assert roConfig.proxyConfig() != null;
                 @SuppressWarnings("deprecation")
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
-                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress(), connectionFactoryStrategy);
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.proxyConfig().address());
                 assert !proxy.requiredOffloads().hasOffloads();
                 connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
@@ -388,9 +388,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> String targetAddress(final HttpClientBuildContext<U, R> ctx) {
         assert ctx.builder.address != null;
-        return ctx.builder.proxyConfig == null ?
-                ctx.builder.address.toString() :
-                ctx.builder.address + " (via " + ctx.builder.proxyConfig.address() + ")";
+        return ctx.builder.proxyAddress == null ?
+                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.builder.proxyAddress + ")";
     }
 
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
@@ -449,8 +448,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
-        this.proxyConfig = requireNonNull(proxyConfig);
-        config.proxy(proxyConfig, hostToCharSequenceFunction.apply(address));
+        this.proxyAddress = requireNonNull(proxyConfig.address());
+        config.proxyConfig(hostToCharSequenceFunction.apply(address), proxyConfig);
         return this;
     }
 

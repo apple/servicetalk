@@ -26,8 +26,19 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ProxyConfigBuilder<A> {
 
+    private static final Consumer<HttpHeaders> NOOP_HEADERS_CONSUMER = new Consumer<HttpHeaders>() {
+        @Override
+        public void accept(final HttpHeaders headers) {
+        }
+
+        @Override
+        public String toString() {
+            return "NOOP";
+        }
+    };
+
     private final A address;
-    private Consumer<HttpHeaders> connectRequestHeadersInitializer = __ -> { };
+    private Consumer<HttpHeaders> connectRequestHeadersInitializer = NOOP_HEADERS_CONSUMER;
 
     /**
      * Creates a new instance.
@@ -81,6 +92,37 @@ public final class ProxyConfigBuilder<A> {
         @Override
         public Consumer<HttpHeaders> connectRequestHeadersInitializer() {
             return connectRequestHeadersInitializer;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof DefaultProxyConfig)) {
+                return false;
+            }
+
+            final DefaultProxyConfig<?> that = (DefaultProxyConfig<?>) o;
+            if (!address.equals(that.address)) {
+                return false;
+            }
+            return connectRequestHeadersInitializer.equals(that.connectRequestHeadersInitializer);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = address.hashCode();
+            result = 31 * result + connectRequestHeadersInitializer.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{address=" + address +
+                    ", connectRequestHeadersInitializer=" + connectRequestHeadersInitializer +
+                    '}';
         }
     }
 }

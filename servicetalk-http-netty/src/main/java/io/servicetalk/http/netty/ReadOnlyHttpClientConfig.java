@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,7 @@ final class ReadOnlyHttpClientConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     @Nullable
-    private final ProxyConfig<?> proxyConfig;
-    @Nullable
-    private final CharSequence connectAddress;
+    private final ProxyConfig<String> proxyConfig;
     private final boolean allowDropTrailers;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
@@ -38,7 +36,6 @@ final class ReadOnlyHttpClientConfig {
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         proxyConfig = from.proxyConfig();
-        connectAddress = from.connectAddress();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
     }
 
@@ -65,16 +62,11 @@ final class ReadOnlyHttpClientConfig {
     }
 
     @Nullable
-    ProxyConfig<?> proxyConfig() {
+    ProxyConfig<String> proxyConfig() {
         return proxyConfig;
     }
 
-    @Nullable
-    CharSequence connectAddress() {
-        return connectAddress;
-    }
-
     boolean hasProxy() {
-        return connectAddress != null;
+        return proxyConfig != null;
     }
 }

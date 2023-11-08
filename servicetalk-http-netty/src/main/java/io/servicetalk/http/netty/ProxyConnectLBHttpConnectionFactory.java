@@ -66,7 +66,6 @@ import static java.lang.Boolean.TRUE;
  */
 final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-    private final String connectAddress;
 
     ProxyConnectLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -80,8 +79,6 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
         assert config.hasProxy() : "Unexpected hasProxy flag";
         assert config.tcpConfig().sslContext() != null : "Proxy CONNECT works only for TLS connections";
         assert config.proxyConfig() != null : "ProxyConfig is required";
-        assert config.connectAddress() != null : "Address (authority) for CONNECT request is required";
-        this.connectAddress = config.connectAddress().toString();
     }
 
     @Override
@@ -103,7 +100,7 @@ final class ProxyConnectLBHttpConnectionFactory<ResolvedAddress>
                 new TcpClientChannelInitializer(config.tcpConfig(), observer, executionContext, true)
                         .andThen(new HttpClientChannelInitializer(
                                 getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
-                observer, h1Config.headersFactory(), connectAddress, config.proxyConfig())
+                observer, h1Config.headersFactory(), config.proxyConfig())
                 .flatMap(ProxyConnectLBHttpConnectionFactory::handshake)
                 .flatMap(protocol -> finishConnectionInitialization(protocol, channel, closeHandler, observer))
                 .onErrorMap(cause -> handleException(cause, channel));

@@ -60,26 +60,23 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
 
     private final ConnectionObserver observer;
     private final HttpHeadersFactory headersFactory;
-    private final String connectAddress;
-    private final ProxyConfig<?> proxyConfig;
+    private final ProxyConfig<String> proxyConfig;
 
     ProxyConnectChannelSingle(final Channel channel,
                               final ChannelInitializer channelInitializer,
                               final ConnectionObserver observer,
                               final HttpHeadersFactory headersFactory,
-                              final String connectAddress,
-                              final ProxyConfig<?> proxyConfig) {
+                              final ProxyConfig<String> proxyConfig) {
         super(channel, channelInitializer);
         this.observer = observer;
         this.headersFactory = headersFactory;
-        this.connectAddress = connectAddress;
         this.proxyConfig = proxyConfig;
         assert !channel.config().isAutoRead();
     }
 
     @Override
     protected ChannelHandler newChannelHandler(final Subscriber<? super Channel> subscriber) {
-        return new ProxyConnectHandler(observer, headersFactory, connectAddress, proxyConfig, subscriber);
+        return new ProxyConnectHandler(observer, headersFactory, proxyConfig, subscriber);
     }
 
     private static final class ProxyConnectHandler extends ChannelDuplexHandler {
@@ -88,8 +85,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
 
         private final ConnectionObserver observer;
         private final HttpHeadersFactory headersFactory;
-        private final String connectAddress;
-        private final ProxyConfig<?> proxyConfig;
+        private final ProxyConfig<String> proxyConfig;
         @Nullable
         private Subscriber<? super Channel> subscriber;
         @Nullable
@@ -99,12 +95,10 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
 
         private ProxyConnectHandler(final ConnectionObserver observer,
                                     final HttpHeadersFactory headersFactory,
-                                    final String connectAddress,
-                                    final ProxyConfig<?> proxyConfig,
+                                    final ProxyConfig<String> proxyConfig,
                                     final Subscriber<? super Channel> subscriber) {
             this.observer = observer;
             this.headersFactory = headersFactory;
-            this.connectAddress = connectAddress;
             this.proxyConfig = proxyConfig;
             this.subscriber = subscriber;
         }
@@ -123,8 +117,8 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
         }
 
         private void sendConnectRequest(final ChannelHandlerContext ctx) {
-            final HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, CONNECT, connectAddress,
-                    headersFactory.newHeaders()).addHeader(HOST, connectAddress);
+            final HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, CONNECT, proxyConfig.address(),
+                    headersFactory.newHeaders()).addHeader(HOST, proxyConfig.address());
             proxyConfig.connectRequestHeadersInitializer().accept(request.headers());
             connectObserver = observer.onProxyConnect(request);
             ctx.writeAndFlush(request).addListener(f -> {
@@ -147,7 +141,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
                 }
                 response = (HttpResponseMetaData) msg;
                 if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                    failSubscriber(ctx, unsuccessfulResponse(ctx.channel(), response, connectAddress));
+                    failSubscriber(ctx, unsuccessfulResponse(ctx.channel(), response, proxyConfig.address()));
                 }
                 // We do not complete subscriber here because we need to wait for the HttpResponseDecoder state machine
                 // to complete. Completion will be signalled by InboundDataEndEvent. Any other messages before that are
@@ -201,7 +195,7 @@ final class ProxyConnectChannelSingle extends ChannelInitSingle<Channel> {
             connectObserver.proxyConnectComplete(response);
             ctx.pipeline().remove(this);
             final Channel channel = ctx.channel();
-            LOGGER.debug("{} Received successful response from proxy on CONNECT {}", channel, connectAddress);
+            LOGGER.debug("{} Received successful response from proxy on CONNECT {}", channel, proxyConfig.address());
             final Subscriber<? super Channel> subscriberCopy = subscriber;
             subscriber = null;
             subscriberCopy.onSuccess(channel);
