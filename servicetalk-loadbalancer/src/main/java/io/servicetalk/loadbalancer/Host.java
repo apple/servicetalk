@@ -149,22 +149,26 @@ final class Host<Addr, C extends LoadBalancedConnection> implements ListenableAs
         }
     }
 
-    void markExpired() {
+    // returns true if the host state is now closed, false otherwise.
+    boolean markExpired() {
         for (;;) {
             ConnState oldState = connStateUpdater.get(this);
-            if (oldState.state == State.EXPIRED || oldState.state == State.CLOSED) {
-                break;
+            if (oldState.state == State.EXPIRED) {
+                return false;
+            } else if (oldState.state == State.CLOSED) {
+                return true;
             }
             Object nextState = oldState.connections.length == 0 ? State.CLOSED : State.EXPIRED;
-
             if (connStateUpdater.compareAndSet(this, oldState,
                     new ConnState(oldState.connections, nextState))) {
                 cancelIfHealthCheck(oldState);
                 if (nextState == State.CLOSED) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             }
         }
     }
