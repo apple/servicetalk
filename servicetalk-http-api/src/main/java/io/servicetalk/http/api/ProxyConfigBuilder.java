@@ -33,7 +33,7 @@ public final class ProxyConfigBuilder<A> {
 
         @Override
         public String toString() {
-            return "NOOP";
+            return "NOOP_HEADERS_CONSUMER";
         }
     };
 
