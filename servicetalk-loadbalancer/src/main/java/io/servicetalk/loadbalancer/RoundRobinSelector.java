@@ -24,23 +24,20 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static java.util.Objects.requireNonNull;
 
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
-        implements HostSelector<ResolvedAddress, C> {
+        extends BaseHostSelector<ResolvedAddress, C> {
 
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<RoundRobinSelector> indexUpdater =
             AtomicIntegerFieldUpdater.newUpdater(RoundRobinSelector.class, "index");
 
-    private final String targetResource;
     @SuppressWarnings("unused")
     private volatile int index;
 
     RoundRobinSelector(final String targetResource) {
-        this.targetResource = requireNonNull(targetResource);
+        super(targetResource);
     }
 
     @Override
@@ -73,9 +70,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         if (pickedHost == null) {
-            return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
-                            targetResource + ". Either all are busy, expired, or unhealthy: " + usedHosts,
-                    this.getClass(), "selectConnection(...)"));
+            return noActiveHostsException(usedHosts);
         }
         // We have a host but no connection was selected: create a new one.
         return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);

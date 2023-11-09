@@ -218,7 +218,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
         boolean available = false;
         for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-            if (host.address.equals(event.address())) {
+            if (host.address().equals(event.address())) {
                 available = true;
                 break;
             }
@@ -283,7 +283,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 // will be all existing hosts that either don't have a matching discovery event or are not marked
                 // as unavailable. If they are marked unavailable, we need to close them (which is idempotent).
                 for (Host<ResolvedAddress, C> host : usedHosts) {
-                    ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address);
+                    ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
                     if (event == null) {
                         // Host doesn't have a SD update so just copy it over.
                         nextHosts.add(host);
@@ -360,7 +360,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new Host<>(NewRoundRobinLoadBalancer.this.toString(), addr,
+            Host<ResolvedAddress, C> host = new DefaultHost<>(NewRoundRobinLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
                     usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
@@ -445,7 +445,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                     // This is the case when SD has emitted some items but none of the hosts are available.
                     failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                             "No hosts are available to connect for " + targetResource + ".",
-                            NewRoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                            this.getClass(), "selectConnection0(...)"));
         }
 
         Single<C> result = hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
@@ -496,7 +496,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
-        return usedHosts.stream().map(Host::asEntry).collect(toList());
+        return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
     }
 
     private static boolean isClosedList(List<?> list) {
