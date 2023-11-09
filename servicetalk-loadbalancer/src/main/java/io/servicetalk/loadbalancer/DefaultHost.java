@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 import static java.util.stream.Collectors.toList;
 
@@ -99,13 +100,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final ListenableAsyncCloseable closeable;
     private volatile ConnState connState = ACTIVE_EMPTY_CONN_STATE;
 
-    DefaultHost(String lbDescription, Addr address, ConnectionFactory<Addr, ? extends C> connectionFactory,
+    DefaultHost(final String lbDescription, final Addr address,
+                final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 int linearSearchSpace, @Nullable HealthCheckConfig healthCheckConfig) {
-        this.lbDescription = lbDescription;
-        this.address = address;
-        this.healthCheckConfig = healthCheckConfig;
-        this.connectionFactory = connectionFactory;
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
+        this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
+        this.healthCheckConfig = healthCheckConfig;
         this.closeable = toAsyncCloseable(graceful ->
                 graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
     }
