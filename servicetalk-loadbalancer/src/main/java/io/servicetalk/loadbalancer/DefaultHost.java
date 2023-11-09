@@ -440,7 +440,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     // Used for testing only
-    @Override
     @SuppressWarnings("unchecked")
     public Map.Entry<Addr, List<C>> asEntry() {
         return new AbstractMap.SimpleImmutableEntry<>(address,

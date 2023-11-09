@@ -501,7 +501,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
-        return usedHosts.stream().map(Host::asEntry).collect(toList());
+        return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
     }
 
     private static boolean isClosedList(List<?> list) {

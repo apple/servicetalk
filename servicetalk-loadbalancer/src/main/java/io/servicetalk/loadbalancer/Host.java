@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
-import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -50,23 +48,20 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
 
     /**
      * The address of the host
+     * @return the address of the host
      */
     ResolvedAddress address();
 
     /**
-     * A snapshot of the current connection pool.
-     * This is only for debugging purposes and shouldn't be used for implementation details.
-     */
-    Map.Entry<ResolvedAddress, List<C>> asEntry();
-
-    /**
      * Whether the host is both considered active by service discovery and healthy by the failure
      * detection mechanisms.
+     * @return whether the host is both active and healthy
      */
     boolean isActiveAndHealthy();
 
     /**
      * Whether the host is considered unhealthy bo the failure detection mechanisms.
+     * @return whether the host is considered unhealthy.
      */
     boolean isUnhealthy();
 
