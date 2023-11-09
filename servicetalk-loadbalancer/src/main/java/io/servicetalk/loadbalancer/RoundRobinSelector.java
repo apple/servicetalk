@@ -70,7 +70,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         if (pickedHost == null) {
-            return noActiveHostsException(usedHosts);
+            return noActiveHosts(usedHosts);
         }
         // We have a host but no connection was selected: create a new one.
         return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);

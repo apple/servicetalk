@@ -73,7 +73,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 // try to make a new one if the host is healthy. If it's not healthy, we fail
                 // and let the higher level retries decide what to do.
                 if (!host.isActiveAndHealthy()) {
-                    return noActiveHostsException(hosts);
+                    return noActiveHosts(hosts);
                 }
                 return host.newConnection(selector, forceNewConnectionAndReserve, context);
             default:
@@ -127,7 +127,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             // Neither are healthy and capable of making a connection: fall through, perhaps for another attempt.
         }
         // Max effort exhausted. We failed to find a healthy and active host.
-        return noActiveHostsException(hosts);
+        return noActiveHosts(hosts);
     }
 
     private Random getRandom() {

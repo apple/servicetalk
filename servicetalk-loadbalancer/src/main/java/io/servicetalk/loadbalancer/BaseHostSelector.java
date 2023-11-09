@@ -35,7 +35,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return targetResource;
     }
 
-    protected final Single<C> noActiveHostsException(List<Host<ResolvedAddress, C>> usedHosts) {
+    protected final Single<C> noActiveHosts(List<Host<ResolvedAddress, C>> usedHosts) {
         return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                         getTargetResource() + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                 this.getClass(), "selectConnection(...)"));
