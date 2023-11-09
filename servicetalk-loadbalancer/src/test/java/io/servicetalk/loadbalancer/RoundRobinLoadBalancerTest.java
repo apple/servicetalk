@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -124,10 +123,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 abstract class RoundRobinLoadBalancerTest {
 
@@ -967,15 +964,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     private TestLoadBalancedConnection newConnection(final String address, final ListenableAsyncCloseable closeable) {
-        final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
-        when(cnx.closeAsync()).thenReturn(closeable.closeAsync());
-        when(cnx.closeAsyncGracefully()).thenReturn(closeable.closeAsyncGracefully());
-        when(cnx.onClose()).thenReturn(closeable.onClose());
-        when(cnx.onClosing()).thenReturn(closeable.onClosing());
-        when(cnx.address()).thenReturn(address);
-        when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
-        when(cnx.tryReserve()).thenReturn(true);
-
+        final TestLoadBalancedConnection cnx = TestLoadBalancedConnection.mockConnection(address, closeable);
         connectionsCreated.add(cnx);
         return cnx;
     }
@@ -992,10 +981,6 @@ abstract class RoundRobinLoadBalancerTest {
             }
             return true;
         };
-    }
-
-    interface TestLoadBalancedConnection extends LoadBalancedConnection {
-        String address();
     }
 
     static class DelegatingConnectionFactory implements
