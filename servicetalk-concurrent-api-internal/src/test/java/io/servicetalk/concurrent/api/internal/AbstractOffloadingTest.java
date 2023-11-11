@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.context.api.ContextMap;
@@ -28,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -80,9 +80,10 @@ public abstract class AbstractOffloadingTest {
     protected static final Matcher<String> OFFLOAD_EXECUTOR = startsWith("TestExecutor");
 
     @RegisterExtension
-    public static final ExecutorExtension<Executor> APP_EXECUTOR_EXT = APP_ISOLATION ?
+    public static final ExecutorExtension<Executor> APP_EXECUTOR_EXT = (APP_ISOLATION ?
             withCachedExecutor(APP_EXECUTOR_PREFIX) :
-            ExecutorExtension.withExecutor(() -> immediate()).setClassLevel(true);
+            ExecutorExtension.withExecutor(Executors::immediate))
+            .setClassLevel(true);
     @RegisterExtension
     public final ExecutorExtension<TestExecutor> testExecutor = ExecutorExtension.withTestExecutor();
 
