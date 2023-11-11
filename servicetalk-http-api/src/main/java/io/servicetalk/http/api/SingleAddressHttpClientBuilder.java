@@ -65,7 +65,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
      * @return {@code this}.
-     * @deprecated Use {@link #proxyConfig(ProxyConfig)} with {@link ProxyConfig#of(Object)}.
+     * @deprecated Use {@link #proxyConfig(ProxyConfig)} with {@link ProxyConfig#forAddress(Object)}.
      */
     // FIXME: 0.43 - remove deprecated method
     @Deprecated
@@ -93,7 +93,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @param proxyConfig Configuration for a proxy. When used with a builder created for a resolved address,
      * {@link ProxyConfig#address()} must also be already resolved – otherwise runtime exceptions will occur.
      * @return {@code this}.
-     * @see ProxyConfig#of(Object)
+     * @see ProxyConfig#forAddress(Object)
      * @see ProxyConfigBuilder
      */
     // FIXME: 0.43 - consider removing default impl

@@ -62,7 +62,7 @@ public interface ProxyConfig<A> {
      * @return a {@link ProxyConfig} for the specified {@code address}
      * @see ProxyConfigBuilder
      */
-    static <A> ProxyConfig<A> of(A address) {
+    static <A> ProxyConfig<A> forAddress(A address) {
         return new ProxyConfigBuilder<>(address).build();
     }
 }

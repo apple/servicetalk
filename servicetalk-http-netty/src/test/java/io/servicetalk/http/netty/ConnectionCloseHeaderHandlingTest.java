@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -68,6 +67,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.ProxyConfig.forAddress;
 import static io.servicetalk.http.netty.GracefulConnectionClosureHandlingTest.RAW_STRING_SERIALIZER;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
@@ -201,7 +201,7 @@ final class ConnectionCloseHeaderHandlingTest {
                     });
 
             client = (viaProxy ? HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                    .proxyConfig(ProxyConfig.of(proxyAddress))
+                    .proxyConfig(forAddress(proxyAddress))
                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                             .peerHost(serverPemHostname()).build()) :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
