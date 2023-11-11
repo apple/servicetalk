@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -50,7 +48,6 @@ import static io.servicetalk.concurrent.api.internal.AbstractOffloadingTest.Capt
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Execution(ExecutionMode.CONCURRENT)
 class OffloadingTest extends AbstractPublisherOffloadingTest {
 
     enum OffloadCase {
@@ -190,7 +187,7 @@ class OffloadingTest extends AbstractPublisherOffloadingTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: case={0}")
     @EnumSource(OffloadCase.class)
     void testOffloading(OffloadCase offloadCase) throws InterruptedException {
         int offloads = testOffloading(offloadCase.offloadOperator, offloadCase.terminal);

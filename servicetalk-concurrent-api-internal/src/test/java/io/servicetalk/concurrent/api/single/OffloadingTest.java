@@ -142,9 +142,9 @@ class OffloadingTest extends AbstractSingleOffloadingTest {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(OffloadingTest.OffloadCase.class)
-    void testOffloading(OffloadingTest.OffloadCase offloadCase) throws InterruptedException {
+    @ParameterizedTest(name = "{displayName} [{index}]: case={0}")
+    @EnumSource(OffloadCase.class)
+    void testOffloading(OffloadCase offloadCase) throws InterruptedException {
         int offloads = testOffloading(offloadCase.offloadOperator, offloadCase.terminal);
         assertThat("Unexpected offloads: " + offloadCase.expectedOffloads,
                 offloads, CoreMatchers.is(offloadCase.offloadsExpected));
