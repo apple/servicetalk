@@ -31,7 +31,7 @@ public interface ProxyConfig<A> {
      * <p>
      * Usually, this is an unresolved proxy address and its type must match the type of address before resolution used
      * by {@link SingleAddressHttpClientBuilder}. However, if the client builder was created for a resolved address,
-     * this address must also be already resolved. Otherwise, a runtime exceptions will occur.
+     * this address must also be already resolved. Otherwise, a runtime exception will occur.
      *
      * @return address of the proxy
      */
