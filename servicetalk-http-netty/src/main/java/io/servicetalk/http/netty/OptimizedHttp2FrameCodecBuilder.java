@@ -42,6 +42,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     // FIXME: 0.43 - reconsider system properties for netty-codec-http2
     // These properties are introduced temporarily in case users need to disable or re-configure default values set by
     // Netty. For the next major release we should either remove these properties or promote them to public API.
+    // These properties are applicable only for the server-side, client-side does not need this DDoS protection.
     private static final String MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME =
             "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.maxConsecutiveEmptyFrames";
     private static final String MAX_RST_FRAMES_PER_WINDOW_PROPERTY_NAME =
