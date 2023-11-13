@@ -39,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class P2CSelectorTest {
@@ -141,7 +143,7 @@ class P2CSelectorTest {
         assertThat(e.getCause(), isA(NoActiveHostException.class));
     }
 
-    @RepeatedTest(100)
+    @Test
     void doesntBiasTowardHostsWithConnections() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         // we setup the first host to always be preferred by score, but it also doesn't have any connections.
@@ -150,10 +152,27 @@ class P2CSelectorTest {
         TestLoadBalancedConnection connection = selector.selectConnection(
                 hosts, PREDICATE, null, false).toFuture().get();
         assertThat(connection.address(), equalTo("addr-1"));
+        // verify that we made a new connection to addr-1.
+        verify(hosts.get(0)).newConnection(any(), anyBoolean(), any());
     }
 
-    @RepeatedTest(100)
-    void biasesTowardsActiveAndHealthyHostWhenNoConnections() throws Exception {
+    @Test
+    void selectsExistingConnectionsFromNonPreferredHost() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        // we setup the first host to always be preferred by score, but it also doesn't have any connections
+        // and is unhealthy.
+        when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
+        when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
+        when(hosts.get(0).score()).thenReturn(10);
+        TestLoadBalancedConnection connection = selector.selectConnection(
+                hosts, PREDICATE, null, false).toFuture().get();
+        assertThat(connection.address(), equalTo("addr-2"));
+        // Verify that we selected an existing connection.
+        verify(hosts.get(1), never()).newConnection(any(), anyBoolean(), any());
+    }
+
+    @Test
+    void biasesTowardsActiveAndHealthyHostWhenMakingConnections() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
         TestLoadBalancedConnection connection = selector.selectConnection(
@@ -161,19 +180,11 @@ class P2CSelectorTest {
         assertThat(connection.address(), equalTo("addr-2"));
     }
 
-    @RepeatedTest(100)
-    void biasesTowardTheHighestWeightHostForNewConnections() throws Exception {
-        biasesTowardTheHighestWeightHost(true);
-    }
-
-    @RepeatedTest(100)
-    void biasesTowardTheHighestWeightHostForExistingConnections() throws Exception {
-        biasesTowardTheHighestWeightHost(false);
-    }
-
+    @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}")
+    @ValueSource(booleans = {false, true})
     void biasesTowardTheHighestWeightHost(boolean forceNewConnection) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        // Host 0 has the highest score so it should always get the new connection.
+        // Host 0 has the highest score, so it should always get the new connection.
         when(hosts.get(0).score()).thenReturn(10);
         TestLoadBalancedConnection connection = selector.selectConnection(
                 hosts, PREDICATE, null, forceNewConnection).toFuture().get();
