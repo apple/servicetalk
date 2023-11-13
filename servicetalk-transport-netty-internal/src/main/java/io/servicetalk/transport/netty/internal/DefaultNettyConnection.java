@@ -58,6 +58,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
+import io.netty.channel.unix.Errors;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
@@ -889,6 +890,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // NettyChannelPublisher will force closure of the channel in case of exception after the cause is
             // propagated to users. In case users don't have offloading, there is a risk to retry on the same IO thread.
             // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
+            if (cause instanceof Errors.NativeIoException) {
+                cause = new Errors.NativeIoException("Boomed here in DefaultNettyConnection",
+                        ((Errors.NativeIoException) cause).expectedErr(), true);
+            }
             connection.notifyOnClosing();
             connection.nettyChannelPublisher.channelOnError(unwrapThrowable(cause));
         }

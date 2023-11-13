@@ -133,7 +133,7 @@ class SslAndNonSslConnectionsTest {
         clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
-    @RepeatedTest(10000)
+    @RepeatedTest(50000)
     void nonSecureClientToSecureServerClosesConnection() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))

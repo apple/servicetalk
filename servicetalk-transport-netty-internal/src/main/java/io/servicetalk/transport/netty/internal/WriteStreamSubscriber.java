@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.unix.Errors;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -28,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
+import io.netty.channel.unix.Errors;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
