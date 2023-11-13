@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
-import io.netty.channel.unix.Errors;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -441,10 +440,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 // We have terminated prematurely perhaps due to write failure.
                 return;
             }
-            if (cause instanceof Errors.NativeIoException) {
-                cause = new Errors.NativeIoException("sourceTerminated",
-                        ((Errors.NativeIoException) cause).expectedErr(), true);
-            }
             this.failureCause = cause;
             state = set(state, SOURCE_TERMINATED);
             if (markCancelled) {
@@ -593,11 +588,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     closeHandler.closeChannelOutbound(channel);
                 }
             } else {
-                if (cause instanceof Errors.NativeIoException) {
-                    // TODO: doesn't appear to be the pathway.
-                    cause = new Errors.NativeIoException("It blew up in WriteStreamSubscriber.",
-                            ((Errors.NativeIoException) cause).expectedErr(), true);
-                }
                 Throwable enrichedCause = enrichProtocolError.apply(cause);
                 assignConnectionError(channel, enrichedCause);
                 enrichedCause = !written ? new AbortedFirstWriteException(enrichedCause) : enrichedCause;

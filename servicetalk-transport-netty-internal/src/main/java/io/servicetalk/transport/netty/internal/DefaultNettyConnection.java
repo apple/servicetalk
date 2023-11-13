@@ -890,11 +890,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // NettyChannelPublisher will force closure of the channel in case of exception after the cause is
             // propagated to users. In case users don't have offloading, there is a risk to retry on the same IO thread.
             // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
-            if (cause instanceof Errors.NativeIoException) {
-                // TODO: doesn't appear to be the pathway.
-                cause = new Errors.NativeIoException("Boomed here in DefaultNettyConnection",
-                        ((Errors.NativeIoException) cause).expectedErr(), true);
-            }
             connection.notifyOnClosing();
             connection.nettyChannelPublisher.channelOnError(unwrapThrowable(cause));
         }
@@ -906,6 +901,17 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             final Throwable cause;
             if (t instanceof DecoderException && (cause = t.getCause()) instanceof SSLException) {
                 return cause;
+            }
+            if (t instanceof Errors.NativeIoException) {
+                if (t.getMessage().contains("Connection reset by peer")) {
+                    // TODO: this is messy and probably not the right place to intercept this.
+                    // This is really a channel closed exception that happens when netty tries to read from a
+                    // channel that is closed.
+                    Throwable channelClosedException = StacklessClosedChannelException.newInstance(
+                            DefaultNettyConnection.class, "exceptionCaught(ChannelInputShutdownReadComplete)");
+                    channelClosedException.initCause(t);
+                    return channelClosedException;
+                }
             }
             return t;
         }
@@ -944,7 +950,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
                 // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
                 // the current netty version) gets triggered reliably at the appropriate time.
-                // TODO: This is the standard pathway the connection is shut down.
                 connection.nettyChannelPublisher.channelOnError(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
             } else if (evt instanceof SslHandshakeCompletionEvent) {
