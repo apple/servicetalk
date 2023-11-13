@@ -898,20 +898,18 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
          * Unwraps certain types of netty exceptions to directly expose its cause to improve debuggability.
          */
         private static Throwable unwrapThrowable(final Throwable t) {
-            final Throwable cause;
+            Throwable cause;
             if (t instanceof DecoderException && (cause = t.getCause()) instanceof SSLException) {
                 return cause;
             }
-            if (t instanceof Errors.NativeIoException) {
-                if (t.getMessage().contains("Connection reset by peer")) {
-                    // TODO: this is messy and probably not the right place to intercept this.
-                    // This is really a channel closed exception that happens when netty tries to read from a
-                    // channel that is closed.
-                    Throwable channelClosedException = StacklessClosedChannelException.newInstance(
-                            DefaultNettyConnection.class, "exceptionCaught(ChannelInputShutdownReadComplete)");
-                    channelClosedException.initCause(t);
-                    return channelClosedException;
-                }
+            if (t instanceof Errors.NativeIoException && t.getMessage().contains("Connection reset by peer")) {
+                // TODO: this is messy and probably not the right place to intercept this.
+                // This is really a channel closed exception that happens when netty tries to read from a
+                // channel that is closed.
+                Throwable channelClosedException = StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "exceptionCaught(ChannelInputShutdownReadComplete)");
+                channelClosedException.initCause(t);
+                return channelClosedException;
             }
             return t;
         }
