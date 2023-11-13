@@ -56,6 +56,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.api.ProxyConfig.forAddress;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -89,7 +90,7 @@ class GrpcProxyTunnelTest {
                 .listenAndAwait((Greeter.BlockingGreeterService) (ctx, request) ->
                         HelloReply.newBuilder().setMessage(GREETING_PREFIX + request.getName()).build());
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(httpBuilder -> httpBuilder.proxyAddress(proxyAddress)
+                .initializeHttp(httpBuilder -> httpBuilder.proxyConfig(forAddress(proxyAddress))
                         .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build())
                         .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {

@@ -45,7 +45,7 @@ public final class HttpContextKeys {
      * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Proxy_servers_and_tunneling#http_tunneling">secure
      * HTTP proxy tunneling</a> and a clear text HTTP proxy, check presence of {@link ConnectionInfo#sslConfig()}.
      *
-     * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
+     * @see SingleAddressHttpClientBuilder#proxyConfig(ProxyConfig)
      * @deprecated Use {@link TransportObserverConnectionFactoryFilter} to configure {@link TransportObserver} and then
      * listen {@link ConnectionObserver#onProxyConnect(Object)} callback to distinguish between a regular connection and
      * a connection to the secure HTTP proxy tunnel. For clear text HTTP proxies, consider installing a custom client

@@ -24,9 +24,11 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.ProxyConfigBuilder;
 import io.servicetalk.http.api.ProxyConnectException;
 import io.servicetalk.http.api.ProxyConnectResponseException;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -58,14 +60,17 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -130,10 +135,15 @@ class HttpsProxyTest {
     }
 
     void setUp(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
+        setUp(protocols, failHandshake, __ -> { /* noop */ });
+    }
+
+    void setUp(List<HttpProtocol> protocols, boolean failHandshake,
+               Consumer<HttpHeaders> connectRequestHeadersInitializer) throws Exception {
         initMocks();
         proxyAddress = proxyTunnel.startProxy();
         startServer(protocols);
-        createClient(protocols, failHandshake);
+        createClient(protocols, failHandshake, connectRequestHeadersInitializer);
     }
 
     @AfterEach
@@ -177,10 +187,13 @@ class HttpsProxyTest {
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    private void createClient(List<HttpProtocol> protocols, boolean failHandshake) {
+    private void createClient(List<HttpProtocol> protocols, boolean failHandshake,
+                              Consumer<HttpHeaders> connectRequestHeadersInitializer) {
         assert serverContext != null && proxyAddress != null;
         client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX)
-                .proxyAddress(proxyAddress)
+                .proxyConfig(new ProxyConfigBuilder<>(proxyAddress)
+                        .connectRequestHeadersInitializer(connectRequestHeadersInitializer)
+                        .build())
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(failHandshake ? "unknown" : serverPemHostname()).build())
                 .protocols(toConfigs(protocols))
@@ -248,6 +261,32 @@ class HttpsProxyTest {
         assertThat(e.response().status(), is(PROXY_AUTHENTICATION_REQUIRED));
         assertTargetAddress();
         verifyProxyConnectFailed(e);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void testProxyAuthRequiredWithAuthInfo(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols, false, headers -> headers.set(PROXY_AUTHORIZATION, "basic " + AUTH_TOKEN));
+        proxyTunnel.basicAuthToken(AUTH_TOKEN);
+        assert client != null;
+        assertResponse(client.request(client.get("/path")), protocols.get(0).version);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
+    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
+    void testHeadersInitializerThrows(List<HttpProtocol> protocols) throws Exception {
+        setUp(protocols, false, headers -> {
+            throw DELIBERATE_EXCEPTION;
+        });
+        proxyTunnel.basicAuthToken(AUTH_TOKEN);
+        assert client != null;
+        ProxyConnectException e = assertThrows(ProxyConnectException.class,
+                () -> client.request(client.get("/path")));
+        assertThat(e, is(not(instanceOf(RetryableException.class))));
+        assertTargetAddress();
+        order.verify(transportObserver).onNewConnection(any(), any());
+        order.verify(connectionObserver).onTransportHandshakeComplete(any());
+        verifyNoMoreInteractions(transportObserver, proxyConnectObserver, securityHandshakeObserver);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")

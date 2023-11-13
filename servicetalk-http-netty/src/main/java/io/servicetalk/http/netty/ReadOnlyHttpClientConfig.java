@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 
 import javax.annotation.Nullable;
@@ -26,7 +27,7 @@ final class ReadOnlyHttpClientConfig {
     @Nullable
     private final H2ProtocolConfig h2Config;
     @Nullable
-    private final CharSequence connectAddress;
+    private final ProxyConfig<String> proxyConfig;
     private final boolean allowDropTrailers;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
@@ -34,7 +35,7 @@ final class ReadOnlyHttpClientConfig {
         tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
-        connectAddress = from.connectAddress();
+        proxyConfig = from.proxyConfig();
         allowDropTrailers = configs.allowDropTrailersReadFromTransport();
     }
 
@@ -61,11 +62,11 @@ final class ReadOnlyHttpClientConfig {
     }
 
     @Nullable
-    CharSequence connectAddress() {
-        return connectAddress;
+    ProxyConfig<String> proxyConfig() {
+        return proxyConfig;
     }
 
     boolean hasProxy() {
-        return connectAddress != null;
+        return proxyConfig != null;
     }
 }
