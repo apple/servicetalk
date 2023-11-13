@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.channel.unix.Errors;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -588,6 +589,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     closeHandler.closeChannelOutbound(channel);
                 }
             } else {
+                if (cause instanceof Errors.NativeIoException) {
+                    cause = new Errors.NativeIoException("It blew up in WriteStreamSubscriber.",
+                            ((Errors.NativeIoException) cause).expectedErr(), true);
+                }
                 Throwable enrichedCause = enrichProtocolError.apply(cause);
                 assignConnectionError(channel, enrichedCause);
                 enrichedCause = !written ? new AbortedFirstWriteException(enrichedCause) : enrichedCause;
