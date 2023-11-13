@@ -32,6 +32,7 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
@@ -132,7 +133,7 @@ class SslAndNonSslConnectionsTest {
         clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
-    @Test
+    @RepeatedTest(10000)
     void nonSecureClientToSecureServerClosesConnection() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
