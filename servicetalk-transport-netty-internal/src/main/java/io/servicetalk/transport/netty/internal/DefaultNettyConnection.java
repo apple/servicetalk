@@ -891,6 +891,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // propagated to users. In case users don't have offloading, there is a risk to retry on the same IO thread.
             // We should notify LoadBalancer that this connection is closing to avoid retrying on the same connection.
             if (cause instanceof Errors.NativeIoException) {
+                // TODO: doesn't appear to be the pathway.
                 cause = new Errors.NativeIoException("Boomed here in DefaultNettyConnection",
                         ((Errors.NativeIoException) cause).expectedErr(), true);
             }
@@ -943,6 +944,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
                 // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
                 // the current netty version) gets triggered reliably at the appropriate time.
+                // TODO: This is the standard pathway the connection is shut down.
                 connection.nettyChannelPublisher.channelOnError(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
             } else if (evt instanceof SslHandshakeCompletionEvent) {

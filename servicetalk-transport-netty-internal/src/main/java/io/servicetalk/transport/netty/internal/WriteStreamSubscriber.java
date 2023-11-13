@@ -441,6 +441,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 // We have terminated prematurely perhaps due to write failure.
                 return;
             }
+            if (cause instanceof Errors.NativeIoException) {
+                cause = new Errors.NativeIoException("sourceTerminated",
+                        ((Errors.NativeIoException) cause).expectedErr(), true);
+            }
             this.failureCause = cause;
             state = set(state, SOURCE_TERMINATED);
             if (markCancelled) {
@@ -590,6 +594,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
             } else {
                 if (cause instanceof Errors.NativeIoException) {
+                    // TODO: doesn't appear to be the pathway.
                     cause = new Errors.NativeIoException("It blew up in WriteStreamSubscriber.",
                             ((Errors.NativeIoException) cause).expectedErr(), true);
                 }
