@@ -25,6 +25,7 @@ import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
 import io.netty.incubator.channel.uring.IOUring;
 import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +41,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -92,8 +94,46 @@ class IoUringTest {
         } finally {
             IoUringUtils.tryIoUring(false);
             if (ioUringExecutor != null) {
-                ioUringExecutor.closeAsync().toFuture().get();
+                ioUringExecutor.closeAsync().toFuture().get(); // the offending line.
                 assertTrue(ioUringExecutor.eventLoopGroup().isShutdown());
+            }
+        }
+    }
+
+    @RepeatedTest(1000)
+    @EnabledOnOs(LINUX)
+    void repro() throws Exception {
+        ioUringIsAvailableOnLinux(false);
+    }
+
+    @RepeatedTest(1000)
+    void maybeGenerallyFlaky() throws Exception {
+        EventLoopAwareNettyIoExecutor ioExecutor = null;
+        try {
+            assumeTrue(IoUringUtils.isAvailable(), "io_uring is unavailable on " +
+                    System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
+            IOUring.ensureAvailability();
+
+            ioExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
+            assertThat(ioExecutor.eventLoopGroup(), is(not(instanceOf(IOUringEventLoopGroup.class))));
+
+            try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                    .ioExecutor(ioExecutor)
+                    .executionStrategy(defaultStrategy())
+                    .listenStreamingAndAwait(new TestServiceStreaming());
+                 BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                         .ioExecutor(ioExecutor)
+                         .executionStrategy(defaultStrategy())
+                         .buildBlocking()) {
+                HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
+                HttpResponse response = client.request(request);
+                assertThat(response.status(), is(OK));
+                assertThat(response.payloadBody(textSerializerUtf8()), is("bonjour!"));
+            }
+        } finally {
+            if (ioExecutor != null) {
+                ioExecutor.closeAsync().toFuture().get(); // the offending line.
+                assertTrue(ioExecutor.eventLoopGroup().isShutdown());
             }
         }
     }
