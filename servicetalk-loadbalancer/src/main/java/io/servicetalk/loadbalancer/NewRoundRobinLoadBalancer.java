@@ -290,7 +290,8 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                         // Host doesn't have a SD update so just copy it over.
                         nextHosts.add(host);
                     } else if (AVAILABLE.equals(event.status())) {
-                        sendReadyEvent = true;
+                        // We only send the ready event if the previous host list was empty.
+                        sendReadyEvent = usedHosts.isEmpty();
                         // If the host is already in CLOSED state, we should discard it and create a new entry.
                         // For duplicate ACTIVE events or for repeated activation due to failed CAS
                         // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
