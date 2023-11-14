@@ -247,23 +247,25 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         @Override
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-            if (events == null) {
-                LOGGER.debug("{}: unexpectedly received null instead of events.", NewRoundRobinLoadBalancer.this);
+            if (events == null || events.isEmpty()) {
+                LOGGER.debug("{}: unexpectedly received null or empty list instead of events.",
+                        NewRoundRobinLoadBalancer.this);
                 return;
             }
 
             boolean sendReadyEvent;
-            List<Host<ResolvedAddress, C>> nextHosts = new ArrayList<>();
+            List<Host<ResolvedAddress, C>> nextHosts;
             for (;;) {
                 // TODO: we have some weirdness in the event that we fail the CAS namely that we can create a host
                 //  that never gets used but is orphaned. It's fine so long as there is nothing to close but that
                 //  guarantee may not always hold in the future.
+                @SuppressWarnings("unchecked")
                 List<Host<ResolvedAddress, C>> usedHosts = usedHostsUpdater.get(NewRoundRobinLoadBalancer.this);
                 if (isClosedList(usedHosts)) {
                     // We don't update if the load balancer is closed.
                     return;
                 }
-                nextHosts.clear();
+                nextHosts = new ArrayList<>(usedHosts.size() + events.size());
                 sendReadyEvent = false;
 
                 // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
@@ -274,7 +276,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
                     ServiceDiscovererEvent<ResolvedAddress> old = eventMap.put(event.address(), event);
                     if (old != null) {
-                        LOGGER.error("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
+                        LOGGER.debug("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
                                 event.address(), event);
                     }
                 }
@@ -304,7 +306,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                     } else if (UNAVAILABLE.equals(event.status())) {
                         host.markClosed();
                     } else {
-                        LOGGER.error("{}: Unexpected Status in event:" +
+                        LOGGER.warn("{}: Unsupported Status in event:" +
                                         " {} (mapped to {}). Leaving usedHosts unchanged: {}",
                                 NewRoundRobinLoadBalancer.this, event, event.status(), nextHosts);
                         nextHosts.add(host);
