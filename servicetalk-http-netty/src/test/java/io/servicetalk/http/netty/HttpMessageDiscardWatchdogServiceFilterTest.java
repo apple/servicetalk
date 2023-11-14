@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,7 +92,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
                 assertEquals(0, response.payloadBody().readableBytes());
             }
 
-            String output = LoggerStringWriter.stableAccumulated(1000);
+            String output = LoggerStringWriter.stableAccumulated(CI ? 5000 : 1000);
             assertTrue(output.contains("Discovered un-drained HTTP response message body which " +
                     "has been dropped by user code"));
         }
