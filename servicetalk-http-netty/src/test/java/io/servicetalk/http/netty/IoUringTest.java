@@ -78,7 +78,7 @@ class IoUringTest {
                     System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
             IOUring.ensureAvailability();
 
-            ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
+            ioUringExecutor = NettyIoExecutors.createIoExecutor(1, "io-uring");
             assertThat(ioUringExecutor.eventLoopGroup(), is(instanceOf(IOUringEventLoopGroup.class)));
 
             try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
