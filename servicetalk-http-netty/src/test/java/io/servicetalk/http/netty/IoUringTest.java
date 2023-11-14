@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.concurrent.EventExecutor;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,7 +42,6 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Thread.getAllStackTraces;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -109,6 +106,10 @@ class IoUringTest {
                             .append(isShutdown)
                             .append('\n');
                     for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                        if (!entry.getKey().getName().startsWith("io-uring")) {
+                            // Not one of our threads.
+                            continue;
+                        }
                         sb.append("Thread: ").append(entry.getKey().getName()).append('\n');
                         for (StackTraceElement e : entry.getValue()) {
                             sb.append('\t').append(e).append('\n');
