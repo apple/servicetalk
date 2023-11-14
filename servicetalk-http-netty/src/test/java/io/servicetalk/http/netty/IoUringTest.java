@@ -100,13 +100,13 @@ class IoUringTest {
         }
     }
 
-    @RepeatedTest(1000)
+    @RepeatedTest(5000)
     @EnabledOnOs(LINUX)
     void repro() throws Exception {
         ioUringIsAvailableOnLinux(false);
     }
 
-    @RepeatedTest(1000)
+    @RepeatedTest(5000)
     void maybeGenerallyFlaky() throws Exception {
         EventLoopAwareNettyIoExecutor ioExecutor = null;
         try {
