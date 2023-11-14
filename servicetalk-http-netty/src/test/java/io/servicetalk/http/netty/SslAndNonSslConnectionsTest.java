@@ -32,12 +32,11 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLHandshakeException;
@@ -133,12 +132,12 @@ class SslAndNonSslConnectionsTest {
         clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
-    @RepeatedTest(50000)
+    @Test
     void nonSecureClientToSecureServerClosesConnection() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .buildBlocking()) {
-            assertThrows(ClosedChannelException.class, () -> client.request(client.get("/")));
+            assertThrows(IOException.class, () -> client.request(client.get("/")));
         }
     }
 
@@ -149,7 +148,7 @@ class SslAndNonSslConnectionsTest {
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .buildBlocking()) {
-            assertThrows(ClosedChannelException.class, () -> client.request(client.get("/")));
+            assertThrows(IOException.class, () -> client.request(client.get("/")));
         }
     }
 

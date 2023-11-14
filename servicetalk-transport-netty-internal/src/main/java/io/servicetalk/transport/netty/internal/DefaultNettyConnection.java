@@ -64,7 +64,6 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
@@ -901,15 +900,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             final Throwable cause;
             if (t instanceof DecoderException && (cause = t.getCause()) instanceof SSLException) {
                 return cause;
-            }
-            if (t instanceof IOException && t.getMessage().contains("Connection reset by peer")) {
-                // TODO: this is messy and probably not the right place to intercept this.
-                // This is really a channel closed exception that happens when netty tries to read from a
-                // channel that is closed.
-                Throwable channelClosedException = StacklessClosedChannelException.newInstance(
-                        DefaultNettyConnection.class, "exceptionCaught(IOException)");
-                channelClosedException.initCause(t);
-                return channelClosedException;
             }
             return t;
         }
