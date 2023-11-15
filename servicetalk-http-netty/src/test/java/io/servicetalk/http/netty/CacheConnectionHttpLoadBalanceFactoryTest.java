@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.Http2SettingsBuilder;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -40,13 +39,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
@@ -111,16 +111,36 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                                          return ofImmediate(Integer.MAX_VALUE);
                                      }).build())
                      .buildStreaming()) {
-            List<Single<StreamingHttpResponse>> responseSingles = new ArrayList<>(numRequests);
+//            List<Single<StreamingHttpResponse>> responseSingles = new ArrayList<>(numRequests);
+            Map<Integer, Future<StreamingHttpResponse>> responses = new HashMap<>();
             for (int i = 0; i < numRequests; ++i) {
                 // Ideally we can always use Publisher.never() however for http1 requests must complete for us to make
                 // progress on subsequent requests (pipelining).
-                responseSingles.add(client.request(client.get("/" + i).payloadBody(
-                        clientPreferH2 && serverPreferH2 ? Publisher.never() : Publisher.empty())));
+                responses.put(i, client.request(client.get("/" + i).payloadBody(
+                        clientPreferH2 && serverPreferH2 ? Publisher.never() : Publisher.empty())).toFuture());
+//                responseSingles.add(client.request(client.get("/" + i).payloadBody(
+//                        clientPreferH2 && serverPreferH2 ? Publisher.never() : Publisher.empty())));
             }
 
-            Collection<StreamingHttpResponse> responses =
-                    collectUnordered(responseSingles, numRequests).toFuture().get();
+//            Collection<StreamingHttpResponse> responses =
+//                    collectUnordered(responseSingles, numRequests).toFuture().get();
+
+            // now make sure all of our responses finished.
+            TimeoutException ex = null;
+            for (Map.Entry<Integer, Future<StreamingHttpResponse>> entry : responses.entrySet()) {
+                try {
+                    entry.getValue().get(10, TimeUnit.SECONDS);
+                } catch (TimeoutException e) {
+                    if (ex == null) {
+                        ex = e;
+                    }
+                    ex.addSuppressed(new TimeoutException("Failed to receive response " + entry.getKey()));
+                }
+            }
+            if (ex != null) {
+                throw ex;
+            }
+
             assertThat(responses, hasSize(numRequests));
             assertThat(connectionObserver.count.get(),
                     // Initial number of streams is unbound, so we may create more streams on connections before the
@@ -129,7 +149,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         }
     }
 
-    @RepeatedTest(100)
+    @RepeatedTest(1000)
     void repro() throws Exception {
         h1OrH2(1000, 100, true, true);
     }
