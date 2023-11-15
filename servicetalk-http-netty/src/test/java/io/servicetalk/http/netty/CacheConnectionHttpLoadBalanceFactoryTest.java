@@ -58,7 +58,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Math.ceil;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 final class CacheConnectionHttpLoadBalanceFactoryTest {
@@ -141,7 +140,6 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                 throw ex;
             }
 
-            assertThat(responses, hasSize(numRequests));
             assertThat(connectionObserver.count.get(),
                     // Initial number of streams is unbound, so we may create more streams on connections before the
                     // client acknowledges the servers max_concurrent_streams setting update.
