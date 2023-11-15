@@ -125,9 +125,9 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         }
     }
 
-    @RepeatedTest(1000)
+    @RepeatedTest(100)
     void repro() throws Exception {
-        h1OrH2(1000, 100, true, true);
+        h1OrH2(5000, 100, true, true);
     }
 
     private static class CountingConnectionObserver implements TransportObserver {
