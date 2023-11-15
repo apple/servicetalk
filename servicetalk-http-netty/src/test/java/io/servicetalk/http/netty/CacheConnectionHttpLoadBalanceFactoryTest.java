@@ -78,7 +78,8 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
 
         CountingConnectionObserver connectionObserver = new CountingConnectionObserver();
         final AtomicInteger numRetries = new AtomicInteger(0);
-        try (ServerContext ctx = HttpServers.forAddress(localAddress(0))
+        try (Spinner unused = new Spinner(Runtime.getRuntime().availableProcessors() * 2);
+             ServerContext ctx = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .build())
                 .protocols(protocolConfigs(serverPreferH2, h1ServerProtocol, h2ServerProtocol))
@@ -123,7 +124,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         }
     }
 
-    @RepeatedTest(10000)
+    @RepeatedTest(1000)
     void repro() throws Exception {
         h1OrH2(1000, 100, true, true);
     }
@@ -143,5 +144,35 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         return preferH2 ?
                 new HttpProtocolConfig[] {h2Config, h1Config} :
                 new HttpProtocolConfig[] {h1Config, h2Config};
+    }
+
+    private final class Spinner implements AutoCloseable {
+        private final List<Thread> threads;
+        private volatile boolean stop;
+
+        private volatile long counter;
+        private Spinner(final int threadCount) {
+            threads = new ArrayList<>(threadCount);
+            for (int i = 0; i < threadCount; i++) {
+                Thread t = new Thread(this::go);
+                t.setDaemon(true);
+                t.start();
+                threads.add(t);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            stop = true;
+            for (Thread t : threads) {
+                t.join();
+            }
+        }
+
+        private void go() {
+            while (!stop) {
+                counter++;
+            }
+        }
     }
 }
