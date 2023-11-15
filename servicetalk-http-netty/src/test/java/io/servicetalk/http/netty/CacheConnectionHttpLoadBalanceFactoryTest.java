@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
@@ -146,11 +147,11 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                 new HttpProtocolConfig[] {h1Config, h2Config};
     }
 
-    private final class Spinner implements AutoCloseable {
+    private static final class Spinner implements AutoCloseable {
+        private final AtomicLong counter = new AtomicLong();
         private final List<Thread> threads;
         private volatile boolean stop;
 
-        private volatile long counter;
         private Spinner(final int threadCount) {
             threads = new ArrayList<>(threadCount);
             for (int i = 0; i < threadCount; i++) {
@@ -171,7 +172,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
 
         private void go() {
             while (!stop) {
-                counter++;
+                counter.incrementAndGet();
             }
         }
     }
