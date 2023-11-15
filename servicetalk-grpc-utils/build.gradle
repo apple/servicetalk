@@ -33,5 +33,3 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 }
-
-spotbugsTest.enabled = false
