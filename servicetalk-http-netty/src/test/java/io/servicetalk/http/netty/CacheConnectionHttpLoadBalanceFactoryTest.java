@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -63,10 +64,16 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 final class CacheConnectionHttpLoadBalanceFactoryTest {
     @ParameterizedTest(name = "{displayName} [{index}] numRequests={0} maxConcurrency={1} clientH2={2} serverH2={3}")
     @CsvSource(value = {
-            "1, 100, true, true", "2, 2, true, false",
-            "100, 100, true, true", "100, 100, false, true", "100, 100, true, false", "100, 100, false, false",
-            "199, 100, true, true", "201, 100, true, true",
-            "1000, 100, true, true", "1001, 100, true, true"
+            "1, 100, true, true",
+            "2, 2, true, false",
+            "100, 100, true, true",
+            "100, 100, false, true",
+            "100, 100, true, false",
+            "100, 100, false, false",
+            "199, 100, true, true",
+            "201, 100, true, true",
+            "1000, 100, true, true",
+            "1001, 100, true, true"
     })
     void h1OrH2(int numRequests, int maxConcurrency, boolean clientPreferH2, boolean serverPreferH2) throws Exception {
         final H2ProtocolConfig h2ServerProtocol = h2().initialSettings(
@@ -120,6 +127,11 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                     // client acknowledges the servers max_concurrent_streams setting update.
                     lessThanOrEqualTo((int) ceil((double) (numRequests + numRetries.get()) / maxConcurrency) + 1));
         }
+    }
+
+    @RepeatedTest(100)
+    void repro() throws Exception {
+        h1OrH2(1000, 100, true, true);
     }
 
     private static class CountingConnectionObserver implements TransportObserver {
