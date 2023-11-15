@@ -98,7 +98,8 @@ class IoUringTest {
             IoUringUtils.tryIoUring(false);
             if (ioUringExecutor != null) {
                 try {
-                    ioUringExecutor.closeAsyncGracefully().toFuture().get(10, TimeUnit.SECONDS); // the offending line.
+                    // It seems that if we attempt to close gracefully we never actually close down.
+                    ioUringExecutor.closeAsync().toFuture().get(10, TimeUnit.SECONDS); // the offending line.
                 } catch (TimeoutException ex) {
                     final boolean isShutdown = ioUringExecutor.eventLoopGroup().isShutdown();
                     StringBuilder sb = new StringBuilder();
