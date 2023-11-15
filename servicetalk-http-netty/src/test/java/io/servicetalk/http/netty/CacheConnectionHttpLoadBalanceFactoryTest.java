@@ -110,19 +110,13 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                                          return ofImmediate(Integer.MAX_VALUE);
                                      }).build())
                      .buildStreaming()) {
-//            List<Single<StreamingHttpResponse>> responseSingles = new ArrayList<>(numRequests);
             Map<Integer, Future<StreamingHttpResponse>> responses = new HashMap<>();
             for (int i = 0; i < numRequests; ++i) {
                 // Ideally we can always use Publisher.never() however for http1 requests must complete for us to make
                 // progress on subsequent requests (pipelining).
                 responses.put(i, client.request(client.get("/" + i).payloadBody(
                         clientPreferH2 && serverPreferH2 ? Publisher.never() : Publisher.empty())).toFuture());
-//                responseSingles.add(client.request(client.get("/" + i).payloadBody(
-//                        clientPreferH2 && serverPreferH2 ? Publisher.never() : Publisher.empty())));
             }
-
-//            Collection<StreamingHttpResponse> responses =
-//                    collectUnordered(responseSingles, numRequests).toFuture().get();
 
             // now make sure all of our responses finished.
             TimeoutException ex = null;
@@ -147,7 +141,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
         }
     }
 
-    @RepeatedTest(1000)
+    @RepeatedTest(10000)
     void repro() throws Exception {
         h1OrH2(1000, 100, true, true);
     }
