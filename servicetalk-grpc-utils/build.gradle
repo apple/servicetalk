@@ -27,6 +27,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305"
 
   testImplementation project(":servicetalk-test-resources")
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

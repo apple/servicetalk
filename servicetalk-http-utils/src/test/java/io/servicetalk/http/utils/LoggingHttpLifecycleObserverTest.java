@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -74,7 +75,7 @@ class LoggingHttpLifecycleObserverTest {
     @Test
     void testOnRequestError() {
         observer.onConnectionSelected(mock(ConnectionInfo.class));
-        Throwable requestError = new RuntimeException("fake request error");
+        Throwable requestError = new DeliberateException();
         observer.onRequest(mockRequestMetadata);
         ((HttpLifecycleObserver.HttpRequestObserver) observer).onRequestError(requestError);
         observer.onResponseCancel();
@@ -95,7 +96,7 @@ class LoggingHttpLifecycleObserverTest {
     void testOnResponseError() {
         observer.onConnectionSelected(mock(ConnectionInfo.class));
         observer.onRequest(mockRequestMetadata);
-        Throwable responseError = new RuntimeException("fake response error");
+        Throwable responseError = new DeliberateException();
         observer.onResponseError(responseError);
         observer.onExchangeFinally();
         verify(mockLogger).log(anyString(),
@@ -113,8 +114,8 @@ class LoggingHttpLifecycleObserverTest {
     @Test
     void testCombinedError() {
         observer.onConnectionSelected(mock(ConnectionInfo.class));
-        Throwable requestError = new RuntimeException("fake request error");
-        Throwable responseError = new RuntimeException("fake response error");
+        Throwable requestError = new DeliberateException();
+        Throwable responseError = new DeliberateException();
         observer.onRequest(mockRequestMetadata);
         ((HttpLifecycleObserver.HttpRequestObserver) observer).onRequestError(requestError);
         observer.onResponseError(responseError);
@@ -136,7 +137,7 @@ class LoggingHttpLifecycleObserverTest {
     void testOnResponseErrorWithMetadata() {
         observer.onConnectionSelected(mock(ConnectionInfo.class));
         observer.onRequest(mockRequestMetadata);
-        Throwable responseError = new RuntimeException("fake response error");
+        Throwable responseError = new DeliberateException();
         observer.onResponse(mockResponseMetadata);
         observer.onResponseError(responseError);
         observer.onExchangeFinally();
