@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -233,35 +233,40 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#proxyAddress(U)" class="member-name-link">proxyAddress</a><wbr>(<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>&nbsp;proxyAddress)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Configure proxy to serve as an intermediary for requests.</div>
+<div class="block">Configures a proxy to serve as an intermediary for requests.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryServiceDiscoveryErrors</a><wbr>(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#proxyConfig(io.servicetalk.http.api.ProxyConfig)" class="member-name-link">proxyConfig</a><wbr>(<a href="ProxyConfig.html" title="interface in io.servicetalk.http.api">ProxyConfig</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>&gt;&nbsp;proxyConfig)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Configures a proxy to serve as an intermediary for requests.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryServiceDiscoveryErrors</a><wbr>(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer</a><wbr>(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer</a><wbr>(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
  T&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a> for all connections created by this builder.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS configuration.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#unresolvedAddressToHost(java.util.function.Function)" class="member-name-link">unresolvedAddressToHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;unresolvedAddressToHostFunction)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#unresolvedAddressToHost(java.util.function.Function)" class="member-name-link">unresolvedAddressToHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;unresolvedAddressToHostFunction)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Provides a means to convert <a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> unresolved address type into a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link"><code>CharSequence</code></a>.</div>
 </div>
 </div>
@@ -326,7 +331,7 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <h3 id="proxyAddress(java.lang.Object)">proxyAddress</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">proxyAddress</span><wbr><span class="parameters">(<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>&nbsp;proxyAddress)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="SingleAddressHttpClientBuilder.html#proxyAddress(U)">SingleAddressHttpClientBuilder</a></code></span></div>
-<div class="block">Configure proxy to serve as an intermediary for requests.
+<div class="block">Configures a proxy to serve as an intermediary for requests.
  <p>
  If the client talks to a proxy over http (not https, <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>ClientSslConfig</code></a> is NOT
  configured), it will rewrite the request-target to
@@ -347,6 +352,42 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
  <code>proxyAddress</code> should also be already resolved – otherwise runtime exceptions may occur.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="proxyConfig(io.servicetalk.http.api.ProxyConfig)">
+<h3>proxyConfig</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">proxyConfig</span><wbr><span class="parameters">(<a href="ProxyConfig.html" title="interface in io.servicetalk.http.api">ProxyConfig</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>&gt;&nbsp;proxyConfig)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="SingleAddressHttpClientBuilder.html#proxyConfig(io.servicetalk.http.api.ProxyConfig)">SingleAddressHttpClientBuilder</a></code></span></div>
+<div class="block">Configures a proxy to serve as an intermediary for requests.
+ <p>
+ If the client talks to a proxy over http (not https, <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>ClientSslConfig</code></a> is NOT
+ configured), it will rewrite the request-target to
+ <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form</a>, as specified by the RFC.
+ <p>
+ For secure proxy tunnels (when <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>ClientSslConfig</code></a> is configured) the tunnel is
+ always initialized using
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request. The actual
+ protocol will be negotiated via <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> of TLS protocol,
+ taking into account HTTP protocols configured via <a href="SingleAddressHttpClientBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)"><code>SingleAddressHttpClientBuilder.protocols(HttpProtocolConfig...)</code></a> method. In case of
+ any error during <code>CONNECT</code> process, <a href="ProxyConnectException.html" title="class in io.servicetalk.http.api"><code>ProxyConnectException</code></a> or <a href="ProxyConnectResponseException.html" title="class in io.servicetalk.http.api"><code>ProxyConnectResponseException</code></a>
+ will be thrown when a request attempt is made through the constructed client instance.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="SingleAddressHttpClientBuilder.html#proxyConfig(io.servicetalk.http.api.ProxyConfig)">proxyConfig</a></code>&nbsp;in interface&nbsp;<code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>proxyConfig</code> - Configuration for a proxy. When used with a builder created for a resolved address,
+ <a href="ProxyConfig.html#address()"><code>ProxyConfig.address()</code></a> must also be already resolved – otherwise runtime exceptions will occur.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="ProxyConfig.html#forAddress(A)"><code>ProxyConfig.forAddress(Object)</code></a></li>
+<li><a href="ProxyConfigBuilder.html" title="class in io.servicetalk.http.api"><code>ProxyConfigBuilder</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

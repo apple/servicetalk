@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -613,6 +613,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/client/api/ServiceDiscovererEvent.html#address()" class="member-name-link">address()</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a></dt>
 <dd>
 <div class="block">Get the resolved address which is the subject of this event.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfig.html#address()" class="member-name-link">address()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api">ProxyConfig</a></dt>
+<dd>
+<div class="block">Address of the proxy.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)" class="member-name-link">addRoute(GrpcExecutionStrategy, MethodDescriptor&lt;Req, Resp&gt;, BufferDecoderGroup, List&lt;BufferEncoder&gt;, GrpcRoutes.Route&lt;Req, Resp&gt;)</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a></dt>
 <dd>
@@ -2588,8 +2592,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Builds a new <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfigBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfigBuilder.html" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a></dt>
+<dd>
+<div class="block">Builds a new <a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api"><code>ProxyConfig</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Builds a new <a href="io/servicetalk/http/api/RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/StrategyInfluencerChainBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StrategyInfluencerChainBuilder.html" title="class in io.servicetalk.http.api">StrategyInfluencerChainBuilder</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -3650,6 +3660,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/client/api/DelegatingConnectionFactory.html#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully()</a> - Method in class io.servicetalk.client.api.<a href="io/servicetalk/client/api/DelegatingConnectionFactory.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactory</a></dt>
@@ -3698,6 +3710,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/ChannelSet.html#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ChannelSet.html" title="class in io.servicetalk.transport.netty.internal">ChannelSet</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
@@ -4352,6 +4366,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#connectionWritabilityChanged(boolean)" class="member-name-link">connectionWritabilityChanged(boolean)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfig.html#connectRequestHeadersInitializer()" class="member-name-link">connectRequestHeadersInitializer()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api">ProxyConfig</a></dt>
+<dd>
+<div class="block">An initializer for <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> related to
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfigBuilder.html#connectRequestHeadersInitializer(java.util.function.Consumer)" class="member-name-link">connectRequestHeadersInitializer(Consumer&lt;HttpHeaders&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfigBuilder.html" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets an initializer for <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> related to
+ <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/ConnectAndHttpExecutionStrategy.html#connectStrategy()" class="member-name-link">connectStrategy()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ConnectAndHttpExecutionStrategy.html" title="class in io.servicetalk.http.api">ConnectAndHttpExecutionStrategy</a></dt>
 <dd>
 <div class="block">Returns the <a href="io/servicetalk/transport/api/ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ConnectExecutionStrategy</code></a> portion of this strategy.</div>
@@ -5140,6 +5164,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the <a href="io/servicetalk/transport/netty/internal/FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> used by default for this <a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnectionContext</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#defaultFlushStrategy()" class="member-name-link">defaultFlushStrategy()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/client/api/DefaultGroupKey.html" class="type-name-link" title="class in io.servicetalk.client.api">DefaultGroupKey</a>&lt;<a href="io/servicetalk/client/api/DefaultGroupKey.html" title="type parameter in DefaultGroupKey">Address</a>&gt; - Class in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
 <dd>
 <div class="block">A default implementation of <a href="io/servicetalk/client/api/GroupKey.html" title="interface in io.servicetalk.client.api"><code>GroupKey</code></a>.</div>
@@ -6786,6 +6812,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#executionContext()" class="member-name-link">executionContext()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#executionContext()" class="member-name-link">executionContext()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#executionContext()" class="member-name-link">executionContext()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ExecutionContext.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;<a href="io/servicetalk/transport/api/ExecutionContext.html" title="type parameter in ExecutionContext">ES</a> extends <a href="io/servicetalk/transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt; - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
@@ -7265,8 +7293,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#firstOrError()" class="member-name-link">firstOrError()</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block">Ensures that this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emits exactly a single <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> to its
- <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</div>
+<div class="block">Converts this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to a <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and ensures that it emits exactly a single
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onNext(T)"><code>element</code></a> before completion.</div>
 </dd>
 <dt><a href="io/servicetalk/http/router/predicate/dsl/StringMultiValueMatcher.html#firstValue(java.lang.CharSequence)" class="member-name-link">firstValue(CharSequence)</a> - Method in interface io.servicetalk.http.router.predicate.dsl.<a href="io/servicetalk/http/router/predicate/dsl/StringMultiValueMatcher.html" title="interface in io.servicetalk.http.router.predicate.dsl">StringMultiValueMatcher</a></dt>
 <dd>
@@ -7501,6 +7529,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)" class="member-name-link">followRedirects(RedirectConfig)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a></dt>
 <dd>
 <div class="block">Configures <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> behavior.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfig.html#forAddress(A)" class="member-name-link">forAddress(A)</a> - Static method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api">ProxyConfig</a></dt>
+<dd>
+<div class="block">Returns a <a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api"><code>ProxyConfig</code></a> for the specified <code>address</code>.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/netty/GrpcClients.html#forAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forAddress(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcClients.html" title="class in io.servicetalk.grpc.netty">GrpcClients</a></dt>
 <dd>
@@ -12141,6 +12173,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#localAddress()" class="member-name-link">localAddress()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#localAddress()" class="member-name-link">localAddress()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/zipkin/publisher/ZipkinPublisher.Builder.html#localAddress(java.net.InetSocketAddress)" class="member-name-link">localAddress(InetSocketAddress)</a> - Method in class io.servicetalk.opentracing.zipkin.publisher.<a href="io/servicetalk/opentracing/zipkin/publisher/ZipkinPublisher.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher">ZipkinPublisher.Builder</a></dt>
 <dd>
 <div class="block">Configures the local address.</div>
@@ -13089,6 +13123,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Return the Netty <code>Channel</code> backing this connection.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#nettyChannel()" class="member-name-link">nettyChannel()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
 <div class="block">Implements <a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> using a netty <code>Channel</code>.</div>
@@ -13144,6 +13180,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoThreadFactory.html#%3Cinit%3E(java.lang.String,boolean)" class="member-name-link">NettyIoThreadFactory(String, boolean)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></dt>
 <dd>
 <div class="block">Create a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a>&lt;<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="type parameter in NettyPipelinedConnection">Req</a>,<wbr><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="type parameter in NettyPipelinedConnection">Resp</a>&gt; - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block">Contract for using a <a href="io/servicetalk/transport/netty/internal/NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> to make pipelined requests, typically for a client.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#%3Cinit%3E(io.servicetalk.transport.netty.internal.NettyConnection,int)" class="member-name-link">NettyPipelinedConnection(NettyConnection&lt;Resp, Req&gt;, int)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>
+<div class="block">New instance.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyPipelineSslUtils.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">NettyPipelineSslUtils</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
@@ -14363,6 +14407,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html#onClose()" class="member-name-link">onClose()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#onClose()" class="member-name-link">onClose()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#onClose()" class="member-name-link">onClose()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/client/api/DelegatingConnectionFactory.html#onClosing()" class="member-name-link">onClosing()</a> - Method in class io.servicetalk.client.api.<a href="io/servicetalk/client/api/DelegatingConnectionFactory.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactory</a></dt>
@@ -14400,6 +14446,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html#onClosing()" class="member-name-link">onClosing()</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#onClosing()" class="member-name-link">onClosing()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#onClosing()" class="member-name-link">onClosing()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
@@ -15044,6 +15092,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/api/DelegatingConnectionContext.html#parent()" class="member-name-link">parent()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#parent()" class="member-name-link">parent()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#parent()" class="member-name-link">parent()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/internal/ZipkinHeaderNames.html#PARENT_SPAN_ID" class="member-name-link">PARENT_SPAN_ID</a> - Static variable in class io.servicetalk.opentracing.internal.<a href="io/servicetalk/opentracing/internal/ZipkinHeaderNames.html" title="class in io.servicetalk.opentracing.internal">ZipkinHeaderNames</a></dt>
 <dd>
@@ -15888,6 +15938,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#protocol()" class="member-name-link">protocol()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#protocol()" class="member-name-link">protocol()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/CloseHandler.CloseEvent.html#PROTOCOL_CLOSING_INBOUND" class="member-name-link">PROTOCOL_CLOSING_INBOUND</a> - Enum constant in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/CloseHandler.CloseEvent.html" title="enum class in io.servicetalk.transport.netty.internal">CloseHandler.CloseEvent</a></dt>
 <dd>
 <div class="block">Inbound protocol close command observed eg.</div>
@@ -15966,7 +16018,9 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#proxyAddress(U)" class="member-name-link">proxyAddress(U)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
 <dd>
-<div class="block">Configure proxy to serve as an intermediary for requests.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#proxyConfig(io.servicetalk.http.api.ProxyConfig)"><code>SingleAddressHttpClientBuilder.proxyConfig(ProxyConfig)</code></a> with <a href="io/servicetalk/http/api/ProxyConfig.html#forAddress(A)"><code>ProxyConfig.forAddress(Object)</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html#proxyAuthenticationRequired()" class="member-name-link">proxyAuthenticationRequired()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponseFactory</a></dt>
 <dd>
@@ -15979,6 +16033,24 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html#proxyAuthenticationRequired()" class="member-name-link">proxyAuthenticationRequired()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#PROXY_AUTHENTICATION_REQUIRED"><code>HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED</code></a> response.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#proxyConfig(io.servicetalk.http.api.ProxyConfig)" class="member-name-link">proxyConfig(ProxyConfig&lt;U&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#proxyConfig(io.servicetalk.http.api.ProxyConfig)" class="member-name-link">proxyConfig(ProxyConfig&lt;U&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Configures a proxy to serve as an intermediary for requests.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfig.html" class="type-name-link" title="interface in io.servicetalk.http.api">ProxyConfig</a>&lt;<a href="io/servicetalk/http/api/ProxyConfig.html" title="type parameter in ProxyConfig">A</a>&gt; - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Configuration for a proxy.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfigBuilder.html" class="type-name-link" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a>&lt;<a href="io/servicetalk/http/api/ProxyConfigBuilder.html" title="type parameter in ProxyConfigBuilder">A</a>&gt; - Class in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Builder for <a href="io/servicetalk/http/api/ProxyConfig.html" title="interface in io.servicetalk.http.api"><code>ProxyConfig</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/ProxyConfigBuilder.html#%3Cinit%3E(A)" class="member-name-link">ProxyConfigBuilder(A)</a> - Constructor for class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ProxyConfigBuilder.html" title="class in io.servicetalk.http.api">ProxyConfigBuilder</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html#proxyConnectComplete(java.lang.Object)" class="member-name-link">proxyConnectComplete(Object)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.ProxyConnectObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ProxyConnectObserver</a></dt>
 <dd>
@@ -16839,6 +16911,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/api/DelegatingConnectionContext.html#remoteAddress()" class="member-name-link">remoteAddress()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#remoteAddress()" class="member-name-link">remoteAddress()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#remoteAddress()" class="member-name-link">remoteAddress()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMap.html#remove(io.servicetalk.client.api.partition.PartitionAttributes)" class="member-name-link">remove(PartitionAttributes)</a> - Method in class io.servicetalk.client.api.internal.partition.<a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMap.html" title="class in io.servicetalk.client.api.internal.partition">PowerSetPartitionMap</a></dt>
 <dd>
@@ -19388,6 +19462,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#socketOption(java.net.SocketOption)" class="member-name-link">socketOption(SocketOption&lt;T&gt;)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#socketOption(java.net.SocketOption)" class="member-name-link">socketOption(SocketOption&lt;T&gt;)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption(SocketOption&lt;T&gt;, T)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#socketOption(java.net.SocketOption,T)" class="member-name-link">socketOption(SocketOption&lt;T&gt;, T)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
@@ -19514,6 +19590,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#sslConfig()" class="member-name-link">sslConfig()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#sslConfig()" class="member-name-link">sslConfig()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig(ClientSslConfig)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig(ClientSslConfig)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
@@ -19602,9 +19680,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#sslSession()" class="member-name-link">sslSession()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#sslSession()" class="member-name-link">sslSession()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/StacklessClosedChannelException.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">StacklessClosedChannelException</a> - Exception in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
-<div class="block"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/channels/ClosedChannelException.html" title="class or interface in java.nio.channels" class="external-link"><code>ClosedChannelException</code></a> that will not not fill in the stacktrace but use a cheaper way of producing
+<div class="block"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/channels/ClosedChannelException.html" title="class or interface in java.nio.channels" class="external-link"><code>ClosedChannelException</code></a> that will not fill in the stacktrace but use a cheaper way of producing
  limited stacktrace details for the user.</div>
 </dd>
 <dt><a href="io/servicetalk/utils/internal/CharsetUtils.html#standardCharsets()" class="member-name-link">standardCharsets()</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/CharsetUtils.html" title="class in io.servicetalk.utils.internal">CharsetUtils</a></dt>
@@ -21377,6 +21457,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoThreadFactory.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#toString(int,int,java.nio.charset.Charset)" class="member-name-link">toString(int, int, Charset)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
 <div class="block">Decodes this buffer's sub-region into a string with the specified
@@ -21679,6 +21761,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>&gt; that may terminate with an error, if an error is observed at
  the transport.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#transportError()" class="member-name-link">transportError()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/BlockingHttpConnection.html#transportEventIterable(io.servicetalk.http.api.HttpEventKey)" class="member-name-link">transportEventIterable(HttpEventKey&lt;T&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpConnection.html" title="interface in io.servicetalk.http.api">BlockingHttpConnection</a></dt>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> that gives the current value of the setting as well as subsequent changes to
@@ -22055,6 +22139,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Updates <a href="io/servicetalk/transport/netty/internal/FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> associated with this connection.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)" class="member-name-link">updateFlushStrategy(NettyConnectionContext.FlushStrategyProvider)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)" class="member-name-link">updateFlushStrategy(NettyConnectionContext.FlushStrategyProvider)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -23038,6 +23124,14 @@ the order they are declared.</div>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 &nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#write(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">write(Publisher&lt;Req&gt;)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>
+<div class="block">Do a write operation in a pipelined fashion.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html#write(io.servicetalk.concurrent.api.Publisher,java.util.function.Supplier,java.util.function.Supplier)" class="member-name-link">write(Publisher&lt;Req&gt;, Supplier&lt;FlushStrategy&gt;, Supplier&lt;WriteDemandEstimator&gt;)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyPipelinedConnection.html" title="class in io.servicetalk.transport.netty.internal">NettyPipelinedConnection</a></dt>
+<dd>
+<div class="block">Do a write operation in a pipelined fashion.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#write(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">write(Publisher&lt;Write&gt;)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyConnection.html#write(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">write(Publisher&lt;Write&gt;)</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnection</a></dt>

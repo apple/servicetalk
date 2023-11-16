@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -359,8 +359,8 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#firstOrError()" class="member-name-link">firstOrError</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Ensures that this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emits exactly a single <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> to its
- <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</div>
+<div class="block">Converts this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and ensures that it emits exactly a single
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>element</code></a> before completion.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flatMapCompletable(java.util.function.Function)" class="member-name-link">flatMapCompletable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="Publisher.html" title="type parameter in Publisher">T</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;mapper)</code></div>
@@ -6298,7 +6298,12 @@ B&gt;</span>
 <section class="detail" id="firstOrElse(java.util.function.Supplier)">
 <h3>firstOrElse</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">firstOrElse</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;defaultValueSupplier)</span></div>
-<div class="block">Converts this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+<div class="block">Converts this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.
+ <p>
+ This operator is useful if the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that is being converted is potentially empty (in which case
+ the <code>defaultValueSupplier</code> will be triggered) or may emit multiple elements (in which case it will be
+ cancelled after receiving the first element). If a conversion to <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is needed where it is expected
+ that the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returns exactly one element, consider using <a href="#firstOrError()"><code>firstOrError()</code></a> instead.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>defaultValueSupplier</code> - A <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link"><code>Supplier</code></a> of default value if this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> did not emit any item.</dd>
@@ -6310,6 +6315,7 @@ B&gt;</span>
 <dd>
 <ul class="see-list">
 <li><a href="https://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a></li>
+<li><a href="#firstOrError()"><code>firstOrError()</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -6319,16 +6325,31 @@ B&gt;</span>
 <section class="detail" id="firstOrError()">
 <h3>firstOrError</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</span>&nbsp;<span class="element-name">firstOrError</span>()</div>
-<div class="block">Ensures that this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emits exactly a single <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> to its
+<div class="block">Converts this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and ensures that it emits exactly a single
+ <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>element</code></a> before completion.
+ <p>
+ This operator ensures that the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emits exactly a single <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>PublisherSource.Subscriber.onNext(Object)</code></a> to its
  <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>. If this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> terminates without emitting any
  items a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/NoSuchElementException.html" title="class or interface in java.util" class="external-link"><code>NoSuchElementException</code></a> will be signaled and if this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emits more than one item,
  an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link"><code>IllegalArgumentException</code></a> will be signaled. Any error emitted by this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> will be
- forwarded to the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+ forwarded to the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.
+ <p>
+ To uphold the guarantees laid out in the previous paragraph, this operator requests two items from the
+ <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. This means that if the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> does not complete after signaling one element, this
+ operator will not complete. If "one element and then complete" semantics are desired, consider chaining the
+ <a href="#takeAtMost(long)"><code>takeAtMost(1)</code></a> operator beforehand. This will ensure a completion signal after one item
+ is propagated from the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will contain the first item emitted from the this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
  If the source <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> does not emit any item, then the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> will terminate with
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/NoSuchElementException.html" title="class or interface in java.util" class="external-link"><code>NoSuchElementException</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#firstOrElse(java.util.function.Supplier)"><code>firstOrElse(Supplier)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
