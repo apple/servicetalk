@@ -8,13 +8,25 @@ import io.servicetalk.concurrent.api.Executor;
 
 import java.time.Duration;
 
-public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
+import static java.util.Objects.requireNonNull;
+
+public final class LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
+
+    private final String id;
+
+    // package private constructor so users must funnel through providers in `LoadBalancers`
+    LoadBalancerBuilder(final String id) {
+        this.id = requireNonNull(id, "id");
+    }
+
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
      * @param loadBalancingPolicy the policy to use
      * @return {@code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy);
+    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy) {
+        throw new RuntimeException("Not implemented.");
+    }
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
@@ -31,8 +43,12 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}.
      * @see #healthCheckFailedConnectionsThreshold(int)
      */
-    LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor);
+    public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
+        throw new RuntimeException("Not implemented.");
+    }
 
+    // TODO: these healthCheck* methods should be moved into their own OutlierDetection configuration instance
+    //  and much like the LoadBalancingPolicy, we should be able to add `OutlierDetectionPolicy`s
     /**
      * Configure an interval for health checking a host that failed to open connections. If no interval is provided
      * using this method, a default value will be used.
@@ -45,7 +61,9 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}.
      * @see #healthCheckFailedConnectionsThreshold(int)
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter);
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
+        throw new RuntimeException("Not implemented.");
+    }
 
     /**
      * Configure an interval for re-subscribing to the original events stream in case all existing hosts become
@@ -63,7 +81,9 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}.
      * @see #healthCheckFailedConnectionsThreshold(int)
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter);
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter) {
+        throw new RuntimeException("Not implemented.");
+    }
 
     /**
      * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
@@ -79,12 +99,16 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}.
      * @see #backgroundExecutor(Executor)
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold);
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold) {
+        throw new RuntimeException("Not implemented.");
+    }
 
     /**
      * Builds the {@link LoadBalancerFactory} configured by this builder.
      *
      * @return a new instance of {@link LoadBalancerFactory} with settings from this builder.
      */
-    LoadBalancerFactory<ResolvedAddress, C> build();
+    LoadBalancerFactory<ResolvedAddress, C> build() {
+        throw new RuntimeException("Not implemented.");
+    }
 }
