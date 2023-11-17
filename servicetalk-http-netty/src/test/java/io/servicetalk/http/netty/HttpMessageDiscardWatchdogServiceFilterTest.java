@@ -45,7 +45,6 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class HttpMessageDiscardWatchdogServiceFilterTest {
 
@@ -93,8 +92,10 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
             }
 
             String output = LoggerStringWriter.stableAccumulated(CI ? 5000 : 1000);
-            assertTrue(output.contains("Discovered un-drained HTTP response message body which " +
-                    "has been dropped by user code"));
+            if (!output.contains("Discovered un-drained HTTP response message body which " +
+                    "has been dropped by user code")) {
+                throw new AssertionError("Logs didn't contain the expected output:\n" + output);
+            }
         }
     }
 
