@@ -40,6 +40,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -242,10 +243,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     ctx.builder.strategyComputation.buildForConnectionFactory();
 
             if (roConfig.hasProxy() && sslContext != null) {
-                assert roConfig.connectAddress() != null;
+                assert roConfig.proxyConfig() != null;
                 @SuppressWarnings("deprecation")
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
-                        new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress(), connectionFactoryStrategy);
+                        new ProxyConnectConnectionFactoryFilter<>(roConfig.proxyConfig().address());
                 assert !proxy.requiredOffloads().hasOffloads();
                 connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
@@ -446,9 +447,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
-        this.proxyAddress = requireNonNull(proxyAddress);
-        config.connectAddress(hostToCharSequenceFunction.apply(address));
+    public DefaultSingleAddressHttpClientBuilder<U, R> proxyConfig(final ProxyConfig<U> proxyConfig) {
+        this.proxyAddress = requireNonNull(proxyConfig.address());
+        config.proxyConfig(hostToCharSequenceFunction.apply(address), proxyConfig);
         return this;
     }
 

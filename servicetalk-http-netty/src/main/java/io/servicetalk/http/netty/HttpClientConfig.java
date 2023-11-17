@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,28 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.Http2Settings;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DelegatingClientSslConfig;
 
 import java.util.List;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
+import static java.util.Objects.requireNonNull;
 
 final class HttpClientConfig {
 
     private final TcpClientConfig tcpConfig;
     private final HttpConfig protocolConfigs;
     @Nullable
-    private CharSequence connectAddress;
+    private ProxyConfig<String> proxyConfig;
     @Nullable
     private String fallbackPeerHost;
     private int fallbackPeerPort = -1;
@@ -61,7 +65,7 @@ final class HttpClientConfig {
     HttpClientConfig(final HttpClientConfig from) {
         tcpConfig = new TcpClientConfig(from.tcpConfig());
         protocolConfigs = new HttpConfig(from.protocolConfigs());
-        connectAddress = from.connectAddress;
+        proxyConfig = from.proxyConfig;
         fallbackPeerHost = from.fallbackPeerHost;
         fallbackPeerPort = from.fallbackPeerPort;
         inferPeerHost = from.inferPeerHost;
@@ -78,12 +82,15 @@ final class HttpClientConfig {
     }
 
     @Nullable
-    CharSequence connectAddress() {
-        return connectAddress;
+    ProxyConfig<String> proxyConfig() {
+        return proxyConfig;
     }
 
-    void connectAddress(@Nullable final CharSequence connectAddress) {
-        this.connectAddress = connectAddress;
+    void proxyConfig(final CharSequence connectAddress, final ProxyConfig<?> proxyConfig) {
+        // Original ProxyConfig.address() is used only by DefaultSingleAddressHttpClientBuilder. For the actual
+        // ProxyConnectLBHttpConnectionFactory, we need only "connectAddress". To simplify internal state, we override
+        // ProxyConfig.address() with "connectAddress" and delegate all other methods to original ProxyConfig.
+        this.proxyConfig = new DelegatingProxyConfig(connectAddress.toString(), proxyConfig);
     }
 
     void fallbackPeerHost(@Nullable String fallbackPeerHost) {
@@ -167,5 +174,57 @@ final class HttpClientConfig {
         // https://tools.ietf.org/html/rfc6066#section-3
         // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
         return peerHost == null || isValidIpV4Address(peerHost) || isValidIpV6Address(peerHost) ? null : peerHost;
+    }
+
+    private static final class DelegatingProxyConfig implements ProxyConfig<String> {
+
+        private final String address;
+        private final ProxyConfig<?> delegate;
+
+        DelegatingProxyConfig(final String address, final ProxyConfig<?> delegate) {
+            this.address = requireNonNull(address);
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        public String address() {
+            return address;
+        }
+
+        @Override
+        public Consumer<HttpHeaders> connectRequestHeadersInitializer() {
+            return delegate.connectRequestHeadersInitializer();
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof DelegatingProxyConfig)) {
+                return false;
+            }
+
+            final DelegatingProxyConfig that = (DelegatingProxyConfig) o;
+            if (!address.equals(that.address)) {
+                return false;
+            }
+            return delegate.equals(that.delegate);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = address.hashCode();
+            result = 31 * result + delegate.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{address='" + address + '\'' +
+                    ", delegate=" + delegate +
+                    '}';
+        }
     }
 }

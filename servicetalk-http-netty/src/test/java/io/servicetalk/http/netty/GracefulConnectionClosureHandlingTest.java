@@ -83,6 +83,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
+import static io.servicetalk.http.api.ProxyConfig.forAddress;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.whenIdleFor;
@@ -245,7 +246,7 @@ class GracefulConnectionClosureHandlingTest {
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
 
         SingleAddressHttpClientBuilder<?, ? extends SocketAddress> clientBuilder = viaProxy ?
-                forSingleAddress(serverHostAndPort(serverContext)).proxyAddress(proxyAddress) :
+                forSingleAddress(serverHostAndPort(serverContext)).proxyConfig(forAddress(proxyAddress)) :
                 forResolvedAddress(serverContext.listenAddress());
 
         if (secure) {

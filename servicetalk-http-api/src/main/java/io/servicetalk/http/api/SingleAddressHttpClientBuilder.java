@@ -48,7 +48,7 @@ import java.util.function.Predicate;
  */
 public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
-     * Configure proxy to serve as an intermediary for requests.
+     * Configures a proxy to serve as an intermediary for requests.
      * <p>
      * If the client talks to a proxy over http (not https, {@link #sslConfig(ClientSslConfig) ClientSslConfig} is NOT
      * configured), it will rewrite the request-target to
@@ -65,10 +65,40 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @param proxyAddress Unresolved address of the proxy. When used with a builder created for a resolved address,
      * {@code proxyAddress} should also be already resolved – otherwise runtime exceptions may occur.
      * @return {@code this}.
+     * @deprecated Use {@link #proxyConfig(ProxyConfig)} with {@link ProxyConfig#forAddress(Object)}.
      */
-    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) { // FIXME: 0.43 - remove default impl
-        throw new UnsupportedOperationException("Setting proxy address is not yet supported by "
-                + getClass().getName());
+    // FIXME: 0.43 - remove deprecated method
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    default SingleAddressHttpClientBuilder<U, R> proxyAddress(U proxyAddress) {
+        proxyConfig(new ProxyConfigBuilder<>(proxyAddress).build());
+        return this;
+    }
+
+    /**
+     * Configures a proxy to serve as an intermediary for requests.
+     * <p>
+     * If the client talks to a proxy over http (not https, {@link #sslConfig(ClientSslConfig) ClientSslConfig} is NOT
+     * configured), it will rewrite the request-target to
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form</a>, as specified by the RFC.
+     * <p>
+     * For secure proxy tunnels (when {@link #sslConfig(ClientSslConfig) ClientSslConfig} is configured) the tunnel is
+     * always initialized using
+     * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request. The actual
+     * protocol will be negotiated via <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> of TLS protocol,
+     * taking into account HTTP protocols configured via {@link #protocols(HttpProtocolConfig...)} method. In case of
+     * any error during {@code CONNECT} process, {@link ProxyConnectException} or {@link ProxyConnectResponseException}
+     * will be thrown when a request attempt is made through the constructed client instance.
+     *
+     * @param proxyConfig Configuration for a proxy. When used with a builder created for a resolved address,
+     * {@link ProxyConfig#address()} must also be already resolved – otherwise runtime exceptions will occur.
+     * @return {@code this}.
+     * @see ProxyConfig#forAddress(Object)
+     * @see ProxyConfigBuilder
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default SingleAddressHttpClientBuilder<U, R> proxyConfig(ProxyConfig<U> proxyConfig) {
+        throw new UnsupportedOperationException("Setting proxy config is not yet supported by " + getClass().getName());
     }
 
     /**

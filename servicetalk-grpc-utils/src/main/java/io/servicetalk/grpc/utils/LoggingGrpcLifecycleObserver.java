@@ -47,7 +47,11 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
      * @param logLevel The level to log at
      */
     LoggingGrpcLifecycleObserver(final String loggerName, final LogLevel logLevel) {
-        this.logger = newLogger(loggerName, logLevel);
+        this(newLogger(loggerName, logLevel));
+    }
+
+    LoggingGrpcLifecycleObserver(FixedLevelLogger logger) {
+        this.logger = logger;
     }
 
     @Override
@@ -177,10 +181,10 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
             final HttpRequestMetaData requestMetaData = this.requestMetaData;
             assert requestMetaData != null;
             final HttpResponseMetaData responseMetaData = this.responseMetaData;
-            Object requestResult = unwrapResult(this.requestResult);
-            if (requestResult == null) {
+            Object unwrappedRequestResult = unwrapResult(this.requestResult);
+            if (unwrappedRequestResult == null) {
                 // It's possible that request can be cancelled before transport subscribed to its payload body
-                requestResult = Result.cancelled;
+                unwrappedRequestResult = Result.cancelled;
             }
             if (responseMetaData != null) {
                 logger.log("connection='{}' " +
@@ -189,7 +193,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
+                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
                 responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
                 responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
                 combine(responseResult, requestResult));
@@ -199,7 +203,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,
                 requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, requestResult,
+                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
                 unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
                 combine(responseResult, requestResult));
             }

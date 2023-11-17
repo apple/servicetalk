@@ -295,6 +295,11 @@ public final class RedirectConfigBuilder {
         return this;
     }
 
+    /**
+     * Builds a new {@link RedirectConfig}.
+     *
+     * @return a new {@link RedirectConfig}
+     */
     public RedirectConfig build() {
         return new DefaultRedirectConfig(maxRedirects,
                 allowedStatuses == null ? DEFAULT_ALLOWED_STATUSES : toSet(allowedStatuses),

@@ -42,6 +42,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     // FIXME: 0.43 - reconsider system properties for netty-codec-http2
     // These properties are introduced temporarily in case users need to disable or re-configure default values set by
     // Netty. For the next major release we should either remove these properties or promote them to public API.
+    // These properties are applicable only for the server-side, client-side does not need this DDoS protection.
     private static final String MAX_CONSECUTIVE_EMPTY_FRAMES_PROPERTY_NAME =
             "io.servicetalk.http.netty.http2.decoderEnforceMaxRstFramesPerWindow.maxConsecutiveEmptyFrames";
     private static final String MAX_RST_FRAMES_PER_WINDOW_PROPERTY_NAME =
@@ -86,7 +87,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
                     .findVirtual(Http2FrameCodecBuilder.class, "decoderEnforceMaxRstFramesPerWindow",
                             methodType(Http2FrameCodecBuilder.class, int.class, int.class));
             // Verify the method is working as expected:
-            decoderEnforceMaxRstFramesPerWindow(decoderEnforceMaxRstFramesPerWindow, builder);
+            decoderEnforceMaxRstFramesPerWindow(decoderEnforceMaxRstFramesPerWindow, builder, builder.isServer());
         } catch (Throwable cause) {
             LOGGER.debug("Http2FrameCodecBuilder#decoderEnforceMaxRstFramesPerWindow(int, int) is available only " +
                             "starting from Netty 4.1.100.Final. Detected Netty version: {}",
@@ -110,7 +111,7 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
         this.server = server;
         this.flowControlQuantum = flowControlQuantum;
         disableFlushPreface(FLUSH_PREFACE, this);
-        decoderEnforceMaxRstFramesPerWindow(DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW, this);
+        decoderEnforceMaxRstFramesPerWindow(DECODER_ENFORCE_MAX_RST_FRAMES_PER_WINDOW, this, server);
     }
 
     @Override
@@ -156,14 +157,25 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     // To avoid a strict dependency on Netty 4.1.100.Final in the classpath, we use {@link MethodHandle} to check if
     // the new method is available or not.
     private static Http2FrameCodecBuilder decoderEnforceMaxRstFramesPerWindow(
-            @Nullable final MethodHandle methodHandle, final Http2FrameCodecBuilder builderInstance) {
+            @Nullable final MethodHandle methodHandle, final Http2FrameCodecBuilder builderInstance,
+            final boolean isServer) {
         if (methodHandle == null) {
             return builderInstance;
+        }
+        final int maxRstFramesPerWindow;
+        final int secondsPerWindow;
+        if (isServer) {
+            maxRstFramesPerWindow = MAX_RST_FRAMES_PER_WINDOW;
+            secondsPerWindow = SECONDS_PER_WINDOW;
+        } else {
+            // Client doesn't need this protection
+            maxRstFramesPerWindow = 0;
+            secondsPerWindow = 0;
         }
         try {
             // invokeExact requires return type cast to match the type signature
             return (Http2FrameCodecBuilder) methodHandle.invokeExact(builderInstance,
-                    MAX_RST_FRAMES_PER_WINDOW, SECONDS_PER_WINDOW);
+                    maxRstFramesPerWindow, secondsPerWindow);
         } catch (Throwable t) {
             throwException(t);
             return builderInstance;

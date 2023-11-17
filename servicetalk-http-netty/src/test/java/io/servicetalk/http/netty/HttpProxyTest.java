@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.api.ProxyConfig.forAddress;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
@@ -126,7 +127,7 @@ class HttpProxyTest {
         assert serverAddress != null && proxyAddress != null;
 
         try (BlockingHttpClient client = clientBuilderFactory.apply(serverAddress)
-                .proxyAddress(proxyAddress)
+                .proxyConfig(forAddress(proxyAddress))
                 .protocols(clientProtocol.config)
                 .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, false))
                 .buildBlocking()) {
@@ -146,17 +147,18 @@ class HttpProxyTest {
                         .protocols(protocol.config);
 
         final AtomicInteger otherProxyRequestCount = new AtomicInteger();
-        try (BlockingHttpClient client = builder.proxyAddress(proxyAddress).buildBlocking();
-            HttpClient otherProxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+        try (BlockingHttpClient client = builder.proxyConfig(forAddress(proxyAddress)).buildBlocking();
+             HttpClient otherProxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder1) -> builder1.protocols(protocol.config))
                 .build();
-            ServerContext otherProxyContext = HttpServers.forAddress(localAddress(0))
+             ServerContext otherProxyContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config)
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     otherProxyRequestCount.incrementAndGet();
                     return otherProxyClient.request(request);
                 });
-             BlockingHttpClient otherClient = builder.proxyAddress(serverHostAndPort(otherProxyContext))
+             BlockingHttpClient otherClient = builder
+                     .proxyConfig(forAddress(serverHostAndPort(otherProxyContext)))
                      .protocols(protocol.config)
                      .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, false))
                      .buildBlocking()) {

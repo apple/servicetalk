@@ -19,7 +19,7 @@ package io.servicetalk.http.api;
  * A subclass of {@link ProxyConnectException} that indicates an unexpected response status from a proxy received for
  * <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-9.3.6">HTTP/1.1 CONNECT</a> request.
  *
- * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
+ * @see SingleAddressHttpClientBuilder#proxyConfig(ProxyConfig)
  */
 public class ProxyConnectResponseException extends ProxyConnectException {
 

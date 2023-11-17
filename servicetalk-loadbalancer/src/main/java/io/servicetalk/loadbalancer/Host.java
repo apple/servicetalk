@@ -81,6 +81,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     /**
      * Signal that the host should not be the target of new connections but existing connections are still expected
      * to be valid and can serve new requests. This does not have any implications for the health status of the host.
+     *
+     * @return true if the host is now in the closed state, false otherwise.
      */
-    void markExpired();
+    boolean markExpired();
 }
