@@ -42,24 +42,6 @@ public final class LoadBalancers {
      */
     public static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancerBuilder<ResolvedAddress, C> builder(final String id) {
-        return applyProviders(id, new LoadBalancerBuilder<>(id));
-    }
-
-
-    // TODO: if we want to offer this as an API pattern, we might want to let providers set a smart
-    //  round-robin specific set of defaults (and p2c, etc). _If_ we want to go down this route we
-    //  can send the providers an enum or something like it. Alternatively, we can make the current
-    //  builder inspectable, something like `getSelector()` so we can set the round-robin lb and
-    //  providers can then check if a selector is set and if so modify that specifically.
-    /**
-     * Creates a standard round-robin load balancer with reasonable defaults.
-     * @param id
-     * @return
-     * @param <ResolvedAddress>
-     * @param <C>
-     */
-    public static <ResolvedAddress, C extends LoadBalancedConnection>
-    LoadBalancerBuilder<ResolvedAddress, C> roundRobin(final String id) {
-        return applyProviders(id, new LoadBalancerBuilder<>(id));
+        return applyProviders(id, new DefaultLoadBalancerBuilder<>(id));
     }
 }
