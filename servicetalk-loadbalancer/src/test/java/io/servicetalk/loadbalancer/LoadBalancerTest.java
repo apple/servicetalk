@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;

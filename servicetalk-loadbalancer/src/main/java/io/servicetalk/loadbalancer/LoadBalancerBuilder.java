@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
@@ -34,9 +49,18 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor);
 
     /**
-     * TODO: javadoc.
-     * @param linearSearchSpace
-     * @return
+     * Sets the linear search space to find an available connection for the next host.
+     * <p>
+     * When the next host has already opened connections, this {@link LoadBalancer} will perform a linear search for
+     * a connection that can serve the next request up to a specified number of attempts. If there are more open
+     * connections, selection of remaining connections will be attempted randomly.
+     * <p>
+     * Higher linear search space may help to better identify excess connections in highly concurrent environments,
+     * but may result in slightly increased selection time.
+     *
+     * @param linearSearchSpace the number of attempts for a linear search space, {@code 0} enforces random
+     * selection all the time.
+     * @return {@code this}.
      */
     LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace);
 
