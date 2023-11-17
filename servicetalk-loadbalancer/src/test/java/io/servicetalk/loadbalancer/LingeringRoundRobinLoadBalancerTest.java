@@ -41,7 +41,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
+class LingeringRoundRobinLoadBalancerTest extends LoadBalancerTest {
+
+    @Override
+    protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
+        return RoundRobinLoadBalancerBuilderAdapter.baseLoadBalancerBuilder(this.getClass());
+    }
 
     @Test
     void hostDownDoesntCloseConnectionCloseLB() throws Exception {

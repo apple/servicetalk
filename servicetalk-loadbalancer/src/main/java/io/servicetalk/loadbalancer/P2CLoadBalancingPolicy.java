@@ -27,7 +27,14 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
         return "P2C";
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
+
+        private Builder() {
+        }
 
         private static final int DEFAULT_MAX_EFFORT = 5;
         private int maxEffort = DEFAULT_MAX_EFFORT;

@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -96,7 +97,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
@@ -126,7 +127,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-abstract class RoundRobinLoadBalancerTest {
+abstract class LoadBalancerTest {
 
     static final String[] EMPTY_ARRAY = new String[] {};
 
@@ -158,10 +159,6 @@ abstract class RoundRobinLoadBalancerTest {
         return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
-        return newTestLoadBalancer();
-    }
-
     TestableLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
         DelegatingConnectionFactory connectionFactory) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
@@ -169,14 +166,12 @@ abstract class RoundRobinLoadBalancerTest {
 
     protected abstract boolean eagerConnectionShutdown();
 
-    protected RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return RoundRobinLoadBalancers.builder(getClass().getSimpleName());
-    }
+    protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
 
     @BeforeEach
     void initialize() {
         testExecutor = executor.executor();
-        lb = defaultLb();
+        lb = newTestLoadBalancer();
         connectionsCreated.clear();
         connectionRealizers.clear();
     }
@@ -855,7 +850,7 @@ abstract class RoundRobinLoadBalancerTest {
     @Test
     void registersNewConnections() throws Exception {
         serviceDiscoveryPublisher.onComplete();
-        lb = defaultLb();
+        lb = newTestLoadBalancer();
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -895,13 +890,13 @@ abstract class RoundRobinLoadBalancerTest {
         return new DefaultServiceDiscovererEvent<>(address, status);
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
+    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-        final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-        final DelegatingConnectionFactory connectionFactory) {
+    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            final DelegatingConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .healthCheckInterval(ofMillis(50), ofMillis(10))

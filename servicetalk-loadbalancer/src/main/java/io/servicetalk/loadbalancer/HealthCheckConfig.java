@@ -19,22 +19,26 @@ import io.servicetalk.concurrent.api.Executor;
 
 import java.time.Duration;
 
+import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
+
 final class HealthCheckConfig {
     final Executor executor;
     final Duration healthCheckInterval;
     final Duration jitter;
     final int failedThreshold;
-    final long healthCheckResubscribeLowerBound;
-    final long healthCheckResubscribeUpperBound;
+    final long resubscribeLowerBoundNanos;
+    final long resubscribeUpperBoundNanos;
 
     HealthCheckConfig(final Executor executor, final Duration healthCheckInterval, final Duration healthCheckJitter,
-                      final int failedThreshold, final long healthCheckResubscribeLowerBound,
-                      final long healthCheckResubscribeUpperBound) {
+                      final int failedThreshold, final Duration resubscribeInterval,
+                      final Duration healthCheckResubscribeJitter) {
         this.executor = executor;
         this.healthCheckInterval = healthCheckInterval;
         this.failedThreshold = failedThreshold;
         this.jitter = healthCheckJitter;
-        this.healthCheckResubscribeLowerBound = healthCheckResubscribeLowerBound;
-        this.healthCheckResubscribeUpperBound = healthCheckResubscribeUpperBound;
+
+        validateHealthCheckIntervals(resubscribeInterval, healthCheckResubscribeJitter);
+        this.resubscribeLowerBoundNanos = resubscribeInterval.minus(healthCheckResubscribeJitter).toNanos();
+        this.resubscribeUpperBoundNanos = resubscribeInterval.plus(healthCheckResubscribeJitter).toNanos();
     }
 }

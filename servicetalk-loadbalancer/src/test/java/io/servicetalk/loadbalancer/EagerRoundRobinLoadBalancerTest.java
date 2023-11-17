@@ -25,7 +25,12 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
+class EagerRoundRobinLoadBalancerTest extends LoadBalancerTest {
+
+    @Override
+    protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
+        return RoundRobinLoadBalancerBuilderAdapter.baseLoadBalancerBuilder(this.getClass());
+    }
 
     @Test
     void duplicateEventsAreIgnored() {

@@ -34,10 +34,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
     private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
     private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-    private long healthCheckResubscribeLowerBound =
-            DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
-    private long healthCheckResubscribeUpperBound =
-            DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();;
+    private Duration healthCheckResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+    private Duration healthCheckResubscribeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
@@ -61,7 +59,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
-        this.backgroundExecutor = requireNonNull(backgroundExecutor, "backgroundExecutor");
+        this.backgroundExecutor = new NormalizedTimeSourceExecutor(backgroundExecutor);
         return this;
     }
 
@@ -77,8 +75,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(
             Duration interval, Duration jitter) {
         validateHealthCheckIntervals(interval, jitter);
-        this.healthCheckResubscribeLowerBound = interval.minus(jitter).toNanos();
-        this.healthCheckResubscribeUpperBound = interval.plus(jitter).toNanos();
+        this.healthCheckResubscribeInterval = interval;
+        this.healthCheckResubscribeJitter = jitter;
         return this;
     }
 
@@ -93,10 +91,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     public LoadBalancerFactory<ResolvedAddress, C> build() {
-        HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
-                this.backgroundExecutor == null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : this.backgroundExecutor,
-                healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
-                healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
+        final HealthCheckConfig healthCheckConfig;
+        if (this.healthCheckFailedConnectionsThreshold < 0) {
+            healthCheckConfig = null;
+        } else {
+            healthCheckConfig = new HealthCheckConfig(this.backgroundExecutor == null ?
+                    RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : this.backgroundExecutor,
+                    healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
+                    healthCheckResubscribeInterval, healthCheckResubscribeJitter);
+        }
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig);
     }
 
@@ -106,16 +109,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final String id;
         private final LoadBalancingPolicy loadBalancingPolicy;
         private final int linearSearchSpace;
+        @Nullable
         private final HealthCheckConfig healthCheckConfig;
 
-        // TODO: this is awkward because LoadBalancingPolicy isn't immutable. We may need them to be immutable and build
-        //  a builder interface around them.
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy loadBalancingPolicy,
         final int linearSearchSpace, final HealthCheckConfig healthCheckConfig) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.linearSearchSpace = linearSearchSpace;
-            this.healthCheckConfig = requireNonNull(healthCheckConfig, "healthCheckConfig");
+            this.healthCheckConfig = healthCheckConfig;
         }
 
         @Override

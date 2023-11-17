@@ -17,7 +17,6 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -181,12 +180,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
             final HealthCheckConfig config, final DefaultLoadBalancer<R, C> lb) {
-        final long lower = config.healthCheckResubscribeLowerBound;
-        final long upper = config.healthCheckResubscribeUpperBound;
-        final long currentTime = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
+        final long lowerNanos = config.resubscribeLowerBoundNanos;
+        final long upperNanos = config.resubscribeUpperBoundNanos;
+        final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
+        final long result = currentTimeNanos + (lowerNanos == upperNanos ?
+                lowerNanos : ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
-                lb, currentTime, result);
+                lb, currentTimeNanos, result);
         return result;
     }
 

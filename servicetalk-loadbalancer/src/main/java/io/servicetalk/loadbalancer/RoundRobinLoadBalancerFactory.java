@@ -37,7 +37,6 @@ import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_INT
 import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_JITTER;
 import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -126,10 +125,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
         private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
         private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-        private long healthCheckResubscribeLowerBound =
-                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
-        private long healthCheckResubscribeUpperBound =
-                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
+        private Duration healthCheckResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+        private Duration healthCheckResubscribeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
         /**
          * Creates a new instance with default settings.
@@ -203,8 +200,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckResubscribeInterval(
                 Duration interval, Duration jitter) {
             validateHealthCheckIntervals(interval, jitter);
-            this.healthCheckResubscribeLowerBound = interval.minus(jitter).toNanos();
-            this.healthCheckResubscribeUpperBound = interval.plus(jitter).toNanos();
+            this.healthCheckResubscribeInterval = interval;
+            this.healthCheckResubscribeJitter = jitter;
             return this;
         }
 
@@ -227,7 +224,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
-                    healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
+                    healthCheckResubscribeInterval, healthCheckResubscribeJitter);
             return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, useNewRoundRobin, healthCheckConfig);
         }
     }

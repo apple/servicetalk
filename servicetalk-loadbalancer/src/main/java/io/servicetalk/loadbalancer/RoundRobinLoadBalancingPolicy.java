@@ -18,7 +18,14 @@ final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
         return "RoundRobin";
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
+
+        private Builder() {
+        }
         RoundRobinLoadBalancingPolicy build() {
             return new RoundRobinLoadBalancingPolicy();
         }

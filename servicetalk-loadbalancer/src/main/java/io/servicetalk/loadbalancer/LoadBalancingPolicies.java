@@ -3,11 +3,11 @@ package io.servicetalk.loadbalancer;
 final class LoadBalancingPolicies {
 
     public static RoundRobinLoadBalancingPolicy roundRobin() {
-        return new RoundRobinLoadBalancingPolicy.Builder().build();
+        return RoundRobinLoadBalancingPolicy.builder().build();
     }
 
     public static P2CLoadBalancingPolicy p2c() {
-        return new P2CLoadBalancingPolicy.Builder().build();
+        return P2CLoadBalancingPolicy.builder().build();
     }
 
 
