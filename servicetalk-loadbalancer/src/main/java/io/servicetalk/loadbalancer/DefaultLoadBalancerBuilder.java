@@ -1,115 +1,130 @@
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
-import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
+import java.util.Collection;
 
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_INTERVAL;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_JITTER;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
+    private static final int DEFAULT_LINEAR_SEARCH_SPACE = Integer.MAX_VALUE;
+    private static final LoadBalancingPolicy DEFAULT_LOAD_BALANCING_POLICY = LoadBalancingPolicies.roundRobin();
+
     private final String id;
+    private LoadBalancingPolicy loadBalancingPolicy = DEFAULT_LOAD_BALANCING_POLICY;
+    private int linearSearchSpace = DEFAULT_LINEAR_SEARCH_SPACE;
+
+    @Nullable
+    private Executor backgroundExecutor;
+    private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+    private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
+    private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+    private long healthCheckResubscribeLowerBound =
+            DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
+    private long healthCheckResubscribeUpperBound =
+            DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
         this.id = requireNonNull(id, "id");
     }
 
-    /**
-     * Set the {@code loadBalancingPolicy} to use with this load balancer.
-     * @param loadBalancingPolicy the policy to use
-     * @return {@code this}
-     */
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
+        if (linearSearchSpace <= 0) {
+            throw new IllegalArgumentException("Illegal linear search space: " + linearSearchSpace +
+                    ".Search space must be a positive number.");
+        }
+        this.linearSearchSpace = linearSearchSpace;
+        return this;
+    }
+
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy) {
-        throw new RuntimeException("Not implemented.");
+        this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
+        return this;
     }
 
-    /**
-     * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
-     * using health checks that run in the background. The health check tries to establish a new connection
-     * and if it succeeds, the host is returned to the load balancing pool. As long as the connection
-     * establishment fails, the host is not considered for opening new connections for processed requests.
-     * If an {@link Executor} is not provided using this method, a default shared instance is used
-     * for all {@link LoadBalancer LoadBalancers} created by this factory.
-     * <p>
-     * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable this mechanism and always
-     * consider all hosts for establishing new connections.
-     *
-     * @param backgroundExecutor {@link Executor} on which to schedule health checking.
-     * @return {@code this}.
-     * @see #healthCheckFailedConnectionsThreshold(int)
-     */
     public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
-        throw new RuntimeException("Not implemented.");
+        this.backgroundExecutor = requireNonNull(backgroundExecutor, "backgroundExecutor");
+        return this;
     }
 
-    // TODO: these healthCheck* methods should be moved into their own OutlierDetection configuration instance
-    //  and much like the LoadBalancingPolicy, we should be able to add `OutlierDetectionPolicy`s
-    /**
-     * Configure an interval for health checking a host that failed to open connections. If no interval is provided
-     * using this method, a default value will be used.
-     * <p>
-     * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
-     * and always consider all hosts for establishing new connections.
-     *
-     * @param interval interval at which a background health check will be scheduled.
-     * @param jitter the amount of jitter to apply to each retry {@code interval}.
-     * @return {@code this}.
-     * @see #healthCheckFailedConnectionsThreshold(int)
-     */
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
-        throw new RuntimeException("Not implemented.");
+        validateHealthCheckIntervals(interval, jitter);
+        this.healthCheckInterval = interval;
+        this.healthCheckJitter = jitter;
+        return this;
     }
 
-    /**
-     * Configure an interval for re-subscribing to the original events stream in case all existing hosts become
-     * unhealthy.
-     * <p>
-     * In situations when there is a latency between {@link ServiceDiscoverer} propagating the updated state and all
-     * known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribe to the
-     * events stream can help to exit from a dead state.
-     * <p>
-     * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
-     * and always consider all hosts for establishing new connections.
-     *
-     * @param interval interval at which re-subscribes will be scheduled.
-     * @param jitter the amount of jitter to apply to each re-subscribe {@code interval}.
-     * @return {@code this}.
-     * @see #healthCheckFailedConnectionsThreshold(int)
-     */
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter) {
-        throw new RuntimeException("Not implemented.");
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(
+            Duration interval, Duration jitter) {
+        validateHealthCheckIntervals(interval, jitter);
+        this.healthCheckResubscribeLowerBound = interval.minus(jitter).toNanos();
+        this.healthCheckResubscribeUpperBound = interval.plus(jitter).toNanos();
+        return this;
     }
 
-    /**
-     * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
-     * consecutively fails to open connections in the amount greater or equal to the specified value,
-     * the host will be marked as unhealthy and connection establishment will take place in the background
-     * repeatedly until a connection is established. During that time, the host will not take part in
-     * load balancing selection.
-     * <p>
-     * Use a negative value of the argument to disable health checking.
-     *
-     * @param threshold number of consecutive connection failures to consider a host unhealthy and eligible for
-     * background health checking. Use negative value to disable the health checking mechanism.
-     * @return {@code this}.
-     * @see #backgroundExecutor(Executor)
-     */
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold) {
-        throw new RuntimeException("Not implemented.");
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
+            int threshold) {
+        if (threshold == 0) {
+            throw new IllegalArgumentException("Health check failed connections threshold should not be 0");
+        }
+        this.healthCheckFailedConnectionsThreshold = threshold;
+        return this;
     }
 
-    /**
-     * Builds the {@link LoadBalancerFactory} configured by this builder.
-     *
-     * @return a new instance of {@link LoadBalancerFactory} with settings from this builder.
-     */
     public LoadBalancerFactory<ResolvedAddress, C> build() {
-        throw new RuntimeException("Not implemented.");
+        HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
+                this.backgroundExecutor == null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : this.backgroundExecutor,
+                healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
+                healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
+        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig);
+    }
+
+    private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
+            implements LoadBalancerFactory<ResolvedAddress, C> {
+
+        private final String id;
+        private final LoadBalancingPolicy loadBalancingPolicy;
+        private final int linearSearchSpace;
+        private final HealthCheckConfig healthCheckConfig;
+
+        // TODO: this is awkward because LoadBalancingPolicy isn't immutable. We may need them to be immutable and build
+        //  a builder interface around them.
+        DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy loadBalancingPolicy,
+        final int linearSearchSpace, final HealthCheckConfig healthCheckConfig) {
+            this.id = requireNonNull(id, "id");
+            this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
+            this.linearSearchSpace = linearSearchSpace;
+            this.healthCheckConfig = requireNonNull(healthCheckConfig, "healthCheckConfig");
+        }
+
+        @Override
+        public <T extends C> LoadBalancer<T> newLoadBalancer(String targetResource,
+             Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+             ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+            return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                    loadBalancingPolicy.buildSelector(targetResource), connectionFactory, linearSearchSpace,
+                    healthCheckConfig);
+        }
     }
 }

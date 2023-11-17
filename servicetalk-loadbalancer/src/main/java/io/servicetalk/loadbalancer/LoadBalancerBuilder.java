@@ -33,6 +33,13 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
      */
     LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor);
 
+    /**
+     * TODO: javadoc.
+     * @param linearSearchSpace
+     * @return
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace);
+
     // TODO: these healthCheck* methods should be moved into their own OutlierDetection configuration instance
     //  and much like the LoadBalancingPolicy, we should be able to add `OutlierDetectionPolicy`s
     /**

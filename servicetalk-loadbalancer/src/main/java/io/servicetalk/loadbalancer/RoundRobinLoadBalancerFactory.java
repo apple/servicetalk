@@ -32,9 +32,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
-import static io.servicetalk.utils.internal.DurationUtils.isPositive;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_INTERVAL;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_JITTER;
+import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -52,11 +54,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @Deprecated // FIXME: 0.43 - make package private
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
-
-    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = ofSeconds(5);
-    private static final Duration DEFAULT_HEALTH_CHECK_JITTER = ofSeconds(3);
-    static final Duration DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL = ofSeconds(10);
-    static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
     private final String id;
     private final int linearSearchSpace;
@@ -80,9 +77,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return useNewRoundRobin ?
-                new NewRoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                        linearSearchSpace, healthCheckConfig)
+        return useNewRoundRobin ? buildNewRoundRobin(targetResource, eventPublisher, connectionFactory)
         : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
@@ -92,10 +87,18 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return useNewRoundRobin ? new NewRoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig)
+        return useNewRoundRobin ? buildNewRoundRobin(targetResource, eventPublisher, connectionFactory)
                                 : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
+    }
+
+    private <T extends C> LoadBalancer<T> buildNewRoundRobin(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory
+    ) {
+        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                new RoundRobinSelector<>(targetResource), connectionFactory, linearSearchSpace, healthCheckConfig);
     }
 
     @Override
@@ -126,7 +129,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         private long healthCheckResubscribeLowerBound =
                 DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
         private long healthCheckResubscribeUpperBound =
-                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();;
+                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
 
         /**
          * Creates a new instance with default settings.
@@ -190,7 +193,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval,
                                                                                              Duration jitter) {
-            validate(interval, jitter);
+            validateHealthCheckIntervals(interval, jitter);
             this.healthCheckInterval = interval;
             this.healthCheckJitter = jitter;
             return this;
@@ -199,25 +202,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckResubscribeInterval(
                 Duration interval, Duration jitter) {
-            validate(interval, jitter);
+            validateHealthCheckIntervals(interval, jitter);
             this.healthCheckResubscribeLowerBound = interval.minus(jitter).toNanos();
             this.healthCheckResubscribeUpperBound = interval.plus(jitter).toNanos();
             return this;
-        }
-
-        private static void validate(Duration interval, Duration jitter) {
-            ensurePositive(interval, "interval");
-            ensureNonNegative(jitter, "jitter");
-            final Duration lowerBound = interval.minus(jitter);
-            if (!isPositive(lowerBound)) {
-                throw new IllegalArgumentException("interval (" + interval + ") minus jitter (" + jitter +
-                        ") must be greater than 0, current=" + lowerBound);
-            }
-            final Duration upperBound = interval.plus(jitter);
-            if (!isPositive(upperBound)) {
-                throw new IllegalArgumentException("interval (" + interval + ") plus jitter (" + jitter +
-                        ") must not overflow, current=" + upperBound);
-            }
         }
 
         @Override
