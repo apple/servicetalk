@@ -15,7 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-class LingeringNewRoundRobinLoadBalancerTest extends LingeringRoundRobinLoadBalancerTest {
+class LingeringNewRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
