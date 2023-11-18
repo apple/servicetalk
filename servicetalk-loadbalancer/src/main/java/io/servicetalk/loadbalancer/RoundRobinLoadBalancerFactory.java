@@ -80,10 +80,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return useNewRoundRobin ?
-                new DefaultLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                        linearSearchSpace, healthCheckConfig)
-        : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+        return useNewRoundRobin ? useNewRoundRobinLoadBalancer(targetResource, eventPublisher, connectionFactory)
+                                : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -92,10 +90,17 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return useNewRoundRobin ? new DefaultLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig)
+        return useNewRoundRobin ? useNewRoundRobinLoadBalancer(targetResource, eventPublisher, connectionFactory)
                                 : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
+    }
+
+    private <T extends C> LoadBalancer<T> useNewRoundRobinLoadBalancer(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher, new RoundRobinSelector<>(targetResource),
+                connectionFactory, linearSearchSpace, healthCheckConfig);
     }
 
     @Override

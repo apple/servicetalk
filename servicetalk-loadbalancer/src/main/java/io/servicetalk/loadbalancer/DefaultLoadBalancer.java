@@ -125,12 +125,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
-        this.hostSelector = new RoundRobinSelector<>(targetResource);
+        this.hostSelector = requireNonNull(hostSelector, "hostSelector");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -380,7 +381,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private List<Host<ResolvedAddress, C>> listWithHostRemoved(
                 List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
             if (oldHostsTyped.isEmpty()) {
-                // this can happen when an expired host is removed during closing of the NewRoundRobinLoadBalancer,
+                // this can happen when an expired host is removed during closing of the DefaultLoadBalancer,
                 // but all of its connections have already been closed
                 return oldHostsTyped;
             }
@@ -508,7 +509,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     private String makeDescription(String id, String targetResource) {
-        return "NewRoundRobinLoadBalancer{" +
+        return getClass().getSimpleName() + "{" +
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
