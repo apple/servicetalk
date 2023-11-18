@@ -77,18 +77,18 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
+final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements TestableLoadBalancer<ResolvedAddress, C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NewRoundRobinLoadBalancer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancer.class);
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<NewRoundRobinLoadBalancer, List> usedHostsUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, List.class, "usedHosts");
+    private static final AtomicReferenceFieldUpdater<DefaultLoadBalancer, List> usedHostsUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(DefaultLoadBalancer.class, List.class, "usedHosts");
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicLongFieldUpdater<NewRoundRobinLoadBalancer> nextResubscribeTimeUpdater =
-            AtomicLongFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "nextResubscribeTime");
+    private static final AtomicLongFieldUpdater<DefaultLoadBalancer> nextResubscribeTimeUpdater =
+            AtomicLongFieldUpdater.newUpdater(DefaultLoadBalancer.class, "nextResubscribeTime");
 
     private static final long RESUBSCRIBING = -1L;
 
@@ -111,7 +111,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     /**
      * Creates a new instance.
      *
-     * @param id a (unique) ID to identify the created {@link NewRoundRobinLoadBalancer}.
+     * @param id a (unique) ID to identify the created {@link DefaultLoadBalancer}.
      * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
@@ -121,7 +121,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
      * continues being eligible for connecting on the request path).
      * @see RoundRobinLoadBalancerFactory
      */
-    NewRoundRobinLoadBalancer(
+    DefaultLoadBalancer(
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
@@ -179,13 +179,14 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
-            final HealthCheckConfig config, final NewRoundRobinLoadBalancer<R, C> lb) {
-        final long lower = config.healthCheckResubscribeLowerBound;
-        final long upper = config.healthCheckResubscribeUpperBound;
-        final long currentTime = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
+            final HealthCheckConfig config, final DefaultLoadBalancer<R, C> lb) {
+        final long lowerNanos = config.healthCheckResubscribeLowerBound;
+        final long upperNanos = config.healthCheckResubscribeUpperBound;
+        final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
+        final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
+                ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
-                lb, currentTime, result);
+                lb, currentTimeNanos, result);
         return result;
     }
 
@@ -249,7 +250,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
             if (events == null || events.isEmpty()) {
                 LOGGER.debug("{}: unexpectedly received null or empty list instead of events.",
-                        NewRoundRobinLoadBalancer.this);
+                        DefaultLoadBalancer.this);
                 return;
             }
 
@@ -260,7 +261,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 //  that never gets used but is orphaned. It's fine so long as there is nothing to close but that
                 //  guarantee may not always hold in the future.
                 @SuppressWarnings("unchecked")
-                List<Host<ResolvedAddress, C>> usedHosts = usedHostsUpdater.get(NewRoundRobinLoadBalancer.this);
+                List<Host<ResolvedAddress, C>> usedHosts = usedHostsUpdater.get(DefaultLoadBalancer.this);
                 if (isClosedList(usedHosts)) {
                     // We don't update if the load balancer is closed.
                     return;
@@ -309,7 +310,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                     } else {
                         LOGGER.warn("{}: Unsupported Status in event:" +
                                         " {} (mapped to {}). Leaving usedHosts unchanged: {}",
-                                NewRoundRobinLoadBalancer.this, event, event.status(), nextHosts);
+                                DefaultLoadBalancer.this, event, event.status(), nextHosts);
                         nextHosts.add(host);
                     }
                 }
@@ -323,13 +324,13 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 }
                 // We've now built the new list so now we need to CAS it before we can move on. This should only be
                 // racing with closing hosts and closing the whole LB so it shouldn't be common to lose the race.
-                if (usedHostsUpdater.compareAndSet(NewRoundRobinLoadBalancer.this, usedHosts, nextHosts)) {
+                if (usedHostsUpdater.compareAndSet(DefaultLoadBalancer.this, usedHosts, nextHosts)) {
                     break;
                 }
             }
 
             LOGGER.debug("{}: now using addresses (size={}): {}.",
-                    NewRoundRobinLoadBalancer.this, nextHosts.size(), nextHosts);
+                    DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
             if (nextHosts.isEmpty()) {
                 eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
             } else if (sendReadyEvent) {
@@ -363,10 +364,10 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new DefaultHost<>(NewRoundRobinLoadBalancer.this.toString(), addr,
+            Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
-                    usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
+                    usedHostsUpdater.updateAndGet(DefaultLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
                                 List<Host<ResolvedAddress, C>> previousHostsTyped =
                                         (List<Host<ResolvedAddress, C>>) previousHosts;
@@ -409,7 +410,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             }
             LOGGER.error(
                 "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
-                    NewRoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+                    DefaultLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
         }
 
         @Override
@@ -420,7 +421,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 eventStreamProcessor.onComplete();
             }
             LOGGER.error("{}: service discoverer completed. Last seen addresses (size={}): {}.",
-                    NewRoundRobinLoadBalancer.this, hosts.size(), hosts);
+                    DefaultLoadBalancer.this, hosts.size(), hosts);
         }
     }
 
