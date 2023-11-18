@@ -45,38 +45,51 @@ public abstract class AbstractCloseableIterable<T> implements CloseableIterable<
     public CloseableIterator<T> iterator() {
         final Iterator<T> iterator = original.iterator();
         return new CloseableIterator<T>() {
-            private boolean closed;
+            private boolean closed = false;
 
             @Override
             public void close() throws Exception {
-                closeIterator(iterator);
+                if (!closed) {
+                    closed = true;
+                    closeIterator(iterator);
+                }
             }
 
             @Override
             public boolean hasNext() {
-                if (!iterator.hasNext()) {
-                    if (!closed) {
-                        closed = true;
-                        try {
-                            close();
-                        } catch (Exception e) {
-                            throwException(e);
-                        }
+                boolean hasNext = iterator.hasNext();
+                if (!hasNext && !closed) {
+                    try {
+                        close();
+                    } catch (Exception e) {
+                        // Consider logging the exception instead of throwing a runtime exception.
+                        // Logger.error("Failed to close iterator", e);
+                        throw new RuntimeException(e);
                     }
-                    return false;
                 }
-                return true;
+                return hasNext;
             }
 
             @Override
             public T next() {
-                if (hasNext()) {
+                if (!closed && iterator.hasNext()) {
                     return iterator.next();
+                } else {
+                    // Attempt to close the iterator if we're at the end and it's not already closed.
+                    if (!closed) {
+                        try {
+                            close();
+                        } catch (Exception e) {
+                            // Consider logging this exception as well.
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    throw new NoSuchElementException();
                 }
-                throw new NoSuchElementException();
             }
         };
     }
+
 
     /**
      * Closes an {@link Iterator} as returned by {@link Iterable#iterator()} of the {@link Iterable} that is wrapped by
