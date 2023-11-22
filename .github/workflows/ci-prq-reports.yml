@@ -27,7 +27,7 @@ jobs:
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
           # TODO https://github.com/jwgmeligmeyling/checkstyle-github-action/issues/6
-          commit: ${{ github.event.workflow_run.head_commit.id }}
+
   pmd:
     runs-on: ubuntu-latest
     strategy:
@@ -50,7 +50,6 @@ jobs:
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
           # TODO: https://github.com/jwgmeligmeyling/pmd-github-action/issues/8
-          commit: ${{ github.event.workflow_run.head_commit.id }}
   spotbugs:
     runs-on: ubuntu-latest
     strategy:
@@ -73,4 +72,3 @@ jobs:
           path: '**/build/reports/spotbugs/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
           # TODO: https://github.com/jwgmeligmeyling/spotbugs-github-action/issues/8
-          commit: ${{ github.event.workflow_run.head_commit.id }}
