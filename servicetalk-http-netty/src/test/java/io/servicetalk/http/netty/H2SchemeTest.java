@@ -53,11 +53,11 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
-import static io.servicetalk.http.netty.StreamObserverTest.safeSync;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeSync;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,9 +78,9 @@ class H2SchemeTest {
     @AfterEach
     void tearDown() throws Exception {
         if (serverAcceptorChannel != null) {
-            safeSync(() -> serverAcceptorChannel.close().sync());
+            safeSync(serverAcceptorChannel.close());
         }
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
+        safeSync(serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS));
     }
 
     private void setUp(Scenario scenario) throws Exception {

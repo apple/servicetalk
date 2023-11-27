@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -51,8 +50,9 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONC
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
-import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeSync;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -119,21 +119,9 @@ class StreamObserverTest {
 
     @AfterEach
     void teardown() throws Exception {
-        safeSync(() -> serverAcceptorChannel.close().sync());
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
+        safeSync(serverAcceptorChannel.close());
+        safeSync(serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS));
         safeClose(client);
-    }
-
-    @SuppressWarnings("PMD.AvoidPrintStackTrace")
-    static void safeSync(Callable<Object> callable) throws Exception {
-        try {
-            callable.call();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Disabled("https://github.com/apple/servicetalk/issues/1264")

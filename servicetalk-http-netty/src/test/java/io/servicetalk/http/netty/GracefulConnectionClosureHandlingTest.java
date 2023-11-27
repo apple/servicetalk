@@ -94,7 +94,6 @@ import static io.servicetalk.http.netty.HttpProtocol.applyFrameLogger;
 import static io.servicetalk.http.netty.HttpProtocol.values;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -102,6 +101,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddr
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
