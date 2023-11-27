@@ -26,7 +26,7 @@ final class LoadBalancers {
     private static final List<LoadBalancerBuilderProvider> PROVIDERS;
 
     static {
-        // TODO: we can service load the providers until we make the interface public.
+        // TODO: we can't service load the providers until we make the interface public.
         PROVIDERS = new ArrayList<>();
     }
 

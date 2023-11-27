@@ -27,11 +27,11 @@ import java.time.Duration;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_INTERVAL;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_JITTER;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_INTERVAL;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
