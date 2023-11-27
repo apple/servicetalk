@@ -106,6 +106,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
+    private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
     /**
@@ -128,7 +129,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
-            @Nullable final HealthCheckConfig healthCheckConfig) {
+            @Nullable final HealthCheckConfig healthCheckConfig,
+            final LoadBalancerObserver loadBalancerObserver) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -138,6 +140,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
+        this.loadBalancerObserver = loadBalancerObserver;
         this.asyncCloseable = toAsyncCloseable(graceful -> {
             discoveryCancellable.cancel();
             eventStreamProcessor.onComplete();
