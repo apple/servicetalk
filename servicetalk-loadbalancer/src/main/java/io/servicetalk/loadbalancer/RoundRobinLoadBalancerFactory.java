@@ -32,11 +32,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_INTERVAL;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_JITTER;
-import static io.servicetalk.loadbalancer.L4HealthCheck.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.L4HealthCheck.validateHealthCheckIntervals;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_INTERVAL;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -76,8 +76,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return useNewRoundRobin ? buildNewRoundRobin(targetResource, eventPublisher, connectionFactory)
-        : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+        return useNewRoundRobin ? useNewRoundRobinLoadBalancer(targetResource, eventPublisher, connectionFactory)
+                                : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -86,18 +86,17 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return useNewRoundRobin ? buildNewRoundRobin(targetResource, eventPublisher, connectionFactory)
+        return useNewRoundRobin ? useNewRoundRobinLoadBalancer(targetResource, eventPublisher, connectionFactory)
                                 : new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
-    private <T extends C> LoadBalancer<T> buildNewRoundRobin(
+    private <T extends C> LoadBalancer<T> useNewRoundRobinLoadBalancer(
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            final ConnectionFactory<ResolvedAddress, T> connectionFactory
-    ) {
-        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
-                new RoundRobinSelector<>(targetResource), connectionFactory, linearSearchSpace, healthCheckConfig);
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher, new RoundRobinSelector<>(targetResource),
+                connectionFactory, linearSearchSpace, healthCheckConfig);
     }
 
     @Override

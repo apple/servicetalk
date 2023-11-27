@@ -218,8 +218,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
             final HealthCheckConfig config, final RoundRobinLoadBalancer<R, C> lb) {
-        final long lower = config.resubscribeLowerBoundNanos;
-        final long upper = config.resubscribeUpperBoundNanos;
+        final long lower = config.healthCheckResubscribeLowerBound;
+        final long upper = config.healthCheckResubscribeUpperBound;
         final long currentTime = config.executor.currentTime(NANOSECONDS);
         final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",

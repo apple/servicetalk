@@ -130,8 +130,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
+        this.hostSelector = requireNonNull(hostSelector, "hostSelector");
         this.eventPublisher = requireNonNull(eventPublisher);
-        this.hostSelector = requireNonNull(hostSelector);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
@@ -180,11 +180,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
             final HealthCheckConfig config, final DefaultLoadBalancer<R, C> lb) {
-        final long lowerNanos = config.resubscribeLowerBoundNanos;
-        final long upperNanos = config.resubscribeUpperBoundNanos;
+        final long lowerNanos = config.healthCheckResubscribeLowerBound;
+        final long upperNanos = config.healthCheckResubscribeUpperBound;
         final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTimeNanos + (lowerNanos == upperNanos ?
-                lowerNanos : ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
+        final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
+                ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTimeNanos, result);
         return result;
@@ -380,7 +380,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private List<Host<ResolvedAddress, C>> listWithHostRemoved(
                 List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
             if (oldHostsTyped.isEmpty()) {
-                // this can happen when an expired host is removed during closing of the NewRoundRobinLoadBalancer,
+                // this can happen when an expired host is removed during closing of the DefaultLoadBalancer,
                 // but all of its connections have already been closed
                 return oldHostsTyped;
             }
@@ -508,7 +508,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     private String makeDescription(String id, String targetResource) {
-        return "NewRoundRobinLoadBalancer{" +
+        return getClass().getSimpleName() + "{" +
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
