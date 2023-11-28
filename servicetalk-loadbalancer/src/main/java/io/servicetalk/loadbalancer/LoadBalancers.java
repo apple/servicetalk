@@ -20,7 +20,9 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: docs
+/**
+ * A factory to create {@link DefaultLoadBalancer DefaultLoadBalancers}.
+ */
 final class LoadBalancers {
 
     private static final List<LoadBalancerBuilderProvider> PROVIDERS;

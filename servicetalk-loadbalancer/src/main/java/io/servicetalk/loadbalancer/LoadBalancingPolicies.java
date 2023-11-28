@@ -15,16 +15,27 @@
  */
 package io.servicetalk.loadbalancer;
 
+/**
+ * A factory to create default {@link LoadBalancingPolicy LoadBalancingPolicies}
+ */
 final class LoadBalancingPolicies {
 
     private LoadBalancingPolicies() {
         // no instances
     }
 
+    /**
+     * Create a default configured {@link RoundRobinLoadBalancingPolicy}.
+     * @return a default configured {@link RoundRobinLoadBalancingPolicy}.
+     */
     public static RoundRobinLoadBalancingPolicy roundRobin() {
         return RoundRobinLoadBalancingPolicy.builder().build();
     }
 
+    /**
+     * Create a default configured {@link P2CLoadBalancingPolicy}.
+     * @return a default configured {@link P2CLoadBalancingPolicy}.
+     */
     public static P2CLoadBalancingPolicy p2c() {
         return P2CLoadBalancingPolicy.builder().build();
     }
