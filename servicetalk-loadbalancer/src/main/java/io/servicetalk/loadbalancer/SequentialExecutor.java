@@ -15,15 +15,13 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.concurrent.PublisherSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,8 +34,7 @@ import static java.util.Objects.requireNonNull;
 final class SequentialExecutor implements Executor {
 
     private final Logger logger;
-    private final PublisherSource.Processor<Runnable, Runnable> sequentialExecutionQueue =
-            newPublisherProcessorDropHeadOnOverflow(Integer.MAX_VALUE);
+    private final AtomicReference<Cell> tail = new AtomicReference<>();
 
     SequentialExecutor(Class<?> clazz) {
         this(LoggerFactory.getLogger(clazz));
@@ -45,12 +42,45 @@ final class SequentialExecutor implements Executor {
 
     SequentialExecutor(final Logger logger) {
         this.logger = requireNonNull(logger, "logger");
-        fromSource(sequentialExecutionQueue).forEach(this::safeRun);
     }
 
     @Override
     public void execute(Runnable command) {
-        sequentialExecutionQueue.onNext(command);
+        final Cell next = new Cell(command);
+        Cell t = tail.getAndSet(next);
+        if (t != null) {
+            // Execution already started. Link the old tail to the new tail.
+            t.next = next;
+        } else {
+            // We are the first element in the queue so it's our responsibility to drain.
+            // Note that the getAndSet establishes the happens before with relation to the previous draining
+            // threads since we must successfully perform a CAS operation to terminate draining.
+            drain(next);
+        }
+    }
+
+    private void drain(Cell next) {
+        for (;;) {
+            assert next != null;
+            safeRun(next.runnable);
+
+            // Attempt to get the next element.
+            Cell n = next.next;
+            if (n != null) {
+                next = n;
+                continue;
+            }
+            // There doesn't seem to be another element linked. See if it was the tail and if so terminate draining.
+            // Note that a successful CAS established a happens-before relationship with future draining threads.
+            if (tail.compareAndSet(next, null)) {
+                return;
+            }
+            // next isn't the tail but the link hasn't resolved: we must poll until it does.
+            while ((n = next.next) == null) {
+                // Still not resolved: try again.
+            }
+            next = n;
+        }
     }
 
     private void safeRun(Runnable runnable) {
@@ -58,6 +88,17 @@ final class SequentialExecutor implements Executor {
             runnable.run();
         } catch (Exception ex) {
             logger.error("Exception caught in sequential execution", ex);
+        }
+    }
+
+    private static final class Cell {
+
+        final Runnable runnable;
+        @Nullable
+        volatile Cell next;
+
+        Cell(Runnable runnable) {
+            this.runnable = runnable;
         }
     }
 }
