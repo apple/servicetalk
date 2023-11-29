@@ -20,6 +20,14 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import java.util.Random;
 import javax.annotation.Nullable;
 
+/**
+ * A random selection "power of two choices" load balancing policy.
+ *
+ * This load balancing policy is characterized by the algorithm:
+ * - select two hosts randomly: hosta, and hostb.
+ * - if neither host is healthy, repeat selection process until max-effort.
+ * - pick the 'best' host of the two options.
+ */
 final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
 
     private final int maxEffort;
@@ -42,10 +50,17 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
         return "P2C";
     }
 
+    /**
+     * Create a new {@link P2CLoadBalancingPolicy} builder.
+     * @return a new {@link P2CLoadBalancingPolicy} builder.
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
+     */
     public static final class Builder {
 
         private static final int DEFAULT_MAX_EFFORT = 5;
@@ -57,6 +72,12 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
         private Builder() {
         }
 
+        /**
+         * Set the maximum number of attempts that P2C will attempt to select a pair with at least one
+         * healthy host.
+         * @param maxEffort the maximum number of attempts.
+         * @return this {@link Builder}.
+         */
         public Builder maxEffort(final int maxEffort) {
             if (maxEffort <= 0) {
                 throw new IllegalArgumentException("Illegal maxEffort: " + maxEffort +
@@ -72,6 +93,10 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
             return this;
         }
 
+        /**
+         * Construct the immutable {@link P2CLoadBalancingPolicy}.
+         * @return the concrete {@link P2CLoadBalancingPolicy}.
+         */
         P2CLoadBalancingPolicy build() {
             return new P2CLoadBalancingPolicy(maxEffort, random);
         }

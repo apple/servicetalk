@@ -17,6 +17,13 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
+/**
+ * A round-robin load balancing policy.
+ *
+ * This load balancing algorithm is the well known policy of selecting hosts sequentially
+ * from an ordered set. If a host is considered unhealthy it is skipped the next host
+ * is selected until a healthy host is found or the entire host set has been exhausted.
+ */
 final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
 
     private RoundRobinLoadBalancingPolicy() {
@@ -33,15 +40,26 @@ final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
         return "RoundRobin";
     }
 
+    /**
+     * Create a new {@link RoundRobinLoadBalancingPolicy} Builder.
+     * @return a new {@link RoundRobinLoadBalancingPolicy} Builder.
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
+     */
     public static final class Builder {
 
         private Builder() {
         }
 
+        /**
+         * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
+         * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
+         */
         public RoundRobinLoadBalancingPolicy build() {
             return new RoundRobinLoadBalancingPolicy();
         }
