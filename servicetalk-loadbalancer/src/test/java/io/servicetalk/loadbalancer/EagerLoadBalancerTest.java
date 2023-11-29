@@ -99,18 +99,6 @@ abstract class EagerLoadBalancerTest extends LoadBalancerTest {
         verify(host2Conn1, never()).closeAsyncGracefully();
     }
 
-    private TestLoadBalancedConnection newForHost(String address) throws Exception {
-        // This is necessary because p2c doesn't select hosts deterministically.
-        for(;;) {
-            TestLoadBalancedConnection cxn = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
-            if (cxn.address().equals(address)) {
-                return cxn;
-            }
-            // need to close it and try again.
-            cxn.closeAsync().subscribe();
-        }
-    }
-
     private void validateConnectionClosedGracefully(final TestLoadBalancedConnection connection) throws Exception {
         connection.onClose().toFuture().get();
         verify(connection).closeAsyncGracefully();

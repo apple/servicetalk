@@ -165,8 +165,8 @@ abstract class LoadBalancerTest {
     }
 
     protected abstract boolean eagerConnectionShutdown();
-    protected abstract boolean isRoundRobin();
 
+    protected abstract boolean isRoundRobin();
 
     protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
 
@@ -456,10 +456,8 @@ abstract class LoadBalancerTest {
 
     @Test
     void unhealthyHostTakenOutOfPoolForSelection() throws Exception {
-        // TODO: For p2c, this doesn't always hit the threshold for all connections.
-        assumeTrue(isRoundRobin());
-
         serviceDiscoveryPublisher.onComplete();
+
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
@@ -469,17 +467,20 @@ abstract class LoadBalancerTest {
         lb = defaultLb(connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        sendServiceDiscoveryEvents(upEvent("address-2"));
 
-
-        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
+        // We need to catch `DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD` exceptions before the bad host
+        // will be taken out of rotation.
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
             try {
-                final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
-                assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+                lb.selectConnection(any(), null).toFuture().get();
+                fail("Shouldn't have gotten a live connection.");
             } catch (Exception e) {
                 assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
             }
         }
+
+        // Now add another healthy host which should be the host to get selected.
+        sendServiceDiscoveryEvents(upEvent("address-2"));
 
         for (int i = 0; i < 10; ++i) {
             final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
@@ -712,10 +713,8 @@ abstract class LoadBalancerTest {
     @ParameterizedTest(name = "{displayName} [{index}]: sdReturnsDelta={0}")
     @ValueSource(booleans = {false, true})
     void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
-        // TODO: this is flaky for p2c because we don't get deterministic host selection
-        assumeTrue(isRoundRobin());
-
         serviceDiscoveryPublisher.onComplete();
+
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
@@ -766,9 +765,14 @@ abstract class LoadBalancerTest {
         expected.put("address-4", is("address-4"));
         String selected1 = lb.selectConnection(any(), null).toFuture().get().address();
         assertThat(selected1, is(anyOf(expected.values())));
-        expected.remove(selected1);
-        assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-        assertConnectionCount(lb.usedAddresses(), connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+
+        if (isRoundRobin()) {
+            // These asserts will become flaky for p2c because we don't have deterministic selection.
+            expected.remove(selected1);
+            assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
+            assertConnectionCount(lb.usedAddresses(),
+                    connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+        }
     }
 
     @Test
@@ -809,9 +813,6 @@ abstract class LoadBalancerTest {
 
     @Test
     void handleAllDiscoveryEvents() throws Exception {
-        // TODO: this is flaky for p2c because we may not select both hosts
-        assumeTrue(isRoundRobin());
-
         serviceDiscoveryPublisher.onComplete();
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
@@ -826,21 +827,26 @@ abstract class LoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
+        // addresses: [address-1]
         sendServiceDiscoveryEvents(downEvent("address-1", UNAVAILABLE));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
+        // addresses: []
         sendServiceDiscoveryEvents(upEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
+        // addresses: [address-2]
         sendServiceDiscoveryEvents(downEvent("address-3", UNAVAILABLE));
         assertAddresses(lb.usedAddresses(), "address-2");
 
+        // addresses: [address-2]
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
         // Make sure both hosts have connections
-        lb.selectConnection(any(), null).toFuture().get();
-        lb.selectConnection(any(), null).toFuture().get();
+        // addresses: [address-1, address-2]
+        newForHost("address-1");
+        newForHost("address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-1", EXPIRED));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
@@ -950,6 +956,18 @@ abstract class LoadBalancerTest {
         final Matcher<Iterable<? extends T>> iterableMatcher =
                 address.length == 0 ? emptyIterable() : contains(args);
         assertThat(addresses, iterableMatcher);
+    }
+
+    TestLoadBalancedConnection newForHost(String address) throws Exception {
+        // This is necessary because p2c doesn't select hosts deterministically.
+        for (;;) {
+            TestLoadBalancedConnection cxn = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+            if (cxn.address().equals(address)) {
+                return cxn;
+            }
+            // need to close it and try again.
+            cxn.closeAsync().subscribe();
+        }
     }
 
     private LegacyTestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {

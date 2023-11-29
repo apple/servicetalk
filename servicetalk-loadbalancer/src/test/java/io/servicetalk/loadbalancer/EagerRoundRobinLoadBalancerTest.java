@@ -15,7 +15,6 @@
  */
 package io.servicetalk.loadbalancer;
 
-
 class EagerRoundRobinLoadBalancerTest extends EagerLoadBalancerTest {
 
     @Override
