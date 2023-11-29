@@ -91,12 +91,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private volatile boolean isClosed;
 
     private final String targetResource;
+    private final SequentialExecutor sequentialExecutor = new SequentialExecutor(DefaultLoadBalancer.class);
     private final String lbDescription;
     private final HostSelector<ResolvedAddress, C> hostSelector;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
-    private final Processor<Runnable, Runnable> sequentialExecutionQueue =
-            newPublisherProcessorDropHeadOnOverflow(Integer.MAX_VALUE);
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
@@ -138,10 +137,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-
-        // Start running the events forever.
-        SourceAdapters.fromSource(sequentialExecutionQueue).forEach(DefaultLoadBalancer::safeRun);
-
         subscribeToEvents(false);
     }
 
@@ -163,7 +158,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // so we don't need to do any Completable.defer business.
     private Completable doClose(final boolean graceful) {
         CompletableSource.Processor processor = Processors.newCompletableProcessor();
-        executeSequentially(() -> {
+        sequentialExecutor.execute(() -> {
             if (!isClosed) {
                 discoveryCancellable.cancel();
                 eventStreamProcessor.onComplete();
@@ -178,10 +173,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
                     // We only want to empty the host list on error if we're closing non-gracefully.
                     compositeCloseable.closeAsync().beforeOnError(t ->
-                            executeSequentially(() -> usedHosts = emptyList()))
+                            sequentialExecutor.execute(() -> usedHosts = emptyList()))
                 )
                 // we want to always empty out the host list if we complete successfully
-                .beforeOnComplete(() -> executeSequentially(() -> usedHosts = emptyList())))
+                .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
                     .subscribe(processor);
         });
         return SourceAdapters.fromSource(processor);
@@ -262,7 +257,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         DefaultLoadBalancer.this);
                 return;
             }
-            executeSequentially(() -> sequentialOnNext(events));
+            sequentialExecutor.execute(() -> sequentialOnNext(events));
         }
 
         private void sequentialOnNext(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
@@ -366,7 +361,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
-                    executeSequentially(() -> {
+                    sequentialExecutor.execute(() -> {
                         final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
                         if (currentHosts.isEmpty()) {
                             // Can't remove an entry from an empty list.
@@ -509,22 +504,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
     }
 
-    private void executeSequentially(Runnable runnable) {
-        sequentialExecutionQueue.onNext(runnable);
-    }
-
     private String makeDescription(String id, String targetResource) {
         return getClass().getSimpleName() + "{" +
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
-    }
-
-    private static void safeRun(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (Exception ex) {
-            LOGGER.error("Exception caught in sequential execution", ex);
-        }
     }
 }
