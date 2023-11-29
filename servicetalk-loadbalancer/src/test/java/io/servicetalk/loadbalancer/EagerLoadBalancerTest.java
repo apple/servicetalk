@@ -84,10 +84,10 @@ abstract class EagerLoadBalancerTest extends LoadBalancerTest {
         TestLoadBalancedConnection host1Conn1 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        TestLoadBalancedConnection host2Conn1 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+        TestLoadBalancedConnection host2Conn1 = newForHost("address-2");
 
         // create another for address-1
-        TestLoadBalancedConnection host1Conn2 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+        TestLoadBalancedConnection host1Conn2 = newForHost("address-1");
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         validateConnectionClosedGracefully(host1Conn1);
@@ -97,6 +97,18 @@ abstract class EagerLoadBalancerTest extends LoadBalancerTest {
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-2", 1));
         verify(host2Conn1, never()).closeAsync();
         verify(host2Conn1, never()).closeAsyncGracefully();
+    }
+
+    private TestLoadBalancedConnection newForHost(String address) throws Exception {
+        // This is necessary because p2c doesn't select hosts deterministically.
+        for(;;) {
+            TestLoadBalancedConnection cxn = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+            if (cxn.address().equals(address)) {
+                return cxn;
+            }
+            // need to close it and try again.
+            cxn.closeAsync().subscribe();
+        }
     }
 
     private void validateConnectionClosedGracefully(final TestLoadBalancedConnection connection) throws Exception {

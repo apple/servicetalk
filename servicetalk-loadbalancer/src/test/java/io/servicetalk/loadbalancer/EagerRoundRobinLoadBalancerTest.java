@@ -15,7 +15,14 @@
  */
 package io.servicetalk.loadbalancer;
 
+
 class EagerRoundRobinLoadBalancerTest extends EagerLoadBalancerTest {
+
+    @Override
+    protected boolean isRoundRobin() {
+        return true;
+    }
+
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return new RoundRobinLoadBalancerBuilderAdapter(this.getClass());

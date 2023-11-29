@@ -16,8 +16,14 @@
 package io.servicetalk.loadbalancer;
 
 public class LingeringP2CLoadBalancerTest extends LingeringLoadBalancerTest {
+
+    @Override
+    protected boolean isRoundRobin() {
+        return false;
+    }
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.builder(getClass().getSimpleName());
+        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
+                .loadBalancingPolicy(LoadBalancingPolicies.p2c());
     }
 }

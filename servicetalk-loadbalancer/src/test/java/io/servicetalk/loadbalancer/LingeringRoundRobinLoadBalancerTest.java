@@ -16,6 +16,12 @@
 package io.servicetalk.loadbalancer;
 
 class LingeringRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
+
+    @Override
+    protected boolean isRoundRobin() {
+        return true;
+    }
+
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return new RoundRobinLoadBalancerBuilderAdapter(this.getClass());

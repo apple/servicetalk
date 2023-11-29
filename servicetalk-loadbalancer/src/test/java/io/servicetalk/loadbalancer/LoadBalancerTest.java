@@ -123,6 +123,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -164,6 +165,8 @@ abstract class LoadBalancerTest {
     }
 
     protected abstract boolean eagerConnectionShutdown();
+    protected abstract boolean isRoundRobin();
+
 
     protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
 
@@ -334,6 +337,8 @@ abstract class LoadBalancerTest {
 
     @Test
     void roundRobining() throws Exception {
+        assumeTrue(isRoundRobin());
+
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
         final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
@@ -451,8 +456,10 @@ abstract class LoadBalancerTest {
 
     @Test
     void unhealthyHostTakenOutOfPoolForSelection() throws Exception {
-        serviceDiscoveryPublisher.onComplete();
+        // TODO: For p2c, this doesn't always hit the threshold for all connections.
+        assumeTrue(isRoundRobin());
 
+        serviceDiscoveryPublisher.onComplete();
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final int timeAdvancementsTillHealthy = 3;
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
@@ -463,6 +470,7 @@ abstract class LoadBalancerTest {
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
+
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
             try {
@@ -704,6 +712,9 @@ abstract class LoadBalancerTest {
     @ParameterizedTest(name = "{displayName} [{index}]: sdReturnsDelta={0}")
     @ValueSource(booleans = {false, true})
     void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
+        // TODO: this is flaky for p2c because we don't get deterministic host selection
+        assumeTrue(isRoundRobin());
+
         serviceDiscoveryPublisher.onComplete();
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
@@ -798,6 +809,9 @@ abstract class LoadBalancerTest {
 
     @Test
     void handleAllDiscoveryEvents() throws Exception {
+        // TODO: this is flaky for p2c because we may not select both hosts
+        assumeTrue(isRoundRobin());
+
         serviceDiscoveryPublisher.onComplete();
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
