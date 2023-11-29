@@ -47,7 +47,7 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
 
     @Override
     public String loadBalancerName() {
-        return "P2C";
+        return "P2C(maxEffort=" + maxEffort + ')';
     }
 
     /**

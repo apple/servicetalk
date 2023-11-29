@@ -714,7 +714,6 @@ abstract class LoadBalancerTest {
     @ValueSource(booleans = {false, true})
     void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
         serviceDiscoveryPublisher.onComplete();
-
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
@@ -767,7 +766,7 @@ abstract class LoadBalancerTest {
         assertThat(selected1, is(anyOf(expected.values())));
 
         if (isRoundRobin()) {
-            // These asserts will become flaky for p2c because we don't have deterministic selection.
+            // These asserts are flaky for p2c because we don't have deterministic selection.
             expected.remove(selected1);
             assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
             assertConnectionCount(lb.usedAddresses(),
