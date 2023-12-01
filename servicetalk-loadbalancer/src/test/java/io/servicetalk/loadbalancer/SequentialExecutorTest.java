@@ -60,10 +60,10 @@ class SequentialExecutorTest {
         // wait for t1 to be in the execution loop then submit a task that should be queued.
         l1.await();
 
-        // note that the behavior of the initial submitting thread executing queued tasks is not critical to
-        // the primitive: we could envision another use as correct implementation where a submitter will
-        // execute the task it just submitted but if there are additional tasks the work gets shifted to a
-        // pooled thread to drain. In that case, the test just needs to be adjusted.
+        // note that the behavior of the initial submitting thread executing queued tasks is not critical to the
+        // primitive: we could envision another correct implementation where a submitter will  execute the task it just
+        // submitted but if there are additional tasks the work gets shifted to a pooled thread to drain. If we switch
+        // the model, the test should be adjusted to conform to the desired behavior.
         final AtomicReference<Thread> executingThread = new AtomicReference<>();
         executor.execute(() -> executingThread.set(Thread.currentThread()));
         assertNull(executingThread.get());
