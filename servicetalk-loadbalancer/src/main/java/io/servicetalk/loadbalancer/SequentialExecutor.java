@@ -77,7 +77,8 @@ final class SequentialExecutor implements Executor {
             }
             // next isn't the tail but the link hasn't resolved: we must poll until it does.
             while ((n = next.next) == null) {
-                // Still not resolved: try again.
+                // Still not resolved: yield and then try again.
+                Thread.yield();
             }
             next = n;
         }
