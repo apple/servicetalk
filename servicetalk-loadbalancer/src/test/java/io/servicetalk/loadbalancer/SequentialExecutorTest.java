@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +38,7 @@ class SequentialExecutorTest {
         // submit two tasks and they should both complete.
         executor.execute(() -> latch.countDown());
         executor.execute(() -> latch.countDown());
-        latch.await(5, TimeUnit.SECONDS);
+        latch.await();
     }
 
     @Test
@@ -112,7 +111,7 @@ class SequentialExecutorTest {
             Thread t = new Thread(() -> {
                 try {
                     ready.countDown();
-                    barrier.await(5, TimeUnit.SECONDS);
+                    barrier.await();
                     executor.execute(() -> completed.countDown());
                 } catch (Exception ex) {
                     throw new AssertionError("unexpected error", ex);
@@ -126,6 +125,6 @@ class SequentialExecutorTest {
         barrier.countDown();
         // all tasks should have completed. Note that all thread are racing with each other to
         // submit work so the order of work execution isn't important.
-        completed.await(5, TimeUnit.SECONDS);
+        completed.await();
     }
 }
