@@ -75,6 +75,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     /**
      * Signal that the host should be considered closed and no more connections should be selected or created.
      * This does not imply that existing connection should hard close.
+     *
+     * @return true if the host transitioned from a non-closed state to the closed state.
      */
     void markClosed();
 

@@ -106,7 +106,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    private final LoadBalancerObserver loadBalancerObserver;
+    private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
     /**
@@ -130,7 +130,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            final LoadBalancerObserver loadBalancerObserver) {
+            final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -369,7 +369,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
-                    connectionFactory, linearSearchSpace, healthCheckConfig);
+                    connectionFactory, linearSearchSpace, healthCheckConfig,
+                    // TODO: note that this host may not get used if we fail a CAS. That means we'll make another
+                    //  and essentially observe the same host created event multiple times.
+                    loadBalancerObserver == null ? null : loadBalancerObserver.hostObserver());
             host.onClose().afterFinally(() ->
                     usedHostsUpdater.updateAndGet(DefaultLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")

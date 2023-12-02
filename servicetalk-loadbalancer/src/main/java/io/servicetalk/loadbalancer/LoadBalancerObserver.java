@@ -1,15 +1,20 @@
 package io.servicetalk.loadbalancer;
 
-interface LoadBalancerObserver {
+interface LoadBalancerObserver<ResolvedAddress> {
 
-    void hostMarkedExpired();
-    void hostRemovedViaExpired();
+    HostObserver<ResolvedAddress> hostObserver();
 
-    void hostRemovedViaUnavailable();
+    OutlierObserver outlierEventObserver();
 
-    void hostAvailable();
+    interface HostObserver<ResolvedAddress> {
+        void hostMarkedExpired(ResolvedAddress address, int connectionCount);
+        void expiredHostRemoved(ResolvedAddress address);
+        void expiredHostRevived(ResolvedAddress address, int connectionCount);
 
-    OutlierObserver outlierEvent();
+        void unavailableHostRemoved(ResolvedAddress address, int connectionCount);
+
+        void hostCreated(ResolvedAddress address);
+    }
 
     interface OutlierObserver {
         void hostMarkedUnhealthy();

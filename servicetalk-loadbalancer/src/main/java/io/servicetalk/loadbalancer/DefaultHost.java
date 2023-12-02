@@ -95,6 +95,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     final Addr address;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
+    @Nullable
+    private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
@@ -102,14 +104,19 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                int linearSearchSpace, @Nullable HealthCheckConfig healthCheckConfig) {
+                int linearSearchSpace, @Nullable HealthCheckConfig healthCheckConfig,
+                @Nullable LoadBalancerObserver.HostObserver<Addr> hostObserver) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
+        this.hostObserver = hostObserver;
         this.closeable = toAsyncCloseable(graceful ->
                 graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
+        if (hostObserver != null) {
+            hostObserver.hostCreated(address);
+        }
     }
 
     @Override
@@ -119,7 +126,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public boolean markActiveIfNotClosed() {
-        final Object oldState = connStateUpdater.getAndUpdate(this, oldConnState -> {
+        final ConnState oldState = connStateUpdater.getAndUpdate(this, oldConnState -> {
             if (oldConnState.state == State.EXPIRED) {
                 return new ConnState(oldConnState.connections, STATE_ACTIVE_NO_FAILURES);
             }
@@ -127,8 +134,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             // or a repeated CAS operation. We could issue a warning, but as we don't know, we don't log anything.
             // UNHEALTHY state cannot transition to ACTIVE without passing the health check.
             return oldConnState;
-        }).state;
-        return oldState != State.CLOSED;
+        });
+        if (hostObserver != null && oldState.state == State.EXPIRED) {
+            hostObserver.expiredHostRevived(address, oldState.connections.length);
+        }
+        return oldState.state != State.CLOSED;
     }
 
     @Override
@@ -142,6 +152,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             @SuppressWarnings("unchecked")
             final C cConn = (C) conn;
             cConn.closeAsyncGracefully().subscribe();
+        }
+        if (hostObserver != null && oldState.state != CLOSED_CONN_STATE) {
+            // this is the first time this was marked closed so we need to let the observer know.
+            hostObserver.unavailableHostRemoved(address, toRemove.length);
         }
     }
 
@@ -171,6 +185,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             if (connStateUpdater.compareAndSet(this, oldState,
                     new ConnState(oldState.connections, nextState))) {
                 cancelIfHealthCheck(oldState);
+                if (hostObserver != null) {
+                    hostObserver.hostMarkedExpired(address, oldState.connections.length);
+                }
                 if (nextState == State.CLOSED) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
@@ -420,6 +437,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // in the next iteration.
                             && connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
                         this.closeAsync().subscribe();
+                        if (hostObserver != null) {
+                            hostObserver.expiredHostRemoved(address);
+                        }
                         break;
                     }
                 } else {
