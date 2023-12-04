@@ -16,13 +16,19 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancer;
 
 import java.util.Random;
 import javax.annotation.Nullable;
 
 /**
  * A random selection "power of two choices" load balancing policy.
- *
+ * <p>
+ * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
+ * Choices in Randomized Load Balancing.
+ *  @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
+ *  Choices in Randomized Load Balancing</a>
+ * <p>
  * This load balancing policy is characterized by the algorithm:
  * - select two hosts randomly: hosta, and hostb.
  * - if neither host is healthy, repeat selection process until max-effort.
@@ -80,8 +86,7 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
          */
         public Builder maxEffort(final int maxEffort) {
             if (maxEffort <= 0) {
-                throw new IllegalArgumentException("Illegal maxEffort: " + maxEffort +
-                        ". maxEffort must be a positive value");
+                throw new IllegalArgumentException("Invalid maxEffort: " + maxEffort + " (expected > 0)");
             }
             this.maxEffort = maxEffort;
             return this;
@@ -94,7 +99,7 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
         }
 
         /**
-         * Construct the immutable {@link P2CLoadBalancingPolicy}.
+         * Construct an immutable {@link P2CLoadBalancingPolicy}.
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         P2CLoadBalancingPolicy build() {

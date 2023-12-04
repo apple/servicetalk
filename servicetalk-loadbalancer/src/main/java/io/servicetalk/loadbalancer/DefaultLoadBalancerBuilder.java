@@ -60,8 +60,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
         if (linearSearchSpace <= 0) {
-            throw new IllegalArgumentException("Illegal linear search space: " + linearSearchSpace +
-                    ".Search space must be a positive number.");
+            throw new IllegalArgumentException("Invalid linear search space: "
+                    + linearSearchSpace + " (expected > 0)");
         }
         this.linearSearchSpace = linearSearchSpace;
         return this;
@@ -99,7 +99,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
             int threshold) {
         if (threshold == 0) {
-            throw new IllegalArgumentException("Health check failed connections threshold should not be 0");
+            throw new IllegalArgumentException("Invalid health-check failed connections (expected != 0)");
         }
         this.healthCheckFailedConnectionsThreshold = threshold;
         return this;
