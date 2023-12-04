@@ -334,7 +334,7 @@ final class CopyOnWriteContextMap implements ContextMap {
 
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return System.identityHashCode(this);
         }
 
         @Override

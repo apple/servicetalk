@@ -405,7 +405,7 @@ class SingleToCompletionStageTest {
             verifyInJdkForkJoinThread();
             strRef.set(str);
             lngRef.set(lng);
-        }), "foo", 13434L, strRef, lngRef);
+        }), "foo", 13_434L, strRef, lngRef);
     }
 
     @Test
@@ -417,7 +417,7 @@ class SingleToCompletionStageTest {
             verifyInJdkExecutorThread();
             strRef.set(str);
             lngRef.set(lng);
-        }, jdkExecutor), "foo", 13434L, strRef, lngRef);
+        }, jdkExecutor), "foo", 13_434L, strRef, lngRef);
     }
 
     private void thenAcceptBoth(CompletableFuture<Long> other, CompletionStage<Void> result,

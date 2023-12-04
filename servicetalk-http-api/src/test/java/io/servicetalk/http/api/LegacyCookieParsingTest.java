@@ -224,7 +224,7 @@ class LegacyCookieParsingTest {
     @Test
     void testDecodingSingleCookieV0() {
         String cookieString = "myCookie=myValue;expires="
-                + DateFormatter.format(new Date(System.currentTimeMillis() + 50000))
+                + DateFormatter.format(new Date(System.currentTimeMillis() + 50_000))
                 + ";path=/apathsomewhere;domain=.adomainsomewhere;secure;SameSite=None";
 
         HttpSetCookie cookie = headers.add(SET_COOKIE, cookieString).getSetCookie("myCookie");

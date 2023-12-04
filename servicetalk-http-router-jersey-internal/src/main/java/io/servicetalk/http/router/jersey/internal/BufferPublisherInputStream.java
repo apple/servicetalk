@@ -27,7 +27,6 @@ import org.glassfish.jersey.message.internal.EntityInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
-import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
@@ -43,6 +42,7 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  * and {@link BufferPublisherInputStream#bufferPublisher()}.
  */
 public final class BufferPublisherInputStream extends InputStream {
+    private static final byte[] EMPTY_ARRAY = new byte[0];
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -147,12 +147,11 @@ public final class BufferPublisherInputStream extends InputStream {
         return inputStreamHandler.apply(wrappedStream, allocator);
     }
 
-    @Nullable
     private static byte[] getBytes(final Buffer content) {
         final int readableBytes = content.readableBytes();
 
         if (readableBytes == 0) {
-            return null;
+            return EMPTY_ARRAY;
         }
 
         if (content.hasArray() && content.arrayOffset() == 0 && content.array().length == readableBytes) {

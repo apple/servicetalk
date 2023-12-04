@@ -36,7 +36,7 @@ class CompletableToSingleTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
-    private TestSingleSubscriber<Void> subscriber = new TestSingleSubscriber<>();
+    private final TestSingleSubscriber<Void> subscriber = new TestSingleSubscriber<>();
 
     @Test
     void noTerminalSucceeds() {

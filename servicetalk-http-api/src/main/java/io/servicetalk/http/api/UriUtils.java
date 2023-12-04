@@ -229,12 +229,12 @@ final class UriUtils {
             return (10 * toDecimal(uri.charAt(begin))) +
                     toDecimal(uri.charAt(begin + 1));
         } else if (len == 5) {
-            final int port = (10000 * toDecimal(uri.charAt(begin))) +
+            final int port = (10_000 * toDecimal(uri.charAt(begin))) +
                     (1000 * toDecimal(uri.charAt(begin + 1))) +
                     (100 * toDecimal(uri.charAt(begin + 2))) +
                     (10 * toDecimal(uri.charAt(begin + 3))) +
                     toDecimal(uri.charAt(begin + 4));
-            if (port > 65535) {
+            if (port > 65_535) {
                 throw new IllegalArgumentException("port out of bounds: " + port);
             }
             return port;

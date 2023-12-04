@@ -54,7 +54,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
  * HttpResponseEncoderInitialLineBenchmark.initialLine           600  thrpt    5  1271252.139 ± 17791.329  ops/s
  * HttpResponseEncoderInitialLineBenchmark.initialLine           700  thrpt    5  1220163.698 ± 43243.342  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

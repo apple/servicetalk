@@ -43,7 +43,8 @@ public class ProxyResponseException extends ProxyConnectResponseException implem
     }
 
     @Override
-    public String toString() {
+    @SuppressWarnings("PMD.UselessOverridingMethod")
+    public String toString() {  // FIXME: 0.43 - remove method that was kept only for ABI backward compatibility
         return super.toString();
     }
 }

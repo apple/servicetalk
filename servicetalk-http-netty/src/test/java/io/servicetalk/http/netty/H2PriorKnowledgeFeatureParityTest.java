@@ -101,6 +101,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -2021,12 +2023,13 @@ class H2PriorKnowledgeFeatureParityTest {
     }
 
     static final class EchoHttp2Handler extends ChannelDuplexHandler {
+        private static final Logger LOGGER = LoggerFactory.getLogger(EchoHttp2Handler.class);
         private boolean sentHeaders;
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            cause.printStackTrace();
+            LOGGER.error("Unexpected exception caught", cause);
             ctx.close();
         }
 

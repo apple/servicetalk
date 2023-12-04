@@ -24,6 +24,6 @@ public class PublisherDeferFromTckTest extends PublisherFromArrayTckTest {
 
     @Override
     protected Publisher<Integer> createServiceTalkPublisher(long elements) {
-        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createServiceTalkPublisher(elements));
+        return Publisher.defer(() -> super.createServiceTalkPublisher(elements));
     }
 }

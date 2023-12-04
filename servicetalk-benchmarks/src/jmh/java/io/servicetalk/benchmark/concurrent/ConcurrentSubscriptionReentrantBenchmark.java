@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import javax.annotation.Nullable;
 
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

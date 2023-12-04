@@ -290,9 +290,9 @@ class RequestResponseCloseHandlerTest {
         private RequestResponseCloseHandler h;
         @Nullable
         private CloseEvent observedEvent;
-        private AtomicBoolean closed = new AtomicBoolean();
-        private AtomicBoolean inputShutdown = new AtomicBoolean();
-        private AtomicBoolean outputShutdown = new AtomicBoolean();
+        private final AtomicBoolean closed = new AtomicBoolean();
+        private final AtomicBoolean inputShutdown = new AtomicBoolean();
+        private final AtomicBoolean outputShutdown = new AtomicBoolean();
         private SocketChannelConfig scc;
 
         /**

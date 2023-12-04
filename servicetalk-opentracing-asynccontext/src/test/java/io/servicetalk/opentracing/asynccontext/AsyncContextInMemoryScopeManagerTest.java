@@ -36,7 +36,7 @@ class AsyncContextInMemoryScopeManagerTest {
     @Mock
     private InMemorySpan mockSpan2;
 
-    private AsyncContextInMemoryScopeManager scopeManager = (AsyncContextInMemoryScopeManager) SCOPE_MANAGER;
+    private final AsyncContextInMemoryScopeManager scopeManager = (AsyncContextInMemoryScopeManager) SCOPE_MANAGER;
 
     @BeforeEach
     public void setup() {

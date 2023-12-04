@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018, 2023 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,39 +22,121 @@
     The Basic ruleset contains a collection of good practices which should be followed.
   </description>
 
-  <rule ref="category/java/errorprone.xml/AvoidBranchingStatementAsLastInLoop"/>
-  <rule ref="category/java/errorprone.xml/AvoidDecimalLiteralsInBigDecimalConstructor"/>
-  <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators"/>
-  <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues"/>
-  <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
-  <rule ref="category/java/errorprone.xml/CheckSkipResult"/>
-  <rule ref="category/java/errorprone.xml/ClassCastExceptionWithToArray"/>
-  <rule ref="category/java/errorprone.xml/DontUseFloatTypeForLoopIndices"/>
-  <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
-  <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
-  <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
-  <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
-  <rule ref="category/java/errorprone.xml/UnconditionalIfStatement"/>
+  <rule ref="category/java/security.xml"/>
 
-  <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
-  <rule ref="category/java/multithreading.xml/DontCallThreadRun"/>
-  <rule ref="category/java/multithreading.xml/DoubleCheckedLocking"/>
+  <rule ref="category/java/errorprone.xml">
+    <exclude name="AssignmentInOperand"/>
+    <exclude name="AvoidAccessibilityAlteration"/>
+    <exclude name="AvoidCatchingThrowable"/>
+    <exclude name="AvoidDuplicateLiterals"/>
+    <exclude name="AvoidFieldNameMatchingMethodName"/>
+    <exclude name="AvoidFieldNameMatchingTypeName"/>
+    <exclude name="AvoidInstanceofChecksInCatchClause"/>
+    <exclude name="AvoidLiteralsInIfCondition"/>
+    <exclude name="CloseResource"/>
+    <exclude name="CompareObjectsWithEquals"/>
+    <exclude name="DoNotCallGarbageCollectionExplicitly"/>
+    <exclude name="EmptyCatchBlock"/>
+    <exclude name="MissingStaticMethodInNonInstantiatableClass"/>
+    <exclude name="NonSerializableClass"/>
+    <exclude name="NullAssignment"/>
+    <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+    <exclude name="TestClassWithoutTestCases"/>
+    <exclude name="UseProperClassLoader"/>
+  </rule>
 
-  <rule ref="category/java/bestpractices.xml/AvoidUsingHardCodedIP"/>
-  <rule ref="category/java/bestpractices.xml/CheckResultSet"/>
-  <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" />
-  <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
-  <rule ref="category/java/bestpractices.xml/SimplifiableTestAssertion"/>
-  <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+  <rule ref="category/java/multithreading.xml">
+    <exclude name="AvoidSynchronizedAtMethodLevel"/>
+    <exclude name="AvoidUsingVolatile"/>
+    <exclude name="DoNotUseThreads"/>
+    <exclude name="UseConcurrentHashMap"/>
+  </rule>
 
-  <rule ref="category/java/codestyle.xml/ExtendsObject"/>
-  <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>
+  <rule ref="category/java/bestpractices.xml">
+    <exclude name="AbstractClassWithoutAbstractMethod"/>
+    <exclude name="ArrayIsStoredDirectly"/>
+    <exclude name="AvoidReassigningLoopVariables"/>
+    <exclude name="AvoidReassigningParameters"/>
+    <exclude name="AvoidStringBufferField"/>
+    <exclude name="ForLoopCanBeForeach"/>
+    <exclude name="ForLoopVariableCount"/>
+    <exclude name="GuardLogStatement"/>
+    <exclude name="JUnit4TestShouldUseAfterAnnotation"/>
+    <exclude name="JUnit4TestShouldUseBeforeAnnotation"/>
+    <exclude name="JUnit4TestShouldUseTestAnnotation"/>
+    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
+    <exclude name="JUnitTestContainsTooManyAsserts"/>
+    <exclude name="JUnitTestsShouldIncludeAssert"/>
+    <exclude name="MethodReturnsInternalArray"/>
+    <exclude name="OneDeclarationPerLine"/>
+    <exclude name="UnusedAssignment"/>
+    <exclude name="UnusedPrivateField"/>
+    <exclude name="UnusedPrivateMethod"/>
+    <exclude name="UseTryWithResources"/>
+    <exclude name="UseVarargs"/>
+  </rule>
 
-  <rule ref="category/java/performance.xml/BigIntegerInstantiation"/>
+  <rule ref="category/java/codestyle.xml">
+    <exclude name="AtLeastOneConstructor"/>
+    <exclude name="CallSuperInConstructor"/>
+    <exclude name="CommentDefaultAccessModifier"/>
+    <exclude name="ConfusingTernary"/>
+    <exclude name="EmptyControlStatement"/>
+    <exclude name="EmptyMethodInAbstractClassShouldBeAbstract"/>
+    <exclude name="FieldDeclarationsShouldBeAtStartOfClass"/>
+    <exclude name="FieldNamingConventions"/>
+    <exclude name="FormalParameterNamingConventions"/>
+    <exclude name="GenericsNaming"/>
+    <exclude name="LinguisticNaming"/>
+    <exclude name="LocalVariableCouldBeFinal"/>
+    <exclude name="LongVariable"/>
+    <exclude name="MethodArgumentCouldBeFinal"/>
+    <exclude name="MethodNamingConventions"/>
+    <exclude name="OnlyOneReturn"/>
+    <exclude name="PrematureDeclaration"/>
+    <exclude name="ShortClassName"/>
+    <exclude name="ShortMethodName"/>
+    <exclude name="ShortVariable"/>
+    <exclude name="TooManyStaticImports"/>
+    <exclude name="UnnecessaryConstructor"/>
+    <exclude name="UnnecessaryFullyQualifiedName"/>
+    <exclude name="UnnecessaryImport"/>
+    <exclude name="UnnecessaryLocalBeforeReturn"/>
+    <exclude name="UselessParentheses"/>
+  </rule>
 
-  <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
-  <rule ref="category/java/design.xml/MutableStaticState" />
-  <rule ref="category/java/design.xml/SimplifiedTernary"/>
+  <rule ref="category/java/performance.xml">
+    <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    <exclude name="InsufficientStringBufferDeclaration"/>
+  </rule>
+
+  <rule ref="category/java/design.xml">
+    <exclude name="AbstractClassWithoutAnyMethod"/>
+    <exclude name="AvoidCatchingGenericException"/>
+    <exclude name="AvoidDeeplyNestedIfStmts"/>
+    <exclude name="AvoidRethrowingException"/>
+    <exclude name="AvoidThrowingNullPointerException"/>
+    <exclude name="AvoidThrowingRawExceptionTypes"/>
+    <exclude name="AvoidUncheckedExceptionsInSignatures"/>
+    <exclude name="CognitiveComplexity"/>
+    <exclude name="CouplingBetweenObjects"/>
+    <exclude name="CyclomaticComplexity"/>
+    <exclude name="DataClass"/>
+    <exclude name="DoNotExtendJavaLangError"/>
+    <exclude name="ExcessiveImports"/>
+    <exclude name="ExcessiveParameterList"/>
+    <exclude name="ExcessivePublicCount"/>
+    <exclude name="GodClass"/>
+    <exclude name="LawOfDemeter"/>
+    <exclude name="NPathComplexity"/>
+    <exclude name="NcssCount"/>
+    <exclude name="SignatureDeclareThrowsException"/>
+    <exclude name="SingularField"/>
+    <exclude name="SwitchDensity"/>
+    <exclude name="TooManyFields"/>
+    <exclude name="TooManyMethods"/>
+    <exclude name="UseUtilityClass"/>
+  </rule>
 
   <!-- generated -->
   <exclude-pattern>.*/generated/source/proto/.*</exclude-pattern>

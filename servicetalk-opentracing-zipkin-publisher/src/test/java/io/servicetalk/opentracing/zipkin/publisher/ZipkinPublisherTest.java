@@ -30,7 +30,6 @@ import java.io.Flushable;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.opentracing.tag.Tags.SPAN_KIND;
@@ -57,7 +56,7 @@ class ZipkinPublisherTest {
     }
 
     @Test
-    void testReportSpan() throws ExecutionException, InterruptedException {
+    void testReportSpan() throws Exception {
         SpanHolder reporter = new SpanHolder();
         try (ZipkinPublisher publisher = buildPublisher(reporter)) {
             InMemorySpan span = buildSpan(SPAN_KIND_SERVER);
@@ -75,14 +74,14 @@ class ZipkinPublisherTest {
         assertEquals(String.valueOf(Long.MAX_VALUE), tags.get("longKey"));
         assertEquals(String.valueOf(Float.MAX_VALUE), tags.get("floatKey"));
         assertEquals(String.valueOf(Double.MAX_VALUE), tags.get("doubleKey"));
-        assertTrue(reporter.span.annotations().stream().anyMatch(a -> a.value().equals("some event happened")));
+        assertTrue(reporter.span.annotations().stream().anyMatch(a -> "some event happened".equals(a.value())));
         assertTrue(reporter.flushed);
         assertTrue(reporter.closed);
     }
 
     @Test
-    void testReportSpanSupportsAllKinds() throws ExecutionException, InterruptedException {
-        final HashMap<String, Span.Kind> kinds = new HashMap<>();
+    void testReportSpanSupportsAllKinds() throws Exception {
+        final Map<String, Span.Kind> kinds = new HashMap<>();
         kinds.put(SPAN_KIND_CLIENT, Span.Kind.CLIENT);
         kinds.put(SPAN_KIND_SERVER, Span.Kind.SERVER);
         kinds.put(SPAN_KIND_CONSUMER, Span.Kind.CONSUMER);
@@ -103,7 +102,7 @@ class ZipkinPublisherTest {
         }
     }
 
-    private ZipkinPublisher buildPublisher(Reporter<Span> reporter) {
+    private static ZipkinPublisher buildPublisher(Reporter<Span> reporter) {
         return new ZipkinPublisher.Builder("test", reporter)
                 .localAddress(new InetSocketAddress("localhost", 1))
                 .build();

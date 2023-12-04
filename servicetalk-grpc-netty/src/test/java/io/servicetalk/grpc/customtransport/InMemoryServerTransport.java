@@ -91,8 +91,10 @@ final class InMemoryServerTransport implements ServerTransport {
         }
         try {
             return route.handle(getServiceContext(channel, allocator), allocator, requestMessages);
+        } catch (GrpcStatusException cause) {
+            return failed(cause);
         } catch (Throwable cause) {
-            return failed((cause instanceof GrpcStatusException) ? cause : mapUnknownException(cause));
+            return failed(mapUnknownException(cause));
         }
     }
 

@@ -85,10 +85,10 @@ class SslProvidersTest {
                 Arguments.of(JDK, OPENSSL, 256),
                 Arguments.of(OPENSSL, JDK, 256),
                 Arguments.of(OPENSSL, OPENSSL, 256),
-                Arguments.of(JDK, JDK, 16384),
-                Arguments.of(JDK, OPENSSL, 16384),
-                Arguments.of(OPENSSL, JDK, 16384),
-                Arguments.of(OPENSSL, OPENSSL, 16384));
+                Arguments.of(JDK, JDK, 16_384),
+                Arguments.of(JDK, OPENSSL, 16_384),
+                Arguments.of(OPENSSL, JDK, 16_384),
+                Arguments.of(OPENSSL, OPENSSL, 16_384));
     }
 
     @AfterEach

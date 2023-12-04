@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
  * CountDownLatchBenchmark.getWithShield     thrpt    5  452938674.099 ± 8088381.004  ops/s
  * CountDownLatchBenchmark.getWithoutShield  thrpt    5  340168846.799 ± 4901839.746  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)
@@ -44,7 +44,7 @@ public class CountDownLatchBenchmark {
 
     private static final Object NULL = new Object();
 
-    private CountDownLatch latch = new CountDownLatch(0);
+    private final CountDownLatch latch = new CountDownLatch(0);
 
     @Nullable
     private volatile Object value = NULL;

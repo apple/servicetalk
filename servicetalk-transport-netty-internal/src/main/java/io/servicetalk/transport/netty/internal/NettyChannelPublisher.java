@@ -389,7 +389,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             if (eventLoop.inEventLoop()) {
                 NettyChannelPublisher.this.requestN(n, this);
             } else {
-                eventLoop.execute(() -> NettyChannelPublisher.this.requestN(n, SubscriptionImpl.this));
+                eventLoop.execute(() -> NettyChannelPublisher.this.requestN(n, this));
             }
         }
 
@@ -398,7 +398,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             if (eventLoop.inEventLoop()) {
                 NettyChannelPublisher.this.cancel0(this);
             } else {
-                eventLoop.execute(() -> NettyChannelPublisher.this.cancel0(SubscriptionImpl.this));
+                eventLoop.execute(() -> NettyChannelPublisher.this.cancel0(this));
             }
         }
     }

@@ -73,8 +73,8 @@ import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.EchoHt
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
-import static io.servicetalk.http.netty.StreamObserverTest.safeSync;
 import static io.servicetalk.transport.api.HostAndPort.of;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeSync;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofMillis;
@@ -147,10 +147,10 @@ class H2ConcurrencyControllerTest {
     @AfterEach
     void tearDown() throws Exception {
         if (serverAcceptorChannel != null) {
-            safeSync(() -> serverAcceptorChannel.close().sync());
+            safeSync(serverAcceptorChannel.close());
         }
         if (serverEventLoopGroup != null) {
-            safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
+            safeSync(serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS));
         }
     }
 

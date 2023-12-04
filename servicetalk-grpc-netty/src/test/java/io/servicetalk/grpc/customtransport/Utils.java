@@ -227,7 +227,9 @@ final class Utils {
     }
 
     private static final class InMemorySocketAddress extends SocketAddress {
+        private static final long serialVersionUID = 2360781509780657308L;
         static final SocketAddress INSTANCE = new InMemorySocketAddress();
+
         private InMemorySocketAddress() {
         }
 

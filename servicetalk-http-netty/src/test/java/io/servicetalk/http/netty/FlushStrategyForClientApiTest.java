@@ -64,7 +64,7 @@ class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
     @Override
     void service(final StreamingHttpService service) {
         super.service((ctx, request, responseFactory) -> {
-            FlushStrategyForClientApiTest.this.request = request;
+            this.request = request;
             requestLatch.countDown();
             request.payloadBody().forEach(buffer -> {
                 try {

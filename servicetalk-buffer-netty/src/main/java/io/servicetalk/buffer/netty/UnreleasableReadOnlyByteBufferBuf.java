@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
 
 final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
-    protected final ByteBuffer buffer;
+    private final ByteBuffer buffer;
     private final ByteBufAllocator allocator;
     @Nullable
     private ByteBuffer tmpNioBuf;
@@ -477,8 +477,9 @@ final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedBy
         ByteBuffer src;
         try {
             src = (ByteBuffer) internalNioBuffer().clear().position(index).limit(index + length);
-        } catch (IllegalArgumentException ignored) {
-            throw new IndexOutOfBoundsException("Too many bytes to read - Need " + (index + length));
+        } catch (IllegalArgumentException cause) {
+            throw (IndexOutOfBoundsException) new IndexOutOfBoundsException(
+                    "Too many bytes to read - Need " + (index + length)).initCause(cause);
         }
 
         ByteBuf dst = src.isDirect() ? alloc().directBuffer(length) : alloc().heapBuffer(length);

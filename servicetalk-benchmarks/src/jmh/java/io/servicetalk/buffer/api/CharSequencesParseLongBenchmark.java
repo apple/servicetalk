@@ -74,7 +74,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
  * javaParseLongAsciiString                  8192  thrpt    5  75324292.593 ±  592329.213  ops/s
  *   stParseLongAsciiString                  8192  thrpt    5  80748587.669 ± 1076241.647  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

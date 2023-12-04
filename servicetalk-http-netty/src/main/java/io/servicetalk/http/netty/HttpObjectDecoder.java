@@ -559,7 +559,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         } else if (evt instanceof DiscardFurtherInboundEvent) {
             resetNow();
-            ctx.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
+            ctx.pipeline().replace(this, DiscardInboundHandler.INSTANCE.toString(),
                     DiscardInboundHandler.INSTANCE);
             ctx.channel().config().setAutoRead(true);
         }

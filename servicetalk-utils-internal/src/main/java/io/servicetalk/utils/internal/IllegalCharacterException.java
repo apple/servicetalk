@@ -45,6 +45,7 @@ public final class IllegalCharacterException extends IllegalArgumentException {
         super(message(value, expected));
     }
 
+    @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
     private static String message(final byte value, @Nullable final String expected) {
         final int codePoint = value & 0xff;
         final StringBuilder sb = new StringBuilder(expected == null ? 10 : 23 + expected.length())

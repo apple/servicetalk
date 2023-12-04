@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class FromInputStreamPublisher extends Publisher<byte[]> implements PublisherSource<byte[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
-    private static final int DEFAULT_READ_CHUNK_SIZE = 65536;
+    private static final int DEFAULT_READ_CHUNK_SIZE = 65_536;
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
 

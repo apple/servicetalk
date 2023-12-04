@@ -37,7 +37,7 @@ public abstract class AbstractWhenCancelTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
-    private TestSubscription subscription = new TestSubscription();
+    private final TestSubscription subscription = new TestSubscription();
 
     @Test
     void testCancelAfterEmissions() {

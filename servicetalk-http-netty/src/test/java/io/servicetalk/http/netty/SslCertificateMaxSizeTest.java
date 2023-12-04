@@ -54,7 +54,7 @@ final class SslCertificateMaxSizeTest {
      * https://source.chromium.org/chromium/chromium/src/+/main:third_party/boringssl/src/ssl/handshake.cc;l=233">limit
      * </a>
      */
-    private static final int BORINGSSL_LOWER_LIMIT = 16384;
+    private static final int BORINGSSL_LOWER_LIMIT = 16_384;
     private static boolean certMaxSizeAvailable() {
         return OpenSsl.isAvailable() &&
                 isOptionSupported(io.netty.handler.ssl.SslProvider.OPENSSL, MAX_CERTIFICATE_LIST_BYTES);

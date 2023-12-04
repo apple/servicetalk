@@ -37,8 +37,8 @@ import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static java.util.Collections.emptyMap;
 
 final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<String, List<String>>> {
-    private static final HashMap<Charset, byte[]> CONTINUATIONS_SEPARATORS;
-    private static final HashMap<Charset, byte[]> KEYVALUE_SEPARATORS;
+    private static final Map<Charset, byte[]> CONTINUATIONS_SEPARATORS;
+    private static final Map<Charset, byte[]> KEYVALUE_SEPARATORS;
     static {
         Collection<Charset> charsets = standardCharsets();
         final int size = charsets.size();

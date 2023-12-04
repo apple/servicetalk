@@ -172,7 +172,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     private BlockingHttpClient client;
     final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-    void start() throws Exception {
+    protected void start() throws Exception {
         serverContext = newServiceTalkServer(scenario, errors);
         client = newServiceTalkClient(serverHostAndPort(serverContext), scenario, errors);
     }
@@ -208,6 +208,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         assertNoAsyncErrors(errors);
     }
 
+    @Override
     protected void assertSuccessful(final ContentCodec encoding) throws Throwable {
         assertResponse(client().request(client()
                 .get("/")
@@ -238,6 +239,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         assertEquals(payloadAsString((byte) 'b'), responsePayload);
     }
 
+    @Override
     protected void assertNotSupported(final ContentCodec encoding) throws Exception {
         final BlockingStreamingHttpClient blockingStreamingHttpClient = client().asBlockingStreamingClient();
         final StreamingHttpClient streamingHttpClient = client().asStreamingClient();

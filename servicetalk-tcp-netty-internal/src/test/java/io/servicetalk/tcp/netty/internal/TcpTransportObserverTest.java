@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class TcpTransportObserverTest extends AbstractTransportObserverTest {
 
+    @Override
     @BeforeEach
     void setUp() throws Exception {
         super.setUp();

@@ -145,7 +145,7 @@ class ConcurrentTerminalSubscriberTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] firstOnComplete={0} secondOnComplete={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void concurrentOnComplete(boolean firstOnComplete, boolean secondOnComplete) throws Exception {
         CyclicBarrier terminalEnterBarrier = new CyclicBarrier(2);
         CountDownLatch terminatedLatch = new CountDownLatch(1);
@@ -201,7 +201,7 @@ class ConcurrentTerminalSubscriberTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onComplete={0} deferred={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void concurrentOnNext(boolean onComplete, boolean deferred) throws Exception {
         CountDownLatch onNextLatch = new CountDownLatch(1);
         CyclicBarrier onNextEnterBarrier = new CyclicBarrier(2);
@@ -265,7 +265,7 @@ class ConcurrentTerminalSubscriberTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onComplete={0} onNext={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void concurrentOnSubscribe(boolean onComplete, boolean onNext) throws Exception {
         CountDownLatch onSubscribeLatch = new CountDownLatch(1);
         CountDownLatch terminatedLatch = new CountDownLatch(1);

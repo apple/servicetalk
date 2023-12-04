@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultContextMap implements ContextMap {
 
-    private final HashMap<Key<?>, Object> theMap;
+    private final Map<Key<?>, Object> theMap;
 
     /**
      * Creates a new instance.

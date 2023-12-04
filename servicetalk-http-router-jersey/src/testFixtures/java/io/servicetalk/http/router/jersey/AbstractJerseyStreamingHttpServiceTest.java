@@ -38,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -108,7 +109,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         final Configuration config = router.configuration();
 
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
-                String.class).toLowerCase().contains("servicetalk");
+                String.class).toLowerCase(Locale.ENGLISH).contains("servicetalk");
 
         HttpServerBuilder httpServerBuilder = serverBuilder
                 .ioExecutor(serverCtx.ioExecutor())

@@ -250,7 +250,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         runTwiceToEnsureEndpointCache(this::runTest);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "PMD.ImplicitSwitchFallThrough"})
     private void runTest() {
         final String resBody = testMode.sendTestRequest(path, this);
         final Map<String, String> threadingInfo;

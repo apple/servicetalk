@@ -251,6 +251,7 @@ final class HeaderUtils {
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
+        private static final long serialVersionUID = -6593491776432933503L;
         int contentLength;
 
         ContentLengthList(int contentLength, int arraySize) {
@@ -389,6 +390,7 @@ final class HeaderUtils {
      * @return the normalized content-length from the headers or {@code -1} if no content-length header is found
      * @throws IllegalArgumentException if multiple content-length header values are present
      */
+    @SuppressWarnings("PMD.PreserveStackTrace")
     static long contentLength(final Iterator<? extends CharSequence> iterator) {
         if (!iterator.hasNext()) {
             return -1;

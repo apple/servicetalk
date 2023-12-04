@@ -182,7 +182,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onError={0} lazy={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void threeSubscribersTTL(boolean onError, boolean lazy) {
         final Duration ttl = ofMillis(2);
         Publisher<Integer> publisher = source.replay(
@@ -221,7 +221,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onError={0} lazy={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void concurrentTTL(boolean onError, boolean lazy) throws Exception {
         final Duration ttl = ofNanos(1);
         final int queueLimit = Integer.MAX_VALUE;
@@ -239,7 +239,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
             // The goal is to race onNext (which calls accumulate) with the timer expiration. We don't verify all the
             // signals are delivered but instead verify that the timer and max elements are always enforced even after
             // the concurrent operations.
-            for (int i = 0; i < 10000; ++i) {
+            for (int i = 0; i < 10_000; ++i) {
                 source.onNext(1);
                 Thread.yield(); // Increase likelihood that timer expires some signals.
             }
@@ -284,7 +284,7 @@ final class ReplayPublisherTest extends MulticastPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] expectedSubscribers={0} expectedSum={1}")
-    @CsvSource(value = {"500,500", "50,50", "50,500", "500,50"})
+    @CsvSource({"500,500", "50,50", "50,500", "500,50"})
     void concurrentSubscribes(final int expectedSubscribers, final long expectedSum) throws Exception {
         Publisher<Integer> replay = source.replay(SumReplayAccumulator::new);
         CyclicBarrier startBarrier = new CyclicBarrier(expectedSubscribers + 1);

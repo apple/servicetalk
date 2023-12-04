@@ -20,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +48,8 @@ class IdentityContentCodecTest {
                         return super.equals(other);
                     }
                 }),
-                Arguments.of(IDENTITY_CODEC, new NoopContentCodec(IDENTITY_CODEC.name().toString().toUpperCase()))
+                Arguments.of(IDENTITY_CODEC,
+                        new NoopContentCodec(IDENTITY_CODEC.name().toString().toUpperCase(Locale.ENGLISH)))
         );
     }
 
@@ -61,13 +63,13 @@ class IdentityContentCodecTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("equalsParams")
-    void equals(IdentityContentCodec identity, Object other) {
+    void testEquals(IdentityContentCodec identity, Object other) {
         assertThat(identity, is(equalTo(other)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("notEqualsParams")
-    void notEquals(IdentityContentCodec identity, Object other) {
+    void testNotEquals(IdentityContentCodec identity, Object other) {
         assertThat(identity, is(not(equalTo(other))));
     }
 }

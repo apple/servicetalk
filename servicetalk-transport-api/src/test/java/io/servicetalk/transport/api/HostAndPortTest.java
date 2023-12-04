@@ -55,7 +55,7 @@ final class HostAndPortTest {
 
     @Test
     void IPv6WithScope() {
-        assertIP("[::FFFF:129.144.52.38%2]:65535", "::FFFF:129.144.52.38%2", 65535);
+        assertIP("[::FFFF:129.144.52.38%2]:65535", "::FFFF:129.144.52.38%2", 65_535);
     }
 
     @Test

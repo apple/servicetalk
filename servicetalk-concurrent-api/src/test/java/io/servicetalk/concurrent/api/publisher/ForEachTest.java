@@ -35,7 +35,7 @@ final class ForEachTest {
     private TestPublisher<Integer> source;
     private Consumer<Integer> forEach;
     private Cancellable cancellable;
-    private TestSubscription subscription = new TestSubscription();
+    private final TestSubscription subscription = new TestSubscription();
 
     @SuppressWarnings("unchecked")
     @BeforeEach

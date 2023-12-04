@@ -94,7 +94,7 @@ class FlushStrategyOverrideTest {
 
         CountDownLatch reqWritten = new CountDownLatch(1);
         StreamingHttpRequest req = client.get("/flush").payloadBody(from(1, 2, 3)
-                .map(count -> client.executionContext().bufferAllocator().fromAscii("" + count))
+                .map(count -> client.executionContext().bufferAllocator().fromAscii(count.toString()))
                 .afterFinally(reqWritten::countDown));
 
         Future<? extends Collection<Object>> clientResp = conn.request(req)

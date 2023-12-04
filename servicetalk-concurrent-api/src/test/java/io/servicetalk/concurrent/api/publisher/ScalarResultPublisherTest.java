@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.sameInstance;
 
 class ScalarResultPublisherTest {
 
-    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     void testJust() {
