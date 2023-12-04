@@ -15,11 +15,17 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.context.api.ContextMap;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,7 +36,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SequentialExecutorTest {
 
-    SequentialExecutor executor = new SequentialExecutor(SequentialExecutorTest.class);
+
+    private SequentialExecutor.ExceptionHandler exceptionHandler;
+    private Executor executor;
+
+    @BeforeEach
+    void setup() {
+         exceptionHandler = (ignored) -> { };
+         executor = new SequentialExecutor(exceptionHandler);
+    }
 
     @Test
     void tasksAreExecuted() throws InterruptedException {
@@ -50,10 +64,15 @@ class SequentialExecutorTest {
     }
 
     @Test
-    void executionFailuresDontThrowOnSubmission() {
+    void thrownExceptionsArePropagatedToTheExceptionHandler() {
+        AtomicReference<Throwable> caught = new AtomicReference<>();
+        exceptionHandler = caught::set;
+        executor = new SequentialExecutor(exceptionHandler);
+        final RuntimeException ex = new RuntimeException("expected");
         executor.execute(() -> {
-            throw null;
+            throw ex;
         });
+        assertEquals(ex, caught.get());
     }
 
     @Test
@@ -101,6 +120,24 @@ class SequentialExecutorTest {
     }
 
     @Test
+    void noStackOverflows() throws Exception {
+        final int maxDepth = 10_000;
+        // If we substitute `executor` with `(runnable) -> runnable.run()` we get a stack overflow.
+        final Runnable runnable = new Runnable() {
+            private final AtomicInteger depth = new AtomicInteger();
+            @Override
+            public void run() {
+                if (depth.incrementAndGet() < maxDepth) {
+                    executor.execute(this);
+                }
+            }
+        };
+        // kick it off. We don't expect any stack-overflows from `SequentialExecutor` which should
+        // always queue the tasks therefore trading stack space for heap space.
+        executor.execute(runnable);
+    }
+
+    @Test
     void manyThreadsCanSubmitTasksConcurrently() throws InterruptedException {
         final int threadCount = 100;
         CountDownLatch completed = new CountDownLatch(threadCount);
@@ -126,5 +163,41 @@ class SequentialExecutorTest {
         // all tasks should have completed. Note that all thread are racing with each other to
         // submit work so the order of work execution isn't important.
         completed.await();
+    }
+
+    @Test
+    void preservesAsyncContext() throws InterruptedException {
+        final CountDownLatch l1 = new CountDownLatch(1);
+        final CountDownLatch l2 = new CountDownLatch(1);
+        Thread t = new Thread(() ->
+                executor.execute(() -> {
+                    try {
+                        l1.countDown();
+                        l2.await();
+                    } catch (Exception ex) {
+                        throw new AssertionError("Unexpected failure", ex);
+                    }
+                }));
+        t.start();
+
+        // wait for t1 to be in the execution loop then submit a task that should be queued.
+        l1.await();
+
+        // note that the behavior of the initial submitting thread executing queued tasks is not critical to the
+        // primitive: we could envision another correct implementation where a submitter will  execute the task it just
+        // submitted but if there are additional tasks the work gets shifted to a pooled thread to drain. If we switch
+        // the model, the test should be adjusted to conform to the desired behavior.
+        final AtomicReference<Object> observedContextValue = new AtomicReference<>();
+        final ContextMap.Key<Object> key = ContextMap.Key.newKey("testkey", Object.class);
+        final Object value = new Object();
+
+        AsyncContext.put(key, value);
+        executor.execute(() -> observedContextValue.set(AsyncContext.context().get(key)));
+        assertNull(observedContextValue.get());
+
+        // Now unblock the initial thread and it should also run the second task.
+        l2.countDown();
+        t.join();
+        assertEquals(value, observedContextValue.get());
     }
 }

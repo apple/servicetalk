@@ -77,7 +77,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancer.class);
 
-
     @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<DefaultLoadBalancer> nextResubscribeTimeUpdater =
             AtomicLongFieldUpdater.newUpdater(DefaultLoadBalancer.class, "nextResubscribeTime");
@@ -91,7 +90,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private volatile boolean isClosed;
 
     private final String targetResource;
-    private final SequentialExecutor sequentialExecutor = new SequentialExecutor(DefaultLoadBalancer.class);
+    private final SequentialExecutor sequentialExecutor;
     private final String lbDescription;
     private final HostSelector<ResolvedAddress, C> hostSelector;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
@@ -134,6 +133,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
+        this.sequentialExecutor = new SequentialExecutor((uncaughtException) -> {
+            LOGGER.error("{}: Uncaught exception in SequentialExecutor triggered closing of the load balancer.",
+                    this, uncaughtException);
+            closeAsync().subscribe();
+        });
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
@@ -159,25 +163,29 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private Completable doClose(final boolean graceful) {
         CompletableSource.Processor processor = Processors.newCompletableProcessor();
         sequentialExecutor.execute(() -> {
-            if (!isClosed) {
-                discoveryCancellable.cancel();
-                eventStreamProcessor.onComplete();
+            try {
+                if (!isClosed) {
+                    discoveryCancellable.cancel();
+                    eventStreamProcessor.onComplete();
+                }
+                isClosed = true;
+                List<Host<ResolvedAddress, C>> currentList = usedHosts;
+                final CompositeCloseable compositeCloseable = newCompositeCloseable()
+                        .appendAll(currentList)
+                        .appendAll(connectionFactory);
+                LOGGER.debug("{} is closing {}gracefully. Last seen addresses (size={}): {}.",
+                        this, graceful ? "" : "non", currentList.size(), currentList);
+                SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
+                                // We only want to empty the host list on error if we're closing non-gracefully.
+                                compositeCloseable.closeAsync().beforeOnError(t ->
+                                        sequentialExecutor.execute(() -> usedHosts = emptyList()))
+                        )
+                                // we want to always empty out the host list if we complete successfully
+                                .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
+                        .subscribe(processor);
+            } catch (Throwable ex) {
+                processor.onError(ex);
             }
-            isClosed = true;
-            List<Host<ResolvedAddress, C>> currentList = usedHosts;
-            final CompositeCloseable compositeCloseable = newCompositeCloseable()
-                    .appendAll(currentList)
-                    .appendAll(connectionFactory);
-            LOGGER.debug("{} is closing {}gracefully. Last seen addresses (size={}): {}.",
-                    this, graceful ? "" : "non", currentList.size(), currentList);
-            SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
-                    // We only want to empty the host list on error if we're closing non-gracefully.
-                    compositeCloseable.closeAsync().beforeOnError(t ->
-                            sequentialExecutor.execute(() -> usedHosts = emptyList()))
-                )
-                // we want to always empty out the host list if we complete successfully
-                .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
-                    .subscribe(processor);
         });
         return SourceAdapters.fromSource(processor);
     }

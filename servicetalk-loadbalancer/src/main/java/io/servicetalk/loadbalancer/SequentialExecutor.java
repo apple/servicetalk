@@ -15,8 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.servicetalk.concurrent.api.AsyncContext;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,19 +32,32 @@ import static java.util.Objects.requireNonNull;
  */
 final class SequentialExecutor implements Executor {
 
-    private final Logger logger;
-    private final AtomicReference<Cell> tail = new AtomicReference<>();
+    /**
+     * Handler of exceptions thrown by submitted Runnables.
+     */
+    @FunctionalInterface
+    public interface ExceptionHandler {
 
-    SequentialExecutor(Class<?> clazz) {
-        this(LoggerFactory.getLogger(clazz));
+        /**
+         * Handle the exception thrown from a submitted Runnable.
+         * Note that if this method throws the behavior is undefined.
+         *
+         * @param ex the Throwable thrown by the Runnable.
+         */
+        void onException(Throwable ex);
     }
 
-    SequentialExecutor(final Logger logger) {
-        this.logger = requireNonNull(logger, "logger");
+    private final ExceptionHandler exceptionHandler;
+    private final AtomicReference<Cell> tail = new AtomicReference<>();
+
+    SequentialExecutor(final ExceptionHandler exceptionHandler) {
+        this.exceptionHandler = requireNonNull(exceptionHandler, "exceptionHandler");
     }
 
     @Override
     public void execute(Runnable command) {
+        // Make sure we propagate any sync contexts.
+        command = AsyncContext.wrapRunnable(requireNonNull(command, "command"));
         final Cell next = new Cell(command);
         Cell t = tail.getAndSet(next);
         if (t != null) {
@@ -62,33 +74,27 @@ final class SequentialExecutor implements Executor {
     private void drain(Cell next) {
         for (;;) {
             assert next != null;
-            safeRun(next.runnable);
+            try {
+                next.runnable.run();
+            } catch (Throwable ex) {
+                exceptionHandler.onException(ex);
+            }
 
             // Attempt to get the next element.
             Cell n = next.next;
-            if (n != null) {
-                next = n;
-                continue;
-            }
-            // There doesn't seem to be another element linked. See if it was the tail and if so terminate draining.
-            // Note that a successful CAS established a happens-before relationship with future draining threads.
-            if (tail.compareAndSet(next, null)) {
-                return;
-            }
-            // next isn't the tail but the link hasn't resolved: we must poll until it does.
-            while ((n = next.next) == null) {
-                // Still not resolved: yield and then try again.
-                Thread.yield();
+            if (n == null) {
+                // There doesn't seem to be another element linked. See if it was the tail and if so terminate draining.
+                // Note that a successful CAS established a happens-before relationship with future draining threads.
+                if (tail.compareAndSet(next, null)) {
+                    break;
+                }
+                // next isn't the tail but the link hasn't resolved: we must poll until it does.
+                while ((n = next.next) == null) {
+                    // Still not resolved: yield and then try again.
+                    Thread.yield();
+                }
             }
             next = n;
-        }
-    }
-
-    private void safeRun(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (Exception ex) {
-            logger.error("Exception caught in sequential execution", ex);
         }
     }
 
