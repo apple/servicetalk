@@ -36,9 +36,11 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
@@ -65,7 +67,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.toList;
@@ -76,18 +77,18 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
+final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements TestableLoadBalancer<ResolvedAddress, C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NewRoundRobinLoadBalancer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancer.class);
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<NewRoundRobinLoadBalancer, List> usedHostsUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, List.class, "usedHosts");
+    private static final AtomicReferenceFieldUpdater<DefaultLoadBalancer, List> usedHostsUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(DefaultLoadBalancer.class, List.class, "usedHosts");
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicLongFieldUpdater<NewRoundRobinLoadBalancer> nextResubscribeTimeUpdater =
-            AtomicLongFieldUpdater.newUpdater(NewRoundRobinLoadBalancer.class, "nextResubscribeTime");
+    private static final AtomicLongFieldUpdater<DefaultLoadBalancer> nextResubscribeTimeUpdater =
+            AtomicLongFieldUpdater.newUpdater(DefaultLoadBalancer.class, "nextResubscribeTime");
 
     private static final long RESUBSCRIBING = -1L;
 
@@ -110,7 +111,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     /**
      * Creates a new instance.
      *
-     * @param id a (unique) ID to identify the created {@link NewRoundRobinLoadBalancer}.
+     * @param id a (unique) ID to identify the created {@link DefaultLoadBalancer}.
      * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
@@ -120,16 +121,17 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
      * continues being eligible for connecting on the request path).
      * @see RoundRobinLoadBalancerFactory
      */
-    NewRoundRobinLoadBalancer(
+    DefaultLoadBalancer(
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
-        this.hostSelector = new RoundRobinSelector<>(targetResource);
+        this.hostSelector = requireNonNull(hostSelector, "hostSelector");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -178,13 +180,14 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
-            final HealthCheckConfig config, final NewRoundRobinLoadBalancer<R, C> lb) {
-        final long lower = config.healthCheckResubscribeLowerBound;
-        final long upper = config.healthCheckResubscribeUpperBound;
-        final long currentTime = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
+            final HealthCheckConfig config, final DefaultLoadBalancer<R, C> lb) {
+        final long lowerNanos = config.healthCheckResubscribeLowerBound;
+        final long upperNanos = config.healthCheckResubscribeUpperBound;
+        final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
+        final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
+                ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
-                lb, currentTime, result);
+                lb, currentTimeNanos, result);
         return result;
     }
 
@@ -246,63 +249,95 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
 
         @Override
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-            if (events == null) {
-                LOGGER.debug("{}: unexpectedly received null instead of events.", NewRoundRobinLoadBalancer.this);
+            if (events == null || events.isEmpty()) {
+                LOGGER.debug("{}: unexpectedly received null or empty list instead of events.",
+                        DefaultLoadBalancer.this);
                 return;
             }
-            for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-                final ServiceDiscovererEvent.Status eventStatus = event.status();
-                LOGGER.debug("{}: received new ServiceDiscoverer event {}. Inferred status: {}.",
-                        NewRoundRobinLoadBalancer.this, event, eventStatus);
 
+            boolean sendReadyEvent;
+            List<Host<ResolvedAddress, C>> nextHosts;
+            for (;;) {
+                // TODO: we have some weirdness in the event that we fail the CAS namely that we can create a host
+                //  that never gets used but is orphaned. It's fine so long as there is nothing to close but that
+                //  guarantee may not always hold in the future.
                 @SuppressWarnings("unchecked")
-                final List<Host<ResolvedAddress, C>> usedAddresses =
-                        usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, oldHosts -> {
-                            if (isClosedList(oldHosts)) {
-                                return oldHosts;
-                            }
-                            final ResolvedAddress addr = requireNonNull(event.address());
-                            @SuppressWarnings("unchecked")
-                            final List<Host<ResolvedAddress, C>> oldHostsTyped =
-                                    (List<Host<ResolvedAddress, C>>) oldHosts;
+                List<Host<ResolvedAddress, C>> usedHosts = usedHostsUpdater.get(DefaultLoadBalancer.this);
+                if (isClosedList(usedHosts)) {
+                    // We don't update if the load balancer is closed.
+                    return;
+                }
+                nextHosts = new ArrayList<>(usedHosts.size() + events.size());
+                sendReadyEvent = false;
 
-                            if (AVAILABLE.equals(eventStatus)) {
-                                return addHostToList(oldHostsTyped, addr);
-                            } else if (EXPIRED.equals(eventStatus)) {
-                                if (oldHostsTyped.isEmpty()) {
-                                    return emptyList();
-                                } else {
-                                    return markHostAsExpired(oldHostsTyped, addr);
-                                }
-                            } else if (UNAVAILABLE.equals(eventStatus)) {
-                                return listWithHostRemoved(oldHostsTyped, host -> {
-                                    boolean match = host.address().equals(addr);
-                                    if (match) {
-                                        host.markClosed();
-                                    }
-                                    return match;
-                                });
-                            } else {
-                                LOGGER.error("{}: Unexpected Status in event:" +
-                                        " {} (mapped to {}). Leaving usedHosts unchanged: {}",
-                                        NewRoundRobinLoadBalancer.this, event, eventStatus, oldHosts);
-                                return oldHosts;
-                            }
-                        });
-
-                LOGGER.debug("{}: now using addresses (size={}): {}.",
-                        NewRoundRobinLoadBalancer.this, usedAddresses.size(), usedAddresses);
-
-                if (AVAILABLE.equals(eventStatus)) {
-                    if (usedAddresses.size() == 1) {
-                        eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
+                // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
+                // Unfortunately we need to make this every iteration of the CAS loop since we remove entries
+                // for hosts that already exist. If this results in to many collisions and map rebuilds we should
+                // re-assess how we manage concurrency for list mutations.
+                final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
+                for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
+                    ServiceDiscovererEvent<ResolvedAddress> old = eventMap.put(event.address(), event);
+                    if (old != null) {
+                        LOGGER.debug("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
+                                event.address(), event);
                     }
-                } else if (usedAddresses.isEmpty()) {
-                    eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                }
+
+                // First thing we do is go through the existing hosts and see if we need to transfer them. These
+                // will be all existing hosts that either don't have a matching discovery event or are not marked
+                // as unavailable. If they are marked unavailable, we need to close them (which is idempotent).
+                for (Host<ResolvedAddress, C> host : usedHosts) {
+                    ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
+                    if (event == null) {
+                        // Host doesn't have a SD update so just copy it over.
+                        nextHosts.add(host);
+                    } else if (AVAILABLE.equals(event.status())) {
+                        // We only send the ready event if the previous host list was empty.
+                        sendReadyEvent = usedHosts.isEmpty();
+                        // If the host is already in CLOSED state, we should discard it and create a new entry.
+                        // For duplicate ACTIVE events or for repeated activation due to failed CAS
+                        // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
+                        if (host.markActiveIfNotClosed()) {
+                            nextHosts.add(host);
+                        } else {
+                            nextHosts.add(createHost(event.address()));
+                        }
+                    } else if (EXPIRED.equals(event.status())) {
+                        if (!host.markExpired()) {
+                            nextHosts.add(host);
+                        }
+                    } else if (UNAVAILABLE.equals(event.status())) {
+                        host.markClosed();
+                    } else {
+                        LOGGER.warn("{}: Unsupported Status in event:" +
+                                        " {} (mapped to {}). Leaving usedHosts unchanged: {}",
+                                DefaultLoadBalancer.this, event, event.status(), nextHosts);
+                        nextHosts.add(host);
+                    }
+                }
+                // Now process events that didn't have an existing host. The only ones that we actually care
+                // about are the AVAILABLE events which result in a new host.
+                for (ServiceDiscovererEvent<ResolvedAddress> event : eventMap.values()) {
+                    if (AVAILABLE.equals(event.status())) {
+                        sendReadyEvent = true;
+                        nextHosts.add(createHost(event.address()));
+                    }
+                }
+                // We've now built the new list so now we need to CAS it before we can move on. This should only be
+                // racing with closing hosts and closing the whole LB so it shouldn't be common to lose the race.
+                if (usedHostsUpdater.compareAndSet(DefaultLoadBalancer.this, usedHosts, nextHosts)) {
+                    break;
                 }
             }
 
-            final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
+            LOGGER.debug("{}: now using addresses (size={}): {}.",
+                    DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
+            if (nextHosts.isEmpty()) {
+                eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+            } else if (sendReadyEvent) {
+                eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
+            }
+
             if (firstEventsAfterResubscribe) {
                 // We can enter this path only if we re-subscribed because all previous hosts were UNHEALTHY.
                 if (events.isEmpty()) {
@@ -320,7 +355,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 // starts from an empty state propagating only AVAILABLE events. To be in sync with the
                 // ServiceDiscoverer we should clean up and close gracefully all hosts that are not present in the
                 // initial collection of events, regardless of their current state.
-                for (Host<ResolvedAddress, C> host : currentHosts) {
+                for (Host<ResolvedAddress, C> host : nextHosts) {
                     if (notAvailable(host, events)) {
                         host.closeAsyncGracefully().subscribe();
                     }
@@ -328,24 +363,12 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             }
         }
 
-        private List<Host<ResolvedAddress, C>> markHostAsExpired(
-                final List<Host<ResolvedAddress, C>> oldHostsTyped, final ResolvedAddress addr) {
-            for (Host<ResolvedAddress, C> host : oldHostsTyped) {
-                if (host.address().equals(addr)) {
-                    // Host removal will be handled by the Host's onClose::afterFinally callback
-                    host.markExpired();
-                    break;  // because duplicates are not allowed, we can stop iteration
-                }
-            }
-            return oldHostsTyped;
-        }
-
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new DefaultHost<>(NewRoundRobinLoadBalancer.this.toString(), addr,
+            Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
-                    usedHostsUpdater.updateAndGet(NewRoundRobinLoadBalancer.this, previousHosts -> {
+                    usedHostsUpdater.updateAndGet(DefaultLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
                                 List<Host<ResolvedAddress, C>> previousHostsTyped =
                                         (List<Host<ResolvedAddress, C>>) previousHosts;
@@ -355,39 +378,16 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             return host;
         }
 
-        private List<Host<ResolvedAddress, C>> addHostToList(
-                List<Host<ResolvedAddress, C>> oldHostsTyped, ResolvedAddress addr) {
-            if (oldHostsTyped.isEmpty()) {
-                return singletonList(createHost(addr));
-            }
-
-            // duplicates are not allowed
-            for (Host<ResolvedAddress, C> host : oldHostsTyped) {
-                if (host.address().equals(addr)) {
-                    if (!host.markActiveIfNotClosed()) {
-                        // If the host is already in CLOSED state, we should create a new entry.
-                        // For duplicate ACTIVE events or for repeated activation due to failed CAS
-                        // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
-                        break;
-                    }
-                    return oldHostsTyped;
-                }
-            }
-
-            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() + 1);
-            newHosts.addAll(oldHostsTyped);
-            newHosts.add(createHost(addr));
-            return newHosts;
-        }
-
         private List<Host<ResolvedAddress, C>> listWithHostRemoved(
                 List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
             if (oldHostsTyped.isEmpty()) {
-                // this can happen when an expired host is removed during closing of the NewRoundRobinLoadBalancer,
+                // this can happen when an expired host is removed during closing of the DefaultLoadBalancer,
                 // but all of its connections have already been closed
                 return oldHostsTyped;
             }
-            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
+            // We keep the old size as the capacity hint because the penalty for a resize in the case that the
+            // element isn't in the list is much worse than the penalty for an unused array slot.
+            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size());
             for (int i = 0; i < oldHostsTyped.size(); ++i) {
                 final Host<ResolvedAddress, C> current = oldHostsTyped.get(i);
                 if (hostPredicate.test(current)) {
@@ -411,7 +411,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
             }
             LOGGER.error(
                 "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
-                    NewRoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+                    DefaultLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
         }
 
         @Override
@@ -422,7 +422,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
                 eventStreamProcessor.onComplete();
             }
             LOGGER.error("{}: service discoverer completed. Last seen addresses (size={}): {}.",
-                    NewRoundRobinLoadBalancer.this, hosts.size(), hosts);
+                    DefaultLoadBalancer.this, hosts.size(), hosts);
         }
     }
 
@@ -509,7 +509,7 @@ final class NewRoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedCon
     }
 
     private String makeDescription(String id, String targetResource) {
-        return "NewRoundRobinLoadBalancer{" +
+        return getClass().getSimpleName() + "{" +
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
