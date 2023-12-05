@@ -25,11 +25,13 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.Nullable;
 
 import static java.lang.System.nanoTime;
 import static java.lang.Thread.currentThread;
@@ -42,9 +44,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public final class LoggerStringWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerStringWriter.class);
-    private static final String APPENDER_NAME = "writer";
-    @Nullable
-    private static StringWriter logStringWriter;
+    private static final ThreadLocal<ConcurrentStringWriter> THREAD_LOCAL_APPENDER = new ThreadLocal<>();
 
     private LoggerStringWriter() {
         // no instances.
@@ -54,7 +54,7 @@ public final class LoggerStringWriter {
      * Clear the content of the {@link #accumulated()}.
      */
     public static void reset() {
-        getStringWriter().getBuffer().setLength(0);
+        getStringWriter().reset();
     }
 
     /**
@@ -157,29 +157,31 @@ public final class LoggerStringWriter {
         assertThat(value.substring(beginIndex, beginIndex + expectedValue.length()), is(expectedValue));
     }
 
-    private static synchronized StringWriter getStringWriter() {
-        if (logStringWriter == null) {
+    private static ConcurrentStringWriter getStringWriter() {
+        ConcurrentStringWriter writer = THREAD_LOCAL_APPENDER.get();
+        if (writer == null) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-            logStringWriter = addWriterAppender(context, DEBUG);
+            writer = addWriterAppender(context, DEBUG);
+            THREAD_LOCAL_APPENDER.set(writer);
         }
-        return logStringWriter;
+        return writer;
     }
 
-    private static synchronized void removeStringWriter() {
-        if (logStringWriter == null) {
+    private static void removeStringWriter() {
+        ConcurrentStringWriter writer = THREAD_LOCAL_APPENDER.get();
+        if (writer == null) {
             return;
         }
-        removeWriterAppender((LoggerContext) LogManager.getContext(false));
-        logStringWriter = null;
+        removeWriterAppender(writer, (LoggerContext) LogManager.getContext(false));
+        THREAD_LOCAL_APPENDER.remove();
     }
 
-    private static StringWriter addWriterAppender(final LoggerContext context, Level level) {
+    private static ConcurrentStringWriter addWriterAppender(final LoggerContext context, Level level) {
         final Configuration config = context.getConfiguration();
-        final StringWriter writer = new StringWriter();
-
+        final ConcurrentStringWriter writer = new ConcurrentStringWriter();
         final Map.Entry<String, Appender> existing = config.getAppenders().entrySet().iterator().next();
         final WriterAppender writerAppender = WriterAppender.newBuilder()
-                .setName(APPENDER_NAME)
+                .setName(writer.name)
                 .setLayout(existing.getValue().getLayout())
                 .setTarget(writer)
                 .build();
@@ -190,16 +192,62 @@ public final class LoggerStringWriter {
         return writer;
     }
 
-    private static void removeWriterAppender(final LoggerContext context) {
+    private static void removeWriterAppender(ConcurrentStringWriter writer, final LoggerContext context) {
         final Configuration config = context.getConfiguration();
         LoggerConfig rootConfig = config.getRootLogger();
         // Stopping the logger is subject to race conditions where logging during cleanup on global executor
         // may still try to log and raise an error.
-        WriterAppender writerAppender = (WriterAppender) rootConfig.getAppenders().get(APPENDER_NAME);
+        WriterAppender writerAppender = (WriterAppender) rootConfig.getAppenders().get(writer.name);
         if (writerAppender != null) {
             writerAppender.stop(0, NANOSECONDS);
         }
         // Don't remove directly from map, because the root logger also cleans up filters.
-        rootConfig.removeAppender(APPENDER_NAME);
+        rootConfig.removeAppender(writer.name);
+    }
+
+    // This is essentially just a thread safe `StringAppender` with a unique `String name` field to use
+    // as a map key.
+    private static final class ConcurrentStringWriter extends Writer {
+
+        private static final String APPENDER_NAME_PREFIX = "writer";
+
+        private final StringWriter stringWriter = new StringWriter();
+
+        // We use uuid as a way to give the appender a unique name. We could try and do it with the current
+        // thread name but it's hard to say if that will be unique but it is certain to be ugly.
+        final String name = APPENDER_NAME_PREFIX + '_' + UUID.randomUUID();
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            synchronized (stringWriter) {
+                stringWriter.write(cbuf, off, len);
+            }
+        }
+
+        @Override
+        public void flush() throws IOException {
+            synchronized (stringWriter) {
+                stringWriter.flush();
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            synchronized (stringWriter) {
+                stringWriter.close();
+            }
+        }
+
+        @Override
+        public String toString() {
+            synchronized (stringWriter) {
+                return stringWriter.toString();
+            }
+        }
+
+        void reset() {
+            synchronized (stringWriter) {
+                stringWriter.getBuffer().setLength(0);
+            }
+        }
     }
 }
