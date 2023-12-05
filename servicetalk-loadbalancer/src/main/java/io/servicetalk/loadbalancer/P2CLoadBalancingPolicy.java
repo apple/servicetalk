@@ -52,16 +52,13 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
     }
 
     @Override
-    public String loadBalancerName() {
-        return "P2C(maxEffort=" + maxEffort + ')';
+    public String name() {
+        return "P2C";
     }
 
-    /**
-     * Create a new {@link P2CLoadBalancingPolicy} builder.
-     * @return a new {@link P2CLoadBalancingPolicy} builder.
-     */
-    public static Builder builder() {
-        return new Builder();
+    @Override
+    public String toString() {
+        return name() + "(maxEffort=" + maxEffort + ')';
     }
 
     /**
@@ -74,9 +71,6 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
         private int maxEffort = DEFAULT_MAX_EFFORT;
         @Nullable
         private Random random;
-
-        private Builder() {
-        }
 
         /**
          * Set the maximum number of attempts that P2C will attempt to select a pair with at least one

@@ -25,6 +25,6 @@ public class EagerP2CLoadBalancerTest extends EagerLoadBalancerTest {
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(LoadBalancingPolicies.p2c());
+                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
     }
 }

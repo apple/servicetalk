@@ -25,7 +25,7 @@ interface LoadBalancingPolicy {
      * The name of the load balancing policy
      * @return the name of the load balancing policy
      */
-    String loadBalancerName();
+    String name();
 
     <ResolvedAddress, C extends LoadBalancedConnection> HostSelector<ResolvedAddress, C>
     buildSelector(String targetResource);

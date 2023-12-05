@@ -19,10 +19,52 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
 
 import java.time.Duration;
+import java.util.function.Predicate;
 
+/**
+ * Builder for {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances based upon the configuration.
+ * <p>
+ * The addresses are provided via the {@link Publisher published}
+ * {@link ServiceDiscovererEvent events} that signal the host's {@link ServiceDiscovererEvent.Status status}.
+ * Instances returned handle {@link ServiceDiscovererEvent.Status#AVAILABLE},
+ * {@link ServiceDiscovererEvent.Status#EXPIRED}, and {@link ServiceDiscovererEvent.Status#UNAVAILABLE} event statuses.
+ * <p>
+ * The created instances have the following behaviour:
+ * <ul>
+ *     <li>Host selection is performed based upon the provided {@link LoadBalancingPolicy}. If no policy is provided
+ *     the default policy is round-robin.</li>
+ *     <li>Connections are created lazily, without any concurrency control on their creation. This can lead to
+ *     over-provisioning connections when dealing with a requests surge.</li>
+ *     <li>Existing connections are reused unless a selector passed to
+ *     {@link LoadBalancer#selectConnection(Predicate, ContextMap)} suggests otherwise. This can lead to situations
+ *     where connections will be used to their maximum capacity (for example in the context of pipelining) before new
+ *     connections are created.</li>
+ *     <li>Closed connections are automatically pruned.</li>
+ *     <li>When {@link Publisher}&lt;{@link ServiceDiscovererEvent}&gt; delivers events with
+ *     {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscovererEvent.Status#UNAVAILABLE}, connections
+ *     are immediately closed (gracefully) for the associated {@link ServiceDiscovererEvent#address()}. In case of
+ *     {@link ServiceDiscovererEvent.Status#EXPIRED}, already established connections to
+ *     {@link ServiceDiscovererEvent#address()} continue to be used for requests, but no new connections are created.
+ *     In case the address' connections are busy, another host is tried. If all hosts are busy based on the selection
+ *     mechanism of the {@link LoadBalancingPolicy}, selection fails with a
+ *     {@link io.servicetalk.client.api.NoActiveHostException}.</li>
+ *     <li>If health checking is configured, for hosts to which consecutive connection attempts fail, a background
+ *     health checking task is created and the host is not considered for opening new connections until the background
+ *     check succeeds to create a connection. Upon such event, the connection can immediately be reused and future
+ *     attempts will again consider this host. This behaviour can be disabled using a negative argument for
+ *     {@link LoadBalancerBuilder#healthCheckFailedConnectionsThreshold(int)} and the failing host will take
+ *     part in the regular host selection cycle for trying to establish a connection on the request path.</li>
+ * </ul>
+ *
+ * @param <ResolvedAddress> The resolved address type.
+ * @param <C> The type of connection.
+ */
 interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.

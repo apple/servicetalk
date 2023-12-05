@@ -38,7 +38,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
     private static final int DEFAULT_LINEAR_SEARCH_SPACE = Integer.MAX_VALUE;
-    private static final LoadBalancingPolicy DEFAULT_LOAD_BALANCING_POLICY = LoadBalancingPolicies.roundRobin();
+    private static final LoadBalancingPolicy DEFAULT_LOAD_BALANCING_POLICY =
+            new RoundRobinLoadBalancingPolicy.Builder().build();
 
     private final String id;
     private LoadBalancingPolicy loadBalancingPolicy = DEFAULT_LOAD_BALANCING_POLICY;

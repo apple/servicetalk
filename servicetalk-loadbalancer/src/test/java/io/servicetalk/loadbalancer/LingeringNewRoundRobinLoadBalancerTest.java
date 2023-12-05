@@ -25,6 +25,6 @@ class LingeringNewRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(RoundRobinLoadBalancingPolicy.builder().build());
+                .loadBalancingPolicy(new RoundRobinLoadBalancingPolicy.Builder().build());
     }
 }

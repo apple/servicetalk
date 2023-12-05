@@ -36,25 +36,14 @@ final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
     }
 
     @Override
-    public String loadBalancerName() {
+    public String name() {
         return "RoundRobin";
-    }
-
-    /**
-     * Create a new {@link RoundRobinLoadBalancingPolicy} Builder.
-     * @return a new {@link RoundRobinLoadBalancingPolicy} Builder.
-     */
-    public static Builder builder() {
-        return new Builder();
     }
 
     /**
      * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
      */
     public static final class Builder {
-
-        private Builder() {
-        }
 
         /**
          * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
