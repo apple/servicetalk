@@ -73,6 +73,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         return this;
     }
 
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
         this.backgroundExecutor = new NormalizedTimeSourceExecutor(backgroundExecutor);
         return this;
@@ -105,6 +106,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         return this;
     }
 
+    @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         final HealthCheckConfig healthCheckConfig;
         if (this.healthCheckFailedConnectionsThreshold < 0) {
