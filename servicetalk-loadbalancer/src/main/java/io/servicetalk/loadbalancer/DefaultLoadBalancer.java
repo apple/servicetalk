@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -130,7 +131,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
+            @Nullable final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -140,7 +141,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
-        this.loadBalancerObserver = loadBalancerObserver;
+        this.loadBalancerObserver = loadBalancerObserver != null ?
+                loadBalancerObserver : NoopLoadBalancerObserver.instance();
         this.asyncCloseable = toAsyncCloseable(graceful -> {
             discoveryCancellable.cancel();
             eventStreamProcessor.onComplete();
@@ -367,12 +369,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
+            // TODO: note that this host may not get used if we fail a CAS. That means we'll make another
+            //  and essentially observe the same host created event multiple times.
+
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
-                    connectionFactory, linearSearchSpace, healthCheckConfig,
-                    // TODO: note that this host may not get used if we fail a CAS. That means we'll make another
-                    //  and essentially observe the same host created event multiple times.
-                    loadBalancerObserver == null ? null : loadBalancerObserver.hostObserver());
+                    connectionFactory, linearSearchSpace, healthCheckConfig, loadBalancerObserver);
             host.onClose().afterFinally(() ->
                     usedHostsUpdater.updateAndGet(DefaultLoadBalancer.this, previousHosts -> {
                                 @SuppressWarnings("unchecked")
@@ -452,27 +454,33 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // It's possible that we're racing with updates from the `onNext` method but since it's intrinsically
         // racy it's fine to do these 'are there any hosts at all' checks here using the total host set.
         if (currentHosts.isEmpty()) {
-            return isClosedList(currentHosts) ? failedLBClosed(targetResource) :
-                    // This is the case when SD has emitted some items but none of the hosts are available.
-                    failed(Exceptions.StacklessNoAvailableHostException.newInstance(
-                            "No hosts are available to connect for " + targetResource + ".",
-                            this.getClass(), "selectConnection0(...)"));
+            if (isClosedList(currentHosts)) {
+                return failedLBClosed(targetResource);
+            } else {
+                // This is the case when SD has emitted some items but none of the hosts are available.
+                loadBalancerObserver.noHostsAvailable();
+                return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
+                        "No hosts are available to connect for " + targetResource + ".",
+                        this.getClass(), "selectConnection0(...)"));
+            }
         }
 
-        Single<C> result = hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
-        if (healthCheckConfig != null) {
-            result = result.beforeOnError(exn -> {
-                if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {
+        return hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve)
+                .beforeOnError(exn -> {
+            if (exn instanceof Exceptions.StacklessNoActiveHostException) {
+                // Observer the event and, if necessary, resubscribe to SD to (hopefully) get a new set
+                // of backends that are healthier.
+                loadBalancerObserver.noActiveHostsAvailable(currentHosts.size(), (NoActiveHostException) exn);
+                if (healthCheckConfig != null && allUnhealthy(currentHosts)) {
                     final long currNextResubscribeTime = nextResubscribeTime;
                     if (currNextResubscribeTime >= 0 &&
                             healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
                             nextResubscribeTimeUpdater.compareAndSet(this, currNextResubscribeTime, RESUBSCRIBING)) {
-                            subscribeToEvents(true);
+                        subscribeToEvents(true);
                     }
                 }
-            });
-        }
-        return result;
+            }
+        });
     }
 
     @Override
