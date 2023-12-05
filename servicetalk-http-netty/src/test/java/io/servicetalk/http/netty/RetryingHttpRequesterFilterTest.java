@@ -171,7 +171,7 @@ class RetryingHttpRequesterFilterTest {
                              .build())
                      .appendClientFilter(new Builder()
                              .waitForLoadBalancer(true)
-                             .responseMapper(resp -> resp.status().statusClass().equals(SERVER_ERROR_5XX) ?
+                             .responseMapper(resp -> resp.status().statusClass() == SERVER_ERROR_5XX ?
                                      new HttpResponseException("failed", resp) : null)
                              .retryResponses((requestMetaData, throwable) -> ofImmediate(Integer.MAX_VALUE - 1))
                              .maxTotalRetries(Integer.MAX_VALUE)
@@ -211,7 +211,7 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter(new Builder()
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediateBounded() :
+                                "/retry".equals(requestMetaData.requestTarget()) ? ofImmediateBounded() :
                                         ofNoRetries()).build())
                 .buildBlocking();
         assertRequestRetryingPred(failingClient);
@@ -223,7 +223,7 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter((__) -> true, new Builder()
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediateBounded() :
+                                "/retry".equals(requestMetaData.requestTarget()) ? ofImmediateBounded() :
                                         ofNoRetries()).build())
                 .buildBlocking();
         assertRequestRetryingPred(failingClient);
@@ -291,7 +291,7 @@ class RetryingHttpRequesterFilterTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void requestPublisherTransformNoStackOverflow(boolean mayReplayRequestPayload) throws Exception {
-        final int serverRequestsBeforeSucceed = 10000;
+        final int serverRequestsBeforeSucceed = 10_000;
         final RetryingHttpRequesterFilter retryFilter;
         final RetryingHttpRequesterFilter.Builder builder = new Builder()
                 .waitForLoadBalancer(true)

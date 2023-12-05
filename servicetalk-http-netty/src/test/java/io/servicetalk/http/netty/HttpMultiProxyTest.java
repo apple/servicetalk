@@ -33,9 +33,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.api.ProxyConfig.forAddress;
-import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +80,7 @@ class HttpMultiProxyTest {
         safeClose(serverBehindProxyContext);
     }
 
-    void startProxy() throws Exception {
+    private void startProxy() throws Exception {
         proxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName()).build();
         proxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
@@ -90,21 +90,21 @@ class HttpMultiProxyTest {
         proxyAddress = serverHostAndPort(proxyContext);
     }
 
-    void startServerBehindProxy() throws Exception {
+    private void startServerBehindProxy() throws Exception {
         serverBehindProxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverBehindProxyAddress = serverHostAndPort(serverBehindProxyContext);
     }
 
-    void startServerWithoutProxy() throws Exception {
+    private void startServerWithoutProxy() throws Exception {
         serverWithoutProxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverWithoutProxyAddress = serverHostAndPort(serverWithoutProxyContext);
     }
 
-    void createClient() {
+    private void createClient() {
         assert serverBehindProxyAddress != null && proxyAddress != null && serverWithoutProxyAddress != null;
         client = HttpClients
                 .forMultiAddressUrl(getClass().getSimpleName())

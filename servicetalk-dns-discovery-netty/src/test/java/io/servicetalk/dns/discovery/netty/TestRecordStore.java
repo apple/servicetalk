@@ -28,11 +28,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
+import static java.util.Collections.emptySet;
 import static org.apache.directory.server.dns.messages.RecordType.A;
 import static org.apache.directory.server.dns.messages.RecordType.AAAA;
 import static org.apache.directory.server.dns.messages.RecordType.CNAME;
@@ -188,7 +190,7 @@ final class TestRecordStore implements RecordStore {
                 return new HashSet<>(recordsForType);
             }
         }
-        return null;
+        return emptySet();
     }
 
     static ResourceRecord createSrvRecord(final String domain, String targetDomain, final int port, final int ttl) {
@@ -249,7 +251,7 @@ final class TestRecordStore implements RecordStore {
             this.timeToLive = timeToLive;
             this.attributes = new HashMap<>();
             for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
-                this.attributes.put(entry.getKey().toLowerCase(), entry.getValue());
+                this.attributes.put(entry.getKey().toLowerCase(Locale.ENGLISH), entry.getValue());
             }
         }
 
@@ -276,7 +278,7 @@ final class TestRecordStore implements RecordStore {
         @Nullable
         @Override
         public String get(final String id) {
-            final Object value = attributes.get(id.toLowerCase());
+            final Object value = attributes.get(id.toLowerCase(Locale.ENGLISH));
             return value == null ? null : value.toString();
         }
 

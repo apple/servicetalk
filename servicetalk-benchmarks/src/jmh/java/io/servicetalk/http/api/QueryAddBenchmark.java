@@ -31,7 +31,7 @@ import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 5)
 @Measurement(iterations = 5, time = 5)

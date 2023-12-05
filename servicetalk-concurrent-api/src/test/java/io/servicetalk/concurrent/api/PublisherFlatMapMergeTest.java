@@ -325,7 +325,7 @@ class PublisherFlatMapMergeTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] errorFirst={0} errorSecond={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void testDuplicateTerminal(boolean errorFirst, boolean errorSecond) {
         PublisherSource<Integer> mappedPublisher = subscriber -> {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
@@ -357,7 +357,7 @@ class PublisherFlatMapMergeTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] onError={0} delayError={1}")
-    @CsvSource(value = {/*"true,true", "true,false",*/ "false,true"/*, "false,false"*/})
+    @CsvSource({/*"true,true", "true,false",*/ "false,true"/*, "false,false"*/})
     void onNextAfterTerminalThrows(boolean onError, boolean delayError) {
         PublisherSource<Publisher<Integer>> mappedPublisher = subscriber -> subscriber.onSubscribe(new Subscription() {
             private boolean terminated;
@@ -439,7 +439,7 @@ class PublisherFlatMapMergeTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] delayError={0} queuedSignals={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void testInvalidDemand(boolean delayError, boolean queuedSignals) throws InterruptedException {
         final int firstItem = 1;
         Publisher<Integer> publisher = Publisher.range(firstItem, firstItem + 10);
@@ -472,7 +472,7 @@ class PublisherFlatMapMergeTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] delayError={0} mapErrorToComplete={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void testDemandNotRespectedPropagatesTerminal(boolean delayError, boolean mapErrorToComplete)
             throws InterruptedException {
         final int firstItem = 1;
@@ -936,7 +936,7 @@ class PublisherFlatMapMergeTest {
         Queue<Integer> resultsQueue = new ConcurrentLinkedQueue<>();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        final int maxRange = 1000000;
+        final int maxRange = 1_000_000;
         toSource(publisher.flatMapMerge(i -> range(0, maxRange), 10)).subscribe(
                 new Subscriber<Integer>() {
                     @Nullable
@@ -1075,7 +1075,7 @@ class PublisherFlatMapMergeTest {
     @Test
     void concurrentMappedDeliveryOrderPreserved() {
         assert executor != null;
-        final int upstreamItems = 10000;
+        final int upstreamItems = 10_000;
         final int mappedItems = 5;
         final TestPublisherSubscriber<IntPair> subscriber = new TestPublisherSubscriber<>();
         Publisher<IntPair> publisher = range(0, upstreamItems).publishOn(executor)
@@ -1381,7 +1381,7 @@ class PublisherFlatMapMergeTest {
         final long memory = Runtime.getRuntime().maxMemory();
         final byte[] array = new byte[(int) min(Integer.MAX_VALUE >>> 3, memory)];
         array[0] = 1; // this value doesn't matter, just to suppressing warning about not writing to array.
-        toSource(range(0, 100000000).flatMapMerge(i -> from(array.clone()), 1))
+        toSource(range(0, 100_000_000).flatMapMerge(i -> from(array.clone()), 1))
                 .subscribe(new Subscriber<byte[]>() {
                     @Override
                     public void onSubscribe(final Subscription subscription) {

@@ -421,8 +421,7 @@ class ErrorHandlingTest {
     }
 
     static Collection<Arguments> data() {
-        GrpcExecutionStrategy[] strategies =
-                new GrpcExecutionStrategy[]{offloadNone(), defaultStrategy()};
+        GrpcExecutionStrategy[] strategies = {offloadNone(), defaultStrategy()};
         List<Arguments> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
         for (GrpcExecutionStrategy serverStrategy : strategies) {
             for (GrpcExecutionStrategy clientStrategy : strategies) {

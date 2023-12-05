@@ -38,6 +38,7 @@ final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<
     }
 
     @Nonnull
+    @Override
     Iterable<T> doDeserialize(final Buffer buffer, @Nullable List<T> resultHolder) throws IOException {
         if (buffer.hasArray()) {
             final int start = buffer.arrayOffset() + buffer.readerIndex();

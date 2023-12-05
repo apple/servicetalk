@@ -132,6 +132,7 @@ final class KeepAliveManager {
                         }));
     }
 
+    @SuppressWarnings("PMD.InvalidLogMessageFormat")
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy,
                      final Scheduler scheduler, final IdlenessDetector idlenessDetector) {
         if (channel instanceof DuplexChannel) {
@@ -334,6 +335,7 @@ final class KeepAliveManager {
         }
     }
 
+    @SuppressWarnings("PMD.InvalidLogMessageFormat")
     private void doCloseAsyncGracefully0(final Runnable whenInitiated, final boolean local) {
         assert channel.eventLoop().inEventLoop();
 

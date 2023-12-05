@@ -62,7 +62,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 final class CacheConnectionHttpLoadBalanceFactoryTest {
     @ParameterizedTest(name = "{displayName} [{index}] numRequests={0} maxConcurrency={1} clientH2={2} serverH2={3}")
-    @CsvSource(value = {
+    @CsvSource({
             "1, 100, true, true", "2, 2, true, false",
             "100, 100, true, true", "100, 100, false, true", "100, 100, true, false", "100, 100, false, false",
             "199, 100, true, true", "201, 100, true, true",

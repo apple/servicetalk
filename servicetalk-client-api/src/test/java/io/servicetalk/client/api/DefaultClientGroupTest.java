@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DefaultClientGroupTest {
 
@@ -30,18 +30,8 @@ class DefaultClientGroupTest {
                 new DefaultClientGroup<>(s -> emptyAsyncCloseable());
         cg.closeAsync().toFuture().get();
 
-        try {
-            cg.get("foo");
-            fail("ClientGroup is closed, cg.get() should throw");
-        } catch (IllegalStateException e) {
-            // Expected
-        }
-
-        try {
-            cg.get("foo"); // Ensure this doesn't hang
-            fail("ClientGroup is closed, cg.get() should throw");
-        } catch (IllegalStateException e) {
-            // Expected
-        }
+        assertThrows(IllegalStateException.class, () -> cg.get("foo"));
+        // Ensure this doesn't hang
+        assertThrows(IllegalStateException.class, () -> cg.get("foo"));
     }
 }

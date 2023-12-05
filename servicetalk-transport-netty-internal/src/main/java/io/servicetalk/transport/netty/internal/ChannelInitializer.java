@@ -54,7 +54,7 @@ public interface ChannelInitializer {
      */
     static ChannelInitializer defaultInitializer() {
         return channel -> channel.config().setRecvByteBufAllocator(
-                new AdaptiveRecvByteBufAllocator(512, 32768, 65536)
+                new AdaptiveRecvByteBufAllocator(512, 32_768, 65_536)
                         .respectMaybeMoreData(false)
                         .maxMessagesPerRead(4));
     }

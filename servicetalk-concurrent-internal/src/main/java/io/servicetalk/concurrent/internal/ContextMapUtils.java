@@ -57,7 +57,7 @@ public final class ContextMapUtils {
                 .append(":{");
 
         map.forEach((key, value) -> {
-            sb.append(key).append('=').append(value == map ? "(this Map)" : value).append(',').append(' ');
+            sb.append(key).append('=').append(value == map ? "(this Map)" : value).append(", ");
             return true;
         });
         sb.setLength(sb.length() - 2);

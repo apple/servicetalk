@@ -262,7 +262,8 @@ class PartitionedHttpClientTest {
                         }
                         ServerContext dSrv = userId == 1 ? srv1 : srv2;
                         InetSocketAddress socketAddress = (InetSocketAddress) dSrv.listenAddress();
-                        return responseFactory.ok().payloadBody(socketAddress.getPort() + "", textSerializerUtf8());
+                        return responseFactory.ok()
+                                .payloadBody(Integer.toString(socketAddress.getPort()), textSerializerUtf8());
                     }
                     return responseFactory.notFound();
                 })) {

@@ -33,7 +33,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.f
 
 class FlushWithExecutorTest extends AbstractFlushTest {
 
-    private static final String[] data = new String[]{"1", "2", "3", "4"};
+    private static final String[] data = {"1", "2", "3", "4"};
 
     @RegisterExtension
     final ExecutionContextExtension contextRule = cached();

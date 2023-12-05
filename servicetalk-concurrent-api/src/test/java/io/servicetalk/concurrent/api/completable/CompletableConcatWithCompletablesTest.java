@@ -86,7 +86,7 @@ class CompletableConcatWithCompletablesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 10000})
+    @ValueSource(ints = {1, 2, 10_000})
     @Timeout(30)
     void testSourceSuccessReentrant(int num) {
         Completable[] mockCompletables = new Completable[num];

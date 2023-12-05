@@ -44,6 +44,7 @@ class HttpEventKeyTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.LooseCoupling")
     void testGenericType() {
         @SuppressWarnings("unchecked")
         HttpEventKey<List<String>> key = newKey("key", (Class<List<String>>) (Class<?>) List.class);

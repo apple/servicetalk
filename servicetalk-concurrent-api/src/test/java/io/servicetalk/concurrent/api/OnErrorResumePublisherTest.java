@@ -35,8 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class OnErrorResumePublisherTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private TestPublisher<Integer> first = new TestPublisher<>();
-    private TestPublisher<Integer> second = new TestPublisher<>();
+    private final TestPublisher<Integer> first = new TestPublisher<>();
+    private final TestPublisher<Integer> second = new TestPublisher<>();
 
     @Test
     void testFirstComplete() {

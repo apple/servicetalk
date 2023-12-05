@@ -111,7 +111,7 @@ class DefaultDnsClientTest {
     private TestDnsServer dnsServer2;
     private DefaultDnsClient client;
 
-    void setup() throws Exception {
+    private void setup() throws Exception {
         setup(UnaryOperator.identity());
     }
 
@@ -588,7 +588,7 @@ class DefaultDnsClientTest {
     void singleDiscoverMultipleRecords() throws Exception {
         setup();
         final String domain = "servicetalk.io";
-        final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        final String[] ips = {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
@@ -611,7 +611,7 @@ class DefaultDnsClientTest {
         setup();
         final String dupIp = nextIp();
         final String domain = "servicetalk.io";
-        final String[] ips = new String[] {nextIp(), nextIp(), dupIp, dupIp, nextIp()};
+        final String[] ips = {nextIp(), nextIp(), dupIp, dupIp, nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
@@ -636,7 +636,7 @@ class DefaultDnsClientTest {
     void repeatDiscoverMultipleRecords() throws Exception {
         setup();
         final String domain = "servicetalk.io";
-        final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        final String[] ips = {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
@@ -647,7 +647,7 @@ class DefaultDnsClientTest {
             assertHasEvent(signals, ip, AVAILABLE);
         }
 
-        final String[] ips2 = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        final String[] ips2 = {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips2);
         subscription.request(ips2.length);
         advanceTime();

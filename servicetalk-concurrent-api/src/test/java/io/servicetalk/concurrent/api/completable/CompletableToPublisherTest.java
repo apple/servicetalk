@@ -42,7 +42,7 @@ class CompletableToPublisherTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
-    private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     void invalidRequestNCancelsCompletable() {

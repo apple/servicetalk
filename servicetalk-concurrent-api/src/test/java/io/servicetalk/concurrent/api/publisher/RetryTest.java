@@ -158,7 +158,7 @@ class RetryTest {
 
     @Test
     void exceptionAfterRetryPreservesDemand() {
-        final Integer[] signals = new Integer[] {1, 2, 3};
+        final Integer[] signals = {1, 2, 3};
         final AtomicInteger onNextCount = new AtomicInteger();
         subscriber = new TestPublisherSubscriber<>();
         BiIntPredicate<Throwable> retryFunc = (count, cause) ->

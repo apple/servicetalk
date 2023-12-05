@@ -162,7 +162,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         private static <U> void tryClose(final Iterator<? extends U> currentIterator) {
             if (currentIterator instanceof AutoCloseable) {
-                closeAndReThrow(((AutoCloseable) currentIterator));
+                closeAndReThrow((AutoCloseable) currentIterator);
             }
         }
 
@@ -213,7 +213,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 throw cause;
                             default:
                                 throw new IllegalArgumentException("Unknown error handling strategy: " +
-                                        errorHandlingStrategyInDrain);
+                                        errorHandlingStrategyInDrain, cause);
                         }
                     }
                     if (terminalNotification != null && !hasNext) {

@@ -65,7 +65,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

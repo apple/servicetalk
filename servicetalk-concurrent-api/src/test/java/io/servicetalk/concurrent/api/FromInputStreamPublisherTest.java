@@ -343,7 +343,7 @@ class FromInputStreamPublisherTest {
     void completeStreamIfEOFObservedDuringReadFromOverEstimatedAvailability() throws Throwable {
         initChunkedStream(smallBuff, ofAll(100), of(10, 0)); // only has 10 items
 
-        byte[][] items = new byte[][]{
+        byte[][] items = {
                 new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
         };
 
@@ -355,7 +355,7 @@ class FromInputStreamPublisherTest {
         initChunkedStream(bigBuff, of(5, 0, 0, 10, 5, 5, 5, 5, 0),
                                    of(5, 1, 1, 10, 5, 5, 5, 5, 0));
 
-        byte[][] items = new byte[][]{
+        byte[][] items = {
                 new byte[]{0, 1, 2, 3, 4},
                 new byte[]{5}, // avail == 0 -> override to 1
                 new byte[]{6}, // avail == 0 -> override to 1
@@ -374,7 +374,7 @@ class FromInputStreamPublisherTest {
         initChunkedStream(bigBuff, of(3, 2, 15, 15, 10, 0),
                                    of(3, 2, 15, 15, 2, 0));
 
-        byte[][] items = new byte[][]{
+        byte[][] items = {
                 new byte[]{0, 1, 2},
                 new byte[]{3, 4},
                 new byte[]{5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},

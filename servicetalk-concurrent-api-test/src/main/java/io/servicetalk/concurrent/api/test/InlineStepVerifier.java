@@ -95,7 +95,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         return timeSource.timeElapsed(startTime);
     }
 
-    private void processRuntimeException(RuntimeException t) {
+    private static void processRuntimeException(RuntimeException t) {
         Throwable cause = t.getCause();
         if (cause instanceof AssertionError) {
             throw (AssertionError) cause;
@@ -143,6 +143,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         abstract String description();
 
         static final class StepAssertionError extends AssertionError {
+            private static final long serialVersionUID = -5220083330558844374L;
             private final PublisherEvent event;
 
             private StepAssertionError(PublisherEvent event, String message, Throwable cause) {
@@ -188,7 +189,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
             public String toString() {
                 String s = StepAssertionError.class.getSimpleName();
                 String message = getLocalizedMessage();
-                return (message != null) ? (s + ": " + message) : s;
+                return message != null ? (s + ": " + message) : s;
             }
         }
     }

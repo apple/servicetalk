@@ -57,7 +57,7 @@ class PublisherFlatMapConcatSingleTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] begin={0} end={1} maxConcurrency={2} delayError={3}")
-    @CsvSource(value = {"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
+    @CsvSource({"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
     void orderPreservedInRangeWithConcurrency(int begin, int end, int maxConcurrency, boolean delayError) {
         toSource(concatSingle(Publisher.range(begin, end),
                 i -> executor.timer(getDuration()).toSingle().map(__ -> i + "x"), maxConcurrency, delayError)
@@ -69,7 +69,7 @@ class PublisherFlatMapConcatSingleTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] begin={0} end={1} maxConcurrency={2} delayError={3}")
-    @CsvSource(value = {"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
+    @CsvSource({"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
     void errorPropagatedInOrderLast(int begin, int end, int maxConcurrency, boolean delayError) {
         final int endLessOne = end - 1;
         String[] expected = expected(begin, endLessOne);
@@ -86,7 +86,7 @@ class PublisherFlatMapConcatSingleTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] begin={0} end={1} maxConcurrency={2} delayError={3}")
-    @CsvSource(value = {"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
+    @CsvSource({"0,5,10,false", "0,25,10,false", "0,5,10,true", "0,25,10,true"})
     void errorPropagatedInOrderFirst(int begin, int end, int maxConcurrency, boolean delayError) {
         toSource(concatSingle(Publisher.range(begin, end), i -> executor.timer(getDuration()).toSingle().map(__ -> {
                     if (i == begin) {

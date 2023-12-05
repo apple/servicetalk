@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -314,7 +315,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
                 }
 
                 final String strAuth = authorization.toString();
-                final int schemeIdx = strAuth.toLowerCase().indexOf(AUTH_SCHEME);
+                final int schemeIdx = strAuth.toLowerCase(Locale.ENGLISH).indexOf(AUTH_SCHEME);
                 if (schemeIdx < 0) {
                     continue;
                 }

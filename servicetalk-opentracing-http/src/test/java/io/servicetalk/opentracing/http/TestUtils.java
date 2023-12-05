@@ -35,7 +35,7 @@ import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsM
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestUtils {
-    static final String[] TRACING_TEST_LOG_LINE_PREFIX = new String[] {
+    static final String[] TRACING_TEST_LOG_LINE_PREFIX = {
             "filter request path={}",
             "filter response map path={}",
             "filter response transform path={}",

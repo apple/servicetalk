@@ -73,7 +73,7 @@ public abstract class AbstractHttpServiceFilterTest {
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     protected InetSocketAddress remoteAddress() {
-        return InetSocketAddress.createUnresolved("127.0.1.2", 28080);
+        return InetSocketAddress.createUnresolved("127.0.1.2", 28_080);
     }
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")

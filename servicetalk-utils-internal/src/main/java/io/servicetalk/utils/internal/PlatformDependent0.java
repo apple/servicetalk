@@ -307,11 +307,10 @@ final class PlatformDependent0 {
         try {
             final Runnable deallocator = (Runnable) DEALLOCATOR_CONSTRUCTOR.invoke(address, size, capacity);
             return (ByteBuffer) DIRECT_BUFFER_CONSTRUCTOR.invoke(capacity, address, null, deallocator);
+        } catch (Error error) {
+            throw error;
         } catch (Throwable cause) {
             // Not expected to ever throw!
-            if (cause instanceof Error) {
-                throw (Error) cause;
-            }
             throw new Error(cause);
         }
     }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -125,21 +126,21 @@ class DefaultHttpSetCookiesTest {
         HttpSetCookie next = cookieItr.next();
         assertTrue(areSetCookiesEqual(new TestSetCookie("foo", "12345", "/", "somecompany.co.uk", null,
                 null, Lax, false, false, true), next));
-        assertThat(next.encoded().toString().toLowerCase(), containsString("samesite=lax"));
+        assertThat(next.encoded().toString().toLowerCase(Locale.ENGLISH), containsString("samesite=lax"));
         assertFalse(cookieItr.hasNext());
         cookieItr = headers.getSetCookiesIterator("bar");
         assertTrue(cookieItr.hasNext());
         next = cookieItr.next();
         assertTrue(areSetCookiesEqual(new TestSetCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
                 3000L, None, false, false, false), next));
-        assertThat(next.encoded().toString().toLowerCase(), containsString("samesite=none"));
+        assertThat(next.encoded().toString().toLowerCase(Locale.ENGLISH), containsString("samesite=none"));
         assertFalse(cookieItr.hasNext());
         cookieItr = headers.getSetCookiesIterator("baz");
         assertTrue(cookieItr.hasNext());
         next = cookieItr.next();
         assertTrue(areSetCookiesEqual(new TestSetCookie("baz", "xyz", "/3", "somecompany.co.uk", null,
                 null, Strict, false, true, false), next));
-        assertThat(next.encoded().toString().toLowerCase(), containsString("samesite=strict"));
+        assertThat(next.encoded().toString().toLowerCase(Locale.ENGLISH), containsString("samesite=strict"));
         assertFalse(cookieItr.hasNext());
     }
 
@@ -445,7 +446,7 @@ class DefaultHttpSetCookiesTest {
 
         final CharSequence value = headers.get("set-cookie");
         assertNotNull(value);
-        assertTrue(value.toString().toLowerCase().contains("qwerty=\"12345\""));
+        assertTrue(value.toString().toLowerCase(Locale.ENGLISH).contains("qwerty=\"12345\""));
     }
 
     @Test

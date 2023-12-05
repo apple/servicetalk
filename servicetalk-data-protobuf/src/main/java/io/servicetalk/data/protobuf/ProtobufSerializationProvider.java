@@ -112,10 +112,10 @@ public final class ProtobufSerializationProvider implements SerializationProvide
                     " was not an instance of " + Parser.class.getName());
         } catch (NoSuchFieldException e) {
             throw new SerializationException("Could not find static field 'PARSER' from " +
-                    classToDeSerialize.getName());
+                    classToDeSerialize.getName(), e);
         } catch (IllegalAccessException e) {
             throw new SerializationException("'PARSER' field on " + classToDeSerialize.getName() +
-                    " was not publicly accessible");
+                    " was not publicly accessible", e);
         }
     }
 

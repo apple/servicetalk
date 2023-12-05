@@ -80,6 +80,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.CloseUtils.safeClose;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -151,16 +152,6 @@ class HttpsProxyTest {
         safeClose(client);
         safeClose(serverContext);
         safeClose(proxyTunnel);
-    }
-
-    static void safeClose(@Nullable AutoCloseable closeable) {
-        if (closeable != null) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                LOGGER.error("Unexpected exception while closing", e);
-            }
-        }
     }
 
     private void initMocks() {

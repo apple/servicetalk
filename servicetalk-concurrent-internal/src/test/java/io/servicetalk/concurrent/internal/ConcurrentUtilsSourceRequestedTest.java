@@ -124,22 +124,22 @@ class ConcurrentUtilsSourceRequestedTest {
 
     @Test
     void calculateSourceRequestedConcurrentB() throws Exception {
-        calculateSourceRequestedConcurrentLoop(5, 5, 6, 100, 123456);
+        calculateSourceRequestedConcurrentLoop(5, 5, 6, 100, 123_456);
     }
 
     @Test
     void calculateSourceRequestedConcurrentC() throws Exception {
-        calculateSourceRequestedConcurrentLoop(5, 1, 3, 2, 900103);
+        calculateSourceRequestedConcurrentLoop(5, 1, 3, 2, 900_103);
     }
 
     @Test
     void calculateSourceRequestedConcurrentD() throws Exception {
-        calculateSourceRequestedConcurrentLoop(5, 1, 5635, 483, 800026);
+        calculateSourceRequestedConcurrentLoop(5, 1, 5635, 483, 800_026);
     }
 
     @Test
     void calculateSourceRequestedConcurrentE() throws Exception {
-        calculateSourceRequestedConcurrentLoop(5, 6, 512, Integer.MAX_VALUE, 1000001);
+        calculateSourceRequestedConcurrentLoop(5, 6, 512, Integer.MAX_VALUE, 1_000_001);
     }
 
     private void calculateSourceRequestedConcurrentLoop(

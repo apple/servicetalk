@@ -128,7 +128,7 @@ class PublisherProcessorTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void duplicateTerminalFiltered(boolean firstComplete, boolean secondComplete) {
         toSource(processor).subscribe(subscriber);
         if (firstComplete) {

@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class HttpMessageDiscardWatchdogClientFilterTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogClientFilterTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -129,7 +133,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                 }
 
                 String output = LoggerStringWriter.stableAccumulated(1000);
-                System.err.println(output);
+                LOGGER.info("Logger output: {}", output);
             }
         }
     }

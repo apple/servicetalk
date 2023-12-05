@@ -35,7 +35,7 @@ public final class VerificationTestUtils {
         assertNotNull(holder);
         boolean found = false;
         for (Throwable actualSuppressed : holder.getSuppressed()) {
-            if (actualSuppressed == expectedSuppressedCause) {
+            if (actualSuppressed.equals(expectedSuppressedCause)) {
                 found = true;
                 break;
             }
@@ -73,7 +73,7 @@ public final class VerificationTestUtils {
             } else {
                 throw new AssertionError("expected " + className(expectedClass) + " optionally wrapped by " +
                         className(optionalWrapperClass) + " but got " + className(cause) + " caused by " +
-                        classNameNullable(cause.getCause()));
+                        classNameNullable(cause.getCause()), cause);
             }
         }
         throw new AssertionError("expected " + className(expectedClass) + " optionally wrapped by " +

@@ -24,6 +24,7 @@ import io.netty.handler.codec.http2.Http2Headers;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
@@ -249,7 +250,7 @@ final class H2ToStH1Utils {
         for (Map.Entry<CharSequence, CharSequence> h1Entry : h1Headers) {
             // header field names MUST be converted to lowercase prior to their encoding in HTTP/2
             // https://tools.ietf.org/html/rfc7540#section-8.1.2
-            http2Headers.add(h1Entry.getKey().toString().toLowerCase(), h1Entry.getValue());
+            http2Headers.add(h1Entry.getKey().toString().toLowerCase(Locale.ENGLISH), h1Entry.getValue());
         }
         return http2Headers;
     }

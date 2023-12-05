@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -70,6 +71,7 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 @Priority(ENTITY_CODER + 100)
 @Consumes(WILDCARD)
 @Produces(WILDCARD)
+@SuppressWarnings("PMD.UnusedFormalParameter")
 final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReader<Object>, MessageBodyWriter<Object> {
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.
@@ -314,7 +316,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         // At the moment, we only support the official JSON mime-type and its related micro-formats
         return mediaType.getType().equalsIgnoreCase(APPLICATION_JSON_TYPE.getType()) &&
                 (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_JSON_TYPE.getSubtype()) ||
-                        mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
+                        mediaType.getSubtype().toLowerCase(Locale.ENGLISH)
+                                .endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
     }
 
     @SuppressWarnings("unchecked")

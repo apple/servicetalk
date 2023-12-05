@@ -119,6 +119,7 @@ final class TestServiceStreaming implements StreamingHttpService {
                 break;
             default:
                 response = newNotFoundResponse(req, factory);
+                break;
         }
         return succeeded(response);
     }

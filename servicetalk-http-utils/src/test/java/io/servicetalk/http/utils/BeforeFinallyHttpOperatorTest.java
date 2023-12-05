@@ -551,7 +551,7 @@ class BeforeFinallyHttpOperatorTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadError={1}")
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void resubscribeToPayloadBody(boolean discardEventsAfterCancel, boolean payloadError) {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();

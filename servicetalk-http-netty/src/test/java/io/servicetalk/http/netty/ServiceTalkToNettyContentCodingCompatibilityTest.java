@@ -35,6 +35,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
@@ -60,7 +62,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
     private BlockingHttpClient client;
 
     @Override
-    void start() throws Exception {
+    protected void start() throws Exception {
         serverEventLoopGroup = createIoExecutor(2, "server-io").eventLoopGroup();
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
@@ -129,6 +131,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
 
     @ChannelHandler.Sharable
     static class EchoServerHandler extends SimpleChannelInboundHandler<HttpObject> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(EchoServerHandler.class);
         static final EchoServerHandler INSTANCE = new EchoServerHandler();
 
         private static final byte[] CONTENT = payload((byte) 'b');
@@ -155,7 +158,7 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            cause.printStackTrace();
+            LOGGER.error("Unexpected exception caught", cause);
             ctx.close();
         }
     }

@@ -39,6 +39,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -207,9 +208,10 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
 
     private static boolean isSupportedMediaType(final Class<?> type, final MediaType mediaType) {
         return (!Publisher.class.equals(type) &&
-                (mediaType.getType().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getType()) &&
-                    (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getSubtype()) ||
-                    mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_X_PROTOBUF_TYPE.getSubtype())))) ||
+                mediaType.getType().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getType()) &&
+                (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getSubtype()) ||
+                        mediaType.getSubtype().toLowerCase(Locale.ENGLISH)
+                                .endsWith('+' + APPLICATION_X_PROTOBUF_TYPE.getSubtype()))) ||
                 (Publisher.class.equals(type) &&
                         mediaType.getType().equalsIgnoreCase(APPLICATION_X_PROTOBUF_VAR_INT_TYPE.getType()) &&
                         mediaType.getSubtype().equalsIgnoreCase(APPLICATION_X_PROTOBUF_VAR_INT_TYPE.getSubtype()));

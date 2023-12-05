@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
@@ -417,7 +418,7 @@ public class SynchronousResources {
     @POST
     public Publisher<Buffer> postJsonBufPubInPubOut(final Publisher<Buffer> requestContent) {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-        return requestContent.map(buf -> allocator.fromUtf8(buf.toString(UTF_8).toUpperCase()));
+        return requestContent.map(buf -> allocator.fromUtf8(buf.toString(UTF_8).toUpperCase(Locale.ENGLISH)));
     }
 
     @Consumes(APPLICATION_JSON)
