@@ -16,6 +16,9 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+
+import java.util.Collection;
 
 final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObserver<ResolvedAddress> {
 
@@ -42,6 +45,12 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
 
     @Override
     public void noActiveHostsAvailable(int hostSetSize, NoActiveHostException exn) {
+        // noop
+    }
+
+    @Override
+    public void serviceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+                                      int oldHostSetSize, int newHostSetSize) {
         // noop
     }
 
@@ -88,7 +97,7 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
         }
 
         @Override
-        public void unavailableHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void activeHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
             // noop
         }
 

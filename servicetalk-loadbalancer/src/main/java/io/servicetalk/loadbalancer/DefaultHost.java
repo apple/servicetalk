@@ -152,7 +152,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
         if (oldState.state != CLOSED_CONN_STATE) {
             // this is the first time this was marked closed so we need to let the observer know.
-            loadBalancerObserver.hostObserver().unavailableHostRemoved(address, toRemove.length);
+            loadBalancerObserver.hostObserver().activeHostRemoved(address, toRemove.length);
         }
     }
 

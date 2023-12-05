@@ -331,6 +331,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 // We've now built the new list so now we need to CAS it before we can move on. This should only be
                 // racing with closing hosts and closing the whole LB so it shouldn't be common to lose the race.
                 if (usedHostsUpdater.compareAndSet(DefaultLoadBalancer.this, usedHosts, nextHosts)) {
+                    // Let our observer know.
+                    loadBalancerObserver.serviceDiscoveryEvent(events, usedHosts.size(), nextHosts.size());
                     break;
                 }
             }
@@ -342,6 +344,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             } else if (sendReadyEvent) {
                 eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
             }
+
 
             if (firstEventsAfterResubscribe) {
                 // We can enter this path only if we re-subscribed because all previous hosts were UNHEALTHY.

@@ -16,32 +16,98 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 
+import javax.annotation.Nullable;
+import java.util.Collection;
+
+/**
+ * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}
+ * @param <ResolvedAddress> the type of the resolved address.
+ */
 interface LoadBalancerObserver<ResolvedAddress> {
 
+    /**
+     * Get a {@link HostObserver}.
+     * @return a {@link HostObserver}.
+     */
     HostObserver<ResolvedAddress> hostObserver();
 
+    /**
+     * Get an {@link OutlierObserver}.
+     * @return an {@link OutlierObserver}.
+     */
     OutlierObserver<ResolvedAddress> outlierEventObserver();
 
+    /**
+     * Callback for when connection selection fails due to no hosts being available.
+     */
     void noHostsAvailable();
 
+    /**
+     * Callback for monitoring the changes due to a service discovery update.
+     */
+    void serviceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+                               int oldHostSetSize, int newHostSetSize);
+
+    /**
+     * Callback for when connection selection fails due to all hosts being inactive.
+     */
     void noActiveHostsAvailable(int hostSetSize, NoActiveHostException exn);
 
     interface HostObserver<ResolvedAddress> {
+
+        /**
+         * Callback for when an active host is marked expired.
+         * @param address the resolved address.
+         * @param connectionCount the number of active connections for the host.
+         */
         void hostMarkedExpired(ResolvedAddress address, int connectionCount);
 
-        void expiredHostRemoved(ResolvedAddress address);
+        /**
+         * Callback for when a host is removed by service discovery.
+         * @param address the resolved address.
+         * @param connectionCount the number of connections that were associated with the host.
+         */
+        void activeHostRemoved(ResolvedAddress address, int connectionCount);
 
+        /**
+         * Callback for when an expired host is returned to an active state.
+         * @param address the resolved address.
+         * @param connectionCount the number of active connections when the host was revived.
+         */
         void expiredHostRevived(ResolvedAddress address, int connectionCount);
 
-        void unavailableHostRemoved(ResolvedAddress address, int connectionCount);
+        /**
+         * Callback for when an expired host is removed.
+         * @param address the resolved address.
+         */
+        void expiredHostRemoved(ResolvedAddress address);
 
+        /**
+         * Callback for when a host is created.
+         * @param address the resolved address.
+         */
         void hostCreated(ResolvedAddress address);
     }
 
+    /**
+     * An observer of outlier events.
+     * @param <ResolvedAddress> the type of the resolved address.
+     */
     interface OutlierObserver<ResolvedAddress> {
-        void hostMarkedUnhealthy(ResolvedAddress address, Throwable cause);
 
+        /**
+         * Callback for when a {@link Host} is transitions from healthy to unhealthy.
+         * @param address the resolved address.
+         * @param cause the most recent cause of the transition.
+         */
+        void hostMarkedUnhealthy(ResolvedAddress address, @Nullable Throwable cause);
+
+        /**
+         * Callback for when a {@link Host} transitions from unhealthy to healthy.
+         * @param address the resolved address.
+         */
         void hostRevived(ResolvedAddress address);
     }
 }
