@@ -36,6 +36,11 @@ import javax.annotation.Nullable;
  */
 final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
 
+    /**
+     * The default P2C load balancing policy.
+     */
+    public static final P2CLoadBalancingPolicy DEFAULT_POLICY = new Builder().build();
+
     private final int maxEffort;
     @Nullable
     private final Random random;

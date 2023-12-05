@@ -26,6 +26,11 @@ import io.servicetalk.client.api.LoadBalancedConnection;
  */
 final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
 
+    /**
+     * The default P2C load balancing policy.
+     */
+    public static final RoundRobinLoadBalancingPolicy DEFAULT_POLICY = new RoundRobinLoadBalancingPolicy();
+
     private RoundRobinLoadBalancingPolicy() {
     }
 
@@ -50,7 +55,8 @@ final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
          * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
          */
         public RoundRobinLoadBalancingPolicy build() {
-            return new RoundRobinLoadBalancingPolicy();
+            // Right now there aren't any configurations for round-robin.
+            return DEFAULT_POLICY;
         }
     }
 }
