@@ -57,6 +57,8 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogClientFilterTest.class);
 
+    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
             ExecutionContextExtension.cached("server-io", "server-executor")
@@ -68,12 +70,12 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
 
     @BeforeEach
     public void setup() {
-        LoggerStringWriter.reset();
+        loggerStringWriter.reset();
     }
 
     @AfterEach
     public void tearDown() {
-        LoggerStringWriter.remove();
+        loggerStringWriter.remove();
     }
 
     /**
@@ -132,7 +134,7 @@ final class HttpMessageDiscardWatchdogClientFilterTest {
                     }
                 }
 
-                String output = LoggerStringWriter.stableAccumulated(1000);
+                String output = loggerStringWriter.stableAccumulated(1000);
                 LOGGER.info("Logger output: {}", output);
             }
         }

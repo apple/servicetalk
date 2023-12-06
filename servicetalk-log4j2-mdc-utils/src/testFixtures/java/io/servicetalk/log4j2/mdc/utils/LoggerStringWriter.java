@@ -44,23 +44,24 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public final class LoggerStringWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerStringWriter.class);
-    private static final ThreadLocal<ConcurrentStringWriter> THREAD_LOCAL_APPENDER = new ThreadLocal<>();
 
-    private LoggerStringWriter() {
-        // no instances.
-    }
+    // protected by synchronization on `this`.
+    private ConcurrentStringWriter writer;
 
     /**
      * Clear the content of the {@link #accumulated()}.
+     * <p>
+     * Note that the underlying logger may be initialized by this method and it must always be
+     * followed up with a {@link #remove()} call at the end of tests to clean up logger state.
      */
-    public static void reset() {
+    public void reset() {
         getStringWriter().reset();
     }
 
     /**
      * Remove the underlying in-memory log appender.
      */
-    public static void remove() {
+    public void remove() {
         removeStringWriter();
     }
 
@@ -69,7 +70,7 @@ public final class LoggerStringWriter {
      *
      * @return the accumulated content that has been logged.
      */
-    public static String accumulated() {
+    public String accumulated() {
         return getStringWriter().toString();
     }
 
@@ -83,7 +84,7 @@ public final class LoggerStringWriter {
      * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
      * {@link #accumulated()} has not yet stabilize.
      */
-    public static String stableAccumulated(int totalWaitTimeMillis) throws InterruptedException, TimeoutException {
+    public String stableAccumulated(int totalWaitTimeMillis) throws InterruptedException, TimeoutException {
         return stableAccumulated(totalWaitTimeMillis, 10);
     }
 
@@ -98,7 +99,7 @@ public final class LoggerStringWriter {
      * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
      * {@link #accumulated()} has not yet stabilize.
      */
-    public static String stableAccumulated(int totalWaitTimeMillis, final long sleepDurationMs)
+    public String stableAccumulated(int totalWaitTimeMillis, final long sleepDurationMs)
             throws InterruptedException, TimeoutException {
         // We force a unique log entry, and wait for it to ensure the content from the local thread has been flushed.
         String forcedLogEntry = "forced log entry to help for flush on current thread " +
@@ -157,23 +158,20 @@ public final class LoggerStringWriter {
         assertThat(value.substring(beginIndex, beginIndex + expectedValue.length()), is(expectedValue));
     }
 
-    private static ConcurrentStringWriter getStringWriter() {
-        ConcurrentStringWriter writer = THREAD_LOCAL_APPENDER.get();
+    private synchronized ConcurrentStringWriter getStringWriter() {
         if (writer == null) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             writer = addWriterAppender(context, DEBUG);
-            THREAD_LOCAL_APPENDER.set(writer);
         }
         return writer;
     }
 
-    private static void removeStringWriter() {
-        ConcurrentStringWriter writer = THREAD_LOCAL_APPENDER.get();
+    private synchronized void removeStringWriter() {
         if (writer == null) {
             return;
         }
         removeWriterAppender(writer, (LoggerContext) LogManager.getContext(false));
-        THREAD_LOCAL_APPENDER.remove();
+        writer = null;
     }
 
     private static ConcurrentStringWriter addWriterAppender(final LoggerContext context, Level level) {
@@ -224,17 +222,13 @@ public final class LoggerStringWriter {
         }
 
         @Override
-        public void flush() throws IOException {
-            synchronized (stringWriter) {
-                stringWriter.flush();
-            }
+        public void flush() {
+            // this is a no-op for `StringWriter`
         }
 
         @Override
-        public void close() throws IOException {
-            synchronized (stringWriter) {
-                stringWriter.close();
-            }
+        public void close() {
+            // this is a no-op for `StringWriter`
         }
 
         @Override
