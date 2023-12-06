@@ -96,7 +96,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
@@ -123,10 +123,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-abstract class RoundRobinLoadBalancerTest {
+abstract class LoadBalancerTest {
 
     static final String[] EMPTY_ARRAY = new String[] {};
 
@@ -158,10 +159,6 @@ abstract class RoundRobinLoadBalancerTest {
         return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> defaultLb() {
-        return newTestLoadBalancer();
-    }
-
     TestableLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
         DelegatingConnectionFactory connectionFactory) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
@@ -169,14 +166,14 @@ abstract class RoundRobinLoadBalancerTest {
 
     protected abstract boolean eagerConnectionShutdown();
 
-    protected RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return RoundRobinLoadBalancers.builder(getClass().getSimpleName());
-    }
+    protected abstract boolean isRoundRobin();
+
+    protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
 
     @BeforeEach
     void initialize() {
         testExecutor = executor.executor();
-        lb = defaultLb();
+        lb = newTestLoadBalancer();
         connectionsCreated.clear();
         connectionRealizers.clear();
     }
@@ -340,6 +337,8 @@ abstract class RoundRobinLoadBalancerTest {
 
     @Test
     void roundRobining() throws Exception {
+        assumeTrue(isRoundRobin());
+
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
         final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
@@ -468,16 +467,20 @@ abstract class RoundRobinLoadBalancerTest {
         lb = defaultLb(connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        sendServiceDiscoveryEvents(upEvent("address-2"));
 
-        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
+        // We need to catch `DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD` exceptions before the bad host
+        // will be taken out of rotation.
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
             try {
-                final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
-                assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+                lb.selectConnection(any(), null).toFuture().get();
+                fail("Shouldn't have gotten a live connection.");
             } catch (Exception e) {
                 assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
             }
         }
+
+        // Now add another healthy host which should be the host to get selected.
+        sendServiceDiscoveryEvents(upEvent("address-2"));
 
         for (int i = 0; i < 10; ++i) {
             final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
@@ -761,9 +764,14 @@ abstract class RoundRobinLoadBalancerTest {
         expected.put("address-4", is("address-4"));
         String selected1 = lb.selectConnection(any(), null).toFuture().get().address();
         assertThat(selected1, is(anyOf(expected.values())));
-        expected.remove(selected1);
-        assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-        assertConnectionCount(lb.usedAddresses(), connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+
+        if (isRoundRobin()) {
+            // These asserts are flaky for p2c because we don't have deterministic selection.
+            expected.remove(selected1);
+            assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
+            assertConnectionCount(lb.usedAddresses(),
+                    connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+        }
     }
 
     @Test
@@ -818,21 +826,26 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
+        // addresses: [address-1]
         sendServiceDiscoveryEvents(downEvent("address-1", UNAVAILABLE));
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
+        // addresses: []
         sendServiceDiscoveryEvents(upEvent("address-2"));
         assertAddresses(lb.usedAddresses(), "address-2");
 
+        // addresses: [address-2]
         sendServiceDiscoveryEvents(downEvent("address-3", UNAVAILABLE));
         assertAddresses(lb.usedAddresses(), "address-2");
 
+        // addresses: [address-2]
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
         // Make sure both hosts have connections
-        lb.selectConnection(any(), null).toFuture().get();
-        lb.selectConnection(any(), null).toFuture().get();
+        // addresses: [address-1, address-2]
+        newForHost("address-1");
+        newForHost("address-2");
 
         sendServiceDiscoveryEvents(downEvent("address-1", EXPIRED));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
@@ -855,7 +868,7 @@ abstract class RoundRobinLoadBalancerTest {
     @Test
     void registersNewConnections() throws Exception {
         serviceDiscoveryPublisher.onComplete();
-        lb = defaultLb();
+        lb = newTestLoadBalancer();
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -895,13 +908,13 @@ abstract class RoundRobinLoadBalancerTest {
         return new DefaultServiceDiscovererEvent<>(address, status);
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
+    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
-    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-        final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-        final DelegatingConnectionFactory connectionFactory) {
+    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            final DelegatingConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
@@ -942,6 +955,18 @@ abstract class RoundRobinLoadBalancerTest {
         final Matcher<Iterable<? extends T>> iterableMatcher =
                 address.length == 0 ? emptyIterable() : contains(args);
         assertThat(addresses, iterableMatcher);
+    }
+
+    TestLoadBalancedConnection newForHost(String address) throws Exception {
+        // This is necessary because p2c doesn't select hosts deterministically.
+        for (;;) {
+            TestLoadBalancedConnection cxn = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+            if (cxn.address().equals(address)) {
+                return cxn;
+            }
+            // need to close it and try again.
+            cxn.closeAsync().subscribe();
+        }
     }
 
     private LegacyTestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {

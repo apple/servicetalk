@@ -17,7 +17,6 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -72,7 +71,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Consult {@link RoundRobinLoadBalancerFactory} for a description of this {@link LoadBalancer} type.
+ * The (new) default load balancer implementation.
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.

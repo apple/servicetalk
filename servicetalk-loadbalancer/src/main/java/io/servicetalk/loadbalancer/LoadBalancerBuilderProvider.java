@@ -15,16 +15,11 @@
  */
 package io.servicetalk.loadbalancer;
 
-class LingeringNewRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
+import io.servicetalk.client.api.LoadBalancedConnection;
 
-    @Override
-    public boolean isRoundRobin() {
-        return true;
-    }
-
-    @Override
-    protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new RoundRobinLoadBalancingPolicy.Builder().build());
-    }
+// TODO: this has to be public for the service loading to work. At that point we'll also likely want
+//  to provide a DelegatingLoadBalancerBuilder.
+interface LoadBalancerBuilderProvider {
+    <ResolvedAddress, C extends LoadBalancedConnection> LoadBalancerBuilder<ResolvedAddress, C>
+    newBuilder(String id, LoadBalancerBuilder<ResolvedAddress, C> builder);
 }

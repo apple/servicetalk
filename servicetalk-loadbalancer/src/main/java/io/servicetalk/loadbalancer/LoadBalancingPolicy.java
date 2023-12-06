@@ -15,16 +15,23 @@
  */
 package io.servicetalk.loadbalancer;
 
-class LingeringNewRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
+import io.servicetalk.client.api.LoadBalancedConnection;
 
-    @Override
-    public boolean isRoundRobin() {
-        return true;
-    }
+/**
+ * Definition of the selector mechanism used for load balancing.
+ */
+interface LoadBalancingPolicy {
+    /**
+     * The name of the load balancing policy
+     * @return the name of the load balancing policy
+     */
+    String name();
 
-    @Override
-    protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new RoundRobinLoadBalancingPolicy.Builder().build());
-    }
+    /**
+     * Construct a {@link HostSelector}.
+     * @param targetResource the name of the target resource, useful for debugging purposes.
+     * @return a {@link HostSelector}
+     */
+    <ResolvedAddress, C extends LoadBalancedConnection> HostSelector<ResolvedAddress, C>
+    buildSelector(String targetResource);
 }
