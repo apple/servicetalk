@@ -18,14 +18,17 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.context.api.ContextMap;
 
@@ -34,21 +37,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Spliterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -82,19 +77,19 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancer.class);
 
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<DefaultLoadBalancer, List> usedHostsUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(DefaultLoadBalancer.class, List.class, "usedHosts");
-
-    @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<DefaultLoadBalancer> nextResubscribeTimeUpdater =
             AtomicLongFieldUpdater.newUpdater(DefaultLoadBalancer.class, "nextResubscribeTime");
 
     private static final long RESUBSCRIBING = -1L;
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
+
+    // writes to these fields protected by `executeSequentially` but they can be read from any thread.
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    private volatile boolean isClosed;
 
     private final String targetResource;
+    private final SequentialExecutor sequentialExecutor;
     private final String lbDescription;
     private final HostSelector<ResolvedAddress, C> hostSelector;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
@@ -137,28 +132,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
-        this.asyncCloseable = toAsyncCloseable(graceful -> {
-            discoveryCancellable.cancel();
-            eventStreamProcessor.onComplete();
-            final CompositeCloseable compositeCloseable;
-            for (;;) {
-                List<Host<ResolvedAddress, C>> currentList = usedHosts;
-                if (isClosedList(currentList) ||
-                        usedHostsUpdater.compareAndSet(this, currentList, new ClosedList<>(currentList))) {
-                    compositeCloseable = newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory);
-                    LOGGER.debug("{} is closing {}gracefully. Last seen addresses (size={}): {}.",
-                            this, graceful ? "" : "non", currentList.size(), currentList);
-                    break;
-                }
-            }
-            return (graceful ? compositeCloseable.closeAsyncGracefully() : compositeCloseable.closeAsync())
-                    .beforeOnError(t -> {
-                        if (!graceful) {
-                            usedHosts = new ClosedList<>(emptyList());
-                        }
-                    })
-                    .beforeOnComplete(() -> usedHosts = new ClosedList<>(emptyList()));
+        this.sequentialExecutor = new SequentialExecutor((uncaughtException) -> {
+            LOGGER.error("{}: Uncaught exception in SequentialExecutor triggered closing of the load balancer.",
+                    this, uncaughtException);
+            closeAsync().subscribe();
         });
+        this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
         subscribeToEvents(false);
@@ -176,6 +155,38 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             assert healthCheckConfig.executor instanceof NormalizedTimeSourceExecutor;
             nextResubscribeTime = nextResubscribeTime(healthCheckConfig, this);
         }
+    }
+
+    // This method is called eagerly, meaning the completable will be immediately subscribed to,
+    // so we don't need to do any Completable.defer business.
+    private Completable doClose(final boolean graceful) {
+        CompletableSource.Processor processor = Processors.newCompletableProcessor();
+        sequentialExecutor.execute(() -> {
+            try {
+                if (!isClosed) {
+                    discoveryCancellable.cancel();
+                    eventStreamProcessor.onComplete();
+                }
+                isClosed = true;
+                List<Host<ResolvedAddress, C>> currentList = usedHosts;
+                final CompositeCloseable compositeCloseable = newCompositeCloseable()
+                        .appendAll(currentList)
+                        .appendAll(connectionFactory);
+                LOGGER.debug("{} is closing {}gracefully. Last seen addresses (size={}): {}.",
+                        this, graceful ? "" : "non", currentList.size(), currentList);
+                SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
+                                // We only want to empty the host list on error if we're closing non-gracefully.
+                                compositeCloseable.closeAsync().beforeOnError(t ->
+                                        sequentialExecutor.execute(() -> usedHosts = emptyList()))
+                        )
+                                // we want to always empty out the host list if we complete successfully
+                                .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
+                        .subscribe(processor);
+            } catch (Throwable ex) {
+                processor.onError(ex);
+            }
+        });
+        return SourceAdapters.fromSource(processor);
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
@@ -253,81 +264,71 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         DefaultLoadBalancer.this);
                 return;
             }
+            sequentialExecutor.execute(() -> sequentialOnNext(events));
+        }
 
-            boolean sendReadyEvent;
-            List<Host<ResolvedAddress, C>> nextHosts;
-            for (;;) {
-                // TODO: we have some weirdness in the event that we fail the CAS namely that we can create a host
-                //  that never gets used but is orphaned. It's fine so long as there is nothing to close but that
-                //  guarantee may not always hold in the future.
-                @SuppressWarnings("unchecked")
-                List<Host<ResolvedAddress, C>> usedHosts = usedHostsUpdater.get(DefaultLoadBalancer.this);
-                if (isClosedList(usedHosts)) {
-                    // We don't update if the load balancer is closed.
-                    return;
-                }
-                nextHosts = new ArrayList<>(usedHosts.size() + events.size());
-                sendReadyEvent = false;
+        private void sequentialOnNext(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
+            assert events != null && !events.isEmpty();
 
-                // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
-                // Unfortunately we need to make this every iteration of the CAS loop since we remove entries
-                // for hosts that already exist. If this results in to many collisions and map rebuilds we should
-                // re-assess how we manage concurrency for list mutations.
-                final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
-                for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-                    ServiceDiscovererEvent<ResolvedAddress> old = eventMap.put(event.address(), event);
-                    if (old != null) {
-                        LOGGER.debug("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
-                                event.address(), event);
-                    }
-                }
+            if (isClosed) {
+                // nothing to do if the load balancer is closed.
+                return;
+            }
 
-                // First thing we do is go through the existing hosts and see if we need to transfer them. These
-                // will be all existing hosts that either don't have a matching discovery event or are not marked
-                // as unavailable. If they are marked unavailable, we need to close them (which is idempotent).
-                for (Host<ResolvedAddress, C> host : usedHosts) {
-                    ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
-                    if (event == null) {
-                        // Host doesn't have a SD update so just copy it over.
-                        nextHosts.add(host);
-                    } else if (AVAILABLE.equals(event.status())) {
-                        // We only send the ready event if the previous host list was empty.
-                        sendReadyEvent = usedHosts.isEmpty();
-                        // If the host is already in CLOSED state, we should discard it and create a new entry.
-                        // For duplicate ACTIVE events or for repeated activation due to failed CAS
-                        // of replacing the usedHosts array the marking succeeds so we will not add a new entry.
-                        if (host.markActiveIfNotClosed()) {
-                            nextHosts.add(host);
-                        } else {
-                            nextHosts.add(createHost(event.address()));
-                        }
-                    } else if (EXPIRED.equals(event.status())) {
-                        if (!host.markExpired()) {
-                            nextHosts.add(host);
-                        }
-                    } else if (UNAVAILABLE.equals(event.status())) {
-                        host.markClosed();
-                    } else {
-                        LOGGER.warn("{}: Unsupported Status in event:" +
-                                        " {} (mapped to {}). Leaving usedHosts unchanged: {}",
-                                DefaultLoadBalancer.this, event, event.status(), nextHosts);
-                        nextHosts.add(host);
-                    }
-                }
-                // Now process events that didn't have an existing host. The only ones that we actually care
-                // about are the AVAILABLE events which result in a new host.
-                for (ServiceDiscovererEvent<ResolvedAddress> event : eventMap.values()) {
-                    if (AVAILABLE.equals(event.status())) {
-                        sendReadyEvent = true;
-                        nextHosts.add(createHost(event.address()));
-                    }
-                }
-                // We've now built the new list so now we need to CAS it before we can move on. This should only be
-                // racing with closing hosts and closing the whole LB so it shouldn't be common to lose the race.
-                if (usedHostsUpdater.compareAndSet(DefaultLoadBalancer.this, usedHosts, nextHosts)) {
-                    break;
+            boolean sendReadyEvent = false;
+            final List<Host<ResolvedAddress, C>> nextHosts = new ArrayList<>(usedHosts.size() + events.size());
+            final List<Host<ResolvedAddress, C>> oldUsedHosts = usedHosts;
+            // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
+            final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
+            for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
+                ServiceDiscovererEvent<ResolvedAddress> old = eventMap.put(event.address(), event);
+                if (old != null) {
+                    LOGGER.debug("Multiple ServiceDiscoveryEvent's detected for address {}. Event: {}.",
+                            event.address(), event);
                 }
             }
+
+            // First thing we do is go through the existing hosts and see if we need to transfer them. These
+            // will be all existing hosts that either don't have a matching discovery event or are not marked
+            // as unavailable. If they are marked unavailable, we need to close them.
+            for (Host<ResolvedAddress, C> host : oldUsedHosts) {
+                ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
+                if (event == null) {
+                    // Host doesn't have a SD update so just copy it over.
+                    nextHosts.add(host);
+                } else if (AVAILABLE.equals(event.status())) {
+                    // We only send the ready event if the previous host list was empty.
+                    sendReadyEvent = oldUsedHosts.isEmpty();
+                    // If the host is already in CLOSED state, we should discard it and create a new entry.
+                    // For duplicate ACTIVE events the marking succeeds, so we will not add a new entry.
+                    if (host.markActiveIfNotClosed()) {
+                        nextHosts.add(host);
+                    } else {
+                        nextHosts.add(createHost(event.address()));
+                    }
+                } else if (EXPIRED.equals(event.status())) {
+                    if (!host.markExpired()) {
+                        nextHosts.add(host);
+                    }
+                } else if (UNAVAILABLE.equals(event.status())) {
+                    host.markClosed();
+                } else {
+                    LOGGER.warn("{}: Unsupported Status in event:" +
+                                    " {} (mapped to {}). Leaving usedHosts unchanged: {}",
+                            DefaultLoadBalancer.this, event, event.status(), nextHosts);
+                    nextHosts.add(host);
+                }
+            }
+            // Now process events that didn't have an existing host. The only ones that we actually care
+            // about are the AVAILABLE events which result in a new host.
+            for (ServiceDiscovererEvent<ResolvedAddress> event : eventMap.values()) {
+                if (AVAILABLE.equals(event.status())) {
+                    sendReadyEvent = true;
+                    nextHosts.add(createHost(event.address()));
+                }
+            }
+            // We've built the new list so now set it for consumption and then send our events.
+            usedHosts = nextHosts;
 
             LOGGER.debug("{}: now using addresses (size={}): {}.",
                     DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
@@ -367,13 +368,20 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig);
             host.onClose().afterFinally(() ->
-                    usedHostsUpdater.updateAndGet(DefaultLoadBalancer.this, previousHosts -> {
-                                @SuppressWarnings("unchecked")
-                                List<Host<ResolvedAddress, C>> previousHostsTyped =
-                                        (List<Host<ResolvedAddress, C>>) previousHosts;
-                                return listWithHostRemoved(previousHostsTyped, current -> current == host);
-                            }
-                    )).subscribe();
+                    sequentialExecutor.execute(() -> {
+                        final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
+                        if (currentHosts.isEmpty()) {
+                            // Can't remove an entry from an empty list.
+                            return;
+                        }
+                        final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
+                                currentHosts, current -> current == host);
+                        usedHosts = nextHosts;
+                        if (nextHosts.isEmpty()) {
+                            // We transitioned from non-empty to empty. That means we're not ready.
+                            eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                        }
+                    })).subscribe();
             return host;
         }
 
@@ -445,7 +453,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // It's possible that we're racing with updates from the `onNext` method but since it's intrinsically
         // racy it's fine to do these 'are there any hosts at all' checks here using the total host set.
         if (currentHosts.isEmpty()) {
-            return isClosedList(currentHosts) ? failedLBClosed(targetResource) :
+            return isClosed ? failedLBClosed(targetResource) :
                     // This is the case when SD has emitted some items but none of the hosts are available.
                     failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                             "No hosts are available to connect for " + targetResource + ".",
@@ -503,172 +511,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
     }
 
-    private static boolean isClosedList(List<?> list) {
-        return list.getClass().equals(ClosedList.class);
-    }
-
     private String makeDescription(String id, String targetResource) {
         return getClass().getSimpleName() + "{" +
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
-    }
-
-    private static final class ClosedList<T> implements List<T> {
-        private final List<T> delegate;
-
-        private ClosedList(final List<T> delegate) {
-            this.delegate = requireNonNull(delegate);
-        }
-
-        @Override
-        public int size() {
-            return delegate.size();
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return delegate.isEmpty();
-        }
-
-        @Override
-        public boolean contains(final Object o) {
-            return delegate.contains(o);
-        }
-
-        @Override
-        public Iterator<T> iterator() {
-            return delegate.iterator();
-        }
-
-        @Override
-        public void forEach(final Consumer<? super T> action) {
-            delegate.forEach(action);
-        }
-
-        @Override
-        public Object[] toArray() {
-            return delegate.toArray();
-        }
-
-        @Override
-        public <T1> T1[] toArray(final T1[] a) {
-            return delegate.toArray(a);
-        }
-
-        @Override
-        public boolean add(final T t) {
-            return delegate.add(t);
-        }
-
-        @Override
-        public boolean remove(final Object o) {
-            return delegate.remove(o);
-        }
-
-        @Override
-        public boolean containsAll(final Collection<?> c) {
-            return delegate.containsAll(c);
-        }
-
-        @Override
-        public boolean addAll(final Collection<? extends T> c) {
-            return delegate.addAll(c);
-        }
-
-        @Override
-        public boolean addAll(final int index, final Collection<? extends T> c) {
-            return delegate.addAll(c);
-        }
-
-        @Override
-        public boolean removeAll(final Collection<?> c) {
-            return delegate.removeAll(c);
-        }
-
-        @Override
-        public boolean removeIf(final Predicate<? super T> filter) {
-            return delegate.removeIf(filter);
-        }
-
-        @Override
-        public boolean retainAll(final Collection<?> c) {
-            return delegate.retainAll(c);
-        }
-
-        @Override
-        public void replaceAll(final UnaryOperator<T> operator) {
-            delegate.replaceAll(operator);
-        }
-
-        @Override
-        public void sort(final Comparator<? super T> c) {
-            delegate.sort(c);
-        }
-
-        @Override
-        public void clear() {
-            delegate.clear();
-        }
-
-        @Override
-        public T get(final int index) {
-            return delegate.get(index);
-        }
-
-        @Override
-        public T set(final int index, final T element) {
-            return delegate.set(index, element);
-        }
-
-        @Override
-        public void add(final int index, final T element) {
-            delegate.add(index, element);
-        }
-
-        @Override
-        public T remove(final int index) {
-            return delegate.remove(index);
-        }
-
-        @Override
-        public int indexOf(final Object o) {
-            return delegate.indexOf(o);
-        }
-
-        @Override
-        public int lastIndexOf(final Object o) {
-            return delegate.lastIndexOf(o);
-        }
-
-        @Override
-        public ListIterator<T> listIterator() {
-            return delegate.listIterator();
-        }
-
-        @Override
-        public ListIterator<T> listIterator(final int index) {
-            return delegate.listIterator(index);
-        }
-
-        @Override
-        public List<T> subList(final int fromIndex, final int toIndex) {
-            return new ClosedList<>(delegate.subList(fromIndex, toIndex));
-        }
-
-        @Override
-        public Spliterator<T> spliterator() {
-            return delegate.spliterator();
-        }
-
-        @Override
-        public Stream<T> stream() {
-            return delegate.stream();
-        }
-
-        @Override
-        public Stream<T> parallelStream() {
-            return delegate.parallelStream();
-        }
     }
 }
