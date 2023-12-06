@@ -27,6 +27,11 @@ interface LoadBalancingPolicy {
      */
     String name();
 
+    /**
+     * Construct a {@link HostSelector}.
+     * @param targetResource the name of the target resource, useful for debugging purposes.
+     * @return a {@link HostSelector}
+     */
     <ResolvedAddress, C extends LoadBalancedConnection> HostSelector<ResolvedAddress, C>
     buildSelector(String targetResource);
 }
