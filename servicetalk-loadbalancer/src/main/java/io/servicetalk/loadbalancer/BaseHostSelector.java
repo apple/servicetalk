@@ -48,6 +48,8 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
 
     @Override
     public final boolean isHealthy() {
+        // TODO: in the future we may want to make this more of a "are at least X hosts available" question
+        //  so that we can compose a group of selectors into a priority set.
         return !allUnhealthy(hosts);
     }
 
@@ -67,7 +69,6 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 this.getClass(), "selectConnection(...)"));
     }
 
-    // This will be faster than `allHealthy` in the typical case since we expect hosts to be healthy most of the time.
     private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
             final List<Host<ResolvedAddress, C>> usedHosts) {
         boolean allUnhealthy = !usedHosts.isEmpty();

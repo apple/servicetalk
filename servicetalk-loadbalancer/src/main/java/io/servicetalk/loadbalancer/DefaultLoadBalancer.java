@@ -517,15 +517,24 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
-        // This method is just for testing so we can use some awaiting to get the results in a thread safe way.
+        // If we're already in the executor we can't submit a task and wait for it without deadlock but
+        // the access is thread safe anyway so just go for it.
+        if (sequentialExecutor.isCurrentThreadDraining()) {
+            return sequentialUsedAddresses();
+        }
         CompletableFuture<List<Entry<ResolvedAddress, List<C>>>> future = new CompletableFuture<>();
-        sequentialExecutor.execute(() -> future.complete(
-                usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList())));
+        sequentialExecutor.execute(() -> future.complete(sequentialUsedAddresses()));
         try {
+            // This method is just for testing, so it's fine to do some awaiting.
             return future.get(5, TimeUnit.SECONDS);
         } catch (Exception ex) {
             throw new AssertionError("Failed to get results", ex);
         }
+    }
+
+    // must be called from within the sequential executor.
+    private List<Entry<ResolvedAddress, List<C>>> sequentialUsedAddresses() {
+        return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
     }
 
     private String makeDescription(String id, String targetResource) {
