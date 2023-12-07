@@ -46,7 +46,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
     P2CSelector(@Nonnull List<Host<ResolvedAddress, C>> hosts,
                 final String targetResource, final int maxEffort, @Nullable final Random random) {
-        super(hosts.isEmpty(), targetResource);
+        super(hosts, targetResource);
         this.hosts = hosts;
         this.maxEffort = maxEffort;
         this.random = random;

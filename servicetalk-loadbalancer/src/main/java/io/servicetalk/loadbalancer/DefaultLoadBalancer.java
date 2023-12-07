@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
@@ -44,6 +45,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -87,7 +89,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // writes to these fields protected by `executeSequentially` but they can be read from any thread.
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
-    private volatile boolean isClosed;
+    private boolean isClosed;
 
     private final String targetResource;
     private final SequentialExecutor sequentialExecutor;
@@ -177,16 +179,21 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
                                 // We only want to empty the host list on error if we're closing non-gracefully.
                                 compositeCloseable.closeAsync().beforeOnError(t ->
-                                        sequentialExecutor.execute(() -> updateUsedHosts(emptyList())))
+                                        sequentialExecutor.execute(this::finishClosed)
                         )
                                 // we want to always empty out the host list if we complete successfully
-                                .beforeOnComplete(() -> sequentialExecutor.execute(() -> updateUsedHosts(emptyList()))))
+                                .beforeOnComplete(() -> sequentialExecutor.execute(this::finishClosed))))
                         .subscribe(processor);
             } catch (Throwable ex) {
                 processor.onError(ex);
             }
         });
         return SourceAdapters.fromSource(processor);
+    }
+
+    private void finishClosed() {
+        hostSelector = new ClosedHostSelector();
+        usedHosts = emptyList();
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
@@ -199,18 +206,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTimeNanos, result);
         return result;
-    }
-
-    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
-            final List<Host<ResolvedAddress, C>> usedHosts) {
-        boolean allUnhealthy = !usedHosts.isEmpty();
-        for (Host<ResolvedAddress, C> host : usedHosts) {
-            if (!host.isUnhealthy()) {
-                allUnhealthy = false;
-                break;
-            }
-        }
-        return allUnhealthy;
     }
 
     private static <ResolvedAddress> boolean onlyAvailable(
@@ -438,10 +433,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.hostSelector = hostSelector.rebuildWithHosts(usedHosts);
     }
 
-    private static <T> Single<T> failedLBClosed(String targetResource) {
-        return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
-    }
-
     @Override
     public Single<C> selectConnection(final Predicate<C> selector, @Nullable final ContextMap context) {
         return defer(() -> selectConnection0(selector, context, false).shareContextOnSubscribe());
@@ -454,21 +445,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                         final boolean forceNewConnectionAndReserve) {
-        final List<Host<ResolvedAddress, C>> currentHosts = this.usedHosts;
-        // It's possible that we're racing with updates from the `onNext` method but since it's intrinsically
-        // racy it's fine to do these 'are there any hosts at all' checks here using the total host set.
-        if (currentHosts.isEmpty()) {
-            return isClosed ? failedLBClosed(targetResource) :
-                    // This is the case when SD has emitted some items but none of the hosts are available.
-                    failed(Exceptions.StacklessNoAvailableHostException.newInstance(
-                            "No hosts are available to connect for " + targetResource + ".",
-                            this.getClass(), "selectConnection0(...)"));
-        }
-
-        Single<C> result = hostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
+        final HostSelector<ResolvedAddress, C> currentHostSelector = hostSelector;
+        Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         if (healthCheckConfig != null) {
             result = result.beforeOnError(exn -> {
-                if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {
+                if (exn instanceof NoActiveHostException && !currentHostSelector.isHealthy()) {
                     final long currNextResubscribeTime = nextResubscribeTime;
                     if (currNextResubscribeTime >= 0 &&
                             healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
@@ -521,5 +502,23 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 "id=" + id + '@' + toHexString(identityHashCode(this)) +
                 ", targetResource=" + targetResource +
                 '}';
+    }
+
+    private class ClosedHostSelector implements HostSelector<ResolvedAddress, C> {
+        @Override
+        public Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+                                          boolean forceNewConnectionAndReserve) {
+            return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
+        }
+
+        @Override
+        public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
+            return this;
+        }
+
+        @Override
+        public boolean isHealthy() {
+            return false;
+        }
     }
 }

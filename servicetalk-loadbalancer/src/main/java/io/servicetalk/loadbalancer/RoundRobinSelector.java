@@ -39,7 +39,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
     private RoundRobinSelector(final AtomicInteger index, final List<Host<ResolvedAddress, C>> usedHosts,
                                final String targetResource) {
-        super(usedHosts.isEmpty(), targetResource);
+        super(usedHosts, targetResource);
         this.index = index;
         this.usedHosts = usedHosts;
     }

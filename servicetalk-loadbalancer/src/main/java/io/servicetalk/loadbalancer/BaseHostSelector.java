@@ -31,9 +31,9 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         implements HostSelector<ResolvedAddress, C> {
 
     private final String targetResource;
-    private final boolean isEmpty;
-    BaseHostSelector(final boolean isEmpty, final String targetResource) {
-        this.isEmpty = isEmpty;
+    private final List<Host<ResolvedAddress, C>> hosts;
+    BaseHostSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+        this.hosts = hosts;
         this.targetResource = requireNonNull(targetResource, "targetResource");
     }
 
@@ -43,7 +43,12 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     @Override
     public final Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
                                       boolean forceNewConnectionAndReserve) {
-        return isEmpty ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
+        return hosts.isEmpty() ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
+    }
+
+    @Override
+    public boolean isHealthy() {
+        return !allUnhealthy(hosts);
     }
 
     protected final String getTargetResource() {
@@ -59,6 +64,19 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     private Single<C> noHostsFailure() {
         return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                 "No hosts are available to connect for " + targetResource + ".",
-                this.getClass(), "selectConnection0(...)"));
+                this.getClass(), "selectConnection(...)"));
+    }
+
+    // This will be faster than `allHealthy` in the typical case since we expect hosts to be healthy most of the time.
+    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
+            final List<Host<ResolvedAddress, C>> usedHosts) {
+        boolean allUnhealthy = !usedHosts.isEmpty();
+        for (Host<ResolvedAddress, C> host : usedHosts) {
+            if (!host.isUnhealthy()) {
+                allUnhealthy = false;
+                break;
+            }
+        }
+        return allUnhealthy;
     }
 }
