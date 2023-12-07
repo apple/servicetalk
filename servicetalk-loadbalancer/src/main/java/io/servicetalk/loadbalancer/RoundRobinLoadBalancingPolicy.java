@@ -24,19 +24,16 @@ import io.servicetalk.client.api.LoadBalancedConnection;
  * from an ordered set. If a host is considered unhealthy it is skipped the next host
  * is selected until a healthy host is found or the entire host set has been exhausted.
  */
-final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
+final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        implements LoadBalancingPolicy<ResolvedAddress, C> {
 
-    /**
-     * The default P2C load balancing policy.
-     */
-    public static final RoundRobinLoadBalancingPolicy DEFAULT_POLICY = new RoundRobinLoadBalancingPolicy();
+    private static final RoundRobinLoadBalancingPolicy<?, ?> DEFAULT_POLICY = new RoundRobinLoadBalancingPolicy<>();
 
     private RoundRobinLoadBalancingPolicy() {
     }
 
     @Override
-    public <ResolvedAddress, C extends LoadBalancedConnection> HostSelector<ResolvedAddress, C>
-    buildSelector(final String targetResource) {
+    public HostSelector<ResolvedAddress, C> buildSelector(final String targetResource) {
         return new RoundRobinSelector<>(targetResource);
     }
 
@@ -52,11 +49,14 @@ final class RoundRobinLoadBalancingPolicy implements LoadBalancingPolicy {
 
         /**
          * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
+         * @param <ResolvedAddress> the type of the resolved address.
+         * @param <C> the refined type of the {@LoadBalancedConnection}.
          * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
          */
-        public RoundRobinLoadBalancingPolicy build() {
+        public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
+        build() {
             // Right now there aren't any configurations for round-robin.
-            return DEFAULT_POLICY;
+            return (RoundRobinLoadBalancingPolicy<ResolvedAddress, C>) DEFAULT_POLICY;
         }
     }
 }

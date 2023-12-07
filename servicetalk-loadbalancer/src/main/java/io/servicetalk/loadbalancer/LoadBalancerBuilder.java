@@ -71,7 +71,8 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
      * @param loadBalancingPolicy the policy to use
      * @return {@code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy);
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
+            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed

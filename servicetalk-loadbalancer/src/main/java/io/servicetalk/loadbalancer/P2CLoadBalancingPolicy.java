@@ -34,12 +34,8 @@ import javax.annotation.Nullable;
  * - if neither host is healthy, repeat selection process until max-effort.
  * - pick the 'best' host of the two options.
  */
-final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
-
-    /**
-     * The default P2C load balancing policy.
-     */
-    public static final P2CLoadBalancingPolicy DEFAULT_POLICY = new Builder().build();
+final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
     @Nullable
@@ -51,8 +47,7 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
     }
 
     @Override
-    public <ResolvedAddress, C extends LoadBalancedConnection> HostSelector<ResolvedAddress, C>
-    buildSelector(String targetResource) {
+    public HostSelector<ResolvedAddress, C> buildSelector(String targetResource) {
         return new P2CSelector<>(targetResource, maxEffort, random);
     }
 
@@ -99,10 +94,12 @@ final class P2CLoadBalancingPolicy implements LoadBalancingPolicy {
 
         /**
          * Construct an immutable {@link P2CLoadBalancingPolicy}.
+         * @param <ResolvedAddress> the type of the resolved address.
+         * @param <C> the refined type of the {@LoadBalancedConnection}.
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
-        P2CLoadBalancingPolicy build() {
-            return new P2CLoadBalancingPolicy(maxEffort, random);
+        public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
+            return new P2CLoadBalancingPolicy<>(maxEffort, random);
         }
     }
 }
