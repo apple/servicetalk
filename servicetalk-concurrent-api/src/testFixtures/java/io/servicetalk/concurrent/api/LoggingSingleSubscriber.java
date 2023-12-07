@@ -59,6 +59,7 @@ public class LoggingSingleSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
+    @SuppressWarnings({"PlaceholderCountMatchesArgumentCount", "PMD.InvalidLogMessageFormat"})
     public void onError(final Throwable t) {
         logger.info("onError({})", t, null); // Pass null so that `t` gets treated as an arg to fill the `{}` with.
         delegate.onError(t);

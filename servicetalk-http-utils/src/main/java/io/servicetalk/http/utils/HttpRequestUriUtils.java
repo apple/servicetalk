@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
+import java.util.Locale;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
@@ -213,7 +214,7 @@ public final class HttpRequestUriUtils {
                     query);
         }
 
-        final String scheme = fixedScheme != null ? fixedScheme.toLowerCase() :
+        final String scheme = fixedScheme != null ? fixedScheme.toLowerCase(Locale.ENGLISH) :
                 (ctx.sslSession() != null ? "https" : "http");
 
         final HostAndPort effectiveHostAndPort;

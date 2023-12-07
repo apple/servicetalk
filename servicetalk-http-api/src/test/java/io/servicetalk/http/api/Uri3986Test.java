@@ -379,7 +379,7 @@ class Uri3986Test {
 
     @Test
     void ipv6maxPortTest() {
-        verifyUri3986("https://foo:goo@[::1]:65535", "https", "foo:goo", "[::1]", 65535, "", "", null, null, null);
+        verifyUri3986("https://foo:goo@[::1]:65535", "https", "foo:goo", "[::1]", 65_535, "", "", null, null, null);
     }
 
     @Test
@@ -390,7 +390,7 @@ class Uri3986Test {
     @Test
     void ipv6HostWithScopeAndPort() {
         verifyUri3986("https://[0:0:0:0:0:0:0:0%0]:49178/path?param=value", "https", null, "[0:0:0:0:0:0:0:0%0]",
-                49178, "/path", "/path", "param=value", "param=value", null);
+                49_178, "/path", "/path", "param=value", "param=value", null);
     }
 
     @Test

@@ -252,7 +252,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return System.identityHashCode(this);
         }
 
         @Override

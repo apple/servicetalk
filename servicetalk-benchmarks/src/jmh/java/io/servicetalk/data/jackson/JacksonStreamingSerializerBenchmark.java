@@ -78,7 +78,7 @@ import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
  * JacksonStreamingSerializerBenchmark.deserializeSmallBackedByArray   thrpt    5  1092601,832 ± 3884,520  ops/s
  * JacksonStreamingSerializerBenchmark.deserializeSmallBackedByDirect  thrpt    5   727287,804 ± 2357,798  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

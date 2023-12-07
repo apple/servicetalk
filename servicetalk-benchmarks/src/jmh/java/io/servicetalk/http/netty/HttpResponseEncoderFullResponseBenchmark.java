@@ -53,7 +53,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
  * Benchmark                                               Mode  Cnt       Score      Error  Units
  * HttpResponseEncoderBenchmarkFullResponse.fullResponse  thrpt    5  669406.100 ± 6113.671  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 5)
 @Measurement(iterations = 5, time = 10)

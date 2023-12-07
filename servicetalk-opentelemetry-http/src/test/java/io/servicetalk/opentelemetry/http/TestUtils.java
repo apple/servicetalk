@@ -43,7 +43,7 @@ public final class TestUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    static final String[] TRACING_TEST_LOG_LINE_PREFIX = new String[] {
+    static final String[] TRACING_TEST_LOG_LINE_PREFIX = {
         "filter request path={}",
         "filter response map path={}",
         "filter response transform path={}",

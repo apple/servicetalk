@@ -35,7 +35,7 @@ class TakeWhilePublisherTest {
 
     @Test
     void testWhile() {
-        Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.takeWhile(s -> !"Hello3".equals(s));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(4);
@@ -47,7 +47,7 @@ class TakeWhilePublisherTest {
 
     @Test
     void testWhileError() {
-        Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.takeWhile(s -> !"Hello3".equals(s));
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello1");
@@ -58,7 +58,7 @@ class TakeWhilePublisherTest {
 
     @Test
     void testWhileComplete() {
-        Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.takeWhile(s -> !"Hello3".equals(s));
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello1");
@@ -68,7 +68,7 @@ class TakeWhilePublisherTest {
 
     @Test
     void testSubCancelled() {
-        Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
+        Publisher<String> p = publisher.takeWhile(s -> !"Hello3".equals(s));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(3);

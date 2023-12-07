@@ -53,7 +53,7 @@ class NettyBufferTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void writeBytesInputStreamExactLength(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
         Buffer buffer = buffer(heapBuffer);
@@ -65,7 +65,7 @@ class NettyBufferTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void writeBytesInputStreamHalfAvailable(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
         Buffer buffer = buffer(heapBuffer);
@@ -76,7 +76,7 @@ class NettyBufferTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void writeBytesInputStreamDoubleLength(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
         Buffer buffer = buffer(heapBuffer);
@@ -100,7 +100,7 @@ class NettyBufferTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
-    @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
+    @CsvSource({"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void writeBytesUntilEndStream(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
         Buffer buffer = buffer(heapBuffer);

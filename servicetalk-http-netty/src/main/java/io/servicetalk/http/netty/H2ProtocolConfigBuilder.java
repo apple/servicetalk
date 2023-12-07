@@ -43,7 +43,7 @@ public final class H2ProtocolConfigBuilder {
     /**
      * 1mb default window size.
      */
-    private static final int INITIAL_FLOW_CONTROL_WINDOW = 1048576;
+    private static final int INITIAL_FLOW_CONTROL_WINDOW = 1_048_576;
     /**
      * Netty currently doubles the connection window by default so a single stream doesn't exhaust all flow control
      * bytes.

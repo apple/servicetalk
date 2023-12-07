@@ -36,9 +36,9 @@ class SkipWhileTest {
     private final TestSubscription subscription = new TestSubscription();
 
     @ParameterizedTest(name = "doComplete={0} doCancel={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false"})
+    @CsvSource({"false,false", "false,true", "true,false"})
     void skipWhile(boolean doComplete, boolean doCancel) {
-        Publisher<String> p = publisher.skipWhile(s -> !s.equals("Hello2"));
+        Publisher<String> p = publisher.skipWhile(s -> !"Hello2".equals(s));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(3);

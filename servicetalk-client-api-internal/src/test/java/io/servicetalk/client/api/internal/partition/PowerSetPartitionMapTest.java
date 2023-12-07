@@ -32,8 +32,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class PowerSetPartitionMapTest {
     private static final Key<Integer> DC_ID = Key.newKey("dc");
@@ -230,12 +230,7 @@ class PowerSetPartitionMapTest {
     void testAddEmptyPartitionAttributesThrows() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         PartitionAttributes emptyAttributes = new DefaultPartitionAttributesBuilder(0).build();
-        try {
-            map.add(emptyAttributes);
-            fail();
-        } catch (IllegalArgumentException expected) {
-            // expected
-        }
+        assertThrows(IllegalArgumentException.class, () -> map.add(emptyAttributes));
     }
 
     @Test

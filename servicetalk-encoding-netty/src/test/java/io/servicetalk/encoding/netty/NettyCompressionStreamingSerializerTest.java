@@ -78,7 +78,7 @@ class NettyCompressionStreamingSerializerTest {
         String rawString = "hello";
         byte[] rawBytes = new byte[1024];
         ThreadLocalRandom.current().nextBytes(rawBytes);
-        Buffer[] clearText = new Buffer[] {allocator.fromAscii(rawString), allocator.wrap(rawBytes)};
+        Buffer[] clearText = {allocator.fromAscii(rawString), allocator.wrap(rawBytes)};
         Publisher<Buffer> serializedPub = serializer.serialize(from(clearText), DEFAULT_ALLOCATOR);
 
         CompositeBuffer serializedBuf = serializedPub

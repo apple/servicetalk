@@ -33,6 +33,7 @@ abstract class AbstractContentCodec implements ContentCodec {
         this.name = name;
     }
 
+    @Override
     public final CharSequence name() {
         return name;
     }

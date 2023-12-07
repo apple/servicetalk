@@ -72,7 +72,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,", "false,1", "false,"})
+    @CsvSource({"true,", "false,1", "false,"})
     void singleSubscriber(boolean onError, @Nullable Integer value) {
         toSource(source.cache(1)).subscribe(subscriber1);
         subscriber1.awaitSubscription();
@@ -137,7 +137,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,", "false,1", "false,"})
+    @CsvSource({"true,", "false,1", "false,"})
     void twoSubscribersNoData(boolean onError, @Nullable Integer value) {
         Single<Integer> single = source.cache(2);
         toSource(single).subscribe(subscriber1);
@@ -157,7 +157,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,", "false,1", "false,"})
+    @CsvSource({"true,", "false,1", "false,"})
     void twoSubscribersAfterTerminalData(boolean onError, @Nullable Integer value) {
         Single<Integer> single = source.cache(1, true, (v, t) -> never());
         toSource(single).subscribe(subscriber1);
@@ -179,7 +179,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void twoSubscribersCancel(boolean firstSubscription, boolean cancelUpstream) {
         Single<Integer> single = source.cache(2, cancelUpstream);
         toSource(single).subscribe(subscriber1);
@@ -212,7 +212,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,", "false,1", "false,"})
+    @CsvSource({"true,", "false,1", "false,"})
     void threeSubscribersOneLateQueueData(boolean onError, @Nullable Integer value) {
         Single<Integer> single = source.cache(2);
         toSource(single).subscribe(subscriber1);
@@ -246,7 +246,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void terminalResubscribe(boolean onError, boolean cacheData) {
         final AtomicBoolean subscribed = new AtomicBoolean();
         final Integer value = 1;
@@ -299,7 +299,7 @@ class CacheSingleTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"400,401", "400,200", "400,2"})
+    @CsvSource({"400,401", "400,200", "400,2"})
     void concurrentSubscribers(int expectedSubscribers, int latchCount) throws Exception {
         Single<Integer> multicast = source.cache(expectedSubscribers);
         ExecutorService executorService = new ThreadPoolExecutor(0, expectedSubscribers, 1, SECONDS,

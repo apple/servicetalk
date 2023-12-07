@@ -143,7 +143,7 @@ final class DefaultHostAndPort implements HostAndPort {
         String str = toString;
         if (str == null) {
             toString = str = hostName + ':' + port;
-        } else if (str == STR_IPV6) {
+        } else if (STR_IPV6.equals(str)) {
             toString = str = '[' + hostName + "]:" + port;
         }
         return str;
@@ -164,7 +164,7 @@ final class DefaultHostAndPort implements HostAndPort {
     }
 
     private static boolean isValidPort(int port) {
-        return port >= 0 && port <= 65535;
+        return port >= 0 && port <= 65_535;
     }
 
     private static String compressIPv6(String rawIp, int start, int end) {

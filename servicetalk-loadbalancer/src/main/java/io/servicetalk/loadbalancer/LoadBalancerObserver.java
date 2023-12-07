@@ -18,8 +18,8 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
+import javax.annotation.Nullable;
 
 /**
  * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}

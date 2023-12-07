@@ -52,7 +52,7 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
                                                     final SecurityType security) throws Exception {
         setUp(security);
         BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
-            if (request.requestTarget().equals("/")) {
+            if ("/".equals(request.requestTarget())) {
                 return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION, "/next"));
             }
             return succeeded(responseFactory.ok());
@@ -79,7 +79,7 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
                                                     final SecurityType security) throws Exception {
         setUp(security);
         BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
-            if (request.requestTarget().equals("/")) {
+            if ("/".equals(request.requestTarget())) {
                 return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION,
                         format("http://%s/next", hostHeader(HostAndPort.of(remoteAddress())))));
             }
@@ -105,7 +105,7 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
                                                       final SecurityType security) throws Exception {
         setUp(security);
         BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
-            if (request.requestTarget().equals("/")) {
+            if ("/".equals(request.requestTarget())) {
                 return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "/next"));
             }
@@ -125,7 +125,7 @@ final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequest
                                                       final SecurityType security) throws Exception {
         setUp(security);
         BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
-            if (request.requestTarget().equals("/")) {
+            if ("/".equals(request.requestTarget())) {
                 return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "http://servicetalk.io:80/next"));
             }

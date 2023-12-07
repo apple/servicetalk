@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -185,12 +186,7 @@ class JacksonSerializationProviderTest {
         final Buffer buffer = serializePojo(expected);
         final StreamingDeserializer<TestPojo> deSerializer = serializationProvider.getDeserializer(TestPojo.class);
         deSerializer.deserialize(buffer.readBytes(buffer.readableBytes() - 1));
-        try {
-            deSerializer.close();
-            fail();
-        } catch (SerializationException e) {
-            // expected
-        }
+        assertThrows(SerializationException.class, deSerializer::close);
     }
 
     @Test

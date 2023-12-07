@@ -46,6 +46,7 @@ import static org.mockito.Mockito.mock;
 
 final class TcpConnectorTest extends AbstractTcpServerTest {
 
+    @Override
     @BeforeEach
     void setUp() throws Exception {
         super.setUp();

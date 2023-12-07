@@ -44,6 +44,7 @@ class ContextMapTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.LooseCoupling")
     void testGenericType() {
         @SuppressWarnings("unchecked")
         ContextMap.Key<List<String>> key = newKey("key", (Class<List<String>>) (Class<?>) List.class);

@@ -63,11 +63,10 @@ import static org.hamcrest.Matchers.is;
 class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
     private static final String EXECUTOR_THREAD_NAME_PREFIX = "http-server-executor";
-    private static final HttpExecutionStrategy[] SERVER_STRATEGIES = new HttpExecutionStrategy[] {
-            defaultStrategy(), offloadNone() };
+    private static final HttpExecutionStrategy[] SERVER_STRATEGIES = {defaultStrategy(), offloadNone()};
 
-    private static final HttpExecutionStrategy[] ROUTE_STRATEGIES = new HttpExecutionStrategy[] {
-            null, defaultStrategy(), offloadNone(), customStrategyBuilder().offloadSend().build() };
+    private static final HttpExecutionStrategy[] ROUTE_STRATEGIES = {null, defaultStrategy(), offloadNone(),
+            customStrategyBuilder().offloadSend().build()};
 
     @RegisterExtension
     private static final ExecutionContextExtension EXECUTION_CONTEXT =

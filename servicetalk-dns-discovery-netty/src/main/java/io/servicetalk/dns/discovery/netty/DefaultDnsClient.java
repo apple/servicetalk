@@ -241,7 +241,7 @@ final class DefaultDnsClient implements DnsClient {
             return observer.onNewDiscovery(id, address);
         } catch (Throwable unexpected) {
             LOGGER.warn("{} unexpected exception from {} while reporting new DNS discovery for {}",
-                    DefaultDnsClient.this, observer, address, unexpected);
+                    this, observer, address, unexpected);
             return null;
         }
     }

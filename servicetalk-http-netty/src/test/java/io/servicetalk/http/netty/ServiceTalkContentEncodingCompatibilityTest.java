@@ -35,6 +35,8 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpServerCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
@@ -114,6 +116,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
 
     @ChannelHandler.Sharable
     static class EchoServerHandler extends SimpleChannelInboundHandler<HttpObject> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(EchoServerHandler.class);
         static final EchoServerHandler INSTANCE = new EchoServerHandler();
 
         private static final byte[] CONTENT = payload((byte) 'b');
@@ -140,7 +143,7 @@ class ServiceTalkContentEncodingCompatibilityTest extends BaseContentEncodingTes
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            cause.printStackTrace();
+            LOGGER.error("Unexpected exception caught", cause);
             ctx.close();
         }
     }

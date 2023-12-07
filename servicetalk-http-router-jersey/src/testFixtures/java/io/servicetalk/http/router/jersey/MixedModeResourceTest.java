@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
 class MixedModeResourceTest extends AbstractJerseyStreamingHttpServiceTest {
+    @Override
     protected void setUp(final RouterApi api) throws Exception {
         super.setUp(api);
         assumeSafeToDisableOffloading(true, api);

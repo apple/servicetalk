@@ -39,6 +39,7 @@ import static java.lang.Thread.NORM_PRIORITY;
 public final class AsyncContextFriendlyExecutor implements ExecutorService {
     private final ExecutorService executor;
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     public AsyncContextFriendlyExecutor(int maxThread, String prefix) {
         executor = Executors.newCachedThreadPool(new DefaultThreadFactory(prefix, false, NORM_PRIORITY));
     }

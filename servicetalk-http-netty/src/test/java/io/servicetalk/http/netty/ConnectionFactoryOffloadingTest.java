@@ -72,7 +72,7 @@ class ConnectionFactoryOffloadingTest {
         Thread appThread = Thread.currentThread();
 
         try (ServerContext server = HttpServers.forPort(0)
-                .listenAndAwait(this::helloWorld)) {
+                .listenAndAwait(ConnectionFactoryOffloadingTest::helloWorld)) {
             SocketAddress serverAddress = server.listenAddress();
 
             ConnectionFactoryFilter<SocketAddress, FilterableStreamingHttpConnection> factory =
@@ -127,9 +127,10 @@ class ConnectionFactoryOffloadingTest {
                 "incorrect offloading, offload=" + offload + " thread=" + factoryThread.get());
     }
 
-    private Single<HttpResponse> helloWorld(HttpServiceContext ctx,
-                                            HttpRequest request,
-                                            HttpResponseFactory responseFactory) {
+    @SuppressWarnings("PMD.UnusedFormalParameter")
+    private static Single<HttpResponse> helloWorld(HttpServiceContext ctx,
+                                                   HttpRequest request,
+                                                   HttpResponseFactory responseFactory) {
         return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
     }
 }

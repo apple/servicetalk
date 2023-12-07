@@ -15,10 +15,16 @@
  */
 package io.servicetalk.loadbalancer;
 
-class LingeringNewRoundRobinLoadBalancerTest extends LingeringRoundRobinLoadBalancerTest {
+class LingeringNewRoundRobinLoadBalancerTest extends LingeringLoadBalancerTest {
+
     @Override
-    protected RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return ((RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>)
-                super.baseLoadBalancerBuilder()).useNewRoundRobin(true);
+    public boolean isRoundRobin() {
+        return true;
+    }
+
+    @Override
+    protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
+        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
+                .loadBalancingPolicy(new RoundRobinLoadBalancingPolicy.Builder().build());
     }
 }

@@ -92,7 +92,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
  * group:requestN          1000000          false  thrpt    3     93466190.240 ±   24680358.208  ops/s
  * group:write             1000000          false  thrpt    3         1675.382 ±       1185.913  ops/s * </pre>
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 2, time = 3)
 @Measurement(iterations = 3, time = 5)

@@ -111,7 +111,7 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     protected InetSocketAddress localAddress() {
-        return InetSocketAddress.createUnresolved("127.0.1.2", 28080);
+        return InetSocketAddress.createUnresolved("127.0.1.2", 28_080);
     }
 
     protected SSLSession sslSession() {

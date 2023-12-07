@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServiceTalkThreadContextMapTest {
@@ -127,11 +127,6 @@ class ServiceTalkThreadContextMapTest {
         Map<String, String> immutableMap = map.getImmutableMapOrNull();
         assertNotNull(immutableMap);
         assertEquals(1, immutableMap.size());
-        try {
-            immutableMap.put("y", "20");
-            fail();
-        } catch (UnsupportedOperationException ignored) {
-            // expected
-        }
+        assertThrows(UnsupportedOperationException.class, () -> immutableMap.put("y", "20"));
     }
 }

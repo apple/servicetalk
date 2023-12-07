@@ -59,7 +59,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * HttpResponseDecoderBenchmark.initialLine           600  thrpt    5   965798.581 ± 13396.336  ops/s
  * HttpResponseDecoderBenchmark.initialLine           700  thrpt    5   811948.162 ± 14176.711  ops/s
  */
-@Fork(value = 1)
+@Fork(1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)

@@ -913,7 +913,7 @@ class DefaultAsyncContextProviderTest {
     }
 
     private static void testPutMultiplePermutations(List<Key<String>> initialKeys) {
-        final Key<?>[] putKeys = new Key<?>[] {K1, K2, K3, K4, K5, K6, K7, K8};
+        final Key<?>[] putKeys = {K1, K2, K3, K4, K5, K6, K7, K8};
         for (int i = 0; i < initialKeys.size(); ++i) {
             AsyncContext.put(initialKeys.get(i), "v" + (i + 1));
         }

@@ -31,7 +31,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @NameBinding
 @Target({TYPE, METHOD})
-@Retention(value = RUNTIME)
+@Retention(RUNTIME)
 public @interface BasicAuthenticated {
     // marker annotation
 }

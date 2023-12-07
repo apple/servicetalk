@@ -84,7 +84,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
             channel = bootstrap.bind(0).sync().channel();
         } catch (InterruptedException e) {
             currentThread().interrupt(); // Reset the interrupted flag.
-            throw new IllegalStateException("Failed to create UDP client");
+            throw new IllegalStateException("Failed to create UDP client", e);
         } catch (Exception e) {
             LOGGER.warn("Failed to create UDP client", e);
             throw e;

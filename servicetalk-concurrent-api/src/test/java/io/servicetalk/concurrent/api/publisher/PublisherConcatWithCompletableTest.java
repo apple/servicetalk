@@ -69,7 +69,7 @@ final class PublisherConcatWithCompletableTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] propagateCancel={0} completableError={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void sourceError(boolean propagateCancel, boolean completableError) {
         setup(propagateCancel);
         subscriber.awaitSubscription().request(1);
@@ -106,7 +106,7 @@ final class PublisherConcatWithCompletableTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] propagateCancel={0} onError={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void sourceCancel(boolean propagateCancel, boolean onError) {
         setup(propagateCancel);
         subscriber.awaitSubscription().cancel();
@@ -140,7 +140,7 @@ final class PublisherConcatWithCompletableTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] propagateCancel={0} onError={1}")
-    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
     void nextCancel(boolean propagateCancel, boolean onError) {
         setup(propagateCancel);
         if (onError) {
@@ -168,7 +168,7 @@ final class PublisherConcatWithCompletableTest {
         }
     }
 
-    void verifySubscriberErrored() {
+    private void verifySubscriberErrored() {
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }
