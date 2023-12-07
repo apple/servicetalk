@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
@@ -39,6 +40,7 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ProxyConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -451,6 +453,15 @@ public final class HttpClients {
                         // Apply after providers to let them see these customizations.
                         .serviceDiscoverer(usd)
                         .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
+                        // Disable health-checking:
+                        .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
+                                RoundRobinLoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                        // Use a different ID to let providers distinguish this LB from the default one
+                                        DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
+                                                DiscoveryStrategy.ON_NEW_CONNECTION.name())
+                                        .healthCheckFailedConnectionsThreshold(-1)
+                                        .build())
+                                .build())
                         .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
