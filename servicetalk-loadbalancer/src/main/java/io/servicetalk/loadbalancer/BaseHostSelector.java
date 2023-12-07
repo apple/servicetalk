@@ -47,7 +47,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     @Override
-    public boolean isHealthy() {
+    public final boolean isHealthy() {
         return !allUnhealthy(hosts);
     }
 

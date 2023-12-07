@@ -42,7 +42,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
@@ -86,9 +88,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
 
-    // writes to these fields protected by `executeSequentially` but they can be read from any thread.
-    private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    // writes are protected by `executeSequentially` but the field can be read by any thread.
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
+    // reads and writes are protected by `executeSequentially`.
+    private List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    // reads and writes are protected by `executeSequentially`.
     private boolean isClosed;
 
     private final String targetResource;
@@ -179,10 +183,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
                                 // We only want to empty the host list on error if we're closing non-gracefully.
                                 compositeCloseable.closeAsync().beforeOnError(t ->
-                                        sequentialExecutor.execute(this::finishClosed)
+                                        sequentialExecutor.execute(this::sequentialCompleteClosed)
                         )
                                 // we want to always empty out the host list if we complete successfully
-                                .beforeOnComplete(() -> sequentialExecutor.execute(this::finishClosed))))
+                                .beforeOnComplete(() -> sequentialExecutor.execute(this::sequentialCompleteClosed))))
                         .subscribe(processor);
             } catch (Throwable ex) {
                 processor.onError(ex);
@@ -191,9 +195,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         return SourceAdapters.fromSource(processor);
     }
 
-    private void finishClosed() {
-        hostSelector = new ClosedHostSelector();
+    // must be called from within the sequential executor.
+    private void sequentialCompleteClosed() {
         usedHosts = emptyList();
+        hostSelector = new ClosedHostSelector();
     }
 
     private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
@@ -286,6 +291,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // First thing we do is go through the existing hosts and see if we need to transfer them. These
             // will be all existing hosts that either don't have a matching discovery event or are not marked
             // as unavailable. If they are marked unavailable, we need to close them.
+            boolean hostSetChanged = false;
             for (Host<ResolvedAddress, C> host : oldUsedHosts) {
                 ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
                 if (event == null) {
@@ -299,14 +305,20 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     if (host.markActiveIfNotClosed()) {
                         nextHosts.add(host);
                     } else {
+                        // It's a new host, so the set changed.
+                        hostSetChanged = true;
                         nextHosts.add(createHost(event.address()));
                     }
                 } else if (EXPIRED.equals(event.status())) {
                     if (!host.markExpired()) {
                         nextHosts.add(host);
+                    } else {
+                        // Marking it expired also resulted in removing it from the set.
+                        hostSetChanged = true;
                     }
                 } else if (UNAVAILABLE.equals(event.status())) {
                     host.markClosed();
+                    hostSetChanged = true;
                 } else {
                     LOGGER.warn("{}: Unsupported Status in event:" +
                                     " {} (mapped to {}). Leaving usedHosts unchanged: {}",
@@ -319,11 +331,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             for (ServiceDiscovererEvent<ResolvedAddress> event : eventMap.values()) {
                 if (AVAILABLE.equals(event.status())) {
                     sendReadyEvent = true;
+                    hostSetChanged = true;
                     nextHosts.add(createHost(event.address()));
                 }
             }
-            // We've built the new list so now set it for consumption and then send our events.
-            updateUsedHosts(nextHosts);
+            // We've built a materially different host set so now set it for consumption and send our events.
+            if (hostSetChanged) {
+                sequentialUpdateUsedHosts(nextHosts);
+            }
 
             LOGGER.debug("{}: now using addresses (size={}): {}.",
                     DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
@@ -371,10 +386,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         }
                         final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
                                 currentHosts, current -> current == host);
-                        updateUsedHosts(nextHosts);
-                        if (nextHosts.isEmpty()) {
-                            // We transitioned from non-empty to empty. That means we're not ready.
-                            eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                        // we only need to do anything else if we actually removed the host
+                        if (nextHosts.size() != currentHosts.size()) {
+                            sequentialUpdateUsedHosts(nextHosts);
+                            if (nextHosts.isEmpty()) {
+                                // We transitioned from non-empty to empty. That means we're not ready.
+                                eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                            }
                         }
                     })).subscribe();
             return host;
@@ -406,29 +424,34 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         @Override
         public void onError(final Throwable t) {
-            List<Host<ResolvedAddress, C>> hosts = usedHosts;
-            if (healthCheckConfig == null) {
-                // Terminate processor only if we will never re-subscribe
-                eventStreamProcessor.onError(t);
-            }
-            LOGGER.error(
-                "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
-                    DefaultLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+            sequentialExecutor.execute(() -> {
+                if (healthCheckConfig == null) {
+                    // Terminate processor only if we will never re-subscribe
+                    eventStreamProcessor.onError(t);
+                }
+                List<Host<ResolvedAddress, C>> hosts = usedHosts;
+                LOGGER.error(
+                    "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
+                        DefaultLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
+            });
         }
 
         @Override
         public void onComplete() {
-            List<Host<ResolvedAddress, C>> hosts = usedHosts;
-            if (healthCheckConfig == null) {
-                // Terminate processor only if we will never re-subscribe
-                eventStreamProcessor.onComplete();
-            }
-            LOGGER.error("{}: service discoverer completed. Last seen addresses (size={}): {}.",
-                    DefaultLoadBalancer.this, hosts.size(), hosts);
+            sequentialExecutor.execute(() -> {
+                List<Host<ResolvedAddress, C>> hosts = usedHosts;
+                if (healthCheckConfig == null) {
+                    // Terminate processor only if we will never re-subscribe
+                    eventStreamProcessor.onComplete();
+                }
+                LOGGER.error("{}: service discoverer completed. Last seen addresses (size={}): {}.",
+                        DefaultLoadBalancer.this, hosts.size(), hosts);
+            });
         }
     }
 
-    private void updateUsedHosts(List<Host<ResolvedAddress, C>> nextHosts) {
+    // must be called from within the SequentialExecutor
+    private void sequentialUpdateUsedHosts(List<Host<ResolvedAddress, C>> nextHosts) {
         this.usedHosts = nextHosts;
         this.hostSelector = hostSelector.rebuildWithHosts(usedHosts);
     }
@@ -494,7 +517,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     @Override
     public List<Entry<ResolvedAddress, List<C>>> usedAddresses() {
-        return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
+        // This method is just for testing so we can use some awaiting to get the results in a thread safe way.
+        CompletableFuture<List<Entry<ResolvedAddress, List<C>>>> future = new CompletableFuture<>();
+        sequentialExecutor.execute(() -> future.complete(
+                usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList())));
+        try {
+            return future.get(5, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            throw new AssertionError("Failed to get results", ex);
+        }
     }
 
     private String makeDescription(String id, String targetResource) {
