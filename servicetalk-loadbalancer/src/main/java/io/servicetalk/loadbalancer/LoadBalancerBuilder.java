@@ -26,6 +26,7 @@ import io.servicetalk.context.api.ContextMap;
 
 import java.time.Duration;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 /**
  * Builder for {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances based upon the configuration.
@@ -68,10 +69,18 @@ import java.util.function.Predicate;
 interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
-     * @param loadBalancingPolicy the policy to use
+     * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
      * @return {@code this}
      */
     LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy);
+
+    /**
+     * Set the {@link LoadBalancerObserver} to use with this load balancer.
+     * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or null to not use an observer.
+     * @return {code this}
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
+            @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver);
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
