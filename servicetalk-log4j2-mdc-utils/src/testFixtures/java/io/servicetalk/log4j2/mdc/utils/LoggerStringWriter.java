@@ -25,11 +25,13 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.Nullable;
 
 import static java.lang.System.nanoTime;
 import static java.lang.Thread.currentThread;
@@ -42,25 +44,24 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public final class LoggerStringWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerStringWriter.class);
-    private static final String APPENDER_NAME = "writer";
-    @Nullable
-    private static StringWriter logStringWriter;
 
-    private LoggerStringWriter() {
-        // no instances.
-    }
+    // protected by synchronization on `this`.
+    private ConcurrentStringWriter writer;
 
     /**
      * Clear the content of the {@link #accumulated()}.
+     * <p>
+     * Note that the underlying logger may be initialized by this method and it must always be
+     * followed up with a {@link #remove()} call at the end of tests to clean up logger state.
      */
-    public static void reset() {
-        getStringWriter().getBuffer().setLength(0);
+    public void reset() {
+        getStringWriter().reset();
     }
 
     /**
      * Remove the underlying in-memory log appender.
      */
-    public static void remove() {
+    public void remove() {
         removeStringWriter();
     }
 
@@ -69,7 +70,7 @@ public final class LoggerStringWriter {
      *
      * @return the accumulated content that has been logged.
      */
-    public static String accumulated() {
+    public String accumulated() {
         return getStringWriter().toString();
     }
 
@@ -83,7 +84,7 @@ public final class LoggerStringWriter {
      * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
      * {@link #accumulated()} has not yet stabilize.
      */
-    public static String stableAccumulated(int totalWaitTimeMillis) throws InterruptedException, TimeoutException {
+    public String stableAccumulated(int totalWaitTimeMillis) throws InterruptedException, TimeoutException {
         return stableAccumulated(totalWaitTimeMillis, 10);
     }
 
@@ -98,7 +99,7 @@ public final class LoggerStringWriter {
      * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
      * {@link #accumulated()} has not yet stabilize.
      */
-    public static String stableAccumulated(int totalWaitTimeMillis, final long sleepDurationMs)
+    public String stableAccumulated(int totalWaitTimeMillis, final long sleepDurationMs)
             throws InterruptedException, TimeoutException {
         // We force a unique log entry, and wait for it to ensure the content from the local thread has been flushed.
         String forcedLogEntry = "forced log entry to help for flush on current thread " +
@@ -157,29 +158,28 @@ public final class LoggerStringWriter {
         assertThat(value.substring(beginIndex, beginIndex + expectedValue.length()), is(expectedValue));
     }
 
-    private static synchronized StringWriter getStringWriter() {
-        if (logStringWriter == null) {
+    private synchronized ConcurrentStringWriter getStringWriter() {
+        if (writer == null) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-            logStringWriter = addWriterAppender(context, DEBUG);
+            writer = addWriterAppender(context, DEBUG);
         }
-        return logStringWriter;
+        return writer;
     }
 
-    private static synchronized void removeStringWriter() {
-        if (logStringWriter == null) {
+    private synchronized void removeStringWriter() {
+        if (writer == null) {
             return;
         }
-        removeWriterAppender((LoggerContext) LogManager.getContext(false));
-        logStringWriter = null;
+        removeWriterAppender(writer, (LoggerContext) LogManager.getContext(false));
+        writer = null;
     }
 
-    private static StringWriter addWriterAppender(final LoggerContext context, Level level) {
+    private static ConcurrentStringWriter addWriterAppender(final LoggerContext context, Level level) {
         final Configuration config = context.getConfiguration();
-        final StringWriter writer = new StringWriter();
-
+        final ConcurrentStringWriter writer = new ConcurrentStringWriter();
         final Map.Entry<String, Appender> existing = config.getAppenders().entrySet().iterator().next();
         final WriterAppender writerAppender = WriterAppender.newBuilder()
-                .setName(APPENDER_NAME)
+                .setName(writer.name)
                 .setLayout(existing.getValue().getLayout())
                 .setTarget(writer)
                 .build();
@@ -190,16 +190,58 @@ public final class LoggerStringWriter {
         return writer;
     }
 
-    private static void removeWriterAppender(final LoggerContext context) {
+    private static void removeWriterAppender(ConcurrentStringWriter writer, final LoggerContext context) {
         final Configuration config = context.getConfiguration();
         LoggerConfig rootConfig = config.getRootLogger();
         // Stopping the logger is subject to race conditions where logging during cleanup on global executor
         // may still try to log and raise an error.
-        WriterAppender writerAppender = (WriterAppender) rootConfig.getAppenders().get(APPENDER_NAME);
+        WriterAppender writerAppender = (WriterAppender) rootConfig.getAppenders().get(writer.name);
         if (writerAppender != null) {
             writerAppender.stop(0, NANOSECONDS);
         }
         // Don't remove directly from map, because the root logger also cleans up filters.
-        rootConfig.removeAppender(APPENDER_NAME);
+        rootConfig.removeAppender(writer.name);
+    }
+
+    // This is essentially just a thread safe `StringAppender` with a unique `String name` field to use
+    // as a map key.
+    private static final class ConcurrentStringWriter extends Writer {
+
+        private static final String APPENDER_NAME_PREFIX = "writer";
+
+        private final StringWriter stringWriter = new StringWriter();
+
+        // We use uuid as a way to give the appender a unique name. We could try and do it with the current
+        // thread name but it's hard to say if that will be unique but it is certain to be ugly.
+        final String name = APPENDER_NAME_PREFIX + '_' + UUID.randomUUID();
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            synchronized (stringWriter) {
+                stringWriter.write(cbuf, off, len);
+            }
+        }
+
+        @Override
+        public void flush() {
+            // this is a no-op for `StringWriter`
+        }
+
+        @Override
+        public void close() {
+            // this is a no-op for `StringWriter`
+        }
+
+        @Override
+        public String toString() {
+            synchronized (stringWriter) {
+                return stringWriter.toString();
+            }
+        }
+
+        void reset() {
+            synchronized (stringWriter) {
+                stringWriter.getBuffer().setLength(0);
+            }
+        }
     }
 }

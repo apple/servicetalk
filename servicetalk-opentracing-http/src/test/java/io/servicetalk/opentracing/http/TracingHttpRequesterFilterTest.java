@@ -58,7 +58,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentracing.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
@@ -87,18 +86,20 @@ import static org.mockito.MockitoAnnotations.initMocks;
 class TracingHttpRequesterFilterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TracingHttpRequesterFilterTest.class);
 
+    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+
     @Mock
     private Tracer mockTracer;
 
     @BeforeEach
     public void setup() {
         initMocks(this);
-        LoggerStringWriter.reset();
+        loggerStringWriter.reset();
     }
 
     @AfterEach
     public void tearDown() {
-        LoggerStringWriter.remove();
+        loggerStringWriter.remove();
     }
 
     @Test
@@ -130,8 +131,8 @@ class TracingHttpRequesterFilterTest {
                 assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                 assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
 
-                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
-                        serverSpanState.spanId, null, TRACING_TEST_LOG_LINE_PREFIX);
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                        serverSpanState.traceId, serverSpanState.spanId, null, TRACING_TEST_LOG_LINE_PREFIX);
             }
         }
     }
@@ -171,9 +172,9 @@ class TracingHttpRequesterFilterTest {
                         assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                         assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                         assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
-
-                        verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
-                            serverSpanState.spanId, serverSpanState.parentSpanId, TRACING_TEST_LOG_LINE_PREFIX);
+                        verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                                serverSpanState.traceId, serverSpanState.spanId, serverSpanState.parentSpanId,
+                                TRACING_TEST_LOG_LINE_PREFIX);
                     } finally {
                         clientSpan.finish();
                     }

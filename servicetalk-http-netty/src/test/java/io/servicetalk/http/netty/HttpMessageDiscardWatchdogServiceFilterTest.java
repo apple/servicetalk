@@ -57,14 +57,16 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
+    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+
     @BeforeEach
     public void setup() {
-        LoggerStringWriter.reset();
+        loggerStringWriter.reset();
     }
 
     @AfterEach
     public void tearDown() {
-        LoggerStringWriter.remove();
+        loggerStringWriter.remove();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] transformer={0}")
@@ -91,7 +93,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
                 assertEquals(0, response.payloadBody().readableBytes());
             }
 
-            String output = LoggerStringWriter.stableAccumulated(CI ? 5000 : 1000);
+            String output = loggerStringWriter.stableAccumulated(CI ? 5000 : 1000);
             if (!output.contains("Discovered un-drained HTTP response message body which " +
                     "has been dropped by user code")) {
                 throw new AssertionError("Logs didn't contain the expected output:\n" + output);
