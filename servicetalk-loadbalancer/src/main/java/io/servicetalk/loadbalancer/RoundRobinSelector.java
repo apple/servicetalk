@@ -20,8 +20,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -29,24 +30,26 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
-    @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<RoundRobinSelector> indexUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(RoundRobinSelector.class, "index");
+    private final AtomicInteger index;
+    private final List<Host<ResolvedAddress, C>> usedHosts;
 
-    @SuppressWarnings("unused")
-    private volatile int index;
+    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource) {
+        this(new AtomicInteger(), usedHosts, targetResource);
+    }
 
-    RoundRobinSelector(final String targetResource) {
-        super(targetResource);
+    private RoundRobinSelector(final AtomicInteger index, final List<Host<ResolvedAddress, C>> usedHosts,
+                               final String targetResource) {
+        super(usedHosts.isEmpty(), targetResource);
+        this.index = index;
+        this.usedHosts = usedHosts;
     }
 
     @Override
-    public Single<C> selectConnection(
-            final List<Host<ResolvedAddress, C>> usedHosts,
+    protected Single<C> selectConnection0(
             final Predicate<C> selector, @Nullable final ContextMap context,
             final boolean forceNewConnectionAndReserve) {
         // try one loop over hosts and if all are expired, give up
-        final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % usedHosts.size();
+        final int cursor = (index.getAndIncrement() & Integer.MAX_VALUE) % usedHosts.size();
         Host<ResolvedAddress, C> pickedHost = null;
         for (int i = 0; i < usedHosts.size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
@@ -70,9 +73,14 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         if (pickedHost == null) {
-            return noActiveHosts(usedHosts);
+            return noActiveHostsFailure(usedHosts);
         }
         // We have a host but no connection was selected: create a new one.
         return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);
+    }
+
+    @Override
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
+        return new RoundRobinSelector<>(index, hosts, getTargetResource());
     }
 }

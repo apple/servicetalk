@@ -18,7 +18,6 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
-import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -28,38 +27,27 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
@@ -81,7 +69,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
-import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
@@ -90,7 +77,6 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
@@ -109,10 +95,8 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -127,33 +111,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-abstract class LoadBalancerTest {
+abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
-    static final String[] EMPTY_ARRAY = new String[] {};
-
-    @RegisterExtension
-    final ExecutorExtension<TestExecutor> executor = ExecutorExtension.withTestExecutor();
+    static final String[] EMPTY_ARRAY = {};
 
     private final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
             new TestSingleSubscriber<>();
-    private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
-    private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
-    private final SequentialPublisherSubscriberFunction<Collection<ServiceDiscovererEvent<String>>>
-            sequentialPublisherSubscriberFunction = new SequentialPublisherSubscriberFunction<>();
-    final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher =
-            new TestPublisher.Builder<Collection<ServiceDiscovererEvent<String>>>()
-                    .sequentialSubscribers(sequentialPublisherSubscriberFunction)
-                    .build();
-    private DelegatingConnectionFactory connectionFactory =
-            new DelegatingConnectionFactory(this::newRealizedConnectionSingle);
-
-    TestableLoadBalancer<String, TestLoadBalancedConnection> lb;
-
-    protected TestExecutor testExecutor;
-
-    static <T> Predicate<T> any() {
-      return __ -> true;
-    }
 
     Predicate<TestLoadBalancedConnection> alwaysNewConnectionFilter() {
         return cnx -> lb.usedAddresses().stream().noneMatch(addr -> addr.getValue().stream().anyMatch(cnx::equals));
@@ -164,37 +127,9 @@ abstract class LoadBalancerTest {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
-    protected abstract boolean eagerConnectionShutdown();
-
     protected abstract boolean isRoundRobin();
 
     protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
-
-    @BeforeEach
-    void initialize() {
-        testExecutor = executor.executor();
-        lb = newTestLoadBalancer();
-        connectionsCreated.clear();
-        connectionRealizers.clear();
-    }
-
-    @AfterEach
-    void closeLoadBalancer() throws Exception {
-        awaitIndefinitely(lb.closeAsync());
-        awaitIndefinitely(lb.onClose());
-
-        TestSubscription subscription = new TestSubscription();
-        serviceDiscoveryPublisher.onSubscribe(subscription);
-        assertTrue(subscription.isCancelled());
-
-        connectionsCreated.forEach(cnx -> {
-            try {
-                awaitIndefinitely(cnx.onClose());
-            } catch (final Exception e) {
-                throw new RuntimeException("Connection: " + cnx + " didn't close properly", e);
-            }
-        });
-    }
 
     @Test
     void streamEventJustClose() throws InterruptedException {
@@ -885,34 +820,8 @@ abstract class LoadBalancerTest {
         verify(conn2, times(1)).tryReserve();
     }
 
-    void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
-        sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void sendServiceDiscoveryEvents(
-            TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final ServiceDiscovererEvent... events) {
-        serviceDiscoveryPublisher.onNext(Arrays.asList(events));
-    }
-
-    ServiceDiscovererEvent upEvent(final String address) {
-        return new DefaultServiceDiscovererEvent<>(address, AVAILABLE);
-    }
-
-    ServiceDiscovererEvent downEvent(final String address) {
-        return new DefaultServiceDiscovererEvent<>(address, eagerConnectionShutdown() ? UNAVAILABLE : EXPIRED);
-    }
-
-    ServiceDiscovererEvent downEvent(final String address, ServiceDiscovererEvent.Status status) {
-        return new DefaultServiceDiscovererEvent<>(address, status);
-    }
-
-    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer() {
-        return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
-    }
-
-    final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+    @Override
+    protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
             final DelegatingConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
@@ -921,40 +830,6 @@ abstract class LoadBalancerTest {
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
-    }
-
-    @SafeVarargs
-    static <T> void assertConnectionCount(
-        Iterable<T> addresses, Map.Entry<String, Integer>... addressAndConnCount) {
-        @SuppressWarnings("unchecked")
-        final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(addressAndConnCount)
-                .map(ac -> both(hasProperty("key", is(ac.getKey())))
-                        .and(hasProperty("value", hasSize(ac.getValue()))))
-                .collect(Collectors.toList())
-                .toArray(new Matcher[] {});
-        final Matcher<Iterable<? extends T>> iterableMatcher =
-                addressAndConnCount.length == 0 ? emptyIterable() : contains(args);
-        assertThat(addresses, iterableMatcher);
-    }
-
-    private void assertSelectThrows(Matcher<Throwable> matcher) {
-        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
-        assertThat(e.getCause(), matcher);
-    }
-
-    Map.Entry<String, Integer> connectionsCount(String addr, int count) {
-        return new AbstractMap.SimpleImmutableEntry<>(addr, count);
-    }
-
-    <T> void assertAddresses(Iterable<T> addresses, String... address) {
-        @SuppressWarnings("unchecked")
-        final Matcher<? super T>[] args = (Matcher<? super T>[]) Arrays.stream(address)
-                .map(a -> hasProperty("key", is(a)))
-                .collect(Collectors.toList())
-                .toArray(new Matcher[] {});
-        final Matcher<Iterable<? extends T>> iterableMatcher =
-                address.length == 0 ? emptyIterable() : contains(args);
-        assertThat(addresses, iterableMatcher);
     }
 
     TestLoadBalancedConnection newForHost(String address) throws Exception {
@@ -973,25 +848,6 @@ abstract class LoadBalancerTest {
         final LegacyTestSingle<TestLoadBalancedConnection> unrealizedCnx = new LegacyTestSingle<>();
         connectionRealizers.offer(() -> unrealizedCnx.onSuccess(newConnection(address)));
         return unrealizedCnx;
-    }
-
-    private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address) {
-        return newRealizedConnectionSingle(address, emptyAsyncCloseable());
-    }
-
-    private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address,
-                                                                           final ListenableAsyncCloseable closeable) {
-        return succeeded(newConnection(address, closeable));
-    }
-
-    private TestLoadBalancedConnection newConnection(final String address) {
-        return newConnection(address, emptyAsyncCloseable());
-    }
-
-    private TestLoadBalancedConnection newConnection(final String address, final ListenableAsyncCloseable closeable) {
-        final TestLoadBalancedConnection cnx = TestLoadBalancedConnection.mockConnection(address, closeable);
-        connectionsCreated.add(cnx);
-        return cnx;
     }
 
     private static Predicate<TestLoadBalancedConnection> newSaturableConnectionFilter() {

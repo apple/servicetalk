@@ -18,7 +18,9 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 
+import java.util.List;
 import java.util.Random;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -47,8 +49,9 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> buildSelector(String targetResource) {
-        return new P2CSelector<>(targetResource, maxEffort, random);
+    public HostSelector<ResolvedAddress, C> buildSelector(
+            @Nonnull List<Host<ResolvedAddress, C>> hosts, String targetResource) {
+        return new P2CSelector<>(hosts, targetResource, maxEffort, random);
     }
 
     @Override

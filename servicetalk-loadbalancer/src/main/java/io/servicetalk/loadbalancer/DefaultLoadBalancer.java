@@ -86,12 +86,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     // writes to these fields protected by `executeSequentially` but they can be read from any thread.
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    private volatile HostSelector<ResolvedAddress, C> hostSelector;
     private volatile boolean isClosed;
 
     private final String targetResource;
     private final SequentialExecutor sequentialExecutor;
     private final String lbDescription;
-    private final HostSelector<ResolvedAddress, C> hostSelector;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
@@ -177,10 +177,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
                                 // We only want to empty the host list on error if we're closing non-gracefully.
                                 compositeCloseable.closeAsync().beforeOnError(t ->
-                                        sequentialExecutor.execute(() -> usedHosts = emptyList()))
+                                        sequentialExecutor.execute(() -> updateUsedHosts(emptyList())))
                         )
                                 // we want to always empty out the host list if we complete successfully
-                                .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
+                                .beforeOnComplete(() -> sequentialExecutor.execute(() -> updateUsedHosts(emptyList()))))
                         .subscribe(processor);
             } catch (Throwable ex) {
                 processor.onError(ex);
@@ -328,7 +328,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 }
             }
             // We've built the new list so now set it for consumption and then send our events.
-            usedHosts = nextHosts;
+            updateUsedHosts(nextHosts);
 
             LOGGER.debug("{}: now using addresses (size={}): {}.",
                     DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
@@ -376,7 +376,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         }
                         final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
                                 currentHosts, current -> current == host);
-                        usedHosts = nextHosts;
+                        updateUsedHosts(nextHosts);
                         if (nextHosts.isEmpty()) {
                             // We transitioned from non-empty to empty. That means we're not ready.
                             eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
@@ -433,6 +433,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
     }
 
+    private void updateUsedHosts(List<Host<ResolvedAddress, C>> nextHosts) {
+        this.usedHosts = nextHosts;
+        this.hostSelector = hostSelector.rebuildWithHosts(usedHosts);
+    }
+
     private static <T> Single<T> failedLBClosed(String targetResource) {
         return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
     }
@@ -460,7 +465,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                             this.getClass(), "selectConnection0(...)"));
         }
 
-        Single<C> result = hostSelector.selectConnection(currentHosts, selector, context, forceNewConnectionAndReserve);
+        Single<C> result = hostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         if (healthCheckConfig != null) {
             result = result.beforeOnError(exn -> {
                 if (exn instanceof Exceptions.StacklessNoActiveHostException && allUnhealthy(currentHosts)) {

@@ -26,6 +26,18 @@ import javax.annotation.Nullable;
 
 /**
  * Interface abstracting away the method of host selection.
+ * <p>
+ * Thread Safety
+ * Because the HostSelector is used on the hot path some care must be paid to thread safety. The easiest
+ * pattern to use is to make the internal state effectively immutable and rebuilds (see below) generate new
+ * immutable instances as necessary. The interface is expected to adhere to the following rules:
+ *
+ * <li>The {@link HostSelector#selectConnection(Predicate, ContextMap, boolean)} method will be used
+ * concurrently with calls to itself as well as calls to {@link HostSelector#rebuildWithHosts(List)}.</li>
+ * <li>The {@link HostSelector#rebuildWithHosts(List)} will only be called sequentially with respect to itself.</li>
+ * <p>
+ * Note that the HostSelector does not own the provided {@link Host}s and therefore should not
+ * attempt to manage their lifecycle.
  */
 interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
 
@@ -35,6 +47,17 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * This method will be called concurrently with other selectConnection calls and
      * hostSetChanged calls and must be thread safe under those conditions.
      */
-    Single<C> selectConnection(@Nonnull List<Host<ResolvedAddress, C>> hosts, @Nonnull Predicate<C> selector,
-                               @Nullable ContextMap context, boolean forceNewConnectionAndReserve);
+    Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+                               boolean forceNewConnectionAndReserve);
+
+    /**
+     * Generate another HostSelector using the provided host list.
+     * <p>
+     * This method is will be called when the host set is updated and provides a way for the
+     * HostSelector to rebuild any data structures necessary. Note that the method can return
+     * {@code this} or a new selector depending on the convenience of implementation.
+     * @param hosts the new list of {@link Host}s the returned selector should choose from.
+     * @return the next selector that should be used for host selection.
+     */
+    HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts);
 }
