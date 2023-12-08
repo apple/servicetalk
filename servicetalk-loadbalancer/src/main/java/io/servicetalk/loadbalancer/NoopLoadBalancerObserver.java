@@ -34,11 +34,6 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
     }
 
     @Override
-    public OutlierObserver<ResolvedAddress> outlierEventObserver() {
-        return (OutlierObserver<ResolvedAddress>) NoopOutlierObserver.INSTANCE;
-    }
-
-    @Override
     public void noHostsAvailable() {
         // noop
     }
@@ -52,25 +47,6 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
     public void serviceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
                                       int oldHostSetSize, int newHostSetSize) {
         // noop
-    }
-
-    private static final class NoopOutlierObserver<ResolvedAddress>
-            implements LoadBalancerObserver.OutlierObserver<ResolvedAddress> {
-
-        private static final OutlierObserver<Object> INSTANCE = new NoopOutlierObserver<>();
-
-        private NoopOutlierObserver() {
-        }
-
-        @Override
-        public void hostMarkedUnhealthy(ResolvedAddress address, Throwable cause) {
-            // noop
-        }
-
-        @Override
-        public void hostRevived(ResolvedAddress address) {
-            // noop
-        }
     }
 
     private static final class NoopHostObserver<ResolvedAddress> implements
@@ -103,6 +79,16 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
 
         @Override
         public void hostCreated(ResolvedAddress resolvedAddress) {
+            // noop
+        }
+
+        @Override
+        public void hostMarkedUnhealthy(ResolvedAddress address, Throwable cause) {
+            // noop
+        }
+
+        @Override
+        public void hostRevived(ResolvedAddress address) {
             // noop
         }
     }

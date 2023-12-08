@@ -1001,5 +1001,4 @@ abstract class LoadBalancerTest {
             return true;
         };
     }
-
 }

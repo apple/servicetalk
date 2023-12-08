@@ -34,12 +34,6 @@ interface LoadBalancerObserver<ResolvedAddress> {
     HostObserver<ResolvedAddress> hostObserver();
 
     /**
-     * Get an {@link OutlierObserver}.
-     * @return an {@link OutlierObserver}.
-     */
-    OutlierObserver<ResolvedAddress> outlierEventObserver();
-
-    /**
      * Callback for when connection selection fails due to no hosts being available.
      */
     void noHostsAvailable();
@@ -89,13 +83,6 @@ interface LoadBalancerObserver<ResolvedAddress> {
          * @param address the resolved address.
          */
         void hostCreated(ResolvedAddress address);
-    }
-
-    /**
-     * An observer of outlier events.
-     * @param <ResolvedAddress> the type of the resolved address.
-     */
-    interface OutlierObserver<ResolvedAddress> {
 
         /**
          * Callback for when a {@link Host} is transitions from healthy to unhealthy.

@@ -95,7 +95,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     final Addr address;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    private final LoadBalancerObserver<Addr> loadBalancerObserver;
+    private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
@@ -104,16 +104,16 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 int linearSearchSpace, @Nullable HealthCheckConfig healthCheckConfig,
-                LoadBalancerObserver<Addr> loadBalancerObserver) {
+                LoadBalancerObserver.HostObserver<Addr> hostObserver) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
-        this.loadBalancerObserver = loadBalancerObserver;
+        this.hostObserver = hostObserver;
         this.closeable = toAsyncCloseable(graceful ->
                 graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
-        loadBalancerObserver.hostObserver().hostCreated(address);
+        hostObserver.hostCreated(address);
     }
 
     @Override
@@ -133,7 +133,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return oldConnState;
         });
         if (oldState.state == State.EXPIRED) {
-            loadBalancerObserver.hostObserver().expiredHostRevived(address, oldState.connections.length);
+            hostObserver.expiredHostRevived(address, oldState.connections.length);
         }
         return oldState.state != State.CLOSED;
     }
@@ -156,7 +156,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             //  closing should probably be re-worked to funnel closing behavior through one place
             //  and also define what being closed means: just the host isn't used anymore for new
             //  requests/connections or does it also mean that all connections have closed?
-            loadBalancerObserver.hostObserver().activeHostRemoved(address, toRemove.length);
+            hostObserver.activeHostRemoved(address, toRemove.length);
         }
     }
 
@@ -186,7 +186,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             if (connStateUpdater.compareAndSet(this, oldState,
                     new ConnState(oldState.connections, nextState))) {
                 cancelIfHealthCheck(oldState);
-                loadBalancerObserver.hostObserver().hostMarkedExpired(address, oldState.connections.length);
+                hostObserver.hostMarkedExpired(address, oldState.connections.length);
                 if (nextState == State.CLOSED) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
@@ -299,7 +299,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
         // Only if the previous state was a healthcheck should we notify the observer.
         if (isUnhealthy(oldState)) {
-            loadBalancerObserver.outlierEventObserver().hostRevived(address);
+            hostObserver.hostRevived(address);
         }
     }
 
@@ -337,7 +337,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                 "{} time(s) in a row. Error counting threshold reached, marking this host as " +
                                 "UNHEALTHY for the selection algorithm and triggering background health-checking.",
                         lbDescription, address, healthCheckConfig.failedThreshold, cause);
-                loadBalancerObserver.outlierEventObserver().hostMarkedUnhealthy(address, cause);
+                hostObserver.hostMarkedUnhealthy(address, cause);
                 healthCheck.schedule(cause);
                 break;
             }
@@ -392,10 +392,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 // It could happen that the Host turned into UNHEALTHY state either concurrently with adding a new
                 // connection or with passing a previous health-check (if SD turned it into ACTIVE state). In both
                 // cases we have to cancel the "previous" ongoing health check. See "markHealthy" for more context.
-                if (isUnhealthy(previous) &&
-                        (currentHealthCheck == null || previous.state != currentHealthCheck)) {
-                    assert newState == STATE_ACTIVE_NO_FAILURES;
-                    cancelIfHealthCheck(previous);
+                if (isUnhealthy(previous)) {
+                    if (currentHealthCheck == null || previous.state != currentHealthCheck) {
+                        assert newState == STATE_ACTIVE_NO_FAILURES;
+                        cancelIfHealthCheck(previous);
+                    }
+                    // If we transitioned from unhealth to healthy we need to let the observer know.
+                    hostObserver.hostRevived(address);
                 }
                 break;
             }
@@ -441,6 +444,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // in the next iteration.
                             && connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
                         this.closeAsync().subscribe();
+                        hostObserver.expiredHostRemoved(address);
                         break;
                     }
                 } else {

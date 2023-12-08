@@ -20,19 +20,15 @@ import static org.mockito.Mockito.when;
 
 interface MockLoadBalancerObserver extends LoadBalancerObserver<String> {
 
+    @Override
+    MockHostObserver hostObserver();
+
     interface MockHostObserver extends LoadBalancerObserver.HostObserver<String> {
-
-    }
-
-    interface MockOutlierObserver extends LoadBalancerObserver.OutlierObserver<String> {
-
     }
 
     static MockLoadBalancerObserver mockObserver() {
         MockHostObserver mockHostObserver = mock(MockHostObserver.class);
-        MockOutlierObserver mockOutlierObserver = mock(MockOutlierObserver.class);
         MockLoadBalancerObserver loadBalancerObserver = mock(MockLoadBalancerObserver.class);
-        when(loadBalancerObserver.outlierEventObserver()).thenReturn(mockOutlierObserver);
         when(loadBalancerObserver.hostObserver()).thenReturn(mockHostObserver);
         return loadBalancerObserver;
     }

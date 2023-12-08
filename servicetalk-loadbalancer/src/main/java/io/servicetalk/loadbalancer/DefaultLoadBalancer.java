@@ -366,7 +366,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
-                    connectionFactory, linearSearchSpace, healthCheckConfig, loadBalancerObserver);
+                    connectionFactory, linearSearchSpace, healthCheckConfig, loadBalancerObserver.hostObserver());
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
