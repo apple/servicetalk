@@ -152,6 +152,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
         if (oldState.state != CLOSED_CONN_STATE) {
             // this is the first time this was marked closed so we need to let the observer know.
+            // TODO: do we need to signal closed for this host? Why isn't it closed? The
+            //  closing should probably be re-worked to funnel closing behavior through one place
+            //  and also define what being closed means: just the host isn't used anymore for new
+            //  requests/connections or does it also mean that all connections have closed?
             loadBalancerObserver.hostObserver().activeHostRemoved(address, toRemove.length);
         }
     }
@@ -437,7 +441,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // in the next iteration.
                             && connStateUpdater.compareAndSet(this, currentConnState, CLOSED_CONN_STATE)) {
                         this.closeAsync().subscribe();
-                        loadBalancerObserver.hostObserver().expiredHostRemoved(address);
                         break;
                     }
                 } else {

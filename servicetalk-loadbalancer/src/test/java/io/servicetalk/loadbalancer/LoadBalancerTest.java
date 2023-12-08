@@ -15,7 +15,6 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
@@ -40,7 +39,6 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
@@ -72,11 +70,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
@@ -88,7 +83,6 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
-import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -96,7 +90,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.LoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
+import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
@@ -144,8 +138,8 @@ abstract class LoadBalancerTest {
             new TestPublisher.Builder<Collection<ServiceDiscovererEvent<String>>>()
                     .sequentialSubscribers(sequentialPublisherSubscriberFunction)
                     .build();
-    private DelegatingConnectionFactory connectionFactory =
-            new DelegatingConnectionFactory(this::newRealizedConnectionSingle);
+    private TestConnectionFactory connectionFactory =
+            new TestConnectionFactory(this::newRealizedConnectionSingle);
 
     TestableLoadBalancer<String, TestLoadBalancedConnection> lb;
 
@@ -160,7 +154,7 @@ abstract class LoadBalancerTest {
     }
 
     TestableLoadBalancer<String, TestLoadBalancedConnection> defaultLb(
-        DelegatingConnectionFactory connectionFactory) {
+        TestConnectionFactory connectionFactory) {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
@@ -277,7 +271,7 @@ abstract class LoadBalancerTest {
     }
 
     private void testSelectStampede(final Predicate<TestLoadBalancedConnection> selectionFilter) throws Exception {
-        connectionFactory = new DelegatingConnectionFactory(this::newUnrealizedConnectionSingle);
+        connectionFactory = new TestConnectionFactory(this::newUnrealizedConnectionSingle);
         lb = defaultLb(connectionFactory);
 
         final ExecutorService clientExecutor = Executors.newFixedThreadPool(20);
@@ -379,7 +373,7 @@ abstract class LoadBalancerTest {
     void connectionFactoryErrorPropagation() {
         serviceDiscoveryPublisher.onComplete();
 
-        connectionFactory = new DelegatingConnectionFactory(__ -> failed(DELIBERATE_EXCEPTION));
+        connectionFactory = new TestConnectionFactory(__ -> failed(DELIBERATE_EXCEPTION));
         lb = defaultLb(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -411,7 +405,7 @@ abstract class LoadBalancerTest {
     void closeGracefulThenClose(boolean closeFromLb)
             throws ExecutionException, InterruptedException {
         serviceDiscoveryPublisher.onComplete();
-        lb = defaultLb(new DelegatingConnectionFactory(addr -> newRealizedConnectionSingle(addr,
+        lb = defaultLb(new TestConnectionFactory(addr -> newRealizedConnectionSingle(addr,
                 toListenableAsyncCloseable(toAsyncCloseable(graceful -> graceful ? never() : completed())))));
         sendServiceDiscoveryEvents(upEvent("address-1"));
         final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any(), null));
@@ -463,7 +457,7 @@ abstract class LoadBalancerTest {
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", timeAdvancementsTillHealthy, properConnection);
 
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
         lb = defaultLb(connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -509,7 +503,7 @@ abstract class LoadBalancerTest {
         final int timeAdvancementsTillHealthy = 3;
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", timeAdvancementsTillHealthy, properConnection);
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
@@ -547,7 +541,7 @@ abstract class LoadBalancerTest {
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", timeAdvancementsTillHealthy, properConnection, exception);
 
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
         lb = defaultLb(connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -576,7 +570,7 @@ abstract class LoadBalancerTest {
         final int timeAdvancementsTillHealthy = 3;
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", timeAdvancementsTillHealthy, properConnection);
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = defaultLb(connectionFactory);
 
@@ -605,7 +599,7 @@ abstract class LoadBalancerTest {
         final Single<TestLoadBalancedConnection> properConnection = newRealizedConnectionSingle("address-1");
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", 4, properConnection);
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
@@ -658,7 +652,7 @@ abstract class LoadBalancerTest {
         final int timeAdvancementsTillHealthy = 3;
         final UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
                 "address-1", timeAdvancementsTillHealthy, properConnection);
-        final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        final TestConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = defaultLb(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -717,7 +711,7 @@ abstract class LoadBalancerTest {
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
-        DelegatingConnectionFactory alwaysFail12ConnectionFactory = new DelegatingConnectionFactory(address -> {
+        TestConnectionFactory alwaysFail12ConnectionFactory = new TestConnectionFactory(address -> {
             switch (address) {
                 case "address-1":
                 case "address-2":
@@ -780,8 +774,8 @@ abstract class LoadBalancerTest {
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
-        DelegatingConnectionFactory alwaysFailConnectionFactory =
-                new DelegatingConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
+        TestConnectionFactory alwaysFailConnectionFactory =
+                new TestConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
@@ -914,7 +908,7 @@ abstract class LoadBalancerTest {
 
     final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final DelegatingConnectionFactory connectionFactory) {
+            final TestConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
@@ -1008,90 +1002,4 @@ abstract class LoadBalancerTest {
         };
     }
 
-    static class DelegatingConnectionFactory implements
-                                                       ConnectionFactory<String, TestLoadBalancedConnection> {
-
-        private final Function<String, Single<TestLoadBalancedConnection>> connectionFactory;
-        private final AtomicBoolean closed = new AtomicBoolean();
-
-        DelegatingConnectionFactory(Function<String, Single<TestLoadBalancedConnection>> connectionFactory) {
-            this.connectionFactory = connectionFactory;
-        }
-
-        @Override
-        public Single<TestLoadBalancedConnection> newConnection(String s, TransportObserver observer) {
-            return connectionFactory.apply(s);
-        }
-
-        @Override
-        public Single<TestLoadBalancedConnection> newConnection(String s, @Nullable ContextMap context,
-                                                                @Nullable TransportObserver observer) {
-            return connectionFactory.apply(s);
-        }
-
-        @Override
-        public Completable onClose() {
-            return Completable.completed();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return Completable.completed().beforeOnSubscribe(cancellable -> closed.set(true));
-        }
-
-        boolean isClosed() {
-            return closed.get();
-        }
-    }
-
-    static class UnhealthyHostConnectionFactory {
-        // Create a new instance of DeliberateException to avoid "Self-suppression not permitted"
-        static final DeliberateException UNHEALTHY_HOST_EXCEPTION = new DeliberateException();
-        private final String failingHost;
-        private final AtomicInteger momentInTime = new AtomicInteger();
-        final AtomicInteger requests = new AtomicInteger();
-        final Single<TestLoadBalancedConnection> properConnection;
-        final List<Single<TestLoadBalancedConnection>> connections;
-
-        final Function<String, Single<TestLoadBalancedConnection>> factory =
-                new Function<String, Single<TestLoadBalancedConnection>>() {
-
-            @Override
-            public Single<TestLoadBalancedConnection> apply(final String s) {
-                return defer(() -> {
-                    if (s.equals(failingHost)) {
-                        requests.incrementAndGet();
-                        if (momentInTime.get() >= connections.size()) {
-                            return properConnection;
-                        }
-                        return connections.get(momentInTime.get());
-                    }
-                    return properConnection;
-                });
-            }
-        };
-
-        UnhealthyHostConnectionFactory(String failingHost, int timeAdvancementsTillHealthy,
-                                       Single<TestLoadBalancedConnection> properConnection) {
-            this(failingHost, timeAdvancementsTillHealthy, properConnection, UNHEALTHY_HOST_EXCEPTION);
-        }
-
-        UnhealthyHostConnectionFactory(String failingHost, int timeAdvancementsTillHealthy,
-                                       Single<TestLoadBalancedConnection> properConnection, Throwable exception) {
-            this.failingHost = failingHost;
-            this.connections = IntStream.range(0, timeAdvancementsTillHealthy)
-                    .<Single<TestLoadBalancedConnection>>mapToObj(__ -> failed(exception))
-                    .collect(Collectors.toList());
-            this.properConnection = properConnection;
-        }
-
-        DelegatingConnectionFactory createFactory() {
-            return new DelegatingConnectionFactory(this.factory);
-        }
-
-        void advanceTime(TestExecutor executor) {
-            momentInTime.incrementAndGet();
-            executor.advanceTimeBy(1, SECONDS);
-        }
-    }
 }

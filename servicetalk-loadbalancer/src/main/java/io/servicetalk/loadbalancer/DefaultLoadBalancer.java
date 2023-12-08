@@ -370,9 +370,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
-            // TODO: note that this host may not get used if we fail a CAS. That means we'll make another
-            //  and essentially observe the same host created event multiple times.
-
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
             Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
                     connectionFactory, linearSearchSpace, healthCheckConfig, loadBalancerObserver);
@@ -385,10 +382,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         }
                         final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
                                 currentHosts, current -> current == host);
-                        usedHosts = nextHosts;
-                        if (nextHosts.isEmpty()) {
-                            // We transitioned from non-empty to empty. That means we're not ready.
-                            eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                        // We only need to do anything if the host was actually removed.
+                        if (nextHosts.size() != currentHosts.size()) {
+                            loadBalancerObserver.hostObserver().expiredHostRemoved(host.address());
+                            usedHosts = nextHosts;
+                            if (nextHosts.isEmpty()) {
+                                // We transitioned from non-empty to empty. That means we're not ready.
+                                eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
+                            }
                         }
                     })).subscribe();
             return host;
