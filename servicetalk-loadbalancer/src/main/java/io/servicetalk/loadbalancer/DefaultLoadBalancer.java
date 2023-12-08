@@ -85,7 +85,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
 
-    // writes to these fields protected by `executeSequentially` but they can be read from any thread.
+    // writes to these fields protected by `sequentialExecutor` but they can be read from any thread.
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
     private volatile boolean isClosed;
 
@@ -137,11 +137,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.healthCheckConfig = healthCheckConfig;
         this.loadBalancerObserver = loadBalancerObserver != null ?
                 loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        this.sequentialExecutor = new SequentialExecutor((uncaughtException) -> {
-            LOGGER.error("{}: Uncaught exception in SequentialExecutor triggered closing of the load balancer.",
-                    this, uncaughtException);
-            closeAsync().subscribe();
-        });
+        this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
+                LOGGER.error("{}: Uncaught exception in SequentialExecutor", this, uncaughtException));
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
@@ -182,8 +179,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 SourceAdapters.toSource((graceful ? compositeCloseable.closeAsyncGracefully() :
                                 // We only want to empty the host list on error if we're closing non-gracefully.
                                 compositeCloseable.closeAsync().beforeOnError(t ->
-                                        sequentialExecutor.execute(() -> usedHosts = emptyList()))
-                        )
+                                        sequentialExecutor.execute(() -> usedHosts = emptyList())))
                                 // we want to always empty out the host list if we complete successfully
                                 .beforeOnComplete(() -> sequentialExecutor.execute(() -> usedHosts = emptyList())))
                         .subscribe(processor);
@@ -273,10 +269,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         private void sequentialOnNext(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-            assert events != null && !events.isEmpty();
-
-            if (isClosed) {
-                // nothing to do if the load balancer is closed.
+            if (isClosed || events.isEmpty()) {
+                // nothing to do if the load balancer is closed or there are no events.
                 return;
             }
 

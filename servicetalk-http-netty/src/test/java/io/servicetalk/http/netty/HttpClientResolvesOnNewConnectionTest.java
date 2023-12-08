@@ -152,6 +152,18 @@ class HttpClientResolvesOnNewConnectionTest {
         assertThat(e.getMessage(), allOf(containsString(ON_NEW_CONNECTION.name()), containsString(otherSd.toString())));
     }
 
+    @Test
+    void noHealthChecking() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forSingleAddress(FailureCase.SERVICE_DISCOVERER_FAILED.customSd,
+                new UnresolvedAddress(null), ON_NEW_CONNECTION).buildBlocking()) {
+            // The default health-checking threshold is 5, validate that client doesn't start returning
+            // NoActiveHostException instead of DeliberateException after 5 attempts
+            for (int i = 0; i < 10; i++) {
+                assertThrows(DeliberateException.class, () -> client.request(client.get("/")));
+            }
+        }
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: failureCase={0}")
     @EnumSource(FailureCase.class)
     void failureCases(FailureCase failureCase) throws Exception {

@@ -66,6 +66,20 @@ class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
+    void testBackoffWith0Jitter() throws Exception {
+        Duration backoff = ofSeconds(1);
+        Duration jitter = ofMillis(0);
+        RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true,
+                backoff, jitter, timerExecutor));
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        verifyDelayWithDeltaJitter(backoff.toNanos(), jitter.toNanos(), 1);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+        verifyNoMoreInteractions(timerExecutor);
+    }
+
+    @Test
     void testBackoffMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
         testMaxRetries(retryWithExponentialBackoffFullJitter(1, cause -> true, backoff, ofDays(10), timerExecutor),

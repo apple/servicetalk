@@ -28,14 +28,16 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 
 class SequentialExecutorTest {
-
 
     private SequentialExecutor.ExceptionHandler exceptionHandler;
     private Executor executor;
@@ -50,8 +52,8 @@ class SequentialExecutorTest {
     void tasksAreExecuted() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         // submit two tasks and they should both complete.
-        executor.execute(() -> latch.countDown());
-        executor.execute(() -> latch.countDown());
+        executor.execute(latch::countDown);
+        executor.execute(latch::countDown);
         latch.await();
     }
 
@@ -59,8 +61,8 @@ class SequentialExecutorTest {
     void firstTaskIsExecutedByCallingThread() {
         AtomicReference<Thread> executorThread = new AtomicReference<>();
         executor.execute(() -> executorThread.set(Thread.currentThread()));
-        assertNotNull(executorThread.get());
-        assertEquals(Thread.currentThread(), executorThread.get());
+        assertThat(executorThread.get(), is(notNullValue()));
+        assertThat(executorThread.get(), is(equalTo(Thread.currentThread())));
     }
 
     @Test
@@ -68,11 +70,10 @@ class SequentialExecutorTest {
         AtomicReference<Throwable> caught = new AtomicReference<>();
         exceptionHandler = caught::set;
         executor = new SequentialExecutor(exceptionHandler);
-        final RuntimeException ex = new RuntimeException("expected");
         executor.execute(() -> {
-            throw ex;
+            throw DELIBERATE_EXCEPTION;
         });
-        assertEquals(ex, caught.get());
+        assertThat(caught.get(), is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -99,16 +100,16 @@ class SequentialExecutorTest {
         // the model, the test should be adjusted to conform to the desired behavior.
         final AtomicReference<Thread> executingThread = new AtomicReference<>();
         executor.execute(() -> executingThread.set(Thread.currentThread()));
-        assertNull(executingThread.get());
+        assertThat(executingThread.get(), is(nullValue()));
 
         // Now unblock the initial thread and it should also run the second task.
         l2.countDown();
         t.join();
-        assertEquals(t, executingThread.get());
+        assertThat(executingThread.get(), is(sameInstance(t)));
     }
 
     @Test
-    void tasksAreNotRenentrant() {
+    void tasksAreNotReentrant() {
         Queue<Integer> order = new ArrayDeque<>();
         executor.execute(() -> {
             // this should be queued for later.
@@ -120,7 +121,7 @@ class SequentialExecutorTest {
     }
 
     @Test
-    void noStackOverflows() throws Exception {
+    void noStackOverflows() {
         final int maxDepth = 10_000;
         // If we substitute `executor` with `(runnable) -> runnable.run()` we get a stack overflow.
         final Runnable runnable = new Runnable() {
@@ -149,7 +150,7 @@ class SequentialExecutorTest {
                 try {
                     ready.countDown();
                     barrier.await();
-                    executor.execute(() -> completed.countDown());
+                    executor.execute(completed::countDown);
                 } catch (Exception ex) {
                     throw new AssertionError("unexpected error", ex);
                 }
@@ -189,11 +190,11 @@ class SequentialExecutorTest {
 
         AsyncContext.put(key, value);
         executor.execute(() -> observedContextValue.set(AsyncContext.context().get(key)));
-        assertNull(observedContextValue.get());
+        assertThat(observedContextValue.get(), is(nullValue()));
 
         // Now unblock the initial thread and it should also run the second task.
         l2.countDown();
         t.join();
-        assertEquals(value, observedContextValue.get());
+        assertThat(observedContextValue.get(), is(value));
     }
 }

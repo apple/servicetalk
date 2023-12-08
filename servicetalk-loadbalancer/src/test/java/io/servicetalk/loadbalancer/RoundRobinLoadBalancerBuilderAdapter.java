@@ -32,7 +32,7 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancingPolicy(
-            LoadBalancingPolicy loadBalancingPolicy) {
+            LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy) {
         throw new IllegalStateException("Cannot set new policy for old round robin");
     }
 

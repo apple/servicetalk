@@ -46,7 +46,6 @@ import java.net.URL;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
@@ -60,14 +59,16 @@ class OpenTelemetryHttpServerFilterTest {
     @RegisterExtension
     static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
+    private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
+
     @BeforeEach
     public void setup() {
-        LoggerStringWriter.reset();
+        loggerStringWriter.reset();
     }
 
     @AfterEach
     public void tearDown() {
-        LoggerStringWriter.remove();
+        loggerStringWriter.remove();
     }
 
     @Test
@@ -78,7 +79,7 @@ class OpenTelemetryHttpServerFilterTest {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
-                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl,
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
                 assertThat(otelTesting.getSpans()).hasSize(1);
@@ -125,7 +126,7 @@ class OpenTelemetryHttpServerFilterTest {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
-                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl,
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
                 assertThat(otelTesting.getSpans()).hasSize(2);
@@ -176,7 +177,7 @@ class OpenTelemetryHttpServerFilterTest {
             } finally {
                 span.end();
             }
-            verifyTraceIdPresentInLogs(stableAccumulated(1000), "/",
+            verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), "/",
                 serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                 TRACING_TEST_LOG_LINE_PREFIX);
             assertThat(otelTesting.getSpans()).hasSize(2);
@@ -209,7 +210,7 @@ class OpenTelemetryHttpServerFilterTest {
                     .toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
-                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl,
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
                 assertThat(otelTesting.getSpans()).hasSize(1);
