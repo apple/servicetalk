@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A concurrency primitive for providing thread safety without using locks.
- *
+ * <p>
  * A {@link SequentialExecutor} is queue of tasks that are executed one at a time in the order they were
  * received. This provides a way to serialize work between threads without needing to use locks which can
  * result in thread contention and thread deadlock scenarios.
@@ -33,16 +33,17 @@ import static java.util.Objects.requireNonNull;
 final class SequentialExecutor implements Executor {
 
     /**
-     * Handler of exceptions thrown by submitted Runnables.
+     * Handler of exceptions thrown by submitted {@link Runnable}s.
      */
     @FunctionalInterface
-    public interface ExceptionHandler {
+    interface ExceptionHandler {
 
         /**
-         * Handle the exception thrown from a submitted Runnable.
+         * Handle the exception thrown from a submitted {@link Runnable}.
+         * <p>
          * Note that if this method throws the behavior is undefined.
          *
-         * @param ex the Throwable thrown by the Runnable.
+         * @param ex the {@link Throwable} thrown by the {@link Runnable}.
          */
         void onException(Throwable ex);
     }
@@ -66,13 +67,13 @@ final class SequentialExecutor implements Executor {
 
     @Override
     public void execute(Runnable command) {
-        // Make sure we propagate any sync contexts.
+        // Make sure we propagate async contexts.
         command = AsyncContext.wrapRunnable(requireNonNull(command, "command"));
         final Cell next = new Cell(command);
-        Cell t = tail.getAndSet(next);
-        if (t != null) {
+        Cell prev = tail.getAndSet(next);
+        if (prev != null) {
             // Execution already started. Link the old tail to the new tail.
-            t.next = next;
+            prev.next = next;
         } else {
             // We are the first element in the queue so it's our responsibility to drain.
             // Note that the getAndSet establishes the happens before with relation to the previous draining
