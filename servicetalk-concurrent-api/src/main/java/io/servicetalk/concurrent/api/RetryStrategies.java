@@ -175,8 +175,8 @@ public final class RetryStrategies {
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
                         // Add 1 because the upper bound is non-inclusive.
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount) + 1), NANOSECONDS) :
-                failed(cause);
+                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount) + 1), NANOSECONDS)
+                : failed(cause);
     }
 
     /**
@@ -210,8 +210,8 @@ public final class RetryStrategies {
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
                         // Add 1 because the upper bound is non-inclusive.
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount) + 1), NANOSECONDS) :
-                failed(cause);
+                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount) + 1), NANOSECONDS)
+                : failed(cause);
     }
 
     /**
