@@ -58,10 +58,12 @@ public final class RetryStrategies {
         checkMaxRetries(maxRetries);
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long delayNanos = delay.toNanos();
-        checkFullJitter(delayNanos);
+        final long jitterNanos = delay.toNanos();
+        checkFullJitter(jitterNanos);
+        // add 1 because upper bound is non-inclusive.
+        final long upperBound = addWithOverflowProtection(jitterNanos, 1);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
+                timerExecutor.timer(current().nextLong(0, upperBound), NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -82,10 +84,12 @@ public final class RetryStrategies {
             final Executor timerExecutor) {
         requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
-        final long delayNanos = delay.toNanos();
-        checkFullJitter(delayNanos);
+        final long jitterNanos = delay.toNanos();
+        checkFullJitter(jitterNanos);
+        // add 1 because upper bound is non-inclusive.
+        final long upperBound = addWithOverflowProtection(jitterNanos, 1);
         return (retryCount, cause) -> causeFilter.test(cause) ?
-                timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : failed(cause);
+                timerExecutor.timer(current().nextLong(0, upperBound), NANOSECONDS) : failed(cause);
     }
 
     /**
@@ -110,7 +114,8 @@ public final class RetryStrategies {
         final long jitterNanos = jitter.toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
-        final long upperBound = delayNanos + jitterNanos;
+        // Add 1 because the upper bound is non-inclusive.
+        final long upperBound = addWithOverflowProtection(addWithOverflowProtection(delayNanos, jitterNanos), 1);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS) : failed(cause);
     }
@@ -141,7 +146,8 @@ public final class RetryStrategies {
         final long jitterNanos = jitter.toNanos();
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
-        final long upperBound = delayNanos + jitterNanos;
+        // Add 1 because the upper bound is non-inclusive.
+        final long upperBound = addWithOverflowProtection(addWithOverflowProtection(delayNanos, jitterNanos), 1);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS) : failed(cause);
     }
@@ -172,8 +178,10 @@ public final class RetryStrategies {
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
-                failed(cause);
+                        // Add 1 because the upper bound is non-inclusive.
+                        addWithOverflowProtection(baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift,
+                                retryCount), 1)), NANOSECONDS)
+                : failed(cause);
     }
 
     /**
@@ -206,8 +214,10 @@ public final class RetryStrategies {
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
-                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
-                failed(cause);
+                        // Add 1 because the upper bound is non-inclusive.
+                        addWithOverflowProtection(baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift,
+                                retryCount), 1)), NANOSECONDS)
+                : failed(cause);
     }
 
     /**
@@ -240,10 +250,11 @@ public final class RetryStrategies {
                 return failed(cause);
             }
             final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
-            return timerExecutor.timer(
-                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
-                            min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
-                    NANOSECONDS);
+            final long lowerBound = max(0, baseDelayNanos - jitterNanos);
+            // Add 1 because the upper bound is non-inclusive.
+            final long upperBound = addWithOverflowProtection(
+                    min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos)), 1);
+            return timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS);
         };
     }
 
@@ -283,7 +294,9 @@ public final class RetryStrategies {
             final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
-                            min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
+                            // Add 1 because the upper bound is non-inclusive.
+                            addWithOverflowProtection(
+                                    min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos)), 1)),
                     NANOSECONDS);
         };
     }
