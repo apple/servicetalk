@@ -120,13 +120,13 @@ final class StreamingConnectionFactory {
         return config;
     }
 
-    private static String toHostAddress(final InetAddress address) {
+    static String toHostAddress(final InetAddress address) {
         final String hostAddress = address.getHostAddress();
-        // Replace colons with dots to satisfy SNIHostName validation
-        return address instanceof Inet6Address ? hostAddress.replace(':', '.') : hostAddress;
+        // Replace colons with dots, and percentages with hyphens, to satisfy SNIHostName validation
+        return address instanceof Inet6Address ? hostAddress.replace(':', '.').replace('%', '-') : hostAddress;
     }
 
-    private static boolean isValidSniHostname(String peerHost) {
+    static boolean isValidSniHostname(String peerHost) {
         try {
             new SNIHostName(peerHost);
             return true;
