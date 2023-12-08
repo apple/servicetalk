@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -42,12 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -88,11 +86,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
 
-    // writes are protected by `executeSequentially` but the field can be read by any thread.
+    // writes are protected by `sequentialExecutor` but the field can be read by any thread.
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
-    // reads and writes are protected by `executeSequentially`.
+    // reads and writes are protected by `sequentialExecutor`.
     private List<Host<ResolvedAddress, C>> usedHosts = emptyList();
-    // reads and writes are protected by `executeSequentially`.
+    // reads and writes are protected by `sequentialExecutor`.
     private boolean isClosed;
 
     private final String targetResource;
@@ -516,11 +514,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         if (sequentialExecutor.isCurrentThreadDraining()) {
             return sequentialUsedAddresses();
         }
-        CompletableFuture<List<Entry<ResolvedAddress, List<C>>>> future = new CompletableFuture<>();
-        sequentialExecutor.execute(() -> future.complete(sequentialUsedAddresses()));
+        SingleSource.Processor<List<Entry<ResolvedAddress, List<C>>>, List<Entry<ResolvedAddress, List<C>>>> processor =
+                Processors.newSingleProcessor();
+        sequentialExecutor.execute(() -> processor.onSuccess(sequentialUsedAddresses()));
         try {
-            // This method is just for testing, so it's fine to do some awaiting.
-            return future.get(5, TimeUnit.SECONDS);
+            // This method is just for testing and our tests have timeouts it's fine to do some awaiting.
+            return SourceAdapters.fromSource(processor).toFuture().get();
         } catch (Exception ex) {
             throw new AssertionError("Failed to get results", ex);
         }
@@ -538,15 +537,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 '}';
     }
 
-    private class ClosedHostSelector implements HostSelector<ResolvedAddress, C> {
+    private final class ClosedHostSelector implements HostSelector<ResolvedAddress, C> {
         @Override
-        public Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+        public Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
                                           boolean forceNewConnectionAndReserve) {
             return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
         }
 
         @Override
-        public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
+        public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts) {
             return this;
         }
 

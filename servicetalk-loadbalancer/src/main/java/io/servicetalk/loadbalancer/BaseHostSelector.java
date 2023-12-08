@@ -21,7 +21,6 @@ import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -37,11 +36,11 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResource, "targetResource");
     }
 
-    protected abstract Single<C> selectConnection0(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+    protected abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
                                          boolean forceNewConnectionAndReserve);
 
     @Override
-    public final Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+    public final Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
                                       boolean forceNewConnectionAndReserve) {
         return hosts.isEmpty() ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
     }

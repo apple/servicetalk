@@ -21,7 +21,6 @@ import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -47,7 +46,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * This method will be called concurrently with other selectConnection calls and
      * hostSetChanged calls and must be thread safe under those conditions.
      */
-    Single<C> selectConnection(@Nonnull Predicate<C> selector, @Nullable ContextMap context,
+    Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
                                boolean forceNewConnectionAndReserve);
 
     /**
@@ -59,7 +58,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * @param hosts the new list of {@link Host}s the returned selector should choose from.
      * @return the next selector that should be used for host selection.
      */
-    HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts);
+    HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts);
 
     /**
      * Whether the load balancer believes itself healthy enough to serve traffic.

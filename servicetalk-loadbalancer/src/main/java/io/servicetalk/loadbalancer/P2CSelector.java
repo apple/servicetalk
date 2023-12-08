@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -44,7 +43,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     private final int maxEffort;
     private final List<Host<ResolvedAddress, C>> hosts;
 
-    P2CSelector(@Nonnull List<Host<ResolvedAddress, C>> hosts,
+    P2CSelector(List<Host<ResolvedAddress, C>> hosts,
                 final String targetResource, final int maxEffort, @Nullable final Random random) {
         super(hosts, targetResource);
         this.hosts = hosts;
@@ -53,15 +52,13 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts) {
         return new P2CSelector<>(hosts, getTargetResource(), maxEffort, random);
     }
 
     @Override
-    protected Single<C> selectConnection0(
-            @Nonnull Predicate<C> selector,
-            @Nullable ContextMap context,
-            boolean forceNewConnectionAndReserve) {
+    protected Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
+                                          boolean forceNewConnectionAndReserve) {
         final int size = hosts.size();
         switch (size) {
             case 0:

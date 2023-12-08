@@ -18,7 +18,6 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * Definition of the selector mechanism used for load balancing.
@@ -37,6 +36,5 @@ interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
      * @param targetResource the name of the target resource, useful for debugging purposes.
      * @return a {@link HostSelector}
      */
-    HostSelector<ResolvedAddress, C> buildSelector(@Nonnull List<Host<ResolvedAddress, C>> hosts,
-                                                   String targetResource);
+    HostSelector<ResolvedAddress, C> buildSelector(List<Host<ResolvedAddress, C>> hosts, String targetResource);
 }

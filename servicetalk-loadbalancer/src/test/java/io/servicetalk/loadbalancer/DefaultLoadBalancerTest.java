@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -122,7 +121,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         @Override
         public HostSelector<String, TestLoadBalancedConnection> buildSelector(
-                @Nonnull List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
+                List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }
 
@@ -136,7 +135,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
             @Override
             public Single<TestLoadBalancedConnection> selectConnection(
-                    @Nonnull Predicate<TestLoadBalancedConnection> selector, @Nullable ContextMap context,
+                    Predicate<TestLoadBalancedConnection> selector, @Nullable ContextMap context,
                     boolean forceNewConnectionAndReserve) {
                 return hosts.isEmpty() ? failed(new IllegalStateException("shouldn't be empty"))
                         : hosts.get(0).newConnection(selector, false, context);
@@ -144,7 +143,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
             @Override
             public HostSelector<String, TestLoadBalancedConnection> rebuildWithHosts(
-                    @Nonnull List<Host<String, TestLoadBalancedConnection>> hosts) {
+                    List<Host<String, TestLoadBalancedConnection>> hosts) {
                 rebuilds++;
                 return new TestSelector(hosts);
             }

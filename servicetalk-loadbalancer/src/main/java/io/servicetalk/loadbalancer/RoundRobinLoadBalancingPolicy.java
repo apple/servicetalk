@@ -18,7 +18,6 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * A round-robin load balancing policy.
@@ -37,7 +36,7 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     @Override
     public HostSelector<ResolvedAddress, C>
-    buildSelector(@Nonnull final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
         return new RoundRobinSelector<>(hosts, targetResource);
     }
 
