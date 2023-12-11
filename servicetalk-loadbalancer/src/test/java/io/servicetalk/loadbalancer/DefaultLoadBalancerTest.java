@@ -149,8 +149,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             }
 
             @Override
-            public boolean isHealthy() {
-                return true;
+            public boolean isUnHealthy() {
+                return false;
             }
         }
     }

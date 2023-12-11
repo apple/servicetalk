@@ -52,7 +52,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Generate another HostSelector using the provided host list.
      * <p>
-     * This method is will be called when the host set is updated and provides a way for the
+     * This method will be called when the host set is updated and provides a way for the
      * HostSelector to rebuild any data structures necessary. Note that the method can return
      * {@code this} or a new selector depending on the convenience of implementation.
      * @param hosts the new list of {@link Host}s the returned selector should choose from.
@@ -61,12 +61,12 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
     HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts);
 
     /**
-     * Whether the load balancer believes itself healthy enough to serve traffic.
+     * Whether the load balancer believes itself to unhealthy for serving traffic.
      * <p>
-     * Note that this is both racy and best effort: just because it is healthy doesn't guarantee that
-     * this selector will be able to successfully serve a request or that if unhealthy a request is
-     * guaranteed to fail.
-     * @return whether the load balancer believes itself healthy enough to serve traffic.
+     * Note that this is both racy and best effort: just because a {@link HostSelector} is
+     * unhealthy doesn't guarantee that a request will fail nor does a healthy status indicate
+     * that this selector is guaranteed to successfully serve a request.
+     * @return whether the load balancer believes itself unhealthy enough and unlikely to successfully serve traffic.
      */
-    boolean isHealthy();
+    boolean isUnHealthy();
 }

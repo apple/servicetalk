@@ -464,7 +464,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         if (healthCheckConfig != null) {
             result = result.beforeOnError(exn -> {
-                if (exn instanceof NoActiveHostException && !currentHostSelector.isHealthy()) {
+                if (exn instanceof NoActiveHostException && currentHostSelector.isUnHealthy()) {
                     final long currNextResubscribeTime = nextResubscribeTime;
                     if (currNextResubscribeTime >= 0 &&
                             healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
@@ -550,7 +550,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public boolean isHealthy() {
+        public boolean isUnHealthy() {
             return false;
         }
     }

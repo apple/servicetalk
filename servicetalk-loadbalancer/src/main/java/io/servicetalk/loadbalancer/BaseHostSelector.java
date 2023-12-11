@@ -46,10 +46,10 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     @Override
-    public final boolean isHealthy() {
+    public final boolean isUnHealthy() {
         // TODO: in the future we may want to make this more of a "are at least X hosts available" question
         //  so that we can compose a group of selectors into a priority set.
-        return !allUnhealthy(hosts);
+        return allUnhealthy(hosts);
     }
 
     protected final String getTargetResource() {
