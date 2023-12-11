@@ -17,8 +17,11 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
+import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static java.util.Objects.requireNonNull;
@@ -27,17 +30,53 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         implements HostSelector<ResolvedAddress, C> {
 
     private final String targetResource;
-    BaseHostSelector(final String targetResource) {
+    private final List<Host<ResolvedAddress, C>> hosts;
+    BaseHostSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+        this.hosts = hosts;
         this.targetResource = requireNonNull(targetResource, "targetResource");
+    }
+
+    protected abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
+                                         boolean forceNewConnectionAndReserve);
+
+    @Override
+    public final Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
+                                      boolean forceNewConnectionAndReserve) {
+        return hosts.isEmpty() ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
+    }
+
+    @Override
+    public final boolean isUnHealthy() {
+        // TODO: in the future we may want to make this more of a "are at least X hosts available" question
+        //  so that we can compose a group of selectors into a priority set.
+        return allUnhealthy(hosts);
     }
 
     protected final String getTargetResource() {
         return targetResource;
     }
 
-    protected final Single<C> noActiveHosts(List<Host<ResolvedAddress, C>> usedHosts) {
+    protected final Single<C> noActiveHostsFailure(List<Host<ResolvedAddress, C>> usedHosts) {
         return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                         getTargetResource() + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                 this.getClass(), "selectConnection(...)"));
+    }
+
+    private Single<C> noHostsFailure() {
+        return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
+                "No hosts are available to connect for " + targetResource + ".",
+                this.getClass(), "selectConnection(...)"));
+    }
+
+    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
+            final List<Host<ResolvedAddress, C>> usedHosts) {
+        boolean allUnhealthy = !usedHosts.isEmpty();
+        for (Host<ResolvedAddress, C> host : usedHosts) {
+            if (!host.isUnhealthy()) {
+                allUnhealthy = false;
+                break;
+            }
+        }
+        return allUnhealthy;
     }
 }

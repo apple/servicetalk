@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -141,8 +142,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
              Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
-                    loadBalancingPolicy.buildSelector(targetResource), connectionFactory, linearSearchSpace,
-                    healthCheckConfig);
+                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
+                    linearSearchSpace, healthCheckConfig);
         }
     }
 
