@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -42,19 +41,24 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     @Nullable
     private final Random random;
     private final int maxEffort;
+    private final List<Host<ResolvedAddress, C>> hosts;
 
-    P2CSelector(final String targetResource, final int maxEffort, @Nullable final Random random) {
-        super(targetResource);
+    P2CSelector(List<Host<ResolvedAddress, C>> hosts,
+                final String targetResource, final int maxEffort, @Nullable final Random random) {
+        super(hosts, targetResource);
+        this.hosts = hosts;
         this.maxEffort = maxEffort;
         this.random = random;
     }
 
     @Override
-    public Single<C> selectConnection(
-            @Nonnull List<Host<ResolvedAddress, C>> hosts,
-            @Nonnull Predicate<C> selector,
-            @Nullable ContextMap context,
-            boolean forceNewConnectionAndReserve) {
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts) {
+        return new P2CSelector<>(hosts, getTargetResource(), maxEffort, random);
+    }
+
+    @Override
+    protected Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
+                                          boolean forceNewConnectionAndReserve) {
         final int size = hosts.size();
         switch (size) {
             case 0:
@@ -64,7 +68,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             case 1:
                 // There is only a single host, so we don't need to do any of the looping or comparison logic.
                 Single<C> connection = selectFromHost(hosts.get(0), selector, forceNewConnectionAndReserve, context);
-                return connection == null ? noActiveHosts(hosts) : connection;
+                return connection == null ? noActiveHostsFailure(hosts) : connection;
             default:
                 return p2c(size, hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
         }
@@ -104,7 +108,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             // Neither t1 nor t2 yielded a connection. Fall through, potentially for another attempt.
         }
         // Max effort exhausted. We failed to find a healthy and active host.
-        return noActiveHosts(hosts);
+        return noActiveHostsFailure(hosts);
     }
 
     @Nullable

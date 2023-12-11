@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nullable;
@@ -95,7 +96,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher, new RoundRobinSelector<>(targetResource),
+        return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                new RoundRobinSelector<>(Collections.emptyList(), targetResource),
                 connectionFactory, linearSearchSpace, healthCheckConfig, null);
     }
 
