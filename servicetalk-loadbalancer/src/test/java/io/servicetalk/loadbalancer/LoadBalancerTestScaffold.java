@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
-import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
