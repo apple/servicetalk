@@ -47,8 +47,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 class TestDnsServer extends DnsServer {

@@ -461,13 +461,14 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ip1, targetPort, AVAILABLE);
 
         // Fail subsequent A queries with SERVFAIL
-        recordStore.servFail.set(new TestRecordStore.ServFail("target1", RecordType.A));
+        final TestRecordStore.ServFail fail = new TestRecordStore.ServFail("target1", RecordType.A);
+        recordStore.addFail(fail);
         advanceTime();
         // Expect no changes (SERVFAIL should be retried indefinitely)
         assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
 
         // Restore functionality for A queries
-        recordStore.servFail.set(null);
+        recordStore.removeFail(fail);
         advanceTime();
 
         List<ServiceDiscovererEvent<InetSocketAddress>> resumeSignals = subscriber.takeOnNext(1);

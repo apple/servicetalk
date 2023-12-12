@@ -58,9 +58,21 @@ final class TestRecordStore implements RecordStore {
             this.name = name;
             this.type = type;
         }
+
+        static ServFail of(final QuestionRecord question) {
+            return new ServFail(question.getDomainName(), question.getRecordType());
+        }
     }
 
-    public final AtomicReference<ServFail> servFail = new AtomicReference<>(null);
+    private final Set<ServFail> failSet = new HashSet<>(null);
+
+    public synchronized void addFail(final ServFail fail) {
+        failSet.add(fail);
+    }
+
+    public synchronized void removeFail(final ServFail fail) {
+        failSet.remove(fail);
+    }
 
     public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
         addSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
@@ -185,8 +197,7 @@ final class TestRecordStore implements RecordStore {
     @Override
     public synchronized Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) throws DnsException {
         final String domain = questionRecord.getDomainName();
-        final ServFail fail = servFail.get();
-        if (fail != null && domain.contains(fail.name) && fail.type.convert() >= questionRecord.getRecordType().convert()) {
+        if (failSet.contains(ServFail.of(questionRecord))) {
             throw new DnsException(SERVER_FAILURE);
         }
         final Map<RecordType, List<ResourceRecord>> recordsToReturn = recordsToReturnByDomain.get(domain);
