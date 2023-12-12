@@ -316,13 +316,11 @@ class DefaultDnsClientTest {
         assertNull(subscriber.pollTerminal(50, MILLISECONDS));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] inactiveEventsOnError={0}")
-    @ValueSource(booleans = {false, true})
-    void srvCNAMEDuplicateAddresses(boolean inactiveEventsOnError) throws Exception {
+    @Test
+    void srvCNAMEDuplicateAddresses() throws Exception {
         setup(builder -> builder
                 .dnsServerAddressStreamProvider(new SequentialDnsServerAddressStreamProvider(
-                        dnsServer2.localAddress(), dnsServer.localAddress()))
-                .inactiveEventsOnError(inactiveEventsOnError));
+                        dnsServer2.localAddress(), dnsServer.localAddress())));
         final String domain = "sd.servicetalk.io";
         final String srvCNAME = "sdcname.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
@@ -354,20 +352,16 @@ class DefaultDnsClientTest {
                 createSrvRecord(domain, targetDomain2, targetPort, ttl));
 
         advanceTime();
-        if (inactiveEventsOnError) {
-            signals = subscriber.takeOnNext(2);
-            assertHasEvent(signals, ip1, targetPort, EXPIRED);
-            assertHasEvent(signals, ip2, targetPort, EXPIRED);
-        } else {
-            assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
-        }
+        signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, EXPIRED);
+        assertHasEvent(signals, ip2, targetPort, EXPIRED);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] missingRecordStatus={0}")
     @MethodSource("missingRecordStatus")
     void srvInactiveEventsAggregated(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
-        setup(builder -> builder.inactiveEventsOnError(true).missingRecordStatus(missingRecordStatus));
+        setup(builder -> builder.missingRecordStatus(missingRecordStatus));
         final String domain = "sd.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
         final String targetDomain2 = "target2.mysvc.servicetalk.io";
@@ -443,7 +437,9 @@ class DefaultDnsClientTest {
                 createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
                 createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL));
         advanceTime();
-        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+        signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, EXPIRED);
+        assertHasEvent(signals, ip2, targetPort, EXPIRED);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -479,7 +475,7 @@ class DefaultDnsClientTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] srvFilterDuplicateEvents={0}")
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans = {false})
     void srvDuplicateAddresses(boolean srvFilterDuplicateEvents) throws Exception {
         setup(builder -> builder.srvFilterDuplicateEvents(srvFilterDuplicateEvents));
         final String domain = "sd.servicetalk.io";
@@ -517,11 +513,9 @@ class DefaultDnsClientTest {
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] inactiveEventsOnError={0}")
-    @ValueSource(booleans = {false, true})
-    void srvAAAAFailsGeneratesInactive(boolean inactiveEventsOnError) throws Exception {
+    @Test
+    void srvAAAAFailsGeneratesInactive() throws Exception {
         setup(builder -> builder
-                .inactiveEventsOnError(inactiveEventsOnError)
                 .srvHostNameRepeatDelay(ofMillis(200), ofMillis(10))
                 .dnsResolverAddressTypes(IPV4_PREFERRED));
         final String domain = "sd.servicetalk.io";
@@ -553,10 +547,9 @@ class DefaultDnsClientTest {
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] inactiveEventsOnError={0}")
-    @ValueSource(booleans = {false, true})
-    void srvRecordFailsGeneratesInactive(boolean inactiveEventsOnError) throws Exception {
-        setup(builder -> builder.inactiveEventsOnError(inactiveEventsOnError));
+    @Test
+    void srvRecordFailsGeneratesInactive() throws Exception {
+        setup();
         final String domain = "sd.servicetalk.io";
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
         final String targetDomain2 = "target2.mysvc.servicetalk.io";
@@ -583,9 +576,7 @@ class DefaultDnsClientTest {
 
         recordStore.removeSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
         advanceTime();
-        if (inactiveEventsOnError) {
-            assertEvent(subscriber.takeOnNext(), ip2, targetPort, EXPIRED);
-        }
+        assertEvent(subscriber.takeOnNext(), ip2, targetPort, EXPIRED);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -600,23 +591,25 @@ class DefaultDnsClientTest {
     }
 
     @Test
-    void singleADiscover() throws Exception {
+    void unknownHostAfterKnownDiscover() throws Exception {
         setup();
-        final String ip = nextIp();
-        final String domain = "servicetalk.io";
-        recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
+        final String targetDomain1 = "sd.domain.com";
+        final String ip1 = nextIp();
 
-        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(targetDomain1);
         Subscription subscription = subscriber.awaitSubscription();
-        subscription.request(1);
+        subscription.request(Long.MAX_VALUE);
 
-        assertEvent(subscriber.takeOnNext(), ip, AVAILABLE);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(1);
+        assertHasEvent(signals, ip1, AVAILABLE);
 
-        // Remove the ip
-        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ip);
-        subscription.request(1);
+        recordStore.removeIPv4Addresses(targetDomain1);
         advanceTime();
-        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+
+        signals = subscriber.takeOnNext(1);
+        assertHasEvent(signals, ip1, EXPIRED);
     }
 
     @Test
@@ -636,8 +629,12 @@ class DefaultDnsClientTest {
 
         // Remove all the ips
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
-        subscription.request(1);
+        subscription.request(ips.length);
         advanceTime();
+        signals = subscriber.takeOnNext(ips.length);
+        for (String ip : ips) {
+            assertHasEvent(signals, ip, EXPIRED);
+        }
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -694,8 +691,15 @@ class DefaultDnsClientTest {
         // Remove all the IPs
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips2);
-        subscription.request(1);
+        subscription.request(ips.length + ips2.length);
         advanceTime();
+        signals = subscriber.takeOnNext(ips.length + ips2.length);
+        for (String ip : ips) {
+            assertHasEvent(signals, ip, EXPIRED);
+        }
+        for (String ip : ips2) {
+            assertHasEvent(signals, ip, EXPIRED);
+        }
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -726,7 +730,9 @@ class DefaultDnsClientTest {
         subscription1.request(1);
         subscription2.request(1);
         advanceTime();
+        assertEvent(subscriber1.takeOnNext(), ip1, EXPIRED);
         assertThat(subscriber1.awaitOnError(), instanceOf(UnknownHostException.class));
+        assertEvent(subscriber2.takeOnNext(), ip2, EXPIRED);
         assertThat(subscriber2.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -734,7 +740,6 @@ class DefaultDnsClientTest {
     @MethodSource("missingRecordStatus")
     void repeatDiscoverNxDomainAndRecover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
         setup(builder -> builder
-                .inactiveEventsOnError(true)
                 .missingRecordStatus(missingRecordStatus));
         final String ip = nextIp();
         final String domain = "servicetalk.io";
@@ -960,6 +965,7 @@ class DefaultDnsClientTest {
         // Remove all ips
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
         advanceTime();
+        assertEvent(subscriber.takeOnNext(), ipv6, EXPIRED);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -980,6 +986,7 @@ class DefaultDnsClientTest {
         // Remove all ips
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
         advanceTime();
+        assertEvent(subscriber.takeOnNext(), ipv4, EXPIRED);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 

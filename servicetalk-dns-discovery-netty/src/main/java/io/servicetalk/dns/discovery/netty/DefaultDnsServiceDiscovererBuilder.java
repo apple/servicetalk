@@ -128,7 +128,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private int negativeTTLCacheSeconds = DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private Duration ttlJitter = ofSeconds(DEFAULT_TTL_POLL_JITTER_SECONDS);
     private int srvConcurrency = 2048;
-    private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
     private boolean srvFilterDuplicateEvents;
     private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
@@ -300,11 +299,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return asHostAndPortDiscoverer(build());
     }
 
-    DefaultDnsServiceDiscovererBuilder inactiveEventsOnError(boolean inactiveEventsOnError) {
-        this.inactiveEventsOnError = inactiveEventsOnError;
-        return this;
-    }
-
     DefaultDnsServiceDiscovererBuilder srvConcurrency(int srvConcurrency) {
         this.srvConcurrency = ensurePositive(srvConcurrency, "srvConcurrency");
         return this;
@@ -369,7 +363,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, consolidateCacheSize,
                 minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, negativeTTLCacheSeconds,
                 ttlJitter.toNanos(),
-                srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
+                srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
                 missingRecordStatus);
