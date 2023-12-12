@@ -64,7 +64,7 @@ final class TestRecordStore implements RecordStore {
         }
     }
 
-    private final Set<ServFail> failSet = new HashSet<>(null);
+    private final Set<ServFail> failSet = new HashSet<>();
 
     public synchronized void addFail(final ServFail fail) {
         failSet.add(fail);
