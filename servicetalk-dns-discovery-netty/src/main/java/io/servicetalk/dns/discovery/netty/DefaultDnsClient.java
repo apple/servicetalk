@@ -973,7 +973,7 @@ final class DefaultDnsClient implements DnsClient {
     private static boolean shouldRevokeState(final Throwable t) {
         // ISE => Subscriber exceptions (downstream of retry)
         return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
-                t instanceof ClosedDnsServiceDiscovererException || (NX_DOMAIN_INVALIDATES && t.getCause() != null &&
+                t instanceof ClosedDnsServiceDiscovererException || (NX_DOMAIN_INVALIDATES &&
                 t.getCause() instanceof DnsErrorCauseException &&
                 NXDOMAIN.equals(((DnsErrorCauseException) t.getCause()).getCode()));
     }
