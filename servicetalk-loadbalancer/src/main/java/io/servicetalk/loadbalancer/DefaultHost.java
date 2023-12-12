@@ -150,7 +150,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             final C cConn = (C) conn;
             cConn.closeAsyncGracefully().subscribe();
         }
-        if (oldState.state != CLOSED_CONN_STATE) {
+        if (oldState.state != State.CLOSED) {
             // this is the first time this was marked closed so we need to let the observer know.
             // TODO: do we need to signal closed for this host? Why isn't it closed? The
             //  closing should probably be re-worked to funnel closing behavior through one place
