@@ -71,9 +71,18 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHost.class);
 
     private enum State {
+        // Represents the state where the host is both active and healthy. This state may
+        // have connection failures but hasn't yet transitioned to unhealthy.
         ACTIVE,
+        // Represents the state where the host is active, but has reached the threshold for
+        // consecutive connection failures.
         UNHEALTHY,
+        // Represents the state where service discovery has signaled that this address may
+        // still serve requests with existing connections but must not attempt new connections.
+        // Once the number of connections reaches 0 the host will be closed and removed.
         EXPIRED,
+        // Represents the closed state. This is a terminal state and all connections are
+        // draining and will be closed.
         CLOSED
     }
 
