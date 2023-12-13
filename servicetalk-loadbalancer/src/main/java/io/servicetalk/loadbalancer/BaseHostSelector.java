@@ -72,7 +72,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
             final List<Host<ResolvedAddress, C>> usedHosts) {
         boolean allUnhealthy = !usedHosts.isEmpty();
         for (Host<ResolvedAddress, C> host : usedHosts) {
-            if (!host.isUnhealthy()) {
+            if (!host.isUnhealthy(false)) {
                 allUnhealthy = false;
                 break;
             }

@@ -16,19 +16,19 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
-import io.servicetalk.concurrent.api.Single;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
+import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
+import static io.servicetalk.loadbalancer.SelectorTestHelpers.connections;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,115 +36,83 @@ import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class P2CSelectorTest {
 
-    private static final Predicate<TestLoadBalancedConnection> PREDICATE = (ignored) -> true;
-
+    private boolean failOpen;
+    private int maxEffort;
+    private Random random;
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
-    void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
-        init(hosts, 5, false, null);
+    @BeforeEach
+    void setup() {
+        // set the default values before each test.
+        selector = null;
+        failOpen = false;
+        maxEffort = 5;
+        random = null;
     }
 
-    void init(List<Host<String, TestLoadBalancedConnection>> hosts,
-              int maxEffort, boolean failOpen, @Nullable Random random) {
+    void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
         selector = new P2CSelector<>(hosts, "testResource", maxEffort, failOpen, random);
     }
 
-    private Host mockHost(String addr, TestLoadBalancedConnection connection) {
-        Host<String, TestLoadBalancedConnection> host = mock(Host.class);
-        when(host.address()).thenReturn(addr);
-        when(host.isUnhealthy()).thenReturn(true);
-        when(host.isActiveAndHealthy()).thenReturn(true);
-        when(host.pickConnection(any(), any())).thenReturn(connection);
-        when(host.newConnection(any(), anyBoolean(), any())).thenReturn(Single.succeeded(connection));
-        return host;
-    }
-
-    private List<Host<String, TestLoadBalancedConnection>> connections(String... addresses) {
-        final List<Host<String, TestLoadBalancedConnection>> results = new ArrayList<>(addresses.length);
-        for (String addr : addresses) {
-            results.add(mockHost(addr, TestLoadBalancedConnection.mockConnection(addr)));
-        }
-        return results;
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}")
-    @ValueSource(booleans = {false, true})
-    void singleHost(boolean forceNewConnection) throws Exception {
+    @Test
+    void singleHealthyHost() throws Exception {
         init(connections("addr-1"));
         TestLoadBalancedConnection connection = selector.selectConnection(
-                PREDICATE, null, forceNewConnection).toFuture().get();
+                PREDICATE, null, false).toFuture().get();
         assertThat(connection.address(), equalTo("addr-1"));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}")
+    @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
     @ValueSource(booleans = {false, true})
-    void singleUnhealthyHostWithConnection(boolean forceNewConnection) throws Exception {
+    void singleUnhealthyHost(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
+        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
+        this.failOpen = failOpen;
         init(hosts);
-        if (forceNewConnection) {
-            Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
-                    PREDICATE, null, forceNewConnection).toFuture().get());
-            assertThat(e.getCause(), isA(NoActiveHostException.class));
-        } else {
+        if (failOpen) {
             TestLoadBalancedConnection connection = selector.selectConnection(
-                    PREDICATE, null, forceNewConnection).toFuture().get();
+                    PREDICATE, null, false).toFuture().get();
             assertThat(connection.address(), equalTo("addr-1"));
+        } else {
+            Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
+                    PREDICATE, null, false).toFuture().get());
+            assertThat(e.getCause(), isA(NoActiveHostException.class));
         }
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}")
-    @ValueSource(booleans = {false, true})
-    void singleUnhealthyHostWithoutConnection(boolean forceNewConnection) {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
-        when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
-        init(hosts);
-        Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
-                PREDICATE, null, forceNewConnection).toFuture().get());
-        assertThat(e.getCause(), isA(NoActiveHostException.class));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}")
-    @ValueSource(booleans = {false, true})
-    void twoHealthyHosts(boolean forceNewConnection) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        init(hosts);
-        TestLoadBalancedConnection connection = selector.selectConnection(
-                PREDICATE, null, forceNewConnection).toFuture().get();
-        assertThat(connection.address(), either(equalTo("addr-1")).or(equalTo("addr-2")));
     }
 
     @Test
-    void twoUnHealthyHostsWithConnections() throws Exception {
+    void twoHealthyHosts() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.isActiveAndHealthy()).thenReturn(false);
-        }
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
-                PREDICATE, null, false).toFuture().get();
+                PREDICATE, null, true).toFuture().get();
         assertThat(connection.address(), either(equalTo("addr-1")).or(equalTo("addr-2")));
     }
 
-    @Test
-    void twoUnHealthyHostsWithoutConnections() {
+    @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
+    @ValueSource(booleans = {false, true})
+    void twoUnHealthyHosts(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.isActiveAndHealthy()).thenReturn(false);
-            when(host.pickConnection(any(), any())).thenReturn(null);
+            when(host.isUnhealthy(anyBoolean())).thenReturn(true);
         }
+        this.failOpen = failOpen;
         init(hosts);
-        Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
-                PREDICATE, null, false).toFuture().get());
-        assertThat(e.getCause(), isA(NoActiveHostException.class));
+        if (failOpen) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, false).toFuture().get();
+            assertThat(connection.address(), either(equalTo("addr-1")).or(equalTo("addr-2")));
+        } else {
+            Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
+                    PREDICATE, null, false).toFuture().get());
+            assertThat(e.getCause(), isA(NoActiveHostException.class));
+        }
     }
 
     @Test
@@ -167,7 +135,7 @@ class P2CSelectorTest {
         // we setup the first host to always be preferred by score, but it also doesn't have any connections
         // and is unhealthy.
         when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
-        when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
+        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
         when(hosts.get(0).score()).thenReturn(10);
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
@@ -178,12 +146,12 @@ class P2CSelectorTest {
     }
 
     @Test
-    void biasesTowardsActiveAndHealthyHostWhenMakingConnections() throws Exception {
+    void biasesTowardsHealthyHostWhenMakingConnections() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        when(hosts.get(0).isActiveAndHealthy()).thenReturn(false);
+        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
-                PREDICATE, null, true).toFuture().get();
+                PREDICATE, null, false).toFuture().get();
         assertThat(connection.address(), equalTo("addr-2"));
     }
 
