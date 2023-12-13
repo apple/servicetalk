@@ -72,7 +72,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 Host<ResolvedAddress, C> host = hosts.get(0);
                 // If we're going to fail open we just yo-lo it, otherwise check if it's considered
                 // healthy.
-                if (failOpen || !host.isUnhealthy(forceNewConnectionAndReserve)) {
+                if (!host.isUnhealthy(forceNewConnectionAndReserve) || (failOpen && host.isActive())) {
                     return selectFromHost(host, selector, forceNewConnectionAndReserve, context);
                 } else {
                     return noActiveHostsFailure(hosts);
@@ -125,13 +125,6 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         return failOpen && lastActive != null ?
                 selectFromHost(lastActive, selector, forceNewConnectionAndReserve, contextMap)
                 : noActiveHostsFailure(hosts);
-    }
-
-    private boolean selectBackup(Host<ResolvedAddress, C> host, boolean forceConnectionAndReserver) {
-        if (forceConnectionAndReserver) {
-            return host.isActive();
-        }
-        return true;
     }
 
     private Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,

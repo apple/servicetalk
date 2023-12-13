@@ -86,6 +86,19 @@ class P2CSelectorTest {
         }
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
+    @ValueSource(booleans = {false, true})
+    void singleInactiveAndUnhealthyHost(boolean failOpen) {
+        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
+        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
+        when(hosts.get(0).isActive()).thenReturn(false);
+        this.failOpen = failOpen;
+        init(hosts);
+        Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
+                PREDICATE, null, false).toFuture().get());
+        assertThat(e.getCause(), isA(NoActiveHostException.class));
+    }
+
     @Test
     void twoHealthyHosts() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");

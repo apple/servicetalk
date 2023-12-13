@@ -53,8 +53,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     ResolvedAddress address();
 
     /**
-     * Whether the host is both considered active by service discovery
-     * @return whether the host is active
+     * Whether the host is both considered active by service discovery.
+     * @return whether the host is both considered active by service discovery.
      */
     boolean isActive();
 
@@ -62,7 +62,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      * Whether the host is considered unhealthy bo the failure detection mechanisms.
      * @param requireNewConnection whether a new connection is required.
      * @return whether the host is considered unhealthy for serving a request. This should include consideration
-     *         as to whether a new connection can be established if that is required.
+     *         whether a new connection can be established if that is required, either by the pool size or by
+     *         the parameter.
      */
     boolean isUnhealthy(boolean requireNewConnection);
 
