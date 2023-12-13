@@ -38,22 +38,24 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
+    private final List<Host<ResolvedAddress, C>> hosts;
     @Nullable
     private final Random random;
     private final int maxEffort;
-    private final List<Host<ResolvedAddress, C>> hosts;
+    private final boolean failOpen;
 
-    P2CSelector(List<Host<ResolvedAddress, C>> hosts,
-                final String targetResource, final int maxEffort, @Nullable final Random random) {
+    P2CSelector(List<Host<ResolvedAddress, C>> hosts, final String targetResource, final int maxEffort,
+                final boolean failOpen, @Nullable final Random random) {
         super(hosts, targetResource);
         this.hosts = hosts;
         this.maxEffort = maxEffort;
+        this.failOpen = failOpen;
         this.random = random;
     }
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts) {
-        return new P2CSelector<>(hosts, getTargetResource(), maxEffort, random);
+        return new P2CSelector<>(hosts, getTargetResource(), maxEffort, failOpen, random);
     }
 
     @Override
@@ -67,7 +69,8 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                         " received an empty host set");
             case 1:
                 // There is only a single host, so we don't need to do any of the looping or comparison logic.
-                Single<C> connection = selectFromHost(hosts.get(0), selector, forceNewConnectionAndReserve, context);
+                Single<C> connection = selectFromHost(
+                        hosts.get(0), selector, forceNewConnectionAndReserve, context);
                 return connection == null ? noActiveHostsFailure(hosts) : connection;
             default:
                 return p2c(size, hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
@@ -78,6 +81,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                           boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // If there are only two hosts we only try once since there is no chance we'll select different hosts
         // on further iterations.
+        Host<ResolvedAddress, C> lastActive = null;
         for (int j = hosts.size() == 2 ? 1 : maxEffort; j > 0; j--) {
             // Pick two random indexes that don't collide. Limit the range on the second index to 1 less than
             // the max value so that if there is a collision we can safety increment. We also increment if
@@ -87,33 +91,54 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             if (i2 >= i1) {
                 ++i2;
             }
-            Host<ResolvedAddress, C> t1 = hosts.get(i1);
-            Host<ResolvedAddress, C> t2 = hosts.get(i2);
-            // Make t1 the preferred host by score to make the logic below a bit cleaner.
-            if (t1.score() < t2.score()) {
-                Host<ResolvedAddress, C> tmp = t1;
-                t1 = t2;
-                t2 = tmp;
-            }
 
-            // Attempt to get a connection from t1 first since it's 'better'. If we can't, then try t2.
-            Single<C> result = selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap);
-            if (result != null) {
-                return result;
+            final Host<ResolvedAddress, C> t1 = hosts.get(i1);
+            final Host<ResolvedAddress, C> t2 = hosts.get(i2);
+            final boolean t1IsUnhealthy = t1.isUnhealthy();
+            final boolean t2IsUnhealthy = t2.isUnhealthy();
+            // Make t1 the preferred host first by health and then by score to make the logic below a bit cleaner.
+            if (t1IsUnhealthy || t2IsUnhealthy) {
+                // One of them is unhealthy. Just see if we can use one of them as backup.
+                if (failOpen && lastActive == null) {
+                    if (selectBackup(t1, forceNewConnectionAndReserve)) {
+                        lastActive = t1;
+                    } else if (selectBackup(t2, forceNewConnectionAndReserve)) {
+                        lastActive = t2;
+                    }
+                }
+                continue;
             }
-            result = selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
-            if (result != null) {
-                return result;
+            // both hosts are health but are the selectable?
+            final boolean t1CanSelect = !forceNewConnectionAndReserve || t1.isActive();
+            final boolean t2CanSelect = !forceNewConnectionAndReserve || t1.isActive();
+
+            if (t1CanSelect && t2CanSelect) {
+                // They're both equal candidates. Pick the one with the best score.
+                return t1.score() >= t2.score() ?
+                        selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap)
+                        : selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+            } else if (t1CanSelect) {
+                return selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap);
+            } else if (t2CanSelect) {
+                return selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
             }
-            // Neither t1 nor t2 yielded a connection. Fall through, potentially for another attempt.
         }
-        // Max effort exhausted. We failed to find a healthy and active host.
-        return noActiveHostsFailure(hosts);
+        // Max effort exhausted. We failed to find a healthy and active host. If we want to fail open and
+        // found an active host but it was considered unhealthy, try it anyway.
+        return failOpen && lastActive != null ?
+                selectFromHost(lastActive, selector, forceNewConnectionAndReserve, contextMap)
+                : noActiveHostsFailure(hosts);
     }
 
-    @Nullable
+    private boolean selectBackup(Host<ResolvedAddress, C> host, boolean forceConnectionAndReserver) {
+        if (forceConnectionAndReserver) {
+            return host.isActive();
+        }
+        return true;
+    }
+
     private Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
-                                     boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+                     boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
         if (!forceNewConnectionAndReserve) {
             C c = host.pickConnection(selector, contextMap);
@@ -121,13 +146,8 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 return succeeded(c);
             }
         }
-        // We need to make a new connection to the host but we'll only do so if it's considered healthy.
-        if (host.isActiveAndHealthy()) {
-            return host.newConnection(selector, forceNewConnectionAndReserve, contextMap);
-        }
-
-        // no selectable active connections and the host is unhealthy, so we return `null`.
-        return null;
+        // We're either
+        return host.newConnection(selector, forceNewConnectionAndReserve, contextMap);
     }
 
     private Random getRandom() {

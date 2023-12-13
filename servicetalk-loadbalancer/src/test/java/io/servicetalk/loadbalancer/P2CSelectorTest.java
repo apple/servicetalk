@@ -48,11 +48,12 @@ class P2CSelectorTest {
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
     void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
-        init(hosts, 5, null);
+        init(hosts, 5, false, null);
     }
 
-    void init(List<Host<String, TestLoadBalancedConnection>> hosts, int maxEffort, @Nullable Random random) {
-        selector = new P2CSelector<>(hosts, "testResource", maxEffort, random);
+    void init(List<Host<String, TestLoadBalancedConnection>> hosts,
+              int maxEffort, boolean failOpen, @Nullable Random random) {
+        selector = new P2CSelector<>(hosts, "testResource", maxEffort, failOpen, random);
     }
 
     private Host mockHost(String addr, TestLoadBalancedConnection connection) {

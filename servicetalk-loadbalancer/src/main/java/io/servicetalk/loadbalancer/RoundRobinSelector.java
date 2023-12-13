@@ -32,16 +32,19 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
     private final AtomicInteger index;
     private final List<Host<ResolvedAddress, C>> usedHosts;
+    private final boolean failOpen;
 
-    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource) {
-        this(new AtomicInteger(), usedHosts, targetResource);
+    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource,
+                       final boolean failOpen) {
+        this(new AtomicInteger(), usedHosts, targetResource, failOpen);
     }
 
     private RoundRobinSelector(final AtomicInteger index, final List<Host<ResolvedAddress, C>> usedHosts,
-                               final String targetResource) {
+                               final String targetResource, final boolean failOpen) {
         super(usedHosts, targetResource);
         this.index = index;
         this.usedHosts = usedHosts;
+        this.failOpen = failOpen;
     }
 
     @Override
@@ -55,7 +58,10 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             // for a particular iteration we maintain a local cursor without contention with other requests
             final int localCursor = (cursor + i) % usedHosts.size();
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
-            assert host != null : "Host can't be null.";
+            if (host.isUnhealthy()) {
+                // maybe we can use it for backup.
+                continue;
+            }
 
             if (!forceNewConnectionAndReserve) {
                 // First see if an existing connection can be used
@@ -81,6 +87,6 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
-        return new RoundRobinSelector<>(index, hosts, getTargetResource());
+        return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen);
     }
 }

@@ -288,7 +288,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
 
-            if (!DefaultHost.isActive(previous) || previous.connections.length > 0
+            if (!DefaultHost.isActiveAndHealthy(previous) || previous.connections.length > 0
                     || cause instanceof ConnectionLimitReachedException) {
                 LOGGER.debug("{}: failed to open a new connection to the host on address {}. {}.",
                         lbDescription, address, previous, cause);
@@ -325,7 +325,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public boolean isActiveAndHealthy() {
-        return isActive(connState);
+        return isActiveAndHealthy(connState);
+    }
+
+    @Override
+    public boolean isActive() {
+        Object state = connState.state;
+        // We're still considered active even if we have a health check pending.
+        // We're just not healthy.
+        return state != State.EXPIRED && state != State.CLOSED;
     }
 
     @Override
@@ -333,7 +341,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return isUnhealthy(connState);
     }
 
-    private static boolean isActive(final ConnState connState) {
+    private static boolean isActiveAndHealthy(final ConnState connState) {
         return ActiveState.class.equals(connState.state.getClass());
     }
 
@@ -363,7 +371,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
             // If we were able to add a new connection to the list, we should mark the host as ACTIVE again and
             // reset its failures counter.
-            final Object newState = DefaultHost.isActive(previous) || DefaultHost.isUnhealthy(previous) ?
+            final Object newState = DefaultHost.isActiveAndHealthy(previous) || DefaultHost.isUnhealthy(previous) ?
                     STATE_ACTIVE_NO_FAILURES : previous.state;
 
             if (connStateUpdater.compareAndSet(this,
@@ -405,7 +413,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                     break;
                 } else if (connections.length == 1) {
                     assert !DefaultHost.isUnhealthy(currentConnState) : "Cannot be UNHEALTHY with #connections > 0";
-                    if (DefaultHost.isActive(currentConnState)) {
+                    if (DefaultHost.isActiveAndHealthy(currentConnState)) {
                         if (connStateUpdater.compareAndSet(this, currentConnState,
                                 new ConnState(EMPTY_ARRAY, currentConnState.state))) {
                             break;

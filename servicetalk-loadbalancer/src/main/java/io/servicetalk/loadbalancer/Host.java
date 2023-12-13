@@ -60,6 +60,12 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     boolean isActiveAndHealthy();
 
     /**
+     * Whether the host is both considered active by service discovery
+     * @return whether the host is active
+     */
+    boolean isActive();
+
+    /**
      * Whether the host is considered unhealthy bo the failure detection mechanisms.
      * @return whether the host is considered unhealthy.
      */
