@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Math.min;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -98,7 +99,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
-    private volatile ConnState connState = new ConnState(new ArrayList<>(), State.ACTIVE, 0, null);
+    private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
@@ -579,10 +580,16 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             if (index < 0) {
                 return this;
             }
-            List<C> newList = new ArrayList<>(connections.size() - 1);
-            for (int i = 0; i < connections.size(); i++) {
-                if (i != index) {
-                    newList.add(connections.get(i));
+            // Create the new list.
+            final List<C> newList;
+            if (connections.size() == 1) {
+                newList = emptyList();
+            } else {
+                newList = new ArrayList<>(connections.size() - 1);
+                for (int i = 0; i < connections.size(); i++) {
+                    if (i != index) {
+                        newList.add(connections.get(i));
+                    }
                 }
             }
             return new ConnState(newList, state, failedConnections, healthCheck);
