@@ -123,7 +123,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     public boolean markActiveIfNotClosed() {
         final ConnState oldState = connStateUpdater.getAndUpdate(this, oldConnState -> {
             if (oldConnState.state == State.EXPIRED) {
-                return oldConnState.activeNoFailures();
+                return oldConnState.toActiveNoFailures();
             }
             // If oldConnState.state == State.ACTIVE this could mean either a duplicate event,
             // or a repeated CAS operation. We could issue a warning, but as we don't know, we don't log anything.
@@ -142,7 +142,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             // closeGracefully with a timeout, which fails, and then force close. If we discard connections when
             // closeGracefully is started we may leak connections.
             final ConnState oldState = connState;
-            if (oldState.state == State.CLOSED || connStateUpdater.compareAndSet(this, oldState, oldState.closed())) {
+            if (oldState.state == State.CLOSED || connStateUpdater.compareAndSet(this, oldState, oldState.toClosed())) {
                 return oldState;
             }
         }
@@ -158,7 +158,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 return true;
             }
             Object nextState = oldState.connections.isEmpty() ? State.CLOSED : State.EXPIRED;
-            if (connStateUpdater.compareAndSet(this, oldState, oldState.expired())) {
+            if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
                 cancelIfHealthCheck(oldState);
                 hostObserver.hostMarkedExpired(address, oldState.connections.size());
                 if (nextState == State.CLOSED) {
@@ -210,7 +210,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         Single<? extends C> establishConnection = connectionFactory.newConnection(address, context, null);
         if (healthCheckConfig != null) {
             // Schedule health check before returning
-            establishConnection = establishConnection.beforeOnError(t -> markUnhealthy(t));
+            establishConnection = establishConnection.beforeOnError(this::markUnhealthy);
         }
         return establishConnection
             .flatMap(newCnx -> {
@@ -262,7 +262,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         // health check.
         ConnState oldState = connStateUpdater.getAndUpdate(this, previous -> {
             if (previous.isUnhealthy()) {
-                return previous.activeNoFailures();
+                return previous.toActiveNoFailures();
             }
             return previous;
         });
@@ -279,7 +279,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         assert healthCheckConfig != null;
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
-
+            // TODO: if we have a failure, why does it matter if the connections are there?
+            //  If we try to make a new connection (maybe the pool is small) it would likely fail.
             if (!previous.isActive() || !previous.connections.isEmpty()
                     || cause instanceof ConnectionLimitReachedException) {
                 LOGGER.debug("{}: failed to open a new connection to the host on address {}. {}.",
@@ -287,28 +288,23 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 break;
             }
 
-            if (previous.failedConnections + 1 < healthCheckConfig.failedThreshold) {
-                final ConnState nextState = previous.forNextFailedConnection();
-                if (connStateUpdater.compareAndSet(this, previous, nextState)) {
+            final ConnState nextState = previous.toNextFailedConnection(cause);
+            if (connStateUpdater.compareAndSet(this, previous, nextState)) {
+                // which state did we transition to?
+                if (nextState.state == State.ACTIVE) {
                     LOGGER.debug("{}: failed to open a new connection to the host on address {}" +
                                     " {} time(s) ({} consecutive failures will trigger health-checking).",
                             lbDescription, address, nextState.failedConnections,
                             healthCheckConfig.failedThreshold, cause);
-                    break;
+                } else {
+                    assert nextState.state == State.UNHEALTHY;
+                    LOGGER.info("{}: failed to open a new connection to the host on address {} " +
+                                    "{} time(s) in a row. Error counting threshold reached, marking this host as " +
+                                    "UNHEALTHY for the selection algorithm and triggering background health-checking.",
+                            lbDescription, address, healthCheckConfig.failedThreshold, cause);
+                    hostObserver.hostMarkedUnhealthy(address, cause);
+                    nextState.healthCheck.schedule(cause);
                 }
-                // another thread won the race, try again
-                continue;
-            }
-            // It's time to set a health check.
-            final HealthCheck healthCheck = new HealthCheck(cause);
-            final ConnState nextState = previous.unhealthy(healthCheck);
-            if (connStateUpdater.compareAndSet(this, previous, nextState)) {
-                LOGGER.info("{}: failed to open a new connection to the host on address {} " +
-                                "{} time(s) in a row. Error counting threshold reached, marking this host as " +
-                                "UNHEALTHY for the selection algorithm and triggering background health-checking.",
-                        lbDescription, address, healthCheckConfig.failedThreshold, cause);
-                hostObserver.hostMarkedUnhealthy(address, cause);
-                healthCheck.schedule(cause);
                 break;
             }
         }
@@ -382,7 +378,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // will allow for determining that. It will prevent closing the Host and will only
                             // remove the connection (previously considered as the last one) from the array
                             // in the next iteration.
-                            && connStateUpdater.compareAndSet(this, currentConnState, nextState.closed())) {
+                            && connStateUpdater.compareAndSet(this, currentConnState, nextState.toClosed())) {
                         this.closeAsync().subscribe();
                         hostObserver.expiredHostRemoved(address);
                         break;
@@ -556,25 +552,26 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             this.healthCheck = healthCheck;
         }
 
-        ConnState forNextFailedConnection() {
-            return new ConnState(connections, State.ACTIVE,
-                    addWithOverflowProtection(this.failedConnections, 1), null);
+        ConnState toNextFailedConnection(Throwable cause) {
+            final int nextFailedCount = addWithOverflowProtection(this.failedConnections, 1);
+            if (state == State.ACTIVE && healthCheckConfig.failedThreshold <= nextFailedCount) {
+                return new ConnState(connections, State.UNHEALTHY, nextFailedCount, new HealthCheck(cause));
+            } else {
+                // either we're already unhealthy or not yet al the threshold so just increment the count.
+                return new ConnState(connections, state, nextFailedCount, healthCheck);
+            }
         }
 
-        ConnState activeNoFailures() {
+        ConnState toActiveNoFailures() {
             return new ConnState(connections, State.ACTIVE, 0, null);
         }
 
-        ConnState closed() {
+        ConnState toClosed() {
             return new ConnState(connections, State.CLOSED, 0, null);
         }
 
-        ConnState expired() {
+        ConnState toExpired() {
             return new ConnState(connections, State.EXPIRED, 0, null);
-        }
-
-        ConnState unhealthy(HealthCheck healthCheck) {
-            return new ConnState(connections, State.UNHEALTHY, failedConnections, healthCheck);
         }
 
         ConnState removeConnection(C connection) {
