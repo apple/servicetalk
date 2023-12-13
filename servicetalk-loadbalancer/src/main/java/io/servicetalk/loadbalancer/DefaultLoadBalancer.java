@@ -314,7 +314,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         hostSetChanged = true;
                     }
                 } else if (UNAVAILABLE.equals(event.status())) {
-                    host.closeAsyncGracefully().subscribe();
+                    host.closeAsyncGracefully()
+                            .beforeOnError(error -> LOGGER.warn("Closing host {} failed.", host.address()))
+                            .subscribe();
                     hostSetChanged = true;
                 } else {
                     LOGGER.warn("{}: Unsupported Status in event:" +

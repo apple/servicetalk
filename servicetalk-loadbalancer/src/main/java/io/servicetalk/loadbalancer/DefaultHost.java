@@ -530,7 +530,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         final List<C> connections;
         final State state;
         final int failedConnections;
-        //
         @Nullable
         HealthCheck healthCheck;
 
