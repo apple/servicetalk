@@ -37,6 +37,12 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
+            LoadBalancerObserver<String> loadBalancerObserver) {
+        throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
+    }
+
+    @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> backgroundExecutor(Executor backgroundExecutor) {
         underlying = underlying.backgroundExecutor(backgroundExecutor);
         return this;

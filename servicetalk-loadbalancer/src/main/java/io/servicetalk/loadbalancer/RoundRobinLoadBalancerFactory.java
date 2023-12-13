@@ -98,7 +98,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                 new RoundRobinSelector<>(Collections.emptyList(), targetResource),
-                connectionFactory, linearSearchSpace, healthCheckConfig);
+                connectionFactory, linearSearchSpace, healthCheckConfig, null);
     }
 
     @Override
