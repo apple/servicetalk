@@ -88,13 +88,9 @@ class DefaultHostTest {
     void activeHostClosed() {
         buildHost();
         verify(mockHostObserver, times(1)).hostCreated(DEFAULT_ADDRESS);
-        host.markClosed();
-        verify(mockHostObserver, times(1))
-                .activeHostRemoved(DEFAULT_ADDRESS,
-                        0);
-        // TODO: this is backwards and should assert true: our `markClosed` method doesn't trigger the host to close
-        //  down. See the related comment in `DefaultHost.markClosed`.
-        assertThat(host.onClose().toFuture().isDone(), is(false));
+        host.closeAsyncGracefully().subscribe();
+        verify(mockHostObserver, times(1)).activeHostRemoved(DEFAULT_ADDRESS, 0);
+        assertThat(host.onClose().toFuture().isDone(), is(true));
     }
 
     @Test
@@ -102,8 +98,7 @@ class DefaultHostTest {
         buildHost();
         verify(mockHostObserver, times(1)).hostCreated(DEFAULT_ADDRESS);
         host.markExpired();
-        verify(mockHostObserver, times(1))
-                .hostMarkedExpired(DEFAULT_ADDRESS, 0);
+        verify(mockHostObserver, times(1)).hostMarkedExpired(DEFAULT_ADDRESS, 0);
         assertThat(host.onClose().toFuture().isDone(), is(true));
     }
 
