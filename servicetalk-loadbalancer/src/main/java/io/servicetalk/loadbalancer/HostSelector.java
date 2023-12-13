@@ -69,4 +69,11 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * @return whether the load balancer believes itself unhealthy enough and unlikely to successfully serve traffic.
      */
     boolean isUnHealthy();
+
+    /**
+     * The size of the host candidate pool for this host selector.
+     * Note that this is primarily for observability purposes.
+     * @return the size of the host candidate pool for this host selector.
+     */
+    int hostSetSize();
 }

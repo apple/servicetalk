@@ -34,18 +34,18 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
     }
 
     @Override
-    public void noHostsAvailable() {
+    public void onNoHostsAvailable() {
         // noop
     }
 
     @Override
-    public void noActiveHostsAvailable(int hostSetSize, NoActiveHostException exn) {
+    public void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exn) {
         // noop
     }
 
     @Override
-    public void serviceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
-                                      int oldHostSetSize, int newHostSetSize) {
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+                                        int oldHostSetSize, int newHostSetSize) {
         // noop
     }
 
@@ -58,37 +58,37 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
         }
 
         @Override
-        public void hostMarkedExpired(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onHostMarkedExpired(ResolvedAddress resolvedAddress, int connectionCount) {
             // noop
         }
 
         @Override
-        public void expiredHostRemoved(ResolvedAddress resolvedAddress) {
+        public void onExpiredHostRemoved(ResolvedAddress resolvedAddress) {
             // noop
         }
 
         @Override
-        public void expiredHostRevived(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onExpiredHostRevived(ResolvedAddress resolvedAddress, int connectionCount) {
             // noop
         }
 
         @Override
-        public void activeHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onActiveHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
             // noop
         }
 
         @Override
-        public void hostCreated(ResolvedAddress resolvedAddress) {
+        public void onHostCreated(ResolvedAddress resolvedAddress) {
             // noop
         }
 
         @Override
-        public void hostMarkedUnhealthy(ResolvedAddress address, Throwable cause) {
+        public void onHostMarkedUnhealthy(ResolvedAddress address, Throwable cause) {
             // noop
         }
 
         @Override
-        public void hostRevived(ResolvedAddress address) {
+        public void onHostRevived(ResolvedAddress address) {
             // noop
         }
     }
