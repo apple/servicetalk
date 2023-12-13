@@ -95,7 +95,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     @Override
     protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final LoadBalancerTest.DelegatingConnectionFactory connectionFactory) {
+            final TestConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .loadBalancingPolicy(loadBalancingPolicy)
@@ -151,6 +151,11 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             @Override
             public boolean isUnHealthy() {
                 return false;
+            }
+
+            @Override
+            public int hostSetSize() {
+                return hosts.size();
             }
         }
     }

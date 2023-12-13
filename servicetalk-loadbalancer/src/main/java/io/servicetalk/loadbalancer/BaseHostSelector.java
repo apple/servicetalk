@@ -46,6 +46,11 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     @Override
+    public final int hostSetSize() {
+        return hosts.size();
+    }
+
+    @Override
     public final boolean isUnHealthy() {
         // TODO: in the future we may want to make this more of a "are at least X hosts available" question
         //  so that we can compose a group of selectors into a priority set.

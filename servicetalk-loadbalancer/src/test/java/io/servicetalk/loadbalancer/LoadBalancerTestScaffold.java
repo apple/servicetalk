@@ -72,8 +72,8 @@ abstract class LoadBalancerTestScaffold {
             new TestPublisher.Builder<Collection<ServiceDiscovererEvent<String>>>()
                     .sequentialSubscribers(sequentialPublisherSubscriberFunction)
                     .build();
-    LoadBalancerTest.DelegatingConnectionFactory connectionFactory =
-            new LoadBalancerTest.DelegatingConnectionFactory(this::newRealizedConnectionSingle);
+    TestConnectionFactory connectionFactory =
+            new TestConnectionFactory(this::newRealizedConnectionSingle);
 
     @Nullable
     TestableLoadBalancer<String, TestLoadBalancedConnection> lb;
@@ -114,7 +114,7 @@ abstract class LoadBalancerTestScaffold {
 
     abstract TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            LoadBalancerTest.DelegatingConnectionFactory connectionFactory);
+            TestConnectionFactory connectionFactory);
 
     void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
