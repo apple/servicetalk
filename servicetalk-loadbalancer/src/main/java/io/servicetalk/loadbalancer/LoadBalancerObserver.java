@@ -36,19 +36,23 @@ interface LoadBalancerObserver<ResolvedAddress> {
     /**
      * Callback for when connection selection fails due to no hosts being available.
      */
-    void noHostsAvailable();
+    void onNoHostsAvailable();
 
     /**
      * Callback for monitoring the changes due to a service discovery update.
      */
-    void serviceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
-                               int oldHostSetSize, int newHostSetSize);
+    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+                                 int oldHostSetSize, int newHostSetSize);
 
     /**
      * Callback for when connection selection fails due to all hosts being inactive.
      */
-    void noActiveHostsAvailable(int hostSetSize, NoActiveHostException exn);
+    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exn);
 
+    /**
+     * An observer for {@link Host} events.
+     * @param <ResolvedAddress> the type of the resolved address.
+     */
     interface HostObserver<ResolvedAddress> {
 
         /**
@@ -56,45 +60,45 @@ interface LoadBalancerObserver<ResolvedAddress> {
          * @param address the resolved address.
          * @param connectionCount the number of active connections for the host.
          */
-        void hostMarkedExpired(ResolvedAddress address, int connectionCount);
+        void onHostMarkedExpired(ResolvedAddress address, int connectionCount);
 
         /**
          * Callback for when a host is removed by service discovery.
          * @param address the resolved address.
          * @param connectionCount the number of connections that were associated with the host.
          */
-        void activeHostRemoved(ResolvedAddress address, int connectionCount);
+        void onActiveHostRemoved(ResolvedAddress address, int connectionCount);
 
         /**
          * Callback for when an expired host is returned to an active state.
          * @param address the resolved address.
          * @param connectionCount the number of active connections when the host was revived.
          */
-        void expiredHostRevived(ResolvedAddress address, int connectionCount);
+        void onExpiredHostRevived(ResolvedAddress address, int connectionCount);
 
         /**
          * Callback for when an expired host is removed.
          * @param address the resolved address.
          */
-        void expiredHostRemoved(ResolvedAddress address);
+        void onExpiredHostRemoved(ResolvedAddress address);
 
         /**
          * Callback for when a host is created.
          * @param address the resolved address.
          */
-        void hostCreated(ResolvedAddress address);
+        void onHostCreated(ResolvedAddress address);
 
         /**
          * Callback for when a {@link Host} transitions from healthy to unhealthy.
          * @param address the resolved address.
          * @param cause the most recent cause of the transition.
          */
-        void hostMarkedUnhealthy(ResolvedAddress address, @Nullable Throwable cause);
+        void onHostMarkedUnhealthy(ResolvedAddress address, @Nullable Throwable cause);
 
         /**
          * Callback for when a {@link Host} transitions from unhealthy to healthy.
          * @param address the resolved address.
          */
-        void hostRevived(ResolvedAddress address);
+        void onHostRevived(ResolvedAddress address);
     }
 }

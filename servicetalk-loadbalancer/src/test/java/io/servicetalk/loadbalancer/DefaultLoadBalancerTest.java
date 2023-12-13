@@ -152,6 +152,11 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             public boolean isUnHealthy() {
                 return false;
             }
+
+            @Override
+            public int hostSetSize() {
+                return hosts.size();
+            }
         }
     }
 }
