@@ -103,14 +103,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                int linearSearchSpace, @Nullable HealthCheckConfig healthCheckConfig,
-                LoadBalancerObserver.HostObserver<Addr> hostObserver) {
+                final int linearSearchSpace, final @Nullable HealthCheckConfig healthCheckConfig,
+                final LoadBalancerObserver.HostObserver<Addr> hostObserver) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
-        this.hostObserver = hostObserver;
+        this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(graceful ->
                 graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));
         hostObserver.hostCreated(address);

@@ -85,7 +85,7 @@ interface LoadBalancerObserver<ResolvedAddress> {
         void hostCreated(ResolvedAddress address);
 
         /**
-         * Callback for when a {@link Host} is transitions from healthy to unhealthy.
+         * Callback for when a {@link Host} transitions from healthy to unhealthy.
          * @param address the resolved address.
          * @param cause the most recent cause of the transition.
          */
