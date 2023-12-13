@@ -334,7 +334,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
 
             // Always send the event regardless of if we update the actual list.
-            loadBalancerObserver.serviceDiscoveryEvent(events, usedHosts.size(), nextHosts.size());
+            loadBalancerObserver.onServiceDiscoveryEvent(events, usedHosts.size(), nextHosts.size());
             // We've built a materially different host set so now set it for consumption and send our events.
             if (hostSetChanged) {
                 sequentialUpdateUsedHosts(nextHosts);
@@ -388,7 +388,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                                 currentHosts, current -> current == host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
-                            loadBalancerObserver.hostObserver().expiredHostRemoved(host.address());
+                            loadBalancerObserver.hostObserver().onExpiredHostRemoved(host.address());
                             sequentialUpdateUsedHosts(nextHosts);
                             if (nextHosts.isEmpty()) {
                                 // We transitioned from non-empty to empty. That means we're not ready.
@@ -472,15 +472,19 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         final HostSelector<ResolvedAddress, C> currentHostSelector = hostSelector;
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
-            if (exn instanceof NoActiveHostException && currentHostSelector.isUnHealthy()) {
-                final long currNextResubscribeTime = nextResubscribeTime;
-                if (currNextResubscribeTime >= 0 &&
-                        healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
-                        nextResubscribeTimeUpdater.compareAndSet(this, currNextResubscribeTime, RESUBSCRIBING)) {
-                    subscribeToEvents(true);
+            if (exn instanceof NoActiveHostException) {
+                if (currentHostSelector.isUnHealthy()) {
+                    final long currNextResubscribeTime = nextResubscribeTime;
+                    if (currNextResubscribeTime >= 0 &&
+                            healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
+                            nextResubscribeTimeUpdater.compareAndSet(this, currNextResubscribeTime, RESUBSCRIBING)) {
+                        subscribeToEvents(true);
+                    }
                 }
+                loadBalancerObserver.onNoActiveHostsAvailable(
+                        currentHostSelector.hostSetSize(), (NoActiveHostException) exn);
             } else if (exn instanceof NoAvailableHostException) {
-                loadBalancerObserver.noHostsAvailable();
+                loadBalancerObserver.onNoHostsAvailable();
             }
         });
     }
@@ -560,6 +564,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public boolean isUnHealthy() {
             return false;
+        }
+
+        @Override
+        public int hostSetSize() {
+            return 0;
         }
     }
 }
