@@ -26,8 +26,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
-
 /**
  * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
  * Choices in Randomized Load Balancing.
@@ -72,11 +70,13 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 Host<ResolvedAddress, C> host = hosts.get(0);
                 // If we're going to fail open we just yo-lo it, otherwise check if it's considered
                 // healthy.
-                if (!host.isUnhealthy(forceNewConnectionAndReserve) || (failOpen && host.isActive())) {
-                    return selectFromHost(host, selector, forceNewConnectionAndReserve, context);
-                } else {
-                    return noActiveHostsFailure(hosts);
+                if (failOpen || !host.isUnhealthy(forceNewConnectionAndReserve)) {
+                    Single<C> result = selectFromHealthyHost(host, selector, forceNewConnectionAndReserve, context);
+                    if (result != null) {
+                        return result;
+                    }
                 }
+                return noActiveHostsFailure(hosts);
             default:
                 return p2c(size, hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
         }
@@ -86,7 +86,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                           boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // If there are only two hosts we only try once since there is no chance we'll select different hosts
         // on further iterations.
-        Host<ResolvedAddress, C> lastActive = null;
+        Host<ResolvedAddress, C> failOpenHost = null;
         for (int j = hosts.size() == 2 ? 1 : maxEffort; j > 0; j--) {
             // Pick two random indexes that don't collide. Limit the range on the second index to 1 less than
             // the max value so that if there is a collision we can safety increment. We also increment if
@@ -97,46 +97,54 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 ++i2;
             }
 
-            final Host<ResolvedAddress, C> t1 = hosts.get(i1);
-            final Host<ResolvedAddress, C> t2 = hosts.get(i2);
+            Host<ResolvedAddress, C> t1 = hosts.get(i1);
+            Host<ResolvedAddress, C> t2 = hosts.get(i2);
             final boolean t1IsUnhealthy = t1.isUnhealthy(forceNewConnectionAndReserve);
             final boolean t2IsUnhealthy = t2.isUnhealthy(forceNewConnectionAndReserve);
             // Make t1 the preferred host first by health and then by score to make the logic below a bit cleaner.
             if (!t1IsUnhealthy && !t2IsUnhealthy) {
                 // both are healthy. Select based on score, using t1 if equal.
-                return t1.score() >= t2.score() ?
-                        selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap)
-                        : selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+                if (t1.score() < t2.score()) {
+                    Host<ResolvedAddress, C> tmp = t1;
+                    t1 = t2;
+                    t2 = tmp;
+                }
+                Single<C> result = selectFromHealthyHost(t1, selector, forceNewConnectionAndReserve, contextMap);
+                if (result == null) {
+                    result = selectFromHealthyHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+                }
+                // If we have a connection we're good to go. Otherwise fall through for another round.
+                if (result != null) {
+                    return result;
+                }
             } else if (!t2IsUnhealthy) {
-                return selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+                Single<C> result = selectFromHealthyHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+                if (result != null) {
+                    return result;
+                }
             } else if (!t1IsUnhealthy) {
-                return selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap);
-            } else if (failOpen && lastActive == null) {
+                Single<C> result = selectFromHealthyHost(t1, selector, forceNewConnectionAndReserve, contextMap);
+                if (result != null) {
+                    return result;
+                }
+            } else if (failOpen && failOpenHost == null) {
                 // both are  unhealthy. If either are active they can be the backup.
                 if (t1.isActive()) {
-                    lastActive = t1;
+                    failOpenHost = t1;
                 } else if (t2.isActive()) {
-                    lastActive = t2;
+                    failOpenHost = t2;
                 }
             }
         }
         // Max effort exhausted. We failed to find a healthy and active host. If we want to fail open and
         // found an active host but it was considered unhealthy, try it anyway.
-        return failOpen && lastActive != null ?
-                selectFromHost(lastActive, selector, forceNewConnectionAndReserve, contextMap)
-                : noActiveHostsFailure(hosts);
-    }
-
-    private Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
-                     boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
-        // First see if we can get an existing connection regardless of health status.
-        if (!forceNewConnectionAndReserve) {
-            C c = host.pickConnection(selector, contextMap);
-            if (c != null) {
-                return succeeded(c);
+        if (failOpenHost != null) {
+            Single<C> result = selectFromHealthyHost(failOpenHost, selector, forceNewConnectionAndReserve, contextMap);
+            if (result != null) {
+                return result;
             }
         }
-        return host.newConnection(selector, forceNewConnectionAndReserve, contextMap);
+        return noActiveHostsFailure(hosts);
     }
 
     private Random getRandom() {

@@ -19,6 +19,7 @@ import io.servicetalk.client.api.NoActiveHostException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
@@ -97,5 +98,19 @@ class RoundRobinSelectorTest {
                     PREDICATE, null, false).toFuture().get());
             assertThat(e.getCause(), isA(NoActiveHostException.class));
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: unhealthy={0} failOpen={1}")
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    void singleInactiveHostWithoutConnections(boolean unhealthy, boolean failOpen) {
+        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
+        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(unhealthy);
+        when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
+        when(hosts.get(0).isActive()).thenReturn(false);
+        this.failOpen = failOpen;
+        init(hosts);
+        Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
+                PREDICATE, null, false).toFuture().get());
+        assertThat(e.getCause(), isA(NoActiveHostException.class));
     }
 }

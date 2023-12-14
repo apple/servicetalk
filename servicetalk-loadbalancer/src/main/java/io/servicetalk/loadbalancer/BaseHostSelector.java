@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.Objects.requireNonNull;
 
 abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnection>
@@ -65,6 +66,24 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                         getTargetResource() + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                 this.getClass(), "selectConnection(...)"));
+    }
+
+    // Note: this helper method assumes that the host has already evaluated false to for
+    // `.isUnHealthy(forceNewConnectionAndReserve)`
+    // TODO: this could really be the core method on `Host` other than the nullable part. We could use Optional...
+    protected final @Nullable Single<C> selectFromHealthyHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
+                                              boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+        // First see if we can get an existing connection regardless of health status.
+        if (!forceNewConnectionAndReserve) {
+            C c = host.pickConnection(selector, contextMap);
+            if (c != null) {
+                return succeeded(c);
+            }
+        }
+        // We can only create a new connection if the host is active. It's possible for it to think that
+        // it's healthy based on having connections but not being active but we haven't been able to
+        // pick an existing connection.
+        return host.isActive() ? host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
     }
 
     private Single<C> noHostsFailure() {

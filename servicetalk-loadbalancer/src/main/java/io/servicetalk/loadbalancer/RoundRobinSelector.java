@@ -25,8 +25,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
-
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
@@ -59,21 +57,13 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             final int localCursor = (cursor + i) % usedHosts.size();
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
             if (!host.isUnhealthy(forceNewConnectionAndReserve)) {
-                // Host should be suitable Let's try it.
-                if (!forceNewConnectionAndReserve) {
-                    // First see if an existing connection can be used
-                    C connection = host.pickConnection(selector, context);
-                    if (connection != null) {
-                        return succeeded(connection);
-                    }
+                Single<C> result = selectFromHealthyHost(host, selector, forceNewConnectionAndReserve, context);
+                if (result != null) {
+                    return result;
                 }
-
-                // Don't open new connections for expired or unhealthy hosts, try a different one.
-                // Unhealthy hosts have no open connections – that's why we don't fail earlier, the loop will not progress.
-                return host.newConnection(selector, forceNewConnectionAndReserve, context);
             }
 
-            // maybe we can use it for backup.
+            // If the host is active we can use it for backup.
             if (failOpen && failOpenHost == null && host.isActive()) {
                 failOpenHost = host;
             }
