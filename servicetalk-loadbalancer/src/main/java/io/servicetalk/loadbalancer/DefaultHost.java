@@ -345,27 +345,24 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
-    public boolean isActive() {
-        return isActive(connState);
-    }
-
-    @Override
-    public boolean isUnhealthy(boolean forceNewConnection) {
+    public Status status(boolean forceNewConnection) {
         ConnState connState = this.connState;
         if (ActiveState.class.equals(connState.state.getClass())) {
-            return false;
+            return Status.HEALTHY_ACTIVE;
         } else if (HealthCheck.class.equals(connState.state.getClass())) {
             // The connections being 0 is currently an invariant of the unhealthy
             // state but if that ever changes this logic should still hold.
-            return forceNewConnection || connState.connections.length == 0;
+            return forceNewConnection || connState.connections.length == 0 ?
+                    Status.UNHEALTHY_ACTIVE : Status.HEALTHY_ACTIVE;
         } else if (connState.state == State.EXPIRED) {
             // If the connections are 0 we might be in a race condition where we're
             // expired but just haven't been able to remove ourselves.
-            return forceNewConnection || connState.connections.length == 0;
+            return forceNewConnection || connState.connections.length == 0 ?
+                    Status.CLOSED : Status.HEALTHY_EXPIRED;
         } else {
             // This is the last possible condition.
             assert connState.state == State.CLOSED;
-            return true;
+            return Status.CLOSED;
         }
     }
 

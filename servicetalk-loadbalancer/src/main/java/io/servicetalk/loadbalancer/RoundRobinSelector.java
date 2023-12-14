@@ -56,21 +56,25 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             // for a particular iteration we maintain a local cursor without contention with other requests
             final int localCursor = (cursor + i) % usedHosts.size();
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
-            if (!host.isUnhealthy(forceNewConnectionAndReserve)) {
-                Single<C> result = selectFromHealthyHost(host, selector, forceNewConnectionAndReserve, context);
+            final Host.Status status = host.status(forceNewConnectionAndReserve);
+            if (status.healthy) {
+                Single<C> result = selectFromHost(host, status, selector, forceNewConnectionAndReserve, context);
                 if (result != null) {
                     return result;
                 }
             }
 
             // If the host is active we can use it for backup.
-            if (failOpen && failOpenHost == null && host.isActive()) {
+            if (failOpen && failOpenHost == null && status.active) {
                 failOpenHost = host;
             }
         }
-        // We want to fail open even if this host think it's not healthy.
         if (failOpenHost != null) {
-            return failOpenHost.newConnection(selector, forceNewConnectionAndReserve, context);
+            Single<C> result = selectFromHost(failOpenHost, failOpenHost.status(forceNewConnectionAndReserve),
+                    selector, forceNewConnectionAndReserve, context);
+            if (result != null) {
+                return result;
+            }
         }
         // We were unable to find a suitable host.
         return noActiveHostsFailure(usedHosts);

@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.connections;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.when;
 class RoundRobinSelectorTest {
 
     private boolean failOpen;
+    @Nullable
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
     @BeforeEach
@@ -67,7 +70,7 @@ class RoundRobinSelectorTest {
     @Test
     void skipUnhealthyHosts() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
+        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -82,7 +85,7 @@ class RoundRobinSelectorTest {
     @ValueSource(booleans = {false, true})
     void noHealthyHosts(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(true);
+        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
         this.failOpen = failOpen;
         init(hosts);
         if (failOpen) {
@@ -104,9 +107,9 @@ class RoundRobinSelectorTest {
     @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void singleInactiveHostWithoutConnections(boolean unhealthy, boolean failOpen) {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).isUnhealthy(anyBoolean())).thenReturn(unhealthy);
+        when(hosts.get(0).status(anyBoolean())).thenReturn(
+                unhealthy ? Host.Status.CLOSED : Host.Status.HEALTHY_EXPIRED);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
-        when(hosts.get(0).isActive()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
         Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(

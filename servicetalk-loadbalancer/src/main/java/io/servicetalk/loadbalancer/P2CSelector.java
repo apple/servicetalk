@@ -70,8 +70,10 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 Host<ResolvedAddress, C> host = hosts.get(0);
                 // If we're going to fail open we just yo-lo it, otherwise check if it's considered
                 // healthy.
-                if (failOpen || !host.isUnhealthy(forceNewConnectionAndReserve)) {
-                    Single<C> result = selectFromHealthyHost(host, selector, forceNewConnectionAndReserve, context);
+                Host.Status status = host.status(forceNewConnectionAndReserve);
+                if (failOpen || status.healthy) {
+                    Single<C> result = selectFromHost(
+                            host, status, selector, forceNewConnectionAndReserve, context);
                     if (result != null) {
                         return result;
                     }
@@ -90,7 +92,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         for (int j = hosts.size() == 2 ? 1 : maxEffort; j > 0; j--) {
             // Pick two random indexes that don't collide. Limit the range on the second index to 1 less than
             // the max value so that if there is a collision we can safety increment. We also increment if
-            // i2 > i1 to avoid biased toward lower numbers since we limited the range by 1.
+            // i2 > i1 to avoid bias toward lower numbers since we limited the range by 1.
             final int i1 = random.nextInt(size);
             int i2 = random.nextInt(size - 1);
             if (i2 >= i1) {
@@ -99,39 +101,47 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
             Host<ResolvedAddress, C> t1 = hosts.get(i1);
             Host<ResolvedAddress, C> t2 = hosts.get(i2);
-            final boolean t1IsUnhealthy = t1.isUnhealthy(forceNewConnectionAndReserve);
-            final boolean t2IsUnhealthy = t2.isUnhealthy(forceNewConnectionAndReserve);
-            // Make t1 the preferred host first by health and then by score to make the logic below a bit cleaner.
-            if (!t1IsUnhealthy && !t2IsUnhealthy) {
+            final Host.Status t1Status = t1.status(forceNewConnectionAndReserve);
+            final Host.Status t2Status = t2.status(forceNewConnectionAndReserve);
+            // Priority of selection: health > score > failOpen
+            // Only if both hosts are healthy do we consider score.
+            if (t1Status.healthy && t2Status.healthy) {
                 // both are healthy. Select based on score, using t1 if equal.
                 if (t1.score() < t2.score()) {
                     Host<ResolvedAddress, C> tmp = t1;
                     t1 = t2;
                     t2 = tmp;
                 }
-                Single<C> result = selectFromHealthyHost(t1, selector, forceNewConnectionAndReserve, contextMap);
+                Single<C> result = selectFromHost(
+                        t1, t1Status, selector, forceNewConnectionAndReserve, contextMap);
+                // We didn't get a connection from the first host: maybe it is inactive
+                // and we couldn't reserve a connection. Try the second host.
                 if (result == null) {
-                    result = selectFromHealthyHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+                    result = selectFromHost(t2, t2Status, selector, forceNewConnectionAndReserve, contextMap);
                 }
                 // If we have a connection we're good to go. Otherwise fall through for another round.
+                // Since we didn't get a connection from either of them there is no reason to think they'll
+                // yield a connection if we make them the fallback.
                 if (result != null) {
                     return result;
                 }
-            } else if (!t2IsUnhealthy) {
-                Single<C> result = selectFromHealthyHost(t2, selector, forceNewConnectionAndReserve, contextMap);
+            } else if (t2Status.healthy) {
+                Single<C> result = selectFromHost(
+                        t2, t2Status, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
-            } else if (!t1IsUnhealthy) {
-                Single<C> result = selectFromHealthyHost(t1, selector, forceNewConnectionAndReserve, contextMap);
+            } else if (t1Status.healthy) {
+                Single<C> result = selectFromHost(
+                        t1, t1Status, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
             } else if (failOpen && failOpenHost == null) {
                 // both are  unhealthy. If either are active they can be the backup.
-                if (t1.isActive()) {
+                if (t1Status.active) {
                     failOpenHost = t1;
-                } else if (t2.isActive()) {
+                } else if (t2Status.active) {
                     failOpenHost = t2;
                 }
             }
@@ -139,7 +149,8 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         // Max effort exhausted. We failed to find a healthy and active host. If we want to fail open and
         // found an active host but it was considered unhealthy, try it anyway.
         if (failOpenHost != null) {
-            Single<C> result = selectFromHealthyHost(failOpenHost, selector, forceNewConnectionAndReserve, contextMap);
+            Single<C> result = selectFromHost(failOpenHost, failOpenHost.status(forceNewConnectionAndReserve),
+                    selector, forceNewConnectionAndReserve, contextMap);
             if (result != null) {
                 return result;
             }

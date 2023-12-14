@@ -31,6 +31,20 @@ import javax.annotation.Nullable;
  */
 interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {
 
+    enum Status {
+        HEALTHY_ACTIVE(true, true),
+        UNHEALTHY_ACTIVE(false, true),
+        HEALTHY_EXPIRED(true, false),
+        CLOSED(false, false);
+
+        public final boolean healthy;
+        public final boolean active;
+        Status(final boolean healthy, final boolean active) {
+            this.healthy = healthy;
+            this.active = active;
+        }
+    }
+
     /**
      * Select an existing connection from the host.
      * @return the selected host, or null if a suitable host couldn't be found.
@@ -53,19 +67,13 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     ResolvedAddress address();
 
     /**
-     * Whether the host is both considered active by service discovery.
-     * @return whether the host is both considered active by service discovery.
-     */
-    boolean isActive();
-
-    /**
-     * Whether the host is considered unhealthy bo the failure detection mechanisms.
+     * Determine the health status of this host for selecting an appropriate connection.
      * @param requireNewConnection whether a new connection is required.
-     * @return whether the host is considered unhealthy for serving a request. This should include consideration
-     *         whether a new connection can be established if that is required, either by the pool size or by
-     *         the parameter.
+     * @return the {@Host.Status} that represents the anticipated ability to handle a request. The status will
+     *         consideration whether a new connection can be established if that is required, either by the pool
+     *         size or by the parameter.
      */
-    boolean isUnhealthy(boolean requireNewConnection);
+    Status status(boolean requireNewConnection);
 
     /**
      * Signal to the host that it has been re-discovered by the service-discovery mechanism and is expected

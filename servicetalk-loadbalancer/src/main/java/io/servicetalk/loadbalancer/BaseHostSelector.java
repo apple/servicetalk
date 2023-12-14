@@ -52,10 +52,10 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     @Override
-    public final boolean isUnHealthy() {
+    public final boolean isHealthy() {
         // TODO: in the future we may want to make this more of a "are at least X hosts available" question
         //  so that we can compose a group of selectors into a priority set.
-        return allUnhealthy(hosts);
+        return anyHealthy(hosts);
     }
 
     protected final String getTargetResource() {
@@ -68,11 +68,12 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 this.getClass(), "selectConnection(...)"));
     }
 
-    // Note: this helper method assumes that the host has already evaluated false to for
-    // `.isUnHealthy(forceNewConnectionAndReserve)`
     // TODO: this could really be the core method on `Host` other than the nullable part. We could use Optional...
-    protected final @Nullable Single<C> selectFromHealthyHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
-                                              boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+    //  The API of passing in the status is weird but we could either live with it or just ask the question again
+    //  if we need to make a new connection.
+    protected final @Nullable Single<C> selectFromHost(
+            Host<ResolvedAddress, C> host, Host.Status status, Predicate<C> selector,
+            boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
         if (!forceNewConnectionAndReserve) {
             C c = host.pickConnection(selector, contextMap);
@@ -81,9 +82,9 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
             }
         }
         // We can only create a new connection if the host is active. It's possible for it to think that
-        // it's healthy based on having connections but not being active but we haven't been able to
-        // pick an existing connection.
-        return host.isActive() ? host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
+        // it's healthy based on having connections but not being active but we weren't able to pick an
+        // existing connection.
+        return status.active ? host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
     }
 
     private Single<C> noHostsFailure() {
@@ -92,15 +93,13 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 this.getClass(), "selectConnection(...)"));
     }
 
-    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
+    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean anyHealthy(
             final List<Host<ResolvedAddress, C>> usedHosts) {
-        boolean allUnhealthy = !usedHosts.isEmpty();
         for (Host<ResolvedAddress, C> host : usedHosts) {
-            if (!host.isUnhealthy(false)) {
-                allUnhealthy = false;
-                break;
+            if (host.status(false).healthy) {
+                return true;
             }
         }
-        return allUnhealthy;
+        return usedHosts.isEmpty();
     }
 }

@@ -53,6 +53,10 @@ class DefaultHostTest {
     private HealthCheckConfig healthCheckConfig;
     private DefaultHost<String, TestLoadBalancedConnection> host;
 
+    static <T> Predicate<T> any() {
+        return __ -> true;
+    }
+
     @BeforeEach
     void init() {
         mockHostObserver = MockLoadBalancerObserver.mockObserver().hostObserver();
@@ -160,7 +164,42 @@ class DefaultHostTest {
         verify(mockHostObserver, times(1)).onHostRevived(DEFAULT_ADDRESS);
     }
 
-    static <T> Predicate<T> any() {
-        return __ -> true;
+    @Test
+    void hostStatus() throws Exception {
+        TestLoadBalancedConnection testLoadBalancedConnection = TestLoadBalancedConnection.mockConnection(
+                DEFAULT_ADDRESS);
+        UnhealthyHostConnectionFactory unhealthyHostConnectionFactory = new UnhealthyHostConnectionFactory(
+                DEFAULT_ADDRESS, 1, succeeded(testLoadBalancedConnection));
+        connectionFactory = unhealthyHostConnectionFactory.createFactory();
+        healthCheckConfig = new HealthCheckConfig(testExecutor,
+                Duration.ofSeconds(1),
+                Duration.ZERO,
+                DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD,
+                Duration.ofMillis(1),
+                Duration.ZERO);
+        buildHost();
+        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
+
+        assertThat(host.status(false), is(Host.Status.HEALTHY_ACTIVE));
+
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
+            assertThrows(ExecutionException.class,
+                    () -> host.newConnection(any(), false, null).toFuture().get());
+        }
+        verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(DEFAULT_ADDRESS, UNHEALTHY_HOST_EXCEPTION);
+        assertThat(host.status(false), is(Host.Status.UNHEALTHY_ACTIVE));
+
+        // now revive and we should see the event and be able to get the connection.
+        unhealthyHostConnectionFactory.advanceTime(testExecutor);
+        verify(mockHostObserver, times(1)).onHostRevived(DEFAULT_ADDRESS);
+        assertThat(host.status(false), is(Host.Status.HEALTHY_ACTIVE));
+
+        host.markExpired();
+        verify(mockHostObserver, times(1)).onHostMarkedExpired(DEFAULT_ADDRESS, 1);
+        assertThat(host.status(false), is(Host.Status.HEALTHY_EXPIRED));
+
+        host.markClosed();
+        verify(mockHostObserver, times(1)).onActiveHostRemoved(DEFAULT_ADDRESS, 1);
+        assertThat(host.status(false), is(Host.Status.CLOSED));
     }
 }
