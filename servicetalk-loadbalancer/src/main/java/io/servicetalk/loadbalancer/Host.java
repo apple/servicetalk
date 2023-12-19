@@ -69,9 +69,7 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     /**
      * Determine the health status of this host for selecting an appropriate connection.
      * @param requireNewConnection whether a new connection is required.
-     * @return the {@Host.Status} that represents the anticipated ability to handle a request. The status will
-     *         consideration whether a new connection can be established if that is required, either by the pool
-     *         size or by the parameter.
+     * @return the {@Host.Status} that represents the anticipated ability to handle a request.
      */
     Status status(boolean requireNewConnection);
 

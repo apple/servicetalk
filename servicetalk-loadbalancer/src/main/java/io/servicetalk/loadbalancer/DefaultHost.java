@@ -317,15 +317,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             case ACTIVE:
                 return Status.HEALTHY_ACTIVE;
             case UNHEALTHY:
-                return forceNewConnection || connState.connections.isEmpty() ?
+                return forceNewConnection || !connState.hasActiveConnections() ?
                         Status.UNHEALTHY_ACTIVE : Status.HEALTHY_ACTIVE;
             case EXPIRED:
-                return forceNewConnection || connState.connections.isEmpty() ?
+                return forceNewConnection || !connState.hasActiveConnections() ?
                         Status.UNHEALTHY_INACTIVE : Status.HEALTHY_INACTIVE;
             case CLOSED:
                 return Status.UNHEALTHY_INACTIVE;
             default:
-                throw new IllegalStateException("shouldn't get here");
+                throw new IllegalStateException("shouldn't get here. ConnState: " + connState);
         }
     }
 
@@ -561,6 +561,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             this.state = state;
             this.failedConnections = failedConnections;
             this.healthCheck = healthCheck;
+        }
+
+        boolean hasActiveConnections() {
+            return !connections.isEmpty();
         }
 
         ConnState toNextFailedConnection(Throwable cause) {

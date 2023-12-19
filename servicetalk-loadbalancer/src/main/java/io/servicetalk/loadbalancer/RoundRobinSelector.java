@@ -58,7 +58,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
             final Host.Status status = host.status(forceNewConnectionAndReserve);
             if (status.healthy) {
-                Single<C> result = selectFromHost(host, status, selector, forceNewConnectionAndReserve, context);
+                Single<C> result = selectFromHost(host, selector, forceNewConnectionAndReserve, context);
                 if (result != null) {
                     return result;
                 }
@@ -70,8 +70,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         if (failOpenHost != null) {
-            Single<C> result = selectFromHost(failOpenHost, failOpenHost.status(forceNewConnectionAndReserve),
-                    selector, forceNewConnectionAndReserve, context);
+            Single<C> result = selectFromHost(failOpenHost, selector, forceNewConnectionAndReserve, context);
             if (result != null) {
                 return result;
             }

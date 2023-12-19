@@ -69,10 +69,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     // TODO: this could really be the core method on `Host` other than the nullable part. We could use Optional...
-    //  The API of passing in the status is weird but we could either live with it or just ask the question again
-    //  if we need to make a new connection.
-    protected final @Nullable Single<C> selectFromHost(
-            Host<ResolvedAddress, C> host, Host.Status status, Predicate<C> selector,
+    protected final @Nullable Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
             boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
         if (!forceNewConnectionAndReserve) {
@@ -84,7 +81,8 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         // We can only create a new connection if the host is active. It's possible for it to think that
         // it's healthy based on having connections but not being active but we weren't able to pick an
         // existing connection.
-        return status.active ? host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
+        return host.status(true).active ?
+                host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
     }
 
     private Single<C> noHostsFailure() {

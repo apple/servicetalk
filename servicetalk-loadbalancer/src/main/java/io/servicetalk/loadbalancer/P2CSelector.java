@@ -73,7 +73,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 Host.Status status = host.status(forceNewConnectionAndReserve);
                 if (failOpen || status.healthy) {
                     Single<C> result = selectFromHost(
-                            host, status, selector, forceNewConnectionAndReserve, context);
+                            host, selector, forceNewConnectionAndReserve, context);
                     if (result != null) {
                         return result;
                     }
@@ -113,11 +113,11 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                     t2 = tmp;
                 }
                 Single<C> result = selectFromHost(
-                        t1, t1Status, selector, forceNewConnectionAndReserve, contextMap);
+                        t1, selector, forceNewConnectionAndReserve, contextMap);
                 // We didn't get a connection from the first host: maybe it is inactive
                 // and we couldn't reserve a connection. Try the second host.
                 if (result == null) {
-                    result = selectFromHost(t2, t2Status, selector, forceNewConnectionAndReserve, contextMap);
+                    result = selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
                 }
                 // If we have a connection we're good to go. Otherwise fall through for another round.
                 // Since we didn't get a connection from either of them there is no reason to think they'll
@@ -126,14 +126,12 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                     return result;
                 }
             } else if (t2Status.healthy) {
-                Single<C> result = selectFromHost(
-                        t2, t2Status, selector, forceNewConnectionAndReserve, contextMap);
+                Single<C> result = selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
             } else if (t1Status.healthy) {
-                Single<C> result = selectFromHost(
-                        t1, t1Status, selector, forceNewConnectionAndReserve, contextMap);
+                Single<C> result = selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
@@ -149,8 +147,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         // Max effort exhausted. We failed to find a healthy and active host. If we want to fail open and
         // found an active host but it was considered unhealthy, try it anyway.
         if (failOpenHost != null) {
-            Single<C> result = selectFromHost(failOpenHost, failOpenHost.status(forceNewConnectionAndReserve),
-                    selector, forceNewConnectionAndReserve, contextMap);
+            Single<C> result = selectFromHost(failOpenHost, selector, forceNewConnectionAndReserve, contextMap);
             if (result != null) {
                 return result;
             }
