@@ -135,10 +135,10 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                     return result;
                 }
             } else if (failOpen && failOpenHost == null) {
-                // Both are unhealthy. If
-                if (t1.canMakeNewConnections() || (!forceNewConnectionAndReserve && t1.hasActiveConnections())) {
+                // Both are unhealthy. If one of them can make new connections then it can be a backup.
+                if (t1.canMakeNewConnections()) {
                     failOpenHost = t1;
-                } else if (t2.canMakeNewConnections() || (!forceNewConnectionAndReserve && t2.hasActiveConnections())) {
+                } else if (t2.canMakeNewConnections()) {
                     failOpenHost = t2;
                 }
             }

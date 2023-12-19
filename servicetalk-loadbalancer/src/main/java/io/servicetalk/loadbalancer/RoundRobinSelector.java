@@ -64,8 +64,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
 
             // If the host is active we can use it for backup.
-            if (failOpen && failOpenHost == null && (host.canMakeNewConnections() ||
-                    !forceNewConnectionAndReserve && host.hasActiveConnections())) {
+            if (failOpen && failOpenHost == null && host.canMakeNewConnections()) {
                 failOpenHost = host;
             }
         }

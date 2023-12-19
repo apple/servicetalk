@@ -46,13 +46,8 @@ final class SelectorTestHelpers {
         when(host.address()).thenReturn(addr);
         when(host.isHealthy()).thenReturn(true);
         when(host.canMakeNewConnections()).thenReturn(true);
-        when(host.hasActiveConnections()).thenReturn(true);
         when(host.pickConnection(any(), any())).thenReturn(connection);
         when(host.newConnection(any(), anyBoolean(), any())).thenReturn(Single.succeeded(connection));
-
-        connection.onClose().beforeFinally(() -> {
-            when(host.hasActiveConnections()).thenReturn(false);
-        }).subscribe();
         return host;
     }
 }

@@ -322,11 +322,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return state != State.EXPIRED && state != State.CLOSED;
     }
 
-    @Override
-    public boolean hasActiveConnections() {
-        return connState.hasActiveConnections();
-    }
-
     private boolean addConnection(final C connection, final @Nullable HealthCheck currentHealthCheck) {
         int addAttempt = 0;
         for (;;) {

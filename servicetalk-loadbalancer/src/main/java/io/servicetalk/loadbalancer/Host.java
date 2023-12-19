@@ -59,8 +59,6 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      */
     boolean isHealthy();
 
-    boolean hasActiveConnections();
-
     /**
      * Determine whether the host is in a state where it can make new connections.
      * @return whether the host is in a state where it can make new connections.
