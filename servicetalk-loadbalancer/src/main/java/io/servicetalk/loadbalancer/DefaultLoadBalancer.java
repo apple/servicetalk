@@ -315,7 +315,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     }
                 } else if (UNAVAILABLE.equals(event.status())) {
                     host.closeAsyncGracefully()
-                            .beforeOnError(error -> LOGGER.warn("Closing host {} failed.", host.address()))
+                            .beforeOnError(error -> LOGGER.warn("Closing host {} failed.", host.address(), error))
                             .subscribe();
                     hostSetChanged = true;
                 } else {
