@@ -332,7 +332,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
             ConnState nextState = previous.addNewConnection(connection);
             // If we didn't add a connection there is no need to update the state or add lifecycle observers.
-            if (nextState.connections.size() == previous.connections.size()) {
+            if (nextState == previous) {
                 return true;
             }
             if (connStateUpdater.compareAndSet(this, previous, nextState)) {
@@ -363,7 +363,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 ++removeAttempt;
                 ConnState nextState = currentConnState.removeConnection(connection);
                 // Search for the connection in the list.
-                if (nextState.connections.size() == currentConnState.connections.size()) {
+                if (nextState == currentConnState) {
                     // Connection was already removed, nothing to do.
                     break;
                 } else if (nextState.connections.isEmpty()) {
@@ -619,6 +619,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         public String toString() {
             return "ConnState{" +
                     "state=" + state +
+                    ", failedConnections=" + failedConnections +
+                    ", healthCheck=" + healthCheck +
                     ", #connections=" + connections.size() +
                     '}';
         }
