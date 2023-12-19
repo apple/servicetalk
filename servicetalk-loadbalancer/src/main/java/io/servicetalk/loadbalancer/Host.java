@@ -34,8 +34,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     enum Status {
         HEALTHY_ACTIVE(true, true),
         UNHEALTHY_ACTIVE(false, true),
-        HEALTHY_EXPIRED(true, false),
-        CLOSED(false, false);
+        HEALTHY_INACTIVE(true, false),
+        UNHEALTHY_INACTIVE(false, false);
 
         public final boolean healthy;
         public final boolean active;

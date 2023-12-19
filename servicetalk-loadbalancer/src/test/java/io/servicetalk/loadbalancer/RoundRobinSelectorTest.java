@@ -108,7 +108,7 @@ class RoundRobinSelectorTest {
     void singleInactiveHostWithoutConnections(boolean unhealthy, boolean failOpen) {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
         when(hosts.get(0).status(anyBoolean())).thenReturn(
-                unhealthy ? Host.Status.CLOSED : Host.Status.HEALTHY_EXPIRED);
+                unhealthy ? Host.Status.UNHEALTHY_INACTIVE : Host.Status.HEALTHY_INACTIVE);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
         this.failOpen = failOpen;
         init(hosts);

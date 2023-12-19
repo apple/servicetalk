@@ -321,9 +321,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                         Status.UNHEALTHY_ACTIVE : Status.HEALTHY_ACTIVE;
             case EXPIRED:
                 return forceNewConnection || connState.connections.isEmpty() ?
-                        Status.CLOSED : Status.HEALTHY_EXPIRED;
+                        Status.UNHEALTHY_INACTIVE : Status.HEALTHY_INACTIVE;
             case CLOSED:
-                return Status.CLOSED;
+                return Status.UNHEALTHY_INACTIVE;
             default:
                 throw new IllegalStateException("shouldn't get here");
         }

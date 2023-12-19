@@ -195,10 +195,10 @@ class DefaultHostTest {
 
         host.markExpired();
         verify(mockHostObserver, times(1)).onHostMarkedExpired(DEFAULT_ADDRESS, 1);
-        assertThat(host.status(false), is(Host.Status.HEALTHY_EXPIRED));
+        assertThat(host.status(false), is(Host.Status.HEALTHY_INACTIVE));
 
         host.closeAsync().toFuture().get();
         verify(mockHostObserver, times(1)).onExpiredHostRemoved(DEFAULT_ADDRESS, 1);
-        assertThat(host.status(false), is(Host.Status.CLOSED));
+        assertThat(host.status(false), is(Host.Status.UNHEALTHY_INACTIVE));
     }
 }
