@@ -61,12 +61,12 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
     HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts);
 
     /**
-     * Whether the load balancer believes itself to healthy enough for serving traffic.
+     * Whether the load balancer believes itself to be healthy enough for serving traffic.
      * <p>
      * Note that this is both racy and best effort: just because a {@link HostSelector} is
      * healthy doesn't guarantee that a request will succeed nor does an unhealthy status
      * indicate that this selector is guaranteed to fail a request.
-     * @return whether the load balancer believes itself unhealthy enough and unlikely to successfully serve traffic.
+     * @return whether the load balancer believes itself healthy enough and likely to successfully serve traffic.
      */
     boolean isHealthy();
 
