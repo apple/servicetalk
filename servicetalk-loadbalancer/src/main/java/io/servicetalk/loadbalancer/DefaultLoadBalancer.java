@@ -314,7 +314,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         hostSetChanged = true;
                     }
                 } else if (UNAVAILABLE.equals(event.status())) {
-                    host.markClosed();
+                    host.closeAsyncGracefully()
+                            .beforeOnError(error -> LOGGER.warn("Closing host {} failed.", host.address(), error))
+                            .subscribe();
                     hostSetChanged = true;
                 } else {
                     LOGGER.warn("{}: Unsupported Status in event:" +
@@ -385,10 +387,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                             return;
                         }
                         final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
-                                currentHosts, current -> current == host);
+                                currentHosts, host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
-                            loadBalancerObserver.hostObserver().onExpiredHostRemoved(host.address());
                             sequentialUpdateUsedHosts(nextHosts);
                             if (nextHosts.isEmpty()) {
                                 // We transitioned from non-empty to empty. That means we're not ready.
@@ -399,25 +400,22 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             return host;
         }
 
-        private List<Host<ResolvedAddress, C>> listWithHostRemoved(
-                List<Host<ResolvedAddress, C>> oldHostsTyped, Predicate<Host<ResolvedAddress, C>> hostPredicate) {
-            if (oldHostsTyped.isEmpty()) {
-                // this can happen when an expired host is removed during closing of the DefaultLoadBalancer,
-                // but all of its connections have already been closed
+        private List<Host<ResolvedAddress, C>> listWithHostRemoved(List<Host<ResolvedAddress, C>> oldHostsTyped,
+                                                                   Host<ResolvedAddress, C> toRemove) {
+            final int index = oldHostsTyped.indexOf(toRemove);
+            if (index < 0) {
+                // Element doesn't exist: just return the old list.
                 return oldHostsTyped;
             }
-            // We keep the old size as the capacity hint because the penalty for a resize in the case that the
-            // element isn't in the list is much worse than the penalty for an unused array slot.
-            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size());
+            if (oldHostsTyped.size() == 1) {
+                // We're removing the last host in the list so we can just return the empty list.
+                return emptyList();
+            }
+            // Copy the remaining live elements to a new list.
+            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
             for (int i = 0; i < oldHostsTyped.size(); ++i) {
-                final Host<ResolvedAddress, C> current = oldHostsTyped.get(i);
-                if (hostPredicate.test(current)) {
-                    for (int x = i + 1; x < oldHostsTyped.size(); ++x) {
-                        newHosts.add(oldHostsTyped.get(x));
-                    }
-                    return newHosts.isEmpty() ? emptyList() : newHosts;
-                } else {
-                    newHosts.add(current);
+                if (i != index) {
+                    newHosts.add(oldHostsTyped.get(i));
                 }
             }
             return newHosts;

@@ -28,10 +28,10 @@ jobs:
       - name: Print JDK Version
         run: java -version
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
       - name: Execute gradle build
         run: ./gradlew --parallel clean assemble
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3

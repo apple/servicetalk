@@ -63,7 +63,7 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
         }
 
         @Override
-        public void onExpiredHostRemoved(ResolvedAddress resolvedAddress) {
+        public void onExpiredHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
             // noop
         }
 
