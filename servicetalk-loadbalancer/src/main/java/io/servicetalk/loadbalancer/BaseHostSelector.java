@@ -68,7 +68,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 this.getClass(), "selectConnection(...)"));
     }
 
-    // TODO: this could really be the core method on `Host` other than the nullable part. We could use Optional...
+    // This method assumes the host is considered healthy.
     protected final @Nullable Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
             boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
@@ -81,7 +81,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         // We can only create a new connection if the host is active. It's possible for it to think that
         // it's healthy based on having connections but not being active but we weren't able to pick an
         // existing connection.
-        return host.status(true).active ?
+        return host.canMakeNewConnections() ?
                 host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
     }
 
@@ -94,7 +94,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     private static <ResolvedAddress, C extends LoadBalancedConnection> boolean anyHealthy(
             final List<Host<ResolvedAddress, C>> usedHosts) {
         for (Host<ResolvedAddress, C> host : usedHosts) {
-            if (host.status(false).healthy) {
+            if (host.isHealthy()) {
                 return true;
             }
         }

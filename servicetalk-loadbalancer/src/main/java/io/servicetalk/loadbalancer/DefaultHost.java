@@ -311,22 +311,20 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
-    public Status status(boolean forceNewConnection) {
-        ConnState connState = this.connState;
-        switch (connState.state) {
-            case ACTIVE:
-                return Status.HEALTHY_ACTIVE;
-            case UNHEALTHY:
-                return forceNewConnection || !connState.hasActiveConnections() ?
-                        Status.UNHEALTHY_ACTIVE : Status.HEALTHY_ACTIVE;
-            case EXPIRED:
-                return forceNewConnection || !connState.hasActiveConnections() ?
-                        Status.UNHEALTHY_INACTIVE : Status.HEALTHY_INACTIVE;
-            case CLOSED:
-                return Status.UNHEALTHY_INACTIVE;
-            default:
-                throw new IllegalStateException("shouldn't get here. ConnState: " + connState);
-        }
+    public boolean isHealthy() {
+        final State state = connState.state;
+        return state != State.UNHEALTHY && state != State.CLOSED;
+    }
+
+    @Override
+    public boolean canMakeNewConnections() {
+        final State state = connState.state;
+        return state != State.EXPIRED && state != State.CLOSED;
+    }
+
+    @Override
+    public boolean hasActiveConnections() {
+        return connState.hasActiveConnections();
     }
 
     private boolean addConnection(final C connection, final @Nullable HealthCheck currentHealthCheck) {

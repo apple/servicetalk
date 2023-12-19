@@ -70,8 +70,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 Host<ResolvedAddress, C> host = hosts.get(0);
                 // If we're going to fail open we just yo-lo it, otherwise check if it's considered
                 // healthy.
-                Host.Status status = host.status(forceNewConnectionAndReserve);
-                if (failOpen || status.healthy) {
+                if (failOpen || host.isHealthy()) {
                     Single<C> result = selectFromHost(
                             host, selector, forceNewConnectionAndReserve, context);
                     if (result != null) {
@@ -101,11 +100,11 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
             Host<ResolvedAddress, C> t1 = hosts.get(i1);
             Host<ResolvedAddress, C> t2 = hosts.get(i2);
-            final Host.Status t1Status = t1.status(forceNewConnectionAndReserve);
-            final Host.Status t2Status = t2.status(forceNewConnectionAndReserve);
+            final boolean t1Healthy = t1.isHealthy();
+            final boolean t2Healthy = t2.isHealthy();
             // Priority of selection: health > score > failOpen
             // Only if both hosts are healthy do we consider score.
-            if (t1Status.healthy && t2Status.healthy) {
+            if (t1Healthy && t2Healthy) {
                 // both are healthy. Select based on score, using t1 if equal.
                 if (t1.score() < t2.score()) {
                     Host<ResolvedAddress, C> tmp = t1;
@@ -125,21 +124,21 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                 if (result != null) {
                     return result;
                 }
-            } else if (t2Status.healthy) {
+            } else if (t2Healthy) {
                 Single<C> result = selectFromHost(t2, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
-            } else if (t1Status.healthy) {
+            } else if (t1Healthy) {
                 Single<C> result = selectFromHost(t1, selector, forceNewConnectionAndReserve, contextMap);
                 if (result != null) {
                     return result;
                 }
             } else if (failOpen && failOpenHost == null) {
-                // both are  unhealthy. If either are active they can be the backup.
-                if (t1Status.active) {
+                // Both are unhealthy. If
+                if (t1.canMakeNewConnections() || (!forceNewConnectionAndReserve && t1.hasActiveConnections())) {
                     failOpenHost = t1;
-                } else if (t2Status.active) {
+                } else if (t2.canMakeNewConnections() || (!forceNewConnectionAndReserve && t2.hasActiveConnections())) {
                     failOpenHost = t2;
                 }
             }

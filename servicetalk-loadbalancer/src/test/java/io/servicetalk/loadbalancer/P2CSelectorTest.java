@@ -70,7 +70,7 @@ class P2CSelectorTest {
     @ValueSource(booleans = {false, true})
     void singleUnhealthyHost(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
         if (failOpen) {
@@ -88,7 +88,8 @@ class P2CSelectorTest {
     @ValueSource(booleans = {false, true})
     void singleInactiveAndUnhealthyHostWithConnection(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_INACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
         if (failOpen) {
@@ -106,7 +107,8 @@ class P2CSelectorTest {
     @ValueSource(booleans = {false, true})
     void singleInactiveAndUnhealthyHostWithoutConnection(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_INACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
         this.failOpen = failOpen;
         init(hosts);
@@ -130,7 +132,7 @@ class P2CSelectorTest {
     void twoHealthyInactiveHostsWithConnections(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.status(anyBoolean())).thenReturn(Host.Status.HEALTHY_INACTIVE);
+            when(host.canMakeNewConnections()).thenReturn(false);
         }
         this.failOpen = failOpen;
         init(hosts);
@@ -144,7 +146,7 @@ class P2CSelectorTest {
     void twoHealthyInactiveHostsWithoutConnections(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.status(anyBoolean())).thenReturn(Host.Status.HEALTHY_INACTIVE);
+            when(host.canMakeNewConnections()).thenReturn(false);
             when(host.pickConnection(PREDICATE, null)).thenReturn(null);
         }
         this.failOpen = failOpen;
@@ -159,7 +161,9 @@ class P2CSelectorTest {
     void twoUnHealthyActiveHostsWithConnections(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+            when(host.isHealthy()).thenReturn(false);
+            when(host.canMakeNewConnections()).thenReturn(false);
+            when(host.canMakeNewConnections()).thenReturn(false);
         }
         this.failOpen = failOpen;
         init(hosts);
@@ -179,7 +183,7 @@ class P2CSelectorTest {
     void twoUnHealthyActiveHostsWithoutConnections(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+            when(host.isHealthy()).thenReturn(false);
             when(host.pickConnection(PREDICATE, null)).thenReturn(null);
         }
         this.failOpen = failOpen;
@@ -197,10 +201,33 @@ class P2CSelectorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
     @ValueSource(booleans = {false, true})
-    void twoUnHealthyInactiveHosts(boolean failOpen) throws Exception {
+    void twoUnHealthyInactiveHostsWithConnections(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
-            when(host.status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_INACTIVE);
+            when(host.isHealthy()).thenReturn(false);
+            when(host.canMakeNewConnections()).thenReturn(false);
+        }
+        this.failOpen = failOpen;
+        init(hosts);
+        if (failOpen) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, false).toFuture().get();
+            assertThat(connection.address(), either(equalTo("addr-1")).or(equalTo("addr-2")));
+        } else {
+            Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
+                    PREDICATE, null, false).toFuture().get());
+            assertThat(e.getCause(), isA(NoActiveHostException.class));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
+    @ValueSource(booleans = {false, true})
+    void twoUnHealthyInactiveHostsWithoutConections(boolean failOpen) {
+        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        for (Host<String, TestLoadBalancedConnection> host : hosts) {
+            when(host.isHealthy()).thenReturn(false);
+            when(host.canMakeNewConnections()).thenReturn(false);
+            when(host.hasActiveConnections()).thenReturn(false);
         }
         this.failOpen = failOpen;
         init(hosts);
@@ -229,7 +256,7 @@ class P2CSelectorTest {
         // we setup the first host to always be preferred by score, but it also doesn't have any connections
         // and is unhealthy.
         when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
         when(hosts.get(0).score()).thenReturn(10);
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
@@ -242,7 +269,7 @@ class P2CSelectorTest {
     @Test
     void biasesTowardsHealthyHostWhenMakingConnections() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
                 PREDICATE, null, false).toFuture().get();
@@ -265,8 +292,8 @@ class P2CSelectorTest {
     @ValueSource(booleans = {false, true})
     void singleInactiveHostFailOpen(boolean unhealthy) {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean()))
-                .thenReturn(unhealthy ? Host.Status.UNHEALTHY_INACTIVE : Host.Status.HEALTHY_INACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(unhealthy);
+        when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
         failOpen = true;
         init(hosts);

@@ -34,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 class RoundRobinSelectorTest {
@@ -70,7 +69,7 @@ class RoundRobinSelectorTest {
     @Test
     void skipUnhealthyHosts() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -85,7 +84,7 @@ class RoundRobinSelectorTest {
     @ValueSource(booleans = {false, true})
     void noHealthyHosts(boolean failOpen) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(Host.Status.UNHEALTHY_ACTIVE);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
         if (failOpen) {
@@ -107,8 +106,7 @@ class RoundRobinSelectorTest {
     @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void singleInactiveHostWithoutConnections(boolean unhealthy, boolean failOpen) {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
-        when(hosts.get(0).status(anyBoolean())).thenReturn(
-                unhealthy ? Host.Status.UNHEALTHY_INACTIVE : Host.Status.HEALTHY_INACTIVE);
+        when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
         this.failOpen = failOpen;
         init(hosts);

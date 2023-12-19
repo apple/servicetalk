@@ -44,9 +44,15 @@ final class SelectorTestHelpers {
     private static Host mockHost(String addr, TestLoadBalancedConnection connection) {
         Host<String, TestLoadBalancedConnection> host = mock(Host.class);
         when(host.address()).thenReturn(addr);
-        when(host.status(anyBoolean())).thenReturn(Host.Status.HEALTHY_ACTIVE);
+        when(host.isHealthy()).thenReturn(true);
+        when(host.canMakeNewConnections()).thenReturn(true);
+        when(host.hasActiveConnections()).thenReturn(true);
         when(host.pickConnection(any(), any())).thenReturn(connection);
         when(host.newConnection(any(), anyBoolean(), any())).thenReturn(Single.succeeded(connection));
+
+        connection.onClose().beforeFinally(() -> {
+            when(host.hasActiveConnections()).thenReturn(false);
+        }).subscribe();
         return host;
     }
 }

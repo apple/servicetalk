@@ -31,20 +31,6 @@ import javax.annotation.Nullable;
  */
 interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {
 
-    enum Status {
-        HEALTHY_ACTIVE(true, true),
-        UNHEALTHY_ACTIVE(false, true),
-        HEALTHY_INACTIVE(true, false),
-        UNHEALTHY_INACTIVE(false, false);
-
-        public final boolean healthy;
-        public final boolean active;
-        Status(final boolean healthy, final boolean active) {
-            this.healthy = healthy;
-            this.active = active;
-        }
-    }
-
     /**
      * Select an existing connection from the host.
      * @return the selected host, or null if a suitable host couldn't be found.
@@ -67,11 +53,19 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     ResolvedAddress address();
 
     /**
-     * Determine the health status of this host for selecting an appropriate connection.
-     * @param requireNewConnection whether a new connection is required.
-     * @return the {@Host.Status} that represents the anticipated ability to handle a request.
+     * Determine the health status of this host.
+     * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
+     *         guarantee that the request will succeed.
      */
-    Status status(boolean requireNewConnection);
+    boolean isHealthy();
+
+    boolean hasActiveConnections();
+
+    /**
+     * Determine whether the host is in a state where it can make new connections.
+     * @return whether the host is in a state where it can make new connections.
+     */
+    boolean canMakeNewConnections();
 
     /**
      * Signal to the host that it has been re-discovered by the service-discovery mechanism and is expected
