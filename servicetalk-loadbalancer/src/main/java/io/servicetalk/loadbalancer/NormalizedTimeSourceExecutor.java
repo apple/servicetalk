@@ -27,15 +27,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 final class NormalizedTimeSourceExecutor extends DelegatingExecutor {
 
-    private final long offset;
+    private final long offsetNanos;
 
     NormalizedTimeSourceExecutor(final Executor delegate) {
         super(delegate);
-        offset = delegate.currentTime(NANOSECONDS);
+        offsetNanos = delegate.currentTime(NANOSECONDS);
     }
 
     @Override
     public long currentTime(final TimeUnit unit) {
-        return delegate().currentTime(unit) - offset;
+        final long elapsedNanos = delegate().currentTime(NANOSECONDS) - offsetNanos;
+        return unit.convert(elapsedNanos, NANOSECONDS);
     }
 }

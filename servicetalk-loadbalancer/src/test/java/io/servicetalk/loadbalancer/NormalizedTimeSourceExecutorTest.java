@@ -24,7 +24,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Long.MIN_VALUE;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -59,5 +62,16 @@ class NormalizedTimeSourceExecutorTest {
         advanceAndVerify(MAX_VALUE - 10, MAX_VALUE);
         advanceAndVerify(10, MAX_VALUE + 10);
         advanceAndVerify(MAX_VALUE - 8, 0);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: initialValue={0}")
+    @ValueSource(longs = {MIN_VALUE, -100, 0, 100, MAX_VALUE})
+    void otherUnits(long initialValue) {
+        setUp(initialValue);
+        testExecutor.advanceTimeByNoExecuteTasks(1, SECONDS);
+        assertThat(executor.currentTime(SECONDS), is(1L));
+        assertThat(executor.currentTime(MILLISECONDS), is(1_000L));
+        assertThat(executor.currentTime(MICROSECONDS), is(1_000_000L));
+        assertThat(executor.currentTime(NANOSECONDS), is(1_000_000_000L));
     }
 }
