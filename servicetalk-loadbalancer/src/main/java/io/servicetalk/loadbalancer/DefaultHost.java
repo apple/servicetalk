@@ -556,10 +556,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             this.healthCheck = healthCheck;
         }
 
-        boolean hasActiveConnections() {
-            return !connections.isEmpty();
-        }
-
         ConnState toNextFailedConnection(Throwable cause) {
             final int nextFailedCount = addWithOverflowProtection(this.failedConnections, 1);
             if (state == State.ACTIVE && healthCheckConfig.failedThreshold <= nextFailedCount) {
