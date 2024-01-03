@@ -25,23 +25,24 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
-
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
     private final AtomicInteger index;
     private final List<Host<ResolvedAddress, C>> usedHosts;
+    private final boolean failOpen;
 
-    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource) {
-        this(new AtomicInteger(), usedHosts, targetResource);
+    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource,
+                       final boolean failOpen) {
+        this(new AtomicInteger(), usedHosts, targetResource, failOpen);
     }
 
     private RoundRobinSelector(final AtomicInteger index, final List<Host<ResolvedAddress, C>> usedHosts,
-                               final String targetResource) {
+                               final String targetResource, final boolean failOpen) {
         super(usedHosts, targetResource);
         this.index = index;
         this.usedHosts = usedHosts;
+        this.failOpen = failOpen;
     }
 
     @Override
@@ -50,37 +51,35 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             final boolean forceNewConnectionAndReserve) {
         // try one loop over hosts and if all are expired, give up
         final int cursor = (index.getAndIncrement() & Integer.MAX_VALUE) % usedHosts.size();
-        Host<ResolvedAddress, C> pickedHost = null;
+        Host<ResolvedAddress, C> failOpenHost = null;
         for (int i = 0; i < usedHosts.size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
             final int localCursor = (cursor + i) % usedHosts.size();
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
-            assert host != null : "Host can't be null.";
-
-            if (!forceNewConnectionAndReserve) {
-                // First see if an existing connection can be used
-                C connection = host.pickConnection(selector, context);
-                if (connection != null) {
-                    return succeeded(connection);
+            if (host.isHealthy()) {
+                Single<C> result = selectFromHost(host, selector, forceNewConnectionAndReserve, context);
+                if (result != null) {
+                    return result;
                 }
             }
 
-            // Don't open new connections for expired or unhealthy hosts, try a different one.
-            // Unhealthy hosts have no open connections – that's why we don't fail earlier, the loop will not progress.
-            if (host.isActiveAndHealthy()) {
-                pickedHost = host;
-                break;
+            // If the host is active we can use it for backup.
+            if (failOpen && failOpenHost == null && host.canMakeNewConnections()) {
+                failOpenHost = host;
             }
         }
-        if (pickedHost == null) {
-            return noActiveHostsFailure(usedHosts);
+        if (failOpenHost != null) {
+            Single<C> result = selectFromHost(failOpenHost, selector, forceNewConnectionAndReserve, context);
+            if (result != null) {
+                return result;
+            }
         }
-        // We have a host but no connection was selected: create a new one.
-        return pickedHost.newConnection(selector, forceNewConnectionAndReserve, context);
+        // We were unable to find a suitable host.
+        return noActiveHostsFailure(usedHosts);
     }
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
-        return new RoundRobinSelector<>(index, hosts, getTargetResource());
+        return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen);
     }
 }

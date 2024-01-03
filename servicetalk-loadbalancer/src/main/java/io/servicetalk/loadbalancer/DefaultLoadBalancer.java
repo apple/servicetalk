@@ -390,7 +390,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                                 currentHosts, host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
-                            loadBalancerObserver.hostObserver().onExpiredHostRemoved(host.address());
                             sequentialUpdateUsedHosts(nextHosts);
                             if (nextHosts.isEmpty()) {
                                 // We transitioned from non-empty to empty. That means we're not ready.
@@ -472,7 +471,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
             if (exn instanceof NoActiveHostException) {
-                if (currentHostSelector.isUnHealthy()) {
+                if (!currentHostSelector.isHealthy()) {
                     final long currNextResubscribeTime = nextResubscribeTime;
                     if (currNextResubscribeTime >= 0 &&
                             healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&
@@ -561,7 +560,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public boolean isUnHealthy() {
+        public boolean isHealthy() {
             return false;
         }
 

@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.Objects.requireNonNull;
 
 abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnection>
@@ -51,10 +52,10 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     @Override
-    public final boolean isUnHealthy() {
+    public final boolean isHealthy() {
         // TODO: in the future we may want to make this more of a "are at least X hosts available" question
         //  so that we can compose a group of selectors into a priority set.
-        return allUnhealthy(hosts);
+        return anyHealthy(hosts);
     }
 
     protected final String getTargetResource() {
@@ -67,21 +68,36 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 this.getClass(), "selectConnection(...)"));
     }
 
+    // This method assumes the host is considered healthy.
+    protected final @Nullable Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
+            boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+        // First see if we can get an existing connection regardless of health status.
+        if (!forceNewConnectionAndReserve) {
+            C c = host.pickConnection(selector, contextMap);
+            if (c != null) {
+                return succeeded(c);
+            }
+        }
+        // We can only create a new connection if the host is active. It's possible for it to think that
+        // it's healthy based on having connections but not being active but we weren't able to pick an
+        // existing connection.
+        return host.canMakeNewConnections() ?
+                host.newConnection(selector, forceNewConnectionAndReserve, contextMap) : null;
+    }
+
     private Single<C> noHostsFailure() {
         return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                 "No hosts are available to connect for " + targetResource + ".",
                 this.getClass(), "selectConnection(...)"));
     }
 
-    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
+    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean anyHealthy(
             final List<Host<ResolvedAddress, C>> usedHosts) {
-        boolean allUnhealthy = !usedHosts.isEmpty();
         for (Host<ResolvedAddress, C> host : usedHosts) {
-            if (!host.isUnhealthy()) {
-                allUnhealthy = false;
-                break;
+            if (host.isHealthy()) {
+                return true;
             }
         }
-        return allUnhealthy;
+        return usedHosts.isEmpty();
     }
 }

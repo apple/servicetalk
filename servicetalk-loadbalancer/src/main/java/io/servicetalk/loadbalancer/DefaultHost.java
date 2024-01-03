@@ -68,7 +68,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
      */
     private static final float RANDOM_SEARCH_FACTOR = 0.75f;
 
-    private static final Object[] EMPTY_ARRAY = new Object[0];
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHost.class);
 
     private enum State {
@@ -312,13 +311,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
-    public boolean isActiveAndHealthy() {
-        return connState.isActive();
+    public boolean isHealthy() {
+        final State state = connState.state;
+        return state != State.UNHEALTHY && state != State.CLOSED;
     }
 
     @Override
-    public boolean isUnhealthy() {
-        return connState.isUnhealthy();
+    public boolean canMakeNewConnections() {
+        final State state = connState.state;
+        return state != State.EXPIRED && state != State.CLOSED;
     }
 
     private boolean addConnection(final C connection, final @Nullable HealthCheck currentHealthCheck) {
@@ -380,8 +381,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // remove the connection (previously considered as the last one) from the array
                             // in the next iteration.
                             && connStateUpdater.compareAndSet(this, currentConnState, nextState.toClosed())) {
-                        this.closeAsync().subscribe();
-                        hostObserver.onExpiredHostRemoved(address);
+                        closeAsync().subscribe();
+                        hostObserver.onExpiredHostRemoved(address, nextState.connections.size());
                         break;
                     }
                 } else {
@@ -435,6 +436,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                     lbDescription, oldState.connections.size(), graceful ? "" : "un", address);
             if (oldState.state == State.ACTIVE) {
                 hostObserver.onActiveHostRemoved(address, oldState.connections.size());
+            } else if (oldState.state == State.EXPIRED) {
+                hostObserver.onExpiredHostRemoved(address, oldState.connections.size());
             }
             final List<C> connections = oldState.connections;
             return (connections.isEmpty() ? completed() :

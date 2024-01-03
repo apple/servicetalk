@@ -53,17 +53,17 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     ResolvedAddress address();
 
     /**
-     * Whether the host is both considered active by service discovery and healthy by the failure
-     * detection mechanisms.
-     * @return whether the host is both active and healthy
+     * Determine the health status of this host.
+     * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
+     *         guarantee that the request will succeed.
      */
-    boolean isActiveAndHealthy();
+    boolean isHealthy();
 
     /**
-     * Whether the host is considered unhealthy bo the failure detection mechanisms.
-     * @return whether the host is considered unhealthy.
+     * Determine whether the host is in a state where it can make new connections.
+     * @return whether the host is in a state where it can make new connections.
      */
-    boolean isUnhealthy();
+    boolean canMakeNewConnections();
 
     /**
      * Signal to the host that it has been re-discovered by the service-discovery mechanism and is expected

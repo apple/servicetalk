@@ -39,17 +39,19 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
         implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
+    private final boolean failOpen;
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final int maxEffort, @Nullable final Random random) {
+    private P2CLoadBalancingPolicy(final int maxEffort, final boolean failOpen, @Nullable final Random random) {
         this.maxEffort = maxEffort;
+        this.failOpen = failOpen;
         this.random = random;
     }
 
     @Override
     public HostSelector<ResolvedAddress, C> buildSelector(List<Host<ResolvedAddress, C>> hosts, String targetResource) {
-        return new P2CSelector<>(hosts, targetResource, maxEffort, random);
+        return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
 
     @Override
@@ -70,6 +72,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
         private static final int DEFAULT_MAX_EFFORT = 5;
 
         private int maxEffort = DEFAULT_MAX_EFFORT;
+        private boolean failOpen;
         @Nullable
         private Random random;
 
@@ -87,6 +90,16 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
             return this;
         }
 
+        /**
+         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @return this {@link Builder}.
+         */
+        public Builder failOpen(final boolean failOpen) {
+            this.failOpen = failOpen;
+            return this;
+        }
+
         // For testing purposes only.
         Builder random(Random random) {
             this.random = random;
@@ -100,7 +113,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
-            return new P2CLoadBalancingPolicy<>(maxEffort, random);
+            return new P2CLoadBalancingPolicy<>(maxEffort, failOpen, random);
         }
     }
 }

@@ -29,15 +29,16 @@ import java.util.List;
 final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancingPolicy<ResolvedAddress, C> {
 
-    private static final RoundRobinLoadBalancingPolicy<?, ?> DEFAULT_POLICY = new RoundRobinLoadBalancingPolicy<>();
+    private final boolean failOpen;
 
-    private RoundRobinLoadBalancingPolicy() {
+    private RoundRobinLoadBalancingPolicy(final boolean failOpen) {
+        this.failOpen = failOpen;
     }
 
     @Override
     public HostSelector<ResolvedAddress, C>
     buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
-        return new RoundRobinSelector<>(hosts, targetResource);
+        return new RoundRobinSelector<>(hosts, targetResource, failOpen);
     }
 
     @Override
@@ -50,6 +51,18 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
      */
     public static final class Builder {
 
+        private boolean failOpen;
+
+        /**
+         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @return this {@link P2CLoadBalancingPolicy.Builder}.
+         */
+        public RoundRobinLoadBalancingPolicy.Builder failOpen(final boolean failOpen) {
+            this.failOpen = failOpen;
+            return this;
+        }
+
         /**
          * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
@@ -58,8 +71,7 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
         build() {
-            // Right now there aren't any configurations for round-robin.
-            return (RoundRobinLoadBalancingPolicy<ResolvedAddress, C>) DEFAULT_POLICY;
+            return new RoundRobinLoadBalancingPolicy<>(failOpen);
         }
     }
 }
