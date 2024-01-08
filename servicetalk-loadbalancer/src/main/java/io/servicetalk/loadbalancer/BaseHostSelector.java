@@ -31,8 +31,8 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         implements HostSelector<ResolvedAddress, C> {
 
     private final String targetResource;
-    private final List<Host<ResolvedAddress, C>> hosts;
-    BaseHostSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+    private final List<? extends Host<ResolvedAddress, C>> hosts;
+    BaseHostSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource) {
         this.hosts = hosts;
         this.targetResource = requireNonNull(targetResource, "targetResource");
     }
@@ -62,7 +62,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return targetResource;
     }
 
-    protected final Single<C> noActiveHostsFailure(List<Host<ResolvedAddress, C>> usedHosts) {
+    protected final Single<C> noActiveHostsFailure(List<? extends Host<ResolvedAddress, C>> usedHosts) {
         return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
                         getTargetResource() + ". Either all are busy, expired, or unhealthy: " + usedHosts,
                 this.getClass(), "selectConnection(...)"));
@@ -92,7 +92,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection> boolean anyHealthy(
-            final List<Host<ResolvedAddress, C>> usedHosts) {
+            final List<? extends Host<ResolvedAddress, C>> usedHosts) {
         for (Host<ResolvedAddress, C> host : usedHosts) {
             if (host.isHealthy()) {
                 return true;

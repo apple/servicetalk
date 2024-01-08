@@ -127,9 +127,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         private class TestSelector implements HostSelector<String, TestLoadBalancedConnection> {
 
-            private final List<Host<String, TestLoadBalancedConnection>> hosts;
+            private final List<? extends Host<String, TestLoadBalancedConnection>> hosts;
 
-            TestSelector(final List<Host<String, TestLoadBalancedConnection>> hosts) {
+            TestSelector(final List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
                 this.hosts = hosts;
             }
 
@@ -143,7 +143,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
             @Override
             public HostSelector<String, TestLoadBalancedConnection> rebuildWithHosts(
-                    List<Host<String, TestLoadBalancedConnection>> hosts) {
+                    List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
                 rebuilds++;
                 return new TestSelector(hosts);
             }

@@ -29,15 +29,15 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         extends BaseHostSelector<ResolvedAddress, C> {
 
     private final AtomicInteger index;
-    private final List<Host<ResolvedAddress, C>> usedHosts;
+    private final List<? extends Host<ResolvedAddress, C>> usedHosts;
     private final boolean failOpen;
 
-    RoundRobinSelector(final List<Host<ResolvedAddress, C>> usedHosts, final String targetResource,
+    RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> usedHosts, final String targetResource,
                        final boolean failOpen) {
         this(new AtomicInteger(), usedHosts, targetResource, failOpen);
     }
 
-    private RoundRobinSelector(final AtomicInteger index, final List<Host<ResolvedAddress, C>> usedHosts,
+    private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> usedHosts,
                                final String targetResource, final boolean failOpen) {
         super(usedHosts, targetResource);
         this.index = index;
@@ -79,7 +79,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<Host<ResolvedAddress, C>> hosts) {
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<? extends Host<ResolvedAddress, C>> hosts) {
         return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen);
     }
 }
