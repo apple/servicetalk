@@ -97,7 +97,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
         if (currentEWMA == 0) {
             // If EWMA has decayed to 0 (or isn't yet initialized) and there are no pending requests we return the
             // maximum score to increase the likelihood this entity is selected. If there are pending requests we
-            // don't yet know what the latency characteristics so we return the minimum score to decrease the
+            // don't yet know the latency characteristics so we return the minimum score to decrease the
             // likelihood this entity is selected.
             return cPending == 0 ? 0 : MIN_VALUE;
         }
