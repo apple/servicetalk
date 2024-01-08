@@ -36,13 +36,13 @@ import javax.annotation.Nullable;
 final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
-    private final List<Host<ResolvedAddress, C>> hosts;
+    private final List<? extends Host<ResolvedAddress, C>> hosts;
     @Nullable
     private final Random random;
     private final int maxEffort;
     private final boolean failOpen;
 
-    P2CSelector(List<Host<ResolvedAddress, C>> hosts, final String targetResource, final int maxEffort,
+    P2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource, final int maxEffort,
                 final boolean failOpen, @Nullable final Random random) {
         super(hosts, targetResource);
         this.hosts = hosts;
@@ -52,7 +52,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts) {
+    public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts) {
         return new P2CSelector<>(hosts, getTargetResource(), maxEffort, failOpen, random);
     }
 
@@ -83,7 +83,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         }
     }
 
-    private Single<C> p2c(int size, List<Host<ResolvedAddress, C>> hosts, Random random, Predicate<C> selector,
+    private Single<C> p2c(int size, List<? extends Host<ResolvedAddress, C>> hosts, Random random, Predicate<C> selector,
                           boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // If there are only two hosts we only try once since there is no chance we'll select different hosts
         // on further iterations.

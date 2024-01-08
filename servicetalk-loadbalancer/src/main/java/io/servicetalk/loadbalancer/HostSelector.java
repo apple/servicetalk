@@ -58,7 +58,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * @param hosts the new list of {@link Host}s the returned selector should choose from.
      * @return the next selector that should be used for host selection.
      */
-    HostSelector<ResolvedAddress, C> rebuildWithHosts(List<Host<ResolvedAddress, C>> hosts);
+    HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts);
 
     /**
      * Whether the load balancer believes itself to be healthy enough for serving traffic.
