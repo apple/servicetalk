@@ -57,7 +57,8 @@ interface LatencyTracker extends ScoreSupplier {
      * Create a latency tracker.
      *
      * @param measurementHalfLife The half-life decay hint period for the tracker.
-     * This is used to help decay bad scoring over time.
+     * This sets the half-life for which past results will be "forgotten" so that newer
+     * data has exponentially more weight than historical data.
      * @param currentTimeSupplier A wall-time supplier.
      */
     static LatencyTracker newTracker(final Duration measurementHalfLife, final LongSupplier currentTimeSupplier) {
