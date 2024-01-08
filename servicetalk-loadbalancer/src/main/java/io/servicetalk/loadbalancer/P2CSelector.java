@@ -83,8 +83,9 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         }
     }
 
-    private Single<C> p2c(int size, List<? extends Host<ResolvedAddress, C>> hosts, Random random, Predicate<C> selector,
-                          boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
+    private Single<C> p2c(int size, List<? extends Host<ResolvedAddress, C>> hosts, Random random,
+                          Predicate<C> selector, boolean forceNewConnectionAndReserve,
+                          @Nullable ContextMap contextMap) {
         // If there are only two hosts we only try once since there is no chance we'll select different hosts
         // on further iterations.
         Host<ResolvedAddress, C> failOpenHost = null;
