@@ -23,9 +23,7 @@ import java.util.function.LongSupplier;
 import java.util.function.LongUnaryOperator;
 
 import static io.servicetalk.loadbalancer.LatencyTracker.newTracker;
-import static java.lang.Integer.MIN_VALUE;
 import static java.lang.System.nanoTime;
-import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
