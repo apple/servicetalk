@@ -41,11 +41,15 @@ final class DefaultLatencyTracker implements LatencyTracker {
     private static final AtomicIntegerFieldUpdater<DefaultLatencyTracker> pendingUpdater =
             newUpdater(DefaultLatencyTracker.class, "pending");
     private static final long MAX_MS_TO_NS = NANOSECONDS.convert(MAX_VALUE, MILLISECONDS);
+    private static final long DEFAULT_CANCEL_PENALTY = 5L;
+    private static final long DEFAULT_ERROR_PENALTY = 10L;
     /**
      * Mean lifetime, exponential decay.
      */
-    private final double tau;
+    private final double inv_tau;
     private final LongSupplier currentTimeSupplier;
+    private final long cancelPenalty;
+    private final long errorPenalty;
 
     /**
      * Last inserted value to compute weight.
@@ -54,16 +58,23 @@ final class DefaultLatencyTracker implements LatencyTracker {
     /**
      * Current weighted average.
      */
-    private volatile int ewma;
+    private int ewma;
     private volatile int pending;
 
     DefaultLatencyTracker(final long halfLifeNanos, final LongSupplier currentTimeSupplier) {
+        this(halfLifeNanos, currentTimeSupplier, DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
+    }
+
+    DefaultLatencyTracker(final long halfLifeNanos, final LongSupplier currentTimeSupplier,
+                          long cancelPenaly, long errorPenaly) {
         if (halfLifeNanos <= 0) {
             throw new IllegalArgumentException("halfLifeNanos: " + halfLifeNanos + " (expected >0)");
         }
-        tau = halfLifeNanos / log(2);
+        this.inv_tau = Math.pow((halfLifeNanos / log(2)), -1);
         this.currentTimeSupplier = currentTimeSupplier;
-        lastTimeNanos = currentTimeSupplier.getAsLong();
+        this.lastTimeNanos = currentTimeSupplier.getAsLong();
+        this.cancelPenalty = cancelPenaly;
+        this.errorPenalty = errorPenaly;
     }
 
     @Override
@@ -93,7 +104,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
     @Override
     public int score() {
         final int currentEWMA = calculateAndStore((ewma, lastTimeNanos) -> 0, 0);
-        final int cPending = pending;
+        final int cPending = pendingUpdater.get(this);
         if (currentEWMA == 0) {
             // If EWMA has decayed to 0 (or isn't yet initialized) and there are no pending requests we return the
             // maximum score to increase the likelihood this entity is selected. If there are pending requests we
@@ -114,13 +125,13 @@ final class DefaultLatencyTracker implements LatencyTracker {
     private int cancelPenalty(int currentEWMA, int currentLatency) {
         // There is no significance to the choice of this multiplier (other than it is half of the error penalty)
         // and it is selected to gather empirical evidence as the algorithm is evaluated.
-        return applyPenalty(currentEWMA, currentLatency, 5L);
+        return applyPenalty(currentEWMA, currentLatency, cancelPenalty);
     }
 
     private int errorPenalty(int currentEWMA, int currentLatency) {
         // There is no significance to the choice of this multiplier (other than it is double of the cancel penalty)
         // and it is selected to gather empirical evidence as the algorithm is evaluated.
-        return applyPenalty(currentEWMA, currentLatency, 10L);
+        return applyPenalty(currentEWMA, currentLatency, errorPenalty);
     }
 
     private static int applyPenalty(int currentEWMA, int currentLatency, long penalty) {
@@ -147,7 +158,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
         if (currentLatency > currentEWMA) {
             nextEWMA = currentLatency;
         } else {
-            final double tmp = (currentTimeNanos - lastTimeNanos) / tau;
+            final double tmp = (currentTimeNanos - lastTimeNanos) * inv_tau;
             final double w = exp(-tmp);
             nextEWMA = (int) ceil(currentEWMA * w + currentLatency * (1d - w));
         }
