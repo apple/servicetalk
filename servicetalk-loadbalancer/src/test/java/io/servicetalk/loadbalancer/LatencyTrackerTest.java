@@ -55,7 +55,7 @@ class LatencyTrackerTest {
         Assertions.assertEquals(-1, latencyTracker.score());
     }
 
-    final class TestClock implements LongSupplier {
+    static final class TestClock implements LongSupplier {
         private final LongUnaryOperator nextValueProvider;
         private long lastValue = nanoTime();
 
