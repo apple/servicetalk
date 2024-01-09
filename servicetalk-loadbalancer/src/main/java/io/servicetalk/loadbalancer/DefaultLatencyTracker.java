@@ -44,9 +44,9 @@ final class DefaultLatencyTracker implements LatencyTracker {
     private static final long DEFAULT_CANCEL_PENALTY = 5L;
     private static final long DEFAULT_ERROR_PENALTY = 10L;
     /**
-     * Mean lifetime, exponential decay.
+     * Mean lifetime, exponential decay. inverted tau
      */
-    private final double inv_tau;
+    private final double invTau;
     private final LongSupplier currentTimeSupplier;
     private final long cancelPenalty;
     private final long errorPenalty;
@@ -70,7 +70,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
         if (halfLifeNanos <= 0) {
             throw new IllegalArgumentException("halfLifeNanos: " + halfLifeNanos + " (expected >0)");
         }
-        this.inv_tau = Math.pow((halfLifeNanos / log(2)), -1);
+        this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.currentTimeSupplier = currentTimeSupplier;
         this.lastTimeNanos = currentTimeSupplier.getAsLong();
         this.cancelPenalty = cancelPenaly;
@@ -158,7 +158,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
         if (currentLatency > currentEWMA) {
             nextEWMA = currentLatency;
         } else {
-            final double tmp = (currentTimeNanos - lastTimeNanos) * inv_tau;
+            final double tmp = (currentTimeNanos - lastTimeNanos) * invTau;
             final double w = exp(-tmp);
             nextEWMA = (int) ceil(currentEWMA * w + currentLatency * (1d - w));
         }

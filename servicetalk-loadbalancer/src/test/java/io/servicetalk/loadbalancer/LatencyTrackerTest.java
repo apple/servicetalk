@@ -69,5 +69,4 @@ class LatencyTrackerTest {
             return lastValue;
         }
     }
-
 }
