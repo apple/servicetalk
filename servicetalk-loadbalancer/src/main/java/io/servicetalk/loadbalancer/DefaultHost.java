@@ -246,7 +246,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 }
                 return newCnx.closeAsync().<C>concat(
                                 failed(Exceptions.StacklessConnectionRejectedException.newInstance(
-                                        "Failed to add newly created connection " + newCnx + " for " + toString(),
+                                        "Failed to add newly created connection " + newCnx + " for " + this,
                                         RoundRobinLoadBalancer.class, "selectConnection0(...)")))
                         .shareContextOnSubscribe();
             });
@@ -489,7 +489,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             .apply(0, originalCause)
                             // Remove any state from async context
                             .beforeOnSubscribe(__ -> AsyncContext.clear())
-                            .concat(connectionFactory.newConnection(address, null, null)
+                            .concat(newConnection(cxn -> true, false, null)
                                     // There is no risk for StackOverflowError because result of each connection
                                     // attempt will be invoked on IoExecutor as a new task.
                                     .retryWhen(retryWithConstantBackoffDeltaJitter(
@@ -502,19 +502,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                             healthCheckConfig.jitter,
                                             healthCheckConfig.executor)))
                             .flatMapCompletable(newCnx -> {
-                                if (addConnection(newCnx, this)) {
-                                    LOGGER.info("{}: health check passed for {}, marked this " +
-                                                    "host as ACTIVE for the selection algorithm.",
-                                            lbDescription, DefaultHost.this);
-                                    return completed();
-                                } else {
-                                    // This happens only if the host is closed, no need to mark as healthy.
-                                    assert connState.state == State.CLOSED;
-                                    LOGGER.debug("{}: health check passed for {}, but the " +
-                                                    "host rejected a new connection {}. Closing it now.",
-                                            lbDescription, DefaultHost.this, newCnx);
-                                    return newCnx.closeAsync();
-                                }
+                                LOGGER.info("{}: health check passed for {}, marked this " +
+                                                "host as ACTIVE for the selection algorithm.",
+                                        lbDescription, DefaultHost.this);
+                                return completed();
                             })
                             // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside
                             // subscribe(): SimpleCompletableSubscriber.
