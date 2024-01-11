@@ -33,6 +33,7 @@ import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -57,11 +58,8 @@ public final class HttpJerseyRouterBuilder {
      * @return this
      */
     public HttpJerseyRouterBuilder publisherInputStreamQueueCapacity(final int publisherInputStreamQueueCapacity) {
-        if (publisherInputStreamQueueCapacity <= 0) {
-            throw new IllegalArgumentException("Invalid queue capacity: " + publisherInputStreamQueueCapacity
-                    + " (expected > 0).");
-        }
-        this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
+        this.publisherInputStreamQueueCapacity =
+                ensurePositive(publisherInputStreamQueueCapacity, "publisherInputStreamQueueCapacity");
         return this;
     }
 

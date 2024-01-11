@@ -36,6 +36,8 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemDefault;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Math.min;
 import static java.lang.System.getProperty;
@@ -156,10 +158,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     @Override
     public DefaultDnsServiceDiscovererBuilder consolidateCacheSize(final int consolidateCacheSize) {
-        if (consolidateCacheSize < 0) {
-            throw new IllegalArgumentException("consolidateCacheSize: " + consolidateCacheSize + " (expected >= 0)");
-        }
-        this.consolidateCacheSize = consolidateCacheSize;
+        this.consolidateCacheSize = ensureNonNegative(consolidateCacheSize, "consolidateCacheSize");
         return this;
     }
 
@@ -172,10 +171,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated
     public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
-        if (minTTLSeconds <= 0) {
-            throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
-        }
-        this.minTTLSeconds = minTTLSeconds;
+        this.minTTLSeconds = ensurePositive(minTTLSeconds, "minTTLSeconds");
         return this;
     }
 
@@ -211,15 +207,11 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                     " (expected: 0 <= minCacheSeconds <= minSeconds(" + minSeconds +
                     ") <= maxCacheSeconds <= maxSeconds(" + maxSeconds + "))");
         }
-        if (negativeTTLCacheSeconds < 0) {
-            throw new IllegalArgumentException("negativeTTLCacheSeconds: " + negativeTTLCacheSeconds +
-                    " (expected >= 0)");
-        }
+        this.negativeTTLCacheSeconds = ensureNonNegative(negativeTTLCacheSeconds, "negativeTTLCacheSeconds");
         this.minTTLSeconds = minSeconds;
         this.maxTTLSeconds = maxSeconds;
         this.minTTLCacheSeconds = minCacheSeconds;
         this.maxTTLCacheSeconds = maxCacheSeconds;
-        this.negativeTTLCacheSeconds = negativeTTLCacheSeconds;
         return this;
     }
 
@@ -251,10 +243,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     @Override
     public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
-        if (maxUdpPayloadSize <= 0) {
-            throw new IllegalArgumentException("maxUdpPayloadSize: " + maxUdpPayloadSize + " (expected > 0)");
-        }
-        this.maxUdpPayloadSize = maxUdpPayloadSize;
+        this.maxUdpPayloadSize = ensurePositive(maxUdpPayloadSize, "maxUdpPayloadSize");
         return this;
     }
 
@@ -317,10 +306,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     DefaultDnsServiceDiscovererBuilder srvConcurrency(int srvConcurrency) {
-        if (srvConcurrency <= 0) {
-            throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
-        }
-        this.srvConcurrency = srvConcurrency;
+        this.srvConcurrency = ensurePositive(srvConcurrency, "srvConcurrency");
         return this;
     }
 

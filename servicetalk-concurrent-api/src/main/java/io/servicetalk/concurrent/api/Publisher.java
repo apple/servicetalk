@@ -69,6 +69,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupp
 import static io.servicetalk.concurrent.api.ReplayPublisher.newReplayPublisher;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.function.Function.identity;
@@ -999,10 +1000,8 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                          int maxConcurrency, int maxDelayedErrorsHint) {
-        if (maxDelayedErrorsHint <= 0) {
-            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
-        }
-        return new PublisherFlatMapMerge<>(this, mapper, maxDelayedErrorsHint, maxConcurrency);
+        return new PublisherFlatMapMerge<>(this, mapper, ensurePositive(maxDelayedErrorsHint, "maxDelayedErrorsHint"),
+                maxConcurrency);
     }
 
     /**
@@ -1230,10 +1229,8 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency, int maxDelayedErrorsHint) {
-        if (maxDelayedErrorsHint <= 0) {
-            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
-        }
-        return new PublisherFlatMapSingle<>(this, mapper, maxDelayedErrorsHint, maxConcurrency);
+        return new PublisherFlatMapSingle<>(this, mapper, ensurePositive(maxDelayedErrorsHint, "maxDelayedErrorsHint"),
+                maxConcurrency);
     }
 
     /**

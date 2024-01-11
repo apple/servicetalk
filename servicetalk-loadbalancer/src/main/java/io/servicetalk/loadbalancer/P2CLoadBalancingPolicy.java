@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+
 /**
  * A random selection "power of two choices" load balancing policy.
  * <p>
@@ -83,10 +85,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
          * @return this {@link Builder}.
          */
         public Builder maxEffort(final int maxEffort) {
-            if (maxEffort <= 0) {
-                throw new IllegalArgumentException("Invalid maxEffort: " + maxEffort + " (expected > 0)");
-            }
-            this.maxEffort = maxEffort;
+            this.maxEffort = ensurePositive(maxEffort, "maxEffort");
             return this;
         }
 

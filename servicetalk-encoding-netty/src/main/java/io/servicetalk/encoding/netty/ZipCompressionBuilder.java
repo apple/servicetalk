@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+
 /**
  * Base class for Zip based content-codecs.
  */
@@ -53,11 +55,7 @@ public abstract class ZipCompressionBuilder {
      * @return {@code this}
      */
     public final ZipCompressionBuilder maxChunkSize(final int maxChunkSize) {
-        if (maxChunkSize <= 0) {
-            throw new IllegalArgumentException("maxChunkSize: " + maxChunkSize + " (expected > 0)");
-        }
-
-        this.maxChunkSize = maxChunkSize;
+        this.maxChunkSize = ensurePositive(maxChunkSize, "maxChunkSize");
         return this;
     }
 

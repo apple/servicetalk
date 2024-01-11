@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import java.io.IOException;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,7 +37,7 @@ public class Http2Exception extends IOException {
      */
     public Http2Exception(final int streamId, final Http2ErrorCode error, final String message) {
         super(message);
-        this.streamId = validateStreamId(streamId);
+        this.streamId = ensureNonNegative(streamId, "streamId");
         this.error = requireNonNull(error);
     }
 
@@ -49,7 +50,7 @@ public class Http2Exception extends IOException {
      */
     public Http2Exception(final int streamId, final Http2ErrorCode error, final Throwable cause) {
         super(cause);
-        this.streamId = validateStreamId(streamId);
+        this.streamId = ensureNonNegative(streamId, "streamId");
         this.error = requireNonNull(error);
     }
 
@@ -63,7 +64,7 @@ public class Http2Exception extends IOException {
      */
     public Http2Exception(final int streamId, final Http2ErrorCode error, final String message, final Throwable cause) {
         super(message, cause);
-        this.streamId = validateStreamId(streamId);
+        this.streamId = ensureNonNegative(streamId, "streamId");
         this.error = requireNonNull(error);
     }
 
@@ -81,13 +82,6 @@ public class Http2Exception extends IOException {
      * @return {@code 0} for the connection stream, {@code > 0} for a non-connection stream, or {@code < 0} if unknown.
      */
     public final int streamId() {
-        return streamId;
-    }
-
-    private static int validateStreamId(int streamId) {
-        if (streamId < 0) {
-            throw new IllegalArgumentException("streamId: " + streamId + "(expected >=0)");
-        }
         return streamId;
     }
 }

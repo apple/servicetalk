@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
@@ -40,12 +41,9 @@ final class RangeIntPublisher extends AbstractSynchronousPublisher<Integer> {
         if (begin > end) {
             throw new IllegalArgumentException("begin(" + begin + ") > end(" + end + ")");
         }
-        if (stride <= 0) {
-            throw new IllegalArgumentException("stride: " + stride + " (expected >0)");
-        }
         this.begin = begin;
         this.end = end;
-        this.stride = stride;
+        this.stride = ensurePositive(stride, "stride");
     }
 
     @Override

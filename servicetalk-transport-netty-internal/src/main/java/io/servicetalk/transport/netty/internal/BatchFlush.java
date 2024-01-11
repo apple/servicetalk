@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 final class BatchFlush implements FlushStrategy {
@@ -28,10 +29,7 @@ final class BatchFlush implements FlushStrategy {
 
     BatchFlush(Publisher<?> durationBoundaries, int batchSize) {
         this.boundaries = requireNonNull(durationBoundaries);
-        if (batchSize <= 0) {
-            throw new IllegalArgumentException("batchSize: " + batchSize + " (expected > 0)");
-        }
-        this.batchSize = batchSize;
+        this.batchSize = ensurePositive(batchSize, "batchSize");
     }
 
     @Override

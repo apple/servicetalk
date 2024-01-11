@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.futureGetCancelOnInterrupt;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 
@@ -43,11 +44,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
 
     StreamingHttpServiceToBlockingStreamingHttpService(final StreamingHttpService original,
                                                        final int demandBatchSize) {
-        if (demandBatchSize <= 0) {
-            throw new IllegalArgumentException("demandBatchSize: " + demandBatchSize + " (expected >0)");
-        }
         this.original = requireNonNull(original);
-        this.demandBatchSize = demandBatchSize;
+        this.demandBatchSize = ensurePositive(demandBatchSize, "demandBatchSize");
     }
 
     @Override

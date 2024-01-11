@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.validateKeepAlivePolicy;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -144,10 +145,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder flowControlQuantum(int flowControlQuantum) {
-        if (flowControlQuantum <= 0) {
-            throw new IllegalArgumentException("flowControlQuantum " + flowControlQuantum + " (expected >0)");
-        }
-        this.flowControlQuantum = flowControlQuantum;
+        this.flowControlQuantum = ensurePositive(flowControlQuantum, "flowControlQuantum");
         return this;
     }
 
@@ -159,11 +157,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder flowControlWindowIncrement(int connectionWindowIncrement) {
-        if (connectionWindowIncrement <= 0) {
-            throw new IllegalArgumentException("connectionWindowIncrement " + connectionWindowIncrement +
-                    " (expected >0)");
-        }
-        this.flowControlIncrement = connectionWindowIncrement;
+        this.flowControlIncrement = ensurePositive(connectionWindowIncrement, "flowControlIncrement");
         return this;
     }
 

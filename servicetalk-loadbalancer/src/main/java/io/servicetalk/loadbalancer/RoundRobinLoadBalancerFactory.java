@@ -38,6 +38,7 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -148,10 +149,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
-            if (linearSearchSpace < 0) {
-                throw new IllegalArgumentException("linearSearchSpace: " + linearSearchSpace + " (expected >=0)");
-            }
-            this.linearSearchSpace = linearSearchSpace;
+            this.linearSearchSpace = ensureNonNegative(linearSearchSpace, "linearSearchSpace");
             return this;
         }
 

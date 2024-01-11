@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.net.StandardSocketOptions.SO_KEEPALIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -108,10 +109,8 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
         requireNonNull(option);
         requireNonNull(value);
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
-            idleTimeoutMs = (Long) value;
-            if (idleTimeoutMs < 0) {
-                throw new IllegalArgumentException("IDLE_TIMEOUT: " + idleTimeoutMs + " (expected>=0)");
-            }
+            final long idleTimeoutMs = (Long) value;
+            this.idleTimeoutMs = ensureNonNegative(idleTimeoutMs, "IDLE_TIMEOUT");
         } else {
             if (options == null) {
                 options = new HashMap<>();

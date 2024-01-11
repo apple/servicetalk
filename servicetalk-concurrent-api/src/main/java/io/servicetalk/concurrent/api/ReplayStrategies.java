@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -113,10 +114,7 @@ public final class ReplayStrategies {
         private final Deque<Object> items;
 
         MostRecentReplayAccumulator(final int maxItems) {
-            if (maxItems <= 0) {
-                throw new IllegalArgumentException("maxItems: " + maxItems + "(expected >0)");
-            }
-            this.maxItems = maxItems;
+            this.maxItems = ensurePositive(maxItems, "maxItems");
             items = new ArrayDeque<>(min(maxItems, 16));
         }
 
@@ -146,10 +144,7 @@ public final class ReplayStrategies {
             if (ttl.isNegative()) {
                 throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
             }
-            if (maxItems <= 0) {
-                throw new IllegalArgumentException("maxItems: " + maxItems + "(expected >0)");
-            }
-            this.maxItems = maxItems;
+            this.maxItems = ensurePositive(maxItems, "maxItems");
             this.executor = requireNonNull(executor);
             this.ttlNanos = ttl.toNanos();
             items = new ArrayDeque<>(min(maxItems, 16));
@@ -211,12 +206,10 @@ public final class ReplayStrategies {
             if (ttl.isNegative()) {
                 throw new IllegalArgumentException("ttl: " + ttl + "(expected non-negative)");
             }
-            if (maxItems <= 0) {
-                throw new IllegalArgumentException("maxItems: " + maxItems + "(expected >0)");
-            }
             this.executor = requireNonNull(executor);
             this.ttlNanos = ttl.toNanos();
-            this.maxItems = maxItems;
+            this.maxItems = ensurePositive(maxItems, "maxItems");
+
             // SpMc
             // producer = accumulate (no concurrent access on this method)
             // consumer = accumulate (may poll from queue due to capacity)

@@ -27,6 +27,7 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -307,10 +308,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @see SSLSessionContext#setSessionCacheSize(int)
      */
     public final T sessionCacheSize(long sessionCacheSize) {
-        if (sessionCacheSize < 0) {
-            throw new IllegalArgumentException("sessionCacheSize: " + sessionCacheSize + " (expected >=0)");
-        }
-        this.sessionCacheSize = sessionCacheSize;
+        this.sessionCacheSize = ensureNonNegative(sessionCacheSize, "sessionCacheSize");
         return thisT();
     }
 
@@ -327,10 +325,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @see SSLSessionContext#setSessionTimeout(int)
      */
     public final T sessionTimeout(long sessionTimeout) {
-        if (sessionTimeout < 0) {
-            throw new IllegalArgumentException("sessionTimeout: " + sessionTimeout + " (expected >=0)");
-        }
-        this.sessionTimeout = sessionTimeout;
+        this.sessionTimeout = ensureNonNegative(sessionTimeout, "sessionTimeout");
         return thisT();
     }
 
@@ -414,10 +409,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      */
     public final T maxCertificateListBytes(int maxBytes) {
-        if (maxBytes < 0) {
-            throw new IllegalArgumentException("maxBytes: " + maxBytes + " (expected >=0)");
-        }
-        this.maxCertificateListBytes = maxBytes;
+        this.maxCertificateListBytes = ensureNonNegative(maxBytes, "maxBytes");
         return thisT();
     }
 

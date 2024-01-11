@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.MulticastPublisher.DEFAULT_MULTICAST_QUEUE_LIMIT;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -49,10 +50,7 @@ public final class ReplayStrategyBuilder<T> {
      * @return {@code this}.
      */
     public ReplayStrategyBuilder<T> minSubscribers(int minSubscribers) {
-        if (minSubscribers <= 0) {
-            throw new IllegalArgumentException("minSubscribers: " + minSubscribers + " (expected >0)");
-        }
-        this.minSubscribers = minSubscribers;
+        this.minSubscribers = ensurePositive(minSubscribers, "minSubscribers");
         return this;
     }
 

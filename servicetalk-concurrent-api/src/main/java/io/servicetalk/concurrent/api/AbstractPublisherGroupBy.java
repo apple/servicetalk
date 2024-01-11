@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscribePublisher<GroupedPublisher<Key, T>> {
     final Publisher<T> original;
@@ -40,14 +41,8 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
     }
 
     AbstractPublisherGroupBy(Publisher<T> original, int queueLimit, int expectedGroupCountHint) {
-        if (expectedGroupCountHint <= 0) {
-            throw new IllegalArgumentException("expectedGroupCountHint " + expectedGroupCountHint + " (expected >0)");
-        }
-        this.initialCapacityForGroups = expectedGroupCountHint;
-        if (queueLimit <= 0) {
-            throw new IllegalArgumentException("queueLimit " + queueLimit + " (expected >0)");
-        }
-        this.queueLimit = queueLimit;
+        this.initialCapacityForGroups = ensurePositive(expectedGroupCountHint, "expectedGroupCountHint");
+        this.queueLimit = ensurePositive(queueLimit, "queueLimit");
         this.original = original;
     }
 

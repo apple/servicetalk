@@ -79,6 +79,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
 import static java.lang.Long.parseUnsignedLong;
@@ -181,15 +182,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                       final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
-        if (maxStartLineLength <= 0) {
-            throw new IllegalArgumentException("maxStartLineLength: " + maxStartLineLength + " (expected >0)");
-        }
-        if (maxHeaderFieldLength <= 0) {
-            throw new IllegalArgumentException("maxHeaderFieldLength: " + maxHeaderFieldLength + " (expected >0)");
-        }
         this.headersFactory = requireNonNull(headersFactory);
-        this.maxStartLineLength = maxStartLineLength;
-        this.maxHeaderFieldLength = maxHeaderFieldLength;
+        this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
+        this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
     }
