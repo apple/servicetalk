@@ -46,6 +46,10 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private boolean requested;
     @Nullable
     private SubscriptionImpl subscription;
+    /**
+     * The size of the queue is bound by {@link SubscriptionImpl#request(long)} demand. Using reactive operators to
+     * transform data and letting ServiceTalk subscribe will take care of backpressure automatically.
+     */
     @Nullable
     private Queue<Object> pending;
     @Nullable

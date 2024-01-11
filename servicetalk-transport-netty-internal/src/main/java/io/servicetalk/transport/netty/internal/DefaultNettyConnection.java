@@ -343,6 +343,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
         assert parent == null || parent.executionContext() == executionContext;
         assert channel.eventLoop() == toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup();
+
+        // For h2 the parent channel must use auto read because control frames and flow controlled frames are on the
+        // same socket, and we must read in timely manner to avoid deadlock. Child channel should not use auto
+        // read as read is explicitly called by NettyChannelPublisher according to the Subscription.request(n) demand.
+        channel.config().setAutoRead(false);
+
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, parent, executionContext,
                 closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);

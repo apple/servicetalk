@@ -79,6 +79,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -108,6 +109,8 @@ class ErrorHandlingTest {
     private BlockingTesterClient blockingClient;
     @Nullable
     private Publisher<TestRequest> requestPublisher;
+    @Nullable
+    private GrpcExecutionStrategy clientExecutionStrategy;
 
     private enum TestMode {
         HttpClientFilterThrows,
@@ -158,6 +161,7 @@ class ErrorHandlingTest {
     private void setUp(TestMode testMode, GrpcExecutionStrategy serverStrategy,
                              GrpcExecutionStrategy clientStrategy) throws Exception {
         this.testMode = testMode;
+        this.clientExecutionStrategy = clientStrategy;
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
         ServiceFactory serviceFactory;
         StreamingHttpServiceFilterFactory serviceFilterFactory = IDENTITY_FILTER;
@@ -643,7 +647,15 @@ class ErrorHandlingTest {
         assertNotNull(cause);
         assertThat(assertThrows(GrpcStatusException.class, () -> {
             throw cause;
-        }).status().code(), equalTo(expectedStatus()));
+        }).status().code(), either(equalTo(expectedStatus())).or(equalTo(expectedStatusSecondary())));
+    }
+
+    private GrpcStatusCode expectedStatusSecondary() {
+        // The server writes trailers with expected status then a RST stream frame. The client may not be done with its
+        // write operation and the RST may be result in CANCELLED being propagated instead.
+        return testMode == TestMode.ServiceSecondOperatorThrowsGrpcException &&
+                clientExecutionStrategy != null && clientExecutionStrategy.hasOffloads() ?
+                GrpcStatusCode.CANCELLED : expectedStatus();
     }
 
     private GrpcStatusCode expectedStatus() {
