@@ -20,14 +20,17 @@ import io.servicetalk.transport.api.CertificateCompressionAlgorithms;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.api.SslConfig.CipherSuiteFilter;
 
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.IdentityCipherSuiteFilter;
 import io.netty.handler.ssl.OpenSslCertificateCompressionConfig;
 import io.netty.handler.ssl.OpenSslContextOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,7 +151,7 @@ public final class SslContextFactory {
                 builder.clientAuth(ClientAuth.REQUIRE);
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported: " + config.clientAuthMode());
+                throw new IllegalArgumentException("Unsupported SslClientAuthMode: " + config.clientAuthMode());
         }
 
         return configureBuilder(config, builder, true);
@@ -243,7 +246,7 @@ public final class SslContextFactory {
                 .applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols))
                 .sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()))
                 .protocols(config.sslProtocols())
-                .ciphers(config.ciphers());
+                .ciphers(config.ciphers(), toNettyCipherSuiteFilter(config.cipherSuiteFilter()));
 
         configureCertificateCompression(config, builder, nettySslProvider, forServer);
         configureNettyOptions(config, builder);
@@ -261,5 +264,17 @@ public final class SslContextFactory {
     @Nullable
     private static <T> T supplierNullSafe(@Nullable Supplier<T> supplier) {
         return supplier == null ? null : supplier.get();
+    }
+
+    private static io.netty.handler.ssl.CipherSuiteFilter toNettyCipherSuiteFilter(
+            final CipherSuiteFilter cipherSuiteFilter) {
+        switch (cipherSuiteFilter) {
+            case IDENTITY:
+                return IdentityCipherSuiteFilter.INSTANCE;
+            case SUPPORTED:
+                return SupportedCipherSuiteFilter.INSTANCE;
+            default:
+                throw new IllegalArgumentException("Unsupported CipherSuiteFilter: " + cipherSuiteFilter);
+        }
     }
 }

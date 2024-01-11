@@ -112,9 +112,20 @@ public interface SslConfig {
      * Get the cipher suites to enable, in the order of preference.
      *
      * @return the cipher suites to enable, in the order of preference.
+     * @see #cipherSuiteFilter()
      */
     @Nullable
     List<String> ciphers();
+
+    /**
+     * Defines filtering behavior for {@link #ciphers() ciphers suites}.
+     *
+     * @return filtering behavior for {@link #ciphers() ciphers suites}.
+     * @see #ciphers()
+     */
+    default CipherSuiteFilter cipherSuiteFilter() {
+        return CipherSuiteFilter.IDENTITY;
+    }
 
     /**
      * Get the size of the cache used for storing SSL session objects.
@@ -185,5 +196,20 @@ public interface SslConfig {
     // FIXME 0.43 - remove default implementation
     default int maxCertificateListBytes() {
         return 0;
+    }
+
+    /**
+     * Defines filtering logic for {@link #ciphers() ciphers suites}.
+     */
+    enum CipherSuiteFilter {
+        /**
+         * Will take all requested ciphers suites as-is without any filtering.
+         */
+        IDENTITY,
+
+        /**
+         * Will filter all requested ciphers suites out that are not supported by the current {@link SSLEngine}.
+         */
+        SUPPORTED
     }
 }
