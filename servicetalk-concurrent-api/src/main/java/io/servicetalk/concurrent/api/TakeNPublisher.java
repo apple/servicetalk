@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
  * {@link Publisher} that will request a fixed number of elements.
@@ -36,7 +36,7 @@ final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T>
 
     TakeNPublisher(Publisher<T> original, long numElements) {
         super(original);
-        this.numElements = ensureNonNegative(numElements, "numElements");
+        this.numElements = ensurePositive(numElements, "numElements");
     }
 
     @Override

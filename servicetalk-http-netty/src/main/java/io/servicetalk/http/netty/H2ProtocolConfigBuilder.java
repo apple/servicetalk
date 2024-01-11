@@ -157,7 +157,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder flowControlWindowIncrement(int connectionWindowIncrement) {
-        this.flowControlIncrement = ensurePositive(connectionWindowIncrement, "flowControlIncrement");
+        this.flowControlIncrement = ensurePositive(connectionWindowIncrement, "connectionWindowIncrement");
         return this;
     }
 
