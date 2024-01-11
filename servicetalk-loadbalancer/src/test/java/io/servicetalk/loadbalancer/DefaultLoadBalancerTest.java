@@ -16,24 +16,38 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             new P2CLoadBalancingPolicy.Builder().build();
+    @Nullable
+    private HealthCheckerFactory healthCheckerFactory;
 
     @Override
     protected boolean eagerConnectionShutdown() {
@@ -92,6 +106,62 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         assertEquals(2, lbPolicy.rebuilds);
     }
 
+    @Test
+    void hostHealthIndicatorLifeCycleManagement() {
+        serviceDiscoveryPublisher.onComplete();
+        final TestHealthCheckerFactory factory = new TestHealthCheckerFactory();
+        healthCheckerFactory = factory;
+        lb = newTestLoadBalancer();
+
+        TestHealthChecker healthChecker = factory.currentHealthChecker.get();
+        assertNotNull(healthChecker);
+        assertThat(healthChecker.getIndicators(), empty());
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertThat(healthChecker.getIndicators(), hasSize(1));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertThat(healthChecker.getIndicators(), hasSize(2));
+        // now for the removals.
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertThat(healthChecker.getIndicators(), hasSize(1));
+        sendServiceDiscoveryEvents(downEvent("address-2"));
+        assertThat(healthChecker.getIndicators(), empty());
+    }
+
+    @Test
+    void hostsConsiderHealthIndicatorEjectionStatus() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final TestHealthCheckerFactory factory = new TestHealthCheckerFactory();
+        healthCheckerFactory = factory;
+        lb = newTestLoadBalancer();
+
+        TestHealthChecker healthChecker = factory.currentHealthChecker.get();
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        TestHealthIndicator indicator = healthChecker.getIndicators().stream()
+                .filter(i -> "address-1".equals(i.address)).findFirst().get();
+        indicator.isHealthy = false;
+        // Now we should always bias toward address-2.
+        TestLoadBalancedConnection connection = lb.selectConnection(any(), null).toFuture().get();
+        for (int i = 0; i < 5; i++) {
+            assertThat(connection.address(), equalTo("address-2"));
+        }
+    }
+
+    @Test
+    void healthCheckerIsClosedOnShutdown() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final TestHealthCheckerFactory factory = new TestHealthCheckerFactory();
+        healthCheckerFactory = factory;
+        lb = newTestLoadBalancer();
+        lb.closeAsync().toFuture().get();
+        assertTrue(factory.currentHealthChecker.get().cancelled);
+    }
+
+    private LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
+        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
+                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
+    }
+
     @Override
     protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
@@ -99,15 +169,95 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
                         .loadBalancingPolicy(loadBalancingPolicy)
+                        .healthCheckerFactory(healthCheckerFactory)
                         .healthCheckFailedConnectionsThreshold(-1)
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
     }
 
-    private LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
+    private static class TestHealthIndicator implements HealthIndicator {
+
+        private final Set<TestHealthIndicator> indicatorSet;
+        final String address;
+        volatile boolean isHealthy = true;
+
+        TestHealthIndicator(final Set<TestHealthIndicator> indicatorSet, final String address) {
+            this.indicatorSet = indicatorSet;
+            this.address = address;
+        }
+
+        @Override
+        public int score() {
+            return 0;
+        }
+
+        @Override
+        public long beforeStart() {
+            return 0;
+        }
+
+        @Override
+        public void cancel() {
+            synchronized (indicatorSet) {
+                assert indicatorSet.remove(this);
+            }
+        }
+
+        @Override
+        public boolean isHealthy() {
+            return isHealthy;
+        }
+
+        @Override
+        public void observeSuccess(long beforeStartTime) {
+        }
+
+        @Override
+        public void observeCancel(long beforeStartTimeNs) {
+        }
+
+        @Override
+        public void observeError(long beforeStartTime) {
+        }
+    }
+
+    private static class TestHealthCheckerFactory implements HealthCheckerFactory<String> {
+
+        final AtomicReference<TestHealthChecker> currentHealthChecker = new AtomicReference<>();
+        @Override
+        public HealthChecker newHealthChecker(Executor executor, HostObserver<String> hostObserver) {
+            assert currentHealthChecker.get() == null;
+            TestHealthChecker result = new TestHealthChecker();
+            currentHealthChecker.set(result);
+            return result;
+        }
+    }
+
+    private static class TestHealthChecker implements HealthChecker<String> {
+
+        private final Set<TestHealthIndicator> indicatorSet = new HashSet<>();
+        volatile boolean cancelled;
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+        }
+
+        @Override
+        public HealthIndicator newHealthIndicator(String address) {
+            TestHealthIndicator healthIndicator = new TestHealthIndicator(indicatorSet, address);
+            synchronized (indicatorSet) {
+                indicatorSet.add(healthIndicator);
+            }
+            return healthIndicator;
+        }
+
+        List<TestHealthIndicator> getIndicators() {
+            synchronized (indicatorSet) {
+                return new ArrayList<>(indicatorSet);
+            }
+        }
     }
 
     private static class TestLoadBalancerPolicy implements LoadBalancingPolicy<String, TestLoadBalancedConnection> {

@@ -35,9 +35,11 @@ import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALT
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class DefaultHostTest {
 
@@ -73,9 +75,13 @@ class DefaultHostTest {
         }
     }
 
-    private void buildHost() {
+    private void buildHost(@Nullable HealthIndicator healthIndicator) {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS, connectionFactory, Integer.MAX_VALUE,
-                healthCheckConfig, mockHostObserver);
+                mockHostObserver, healthCheckConfig, healthIndicator);
+    }
+
+    private void buildHost() {
+        buildHost(null);
     }
 
     @Test
@@ -84,7 +90,7 @@ class DefaultHostTest {
         verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         // make another one, just for good measure.
         new DefaultHost<>("lbDescription", "address2", connectionFactory, Integer.MAX_VALUE,
-                healthCheckConfig, mockHostObserver);
+                mockHostObserver, healthCheckConfig, null);
         verify(mockHostObserver, times(1)).onHostCreated("address2");
     }
 
@@ -205,5 +211,26 @@ class DefaultHostTest {
         verify(mockHostObserver, times(1)).onExpiredHostRemoved(DEFAULT_ADDRESS, 1);
         assertThat(host.isHealthy(), is(false));
         assertThat(host.canMakeNewConnections(), is(false));
+    }
+
+    @Test
+    void healthIndicatorInfluencesHealthStatus() {
+        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        when(healthIndicator.isHealthy()).thenReturn(true);
+        buildHost(healthIndicator);
+        verify(mockHostObserver, times(1)).onHostCreated("address");
+        assertThat(host.isHealthy(), is(true));
+        when(healthIndicator.isHealthy()).thenReturn(false);
+        assertThat(host.isHealthy(), is(false));
+    }
+
+    @Test
+    void forwardsHealthIndicatorScore() {
+        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        when(healthIndicator.score()).thenReturn(10);
+        buildHost(healthIndicator);
+        verify(mockHostObserver, times(1)).onHostCreated("address");
+        assertThat(host.score(), is(10));
+        verify(healthIndicator, times(1)).score();
     }
 }

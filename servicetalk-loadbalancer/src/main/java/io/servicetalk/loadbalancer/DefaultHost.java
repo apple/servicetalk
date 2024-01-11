@@ -22,8 +22,10 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -94,6 +97,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final Addr address;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
+    @Nullable
+    private final HealthIndicator healthIndicator;
     private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
@@ -102,14 +107,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                final int linearSearchSpace, final @Nullable HealthCheckConfig healthCheckConfig,
-                final LoadBalancerObserver.HostObserver<Addr> hostObserver) {
+                final int linearSearchSpace, final HostObserver<Addr> hostObserver,
+                final @Nullable HealthCheckConfig healthCheckConfig, final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
+        this.healthIndicator = healthIndicator;
         this.closeable = toAsyncCloseable(this::doClose);
         hostObserver.onHostCreated(address);
     }
@@ -142,7 +148,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             // closeGracefully with a timeout, which fails, and then force close. If we discard connections when
             // closeGracefully is started we may leak connections.
             final ConnState oldState = connState;
-            if (oldState.state == State.CLOSED || connStateUpdater.compareAndSet(this, oldState, oldState.toClosed())) {
+            if (oldState.state == State.CLOSED) {
+                // already closed.
+                return oldState;
+            }
+            // Try to close. If we succeed we can also clean up the healthIndicator.
+            if (connStateUpdater.compareAndSet(this, oldState, oldState.toClosed())) {
+                if (healthIndicator != null) {
+                    healthIndicator.cancel();
+                }
                 return oldState;
             }
         }
@@ -204,7 +218,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public Single<C> newConnection(
-            Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable final ContextMap context) {
+            Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable ContextMap context) {
+        // We need to put our address latency tracker in the context for consumption.
+        if (healthIndicator != null) {
+            if (context == null) {
+                context = new DefaultContextMap();
+            }
+            context.put(REQUEST_TRACKER_KEY, healthIndicator);
+        }
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
         Single<? extends C> establishConnection = connectionFactory.newConnection(address, context, null);
@@ -313,7 +334,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public boolean isHealthy() {
         final State state = connState.state;
-        return state != State.UNHEALTHY && state != State.CLOSED;
+        return state != State.UNHEALTHY && state != State.CLOSED &&
+                (healthIndicator == null || healthIndicator.isHealthy());
     }
 
     @Override
@@ -456,8 +478,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public int score() {
-        // TODO: this is going to need some refinement but it's fine for now.
-        return 1;
+        return healthIndicator == null ? 1 : healthIndicator.score();
     }
 
     @Override

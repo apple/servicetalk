@@ -43,6 +43,12 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckerFactory(
+            HealthCheckerFactory healthCheckerFactory) {
+        throw new IllegalStateException("Cannot set a load balancer health checker for old round robin");
+    }
+
+    @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> backgroundExecutor(Executor backgroundExecutor) {
         underlying = underlying.backgroundExecutor(backgroundExecutor);
         return this;

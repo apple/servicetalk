@@ -19,52 +19,47 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.function.LongSupplier;
 import java.util.function.LongUnaryOperator;
 
-import static io.servicetalk.loadbalancer.LatencyTracker.newTracker;
 import static java.lang.System.nanoTime;
 import static java.time.Duration.ofSeconds;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class LatencyTrackerTest {
+class DefaultRequestTrackerTest {
 
     @Test
     void test() {
         final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
-        final LongSupplier currentTimeSupplier = new TestClock(nextValueProvider);
-
-        final LatencyTracker latencyTracker = newTracker(Duration.ofSeconds(1), currentTimeSupplier);
-        Assertions.assertEquals(0, latencyTracker.score());
+        final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
+        Assertions.assertEquals(0, requestTracker.score());
 
         // upon success score
-        long start = latencyTracker.beforeStart();
-        latencyTracker.observeSuccess(start);
-        Assertions.assertEquals(-500, latencyTracker.score());
+        requestTracker.observeSuccess(requestTracker.beforeStart());
+        Assertions.assertEquals(-500, requestTracker.score());
 
         // error penalty
-        start = latencyTracker.beforeStart();
-        latencyTracker.observeError(start);
-        Assertions.assertEquals(-5000, latencyTracker.score());
+        requestTracker.observeError(requestTracker.beforeStart());
+        Assertions.assertEquals(-5000, requestTracker.score());
 
         // decay
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(20).toNanos());
-        Assertions.assertEquals(-1, latencyTracker.score());
+        Assertions.assertEquals(-1, requestTracker.score());
     }
 
-    static final class TestClock implements LongSupplier {
+    static final class TestRequestTracker extends DefaultRequestTracker {
         private final LongUnaryOperator nextValueProvider;
         private long lastValue = nanoTime();
 
-        TestClock(final LongUnaryOperator nextValueProvider) {
+        TestRequestTracker(Duration measurementHalfLife, final LongUnaryOperator nextValueProvider) {
+            super(measurementHalfLife.toNanos(), DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
             this.nextValueProvider = nextValueProvider;
         }
 
         @Override
-        public long getAsLong() {
+        protected long currentTimeNanos() {
             lastValue += nextValueProvider.applyAsLong(lastValue);
             return lastValue;
         }

@@ -15,15 +15,16 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.ScoreSupplier;
-
-import java.time.Duration;
-import java.util.function.LongSupplier;
+import io.servicetalk.context.api.ContextMap;
 
 /**
  * A tracker of latency of an action over time.
  */
-interface LatencyTracker extends ScoreSupplier {
+interface RequestTracker {
+
+    @SuppressWarnings("rawtypes")
+    ContextMap.Key<RequestTracker> REQUEST_TRACKER_KEY =
+            ContextMap.Key.newKey("request_tracker", RequestTracker.class);
 
     /**
      * Invoked before each start of the action for which latency is to be tracked.
@@ -52,16 +53,4 @@ interface LatencyTracker extends ScoreSupplier {
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
      */
     void observeError(long beforeStartTimeNs);
-
-    /**
-     * Create a latency tracker.
-     *
-     * @param measurementHalfLife The half-life decay hint period for the tracker.
-     * This sets the half-life for which past results will be "forgotten" so that newer
-     * data has exponentially more weight than historical data.
-     * @param currentTimeSupplier A wall-time supplier.
-     */
-    static LatencyTracker newTracker(final Duration measurementHalfLife, final LongSupplier currentTimeSupplier) {
-        return new DefaultLatencyTracker(measurementHalfLife.toNanos(), currentTimeSupplier);
-    }
 }
