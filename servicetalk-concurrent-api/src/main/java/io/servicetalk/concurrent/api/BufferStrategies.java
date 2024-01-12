@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -130,9 +131,7 @@ public final class BufferStrategies {
     public static <T, BC extends Accumulator<T, B>, B> BufferStrategy<T, Accumulator<T, B>, B> forCountOrTime(
             final int count, final Duration duration, Supplier<BC> accumulatorSupplier,
             final Executor executor) {
-        if (count <= 0) {
-            throw new IllegalArgumentException("count: " + count + " (expected > 0)");
-        }
+        ensurePositive(count, "count");
         requireNonNull(duration);
         requireNonNull(accumulatorSupplier);
         requireNonNull(executor);

@@ -43,6 +43,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.notEqualsOnNext;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
@@ -544,13 +545,10 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         private final long minOnNext;
 
         OnNextExpectCountEvent(long minOnNext, long maxOnNext) {
-            if (maxOnNext <= 0) {
-                throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " (expected >0)");
-            }
+            this.maxOnNext = ensurePositive(maxOnNext, "maxOnNext");
             if (maxOnNext < minOnNext) {
                 throw new IllegalArgumentException("maxOnNext " + maxOnNext + " < minOnNext" + minOnNext);
             }
-            this.maxOnNext = maxOnNext;
             this.minOnNext = minOnNext;
         }
 
@@ -574,14 +572,11 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         private final Consumer<? super Iterable<? extends T>> signalsConsumer;
 
         OnNextAggregateEvent(long minOnNext, long maxOnNext, Consumer<? super Iterable<? extends T>> signalsConsumer) {
-            if (maxOnNext <= 0) {
-                throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " (expected >0)");
-            }
+            this.maxOnNext = ensurePositive(maxOnNext, "maxOnNext");
             if (maxOnNext < minOnNext) {
                 throw new IllegalArgumentException("maxOnNext " + maxOnNext + " < minOnNext" + minOnNext);
             }
             this.signalsConsumer = requireNonNull(signalsConsumer);
-            this.maxOnNext = maxOnNext;
             this.minOnNext = minOnNext;
         }
 

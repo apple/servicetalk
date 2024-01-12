@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+
 /**
  * Initializes the channel with idle timeout handling.
  */
@@ -52,10 +54,7 @@ public class IdleTimeoutInitializer implements ChannelInitializer { // FIXME: 0.
      * @param idleTimeoutMillis timeout in milliseconds.
      */
     public IdleTimeoutInitializer(long idleTimeoutMillis) {
-        if (idleTimeoutMillis <= 0L) {
-            throw new IllegalArgumentException("idleTimeoutMillis: " + idleTimeoutMillis + " (expected >0)");
-        }
-        timeoutMs = idleTimeoutMillis;
+        this.timeoutMs = ensurePositive(idleTimeoutMillis, "idleTimeoutMillis");
     }
 
     @Override

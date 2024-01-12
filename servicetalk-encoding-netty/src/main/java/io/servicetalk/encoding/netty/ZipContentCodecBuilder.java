@@ -22,6 +22,7 @@ import io.netty.handler.codec.compression.JdkZlibEncoder;
 import io.netty.handler.codec.compression.ZlibWrapper;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
  * Base class for Zip based content-codecs.
@@ -60,11 +61,7 @@ public abstract class ZipContentCodecBuilder {
      * @return {@code this}
      */
     public final ZipContentCodecBuilder maxChunkSize(final int maxChunkSize) {
-        if (maxChunkSize <= 0) {
-            throw new IllegalArgumentException("maxChunkSize: " + maxChunkSize + " (expected > 0)");
-        }
-
-        this.maxChunkSize = maxChunkSize;
+        this.maxChunkSize = ensurePositive(maxChunkSize, "maxChunkSize");
         return this;
     }
 

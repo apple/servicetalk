@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.newLimiter;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
  * Limits the request payload size. The filter will throw an exception which may result in stream/connection closure.
@@ -41,10 +42,7 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
      * @param maxRequestPayloadSize The maximum request payload size allowed.
      */
     public PayloadSizeLimitingHttpServiceFilter(int maxRequestPayloadSize) {
-        if (maxRequestPayloadSize < 0) {
-            throw new IllegalArgumentException("maxRequestPayloadSize: " + maxRequestPayloadSize + " (expected >=0)");
-        }
-        this.maxRequestPayloadSize = maxRequestPayloadSize;
+        this.maxRequestPayloadSize = ensureNonNegative(maxRequestPayloadSize, "maxRequestPayloadSize");
     }
 
     @Override

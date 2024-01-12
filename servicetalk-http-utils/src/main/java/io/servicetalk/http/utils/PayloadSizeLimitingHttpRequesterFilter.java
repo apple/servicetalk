@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 /**
  * Limits the response payload size. The filter will throw an exception which may result in stream/connection closure.
@@ -48,10 +49,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
      * @param maxResponsePayloadSize The maximum response payload size allowed.
      */
     public PayloadSizeLimitingHttpRequesterFilter(int maxResponsePayloadSize) {
-        if (maxResponsePayloadSize < 0) {
-            throw new IllegalArgumentException("maxResponsePayloadSize: " + maxResponsePayloadSize + " (expected >=0)");
-        }
-        this.maxResponsePayloadSize = maxResponsePayloadSize;
+        this.maxResponsePayloadSize = ensureNonNegative(maxResponsePayloadSize, "maxResponsePayloadSize");
     }
 
     @Override

@@ -26,6 +26,7 @@ import static io.servicetalk.concurrent.api.ProcessorBufferUtils.consumeNextItem
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -41,10 +42,7 @@ abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object
     private volatile int buffered;
 
     AbstractPublisherProcessorSignalsHolder(final int maxBuffer, final Q signals) {
-        if (maxBuffer <= 0) {
-            throw new IllegalArgumentException("maxBuffer: " + maxBuffer + " (expected > 0)");
-        }
-        this.maxBuffer = maxBuffer;
+        this.maxBuffer = ensurePositive(maxBuffer, "maxBuffer");
         this.signals = requireNonNull(signals);
     }
 

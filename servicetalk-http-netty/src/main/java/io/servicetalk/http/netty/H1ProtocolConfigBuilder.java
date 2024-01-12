@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -67,10 +68,7 @@ public final class H1ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder maxPipelinedRequests(final int maxPipelinedRequests) {
-        if (maxPipelinedRequests <= 0) {
-            throw new IllegalArgumentException("maxPipelinedRequests: " + maxPipelinedRequests + " (expected >0)");
-        }
-        this.maxPipelinedRequests = maxPipelinedRequests;
+        this.maxPipelinedRequests = ensurePositive(maxPipelinedRequests, "maxPipelinedRequests");
         return this;
     }
 
@@ -86,10 +84,7 @@ public final class H1ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder maxStartLineLength(final int maxStartLineLength) {
-        if (maxStartLineLength <= 0) {
-            throw new IllegalArgumentException("maxStartLineLength: " + maxStartLineLength + " (expected >0)");
-        }
-        this.maxStartLineLength = maxStartLineLength;
+        this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
         return this;
     }
 
@@ -106,10 +101,7 @@ public final class H1ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder maxHeaderFieldLength(final int maxHeaderFieldLength) {
-        if (maxHeaderFieldLength <= 0) {
-            throw new IllegalArgumentException("maxHeaderFieldLength: " + maxHeaderFieldLength + " (expected >0)");
-        }
-        this.maxHeaderFieldLength = maxHeaderFieldLength;
+        this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
         return this;
     }
 
@@ -125,11 +117,7 @@ public final class H1ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        if (headersEncodedSizeEstimate <= 0) {
-            throw new IllegalArgumentException("headersEncodedSizeEstimate: " + headersEncodedSizeEstimate +
-                    " (expected >0)");
-        }
-        this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
+        this.headersEncodedSizeEstimate = ensurePositive(headersEncodedSizeEstimate, "headersEncodedSizeEstimate");
         return this;
     }
 
@@ -143,11 +131,7 @@ public final class H1ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        if (trailersEncodedSizeEstimate <= 0) {
-            throw new IllegalArgumentException("trailersEncodedSizeEstimate: " + trailersEncodedSizeEstimate +
-                    " (expected >0)");
-        }
-        this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
+        this.trailersEncodedSizeEstimate = ensurePositive(trailersEncodedSizeEstimate, "trailersEncodedSizeEstimate");
         return this;
     }
 

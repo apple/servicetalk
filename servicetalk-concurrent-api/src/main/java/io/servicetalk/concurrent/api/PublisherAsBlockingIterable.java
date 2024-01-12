@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
@@ -59,11 +60,8 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
     PublisherAsBlockingIterable(final Publisher<T> original, int queueCapacityHint) {
         this.original = requireNonNull(original);
-        if (queueCapacityHint <= 0) {
-            throw new IllegalArgumentException("Invalid queueCapacityHint: " + queueCapacityHint + " (expected > 0).");
-        }
         // Add a sane upper bound to the capacity to reduce buffering.
-        this.queueCapacityHint = min(queueCapacityHint, 128);
+        this.queueCapacityHint = min(ensurePositive(queueCapacityHint, "queueCapacityHint"), 128);
     }
 
     @Override

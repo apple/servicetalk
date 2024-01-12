@@ -42,6 +42,8 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -88,15 +90,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
                           int maxDelayedErrors, int maxConcurrency) {
         super(original);
-        if (maxConcurrency <= 0) {
-            throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
-        }
-        if (maxDelayedErrors < 0) {
-            throw new IllegalArgumentException("maxDelayedErrors: " + maxDelayedErrors + " (expected >=0)");
-        }
         this.mapper = requireNonNull(mapper);
-        this.maxConcurrency = maxConcurrency;
-        this.maxDelayedErrors = maxDelayedErrors;
+        this.maxConcurrency = ensurePositive(maxConcurrency, "maxConcurrency");
+        this.maxDelayedErrors = ensureNonNegative(maxDelayedErrors, "maxDelayedErrors");
     }
 
     @Override

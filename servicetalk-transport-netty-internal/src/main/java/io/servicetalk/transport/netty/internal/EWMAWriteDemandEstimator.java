@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.max;
 
 final class EWMAWriteDemandEstimator extends OverlappingCapacityAwareEstimator {
@@ -29,10 +30,7 @@ final class EWMAWriteDemandEstimator extends OverlappingCapacityAwareEstimator {
 
     EWMAWriteDemandEstimator(long sizeAccumulator) {
         super(defaultEstimator());
-        if (sizeAccumulator <= 0) {
-            throw new IllegalArgumentException("sizeAccumulator: " + sizeAccumulator + " (expected >0)");
-        }
-        this.sizeAccumulator = sizeAccumulator;
+        this.sizeAccumulator = ensurePositive(sizeAccumulator, "sizeAccumulator");
     }
 
     @Override

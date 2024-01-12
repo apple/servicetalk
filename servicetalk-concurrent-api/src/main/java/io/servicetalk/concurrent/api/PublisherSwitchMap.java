@@ -32,6 +32,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -50,10 +51,7 @@ final class PublisherSwitchMap<T, R> extends AbstractAsynchronousPublisherOperat
                        final int maxDelayedErrors,
                        final Function<? super T, ? extends Publisher<? extends R>> mapper) {
         super(original);
-        if (maxDelayedErrors < 0) {
-            throw new IllegalArgumentException("maxDelayedErrors: " + maxDelayedErrors + " (expected >=0)");
-        }
-        this.maxDelayedErrors = maxDelayedErrors;
+        this.maxDelayedErrors = ensureNonNegative(maxDelayedErrors, "maxDelayedErrors");
         this.mapper = requireNonNull(mapper);
     }
 

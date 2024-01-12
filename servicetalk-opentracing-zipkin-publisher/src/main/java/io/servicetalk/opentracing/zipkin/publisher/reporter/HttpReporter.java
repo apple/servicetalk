@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static zipkin2.CheckResult.OK;
@@ -244,10 +245,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
          * @return {@code this}.
          */
         public Builder maxConcurrentReports(final int maxConcurrentReports) {
-            if (maxConcurrentReports <= 0) {
-                throw new IllegalArgumentException("maxConcurrentReports: " + maxConcurrentReports + " (expected > 0)");
-            }
-            this.maxConcurrentReports = maxConcurrentReports;
+            this.maxConcurrentReports = ensurePositive(maxConcurrentReports, "maxConcurrentReports");
             return this;
         }
 
@@ -259,12 +257,9 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
          * @return {@code this}.
          */
         public Builder batchSpans(final int batchSizeHint, final Duration maxBatchDuration) {
-            if (batchSizeHint <= 0) {
-                throw new IllegalArgumentException("batchSizeHint: " + batchSizeHint + " (expected > 0)");
-            }
-            batchingEnabled = true;
-            this.batchSizeHint = batchSizeHint;
+            this.batchSizeHint = ensurePositive(batchSizeHint, "batchSizeHint");
             this.maxBatchDuration = requireNonNull(maxBatchDuration);
+            batchingEnabled = true;
             return this;
         }
 

@@ -33,6 +33,7 @@ dependencies {
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
+  implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305"
   implementation "com.sun.activation:jakarta.activation"
   implementation "com.sun.xml.bind:jaxb-core"

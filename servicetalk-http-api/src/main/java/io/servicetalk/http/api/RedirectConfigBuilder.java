@@ -38,6 +38,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
@@ -86,10 +87,7 @@ public final class RedirectConfigBuilder {
      * @return {@code this}
      */
     public RedirectConfigBuilder maxRedirects(final int maxRedirects) {
-        if (maxRedirects < 0) {
-            throw new IllegalArgumentException("maxRedirects: " + maxRedirects + " (expected >= 0)");
-        }
-        this.maxRedirects = maxRedirects;
+        this.maxRedirects = ensureNonNegative(maxRedirects, "maxRedirects");
         return this;
     }
 

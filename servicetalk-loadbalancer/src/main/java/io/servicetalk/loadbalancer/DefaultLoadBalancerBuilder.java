@@ -33,6 +33,7 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
@@ -61,11 +62,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
-        if (linearSearchSpace <= 0) {
-            throw new IllegalArgumentException("Invalid linear search space: "
-                    + linearSearchSpace + " (expected > 0)");
-        }
-        this.linearSearchSpace = linearSearchSpace;
+        this.linearSearchSpace = ensurePositive(linearSearchSpace, "linearSearchSpace");
         return this;
     }
 

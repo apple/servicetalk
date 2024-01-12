@@ -66,6 +66,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
 
@@ -387,10 +389,7 @@ public final class RetryingHttpRequesterFilter
                     "positive value.") : null;
             this.timerExecutor = timerExecutor;
             this.exponential = exponential;
-            if (maxRetries <= 0) {
-                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected > 0).");
-            }
-            this.maxRetries = maxRetries;
+            this.maxRetries = ensurePositive(maxRetries, "maxRetries");
         }
 
         BackOffPolicy(final int maxRetries) {
@@ -399,10 +398,7 @@ public final class RetryingHttpRequesterFilter
             this.maxDelay = null;
             this.timerExecutor = null;
             this.exponential = false;
-            if (maxRetries < 0) {
-                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected >= 0).");
-            }
-            this.maxRetries = maxRetries;
+            this.maxRetries = ensureNonNegative(maxRetries, "maxRetries");
         }
 
         /**
