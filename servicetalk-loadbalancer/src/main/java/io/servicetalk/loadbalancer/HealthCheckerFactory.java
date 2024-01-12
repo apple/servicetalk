@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 /**
  * A factory of {@link HealthChecker} instances. The factory will be used by load balancer
@@ -26,9 +27,9 @@ interface HealthCheckerFactory<ResolvedAddress> {
     /**
      * Create a new {@link HealthChecker}.
      * @param executor the {@link Executor} to use for scheduling tasks and obtaining the current time.
-     * @param hostObserver a {@link io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver} to notify of
+     * @param hostObserver a {@link HostObserver} to notify of
      *                     relevant host events.
      * @return a new {@link HealthChecker}.
      */
-    HealthChecker newHealthChecker(Executor executor, LoadBalancerObserver.HostObserver<ResolvedAddress> hostObserver);
+    HealthChecker newHealthChecker(Executor executor, HostObserver<ResolvedAddress> hostObserver);
 }
