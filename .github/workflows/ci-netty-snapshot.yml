@@ -23,6 +23,10 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: Print Netty Version
+        env:
+          ORG_GRADLE_PROJECT_nettyVersion: 4.1+
+        run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | grep "io.netty:netty-codec-http2"
       - name: Build and Test
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
