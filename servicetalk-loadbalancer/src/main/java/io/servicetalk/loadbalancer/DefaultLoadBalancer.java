@@ -47,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -105,6 +106,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
+    @Nullable
+    private final HealthChecker<ResolvedAddress> healthChecker;
     private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
@@ -128,8 +131,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
+            final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            @Nullable final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
+            @Nullable final Supplier<HealthChecker> healthCheckerFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -138,15 +142,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
         this.linearSearchSpace = linearSearchSpace;
+        this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
         this.healthCheckConfig = healthCheckConfig;
-        this.loadBalancerObserver = loadBalancerObserver != null ?
-                loadBalancerObserver : NoopLoadBalancerObserver.instance();
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
-                LOGGER.error("{}: Uncaught exception in SequentialExecutor", this, uncaughtException));
+                LOGGER.error("{}: Uncaught exception in " + this.getClass().getSimpleName(), this, uncaughtException));
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
         subscribeToEvents(false);
+        this.healthChecker = healthCheckerFactory == null ? null : healthCheckerFactory.get();
     }
 
     private void subscribeToEvents(boolean resubscribe) {
@@ -172,6 +176,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (!isClosed) {
                     discoveryCancellable.cancel();
                     eventStreamProcessor.onComplete();
+                    if (healthChecker != null) {
+                        healthChecker.cancel();
+                    }
                 }
                 isClosed = true;
                 List<Host<ResolvedAddress, C>> currentList = usedHosts;
@@ -377,8 +384,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            Host<ResolvedAddress, C> host = new DefaultHost<>(DefaultLoadBalancer.this.toString(), addr,
-                    connectionFactory, linearSearchSpace, healthCheckConfig, loadBalancerObserver.hostObserver());
+            final HealthIndicator indicator = healthChecker == null ? null : healthChecker.newHealthIndicator(addr);
+            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionFactory,
+                    linearSearchSpace, loadBalancerObserver.hostObserver(), healthCheckConfig, indicator);
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
@@ -386,8 +394,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                             // Can't remove an entry from an empty list.
                             return;
                         }
-                        final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
-                                currentHosts, host);
+                        final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(currentHosts, host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
                             sequentialUpdateUsedHosts(nextHosts);

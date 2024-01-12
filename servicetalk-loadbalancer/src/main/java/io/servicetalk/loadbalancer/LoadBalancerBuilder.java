@@ -77,11 +77,19 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
 
     /**
      * Set the {@link LoadBalancerObserver} to use with this load balancer.
-     * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or null to not use an observer.
+     * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or {@code null} to not use an observer.
      * @return {code this}
      */
     LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver);
+
+    /**
+     * Set the {@link HealthCheckerFactory} to use with this load balancer.
+     * @param healthCheckerFactory the {@link HealthCheckerFactory} to use, or {@code null} to not use a
+     * {@link HealthChecker}.
+     * @return {code this}
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory);
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed

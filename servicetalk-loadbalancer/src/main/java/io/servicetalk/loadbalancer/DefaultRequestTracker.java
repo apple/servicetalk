@@ -15,9 +15,10 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.ScoreSupplier;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.IntBinaryOperator;
-import java.util.function.LongSupplier;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
@@ -37,17 +38,16 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * @see <a href="http://www.eckner.com/papers/Algorithms%20for%20Unevenly%20Spaced%20Time%20Series.pdf"> Eckner
  * (2019) Algorithms for Unevenly Spaced Time Series: Moving Averages and Other Rolling Operators (4.2 pp. 10)</a>
  */
-final class DefaultLatencyTracker implements LatencyTracker {
-    private static final AtomicIntegerFieldUpdater<DefaultLatencyTracker> pendingUpdater =
-            newUpdater(DefaultLatencyTracker.class, "pending");
+abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
+    private static final AtomicIntegerFieldUpdater<DefaultRequestTracker> pendingUpdater =
+            newUpdater(DefaultRequestTracker.class, "pending");
     private static final long MAX_MS_TO_NS = NANOSECONDS.convert(MAX_VALUE, MILLISECONDS);
-    private static final long DEFAULT_CANCEL_PENALTY = 5L;
-    private static final long DEFAULT_ERROR_PENALTY = 10L;
+    static final long DEFAULT_CANCEL_PENALTY = 5L;
+    static final long DEFAULT_ERROR_PENALTY = 10L;
     /**
      * Mean lifetime, exponential decay. inverted tau
      */
     private final double invTau;
-    private final LongSupplier currentTimeSupplier;
     private final long cancelPenalty;
     private final long errorPenalty;
 
@@ -61,26 +61,29 @@ final class DefaultLatencyTracker implements LatencyTracker {
     private int ewma;
     private volatile int pending;
 
-    DefaultLatencyTracker(final long halfLifeNanos, final LongSupplier currentTimeSupplier) {
-        this(halfLifeNanos, currentTimeSupplier, DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
+    DefaultRequestTracker(final long halfLifeNanos) {
+        this(halfLifeNanos, DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
     }
 
-    DefaultLatencyTracker(final long halfLifeNanos, final LongSupplier currentTimeSupplier,
-                          long cancelPenaly, long errorPenaly) {
+    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty) {
         if (halfLifeNanos <= 0) {
             throw new IllegalArgumentException("halfLifeNanos: " + halfLifeNanos + " (expected >0)");
         }
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
-        this.currentTimeSupplier = currentTimeSupplier;
-        this.lastTimeNanos = currentTimeSupplier.getAsLong();
-        this.cancelPenalty = cancelPenaly;
-        this.errorPenalty = errorPenaly;
+        this.cancelPenalty = cancelPenalty;
+        this.errorPenalty = errorPenalty;
     }
 
+    /**
+     * The current time in nanoseconds.
+     * @return the current time in nanoseconds.
+     */
+    protected abstract long currentTimeNanos();
+
     @Override
-    public long beforeStart() {
+    public final long beforeStart() {
         pendingUpdater.incrementAndGet(this);
-        return currentTimeSupplier.getAsLong();
+        return currentTimeNanos();
     }
 
     @Override
@@ -102,7 +105,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
     }
 
     @Override
-    public int score() {
+    public final int score() {
         final int currentEWMA = calculateAndStore((ewma, lastTimeNanos) -> 0, 0);
         final int cPending = pendingUpdater.get(this);
         if (currentEWMA == 0) {
@@ -145,7 +148,7 @@ final class DefaultLatencyTracker implements LatencyTracker {
         // We capture the current time inside the synchronized block to exploit the monotonic time source
         // properties which prevent the time duration from going negative. This will result in a latency penalty
         // as concurrency increases, but is a trade-off for simplicity.
-        final long currentTimeNanos = currentTimeSupplier.getAsLong();
+        final long currentTimeNanos = currentTimeNanos();
         // When modifying the EWMA and lastTime we read/write both values in a synchronized block as they are
         // tightly coupled in the EWMA formula below.
         final int currentEWMA = ewma;

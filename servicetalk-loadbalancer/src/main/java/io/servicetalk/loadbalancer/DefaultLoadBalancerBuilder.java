@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -49,6 +50,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+    @Nullable
+    private HealthCheckerFactory healthCheckerFactory;
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
     private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
     private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -76,6 +79,12 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
         this.loadBalancerObserver = loadBalancerObserver;
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory) {
+        this.healthCheckerFactory = healthCheckerFactory;
         return this;
     }
 
@@ -118,13 +127,23 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         if (this.healthCheckFailedConnectionsThreshold < 0) {
             healthCheckConfig = null;
         } else {
-            healthCheckConfig = new HealthCheckConfig(this.backgroundExecutor == null ?
-                    RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : this.backgroundExecutor,
+            healthCheckConfig = new HealthCheckConfig(getExecutor(),
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
                     healthCheckResubscribeInterval, healthCheckResubscribeJitter);
         }
+        final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver = this.loadBalancerObserver != null ?
+                this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
+        Supplier<HealthChecker> healthCheckerSupplier;
+        if (healthCheckerFactory == null) {
+            healthCheckerSupplier = null;
+        } else {
+            final Executor executor = getExecutor();
+            healthCheckerSupplier = () -> healthCheckerFactory.newHealthChecker(executor,
+                    loadBalancerObserver.hostObserver());
+        }
+
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
-                loadBalancerObserver);
+                loadBalancerObserver, healthCheckerSupplier);
     }
 
     private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -132,20 +151,23 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy loadBalancingPolicy;
+        private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
         private final int linearSearchSpace;
         @Nullable
-        private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+        private final Supplier<HealthChecker> healthCheckerFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy loadBalancingPolicy,
         final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
-                                   final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
+                                   final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
+                                   final Supplier<HealthChecker> healthCheckerFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
+            this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
             this.linearSearchSpace = linearSearchSpace;
             this.healthCheckConfig = healthCheckConfig;
-            this.loadBalancerObserver = loadBalancerObserver;
+            this.healthCheckerFactory = healthCheckerFactory;
         }
 
         @Override
@@ -154,8 +176,13 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
-                    linearSearchSpace, healthCheckConfig, loadBalancerObserver);
+                    linearSearchSpace, loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
         }
+    }
+
+    private Executor getExecutor() {
+        return backgroundExecutor ==
+                null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : backgroundExecutor;
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>

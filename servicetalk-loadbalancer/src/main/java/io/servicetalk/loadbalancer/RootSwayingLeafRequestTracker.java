@@ -18,15 +18,15 @@ package io.servicetalk.loadbalancer;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A two-level latency tracker, namely root and leaf.
- * Each tracking interaction influences both levels, but reporting operations (i.e., {@link #score()}) will only
+ * A two-level request tracker, namely root and leaf.
+ * Each tracking interaction influences both levels, but reporting operations will only
  * consult the leaf.
  */
-final class RootSwayingLeafLatencyTracker implements LatencyTracker {
+final class RootSwayingLeafRequestTracker implements RequestTracker {
 
-    private final LatencyTracker root;
-    private final LatencyTracker leaf;
-    RootSwayingLeafLatencyTracker(final LatencyTracker root, final LatencyTracker leaf) {
+    private final RequestTracker root;
+    private final RequestTracker leaf;
+    RootSwayingLeafRequestTracker(final RequestTracker root, final RequestTracker leaf) {
         this.root = requireNonNull(root);
         this.leaf = requireNonNull(leaf);
     }
@@ -58,11 +58,5 @@ final class RootSwayingLeafLatencyTracker implements LatencyTracker {
         // Tracks both levels
         root.observeError(beforeStartTimeNs);
         leaf.observeError(beforeStartTimeNs);
-    }
-
-    @Override
-    public int score() {
-        // Reports the level score
-        return leaf.score();
     }
 }
