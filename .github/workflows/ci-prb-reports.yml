@@ -14,7 +14,7 @@ jobs:
         os: [ ubuntu-latest ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@e73ee10c7552966e58bde25ecb4a0033cd13a843
+        uses: dawidd6/action-download-artifact@919731637237edfee1503d8a42b0e0caa49a4c63
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
