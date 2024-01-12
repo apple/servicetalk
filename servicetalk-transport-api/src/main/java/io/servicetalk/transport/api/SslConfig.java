@@ -118,9 +118,9 @@ public interface SslConfig {
     List<String> ciphers();
 
     /**
-     * Defines filtering behavior for {@link #ciphers() ciphers suites}.
+     * Defines filtering behavior for ciphers suites.
      *
-     * @return filtering behavior for {@link #ciphers() ciphers suites}.
+     * @return filtering behavior for ciphers suites.
      * @see #ciphers()
      */
     default CipherSuiteFilter cipherSuiteFilter() {
@@ -199,18 +199,18 @@ public interface SslConfig {
     }
 
     /**
-     * Defines filtering logic for {@link #ciphers() ciphers suites}.
+     * Defines filtering logic for ciphers suites.
      *
      * @see #ciphers()
      */
     enum CipherSuiteFilter {
         /**
-         * Will take all {@link SslConfig#ciphers() provided ciphers suites} as-is without any filtering.
+         * Will take all provided ciphers suites as-is without any filtering.
          */
         PROVIDED,
 
         /**
-         * Will filter all requested ciphers suites out that are not supported by the current {@link SSLEngine}.
+         * Will filter all provided ciphers suites out that are not supported by the current {@link SSLEngine}.
          */
         SUPPORTED
     }

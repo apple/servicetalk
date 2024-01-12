@@ -304,7 +304,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     }
 
     /**
-     * Set the filtering behavior for {@link #ciphers(List) ciphers suites}.
+     * Set the filtering behavior for ciphers suites.
      *
      * @param cipherSuiteFilter {@link CipherSuiteFilter} to use.
      * @return {@code this}.
