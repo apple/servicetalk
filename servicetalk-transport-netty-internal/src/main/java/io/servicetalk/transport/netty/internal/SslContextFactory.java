@@ -269,7 +269,7 @@ public final class SslContextFactory {
     private static io.netty.handler.ssl.CipherSuiteFilter toNettyCipherSuiteFilter(
             final CipherSuiteFilter cipherSuiteFilter) {
         switch (cipherSuiteFilter) {
-            case IDENTITY:
+            case PROVIDED:
                 return IdentityCipherSuiteFilter.INSTANCE;
             case SUPPORTED:
                 return SupportedCipherSuiteFilter.INSTANCE;

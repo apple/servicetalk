@@ -124,7 +124,7 @@ public interface SslConfig {
      * @see #ciphers()
      */
     default CipherSuiteFilter cipherSuiteFilter() {
-        return CipherSuiteFilter.IDENTITY;
+        return CipherSuiteFilter.PROVIDED;
     }
 
     /**
@@ -200,12 +200,14 @@ public interface SslConfig {
 
     /**
      * Defines filtering logic for {@link #ciphers() ciphers suites}.
+     *
+     * @see #ciphers()
      */
     enum CipherSuiteFilter {
         /**
-         * Will take all requested ciphers suites as-is without any filtering.
+         * Will take all {@link SslConfig#ciphers() provided ciphers suites} as-is without any filtering.
          */
-        IDENTITY,
+        PROVIDED,
 
         /**
          * Will filter all requested ciphers suites out that are not supported by the current {@link SSLEngine}.

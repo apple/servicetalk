@@ -61,7 +61,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private List<String> alpnProtocols;
     @Nullable
     private List<String> ciphers;
-    private CipherSuiteFilter cipherSuiteFilter = CipherSuiteFilter.IDENTITY;
+    private CipherSuiteFilter cipherSuiteFilter = CipherSuiteFilter.PROVIDED;
     private long sessionCacheSize;
     private long sessionTimeout;
     private int maxCertificateListBytes = DEFAULT_MAX_CERTIFICATE_LIST_BYTES;

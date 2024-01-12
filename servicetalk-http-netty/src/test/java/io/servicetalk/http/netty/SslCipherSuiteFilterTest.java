@@ -33,7 +33,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static io.servicetalk.transport.api.SslConfig.CipherSuiteFilter.IDENTITY;
+import static io.servicetalk.transport.api.SslConfig.CipherSuiteFilter.PROVIDED;
 import static io.servicetalk.transport.api.SslConfig.CipherSuiteFilter.SUPPORTED;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -63,7 +63,7 @@ class SslCipherSuiteFilterTest {
                                 .peerHost(serverPemHostname())
                                 .provider(provider)
                                 .ciphers(SUPPORTED_CIPHER, UNSUPPORTED_CIPHER)
-                                .cipherSuiteFilter(IDENTITY)
+                                .cipherSuiteFilter(PROVIDED)
                                 .build())
                         .buildBlocking()) {
 
@@ -88,7 +88,7 @@ class SslCipherSuiteFilterTest {
                             DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                             .provider(SslProvider.OPENSSL)
                             .ciphers(SUPPORTED_CIPHER, UNSUPPORTED_CIPHER)
-                            .cipherSuiteFilter(IDENTITY)
+                            .cipherSuiteFilter(PROVIDED)
                             .build())
                     .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         });
@@ -103,7 +103,7 @@ class SslCipherSuiteFilterTest {
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .provider(SslProvider.JDK)
                         .ciphers(SUPPORTED_CIPHER, UNSUPPORTED_CIPHER)
-                        .cipherSuiteFilter(IDENTITY)
+                        .cipherSuiteFilter(PROVIDED)
                         .build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
