@@ -276,7 +276,6 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param ciphers the ciphers to use.
      * @return {@code this}.
      * @see SslConfig#ciphers()
-     * @see #cipherSuiteFilter(CipherSuiteFilter)
      */
     public final T ciphers(final List<String> ciphers) {
         if (ciphers.isEmpty()) {
@@ -292,7 +291,6 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param ciphers the ciphers to use.
      * @return {@code this}.
      * @see SslConfig#ciphers()
-     * @see #cipherSuiteFilter(CipherSuiteFilter)
      */
     public final T ciphers(final String... ciphers) {
         return ciphers(asList(ciphers));
