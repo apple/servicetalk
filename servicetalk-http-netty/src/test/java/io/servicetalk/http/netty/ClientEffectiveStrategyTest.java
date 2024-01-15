@@ -65,10 +65,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -478,9 +480,10 @@ class ClientEffectiveStrategyTest {
 
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
-        private Thread applicationThread = Thread.currentThread();
-        private HttpExecutionStrategy expectedStrategy;
-        private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
+        private volatile Thread applicationThread = Thread.currentThread();
+        private volatile HttpExecutionStrategy expectedStrategy;
+        private final Set<ClientOffloadPoint> offloadPoints =
+                Collections.synchronizedSet(EnumSet.noneOf(ClientOffloadPoint.class));
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
