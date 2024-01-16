@@ -140,6 +140,7 @@ import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.data.jackson.JacksonSerializerFactory.JACKSON;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -157,6 +158,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializers.jsonStreamingSerializer;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K1;
@@ -1304,6 +1306,24 @@ class H2PriorKnowledgeFeatureParityTest {
             assertEquals(responseBody, response.payloadBody(textSerializerUtf8()));
             assertNoAsyncErrors(errorQueue);
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void backpressureNoSOOEForLargePayloads(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge)
+            throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        InetSocketAddress serverAddress = bindHttpEchoServer();
+        StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming();
+
+        StreamingHttpRequest request = client.post("/").payloadBody(Publisher.range(0, 10_000),
+                jsonStreamingSerializer(JACKSON.streamingSerializerDeserializer(Integer.class)));
+        StreamingHttpResponse response = client.request(request).toFuture().get();
+
+        response.messageBody().ignoreElements().toFuture().get();
+        client.close();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
