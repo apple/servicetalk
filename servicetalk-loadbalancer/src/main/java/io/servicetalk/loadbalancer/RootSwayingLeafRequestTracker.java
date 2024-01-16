@@ -40,23 +40,23 @@ final class RootSwayingLeafRequestTracker implements RequestTracker {
     }
 
     @Override
-    public void observeSuccess(final long beforeStartTimeNs) {
+    public void onSuccess(final long beforeStartTimeNs) {
         // Tracks both levels
-        root.observeSuccess(beforeStartTimeNs);
-        leaf.observeSuccess(beforeStartTimeNs);
+        root.onSuccess(beforeStartTimeNs);
+        leaf.onSuccess(beforeStartTimeNs);
     }
 
     @Override
-    public void observeCancel(final long beforeStartTimeNs) {
+    public void onCancel(final long beforeStartTimeNs) {
         // Tracks both levels
-        root.observeCancel(beforeStartTimeNs);
-        leaf.observeCancel(beforeStartTimeNs);
+        root.onCancel(beforeStartTimeNs);
+        leaf.onCancel(beforeStartTimeNs);
     }
 
     @Override
-    public void observeError(final long beforeStartTimeNs) {
+    public void onError(final long beforeStartTimeNs) {
         // Tracks both levels
-        root.observeError(beforeStartTimeNs);
-        leaf.observeError(beforeStartTimeNs);
+        root.onError(beforeStartTimeNs);
+        leaf.onError(beforeStartTimeNs);
     }
 }

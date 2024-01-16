@@ -210,15 +210,15 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void observeSuccess(long beforeStartTime) {
+        public void onSuccess(long beforeStartTime) {
         }
 
         @Override
-        public void observeCancel(long beforeStartTimeNs) {
+        public void onCancel(long beforeStartTimeNs) {
         }
 
         @Override
-        public void observeError(long beforeStartTime) {
+        public void onError(long beforeStartTime) {
         }
     }
 
@@ -270,30 +270,30 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public HostSelector<String, TestLoadBalancedConnection> buildSelector(
-                List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
+        public <T extends TestLoadBalancedConnection> HostSelector<String, T> buildSelector(
+                List<Host<String, T>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }
 
-        private class TestSelector implements HostSelector<String, TestLoadBalancedConnection> {
+        private class TestSelector<C extends TestLoadBalancedConnection> implements HostSelector<String, C> {
 
-            private final List<? extends Host<String, TestLoadBalancedConnection>> hosts;
+            private final List<? extends Host<String, C>> hosts;
 
-            TestSelector(final List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
+            TestSelector(final List<? extends Host<String, C>> hosts) {
                 this.hosts = hosts;
             }
 
             @Override
-            public Single<TestLoadBalancedConnection> selectConnection(
-                    Predicate<TestLoadBalancedConnection> selector, @Nullable ContextMap context,
+            public Single<C> selectConnection(
+                    Predicate<C> selector, @Nullable ContextMap context,
                     boolean forceNewConnectionAndReserve) {
                 return hosts.isEmpty() ? failed(new IllegalStateException("shouldn't be empty"))
                         : hosts.get(0).newConnection(selector, false, context);
             }
 
             @Override
-            public HostSelector<String, TestLoadBalancedConnection> rebuildWithHosts(
-                    List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
+            public HostSelector<String, C> rebuildWithHosts(
+                    List<? extends Host<String, C>> hosts) {
                 rebuilds++;
                 return new TestSelector(hosts);
             }

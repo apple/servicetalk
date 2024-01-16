@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 
 /**
  * The representation of a health checking system for use with load balancing.
- * <p>
- * The core
  */
 interface HealthChecker<ResolvedAddress> extends Cancellable {
 

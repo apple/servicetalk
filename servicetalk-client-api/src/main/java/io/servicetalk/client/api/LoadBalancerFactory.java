@@ -86,7 +86,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @param targetResource A {@link String} representation of the target resource for which the created instance
-     * will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
+     * will perform load balancing. Bear in mind, load balancing is performed over the collection of hosts provided
      * via the {@code eventPublisher} which may not correspond directly to a single unresolved address, but potentially
      * a merged collection.
      * @return a new {@link LoadBalancer}.

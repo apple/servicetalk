@@ -37,11 +37,11 @@ class DefaultRequestTrackerTest {
         Assertions.assertEquals(0, requestTracker.score());
 
         // upon success score
-        requestTracker.observeSuccess(requestTracker.beforeStart());
+        requestTracker.onSuccess(requestTracker.beforeStart());
         Assertions.assertEquals(-500, requestTracker.score());
 
         // error penalty
-        requestTracker.observeError(requestTracker.beforeStart());
+        requestTracker.onError(requestTracker.beforeStart());
         Assertions.assertEquals(-5000, requestTracker.score());
 
         // decay

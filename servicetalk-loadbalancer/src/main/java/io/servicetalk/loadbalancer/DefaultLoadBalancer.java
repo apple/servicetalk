@@ -133,7 +133,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final int linearSearchSpace,
             final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            @Nullable final Supplier<HealthChecker> healthCheckerFactory) {
+            @Nullable final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -145,7 +145,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
-                LOGGER.error("{}: Uncaught exception in " + this.getClass().getSimpleName(), this, uncaughtException));
+                LOGGER.error("{}: Uncaught exception in {}", this, this.getClass().getSimpleName(), uncaughtException));
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();

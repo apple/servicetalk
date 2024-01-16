@@ -89,7 +89,8 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
      * {@link HealthChecker}.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory);
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
+            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory);
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
