@@ -144,8 +144,9 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     public ClientSslConfig build() {
         return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
-                keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), sessionCacheSize(), sessionTimeout(),
-                maxCertificateListBytes(), provider(), certificateCompressionAlgorithms(), handshakeTimeout());
+                keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), cipherSuiteFilter(), sessionCacheSize(),
+                sessionTimeout(), maxCertificateListBytes(), provider(), certificateCompressionAlgorithms(),
+                handshakeTimeout());
     }
 
     @Override
@@ -172,14 +173,15 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
                                @Nullable final Supplier<InputStream> keyCertChainSupplier,
                                @Nullable final Supplier<InputStream> keySupplier, @Nullable final String keyPassword,
                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
-                               @Nullable final List<String> ciphers, final long sessionCacheSize,
-                               final long sessionTimeout, final int maxCertificateListBytes,
-                               @Nullable final SslProvider provider,
+                               @Nullable final List<String> ciphers, final CipherSuiteFilter cipherSuiteFilter,
+                               final long sessionCacheSize, final long sessionTimeout,
+                               final int maxCertificateListBytes, @Nullable final SslProvider provider,
                                @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                                final Duration handshakeTimeout) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
-                    keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout,
-                    maxCertificateListBytes, provider, certificateCompressionAlgorithms, handshakeTimeout);
+                    keyPassword, sslProtocols, alpnProtocols, ciphers, cipherSuiteFilter, sessionCacheSize,
+                    sessionTimeout, maxCertificateListBytes, provider, certificateCompressionAlgorithms,
+                    handshakeTimeout);
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
             this.peerHost = peerHost;
             this.peerPort = peerPort;

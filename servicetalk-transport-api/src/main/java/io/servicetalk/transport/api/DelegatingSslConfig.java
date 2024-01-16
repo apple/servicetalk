@@ -103,6 +103,11 @@ public abstract class DelegatingSslConfig<T extends SslConfig> implements SslCon
     }
 
     @Override
+    public CipherSuiteFilter cipherSuiteFilter() {
+        return delegate.cipherSuiteFilter();
+    }
+
+    @Override
     public long sessionCacheSize() {
         return delegate.sessionCacheSize();
     }

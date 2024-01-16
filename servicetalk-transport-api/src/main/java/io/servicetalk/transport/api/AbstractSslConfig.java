@@ -42,6 +42,7 @@ abstract class AbstractSslConfig implements SslConfig {
     private final List<String> alpnProtocols;
     @Nullable
     private final List<String> ciphers;
+    private final CipherSuiteFilter cipherSuiteFilter;
     private final long sessionCacheSize;
     private final long sessionTimeout;
     private final int maxCertificateListBytes;
@@ -58,7 +59,8 @@ abstract class AbstractSslConfig implements SslConfig {
                       @Nullable final Supplier<InputStream> keySupplier,
                       @Nullable final String keyPassword, @Nullable final List<String> sslProtocols,
                       @Nullable final List<String> alpnProtocols,
-                      @Nullable final List<String> ciphers, final long sessionCacheSize, final long sessionTimeout,
+                      @Nullable final List<String> ciphers, final CipherSuiteFilter cipherSuiteFilter,
+                      final long sessionCacheSize, final long sessionTimeout,
                       final int maxCertificateListBytes, @Nullable final SslProvider provider,
                       @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                       final Duration handshakeTimeout) {
@@ -71,6 +73,7 @@ abstract class AbstractSslConfig implements SslConfig {
         this.sslProtocols = sslProtocols;
         this.alpnProtocols = alpnProtocols;
         this.ciphers = ciphers;
+        this.cipherSuiteFilter = cipherSuiteFilter;
         this.sessionCacheSize = sessionCacheSize;
         this.sessionTimeout = sessionTimeout;
         this.maxCertificateListBytes = maxCertificateListBytes;
@@ -131,6 +134,11 @@ abstract class AbstractSslConfig implements SslConfig {
     @Override
     public final List<String> ciphers() {
         return ciphers;
+    }
+
+    @Override
+    public CipherSuiteFilter cipherSuiteFilter() {
+        return cipherSuiteFilter;
     }
 
     @Override
