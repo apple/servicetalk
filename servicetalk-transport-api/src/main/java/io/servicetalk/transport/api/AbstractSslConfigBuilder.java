@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.transport.api.SslConfig.CipherSuiteFilter;
+
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Arrays;
@@ -60,6 +62,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private List<String> alpnProtocols;
     @Nullable
     private List<String> ciphers;
+    private CipherSuiteFilter cipherSuiteFilter = CipherSuiteFilter.PROVIDED;
     private long sessionCacheSize;
     private long sessionTimeout;
     private int maxCertificateListBytes = DEFAULT_MAX_CERTIFICATE_LIST_BYTES;
@@ -297,6 +300,24 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     @Nullable
     final List<String> ciphers() {
         return ciphers;
+    }
+
+    /**
+     * Set the filtering behavior for ciphers suites.
+     *
+     * @param cipherSuiteFilter {@link CipherSuiteFilter} to use.
+     * @return {@code this}.
+     * @see SslConfig#cipherSuiteFilter()
+     * @see #ciphers(String...)
+     * @see #ciphers(List)
+     */
+    public final T cipherSuiteFilter(final CipherSuiteFilter cipherSuiteFilter) {
+        this.cipherSuiteFilter = requireNonNull(cipherSuiteFilter);
+        return thisT();
+    }
+
+    final CipherSuiteFilter cipherSuiteFilter() {
+        return cipherSuiteFilter;
     }
 
     /**
