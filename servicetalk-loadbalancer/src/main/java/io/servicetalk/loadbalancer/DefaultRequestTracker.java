@@ -87,19 +87,19 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     }
 
     @Override
-    public void observeSuccess(final long startTimeNanos) {
+    public void onSuccess(final long startTimeNanos) {
         pendingUpdater.decrementAndGet(this);
         calculateAndStore((ewma, currentLatency) -> currentLatency, startTimeNanos);
     }
 
     @Override
-    public void observeCancel(final long startTimeNanos) {
+    public void onCancel(final long startTimeNanos) {
         pendingUpdater.decrementAndGet(this);
         calculateAndStore(this::cancelPenalty, startTimeNanos);
     }
 
     @Override
-    public void observeError(final long startTimeNanos) {
+    public void onError(final long startTimeNanos) {
         pendingUpdater.decrementAndGet(this);
         calculateAndStore(this::errorPenalty, startTimeNanos);
     }

@@ -52,7 +52,8 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> buildSelector(List<Host<ResolvedAddress, C>> hosts, String targetResource) {
+    public <T extends C> HostSelector<ResolvedAddress, T> buildSelector(
+            List<Host<ResolvedAddress, T>> hosts, String targetResource) {
         return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
 

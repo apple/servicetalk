@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.servicetalk.context.api.ContextMap;
  */
 interface RequestTracker {
 
-    @SuppressWarnings("rawtypes")
     ContextMap.Key<RequestTracker> REQUEST_TRACKER_KEY =
             ContextMap.Key.newKey("request_tracker", RequestTracker.class);
 
@@ -38,19 +37,19 @@ interface RequestTracker {
      *
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
      */
-    void observeSuccess(long beforeStartTimeNs);
+    void onSuccess(long beforeStartTimeNs);
 
     /**
      * Records cancellation of the action for which latency is to be tracked.
      *
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
      */
-    void observeCancel(long beforeStartTimeNs);
+    void onCancel(long beforeStartTimeNs);
 
     /**
      * Records a failed completion of the action for which latency is to be tracked.
      *
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
      */
-    void observeError(long beforeStartTimeNs);
+    void onError(long beforeStartTimeNs);
 }
