@@ -17,6 +17,8 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.context.api.ContextMap;
 
+import javax.annotation.Nullable;
+
 /**
  * A tracker of latency of an action over time.
  */
@@ -40,16 +42,11 @@ interface RequestTracker {
     void onSuccess(long beforeStartTimeNs);
 
     /**
-     * Records cancellation of the action for which latency is to be tracked.
-     *
-     * @param beforeStartTimeNs return value from {@link #beforeStart()}.
-     */
-    void onCancel(long beforeStartTimeNs);
-
-    /**
      * Records a failed completion of the action for which latency is to be tracked.
      *
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
+     * @param errorClass the class of error that triggered this method.
+     * @param cause the specific cause of the error, if available. Primarily for observability.
      */
-    void onError(long beforeStartTimeNs);
+    void onError(long beforeStartTimeNs, ErrorClass errorClass, @Nullable Throwable cause);
 }
