@@ -42,12 +42,7 @@ enum ErrorClass {
     /**
      * Failure due to cancellation.
      */
-    CANCELLED(true),
-
-    /**
-     * Failure for an unknown reason.
-     */
-    UNKNOWN(false);
+    CANCELLED(true);
 
     private final boolean isLocal;
     ErrorClass(boolean isLocal) {
