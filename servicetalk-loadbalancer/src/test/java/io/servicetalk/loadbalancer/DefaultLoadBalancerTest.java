@@ -214,7 +214,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onError(long beforeStartTime, ErrorClass errorClass, Throwable cause) {
+        public void onError(long beforeStartTime, ErrorClass errorClass) {
         }
     }
 

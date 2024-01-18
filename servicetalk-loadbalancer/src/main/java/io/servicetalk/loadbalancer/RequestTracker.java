@@ -17,13 +17,11 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.context.api.ContextMap;
 
-import javax.annotation.Nullable;
-
 /**
  * A tracker of latency of an action over time.
  * <p>
  * The usage of the RequestTracker is intended to follow the simple workflow:
- * - At initiation of an action for which a request is must call {@link RequestTracker#beforeStart()} and safe the
+ * - At initiation of an action for which a request is must call {@link RequestTracker#beforeStart()} and save the
  *   timestamp much like would be done when using a stamped lock.
  * - Once the request event is complete only one of the {@link RequestTracker#onSuccess(long)} or
  *   {@link RequestTracker#onError(long, ErrorClass, Throwable)} methods must be called and called exactly once.
@@ -56,7 +54,6 @@ interface RequestTracker {
      *
      * @param beforeStartTimeNs return value from {@link #beforeStart()}.
      * @param errorClass the class of error that triggered this method.
-     * @param cause the specific cause of the error, if available. Primarily for observability.
      */
-    void onError(long beforeStartTimeNs, ErrorClass errorClass, @Nullable Throwable cause);
+    void onError(long beforeStartTimeNs, ErrorClass errorClass);
 }

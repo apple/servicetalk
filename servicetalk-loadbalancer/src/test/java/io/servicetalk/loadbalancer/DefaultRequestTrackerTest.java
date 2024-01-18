@@ -41,11 +41,11 @@ class DefaultRequestTrackerTest {
         Assertions.assertEquals(-500, requestTracker.score());
 
         // error penalty
-        requestTracker.onError(requestTracker.beforeStart(), ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED, null);
+        requestTracker.onError(requestTracker.beforeStart(), ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED);
         Assertions.assertEquals(-5000, requestTracker.score());
 
         // cancellation penalty
-        requestTracker.onError(requestTracker.beforeStart(), ErrorClass.CANCELLED, null);
+        requestTracker.onError(requestTracker.beforeStart(), ErrorClass.CANCELLED);
         Assertions.assertEquals(-12_500, requestTracker.score());
 
         // decay
