@@ -34,7 +34,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -47,7 +46,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
-import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -101,17 +99,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final HealthIndicator healthIndicator;
     private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
-    private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                final int linearSearchSpace, final HostObserver<Addr> hostObserver,
-                final @Nullable HealthCheckConfig healthCheckConfig, final @Nullable HealthIndicator healthIndicator) {
+                final HostObserver<Addr> hostObserver, final @Nullable HealthCheckConfig healthCheckConfig,
+                final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
-        this.linearSearchSpace = linearSearchSpace;
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
@@ -190,26 +186,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     public @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
         // Exhaust the linear search space first:
-        final int linearAttempts = min(connections.size(), linearSearchSpace);
+        final int linearAttempts = connections.size();
         for (int j = 0; j < linearAttempts; ++j) {
             final C connection = connections.get(j);
             if (selector.test(connection)) {
                 return connection;
-            }
-        }
-        // Try other connections randomly:
-        if (connections.size() > linearAttempts) {
-            final int diff = connections.size() - linearAttempts;
-            // With small enough search space, attempt number of times equal to number of remaining connections.
-            // Back off after exploring most of the search space, it gives diminishing returns.
-            final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
-                    (int) (diff * RANDOM_SEARCH_FACTOR);
-            final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-            for (int j = 0; j < randomAttempts; ++j) {
-                final C connection = connections.get(rnd.nextInt(linearAttempts, connections.size()));
-                if (selector.test(connection)) {
-                    return connection;
-                }
             }
         }
         // So sad, we didn't find a healthy connection.

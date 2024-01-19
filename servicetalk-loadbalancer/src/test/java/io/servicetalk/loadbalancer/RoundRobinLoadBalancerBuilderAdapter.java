@@ -55,12 +55,6 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> linearSearchSpace(int linearSearchSpace) {
-        underlying = underlying.linearSearchSpace(linearSearchSpace);
-        return this;
-    }
-
-    @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckInterval(
             Duration interval, Duration jitter) {
         underlying = underlying.healthCheckInterval(interval, jitter);

@@ -34,7 +34,6 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
@@ -44,7 +43,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private final String id;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
-    private int linearSearchSpace = DEFAULT_LINEAR_SEARCH_SPACE;
 
     @Nullable
     private Executor backgroundExecutor;
@@ -61,12 +59,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
         this.id = requireNonNull(id, "id");
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
-        this.linearSearchSpace = ensurePositive(linearSearchSpace, "linearSearchSpace");
-        return this;
     }
 
     @Override
@@ -144,7 +136,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     loadBalancerObserver.hostObserver());
         }
 
-        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
+        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
                 loadBalancerObserver, healthCheckerSupplier);
     }
 
@@ -154,20 +146,18 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
-        private final int linearSearchSpace;
         @Nullable
         private final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
+                                   final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
                                    final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
-            this.linearSearchSpace = linearSearchSpace;
             this.healthCheckConfig = healthCheckConfig;
             this.healthCheckerFactory = healthCheckerFactory;
         }
@@ -178,7 +168,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
             return new DefaultLoadBalancer<ResolvedAddress, T>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
-                    linearSearchSpace, loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
+                    loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
         }
     }
 

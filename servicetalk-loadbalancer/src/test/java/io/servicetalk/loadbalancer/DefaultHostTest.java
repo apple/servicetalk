@@ -76,7 +76,7 @@ class DefaultHostTest {
     }
 
     private void buildHost(@Nullable HealthIndicator healthIndicator) {
-        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS, connectionFactory, Integer.MAX_VALUE,
+        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS, connectionFactory,
                 mockHostObserver, healthCheckConfig, healthIndicator);
     }
 
@@ -89,7 +89,7 @@ class DefaultHostTest {
         buildHost();
         verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         // make another one, just for good measure.
-        new DefaultHost<>("lbDescription", "address2", connectionFactory, Integer.MAX_VALUE,
+        new DefaultHost<>("lbDescription", "address2", connectionFactory,
                 mockHostObserver, healthCheckConfig, null);
         verify(mockHostObserver, times(1)).onHostCreated("address2");
     }
