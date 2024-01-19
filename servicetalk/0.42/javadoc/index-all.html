@@ -3354,6 +3354,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Set the cipher suites to enable, in the order of preference.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/DelegatingSslConfig.html#cipherSuiteFilter()" class="member-name-link">cipherSuiteFilter()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.html#cipherSuiteFilter()" class="member-name-link">cipherSuiteFilter()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></dt>
+<dd>
+<div class="block">Defines filtering behavior for ciphers suites.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html#cipherSuiteFilter(io.servicetalk.transport.api.SslConfig.CipherSuiteFilter)" class="member-name-link">cipherSuiteFilter(SslConfig.CipherSuiteFilter)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></dt>
+<dd>
+<div class="block">Set the filtering behavior for ciphers suites.</div>
+</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#clear()" class="member-name-link">clear()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
 <div class="block">Sets the <code>readerIndex</code> and <code>writerIndex</code> of this buffer to
@@ -6575,9 +6585,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block"><a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">ENHANCE_YOUR_CALM</a>.</div>
 </dd>
+<dt><a href="io/servicetalk/utils/internal/NumberUtils.html#ensureNonNegative(int,java.lang.String)" class="member-name-link">ensureNonNegative(int, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/NumberUtils.html" title="class in io.servicetalk.utils.internal">NumberUtils</a></dt>
+<dd>
+<div class="block">Ensures the int is non-negative.</div>
+</dd>
+<dt><a href="io/servicetalk/utils/internal/NumberUtils.html#ensureNonNegative(long,java.lang.String)" class="member-name-link">ensureNonNegative(long, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/NumberUtils.html" title="class in io.servicetalk.utils.internal">NumberUtils</a></dt>
+<dd>
+<div class="block">Ensures the long is non-negative.</div>
+</dd>
 <dt><a href="io/servicetalk/utils/internal/DurationUtils.html#ensureNonNegative(java.time.Duration,java.lang.String)" class="member-name-link">ensureNonNegative(Duration, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/DurationUtils.html" title="class in io.servicetalk.utils.internal">DurationUtils</a></dt>
 <dd>
 <div class="block">Ensures the duration is non-negative.</div>
+</dd>
+<dt><a href="io/servicetalk/utils/internal/NumberUtils.html#ensurePositive(int,java.lang.String)" class="member-name-link">ensurePositive(int, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/NumberUtils.html" title="class in io.servicetalk.utils.internal">NumberUtils</a></dt>
+<dd>
+<div class="block">Ensures the int is positive, excluding zero.</div>
+</dd>
+<dt><a href="io/servicetalk/utils/internal/NumberUtils.html#ensurePositive(long,java.lang.String)" class="member-name-link">ensurePositive(long, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/NumberUtils.html" title="class in io.servicetalk.utils.internal">NumberUtils</a></dt>
+<dd>
+<div class="block">Ensures the long is positive, excluding zero.</div>
 </dd>
 <dt><a href="io/servicetalk/utils/internal/DurationUtils.html#ensurePositive(java.time.Duration,java.lang.String)" class="member-name-link">ensurePositive(Duration, String)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/DurationUtils.html" title="class in io.servicetalk.utils.internal">DurationUtils</a></dt>
 <dd>
@@ -14112,6 +14138,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#NOT_MODIFIED"><code>HttpResponseStatus.NOT_MODIFIED</code></a> response.</div>
 </dd>
+<dt><a href="io/servicetalk/utils/internal/NumberUtils.html" class="type-name-link" title="class in io.servicetalk.utils.internal">NumberUtils</a> - Class in <a href="io/servicetalk/utils/internal/package-summary.html">io.servicetalk.utils.internal</a></dt>
+<dd>
+<div class="block">Helper utilities for <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Number.html" title="class or interface in java.lang" class="external-link"><code>Number</code></a>s.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:O">O</h2>
 <dl class="index">
@@ -15987,6 +16017,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)" class="member-name-link">protocols(HttpProtocolConfig...)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
 <dd>
 <div class="block">Configurations of various HTTP protocol versions.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html#PROVIDED" class="member-name-link">PROVIDED</a> - Enum constant in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html" title="enum class in io.servicetalk.transport.api">SslConfig.CipherSuiteFilter</a></dt>
+<dd>
+<div class="block">Will take all provided ciphers suites as-is without any filtering.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/DelegatingSslConfig.html#provider()" class="member-name-link">provider()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a></dt>
 <dd>&nbsp;</dd>
@@ -19632,6 +19666,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Specifies the configuration for TLS/SSL.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html" class="type-name-link" title="enum class in io.servicetalk.transport.api">SslConfig.CipherSuiteFilter</a> - Enum Class in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Defines filtering logic for ciphers suites.</div>
+</dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpClientConfig.html#sslContext()" class="member-name-link">sslContext()</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a></dt>
 <dd>
 <div class="block">Returns the <code>SslContext</code>.</div>
@@ -20162,6 +20200,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/HttpResponseStatus.StatusClass.html#SUCCESSFUL_2XX" class="member-name-link">SUCCESSFUL_2XX</a> - Enum constant in enum class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpResponseStatus.StatusClass.html" title="enum class in io.servicetalk.http.api">HttpResponseStatus.StatusClass</a></dt>
 <dd>
 <div class="block"><a href="https://tools.ietf.org/html/rfc7231#section-6.3">Successful 2xx</a>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html#SUPPORTED" class="member-name-link">SUPPORTED</a> - Enum constant in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html" title="enum class in io.servicetalk.transport.api">SslConfig.CipherSuiteFilter</a></dt>
+<dd>
+<div class="block">Will filter all provided ciphers suites out that are not supported by the current <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings()" class="member-name-link">supportedMessageCodings()</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcClientFactory.html" title="class in io.servicetalk.grpc.api">GrpcClientFactory</a></dt>
 <dd>
@@ -22358,6 +22400,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html" title="enum class in io.servicetalk.transport.api">SslConfig.CipherSuiteFilter</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/api/SslProvider.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -22423,6 +22469,11 @@ the order they are declared.</div>
 the order they are declared.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/SslClientAuthMode.html#values()" class="member-name-link">values()</a> - Static method in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslClientAuthMode.html" title="enum class in io.servicetalk.transport.api">SslClientAuthMode</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html#values()" class="member-name-link">values()</a> - Static method in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.CipherSuiteFilter.html" title="enum class in io.servicetalk.transport.api">SslConfig.CipherSuiteFilter</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
