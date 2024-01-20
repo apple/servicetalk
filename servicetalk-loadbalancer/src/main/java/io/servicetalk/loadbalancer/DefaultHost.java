@@ -52,23 +52,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<Addr, C> {
 
-    /**
-     * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
-     * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
-     * selection attempt.
-     */
-    private static final int MIN_RANDOM_SEARCH_SPACE = 64;
-
-    /**
-     * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
-     * trying to locate an available connection when most connections are in use. This increases tail latencies, thus
-     * after some number of failed attempts it appears to be more beneficial to open a new connection instead.
-     * <p>
-     * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
-     * counts, larger connection counts, low connection churn, high connection churn.
-     */
-    private static final float RANDOM_SEARCH_FACTOR = 0.75f;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHost.class);
 
     private enum State {

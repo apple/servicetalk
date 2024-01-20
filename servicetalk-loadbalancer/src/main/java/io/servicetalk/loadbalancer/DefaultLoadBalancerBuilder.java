@@ -39,8 +39,6 @@ import static java.util.Objects.requireNonNull;
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
-    private static final int DEFAULT_LINEAR_SEARCH_SPACE = Integer.MAX_VALUE;
-
     private final String id;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
 
