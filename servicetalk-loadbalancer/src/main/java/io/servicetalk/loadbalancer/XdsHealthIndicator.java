@@ -123,8 +123,12 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     }
 
     @Override
-    public final void onError(final long beforeStartTimeNs) {
-        super.onError(beforeStartTimeNs);
+    public final void onError(final long beforeStartTimeNs, ErrorClass errorClass) {
+        super.onError(beforeStartTimeNs, errorClass);
+        // For now, don't consider cancellation to be an error or a success.
+        if (errorClass == ErrorClass.CANCELLED) {
+            return;
+        }
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
         final OutlierDetectorConfig localConfig = currentConfig();

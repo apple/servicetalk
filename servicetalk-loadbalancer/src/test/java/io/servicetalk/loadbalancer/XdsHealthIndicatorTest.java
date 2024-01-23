@@ -61,7 +61,8 @@ class XdsHealthIndicatorTest {
     @Test
     void consecutive5xx() {
         for (int i = 0; i < config.consecutive5xx(); i++) {
-            healthIndicator.onError(healthIndicator.beforeStart() + 1);
+            healthIndicator.onError(healthIndicator.beforeStart() + 1,
+                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
     }
@@ -70,7 +71,8 @@ class XdsHealthIndicatorTest {
     void nonConsecutive5xxDoesntTripIndicator() {
         for (int i = 0; i < config.consecutive5xx() * 10; i++) {
             if ((i % 2) == 0) {
-                healthIndicator.onError(healthIndicator.beforeStart() + 1);
+                healthIndicator.onError(healthIndicator.beforeStart() + 1,
+                        ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
             } else {
                 healthIndicator.onSuccess(healthIndicator.beforeStart() + 1);
             }
@@ -179,12 +181,22 @@ class XdsHealthIndicatorTest {
     @Test
     void cancellationWillConsiderAHostRevived() {
         for (int i = 0; i < config.consecutive5xx(); i++) {
-            healthIndicator.onError(healthIndicator.beforeStart() + 1);
+            healthIndicator.onError(healthIndicator.beforeStart() + 1,
+                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
         healthIndicator.cancel();
         assertEquals(1, healthIndicator.revivalCount);
         assertTrue(healthIndicator.cancelled);
+    }
+
+    @Test
+    void errorClassCancelledIsNotSuccessOrError() {
+        // Note that this is a specific interpretation that we can change: we just need to change the test.
+        healthIndicator.onError(healthIndicator.beforeStart() + 1,
+                ErrorClass.CANCELLED);
+        assertEquals(0L, healthIndicator.getSuccesses());
+        assertEquals(0L, healthIndicator.getFailures());
     }
 
     private void ejectIndicator(boolean isOutlier) {

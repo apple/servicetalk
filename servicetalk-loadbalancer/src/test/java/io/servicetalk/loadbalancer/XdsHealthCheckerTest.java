@@ -151,7 +151,7 @@ class XdsHealthCheckerTest {
                 break;
             }
             long startTime = indicator.beforeStart();
-            indicator.onError(startTime + 1);
+            indicator.onError(startTime + 1, ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
     }
 }

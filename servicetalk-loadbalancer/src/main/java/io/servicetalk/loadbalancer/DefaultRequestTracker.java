@@ -93,15 +93,10 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     }
 
     @Override
-    public void onCancel(final long startTimeNanos) {
+    public void onError(final long startTimeNanos, ErrorClass errorClass) {
         pendingUpdater.decrementAndGet(this);
-        calculateAndStore(this::cancelPenalty, startTimeNanos);
-    }
-
-    @Override
-    public void onError(final long startTimeNanos) {
-        pendingUpdater.decrementAndGet(this);
-        calculateAndStore(this::errorPenalty, startTimeNanos);
+        calculateAndStore(errorClass == ErrorClass.CANCELLED ? this:: cancelPenalty : this::errorPenalty,
+                startTimeNanos);
     }
 
     @Override
