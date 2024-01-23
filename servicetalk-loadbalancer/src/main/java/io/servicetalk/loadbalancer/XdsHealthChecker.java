@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -175,6 +176,39 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
         if (config.enforcingSuccessRate() > 0) {
             detectors.add(SuccessRateXdsOutlierDetector.INSTANCE);
         }
+        // We need at least one failure detector so that we can decrement the failure multiplier on each interval.
+        if (detectors.isEmpty()) {
+            detectors.add(AlwaysHealthyOutlierDetector.INSTANCE);
+        }
         return detectors;
+    }
+
+    private static final class AlwaysHealthyOutlierDetector implements XdsOutlierDetector {
+
+        static final XdsOutlierDetector INSTANCE = new AlwaysHealthyOutlierDetector();
+
+        private AlwaysHealthyOutlierDetector() {
+            // singleton.
+        }
+
+        @Override
+        public void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator> indicators) {
+            int unhealthy = 0;
+            for (XdsHealthIndicator indicator : indicators) {
+                // Hosts can still be marked unhealthy due to consecutive failures.
+                final boolean isHealthy = indicator.isHealthy();
+                if (isHealthy) {
+                    // If the indicator is healthy we need to mark it as health to make sure
+                    // we decrement the failure multiplier.
+                    indicator.updateOutlierStatus(config, false);
+                } else {
+                    unhealthy++;
+                }
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("NoopOutlierDetector found {} unhealthy instances out of a total of {}.",
+                        unhealthy, indicators.size());
+            }
+        }
     }
 }

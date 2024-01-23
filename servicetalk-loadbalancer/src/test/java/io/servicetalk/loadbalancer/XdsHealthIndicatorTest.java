@@ -188,7 +188,7 @@ class XdsHealthIndicatorTest {
     }
 
     private void ejectIndicator(boolean isOutlier) {
-        sequentialExecutor.execute(() -> healthIndicator.markAsOutlier(config, isOutlier));
+        sequentialExecutor.execute(() -> healthIndicator.updateOutlierStatus(config, isOutlier));
     }
 
     private class TestIndicator extends XdsHealthIndicator<String> {

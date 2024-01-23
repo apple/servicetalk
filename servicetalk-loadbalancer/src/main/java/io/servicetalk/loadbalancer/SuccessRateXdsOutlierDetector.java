@@ -86,7 +86,7 @@ final class SuccessRateXdsOutlierDetector implements XdsOutlierDetector {
         i = 0;
         for (XdsHealthIndicator indicator : indicators) {
             double successRate = successRates[i++];
-            if (indicator.markAsOutlier(config, successRate == NOT_EVALUATED ||
+            if (indicator.updateOutlierStatus(config, successRate == NOT_EVALUATED ||
                     successRate < requiredSuccessRate && enforcing(config.enforcingSuccessRate()))) {
                 ejectedCount++;
             }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -99,6 +100,34 @@ class XdsHealthCheckerTest {
         testEjectPercentage(100);
     }
 
+    @Test
+    void withoutOutlierDetectorsWeStillDecrementFailureMultiplier() {
+        config = withAllEnforcing().maxEjectionPercentage(100)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(0)
+                .build();
+        healthChecker = buildHealthChecker();
+
+        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1");
+        eject(indicator1);
+        assertFalse(indicator1.isHealthy());
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        assertTrue(indicator1.isHealthy());
+        eject(indicator1);
+        assertFalse(indicator1.isHealthy());
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos() * 2 - 1, TimeUnit.NANOSECONDS);
+        assertFalse(indicator1.isHealthy());
+        testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
+        assertTrue(indicator1.isHealthy());
+
+        // now let two periods elapse so our failure multiplier will get decremented.
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        eject(indicator1);
+        testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
+        assertTrue(indicator1.isHealthy());
+    }
+
     private void testEjectPercentage(int maxEjectPercentage) {
         config = withAllEnforcing().maxEjectionPercentage(maxEjectPercentage).build();
         healthChecker = buildHealthChecker();
@@ -118,7 +147,9 @@ class XdsHealthCheckerTest {
 
     private void eject(HealthIndicator indicator) {
         for (int i = 0; i < config.consecutive5xx(); i++) {
-            // start to kill off our indicators.
+            if (!indicator.isHealthy()) {
+                break;
+            }
             long startTime = indicator.beforeStart();
             indicator.onError(startTime + 1);
         }

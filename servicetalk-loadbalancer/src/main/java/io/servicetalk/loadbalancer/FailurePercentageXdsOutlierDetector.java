@@ -43,6 +43,7 @@ final class FailurePercentageXdsOutlierDetector implements XdsOutlierDetector {
         int alreadyEjectedHosts = 0;
         for (XdsHealthIndicator indicator : indicators) {
             if (!indicator.isHealthy()) {
+                failurePercentages[i] = NOT_EVALUATED;
                 alreadyEjectedHosts++;
             } else {
                 long successes = indicator.getSuccesses();
@@ -72,7 +73,7 @@ final class FailurePercentageXdsOutlierDetector implements XdsOutlierDetector {
         i = 0;
         for (XdsHealthIndicator indicator : indicators) {
             long failurePercentage = failurePercentages[i++];
-            if (indicator.markAsOutlier(config, failurePercentage == NOT_EVALUATED ||
+            if (indicator.updateOutlierStatus(config, failurePercentage == NOT_EVALUATED ||
                     failurePercentage >= failurePercentageThreshold &&
                             enforcing(config.enforcingFailurePercentage()))) {
                 ejectedCount++;

@@ -51,7 +51,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private boolean cancelled;
     // reads and writes protected by the helpers `SequentialExecutor`.
     private int failureMultiplier;
-    // Any thread can read this value at any time but mutations are serialized by helpers `SequentialExecutor`.
+    // Any thread can read this value at any time but mutations are serialized by the `SequentialExecutor`.
     @Nullable
     private volatile Long evictedUntilNanos;
 
@@ -78,7 +78,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     protected abstract boolean tryEjectHost();
 
     /**
-     * Alert the parent {@link XdsHealthChecker} that this host is now considered healthy again.
+     * Alert the parent {@link XdsHealthChecker} that this host has transitions from healthy to unhealthy.
      */
     protected abstract void hostRevived();
 
@@ -99,7 +99,8 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
             return true;
         }
         // Envoy technically will perform revival (un-ejection) on the same timer as the outlier detection. If we want
-        // to remove some overhead from the sad path we can go to that.
+        // to remove some overhead from the sad path we can go to that at the cost of leaving hosts unhealthy longer
+        // than the eviction time technically prescribes.
         if (evictedUntilNanos <= currentTimeNanos()) {
             sequentialExecutor.execute(() -> {
                 if (!cancelled && this.evictedUntilNanos != null && this.evictedUntilNanos <= currentTimeNanos()) {
@@ -127,10 +128,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
         final OutlierDetectorConfig localConfig = currentConfig();
-        // We use `==` instead of `>=` so we only call it once when we overflow the counter. This is like envoys
-        // behavior and can result in a consistently failing host to not be ejected for consecutive 5xx forever and
-        // will have  to wait for an outlier detector round to do it.
-        if (consecutiveFailures == localConfig.consecutive5xx() && enforcing(localConfig.enforcingConsecutive5xx())) {
+        if (consecutiveFailures >= localConfig.consecutive5xx() && enforcing(localConfig.enforcingConsecutive5xx())) {
             sequentialExecutor.execute(() -> {
                 if (!cancelled && evictedUntilNanos == null &&
                         sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // this performs side effects.
@@ -155,7 +153,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         }
     }
 
-    public final boolean markAsOutlier(OutlierDetectorConfig config, boolean isOutlier) {
+    public final boolean updateOutlierStatus(OutlierDetectorConfig config, boolean isOutlier) {
         assert sequentialExecutor.isCurrentThreadDraining();
         if (cancelled) {
             return false;
