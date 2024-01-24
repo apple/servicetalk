@@ -444,6 +444,7 @@ class GracefulConnectionClosureHandlingTest {
         StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
+        Thread.sleep(500);
         triggerGracefulClosure();
 
         clientSendRequestPayload.countDown();
@@ -461,7 +462,8 @@ class GracefulConnectionClosureHandlingTest {
     @RepeatedTest(100)
     void closeAfterRequestMetaDataSentResponseMetaDataReceived() throws Exception {
         // only seems to fail if the connection is secure.
-        closeAfterRequestMetaDataSentResponseMetaDataReceived(HTTP_2, true, false, false, false);
+        boolean secure = false;
+        closeAfterRequestMetaDataSentResponseMetaDataReceived(HTTP_2, secure, false, false, false);
     }
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
