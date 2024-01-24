@@ -50,6 +50,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -427,6 +428,8 @@ class GracefulConnectionClosureHandlingTest {
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
     @MethodSource("data")
+    // GracefulConnectionClosureHandlingTest > closeAfterRequestMetaDataSentResponseMetaDataReceived(HttpProtocol, boolean, boolean, boolean, boolean) > 15: protocol=HTTP_2 secure=true initiateClosureFromClient=false useUds=false viaProxy=true FAILED
+    // GracefulConnectionClosureHandlingTest > closePipelinedAfterTwoRequestsSentBeforeAnyResponseReceived(HttpProtocol, boolean, boolean, boolean, boolean) > 14: protocol=HTTP_2 secure=true initiateClosureFromClient=false useUds=true viaProxy=false FAILED
     void closeAfterRequestMetaDataSentResponseMetaDataReceived(HttpProtocol protocol,
                                                                boolean secure,
                                                                boolean initiateClosureFromClient,
@@ -446,10 +449,19 @@ class GracefulConnectionClosureHandlingTest {
         clientSendRequestPayload.countDown();
         serverSendResponsePayload.countDown();
         assertRequestPayloadBody(request);
-        assertResponsePayloadBody(response);
+        // https://github.com/apple/servicetalk/actions/runs/7633724068/job/20796480808?pr=2813#step:7:1988
+        // io.netty.channel.StacklessClosedChannelException
+        //            at io.netty.channel.AbstractChannel$AbstractUnsafe.write(Object, ChannelPromise)(Unknown Source)
+        assertResponsePayloadBody(response); // this is what fails in both flaky cases.
 
         awaitConnectionClosed();
         assertNextRequestFails();
+    }
+
+    @RepeatedTest(100)
+    void closeAfterRequestMetaDataSentResponseMetaDataReceived() throws Exception {
+        // only seems to fail if the connection is secure.
+        closeAfterRequestMetaDataSentResponseMetaDataReceived(HTTP_2, true, false, false, false);
     }
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
