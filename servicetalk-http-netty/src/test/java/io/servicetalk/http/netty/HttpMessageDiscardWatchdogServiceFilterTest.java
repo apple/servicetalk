@@ -64,11 +64,12 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws InterruptedException {
         loggerStringWriter.reset();
         // Ensure our logger is fully initialized.
         String expected = "Logger initialized";
         do {
+            Thread.sleep(10);
             LOGGER.info(expected);
         } while (!loggerStringWriter.accumulated().contains(expected));
     }
