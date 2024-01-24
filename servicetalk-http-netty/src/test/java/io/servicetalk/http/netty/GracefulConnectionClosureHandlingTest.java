@@ -44,6 +44,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -202,7 +203,7 @@ class GracefulConnectionClosureHandlingTest {
 
         if (secure) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey).build());
+                    DefaultTestCerts::loadServerKey).provider(SslProvider.JDK).build());
         }
 
         HostAndPort proxyAddress = null;
@@ -462,7 +463,7 @@ class GracefulConnectionClosureHandlingTest {
     @RepeatedTest(100)
     void closeAfterRequestMetaDataSentResponseMetaDataReceived() throws Exception {
         // only seems to fail if the connection is secure.
-        boolean secure = false;
+        boolean secure = true;
         closeAfterRequestMetaDataSentResponseMetaDataReceived(HTTP_2, secure, false, false, false);
     }
 
