@@ -35,6 +35,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -164,9 +165,15 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
         if (withZeroTimeout) {
             request.context().put(READ_TIMEOUT_KEY, Duration.ZERO);
         }
-        HttpResponse response = client().request(request);
+        HttpResponse response = client().request(request); // this is the line that is failing due to test timeout.
         assertThat(response.status(), is(OK));
         assertThat(response.payloadBody().toString(US_ASCII), is(equalTo("HelloWorld")));
+    }
+
+    @RepeatedTest(1000)
+    void noTimeout() throws Exception {
+        // This is the failing test case. https://github.com/apple/servicetalk/issues/2687
+        noTimeout(true, false, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: expectContinue={0} withServerDelays={1}")
