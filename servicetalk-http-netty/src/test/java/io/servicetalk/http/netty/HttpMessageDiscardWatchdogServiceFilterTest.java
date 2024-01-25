@@ -36,6 +36,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -47,6 +49,8 @@ import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 final class HttpMessageDiscardWatchdogServiceFilterTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilterTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -60,8 +64,14 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws InterruptedException {
         loggerStringWriter.reset();
+        // Ensure our logger is fully initialized.
+        String expected = "Logger initialized";
+        do {
+            Thread.sleep(10);
+            LOGGER.info(expected);
+        } while (!loggerStringWriter.accumulated().contains(expected));
     }
 
     @AfterEach
@@ -96,7 +106,8 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
             String output = loggerStringWriter.stableAccumulated(CI ? 5000 : 1000);
             if (!output.contains("Discovered un-drained HTTP response message body which " +
                     "has been dropped by user code")) {
-                throw new AssertionError("Logs didn't contain the expected output:\n" + output);
+                throw new AssertionError("Logs didn't contain the expected output:\n-- START OUTPUT--\n"
+                        + output + "\n-- END OUTPUT --");
             }
         }
     }
