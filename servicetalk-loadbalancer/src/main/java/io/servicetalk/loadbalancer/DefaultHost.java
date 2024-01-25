@@ -80,6 +80,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
     private final HealthIndicator healthIndicator;
+    private final ConnectionPoolStrategy<C> connectionPoolStrategy;
     private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final ListenableAsyncCloseable closeable;
@@ -95,6 +96,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.healthIndicator = healthIndicator;
+
+        // TODO: make this configurable.
+        this.connectionPoolStrategy = new ConnectionPoolStrategy.LinearSearchFirst<>(Integer.MAX_VALUE);
         this.closeable = toAsyncCloseable(this::doClose);
         hostObserver.onHostCreated(address);
     }
@@ -168,16 +172,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
-        // Exhaust the linear search space first:
-        final int linearAttempts = connections.size();
-        for (int j = 0; j < linearAttempts; ++j) {
-            final C connection = connections.get(j);
-            if (selector.test(connection)) {
-                return connection;
-            }
-        }
-        // So sad, we didn't find a healthy connection.
-        return null;
+        return connectionPoolStrategy.select(connections, selector, context);
     }
 
     @Override
