@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.ScoreSupplier;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -22,13 +24,20 @@ import static java.util.Objects.requireNonNull;
  * Each tracking interaction influences both levels, but reporting operations will only
  * consult the leaf.
  */
-final class RootSwayingLeafRequestTracker implements RequestTracker {
+final class RootSwayingLeafRequestTracker implements RequestTracker, ScoreSupplier {
 
     private final RequestTracker root;
-    private final RequestTracker leaf;
-    RootSwayingLeafRequestTracker(final RequestTracker root, final RequestTracker leaf) {
+    private final DefaultRequestTracker leaf;
+
+    RootSwayingLeafRequestTracker(final RequestTracker root, final DefaultRequestTracker leaf) {
         this.root = requireNonNull(root);
         this.leaf = requireNonNull(leaf);
+    }
+
+    @Override
+    public int score() {
+        // report the leaf
+        return leaf.score();
     }
 
     @Override

@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithUnderOverflowProtection;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
@@ -53,6 +54,9 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<Addr, C> {
+
+    @SuppressWarnings("rawtypes")
+    static ContextMap.Key<DefaultHost> HOST_KEY = ContextMap.Key.newKey("host", DefaultHost.class);
 
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
@@ -218,59 +222,64 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public Single<C> newConnection(
-            Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable ContextMap context) {
-        // We need to put our address latency tracker in the context for consumption.
-        if (healthIndicator != null) {
-            if (context == null) {
-                context = new DefaultContextMap();
+            Predicate<C> selector, final boolean forceNewConnectionAndReserve, final @Nullable ContextMap context) {
+        return Single.defer(() -> {
+            ContextMap actualContext = context;
+            if (actualContext == null) {
+                actualContext = new DefaultContextMap();
             }
-            context.put(REQUEST_TRACKER_KEY, healthIndicator);
-        }
-        // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
-        // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
-        Single<? extends C> establishConnection = connectionFactory.newConnection(address, context, null);
-        if (healthCheckConfig != null) {
-            // Schedule health check before returning
-            establishConnection = establishConnection.beforeOnError(this::markUnhealthy);
-        }
-        return establishConnection
-            .flatMap(newCnx -> {
-                if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
-                    return newCnx.closeAsync().<C>concat(failed(
-                            Exceptions.StacklessConnectionRejectedException.newInstance(
+            actualContext.put(HOST_KEY, this);
+
+            // We need to put our address latency tracker in the context for consumption.
+            if (healthIndicator != null) {
+                actualContext.put(REQUEST_TRACKER_KEY, healthIndicator);
+            }
+            // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
+            // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
+            Single<? extends C> establishConnection = connectionFactory.newConnection(address, actualContext, null);
+            if (healthCheckConfig != null) {
+                // Schedule health check before returning
+                establishConnection = establishConnection.beforeOnError(this::markUnhealthy);
+            }
+            return establishConnection
+                    .flatMap(newCnx -> {
+                        if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
+                            return newCnx.closeAsync().<C>concat(failed(
+                                            Exceptions.StacklessConnectionRejectedException.newInstance(
+                                                    "Newly created connection " + newCnx + " for " + lbDescription
+                                                            + " could not be reserved.",
+                                                    RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                                    .shareContextOnSubscribe();
+                        }
+
+                        // Invoke the selector before adding the connection to the pool, otherwise, connection can be
+                        // used concurrently and hence a new connection can be rejected by the selector.
+                        if (!selector.test(newCnx)) {
+                            // Failure in selection could be the result of connection factory returning cached connection,
+                            // and not having visibility into max-concurrent-requests, or other threads already selected the
+                            // connection which uses all the max concurrent request count.
+
+                            // If there is caching Propagate the exception and rely upon retry strategy.
+                            Single<C> failedSingle = failed(Exceptions.StacklessConnectionRejectedException.newInstance(
                                     "Newly created connection " + newCnx + " for " + lbDescription
-                                            + " could not be reserved.",
-                                    RoundRobinLoadBalancer.class, "selectConnection0(...)")))
-                            .shareContextOnSubscribe();
-                }
+                                            + " was rejected by the selection filter.",
+                                    RoundRobinLoadBalancer.class, "selectConnection0(...)"));
 
-                // Invoke the selector before adding the connection to the pool, otherwise, connection can be
-                // used concurrently and hence a new connection can be rejected by the selector.
-                if (!selector.test(newCnx)) {
-                    // Failure in selection could be the result of connection factory returning cached connection,
-                    // and not having visibility into max-concurrent-requests, or other threads already selected the
-                    // connection which uses all the max concurrent request count.
-
-                    // If there is caching Propagate the exception and rely upon retry strategy.
-                    Single<C> failedSingle = failed(Exceptions.StacklessConnectionRejectedException.newInstance(
-                            "Newly created connection " + newCnx + " for " + lbDescription
-                                    + " was rejected by the selection filter.",
-                            RoundRobinLoadBalancer.class, "selectConnection0(...)"));
-
-                    // Just in case the connection is not closed add it to the host so we don't lose track,
-                    // duplicates will be filtered out.
-                    return (addConnection(newCnx, null) ?
-                            failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
-                }
-                if (addConnection(newCnx, null)) {
-                    return succeeded(newCnx).shareContextOnSubscribe();
-                }
-                return newCnx.closeAsync().<C>concat(
-                                failed(Exceptions.StacklessConnectionRejectedException.newInstance(
-                                        "Failed to add newly created connection " + newCnx + " for " + this,
-                                        RoundRobinLoadBalancer.class, "selectConnection0(...)")))
-                        .shareContextOnSubscribe();
-            });
+                            // Just in case the connection is not closed add it to the host so we don't lose track,
+                            // duplicates will be filtered out.
+                            return (addConnection(newCnx, null) ?
+                                    failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
+                        }
+                        if (addConnection(newCnx, null)) {
+                            return succeeded(newCnx).shareContextOnSubscribe();
+                        }
+                        return newCnx.closeAsync().<C>concat(
+                                        failed(Exceptions.StacklessConnectionRejectedException.newInstance(
+                                                "Failed to add newly created connection " + newCnx + " for " + this,
+                                                RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                                .shareContextOnSubscribe();
+                    });
+        });
     }
 
     private void markHealthy(final HealthCheck originalHealthCheckState) {
@@ -448,6 +457,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public Completable onClosing() {
         return closeable.onClosing();
+    }
+
+    @Nullable
+    HealthIndicator healthIndicator() {
+        return healthIndicator;
     }
 
     private Completable doClose(final boolean graceful) {
