@@ -88,7 +88,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     protected abstract void doCancel();
 
     @Override
-    protected final long currentTimeNanos() {
+    public final long currentTimeNanos() {
         return executor.currentTime(TimeUnit.NANOSECONDS);
     }
 
@@ -126,9 +126,17 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     public final void onError(final long beforeStartTimeNs, ErrorClass errorClass) {
         super.onError(beforeStartTimeNs, errorClass);
         // For now, don't consider cancellation to be an error or a success.
-        if (errorClass == ErrorClass.CANCELLED) {
-            return;
+        if (errorClass != ErrorClass.CANCELLED) {
+            doOnError();
         }
+    }
+
+    @Override
+    public void onConnectFailure(long startTimeNanos) {
+        doOnError();
+    }
+
+    private void doOnError() {
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
         final OutlierDetectorConfig localConfig = currentConfig();

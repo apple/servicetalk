@@ -220,18 +220,23 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     public Single<C> newConnection(
             Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable ContextMap context) {
         // We need to put our address latency tracker in the context for consumption.
+        final long connectStartTime;
         if (healthIndicator != null) {
             if (context == null) {
                 context = new DefaultContextMap();
             }
             context.put(REQUEST_TRACKER_KEY, healthIndicator);
+            connectStartTime = healthIndicator.currentTimeNanos();
+        } else {
+            // Won't be used so it doesn't matter what we put.
+            connectStartTime = 0;
         }
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
         Single<? extends C> establishConnection = connectionFactory.newConnection(address, context, null);
-        if (healthCheckConfig != null) {
+        if (healthCheckConfig != null || healthIndicator != null) {
             // Schedule health check before returning
-            establishConnection = establishConnection.beforeOnError(this::markUnhealthy);
+            establishConnection = establishConnection.beforeOnError(exn -> onConnectionError(connectStartTime, exn));
         }
         return establishConnection
             .flatMap(newCnx -> {
@@ -296,8 +301,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
     }
 
-    private void markUnhealthy(final Throwable cause) {
-        assert healthCheckConfig != null;
+    private void onConnectionError(final long connectStartTime, final Throwable cause) {
+        if (healthIndicator != null) {
+            healthIndicator.onConnectFailure(connectStartTime);
+        }
+        if (healthCheckConfig == null) {
+            return;
+        }
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
             // TODO: if we have a failure, why does it matter if the connections are there?

@@ -198,6 +198,15 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
+        public long currentTimeNanos() {
+            return 0;
+        }
+
+        @Override
+        public void onConnectFailure(long startTimeNanos) {
+        }
+
+        @Override
         public void cancel() {
             synchronized (indicatorSet) {
                 assert indicatorSet.remove(this);
