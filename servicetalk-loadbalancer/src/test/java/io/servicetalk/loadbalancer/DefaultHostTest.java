@@ -246,7 +246,7 @@ class DefaultHostTest {
         Throwable underlying = assertThrows(ExecutionException.class, () ->
                 host.newConnection(cxn -> true, false, null).toFuture().get()).getCause();
         assertEquals(DELIBERATE_EXCEPTION, underlying);
-        verify(healthIndicator, times(1)).currentTimeNanos();
-        verify(healthIndicator, times(1)).onConnectFailure(0L);
+        verify(healthIndicator, times(1)).beforeConnectStart();
+        verify(healthIndicator, times(1)).onConnectError(0L);
     }
 }

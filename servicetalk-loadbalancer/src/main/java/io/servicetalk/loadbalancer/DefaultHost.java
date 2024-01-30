@@ -17,7 +17,10 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -26,6 +29,7 @@ import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -112,10 +117,12 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
-        this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
+        this.healthIndicator = healthIndicator;
+        requireNonNull(connectionFactory, "connectionFactory");
+        this.connectionFactory = healthIndicator == null ? connectionFactory :
+                new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
-        this.healthIndicator = healthIndicator;
         this.closeable = toAsyncCloseable(this::doClose);
         hostObserver.onHostCreated(address);
     }
@@ -220,26 +227,22 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     public Single<C> newConnection(
             Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable ContextMap context) {
         // We need to put our address latency tracker in the context for consumption.
-        final long connectStartTime;
         if (healthIndicator != null) {
             if (context == null) {
                 context = new DefaultContextMap();
             }
             context.put(REQUEST_TRACKER_KEY, healthIndicator);
-            connectStartTime = healthIndicator.currentTimeNanos();
-        } else {
-            // Won't be used so it doesn't matter what we put.
-            connectStartTime = 0;
         }
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
         Single<? extends C> establishConnection = connectionFactory.newConnection(address, context, null);
-        if (healthCheckConfig != null || healthIndicator != null) {
+        if (healthCheckConfig != null) {
             // Schedule health check before returning
-            establishConnection = establishConnection.beforeOnError(exn -> onConnectionError(connectStartTime, exn));
+            establishConnection = establishConnection.beforeOnError(this::onConnectionError);
         }
         return establishConnection
             .flatMap(newCnx -> {
+
                 if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
                     return newCnx.closeAsync().<C>concat(failed(
                             Exceptions.StacklessConnectionRejectedException.newInstance(
@@ -301,13 +304,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
     }
 
-    private void onConnectionError(final long connectStartTime, final Throwable cause) {
-        if (healthIndicator != null) {
-            healthIndicator.onConnectFailure(connectStartTime);
-        }
-        if (healthCheckConfig == null) {
-            return;
-        }
+    private void onConnectionError(Throwable cause) {
+        assert healthCheckConfig != null;
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
             // TODO: if we have a failure, why does it matter if the connections are there?
@@ -648,6 +646,65 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                     ", healthCheck=" + healthCheck +
                     ", #connections=" + connections.size() +
                     '}';
+        }
+    }
+
+    private static final class InstrumentedConnectionFactory<Addr, C extends LoadBalancedConnection>
+            extends DelegatingConnectionFactory<Addr, C> {
+
+        private final ConnectTracker connectTracker;
+
+        InstrumentedConnectionFactory(final ConnectionFactory<Addr, C> delegate, ConnectTracker connectTracker) {
+            super(delegate);
+            this.connectTracker = connectTracker;
+        }
+
+        @Override
+        public Single<C> newConnection(Addr addr, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            return super.newConnection(addr, context, observer).liftSync(delegate -> new ConnectSubscriber(delegate));
+        }
+
+        private class ConnectSubscriber implements SingleSource.Subscriber<C> {
+
+            private final AtomicBoolean once = new AtomicBoolean();
+            private final SingleSource.Subscriber<? super C> delegate;
+            private final long connectStartTime;
+
+            ConnectSubscriber(final SingleSource.Subscriber<? super C> delegate) {
+                this.delegate = delegate;
+                this.connectStartTime = connectTracker.beforeConnectStart();
+            }
+
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                delegate.onSubscribe(() -> {
+                    if (once()) {
+                        // we assume that cancellation is the result of taking to long so it's an error.
+                        connectTracker.onConnectError(connectStartTime);
+                    }
+                    cancellable.cancel();
+                });
+            }
+
+            @Override
+            public void onSuccess(@Nullable C result) {
+                if (once()) {
+                    connectTracker.onConnectSuccess(connectStartTime);
+                }
+                delegate.onSuccess(result);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                if (once()) {
+                    connectTracker.onConnectError(connectStartTime);
+                }
+                delegate.onError(t);
+            }
+
+            private boolean once() {
+                return !once.getAndSet(true);
+            }
         }
     }
 }

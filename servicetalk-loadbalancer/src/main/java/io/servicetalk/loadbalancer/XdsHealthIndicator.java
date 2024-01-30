@@ -132,8 +132,21 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     }
 
     @Override
-    public void onConnectFailure(long startTimeNanos) {
+    public long beforeConnectStart() {
+        return currentTimeNanos();
+    }
+
+    @Override
+    public void onConnectError(long beforeConnectStart) {
+        // This assumes that the connect request was intended to be used for a request dispatch which
+        // will have now failed. This is not strictly true: a connection can be acquired and simply not
+        // used, but in practice it's a very good assumption.
         doOnError();
+    }
+
+    @Override
+    public void onConnectSuccess(long beforeConnectStart) {
+        // noop: the request path will now determine if the request was a success or failure.
     }
 
     private void doOnError() {

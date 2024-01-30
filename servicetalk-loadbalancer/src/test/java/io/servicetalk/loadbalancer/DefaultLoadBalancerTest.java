@@ -198,12 +198,16 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public long currentTimeNanos() {
+        public long beforeConnectStart() {
             return 0;
         }
 
         @Override
-        public void onConnectFailure(long startTimeNanos) {
+        public void onConnectSuccess(long beforeConnectStart) {
+        }
+
+        @Override
+        public void onConnectError(long beforeConnectStart) {
         }
 
         @Override
