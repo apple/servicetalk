@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 /**
  * Enumeration of the main failure classes.
  */
-enum ErrorClass {
+public enum ErrorClass {
 
     /**
      * Failures related to locally enforced timeouts that prevent session establishment with the peer.
