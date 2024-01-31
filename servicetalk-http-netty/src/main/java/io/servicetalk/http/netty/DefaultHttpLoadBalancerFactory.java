@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021,2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,7 +231,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
     }
 
-    static final class DefaultHttpLoadBalancedConnection
+    private static final class DefaultHttpLoadBalancedConnection
             implements FilterableStreamingHttpLoadBalancedConnection {
         private final FilterableStreamingHttpConnection delegate;
         private final ReservableRequestConcurrencyController concurrencyController;
