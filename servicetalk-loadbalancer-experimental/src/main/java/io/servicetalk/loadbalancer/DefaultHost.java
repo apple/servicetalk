@@ -273,7 +273,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                         return newCnx.closeAsync().<C>concat(
                                         failed(Exceptions.StacklessConnectionRejectedException.newInstance(
                                                 "Failed to add newly created connection " + newCnx + " for " + this,
-                                                RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                                                DefaultHost.class, "newConnection(...)")))
                                 .shareContextOnSubscribe();
                     });
         });
