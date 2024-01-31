@@ -51,7 +51,6 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      */
     ResolvedAddress address();
 
-
     /**
      * Determine the health status of this host.
      * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
