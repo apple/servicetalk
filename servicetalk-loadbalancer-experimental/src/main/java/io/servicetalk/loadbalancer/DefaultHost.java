@@ -46,7 +46,6 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithUnderOverflowProtection;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
@@ -54,9 +53,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<Addr, C> {
-
-    @SuppressWarnings("rawtypes")
-    static ContextMap.Key<DefaultHost> HOST_KEY = ContextMap.Key.newKey("host", DefaultHost.class);
 
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
@@ -228,14 +224,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             if (actualContext == null) {
                 actualContext = new DefaultContextMap();
             }
-            actualContext.put(HOST_KEY, this);
 
             // We need to put our address latency tracker in the context for consumption.
             if (healthIndicator != null) {
                 actualContext.put(REQUEST_TRACKER_KEY, healthIndicator);
             }
             // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
-            // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
+            // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with
+            // TransportObserver.
             Single<? extends C> establishConnection = connectionFactory.newConnection(address, actualContext, null);
             if (healthCheckConfig != null) {
                 // Schedule health check before returning
@@ -255,8 +251,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                         // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                         // used concurrently and hence a new connection can be rejected by the selector.
                         if (!selector.test(newCnx)) {
-                            // Failure in selection could be the result of connection factory returning cached connection,
-                            // and not having visibility into max-concurrent-requests, or other threads already selected the
+                            // Failure in selection could be the result of connection factory returning cached
+                            // connection, and not having visibility into max-concurrent-requests, or other threads
+                            // already selected the
                             // connection which uses all the max concurrent request count.
 
                             // If there is caching Propagate the exception and rely upon retry strategy.

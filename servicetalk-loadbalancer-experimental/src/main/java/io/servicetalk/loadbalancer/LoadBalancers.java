@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * A factory to create {@link DefaultLoadBalancer DefaultLoadBalancers}.
  */
-public final class LoadBalancers {
+final class LoadBalancers {
 
     private static final List<LoadBalancerBuilderProvider> PROVIDERS;
 

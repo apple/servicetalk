@@ -18,11 +18,13 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
-import io.servicetalk.client.api.ScoreSupplier;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
@@ -31,14 +33,36 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
+import io.servicetalk.loadbalancer.ErrorClass;
+import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
-import java.util.Collection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
+import java.net.ConnectException;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
+import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
+import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
+import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
+import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Default implementation of {@link HttpLoadBalancerFactory}.
@@ -47,13 +71,20 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerFactory.class);
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
+    private final Function<Throwable, ErrorClass> errorClassFunction;
+    private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
     private final HttpExecutionStrategy strategy;
 
     DefaultHttpLoadBalancerFactory(
             final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
+            final Function<Throwable, ErrorClass> errorClassFunction,
+            final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
             final HttpExecutionStrategy strategy) {
         this.rawFactory = rawFactory;
+        this.errorClassFunction = errorClassFunction;
+        this.peerResponseErrorClassifier = peerResponseErrorClassifier;
         this.strategy = strategy;
     }
 
@@ -74,10 +105,29 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
     }
 
-    @Override   // FIXME: 0.43 - remove deprecated method
+    @Override
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
-            final FilterableStreamingHttpConnection connection) {
-        return new DefaultFilterableStreamingHttpLoadBalancedConnection(connection);
+            final FilterableStreamingHttpConnection connection,
+            final ReservableRequestConcurrencyController concurrencyController,
+            @Nullable final ContextMap context) {
+
+        RequestTracker hostHealthIndicator = null;
+        if (context == null) {
+            LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                    ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                    ", health-monitor of this connection, the context must not be null.");
+        } else {
+            hostHealthIndicator = context.get(REQUEST_TRACKER_KEY);
+            if (hostHealthIndicator == null) {
+                LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
+                        "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                        ", health-monitor of this connection, the context must be properly wired.");
+            }
+        }
+
+        return new DefaultHttpLoadBalancedConnection(connection, concurrencyController,
+                errorClassFunction, peerResponseErrorClassifier, hostHealthIndicator);
     }
 
     @Override
@@ -94,6 +144,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     public static final class Builder<ResolvedAddress> {
         private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
         private final HttpExecutionStrategy strategy;
+        private Function<Throwable, ErrorClass> errorClassifier = t -> t instanceof ConnectException ?
+                LOCAL_ORIGIN_CONNECT_FAILED : LOCAL_ORIGIN_REQUEST_FAILED;
+        private Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier = resp ->
+                (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
+                        ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
 
         private Builder(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
@@ -103,12 +158,47 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         /**
+         * Sets a {@link Function} that is invoked for each received response to check whether the response should be
+         * considered as an error, and if so, of what {@link ErrorClass class}.
+         * <p>
+         * <strong>Note: </strong>Enabling this feature has no effect to {@link LoadBalancer}s that are not evaluating
+         * it.
+         *
+         * @param peerResponseErrorClassifier A {@link Function} to check if a received response should be considered an
+         * error. Returning {@code null} from that {@link Function}, means the response is considered as successful.
+         * @return {@code this}.
+         */
+        public Builder<ResolvedAddress> peerResponseErrorClassifier(
+                final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier) {
+            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
+            return this;
+        }
+
+        /**
+         * Sets a {@link Function} that is invoked for each {@link Throwable} occurred in the flow, to classify it to an
+         * {@link ErrorClass}.
+         * <p>
+         * <strong>Note: </strong>Enabling this feature has no effect to {@link LoadBalancer}s that are not evaluating
+         * it.
+         *
+         * @param errorClassifier A {@link Function} to check if a received response should be considered an
+         * error.
+         * @return {@code this}.
+         */
+        public Builder<ResolvedAddress> errorClassifier(
+                final Function<Throwable, ErrorClass> errorClassifier) {
+            this.errorClassifier = errorClassifier;
+            return this;
+        }
+
+        /**
          * Builds a {@link DefaultHttpLoadBalancerFactory} using the properties configured on this builder.
          *
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
+            return new DefaultHttpLoadBalancerFactory<>(rawFactory, errorClassifier, peerResponseErrorClassifier,
+                    strategy);
         }
 
         /**
@@ -141,22 +231,70 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
     }
 
-    private static final class DefaultFilterableStreamingHttpLoadBalancedConnection
+    static final class DefaultHttpLoadBalancedConnection
             implements FilterableStreamingHttpLoadBalancedConnection {
-
         private final FilterableStreamingHttpConnection delegate;
+        private final ReservableRequestConcurrencyController concurrencyController;
+        private final Function<Throwable, ErrorClass> errorClassFunction;
+        private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
+        @Nullable
+        private final RequestTracker tracker;
 
-        DefaultFilterableStreamingHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate) {
-            this.delegate = requireNonNull(delegate);
+        DefaultHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate,
+                                          final ReservableRequestConcurrencyController concurrencyController,
+                                          final Function<Throwable, ErrorClass> errorClassFunction,
+                                          final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
+                                          @Nullable final RequestTracker tracker) {
+            this.delegate = delegate;
+            this.concurrencyController = concurrencyController;
+            this.errorClassFunction = errorClassFunction;
+            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
+            this.tracker = tracker;
         }
 
         @Override
         public int score() {
-            throw new UnsupportedOperationException(
-                   DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
-                           " doesn't support scoring. " + ScoreSupplier.class.getName() +
-                           " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
-                           " implementations that support scoring.");
+            return 1;
+        }
+
+        @Override
+        public ReservedHttpConnection asConnection() {
+            return toReservedConnection(this, executionContext().executionStrategy());
+        }
+
+        @Override
+        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+            return toReservedBlockingStreamingConnection(this, executionContext().executionStrategy());
+        }
+
+        @Override
+        public ReservedBlockingHttpConnection asBlockingConnection() {
+            return toReservedBlockingConnection(this, executionContext().executionStrategy());
+        }
+
+        @Override
+        public Completable releaseAsync() {
+            return concurrencyController.releaseAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Result tryRequest() {
+            return concurrencyController.tryRequest();
+        }
+
+        @Override
+        public boolean tryReserve() {
+            return concurrencyController.tryReserve();
+        }
+
+        @Override
+        public void requestFinished() {
+            concurrencyController.requestFinished();
         }
 
         @Override
@@ -171,7 +309,41 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return delegate.request(request);
+            return Single.defer(() -> {
+                if (tracker == null) {
+                    return delegate.request(request).shareContextOnSubscribe();
+                }
+
+                final RequestTracker theTracker = new AtMostOnceDeliveryRequestTracker(tracker);
+                final long startTime = theTracker.beforeStart();
+
+                return delegate.request(request)
+                        .flatMap(response -> {
+                            final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
+                            if (eClass != null) {
+                                // The onError is triggered before the body is actually consumed.
+                                theTracker.onError(startTime, eClass);
+                            }
+                            return Single.succeeded(response);
+                        })
+                        .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
+                            @Override
+                            public void onComplete() {
+                                theTracker.onSuccess(startTime);
+                            }
+
+                            @Override
+                            public void onError(final Throwable throwable) {
+                                theTracker.onError(startTime, errorClassFunction.apply(throwable));
+                            }
+
+                            @Override
+                            public void cancel() {
+                                theTracker.onError(startTime, ErrorClass.CANCELLED);
+                            }
+                        }, true))
+                        .shareContextOnSubscribe();
+            });
         }
 
         @Override
@@ -200,18 +372,43 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return delegate.newRequest(method, requestTarget);
         }
 
-        @Override
-        public String toString() {
-            return delegate.toString();
+        private static final class AtMostOnceDeliveryRequestTracker implements RequestTracker {
+
+            private static final AtomicIntegerFieldUpdater<AtMostOnceDeliveryRequestTracker> doneUpdater =
+                    newUpdater(AtMostOnceDeliveryRequestTracker.class, "done");
+
+            private final RequestTracker original;
+            private volatile int done;
+
+            private AtMostOnceDeliveryRequestTracker(final RequestTracker original) {
+                this.original = original;
+            }
+
+            @Override
+            public long beforeStart() {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    return original.beforeStart();
+                }
+                throw new IllegalStateException();
+            }
+
+            @Override
+            public void onSuccess(final long beforeStartTimeNs) {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    original.onSuccess(beforeStartTimeNs);
+                }
+            }
+
+            @Override
+            public void onError(final long beforeStartTimeNs, final ErrorClass errorClass) {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    original.onError(beforeStartTimeNs, errorClass);
+                }
+            }
         }
     }
 }

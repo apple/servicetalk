@@ -36,7 +36,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -45,12 +44,11 @@ import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConne
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class DefaultHttpLoadBalancedConnection
         implements FilterableStreamingHttpLoadBalancedConnection {
-    private final RootSwayingLeafRequestTracker tracker;
+    private final RequestTracker tracker;
     private final Function<HttpResponseMetaData, ErrorClass> responseErrorMapper;
     private final FilterableStreamingHttpConnection delegate;
     private final ReservableRequestConcurrencyController concurrencyController;
@@ -58,17 +56,7 @@ final class DefaultHttpLoadBalancedConnection
     DefaultHttpLoadBalancedConnection(final Function<HttpResponseMetaData, ErrorClass> responseErrorMapper,
                                       final FilterableStreamingHttpConnection delegate,
                                       final ReservableRequestConcurrencyController concurrencyController,
-                                      final DefaultHost parent,
-                                      final Duration requestLatencyHalfLife) {
-        this(responseErrorMapper, delegate, concurrencyController,
-                new RootSwayingLeafRequestTracker(requireNonNull(parent).healthIndicator(),
-                        new DefaultAddressLatencyRequestTracker(requestLatencyHalfLife.toNanos())));
-    }
-
-    DefaultHttpLoadBalancedConnection(final Function<HttpResponseMetaData, ErrorClass> responseErrorMapper,
-                                      final FilterableStreamingHttpConnection delegate,
-                                      final ReservableRequestConcurrencyController concurrencyController,
-                                      final RootSwayingLeafRequestTracker tracker) {
+                                      final RequestTracker tracker) {
         this.responseErrorMapper = responseErrorMapper;
         this.delegate = delegate;
         this.tracker = tracker;
@@ -77,7 +65,7 @@ final class DefaultHttpLoadBalancedConnection
 
     @Override
     public int score() {
-        return tracker.score();
+        return 1;
     }
 
     @Override
