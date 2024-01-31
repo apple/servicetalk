@@ -456,11 +456,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return closeable.onClosing();
     }
 
-    @Nullable
-    HealthIndicator healthIndicator() {
-        return healthIndicator;
-    }
-
     private Completable doClose(final boolean graceful) {
         return Completable.defer(() -> {
             final ConnState oldState = closeConnState();

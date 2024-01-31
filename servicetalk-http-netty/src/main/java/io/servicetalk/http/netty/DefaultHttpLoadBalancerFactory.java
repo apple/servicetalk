@@ -318,13 +318,13 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                 final long startTime = theTracker.beforeStart();
 
                 return delegate.request(request)
-                        .flatMap(response -> {
+                        .map(response -> {
                             final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
                             if (eClass != null) {
                                 // The onError is triggered before the body is actually consumed.
                                 theTracker.onError(startTime, eClass);
                             }
-                            return Single.succeeded(response);
+                            return response;
                         })
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                             @Override
@@ -390,10 +390,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
             @Override
             public long beforeStart() {
-                if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    return original.beforeStart();
-                }
-                throw new IllegalStateException();
+                return original.beforeStart();
             }
 
             @Override
