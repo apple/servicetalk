@@ -41,7 +41,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
+class LingeringLoadBalancerTest extends LoadBalancerTest {
+
+    @Override
+    protected boolean eagerConnectionShutdown() {
+        return false;
+    }
 
     @Test
     void hostDownDoesntCloseConnectionCloseLB() throws Exception {
@@ -312,10 +317,5 @@ abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
 
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
         assertAddresses(lb.usedAddresses(), "address-1");
-    }
-
-    @Override
-    protected boolean eagerConnectionShutdown() {
-        return false;
     }
 }

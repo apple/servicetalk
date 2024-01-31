@@ -25,7 +25,12 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-abstract class EagerLoadBalancerTest extends LoadBalancerTest {
+class EagerLoadBalancerTest extends LoadBalancerTest {
+
+    @Override
+    protected boolean eagerConnectionShutdown() {
+        return true;
+    }
 
     @Test
     void duplicateEventsAreIgnored() {
@@ -103,10 +108,5 @@ abstract class EagerLoadBalancerTest extends LoadBalancerTest {
         connection.onClose().toFuture().get();
         verify(connection).closeAsyncGracefully();
         verify(connection, never()).closeAsync();
-    }
-
-    @Override
-    protected boolean eagerConnectionShutdown() {
-        return true;
     }
 }

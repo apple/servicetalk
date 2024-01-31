@@ -99,7 +99,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -119,9 +118,9 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         return newTestLoadBalancer(serviceDiscoveryPublisher, connectionFactory);
     }
 
-    protected abstract boolean isRoundRobin();
-
-    protected abstract LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder();
+    protected RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
+        return RoundRobinLoadBalancers.builder("lb");
+    }
 
     @Test
     void streamEventJustClose() throws InterruptedException {
@@ -264,8 +263,6 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
     @Test
     void roundRobining() throws Exception {
-        assumeTrue(isRoundRobin());
-
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
         final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
@@ -692,13 +689,10 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         String selected1 = lb.selectConnection(any(), null).toFuture().get().address();
         assertThat(selected1, is(anyOf(expected.values())));
 
-        if (isRoundRobin()) {
-            // These asserts are flaky for p2c because we don't have deterministic selection.
-            expected.remove(selected1);
-            assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-            assertConnectionCount(lb.usedAddresses(),
-                    connectionsCount("address-3", 1), connectionsCount("address-4", 1));
-        }
+        expected.remove(selected1);
+        assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
+        assertConnectionCount(lb.usedAddresses(),
+                connectionsCount("address-3", 1), connectionsCount("address-4", 1));
     }
 
     @Test
