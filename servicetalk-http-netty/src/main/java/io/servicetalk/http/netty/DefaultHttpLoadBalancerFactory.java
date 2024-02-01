@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -62,6 +63,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
 import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -103,6 +105,12 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory,
             final String targetResource) {
         return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
+    }
+
+    @Override   // FIXME: 0.43 - remove deprecated method
+    public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
+            final FilterableStreamingHttpConnection connection) {
+        return new DefaultFilterableStreamingHttpLoadBalancedConnection(connection);
     }
 
     @Override
@@ -158,40 +166,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         /**
-         * Sets a {@link Function} that is invoked for each received response to check whether the response should be
-         * considered as an error, and if so, of what {@link ErrorClass class}.
-         * <p>
-         * <strong>Note: </strong>Enabling this feature has no effect to {@link LoadBalancer}s that are not evaluating
-         * it.
-         *
-         * @param peerResponseErrorClassifier A {@link Function} to check if a received response should be considered an
-         * error. Returning {@code null} from that {@link Function}, means the response is considered as successful.
-         * @return {@code this}.
-         */
-        public Builder<ResolvedAddress> peerResponseErrorClassifier(
-                final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier) {
-            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-            return this;
-        }
-
-        /**
-         * Sets a {@link Function} that is invoked for each {@link Throwable} occurred in the flow, to classify it to an
-         * {@link ErrorClass}.
-         * <p>
-         * <strong>Note: </strong>Enabling this feature has no effect to {@link LoadBalancer}s that are not evaluating
-         * it.
-         *
-         * @param errorClassifier A {@link Function} to check if a received response should be considered an
-         * error.
-         * @return {@code this}.
-         */
-        public Builder<ResolvedAddress> errorClassifier(
-                final Function<Throwable, ErrorClass> errorClassifier) {
-            this.errorClassifier = errorClassifier;
-            return this;
-        }
-
-        /**
          * Builds a {@link DefaultHttpLoadBalancerFactory} using the properties configured on this builder.
          *
          * @return A {@link DefaultHttpLoadBalancerFactory}.
@@ -228,6 +202,80 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
             final HttpExecutionStrategy strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
             return new Builder<>(rawFactory, strategy);
+        }
+    }
+
+    private static final class DefaultFilterableStreamingHttpLoadBalancedConnection
+            implements FilterableStreamingHttpLoadBalancedConnection {
+
+        private final FilterableStreamingHttpConnection delegate;
+
+        DefaultFilterableStreamingHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        public int score() {
+            throw new UnsupportedOperationException(
+                    DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
+                            " doesn't support scoring. " + ScoreSupplier.class.getName() +
+                            " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
+                            " implementations that support scoring.");
+        }
+
+        @Override
+        public HttpConnectionContext connectionContext() {
+            return delegate.connectionContext();
+        }
+
+        @Override
+        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+            return delegate.transportEventStream(eventKey);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return delegate.request(request);
+        }
+
+        @Override
+        public HttpExecutionContext executionContext() {
+            return delegate.executionContext();
+        }
+
+        @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return delegate.httpResponseFactory();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+            return delegate.newRequest(method, requestTarget);
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
         }
     }
 
@@ -318,14 +366,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                 final long startTime = theTracker.beforeStart();
 
                 return delegate.request(request)
-                        .map(response -> {
-                            final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
-                            if (eClass != null) {
-                                // The onError is triggered before the body is actually consumed.
-                                theTracker.onError(startTime, eClass);
-                            }
-                            return response;
-                        })
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                             @Override
                             public void onComplete() {
@@ -341,7 +381,21 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                             public void cancel() {
                                 theTracker.onError(startTime, ErrorClass.CANCELLED);
                             }
-                        }, true))
+                        }, /*discardEventsAfterCancel*/ true))
+
+                        // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
+                        // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed
+                        // before completion of Meta. It also transforms the original Publisher<Data> to discard
+                        // signals after cancel. So in order for downstream operators to get a consistent view of the
+                        // data path map() needs to be applied last.
+                        .map(response -> {
+                            final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
+                            if (eClass != null) {
+                                // The onError is triggered before the body is actually consumed.
+                                theTracker.onError(startTime, eClass);
+                            }
+                            return response;
+                        })
                         .shareContextOnSubscribe();
             });
         }

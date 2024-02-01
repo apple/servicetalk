@@ -33,6 +33,7 @@ dependencies {
   implementation project(":servicetalk-dns-discovery-netty")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-loadbalancer")
+  implementation project(":servicetalk-loadbalancer-experimental")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-tcp-netty-internal")
   implementation project(":servicetalk-transport-netty")
