@@ -152,9 +152,9 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     public static final class Builder<ResolvedAddress> {
         private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
         private final HttpExecutionStrategy strategy;
-        private Function<Throwable, ErrorClass> errorClassifier = t -> t instanceof ConnectException ?
+        private final Function<Throwable, ErrorClass> errorClassifier = t -> t instanceof ConnectException ?
                 LOCAL_ORIGIN_CONNECT_FAILED : LOCAL_ORIGIN_REQUEST_FAILED;
-        private Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier = resp ->
+        private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier = resp ->
                 (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
                         ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
 
