@@ -244,7 +244,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                             Exceptions.StacklessConnectionRejectedException.newInstance(
                                                     "Newly created connection " + newCnx + " for " + lbDescription
                                                             + " could not be reserved.",
-                                                    RoundRobinLoadBalancer.class, "selectConnection0(...)")))
+                                                    DefaultHost.class, "newConnection(...)")))
                                     .shareContextOnSubscribe();
                         }
 
@@ -260,7 +260,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             Single<C> failedSingle = failed(Exceptions.StacklessConnectionRejectedException.newInstance(
                                     "Newly created connection " + newCnx + " for " + lbDescription
                                             + " was rejected by the selection filter.",
-                                    RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                                    DefaultHost.class, "newConnection(...)"));
 
                             // Just in case the connection is not closed add it to the host so we don't lose track,
                             // duplicates will be filtered out.
@@ -275,7 +275,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                                 "Failed to add newly created connection " + newCnx + " for " + this,
                                                 DefaultHost.class, "newConnection(...)")))
                                 .shareContextOnSubscribe();
-                    });
+                    }).shareContextOnSubscribe();
         });
     }
 
