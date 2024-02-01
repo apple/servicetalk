@@ -667,7 +667,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return Single.defer(() -> {
                 final long connectStartTime = connectTracker.beforeConnectStart();
                 return delegate().newConnection(addr, context, observer)
-                        .beforeFinally(new ConnectSignalConsumer<>(connectStartTime, connectTracker));
+                        .beforeFinally(new ConnectSignalConsumer<>(connectStartTime, connectTracker))
+                        .shareContextOnSubscribe();
             });
         }
     }
