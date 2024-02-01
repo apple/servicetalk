@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -670,14 +669,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     private static class ConnectSignalConsumer<C extends LoadBalancedConnection> implements TerminalSignalConsumer {
 
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<ConnectSignalConsumer> onceUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(ConnectSignalConsumer.class, "once");
-
         private final ConnectTracker connectTracker;
         private final long connectStartTime;
-        @SuppressWarnings("unused")
-        private volatile int once;
 
         ConnectSignalConsumer(final long connectStartTime, final ConnectTracker connectTracker) {
             this.connectStartTime = connectStartTime;
@@ -686,9 +679,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
         @Override
         public void onComplete() {
-            if (once()) {
-                connectTracker.onConnectSuccess(connectStartTime);
-            }
+            connectTracker.onConnectSuccess(connectStartTime);
         }
 
         @Override
@@ -703,13 +694,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
 
         private void doOnError() {
-            if (once()) {
-                connectTracker.onConnectError(connectStartTime);
-            }
-        }
-
-        private boolean once() {
-            return onceUpdater.getAndSet(this, 1) == 0;
+            connectTracker.onConnectError(connectStartTime);
         }
     }
 }
