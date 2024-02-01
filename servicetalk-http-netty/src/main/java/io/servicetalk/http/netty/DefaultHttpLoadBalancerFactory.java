@@ -134,6 +134,10 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             }
         }
 
+        if (hostHealthIndicator == null) {
+            return HttpLoadBalancerFactory.super.toLoadBalancedConnection(connection, concurrencyController, context);
+        }
+
         return new DefaultHttpLoadBalancedConnection(connection, concurrencyController,
                 errorClassFunction, peerResponseErrorClassifier, hostHealthIndicator);
     }
@@ -357,11 +361,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return Single.defer(() -> {
-                if (tracker == null) {
-                    return delegate.request(request).shareContextOnSubscribe();
-                }
+            if (tracker == null) {
+                return delegate.request(request).shareContextOnSubscribe();
+            }
 
+            return Single.defer(() -> {
                 final RequestTracker theTracker = new AtMostOnceDeliveryRequestTracker(tracker);
                 final long startTime = theTracker.beforeStart();
 
@@ -428,6 +432,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return delegate.newRequest(method, requestTarget);
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
         }
 
         private static final class AtMostOnceDeliveryRequestTracker implements RequestTracker {
