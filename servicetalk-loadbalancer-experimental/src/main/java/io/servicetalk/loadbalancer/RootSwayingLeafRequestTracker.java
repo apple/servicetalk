@@ -32,24 +32,24 @@ final class RootSwayingLeafRequestTracker implements RequestTracker {
     }
 
     @Override
-    public long beforeStart() {
+    public long beforeRequestStart() {
         // Tracks both levels
-        final long timestamp = root.beforeStart();
-        leaf.beforeStart();
+        final long timestamp = root.beforeRequestStart();
+        leaf.beforeRequestStart();
         return timestamp;
     }
 
     @Override
-    public void onSuccess(final long beforeStartTimeNs) {
+    public void onRequestSuccess(final long beforeStartTimeNs) {
         // Tracks both levels
-        root.onSuccess(beforeStartTimeNs);
-        leaf.onSuccess(beforeStartTimeNs);
+        root.onRequestSuccess(beforeStartTimeNs);
+        leaf.onRequestSuccess(beforeStartTimeNs);
     }
 
     @Override
-    public void onError(final long beforeStartTimeNs, ErrorClass errorClass) {
+    public void onRequestError(final long beforeStartTimeNs, ErrorClass errorClass) {
         // Tracks both levels
-        root.onError(beforeStartTimeNs, errorClass);
-        leaf.onError(beforeStartTimeNs, errorClass);
+        root.onRequestError(beforeStartTimeNs, errorClass);
+        leaf.onRequestError(beforeStartTimeNs, errorClass);
     }
 }

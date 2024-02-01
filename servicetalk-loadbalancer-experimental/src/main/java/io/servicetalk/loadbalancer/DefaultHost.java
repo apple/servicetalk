@@ -19,12 +19,11 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.context.api.ContextMap;
@@ -39,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -661,50 +660,56 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
         @Override
         public Single<C> newConnection(Addr addr, @Nullable ContextMap context, @Nullable TransportObserver observer) {
-            return super.newConnection(addr, context, observer).liftSync(delegate -> new ConnectSubscriber(delegate));
+            return Single.defer(() -> {
+                final long connectStartTime = connectTracker.beforeConnectStart();
+                return delegate().newConnection(addr, context, observer)
+                        .beforeFinally(new ConnectSignalConsumer<>(connectStartTime, connectTracker));
+            });
+        }
+    }
+
+    private static class ConnectSignalConsumer<C extends LoadBalancedConnection> implements TerminalSignalConsumer {
+
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<ConnectSignalConsumer> onceUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(ConnectSignalConsumer.class, "once");
+
+        private final ConnectTracker connectTracker;
+        private final long connectStartTime;
+        @SuppressWarnings("unused")
+        private volatile int once;
+
+        ConnectSignalConsumer(final long connectStartTime, final ConnectTracker connectTracker) {
+            this.connectStartTime = connectStartTime;
+            this.connectTracker = connectTracker;
         }
 
-        private class ConnectSubscriber implements SingleSource.Subscriber<C> {
-
-            private final AtomicBoolean once = new AtomicBoolean();
-            private final SingleSource.Subscriber<? super C> delegate;
-            private final long connectStartTime;
-
-            ConnectSubscriber(final SingleSource.Subscriber<? super C> delegate) {
-                this.delegate = delegate;
-                this.connectStartTime = connectTracker.beforeConnectStart();
+        @Override
+        public void onComplete() {
+            if (once()) {
+                connectTracker.onConnectSuccess(connectStartTime);
             }
+        }
 
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                delegate.onSubscribe(() -> {
-                    if (once()) {
-                        // we assume that cancellation is the result of taking to long so it's an error.
-                        connectTracker.onConnectError(connectStartTime);
-                    }
-                    cancellable.cancel();
-                });
-            }
+        @Override
+        public void cancel() {
+            // We assume cancellation is the result of some sort of timeout.
+            doOnError();
+        }
 
-            @Override
-            public void onSuccess(@Nullable C result) {
-                if (once()) {
-                    connectTracker.onConnectSuccess(connectStartTime);
-                }
-                delegate.onSuccess(result);
-            }
+        @Override
+        public void onError(Throwable t) {
+            doOnError();
+        }
 
-            @Override
-            public void onError(Throwable t) {
-                if (once()) {
-                    connectTracker.onConnectError(connectStartTime);
-                }
-                delegate.onError(t);
+        private void doOnError() {
+            if (once()) {
+                connectTracker.onConnectError(connectStartTime);
             }
+        }
 
-            private boolean once() {
-                return !once.getAndSet(true);
-            }
+        private boolean once() {
+            return onceUpdater.getAndSet(this, 1) == 0;
         }
     }
 }

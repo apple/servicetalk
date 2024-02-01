@@ -193,7 +193,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public long beforeStart() {
+        public long beforeRequestStart() {
             return 0;
         }
 
@@ -223,11 +223,11 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onSuccess(long beforeStartTime) {
+        public void onRequestSuccess(long beforeStartTime) {
         }
 
         @Override
-        public void onError(long beforeStartTime, ErrorClass errorClass) {
+        public void onRequestError(long beforeStartTime, ErrorClass errorClass) {
         }
     }
 

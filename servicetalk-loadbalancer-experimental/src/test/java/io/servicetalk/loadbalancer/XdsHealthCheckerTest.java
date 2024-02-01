@@ -150,8 +150,8 @@ class XdsHealthCheckerTest {
             if (!indicator.isHealthy()) {
                 break;
             }
-            long startTime = indicator.beforeStart();
-            indicator.onError(startTime + 1, ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+            long startTime = indicator.beforeRequestStart();
+            indicator.onRequestError(startTime + 1, ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
     }
 }

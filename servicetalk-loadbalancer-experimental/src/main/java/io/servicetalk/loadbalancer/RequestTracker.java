@@ -21,13 +21,13 @@ import io.servicetalk.context.api.ContextMap;
  * A tracker of latency of an action over time.
  * <p>
  * The usage of the RequestTracker is intended to follow the simple workflow:
- * - At initiation of an action for which a request is must call {@link RequestTracker#beforeStart()} and save the
- *   timestamp much like would be done when using a stamped lock.
- * - Once the request event is complete only one of the {@link RequestTracker#onSuccess(long)} or
- *   {@link RequestTracker#onError(long, ErrorClass)} methods must be called and called exactly once.
- * In other words, every call to {@link RequestTracker#beforeStart()} must be followed by exactly one call to either of
- * the completion methods {@link RequestTracker#onSuccess(long)} or
- * {@link RequestTracker#onError(long, ErrorClass)}. Failure to do so can cause state corruption in the
+ * - At initiation of an action for which a request is must call {@link RequestTracker#beforeRequestStart()} and save
+ *   the timestamp much like would be done when using a stamped lock.
+ * - Once the request event is complete only one of the {@link RequestTracker#onRequestSuccess(long)} or
+ *   {@link RequestTracker#onRequestError(long, ErrorClass)} methods must be called and called exactly once.
+ * In other words, every call to {@link RequestTracker#beforeRequestStart()} must be followed by exactly one call to
+ * either of the completion methods {@link RequestTracker#onRequestSuccess(long)} or
+ * {@link RequestTracker#onRequestError(long, ErrorClass)}. Failure to do so can cause state corruption in the
  * {@link RequestTracker} implementations which may track not just latency but also the outstanding requests.
  */
 public interface RequestTracker {
@@ -40,20 +40,20 @@ public interface RequestTracker {
      *
      * @return Current time in nanoseconds.
      */
-    long beforeStart();
+    long beforeRequestStart();
 
     /**
      * Records a successful completion of the action for which latency is to be tracked.
      *
-     * @param beforeStartTimeNs return value from {@link #beforeStart()}.
+     * @param beforeStartTimeNs return value from {@link #beforeRequestStart()}.
      */
-    void onSuccess(long beforeStartTimeNs);
+    void onRequestSuccess(long beforeStartTimeNs);
 
     /**
      * Records a failed completion of the action for which latency is to be tracked.
      *
-     * @param beforeStartTimeNs return value from {@link #beforeStart()}.
+     * @param beforeStartTimeNs return value from {@link #beforeRequestStart()}.
      * @param errorClass the class of error that triggered this method.
      */
-    void onError(long beforeStartTimeNs, ErrorClass errorClass);
+    void onRequestError(long beforeStartTimeNs, ErrorClass errorClass);
 }

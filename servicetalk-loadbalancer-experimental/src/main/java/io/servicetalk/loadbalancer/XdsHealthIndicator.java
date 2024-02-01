@@ -88,7 +88,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     protected abstract void doCancel();
 
     @Override
-    public final long currentTimeNanos() {
+    protected final long currentTimeNanos() {
         return executor.currentTime(TimeUnit.NANOSECONDS);
     }
 
@@ -115,16 +115,16 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     }
 
     @Override
-    public final void onSuccess(final long beforeStartTimeNs) {
-        super.onSuccess(beforeStartTimeNs);
+    public final void onRequestSuccess(final long beforeStartTimeNs) {
+        super.onRequestSuccess(beforeStartTimeNs);
         successes.incrementAndGet();
         consecutive5xx.set(0);
         LOGGER.trace("Observed success for address {}", address);
     }
 
     @Override
-    public final void onError(final long beforeStartTimeNs, ErrorClass errorClass) {
-        super.onError(beforeStartTimeNs, errorClass);
+    public final void onRequestError(final long beforeStartTimeNs, ErrorClass errorClass) {
+        super.onRequestError(beforeStartTimeNs, errorClass);
         // For now, don't consider cancellation to be an error or a success.
         if (errorClass != ErrorClass.CANCELLED) {
             doOnError();
