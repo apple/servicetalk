@@ -24,13 +24,13 @@ import io.servicetalk.context.api.ContextMap;
  * - At initiation of an action for which a request is must call {@link RequestTracker#beforeStart()} and save the
  *   timestamp much like would be done when using a stamped lock.
  * - Once the request event is complete only one of the {@link RequestTracker#onSuccess(long)} or
- *   {@link RequestTracker#onError(long, ErrorClass, Throwable)} methods must be called and called exactly once.
+ *   {@link RequestTracker#onError(long, ErrorClass)} methods must be called and called exactly once.
  * In other words, every call to {@link RequestTracker#beforeStart()} must be followed by exactly one call to either of
  * the completion methods {@link RequestTracker#onSuccess(long)} or
- * {@link RequestTracker#onError(long, ErrorClass, Throwable)}. Failure to do so can cause state corruption in the
+ * {@link RequestTracker#onError(long, ErrorClass)}. Failure to do so can cause state corruption in the
  * {@link RequestTracker} implementations which may track not just latency but also the outstanding requests.
  */
-interface RequestTracker {
+public interface RequestTracker {
 
     ContextMap.Key<RequestTracker> REQUEST_TRACKER_KEY =
             ContextMap.Key.newKey("request_tracker", RequestTracker.class);

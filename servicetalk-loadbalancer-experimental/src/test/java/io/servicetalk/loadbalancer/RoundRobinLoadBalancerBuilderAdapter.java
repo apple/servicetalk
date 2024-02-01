@@ -49,6 +49,12 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolStrategyFactory(
+            ConnectionPoolStrategyFactory<TestLoadBalancedConnection> connectionPoolStrategyFactory) {
+        throw new IllegalStateException("Cannot set a connection pool strategy for old round robin");
+    }
+
+    @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> backgroundExecutor(Executor backgroundExecutor) {
         underlying = underlying.backgroundExecutor(backgroundExecutor);
         return this;

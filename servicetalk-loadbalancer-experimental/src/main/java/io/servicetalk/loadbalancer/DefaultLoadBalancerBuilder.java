@@ -48,6 +48,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
     @Nullable
     private HealthCheckerFactory<ResolvedAddress> healthCheckerFactory;
+    private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory =
+            LinearSearchConnectionPoolStrategy.defaultFactory();
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
     private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
     private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -77,6 +79,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
             HealthCheckerFactory<ResolvedAddress> healthCheckerFactory) {
         this.healthCheckerFactory = healthCheckerFactory;
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolStrategyFactory(
+            ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
+        this.connectionPoolStrategyFactory = requireNonNull(connectionPoolStrategyFactory,
+                "connectionPoolStrategyFactory");
         return this;
     }
 
@@ -135,7 +145,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
-                loadBalancerObserver, healthCheckerSupplier);
+                loadBalancerObserver, healthCheckerSupplier, connectionPoolStrategyFactory);
     }
 
     private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -148,14 +158,18 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
+        private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
-                                   final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory) {
+                                   final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory,
+                                   final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
+            this.connectionPoolStrategyFactory = requireNonNull(
+                    connectionPoolStrategyFactory, "connectionPoolStrategyFactory");
             this.healthCheckConfig = healthCheckConfig;
             this.healthCheckerFactory = healthCheckerFactory;
         }
@@ -164,9 +178,10 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         public <T extends C> LoadBalancer<T> newLoadBalancer(String targetResource,
              Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new DefaultLoadBalancer<ResolvedAddress, T>(id, targetResource, eventPublisher,
-                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
-                    loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
+            return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
+                    connectionPoolStrategyFactory.buildStrategy(), connectionFactory, loadBalancerObserver,
+                    healthCheckConfig, healthCheckerFactory);
         }
     }
 

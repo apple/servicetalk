@@ -93,6 +93,14 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
             HealthCheckerFactory<ResolvedAddress> healthCheckerFactory);
 
     /**
+     * Set the {@link ConnectionPoolStrategy} to use with this load balancer.
+     * @param connectionPoolStrategyFactory the factory of connection pooling strategies to use.
+     * @return {@code this}
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolStrategyFactory(
+            ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory);
+
+    /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
      * using health checks that run in the background. The health check tries to establish a new connection
      * and if it succeeds, the host is returned to the load balancing pool. As long as the connection

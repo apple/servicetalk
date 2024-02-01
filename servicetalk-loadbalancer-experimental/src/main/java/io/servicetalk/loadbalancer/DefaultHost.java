@@ -87,18 +87,18 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
+                final ConnectionPoolStrategy<C> connectionPoolStrategy,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 final HostObserver<Addr> hostObserver, final @Nullable HealthCheckConfig healthCheckConfig,
                 final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
+        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.healthIndicator = healthIndicator;
 
-        // TODO: make this configurable.
-        this.connectionPoolStrategy = new ConnectionPoolStrategy.LinearSearchFirst<>(Integer.MAX_VALUE);
         this.closeable = toAsyncCloseable(this::doClose);
         hostObserver.onHostCreated(address);
     }
