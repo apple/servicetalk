@@ -30,6 +30,11 @@ public enum ErrorClass {
     LOCAL_ORIGIN_CONNECT_FAILED(true),
 
     /**
+     * Failures caused locally, these would be things that failed due to an exception locally.
+     */
+    LOCAL_ORIGIN_REQUEST_FAILED(true),
+
+    /**
      * Failures related to locally enforced timeouts waiting for responses from the peer.
      */
     EXT_ORIGIN_TIMEOUT(false),
