@@ -135,7 +135,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         if (hostHealthIndicator == null) {
-            return new DefaultFilterableStreamingHttpLoadBalancedConnection(connection);
+            return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection, concurrencyController);
         }
 
         return new DefaultHttpLoadBalancedConnection(connection, concurrencyController,
