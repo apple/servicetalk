@@ -61,7 +61,6 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
 
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
-    private final HostObserver<ResolvedAddress> hostObserver;
     private final Kernel kernel;
     private final AtomicInteger indicatorCount = new AtomicInteger();
     // Protected by `sequentialExecutor`.
@@ -69,18 +68,16 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
     // reads and writes are protected by `sequentialExecutor`.
     private int ejectedHostCount;
 
-    XdsHealthChecker(final Executor executor, final HostObserver<ResolvedAddress> hostObserver,
-                     final OutlierDetectorConfig config) {
+    XdsHealthChecker(final Executor executor, final OutlierDetectorConfig config, String lbDescription) {
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
             LOGGER.error("{}: Uncaught exception in " + this.getClass().getSimpleName(), this, uncaughtException));
         this.executor = requireNonNull(executor, "executor");
-        this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.kernel = new Kernel(config);
     }
 
     @Override
-    public HealthIndicator newHealthIndicator(ResolvedAddress address) {
-        XdsHealthIndicator result = new XdsHealthIndicatorImpl(address);
+    public HealthIndicator newHealthIndicator(ResolvedAddress address, HostObserver hostObserver) {
+        XdsHealthIndicator result = new XdsHealthIndicatorImpl(address, hostObserver);
         sequentialExecutor.execute(() -> indicators.add(result));
         indicatorCount.incrementAndGet();
         return result;
@@ -101,7 +98,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress> {
 
-        XdsHealthIndicatorImpl(final ResolvedAddress address) {
+        XdsHealthIndicatorImpl(final ResolvedAddress address, HostObserver hostObserver) {
             super(sequentialExecutor, executor, address, hostObserver);
         }
 

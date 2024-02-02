@@ -235,7 +235,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         final AtomicReference<TestHealthChecker> currentHealthChecker = new AtomicReference<>();
         @Override
-        public HealthChecker newHealthChecker(Executor executor, HostObserver<String> hostObserver) {
+        public HealthChecker newHealthChecker(Executor executor, String lbDescription) {
             assert currentHealthChecker.get() == null;
             TestHealthChecker result = new TestHealthChecker();
             currentHealthChecker.set(result);
@@ -254,7 +254,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public HealthIndicator newHealthIndicator(String address) {
+        public HealthIndicator newHealthIndicator(String address, HostObserver hostObserver) {
             TestHealthIndicator healthIndicator = new TestHealthIndicator(indicatorSet, address);
             synchronized (indicatorSet) {
                 indicatorSet.add(healthIndicator);

@@ -40,7 +40,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
 
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
-    private final HostObserver<ResolvedAddress> hostObserver;
+    private final HostObserver hostObserver;
     private final ResolvedAddress address;
     private final AtomicInteger consecutive5xx = new AtomicInteger();
     private final AtomicLong successes = new AtomicLong();
@@ -56,7 +56,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private volatile Long evictedUntilNanos;
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
-                       final ResolvedAddress address, final HostObserver<ResolvedAddress> hostObserver) {
+                       final ResolvedAddress address, final HostObserver hostObserver) {
         super(1);
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");
@@ -262,7 +262,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // Finally we add jitter to the ejection time.
         final long jitterNanos = ThreadLocalRandom.current().nextLong(config.maxEjectionTimeJitter().toNanos() + 1);
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
-        hostObserver.onHostMarkedUnhealthy(address, cause);
+        hostObserver.onHostMarkedUnhealthy(cause);
         return true;
     }
 
@@ -274,7 +274,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // are reasonable that it's still a bad host, so we'll want to mark it as an outlier again immediately if
         // the next request also fails.
         hostRevived();
-        hostObserver.onHostRevived(address);
+        hostObserver.onHostRevived();
     }
 
     private static final class EjectedCause extends Exception {

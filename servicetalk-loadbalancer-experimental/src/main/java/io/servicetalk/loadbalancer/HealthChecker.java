@@ -30,5 +30,5 @@ interface HealthChecker<ResolvedAddress> extends Cancellable {
      * @param address the resolved address of the destination.
      * @return new {@link HealthIndicator}.
      */
-    HealthIndicator newHealthIndicator(ResolvedAddress address);
+    HealthIndicator newHealthIndicator(ResolvedAddress address, LoadBalancerObserver.HostObserver hostObserver);
 }
