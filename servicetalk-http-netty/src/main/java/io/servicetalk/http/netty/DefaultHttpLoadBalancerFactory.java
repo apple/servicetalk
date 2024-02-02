@@ -368,23 +368,23 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
             return Single.defer(() -> {
                 final RequestTracker theTracker = new AtMostOnceDeliveryRequestTracker(tracker);
-                final long startTime = theTracker.beforeStart();
+                final long startTime = theTracker.beforeRequestStart();
 
                 return delegate.request(request)
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                             @Override
                             public void onComplete() {
-                                theTracker.onSuccess(startTime);
+                                theTracker.onRequestSuccess(startTime);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                theTracker.onError(startTime, errorClassFunction.apply(throwable));
+                                theTracker.onRequestError(startTime, errorClassFunction.apply(throwable));
                             }
 
                             @Override
                             public void cancel() {
-                                theTracker.onError(startTime, ErrorClass.CANCELLED);
+                                theTracker.onRequestError(startTime, ErrorClass.CANCELLED);
                             }
                         }, /*discardEventsAfterCancel*/ true))
 
@@ -397,7 +397,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                             final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
                             if (eClass != null) {
                                 // The onError is triggered before the body is actually consumed.
-                                theTracker.onError(startTime, eClass);
+                                theTracker.onRequestError(startTime, eClass);
                             }
                             return response;
                         })
@@ -453,21 +453,21 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             }
 
             @Override
-            public long beforeStart() {
-                return original.beforeStart();
+            public long beforeRequestStart() {
+                return original.beforeRequestStart();
             }
 
             @Override
-            public void onSuccess(final long beforeStartTimeNs) {
+            public void onRequestSuccess(final long beforeStartTimeNs) {
                 if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    original.onSuccess(beforeStartTimeNs);
+                    original.onRequestSuccess(beforeStartTimeNs);
                 }
             }
 
             @Override
-            public void onError(final long beforeStartTimeNs, final ErrorClass errorClass) {
+            public void onRequestError(final long beforeStartTimeNs, final ErrorClass errorClass) {
                 if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    original.onError(beforeStartTimeNs, errorClass);
+                    original.onRequestError(beforeStartTimeNs, errorClass);
                 }
             }
         }

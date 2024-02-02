@@ -24,6 +24,10 @@ public enum ErrorClass {
      * Failures related to locally enforced timeouts that prevent session establishment with the peer.
      */
     LOCAL_ORIGIN_TIMEOUT(true),
+    /**
+     * Failures related to connection establishment.
+     */
+    LOCAL_ORIGIN_CONNECT_FAILED(true),
 
     /**
      * Failures caused locally, these would be things that failed due to an exception locally.
