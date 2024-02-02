@@ -115,20 +115,41 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     }
 
     @Override
-    public final void onSuccess(final long beforeStartTimeNs) {
-        super.onSuccess(beforeStartTimeNs);
+    public final void onRequestSuccess(final long beforeStartTimeNs) {
+        super.onRequestSuccess(beforeStartTimeNs);
         successes.incrementAndGet();
         consecutive5xx.set(0);
         LOGGER.trace("Observed success for address {}", address);
     }
 
     @Override
-    public final void onError(final long beforeStartTimeNs, ErrorClass errorClass) {
-        super.onError(beforeStartTimeNs, errorClass);
+    public final void onRequestError(final long beforeStartTimeNs, ErrorClass errorClass) {
+        super.onRequestError(beforeStartTimeNs, errorClass);
         // For now, don't consider cancellation to be an error or a success.
-        if (errorClass == ErrorClass.CANCELLED) {
-            return;
+        if (errorClass != ErrorClass.CANCELLED) {
+            doOnError();
         }
+    }
+
+    @Override
+    public long beforeConnectStart() {
+        return currentTimeNanos();
+    }
+
+    @Override
+    public void onConnectError(long beforeConnectStart) {
+        // This assumes that the connect request was intended to be used for a request dispatch which
+        // will have now failed. This is not strictly true: a connection can be acquired and simply not
+        // used, but in practice it's a very good assumption.
+        doOnError();
+    }
+
+    @Override
+    public void onConnectSuccess(long beforeConnectStart) {
+        // noop: the request path will now determine if the request was a success or failure.
+    }
+
+    private void doOnError() {
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
         final OutlierDetectorConfig localConfig = currentConfig();

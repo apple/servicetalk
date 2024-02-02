@@ -193,8 +193,21 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public long beforeStart() {
+        public long beforeRequestStart() {
             return 0;
+        }
+
+        @Override
+        public long beforeConnectStart() {
+            return 0;
+        }
+
+        @Override
+        public void onConnectSuccess(long beforeConnectStart) {
+        }
+
+        @Override
+        public void onConnectError(long beforeConnectStart) {
         }
 
         @Override
@@ -210,11 +223,11 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onSuccess(long beforeStartTime) {
+        public void onRequestSuccess(long beforeStartTime) {
         }
 
         @Override
-        public void onError(long beforeStartTime, ErrorClass errorClass) {
+        public void onRequestError(long beforeStartTime, ErrorClass errorClass) {
         }
     }
 

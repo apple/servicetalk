@@ -81,19 +81,19 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     protected abstract long currentTimeNanos();
 
     @Override
-    public final long beforeStart() {
+    public final long beforeRequestStart() {
         pendingUpdater.incrementAndGet(this);
         return currentTimeNanos();
     }
 
     @Override
-    public void onSuccess(final long startTimeNanos) {
+    public void onRequestSuccess(final long startTimeNanos) {
         pendingUpdater.decrementAndGet(this);
         calculateAndStore((ewma, currentLatency) -> currentLatency, startTimeNanos);
     }
 
     @Override
-    public void onError(final long startTimeNanos, ErrorClass errorClass) {
+    public void onRequestError(final long startTimeNanos, ErrorClass errorClass) {
         pendingUpdater.decrementAndGet(this);
         calculateAndStore(errorClass == ErrorClass.CANCELLED ? this:: cancelPenalty : this::errorPenalty,
                 startTimeNanos);

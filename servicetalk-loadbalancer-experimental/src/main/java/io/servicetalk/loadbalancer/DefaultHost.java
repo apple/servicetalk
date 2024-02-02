@@ -17,15 +17,18 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,10 +115,12 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
-        this.connectionFactory = requireNonNull(connectionFactory, "connectionFactory");
+        this.healthIndicator = healthIndicator;
+        requireNonNull(connectionFactory, "connectionFactory");
+        this.connectionFactory = healthIndicator == null ? connectionFactory :
+                new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
-        this.healthIndicator = healthIndicator;
         this.closeable = toAsyncCloseable(this::doClose);
         hostObserver.onHostCreated(address);
     }
@@ -235,7 +240,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             Single<? extends C> establishConnection = connectionFactory.newConnection(address, actualContext, null);
             if (healthCheckConfig != null) {
                 // Schedule health check before returning
-                establishConnection = establishConnection.beforeOnError(this::markUnhealthy);
+                establishConnection = establishConnection.beforeOnError(this::onConnectionError);
             }
             return establishConnection
                     .flatMap(newCnx -> {
@@ -302,7 +307,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
     }
 
-    private void markUnhealthy(final Throwable cause) {
+    private void onConnectionError(Throwable cause) {
         assert healthCheckConfig != null;
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
@@ -644,6 +649,58 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                     ", healthCheck=" + healthCheck +
                     ", #connections=" + connections.size() +
                     '}';
+        }
+    }
+
+    private static final class InstrumentedConnectionFactory<Addr, C extends LoadBalancedConnection>
+            extends DelegatingConnectionFactory<Addr, C> {
+
+        private final ConnectTracker connectTracker;
+
+        InstrumentedConnectionFactory(final ConnectionFactory<Addr, C> delegate, ConnectTracker connectTracker) {
+            super(delegate);
+            this.connectTracker = connectTracker;
+        }
+
+        @Override
+        public Single<C> newConnection(Addr addr, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            return Single.defer(() -> {
+                final long connectStartTime = connectTracker.beforeConnectStart();
+                return delegate().newConnection(addr, context, observer)
+                        .beforeFinally(new ConnectSignalConsumer<>(connectStartTime, connectTracker))
+                        .shareContextOnSubscribe();
+            });
+        }
+    }
+
+    private static class ConnectSignalConsumer<C extends LoadBalancedConnection> implements TerminalSignalConsumer {
+
+        private final ConnectTracker connectTracker;
+        private final long connectStartTime;
+
+        ConnectSignalConsumer(final long connectStartTime, final ConnectTracker connectTracker) {
+            this.connectStartTime = connectStartTime;
+            this.connectTracker = connectTracker;
+        }
+
+        @Override
+        public void onComplete() {
+            connectTracker.onConnectSuccess(connectStartTime);
+        }
+
+        @Override
+        public void cancel() {
+            // We assume cancellation is the result of some sort of timeout.
+            doOnError();
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            doOnError();
+        }
+
+        private void doOnError() {
+            connectTracker.onConnectError(connectStartTime);
         }
     }
 }
