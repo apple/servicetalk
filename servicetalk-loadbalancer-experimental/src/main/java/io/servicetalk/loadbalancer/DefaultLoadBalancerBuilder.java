@@ -140,7 +140,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             healthCheckerSupplier = null;
         } else {
             final Executor executor = getExecutor();
-            healthCheckerSupplier = (String lbDescrption) -> healthCheckerFactory.newHealthChecker(executor, lbDescrption);
+            healthCheckerSupplier = (String lbDescrption) ->
+                    healthCheckerFactory.newHealthChecker(executor, lbDescrption);
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,

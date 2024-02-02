@@ -62,35 +62,30 @@ interface LoadBalancerObserver<ResolvedAddress> {
 
         /**
          * Callback for when a host is removed by service discovery.
-         * @param address the resolved address.
          * @param connectionCount the number of open connections when the host was removed.
          */
         void onActiveHostRemoved(int connectionCount);
 
         /**
          * Callback for when an expired host is returned to an active state.
-         * @param address the resolved address.
          * @param connectionCount the number of active connections when the host was revived.
          */
         void onExpiredHostRevived(int connectionCount);
 
         /**
          * Callback for when an expired host is removed.
-         * @param address the resolved address.
          * @param connectionCount the number of open connections when the host was removed.
          */
         void onExpiredHostRemoved(int connectionCount);
 
         /**
          * Callback for when a {@link Host} transitions from healthy to unhealthy.
-         * @param address the resolved address.
          * @param cause the most recent cause of the transition.
          */
         void onHostMarkedUnhealthy(@Nullable Throwable cause);
 
         /**
          * Callback for when a {@link Host} transitions from unhealthy to healthy.
-         * @param address the resolved address.
          */
         void onHostRevived();
     }

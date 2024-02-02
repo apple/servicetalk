@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 import static java.util.Objects.requireNonNull;
 

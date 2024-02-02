@@ -61,6 +61,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
 
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
+    private final String lbDescription;
     private final Kernel kernel;
     private final AtomicInteger indicatorCount = new AtomicInteger();
     // Protected by `sequentialExecutor`.
@@ -72,6 +73,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
             LOGGER.error("{}: Uncaught exception in " + this.getClass().getSimpleName(), this, uncaughtException));
         this.executor = requireNonNull(executor, "executor");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.kernel = new Kernel(config);
     }
 
@@ -99,7 +101,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress> {
 
         XdsHealthIndicatorImpl(final ResolvedAddress address, HostObserver hostObserver) {
-            super(sequentialExecutor, executor, address, hostObserver);
+            super(sequentialExecutor, executor, address, lbDescription, hostObserver);
         }
 
         @Override

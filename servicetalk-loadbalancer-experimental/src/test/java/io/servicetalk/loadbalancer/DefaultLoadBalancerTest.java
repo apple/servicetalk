@@ -231,7 +231,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestHealthCheckerFactory implements HealthCheckerFactory<String> {
+    private static class TestHealthCheckerFactory implements HealthCheckerFactory {
 
         final AtomicReference<TestHealthChecker> currentHealthChecker = new AtomicReference<>();
         @Override

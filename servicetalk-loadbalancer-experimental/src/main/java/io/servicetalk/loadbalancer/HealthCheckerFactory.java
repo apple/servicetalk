@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 /**
  * A factory of {@link HealthChecker} instances. The factory will be used by load balancer
@@ -30,5 +29,5 @@ interface HealthCheckerFactory<ResolvedAddress> {
      * @param lbDescription a description of the load balancer for logging purposes.
      * @return a new {@link HealthChecker}.
      */
-    HealthChecker newHealthChecker(Executor executor, String lbDescription);
+    HealthChecker<ResolvedAddress> newHealthChecker(Executor executor, String lbDescription);
 }
