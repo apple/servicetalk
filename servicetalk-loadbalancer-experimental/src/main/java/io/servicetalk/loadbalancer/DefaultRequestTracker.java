@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ScoreSupplier;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.IntBinaryOperator;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
 import static java.lang.Math.ceil;
@@ -66,9 +67,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     }
 
     DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty) {
-        if (halfLifeNanos <= 0) {
-            throw new IllegalArgumentException("halfLifeNanos: " + halfLifeNanos + " (expected >0)");
-        }
+        ensurePositive(halfLifeNanos, "halfLifeNanos");
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
         this.errorPenalty = errorPenalty;
