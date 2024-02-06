@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
  * @param <C> the concrete type of returned connections.
  */
 interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {
-
     /**
      * Select an existing connection from the host.
      * @return the selected host, or null if a suitable host couldn't be found.

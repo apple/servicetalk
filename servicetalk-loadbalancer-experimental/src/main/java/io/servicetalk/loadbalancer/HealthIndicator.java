@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.Cancellable;
  * health check system can give the host information about it's perceived health and the host can give the
  * health check system information about request results.
  */
-interface HealthIndicator extends RequestTracker, ScoreSupplier, Cancellable {
+interface HealthIndicator extends RequestTracker, ConnectTracker, ScoreSupplier, Cancellable {
 
     /**
      * Whether the host is considered healthy by the HealthIndicator.

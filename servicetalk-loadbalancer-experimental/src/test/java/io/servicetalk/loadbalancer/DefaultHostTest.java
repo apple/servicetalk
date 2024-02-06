@@ -29,11 +29,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -234,5 +237,18 @@ class DefaultHostTest {
         verify(mockHostObserver, times(1)).onHostCreated("address");
         assertThat(host.score(), is(10));
         verify(healthIndicator, times(1)).score();
+    }
+
+    @Test
+    void connectFailuresAreForwardedToHealthIndicator() {
+        connectionFactory = new TestConnectionFactory(address -> failed(DELIBERATE_EXCEPTION));
+        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        buildHost(healthIndicator);
+        verify(mockHostObserver, times(1)).onHostCreated("address");
+        Throwable underlying = assertThrows(ExecutionException.class, () ->
+                host.newConnection(cxn -> true, false, null).toFuture().get()).getCause();
+        assertEquals(DELIBERATE_EXCEPTION, underlying);
+        verify(healthIndicator, times(1)).beforeConnectStart();
+        verify(healthIndicator, times(1)).onConnectError(0L);
     }
 }
