@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,7 +34,7 @@ final class XdsHealthCheckerFactory<ResolvedAddress> implements HealthCheckerFac
 
     @Override
     public HealthChecker<ResolvedAddress> newHealthChecker(
-            final Executor executor, final HostObserver<ResolvedAddress> hostObserver) {
-        return new XdsHealthChecker<>(executor, hostObserver, config);
+            final Executor executor, String lbDescription) {
+        return new XdsHealthChecker<>(executor, config, lbDescription);
     }
 }

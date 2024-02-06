@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -135,13 +135,13 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         }
         final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        Supplier<HealthChecker<ResolvedAddress>> healthCheckerSupplier;
+        Function<String, HealthChecker<ResolvedAddress>> healthCheckerSupplier;
         if (healthCheckerFactory == null) {
             healthCheckerSupplier = null;
         } else {
             final Executor executor = getExecutor();
-            healthCheckerSupplier = () -> healthCheckerFactory.newHealthChecker(executor,
-                    loadBalancerObserver.hostObserver());
+            healthCheckerSupplier = (String lbDescrption) ->
+                    healthCheckerFactory.newHealthChecker(executor, lbDescrption);
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
@@ -156,14 +156,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
         private final int linearSearchSpace;
         @Nullable
-        private final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory;
+        private final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
-                                   final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory) {
+                                   final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");

@@ -102,7 +102,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
     private final HealthIndicator healthIndicator;
-    private final LoadBalancerObserver.HostObserver<Addr> hostObserver;
+    private final LoadBalancerObserver.HostObserver hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
@@ -110,7 +110,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                final int linearSearchSpace, final HostObserver<Addr> hostObserver,
+                final int linearSearchSpace, final HostObserver hostObserver,
                 final @Nullable HealthCheckConfig healthCheckConfig, final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
@@ -122,7 +122,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(this::doClose);
-        hostObserver.onHostCreated(address);
     }
 
     @Override
@@ -142,7 +141,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return oldConnState;
         });
         if (oldState.state == State.EXPIRED) {
-            hostObserver.onExpiredHostRevived(address, oldState.connections.size());
+            hostObserver.onExpiredHostRevived(oldState.connections.size());
         }
         return oldState.state != State.CLOSED;
     }
@@ -179,7 +178,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             Object nextState = oldState.connections.isEmpty() ? State.CLOSED : State.EXPIRED;
             if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
                 cancelIfHealthCheck(oldState);
-                hostObserver.onHostMarkedExpired(address, oldState.connections.size());
+                hostObserver.onHostMarkedExpired(oldState.connections.size());
                 if (nextState == State.CLOSED) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
@@ -303,7 +302,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
         // Only if the previous state was a healthcheck should we notify the observer.
         if (oldState.isUnhealthy()) {
-            hostObserver.onHostRevived(address);
+            hostObserver.onHostRevived();
         }
     }
 
@@ -334,7 +333,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                                     "{} time(s) in a row. Error counting threshold reached, marking this host as " +
                                     "UNHEALTHY for the selection algorithm and triggering background health-checking.",
                             lbDescription, address, healthCheckConfig.failedThreshold, cause);
-                    hostObserver.onHostMarkedUnhealthy(address, cause);
+                    hostObserver.onHostMarkedUnhealthy(cause);
                     nextState.healthCheck.schedule(cause);
                 }
                 break;
@@ -378,7 +377,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                         cancelIfHealthCheck(previous);
                     }
                     // If we transitioned from unhealth to healthy we need to let the observer know.
-                    hostObserver.onHostRevived(address);
+                    hostObserver.onHostRevived();
                 }
                 break;
             }
@@ -415,7 +414,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             // in the next iteration.
                             && connStateUpdater.compareAndSet(this, currentConnState, nextState.toClosed())) {
                         closeAsync().subscribe();
-                        hostObserver.onExpiredHostRemoved(address, nextState.connections.size());
+                        hostObserver.onExpiredHostRemoved(nextState.connections.size());
                         break;
                     }
                 } else {
@@ -468,9 +467,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             LOGGER.debug("{}: closing {} connection(s) {}gracefully to the closed address: {}.",
                     lbDescription, oldState.connections.size(), graceful ? "" : "un", address);
             if (oldState.state == State.ACTIVE) {
-                hostObserver.onActiveHostRemoved(address, oldState.connections.size());
+                hostObserver.onActiveHostRemoved(oldState.connections.size());
             } else if (oldState.state == State.EXPIRED) {
-                hostObserver.onExpiredHostRemoved(address, oldState.connections.size());
+                hostObserver.onExpiredHostRemoved(oldState.connections.size());
             }
             final List<C> connections = oldState.connections;
             return (connections.isEmpty() ? completed() :
