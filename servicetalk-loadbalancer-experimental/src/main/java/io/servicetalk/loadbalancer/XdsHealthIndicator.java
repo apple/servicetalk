@@ -21,6 +21,7 @@ import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,8 +58,9 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private volatile Long evictedUntilNanos;
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
-                       final ResolvedAddress address, final String lbDescription, final HostObserver hostObserver) {
-        super(1);
+                       final Duration ewmaHalfLife, final ResolvedAddress address, String lbDescription,
+                       final HostObserver hostObserver) {
+        super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos());
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");
         assert executor instanceof NormalizedTimeSourceExecutor;

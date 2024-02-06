@@ -23,6 +23,7 @@ import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -79,7 +80,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
 
     @Override
     public HealthIndicator newHealthIndicator(ResolvedAddress address, HostObserver hostObserver) {
-        XdsHealthIndicator result = new XdsHealthIndicatorImpl(address, hostObserver);
+        XdsHealthIndicator result = new XdsHealthIndicatorImpl(address, kernel.config.ewmaHalfLife(), hostObserver);
         sequentialExecutor.execute(() -> indicators.add(result));
         indicatorCount.incrementAndGet();
         return result;
@@ -100,8 +101,8 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress> {
 
-        XdsHealthIndicatorImpl(final ResolvedAddress address, HostObserver hostObserver) {
-            super(sequentialExecutor, executor, address, lbDescription, hostObserver);
+        XdsHealthIndicatorImpl(final ResolvedAddress address, Duration ewmaHalfLife, HostObserver hostObserver) {
+            super(sequentialExecutor, executor, ewmaHalfLife, address, lbDescription, hostObserver);
         }
 
         @Override

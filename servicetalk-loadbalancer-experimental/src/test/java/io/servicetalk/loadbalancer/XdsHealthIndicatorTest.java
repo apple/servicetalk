@@ -212,7 +212,7 @@ class XdsHealthIndicatorTest {
         boolean mayEjectHost = true;
 
         TestIndicator(final OutlierDetectorConfig config) {
-            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), "address",
+            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10), "address",
                     "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }
