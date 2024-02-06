@@ -64,7 +64,8 @@ class DefaultHostTest {
 
     @BeforeEach
     void init() {
-        mockHostObserver = MockLoadBalancerObserver.mockObserver().hostObserver();
+        MockLoadBalancerObserver mockLoadBalancerObserver = MockLoadBalancerObserver.mockObserver();
+        mockHostObserver = mockLoadBalancerObserver.hostObserver(DEFAULT_ADDRESS);
         connectionFactory = new TestConnectionFactory(address ->
                 succeeded(TestLoadBalancedConnection.mockConnection(address)));
         testExecutor = executor.executor();
@@ -88,45 +89,32 @@ class DefaultHostTest {
     }
 
     @Test
-    void hostCreatedEvents() {
-        buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
-        // make another one, just for good measure.
-        new DefaultHost<>("lbDescription", "address2", connectionFactory, Integer.MAX_VALUE,
-                mockHostObserver, healthCheckConfig, null);
-        verify(mockHostObserver, times(1)).onHostCreated("address2");
-    }
-
-    @Test
     void activeHostClosed() throws Exception {
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         host.closeAsyncGracefully().toFuture().get();
-        verify(mockHostObserver, times(1)).onActiveHostRemoved(DEFAULT_ADDRESS, 0);
+        verify(mockHostObserver, times(1)).onActiveHostRemoved(0);
         assertThat(host.onClose().toFuture().isDone(), is(true));
     }
 
     @Test
     void activeHostExpires() {
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         host.markExpired();
-        verify(mockHostObserver, times(1)).onHostMarkedExpired(DEFAULT_ADDRESS, 0);
-        verify(mockHostObserver, times(1)).onExpiredHostRemoved(DEFAULT_ADDRESS, 0);
+        verify(mockHostObserver, times(1)).onHostMarkedExpired(0);
+        verify(mockHostObserver, times(1)).onExpiredHostRemoved(0);
         assertThat(host.onClose().toFuture().isDone(), is(true));
     }
 
     @Test
     void expiredHostClosesAfterLastConnectionClosed() throws Exception {
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         TestLoadBalancedConnection cxn = host.newConnection(any(), false, null).toFuture().get();
         host.markExpired();
-        verify(mockHostObserver, times(1)).onHostMarkedExpired(DEFAULT_ADDRESS, 1);
+        verify(mockHostObserver, times(1)).onHostMarkedExpired(1);
         assertThat(host.onClose().toFuture().isDone(), is(false));
         cxn.closeAsync().toFuture().get();
         assertThat(host.onClose().toFuture().isDone(), is(true));
-        verify(mockHostObserver).onExpiredHostRemoved(DEFAULT_ADDRESS, 0);
+        verify(mockHostObserver).onExpiredHostRemoved(0);
         // shouldn't able to revive it.
         assertThat(host.markActiveIfNotClosed(), is(false));
     }
@@ -134,14 +122,13 @@ class DefaultHostTest {
     @Test
     void expiredHostRevives() throws Exception {
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         host.newConnection(any(), false, null).toFuture().get();
         host.markExpired();
         verify(mockHostObserver, times(1))
-                .onHostMarkedExpired(DEFAULT_ADDRESS, 1);
+                .onHostMarkedExpired(1);
         assertThat(host.onClose().toFuture().isDone(), is(false));
         assertThat(host.markActiveIfNotClosed(), is(true));
-        verify(mockHostObserver).onExpiredHostRevived(DEFAULT_ADDRESS, 1);
+        verify(mockHostObserver).onExpiredHostRevived(1);
     }
 
     @Test
@@ -158,18 +145,17 @@ class DefaultHostTest {
                 Duration.ofMillis(1),
                 Duration.ZERO);
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; i++) {
             assertThrows(ExecutionException.class,
                     () -> host.newConnection(any(), false, null).toFuture().get());
         }
-        verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(DEFAULT_ADDRESS, UNHEALTHY_HOST_EXCEPTION);
+        verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(UNHEALTHY_HOST_EXCEPTION);
 
         // now revive and we should see the event and be able to get the connection.
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
         assertThat(host.newConnection(any(), false, null).toFuture().get(),
                 is(testLoadBalancedConnection));
-        verify(mockHostObserver, times(1)).onHostRevived(DEFAULT_ADDRESS);
+        verify(mockHostObserver, times(1)).onHostRevived();
     }
 
     @Test
@@ -186,7 +172,6 @@ class DefaultHostTest {
                 Duration.ofMillis(1),
                 Duration.ZERO);
         buildHost();
-        verify(mockHostObserver, times(1)).onHostCreated(DEFAULT_ADDRESS);
 
         assertThat(host.isHealthy(), is(true));
         assertThat(host.canMakeNewConnections(), is(true));
@@ -195,23 +180,23 @@ class DefaultHostTest {
             assertThrows(ExecutionException.class,
                     () -> host.newConnection(any(), false, null).toFuture().get());
         }
-        verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(DEFAULT_ADDRESS, UNHEALTHY_HOST_EXCEPTION);
+        verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(UNHEALTHY_HOST_EXCEPTION);
         assertThat(host.isHealthy(), is(false));
         assertThat(host.canMakeNewConnections(), is(true));
 
         // now revive and we should see the event and be able to get the connection.
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
-        verify(mockHostObserver, times(1)).onHostRevived(DEFAULT_ADDRESS);
+        verify(mockHostObserver, times(1)).onHostRevived();
         assertThat(host.isHealthy(), is(true));
         assertThat(host.canMakeNewConnections(), is(true));
 
         host.markExpired();
-        verify(mockHostObserver, times(1)).onHostMarkedExpired(DEFAULT_ADDRESS, 1);
+        verify(mockHostObserver, times(1)).onHostMarkedExpired(1);
         assertThat(host.isHealthy(), is(true));
         assertThat(host.canMakeNewConnections(), is(false));
 
         host.closeAsync().toFuture().get();
-        verify(mockHostObserver, times(1)).onExpiredHostRemoved(DEFAULT_ADDRESS, 1);
+        verify(mockHostObserver, times(1)).onExpiredHostRemoved(1);
         assertThat(host.isHealthy(), is(false));
         assertThat(host.canMakeNewConnections(), is(false));
     }
@@ -221,7 +206,6 @@ class DefaultHostTest {
         HealthIndicator healthIndicator = mock(HealthIndicator.class);
         when(healthIndicator.isHealthy()).thenReturn(true);
         buildHost(healthIndicator);
-        verify(mockHostObserver, times(1)).onHostCreated("address");
         assertThat(host.isHealthy(), is(true));
         when(healthIndicator.isHealthy()).thenReturn(false);
         assertThat(host.isHealthy(), is(false));
@@ -232,7 +216,6 @@ class DefaultHostTest {
         HealthIndicator healthIndicator = mock(HealthIndicator.class);
         when(healthIndicator.score()).thenReturn(10);
         buildHost(healthIndicator);
-        verify(mockHostObserver, times(1)).onHostCreated("address");
         assertThat(host.score(), is(10));
         verify(healthIndicator, times(1)).score();
     }
@@ -242,7 +225,6 @@ class DefaultHostTest {
         connectionFactory = new TestConnectionFactory(address -> failed(DELIBERATE_EXCEPTION));
         HealthIndicator healthIndicator = mock(HealthIndicator.class);
         buildHost(healthIndicator);
-        verify(mockHostObserver, times(1)).onHostCreated("address");
         Throwable underlying = assertThrows(ExecutionException.class, () ->
                 host.newConnection(cxn -> true, false, null).toFuture().get()).getCause();
         assertEquals(DELIBERATE_EXCEPTION, underlying);

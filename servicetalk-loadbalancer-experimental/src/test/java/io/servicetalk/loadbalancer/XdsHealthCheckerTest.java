@@ -65,8 +65,11 @@ class XdsHealthCheckerTest {
     }
 
     private XdsHealthChecker<String> buildHealthChecker() {
-        LoadBalancerObserver<String> observer = NoopLoadBalancerObserver.instance();
-        return new XdsHealthChecker<>(new NormalizedTimeSourceExecutor(testExecutor), observer.hostObserver(), config);
+        return new XdsHealthChecker<>(new NormalizedTimeSourceExecutor(testExecutor), config, "");
+    }
+
+    private LoadBalancerObserver.HostObserver observer() {
+        return NoopLoadBalancerObserver.instance().hostObserver("");
     }
 
     @Test
@@ -78,8 +81,8 @@ class XdsHealthCheckerTest {
     void cancellation() {
         config = withAllEnforcing().maxEjectionPercentage(100).build();
         healthChecker = buildHealthChecker();
-        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1");
-        HealthIndicator indicator2 = healthChecker.newHealthIndicator("address-2");
+        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1", observer());
+        HealthIndicator indicator2 = healthChecker.newHealthIndicator("address-2", observer());
         eject(indicator1);
         eject(indicator2);
         assertFalse(indicator1.isHealthy());
@@ -108,7 +111,7 @@ class XdsHealthCheckerTest {
                 .build();
         healthChecker = buildHealthChecker();
 
-        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1");
+        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1", observer());
         eject(indicator1);
         assertFalse(indicator1.isHealthy());
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
@@ -133,7 +136,7 @@ class XdsHealthCheckerTest {
         healthChecker = buildHealthChecker();
         List<HealthIndicator> healthIndicators = new ArrayList<>(4);
         for (int i = 0; i < 4; i++) {
-            healthIndicators.add(healthChecker.newHealthIndicator("address-" + i));
+            healthIndicators.add(healthChecker.newHealthIndicator("address-" + i, observer()));
         }
 
         for (HealthIndicator indicator : healthIndicators) {

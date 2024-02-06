@@ -96,8 +96,8 @@ final class OutlierDetectorConfig {
 
     /**
      * The Exponentially Weighted Moving Average (EWMA) half-life.
-     * In the context of an exponentially weighted moving average, the half-life means the time during which historical
-     * data has the same weight as a new sample.
+     * In the context of an exponentially weighted moving average, the half-life means the time during which
+     * historical data has the same weight as a new sample.
      * @return the Exponentially Weighted Moving Average (EWMA) half-life.
      */
     public Duration ewmaHalfLife() {
@@ -377,8 +377,8 @@ final class OutlierDetectorConfig {
 
         /**
          * Set the Exponentially Weighted Moving Average (EWMA) half-life.
-         * In the context of an exponentially weighted moving average, the half-life means the time during which historical
-         * data has the same weight as a new sample.
+         * In the context of an exponentially weighted moving average, the half-life means the time during which
+         * historical data has the same weight as a new sample.
          * Defaults to 10 seconds.
          * @param ewmaHalfLife the half-life for latency data.
          * @return {@code this}

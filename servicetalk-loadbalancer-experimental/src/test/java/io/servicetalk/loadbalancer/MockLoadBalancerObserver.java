@@ -15,21 +15,22 @@
  */
 package io.servicetalk.loadbalancer;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 interface MockLoadBalancerObserver extends LoadBalancerObserver<String> {
 
     @Override
-    MockHostObserver hostObserver();
+    MockHostObserver hostObserver(String resolvedAddress);
 
-    interface MockHostObserver extends LoadBalancerObserver.HostObserver<String> {
+    interface MockHostObserver extends LoadBalancerObserver.HostObserver {
     }
 
     static MockLoadBalancerObserver mockObserver() {
         MockHostObserver mockHostObserver = mock(MockHostObserver.class);
         MockLoadBalancerObserver loadBalancerObserver = mock(MockLoadBalancerObserver.class);
-        when(loadBalancerObserver.hostObserver()).thenReturn(mockHostObserver);
+        when(loadBalancerObserver.hostObserver(any())).thenReturn(mockHostObserver);
         return loadBalancerObserver;
     }
 }
