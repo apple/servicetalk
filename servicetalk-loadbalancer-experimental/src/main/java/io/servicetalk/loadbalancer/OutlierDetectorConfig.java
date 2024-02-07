@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class OutlierDetectorConfig {
 
+    private final Duration ewmaHalfLife;
     private final int consecutive5xx;
     private final Duration interval;
     private final Duration baseEjectionTime;
@@ -55,7 +56,8 @@ final class OutlierDetectorConfig {
     private final Duration maxEjectionTimeJitter;
     private final boolean successfulActiveHealthCheckUnejectHost;
 
-    OutlierDetectorConfig(final int consecutive5xx, final Duration interval, final Duration baseEjectionTime,
+    OutlierDetectorConfig(final Duration ewmaHalfLife,
+                          final int consecutive5xx, final Duration interval, final Duration baseEjectionTime,
                           final int maxEjectionPercentage, final int enforcingConsecutive5xx,
                           final int enforcingSuccessRate, final int successRateMinimumHosts,
                           final int successRateRequestVolume, final int successRateStdevFactor,
@@ -66,6 +68,7 @@ final class OutlierDetectorConfig {
                           final int enforcingFailurePercentageLocalOrigin, final int failurePercentageMinimumHosts,
                           final int failurePercentageRequestVolume, final Duration maxEjectionTime,
                           final Duration maxEjectionTimeJitter, final boolean successfulActiveHealthCheckUnejectHost) {
+        this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.consecutive5xx = consecutive5xx;
         this.interval = requireNonNull(interval, "interval");
         this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
@@ -89,6 +92,16 @@ final class OutlierDetectorConfig {
         this.maxEjectionTime = requireNonNull(maxEjectionTime, "maxEjectionTime");
         this.maxEjectionTimeJitter = requireNonNull(maxEjectionTimeJitter, "maxEjectionTimeJitter");
         this.successfulActiveHealthCheckUnejectHost = successfulActiveHealthCheckUnejectHost;
+    }
+
+    /**
+     * The Exponentially Weighted Moving Average (EWMA) half-life.
+     * In the context of an exponentially weighted moving average, the half-life means the time during which
+     * historical data has the same weight as a new sample.
+     * @return the Exponentially Weighted Moving Average (EWMA) half-life.
+     */
+    public Duration ewmaHalfLife() {
+        return ewmaHalfLife;
     }
 
     /**
@@ -299,6 +312,7 @@ final class OutlierDetectorConfig {
      * A builder for {@link OutlierDetectorConfig} instances.
      */
     public static class Builder {
+        private Duration ewmaHalfLife = Duration.ofSeconds(10);
         private int consecutive5xx = 5;
 
         private Duration interval = Duration.ofSeconds(10);
@@ -346,7 +360,8 @@ final class OutlierDetectorConfig {
         private boolean successfulActiveHealthCheckUnejectHost = true;
 
         OutlierDetectorConfig build() {
-            return new OutlierDetectorConfig(consecutive5xx, interval, baseEjectionTime,
+            return new OutlierDetectorConfig(ewmaHalfLife, consecutive5xx,
+                    interval, baseEjectionTime,
                     maxEjectionPercentage, enforcingConsecutive5xx,
                     enforcingSuccessRate, successRateMinimumHosts,
                     successRateRequestVolume, successRateStdevFactor,
@@ -358,6 +373,21 @@ final class OutlierDetectorConfig {
                     failurePercentageRequestVolume, maxEjectionTime,
                     maxEjectionTimeJitter,
                     successfulActiveHealthCheckUnejectHost);
+        }
+
+        /**
+         * Set the Exponentially Weighted Moving Average (EWMA) half-life.
+         * In the context of an exponentially weighted moving average, the half-life means the time during which
+         * historical data has the same weight as a new sample.
+         * Defaults to 10 seconds.
+         * @param ewmaHalfLife the half-life for latency data.
+         * @return {@code this}
+         */
+        public Builder ewmaHalfLife(final Duration ewmaHalfLife) {
+            requireNonNull(ewmaHalfLife, "ewmaHalfLife");
+            ensureNonNegative(ewmaHalfLife.toNanos(), "ewmaHalfLife");
+            this.ewmaHalfLife = ewmaHalfLife;
+            return this;
         }
 
         /**

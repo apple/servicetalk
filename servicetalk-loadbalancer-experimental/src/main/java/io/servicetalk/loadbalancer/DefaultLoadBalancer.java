@@ -46,8 +46,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -133,7 +133,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            @Nullable final Supplier<HealthChecker<ResolvedAddress>> healthCheckerFactory) {
+            @Nullable final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -150,7 +150,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
         subscribeToEvents(false);
-        this.healthChecker = healthCheckerFactory == null ? null : healthCheckerFactory.get();
+        this.healthChecker = healthCheckerFactory == null ? null : healthCheckerFactory.apply(lbDescription);
     }
 
     private void subscribeToEvents(boolean resubscribe) {
@@ -383,10 +383,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
+            final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
             // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            final HealthIndicator indicator = healthChecker == null ? null : healthChecker.newHealthIndicator(addr);
+            final HealthIndicator indicator = healthChecker == null ?
+                    null : healthChecker.newHealthIndicator(addr, hostObserver);
             final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
-                    connectionFactory, loadBalancerObserver.hostObserver(), healthCheckConfig, indicator);
+                    connectionFactory, loadBalancerObserver.hostObserver(addr), healthCheckConfig, indicator);
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;

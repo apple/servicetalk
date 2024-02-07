@@ -21,6 +21,7 @@ import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,8 +41,9 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
 
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
-    private final HostObserver<ResolvedAddress> hostObserver;
+    private final HostObserver hostObserver;
     private final ResolvedAddress address;
+    private final String lbDescription;
     private final AtomicInteger consecutive5xx = new AtomicInteger();
     private final AtomicLong successes = new AtomicLong();
     private final AtomicLong failures = new AtomicLong();
@@ -56,12 +58,14 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private volatile Long evictedUntilNanos;
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
-                       final ResolvedAddress address, final HostObserver<ResolvedAddress> hostObserver) {
-        super(1);
+                       final Duration ewmaHalfLife, final ResolvedAddress address, String lbDescription,
+                       final HostObserver hostObserver) {
+        super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos());
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");
         assert executor instanceof NormalizedTimeSourceExecutor;
         this.address = requireNonNull(address, "address");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
     }
 
@@ -119,7 +123,9 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         super.onRequestSuccess(beforeStartTimeNs);
         successes.incrementAndGet();
         consecutive5xx.set(0);
-        LOGGER.trace("Observed success for address {}", address);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("{}-{}: observed request success", lbDescription, address);
+        }
     }
 
     @Override
@@ -158,15 +164,15 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
                 if (!cancelled && evictedUntilNanos == null &&
                         sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // this performs side effects.
                         LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("address {}: observed error which did result in consecutive 5xx ejection. " +
-                                    "Consecutive 5xx: {}, limit: {}.", address, consecutiveFailures,
+                    LOGGER.debug("{}-{}: observed error which did result in consecutive 5xx ejection. " +
+                                    "Consecutive 5xx: {}, limit: {}.", lbDescription, address, consecutiveFailures,
                             localConfig.consecutive5xx());
                 }
             });
         } else {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("address {}: observed error which didn't result in ejection. " +
-                        "Consecutive 5xx: {}, limit: {}", address, consecutiveFailures, localConfig.consecutive5xx());
+                LOGGER.trace("{}-{}: observed error which didn't result in ejection. Consecutive 5xx: {}, limit: {}",
+                        lbDescription, address, consecutiveFailures, localConfig.consecutive5xx());
             }
         }
     }
@@ -192,23 +198,23 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
             // If we are evicted or just transitioned out of eviction we shouldn't be marked as  an outlier this round.
             // Note that this differs from the envoy behavior. If we want to mimic it, then I think we need to just
             // fall through and maybe attempt to eject again.
-            LOGGER.trace("address {}: markAsOutlier(..) resulted in host revival.", address);
+            LOGGER.trace("{}-{}: markAsOutlier(..) resulted in host revival.", lbDescription, address);
             return false;
         } else if (isOutlier) {
             final boolean result = sequentialTryEject(config, OUTLIER_DETECTOR_CAUSE);
             if (result) {
-                LOGGER.debug("address {}: markAsOutlier(isOutlier = true) resulted in ejection. " +
-                        "Failure multiplier: {}.", address, failureMultiplier);
+                LOGGER.debug("{}-{}: markAsOutlier(isOutlier = true) resulted in ejection. " +
+                        "Failure multiplier: {}.", lbDescription, address, failureMultiplier);
             } else {
-                LOGGER.trace("address {}: markAsOutlier(isOutlier = true) did not result in ejection. " +
-                        "Failure multiplier: {}.", address, failureMultiplier);
+                LOGGER.trace("{}-{}: markAsOutlier(isOutlier = true) did not result in ejection. " +
+                        "Failure multiplier: {}.", lbDescription, address, failureMultiplier);
             }
             return result;
         } else {
             // All we have to do is decrement our failure multiplier.
             failureMultiplier = max(0, failureMultiplier - 1);
-            LOGGER.trace("address {}: markAsOutlier(isOutlier = false). " +
-                    "Failure multiplier: {}", address, failureMultiplier);
+            LOGGER.trace("{}-{}: markAsOutlier(isOutlier = false). " +
+                    "Failure multiplier: {}", lbDescription, address, failureMultiplier);
             return false;
         }
     }
@@ -262,7 +268,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // Finally we add jitter to the ejection time.
         final long jitterNanos = ThreadLocalRandom.current().nextLong(config.maxEjectionTimeJitter().toNanos() + 1);
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
-        hostObserver.onHostMarkedUnhealthy(address, cause);
+        hostObserver.onHostMarkedUnhealthy(cause);
         return true;
     }
 
@@ -274,7 +280,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // are reasonable that it's still a bad host, so we'll want to mark it as an outlier again immediately if
         // the next request also fails.
         hostRevived();
-        hostObserver.onHostRevived(address);
+        hostObserver.onHostRevived();
     }
 
     private static final class EjectedCause extends Exception {
