@@ -17,7 +17,6 @@ package io.servicetalk.loadbalancer;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,30 +29,30 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 
-class CorePoolConnectionPoolStrategyTest {
+class P2CConnectionPoolStrategyTest {
 
     static List<TestLoadBalancedConnection> makeConnections(int size) {
-        List<TestLoadBalancedConnection> result = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            result.add(TestLoadBalancedConnection.mockConnection("address-" + i));
-        }
-        return result;
+        return CorePoolConnectionPoolStrategyTest.makeConnections(size);
     }
 
     @Test
     void selectsHosts() {
-        List<TestLoadBalancedConnection> connections = makeConnections(1);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(1, false);
-        assertNotNull(strategy.select(connections, c -> true, null));
+        // Ensure we can successfully select hosts for most sized pools
+        for (int i = 1; i < 10; i++) {
+            List<TestLoadBalancedConnection> connections = makeConnections(1);
+            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
+                    new P2CConnectionPoolStrategy<>(5, false);
+            assertNotNull(strategy.select(connections, c -> true, null));
+        }
     }
 
     @Test
     void prefersCorePool() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
         ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(5, false);
+                new P2CConnectionPoolStrategy<>(5, false);
         Set<TestLoadBalancedConnection> selected = new HashSet<>();
         for (int i = 0; i < 100; i++) {
             selected.add(strategy.select(connections, c -> true, null));
@@ -72,12 +71,40 @@ class CorePoolConnectionPoolStrategyTest {
     void spillsIntoOverflow() {
         List<TestLoadBalancedConnection> connections = makeConnections(6);
         ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(5, false);
+                new P2CConnectionPoolStrategy<>(5, false);
         Set<TestLoadBalancedConnection> corePoolCxns = new HashSet<>();
         for (int i = 0; i < 5; i++) {
             corePoolCxns.add(connections.get(i));
         }
         Predicate<TestLoadBalancedConnection> selector = (TestLoadBalancedConnection c) -> !corePoolCxns.contains(c);
         assertEquals(connections.get(5), strategy.select(connections, selector, null));
+    }
+
+    @Test
+    void prefersHigherScoringHosts() {
+        List<TestLoadBalancedConnection> connections = makeConnections(2);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
+                new P2CConnectionPoolStrategy<>(5, false);
+        // We should always get connection at index 1 becuase it has the higher score.
+        when(connections.get(0).score()).thenReturn(0);
+        when(connections.get(1).score()).thenReturn(1);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(connections.get(1), strategy.select(connections, ctx -> true, null));
+        }
+    }
+
+    @Test
+    void willSelectLowerScoringConnectionIfHigherScoredConnectionCantBeSelected() {
+        List<TestLoadBalancedConnection> connections = makeConnections(2);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
+                new P2CConnectionPoolStrategy<>(5, false);
+        // We should always get connection at index 1 becuase it has the higher score.
+        when(connections.get(0).score()).thenReturn(0);
+        when(connections.get(1).score()).thenReturn(1);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(connections.get(0), strategy.select(connections, ctx -> ctx == connections.get(0), null));
+        }
     }
 }
