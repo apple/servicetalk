@@ -21,12 +21,13 @@ import java.util.List;
 
 /**
  * A round-robin load balancing policy.
- *
  * This load balancing algorithm is the well known policy of selecting hosts sequentially
  * from an ordered set. If a host is considered unhealthy it is skipped the next host
  * is selected until a healthy host is found or the entire host set has been exhausted.
+ * @param <ResolvedAddress> the type of the resolved address
+ * @param <C> the type of the load balanced connection
  */
-final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
@@ -66,7 +67,7 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         /**
          * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@LoadBalancedConnection}.
+         * @param <C> the refined type of the {@link LoadBalancedConnection}.
          * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>

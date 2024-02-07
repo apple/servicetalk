@@ -21,11 +21,12 @@ import java.util.List;
 
 /**
  * Definition of the selector mechanism used for load balancing.
+ * @param <ResolvedAddress> the type of the resolved address
+ * @param <C> the type of the load balanced connection
  */
-interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
+public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
-     * The name of the load balancing policy
-     *
+     * The name of the load balancing policy.
      * @return the name of the load balancing policy
      */
     String name();
@@ -35,6 +36,7 @@ interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
      * @param hosts          the set of {@link Host}s to select from.
      * @param targetResource the name of the target resource, useful for debugging purposes.
      * @return a {@link HostSelector}
+     * @param <T> the refined type of the connections over which to load balance
      */
     <T extends C> HostSelector<ResolvedAddress, T> buildSelector(
             List<Host<ResolvedAddress, T>> hosts, String targetResource);
