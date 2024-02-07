@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Definition of the selector mechanism used for load balancing.
  */
-interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
+public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * The name of the load balancing policy
      *

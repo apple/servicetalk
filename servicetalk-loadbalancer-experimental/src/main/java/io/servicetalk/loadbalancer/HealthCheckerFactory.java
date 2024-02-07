@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Executor;
  * builders and may make more than one health checker per-load balancer.
  * @param <ResolvedAddress> the type of the resolved address.
  */
-interface HealthCheckerFactory<ResolvedAddress> {
+public interface HealthCheckerFactory<ResolvedAddress> {
     /**
      * Create a new {@link HealthChecker}.
      * @param executor the {@link Executor} to use for scheduling tasks and obtaining the current time.

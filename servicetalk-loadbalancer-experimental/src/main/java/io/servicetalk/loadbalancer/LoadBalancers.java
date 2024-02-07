@@ -17,19 +17,24 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
-import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
+
+import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 
 /**
  * A factory to create {@link DefaultLoadBalancer DefaultLoadBalancers}.
  */
-final class LoadBalancers {
+public final class LoadBalancers {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalancers.class);
     private static final List<LoadBalancerBuilderProvider> PROVIDERS;
 
     static {
-        // TODO: we can't service load the providers until we make the interface public.
-        PROVIDERS = new ArrayList<>();
+        final ClassLoader classLoader = LoadBalancers.class.getClassLoader();
+        PROVIDERS = loadProviders(LoadBalancerBuilderProvider.class, classLoader, LOGGER);
     }
 
     private LoadBalancers() {

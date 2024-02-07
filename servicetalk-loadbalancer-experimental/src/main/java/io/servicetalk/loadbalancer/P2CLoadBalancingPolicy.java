@@ -37,7 +37,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * - if neither host is healthy, repeat selection process until max-effort.
  * - pick the 'best' host of the two options.
  */
-final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
@@ -109,7 +109,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
         /**
          * Construct an immutable {@link P2CLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@LoadBalancedConnection}.
+         * @param <C> the refined type of the {@link LoadBalancedConnection}.
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {

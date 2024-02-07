@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  * See the {@link XdsHealthChecker} for a detailed description and history of the xDS protocol.
  * @param <ResolvedAddress> the type of the resolved address.
  */
-final class XdsHealthCheckerFactory<ResolvedAddress> implements HealthCheckerFactory<ResolvedAddress> {
+public final class XdsHealthCheckerFactory<ResolvedAddress> implements HealthCheckerFactory<ResolvedAddress> {
 
     private final OutlierDetectorConfig config;
 
