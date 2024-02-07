@@ -25,9 +25,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * XDS outlier detector configuration.
  * <p>
- * See the <a href="https://www.envoyproxy.io/docs/envoy/v1.29.0/api-v3/config/cluster/v3/
-outlier_detection.proto#envoy-v3-api-msg-config-cluster-v3-outlierdetection"> Envoy docs</a> for the official
- * OutlierDetector configuration definition.
+ * See the <a href="https://www.envoyproxy.io/docs/envoy/v1.29.0/api-v3/config/cluster/v3/outlier_detection.proto#envoy-v3-api-msg-config-cluster-v3-outlierdetection">Envoy docs</a>
+ * for the official OutlierDetector configuration definition.
  */
 public final class OutlierDetectorConfig {
 
