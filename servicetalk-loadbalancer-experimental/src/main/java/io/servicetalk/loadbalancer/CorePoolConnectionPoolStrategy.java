@@ -44,6 +44,9 @@ import static java.lang.Math.min;
 final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         implements ConnectionPoolStrategy<C> {
 
+    private static final int DEFAULT_CORE_POOL_SIZE = 2;
+    private static final boolean DEFAULT_FORCE_CORE_POOL = false;
+
     private final int corePoolSize;
     private final boolean forceCorePool;
 
@@ -82,5 +85,19 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         }
         // So sad, we didn't find a healthy connection.
         return null;
+    }
+
+    ConnectionPoolStrategyFactory<C> defaultFactory() {
+        return factory(DEFAULT_CORE_POOL_SIZE, DEFAULT_FORCE_CORE_POOL);
+    }
+
+    ConnectionPoolStrategyFactory<C> factory(int corePoolSize, boolean forceCorePool) {
+        ensureNonNegative(corePoolSize, "corePoolSize");
+        return new ConnectionPoolStrategyFactory<C>() {
+            @Override
+            public <T extends C> ConnectionPoolStrategy<T> buildStrategy() {
+                return new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
+            }
+        };
     }
 }

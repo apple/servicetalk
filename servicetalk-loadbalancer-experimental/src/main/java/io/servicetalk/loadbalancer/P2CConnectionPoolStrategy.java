@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 
 public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
@@ -127,5 +128,17 @@ public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> impleme
         }
         // Neither connection was acceptable.
         return null;
+    }
+
+    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
+            final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
+        ensurePositive(maxEffort, " maxEffort");
+        ensureNonNegative(corePoolSize, "corePoolSize");
+        return new ConnectionPoolStrategyFactory<C>() {
+            @Override
+            public <T extends C> ConnectionPoolStrategy<T> buildStrategy() {
+                return new P2CConnectionPoolStrategy<T>(maxEffort, corePoolSize, forceCorePool);
+            }
+        };
     }
 }
