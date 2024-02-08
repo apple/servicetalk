@@ -28,7 +28,7 @@ public final class XdsHealthCheckerFactory<ResolvedAddress> implements HealthChe
 
     private final OutlierDetectorConfig config;
 
-    XdsHealthCheckerFactory(final OutlierDetectorConfig config) {
+    public XdsHealthCheckerFactory(final OutlierDetectorConfig config) {
         this.config = requireNonNull(config, "config");
     }
 

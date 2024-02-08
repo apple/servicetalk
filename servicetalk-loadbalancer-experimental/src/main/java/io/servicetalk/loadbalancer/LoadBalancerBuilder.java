@@ -66,7 +66,7 @@ import javax.annotation.Nullable;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
+public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
