@@ -358,7 +358,11 @@ public final class OutlierDetectorConfig {
 
         private boolean successfulActiveHealthCheckUnejectHost = true;
 
-        OutlierDetectorConfig build() {
+        /**
+         * Build the OutlierDetectorConfig.
+         * @return the OutlierDetectorConfig.
+         */
+        public OutlierDetectorConfig build() {
             return new OutlierDetectorConfig(ewmaHalfLife, consecutive5xx,
                     interval, baseEjectionTime,
                     maxEjectionPercentage, enforcingConsecutive5xx,
