@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
  * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}
  * @param <ResolvedAddress> the type of the resolved address.
  */
-interface LoadBalancerObserver<ResolvedAddress> {
+public interface LoadBalancerObserver<ResolvedAddress> {
 
     /**
      * Get a {@link HostObserver}.
