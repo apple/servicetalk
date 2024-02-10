@@ -47,7 +47,7 @@ final class SuccessRateXdsOutlierDetector implements XdsOutlierDetector {
 
     @Override
     public void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator> indicators) {
-        LOGGER.trace("Started outlier detection.");
+        LOGGER.debug("Started outlier detection.");
         final double[] successRates = new double[indicators.size()];
         int i = 0;
         int enoughVolumeHosts = 0;

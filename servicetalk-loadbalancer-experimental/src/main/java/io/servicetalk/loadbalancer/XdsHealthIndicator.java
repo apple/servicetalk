@@ -269,12 +269,19 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         final long jitterNanos = ThreadLocalRandom.current().nextLong(config.maxEjectionTimeJitter().toNanos() + 1);
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
         hostObserver.onHostMarkedUnhealthy(cause);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.info("{}-{}: ejecting indicator for {} milliseconds",
+                    lbDescription, address, (ejectTimeNanos + jitterNanos) / 1e6);
+        }
         return true;
     }
 
     private void sequentialRevive() {
         assert sequentialExecutor.isCurrentThreadDraining();
         assert !cancelled;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{}-{}: host revived", lbDescription, address);
+        }
         evictedUntilNanos = null;
         // Envoy resets the `consecutive5xx` counter on revival. I'm not sure that's the best because chances
         // are reasonable that it's still a bad host, so we'll want to mark it as an outlier again immediately if
