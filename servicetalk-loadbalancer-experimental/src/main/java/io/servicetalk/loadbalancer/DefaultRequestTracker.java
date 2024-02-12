@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ScoreSupplier;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.IntBinaryOperator;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -30,7 +31,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Latency tracker using exponential weighted moving average based on the work by Andreas Eckner and subsequent
@@ -41,7 +41,9 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  */
 abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private static final AtomicIntegerFieldUpdater<DefaultRequestTracker> pendingUpdater =
-            newUpdater(DefaultRequestTracker.class, "pending");
+            AtomicIntegerFieldUpdater.newUpdater(DefaultRequestTracker.class, "pendingCount");
+    private static final AtomicLongFieldUpdater<DefaultRequestTracker> pendingStampUpdater =
+            AtomicLongFieldUpdater.newUpdater(DefaultRequestTracker.class, "pendingStamp");
     private static final long MAX_MS_TO_NS = NANOSECONDS.convert(MAX_VALUE, MILLISECONDS);
     static final long DEFAULT_CANCEL_PENALTY = 5L;
     static final long DEFAULT_ERROR_PENALTY = 10L;
@@ -60,7 +62,8 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
      * Current weighted average.
      */
     private int ewma;
-    private volatile int pending;
+    private volatile int pendingCount;
+    private volatile long pendingStamp = Long.MIN_VALUE;
 
     DefaultRequestTracker(final long halfLifeNanos) {
         this(halfLifeNanos, DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
@@ -81,28 +84,40 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
 
     @Override
     public final long beforeRequestStart() {
+        long stamp = currentTimeNanos();
         pendingUpdater.incrementAndGet(this);
-        return currentTimeNanos();
+        pendingStampUpdater.compareAndSet(this, Long.MIN_VALUE, stamp);
+        return stamp;
     }
 
     @Override
     public void onRequestSuccess(final long startTimeNanos) {
         pendingUpdater.decrementAndGet(this);
+        pendingStampUpdater.set(this, Long.MIN_VALUE);
         calculateAndStore((ewma, currentLatency) -> currentLatency, startTimeNanos);
     }
 
     @Override
     public void onRequestError(final long startTimeNanos, ErrorClass errorClass) {
         pendingUpdater.decrementAndGet(this);
+        pendingStampUpdater.set(this, Long.MIN_VALUE);
         calculateAndStore(errorClass == ErrorClass.CANCELLED ? this:: cancelPenalty : this::errorPenalty,
                 startTimeNanos);
     }
 
     @Override
     public final int score() {
-        final int currentEWMA = calculateAndStore((ewma, lastTimeNanos) -> 0, 0);
+        int currentEWMA = calculateAndStore((ewma, lastTimeNanos) -> 0, 0);
         final int cPending = pendingUpdater.get(this);
-        if (currentEWMA == 0) {
+
+        // If we have a request outstanding we should consider how long it has been outstanding so that sudden
+        // interruptions don't have to wait for timeouts before our score can be adjusted.
+        if (cPending > 0) {
+            final long pendingStamp = this.pendingStamp;
+            if (pendingStamp != Long.MIN_VALUE) {
+                currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos() - pendingStamp));
+            }
+        } else if (currentEWMA == 0) {
             // If EWMA has decayed to 0 (or isn't yet initialized) and there are no pending requests we return the
             // maximum score to increase the likelihood this entity is selected. If there are pending requests we
             // don't yet know the latency characteristics so we return the minimum score to decrease the
