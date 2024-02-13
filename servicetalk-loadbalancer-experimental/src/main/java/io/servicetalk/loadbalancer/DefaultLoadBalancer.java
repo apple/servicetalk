@@ -149,8 +149,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-        subscribeToEvents(false);
         this.healthChecker = healthCheckerFactory == null ? null : healthCheckerFactory.apply(lbDescription);
+        // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
+        // we already have all the fields initialized.
+        subscribeToEvents(false);
     }
 
     private void subscribeToEvents(boolean resubscribe) {
