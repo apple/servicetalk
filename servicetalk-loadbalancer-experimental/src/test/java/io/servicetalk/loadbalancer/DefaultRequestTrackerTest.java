@@ -15,13 +15,11 @@
  */
 package io.servicetalk.loadbalancer;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.function.LongUnaryOperator;
 
-import static java.lang.System.nanoTime;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -47,7 +45,7 @@ class DefaultRequestTrackerTest {
 
         // cancellation penalty
         requestTracker.onRequestError(requestTracker.beforeRequestStart(), ErrorClass.CANCELLED);
-        assertEquals(-12_500, requestTracker.score());
+        assertEquals(-25_000, requestTracker.score());
 
         // decay
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(20).toNanos());
@@ -55,9 +53,9 @@ class DefaultRequestTrackerTest {
     }
 
     @Test
-    void zeroDataScoreIsIntMinValue() {
+    void zeroDataScoreWithPendingRequestIsIntMinValue() {
         final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
-        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(0).toNanos());
         final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
         assertEquals(0, requestTracker.score());
 
@@ -84,7 +82,7 @@ class DefaultRequestTrackerTest {
         // start to advance time
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
         // this is 4 because we are calling the time twice...
-        assertEquals(-4000, requestTracker.score());
+        assertEquals(-2000, requestTracker.score());
     }
 
     static final class TestRequestTracker extends DefaultRequestTracker {
