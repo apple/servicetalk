@@ -270,8 +270,8 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
         hostObserver.onHostMarkedUnhealthy(cause);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.info("{}-{}: ejecting indicator for {} milliseconds",
-                    lbDescription, address, (ejectTimeNanos + jitterNanos) / 1e6);
+            LOGGER.debug("{}-{}: ejecting indicator for {} milliseconds",
+                    lbDescription, address, (ejectTimeNanos + jitterNanos) / 1_000_000);
         }
         return true;
     }

@@ -708,7 +708,7 @@ public final class OutlierDetectorConfig {
     }
 
     static boolean enforcing(int enforcingPercentage) {
-        if (enforcingPercentage == 0) {
+        if (enforcingPercentage <= 0) {
             return false;
         }
         if (enforcingPercentage >= 100) {
