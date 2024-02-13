@@ -144,18 +144,18 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
             currentEWMA = (int) ceil(currentEWMA * w);
         }
 
-        if (cPending > 0 && pendingStamp != Long.MIN_VALUE) {
-            // If we have a request outstanding we should consider how long it has been outstanding so that sudden
-            // interruptions don't have to wait for timeouts before our scores can be adjusted.
-            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - pendingStamp));
-        }
-
         if (currentEWMA == 0) {
             // If EWMA has decayed to 0 (or isn't yet initialized) and there are no pending requests we return the
             // maximum score to increase the likelihood this entity is selected. If there are pending requests we
             // don't yet know the latency characteristics so we return the minimum score to decrease the
             // likelihood this entity is selected.
             return cPending == 0 ? 0 : MIN_VALUE;
+        }
+
+        if (cPending > 0 && pendingStamp != Long.MIN_VALUE) {
+            // If we have a request outstanding we should consider how long it has been outstanding so that sudden
+            // interruptions don't have to wait for timeouts before our scores can be adjusted.
+            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - pendingStamp));
         }
 
         // Add penalty for pending requests to account for "unaccounted" load.

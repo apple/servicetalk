@@ -41,7 +41,7 @@ class DefaultRequestTrackerTest {
 
         // error penalty
         requestTracker.onRequestError(requestTracker.beforeRequestStart(), ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
-        assertEquals(-5000, requestTracker.score());
+        assertEquals(-5_000, requestTracker.score());
 
         // cancellation penalty
         requestTracker.onRequestError(requestTracker.beforeRequestStart(), ErrorClass.CANCELLED);
@@ -67,7 +67,7 @@ class DefaultRequestTrackerTest {
     @Test
     void outstandingLatencyIsTracked() {
         final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
-        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(0).toNanos());
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
 
         final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
         assertEquals(0, requestTracker.score());
@@ -75,14 +75,14 @@ class DefaultRequestTrackerTest {
         // upon success score
         requestTracker.onRequestSuccess(requestTracker.beforeRequestStart());
         // super quick, so our score is the max it can be which is 0.
-        assertEquals(0, requestTracker.score());
+        assertEquals(-500, requestTracker.score());
 
-        // start a request
-        assertEquals(0, requestTracker.beforeRequestStart());
+        // start a request. Should be 5 calls to the time provider.
+        assertEquals(5_000_000_000L, requestTracker.beforeRequestStart());
         // start to advance time
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
         // this is 4 because we are calling the time twice...
-        assertEquals(-2000, requestTracker.score());
+        assertEquals(-2_000, requestTracker.score());
     }
 
     static final class TestRequestTracker extends DefaultRequestTracker {
