@@ -61,7 +61,7 @@ final class FailurePercentageXdsOutlierDetector implements XdsOutlierDetector {
         if (enoughVolumeHosts < config.failurePercentageMinimumHosts()) {
             // not enough hosts with enough volume to do the analysis.
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Not enough hosts  with sufficient volume to perform ejection: " +
+                LOGGER.debug("Not enough hosts with sufficient volume to perform ejection: " +
                                 "{} total hosts and {} had sufficient volume. Minimum {} required.",
                         indicators.size(), enoughVolumeHosts, config.failurePercentageMinimumHosts());
             }
