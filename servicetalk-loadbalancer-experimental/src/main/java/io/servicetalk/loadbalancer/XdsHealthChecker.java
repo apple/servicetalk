@@ -113,7 +113,7 @@ final class XdsHealthChecker<ResolvedAddress> implements HealthChecker<ResolvedA
         @Override
         public boolean tryEjectHost() {
             assert sequentialExecutor.isCurrentThreadDraining();
-            final int maxEjected = max(1, indicatorCount.get() * currentConfig().maxEjectionPercentage() / 100);
+            final int maxEjected = indicatorCount.get() * currentConfig().maxEjectionPercentage() / 100;
             if (ejectedHostCount >= maxEjected) {
                 return false;
             } else {

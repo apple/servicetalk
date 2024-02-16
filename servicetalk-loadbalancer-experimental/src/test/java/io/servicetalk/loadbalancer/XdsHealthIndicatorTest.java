@@ -46,12 +46,15 @@ class XdsHealthIndicatorTest {
     @BeforeEach
     void initialize() {
         testExecutor = executor.executor();
-        config = new OutlierDetectorConfig.Builder()
+        config = baseBuilder().build();
+        initIndicator();
+    }
+
+    private OutlierDetectorConfig.Builder baseBuilder() {
+        return new OutlierDetectorConfig.Builder()
                 .maxEjectionTimeJitter(Duration.ZERO)
                 .maxEjectionTime(Duration.ofSeconds(MAX_EJECTION_SECONDS))
-                .baseEjectionTime(Duration.ofSeconds(1))
-                .build();
-        initIndicator();
+                .baseEjectionTime(Duration.ofSeconds(1));
     }
 
     private void initIndicator() {
@@ -65,6 +68,42 @@ class XdsHealthIndicatorTest {
                     ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
+    }
+
+    @Test
+    void consecutiveGatewayFailures() {
+        config = baseBuilder()
+                .enforcingConsecutiveGatewayFailure(100)
+                .enforcingConsecutive5xx(0)
+                .consecutive5xx(Integer.MAX_VALUE)
+                .build();
+        initIndicator();
+
+        for (int i = 0; i < config.consecutiveGatewayFailure(); i++) {
+            healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
+                    ErrorClass.GATEWAY_FAILURE);
+        }
+        assertFalse(healthIndicator.isHealthy());
+    }
+
+    @Test
+    void nonConsecutiveGatewayFailuresDoesntTripIndicator() {
+        config = baseBuilder()
+                .enforcingConsecutiveGatewayFailure(100)
+                .enforcingConsecutive5xx(0)
+                .consecutive5xx(Integer.MAX_VALUE)
+                .build();
+        initIndicator();
+
+        for (int i = 0; i < config.consecutiveGatewayFailure() * 10; i++) {
+            if ((i % 2) == 0) {
+                healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
+                        ErrorClass.GATEWAY_FAILURE);
+            } else {
+                healthIndicator.onRequestSuccess(healthIndicator.beforeRequestStart() + 1);
+            }
+        }
+        assertTrue(healthIndicator.isHealthy());
     }
 
     @Test

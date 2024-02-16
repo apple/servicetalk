@@ -51,10 +51,7 @@ class XdsHealthCheckerTest {
                 .enforcingConsecutive5xx(100)
                 .enforcingFailurePercentage(100)
                 .enforcingSuccessRate(100)
-                .enforcingConsecutiveGatewayFailure(100)
-                .enforcingConsecutiveLocalOriginFailure(100)
-                .enforcingFailurePercentageLocalOrigin(100)
-                .enforcingLocalOriginSuccessRate(100);
+                .enforcingConsecutiveGatewayFailure(100);
     }
 
     @BeforeEach
