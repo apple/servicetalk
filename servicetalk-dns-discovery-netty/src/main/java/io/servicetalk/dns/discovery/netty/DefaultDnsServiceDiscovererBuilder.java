@@ -313,6 +313,11 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             Duration initialDelay, Duration jitter) {
         this.srvHostNameRepeatInitialDelay = requireNonNull(initialDelay);
         this.srvHostNameRepeatJitter = requireNonNull(jitter);
+        ensurePositive(srvHostNameRepeatInitialDelay, "srvHostNameRepeatInitialDelay");
+        ensurePositive(srvHostNameRepeatJitter, "srvHostNameRepeatJitter");
+        if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
+            throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
+        }
         return this;
     }
 

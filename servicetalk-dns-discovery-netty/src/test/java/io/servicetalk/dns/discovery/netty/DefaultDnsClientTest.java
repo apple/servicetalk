@@ -79,6 +79,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.net.InetAddress.getByName;
 import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
@@ -461,14 +462,15 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ip1, targetPort, AVAILABLE);
 
         // Fail subsequent A queries with SERVFAIL
-        final TestRecordStore.ServFail fail = new TestRecordStore.ServFail("target1", RecordType.A);
-        recordStore.addFail(fail);
+        final TestRecordStore.ServFail aFail = new TestRecordStore.ServFail(targetDomain1, RecordType.A);
+        recordStore.addFail(aFail);
         advanceTime();
+
         // Expect no changes (SERVFAIL should be retried indefinitely)
         assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
 
         // Restore functionality for A queries
-        recordStore.removeFail(fail);
+        recordStore.removeFail(aFail);
         advanceTime();
 
         List<ServiceDiscovererEvent<InetSocketAddress>> resumeSignals = subscriber.takeOnNext(1);
@@ -1233,7 +1235,8 @@ class DefaultDnsClientTest {
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
                 .ttl(1, 5, 0, 0)
-                .ttlJitter(Duration.ofNanos(1));
+                .ttlJitter(Duration.ofNanos(1))
+                .srvHostNameRepeatDelay(ofNanos(10), ofNanos(1));
     }
 
     private static void assertEvent(@Nullable ServiceDiscovererEvent<InetSocketAddress> event,

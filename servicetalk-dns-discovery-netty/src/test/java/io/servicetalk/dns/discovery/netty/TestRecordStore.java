@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -60,6 +61,31 @@ final class TestRecordStore implements RecordStore {
 
         static ServFail of(final QuestionRecord question) {
             return new ServFail(question.getDomainName(), question.getRecordType());
+        }
+
+        @Override
+        public String toString() {
+            return "ServFail{" +
+                    "name='" + name + '\'' +
+                    ", type=" + type +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final ServFail fail = (ServFail) o;
+            return Objects.equals(name, fail.name) && type == fail.type;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, type);
         }
     }
 
