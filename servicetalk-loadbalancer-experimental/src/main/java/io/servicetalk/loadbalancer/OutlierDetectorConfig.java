@@ -40,8 +40,6 @@ public final class OutlierDetectorConfig {
     private final int successRateMinimumHosts;
     private final int successRateRequestVolume;
     private final int successRateStdevFactor;
-    private final int consecutiveGatewayFailure;
-    private final int enforcingConsecutiveGatewayFailure;
     private final int failurePercentageThreshold;
     private final int enforcingFailurePercentage;
     private final int failurePercentageMinimumHosts;
@@ -54,11 +52,9 @@ public final class OutlierDetectorConfig {
                           final int maxEjectionPercentage, final int enforcingConsecutive5xx,
                           final int enforcingSuccessRate, final int successRateMinimumHosts,
                           final int successRateRequestVolume, final int successRateStdevFactor,
-                          final int consecutiveGatewayFailure, final int enforcingConsecutiveGatewayFailure,
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
-                          final int failurePercentageMinimumHosts,
-                          final int failurePercentageRequestVolume, final Duration maxEjectionTime,
-                          final Duration maxEjectionTimeJitter) {
+                          final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
+                          final Duration maxEjectionTime, final Duration maxEjectionTimeJitter) {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.consecutive5xx = consecutive5xx;
         this.interval = requireNonNull(interval, "interval");
@@ -69,8 +65,6 @@ public final class OutlierDetectorConfig {
         this.successRateMinimumHosts = successRateMinimumHosts;
         this.successRateRequestVolume = successRateRequestVolume;
         this.successRateStdevFactor = successRateStdevFactor;
-        this.consecutiveGatewayFailure = consecutiveGatewayFailure;
-        this.enforcingConsecutiveGatewayFailure = enforcingConsecutiveGatewayFailure;
         this.failurePercentageThreshold = failurePercentageThreshold;
         this.enforcingFailurePercentage = enforcingFailurePercentage;
         this.failurePercentageMinimumHosts = failurePercentageMinimumHosts;
@@ -168,23 +162,6 @@ public final class OutlierDetectorConfig {
     }
 
     /**
-     * The threshold for consecutive gateway failures before the host is ejected.
-     * @return the threshold for consecutive gateway failures before local the host is ejected.
-     */
-    public int consecutiveGatewayFailure() {
-        return consecutiveGatewayFailure;
-    }
-
-    /**
-     * The probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive gateway
-     * failure threshold.
-     * @return the probability with which the host should be marked as unhealthy.
-     */
-    public int enforcingConsecutiveGatewayFailure() {
-        return enforcingConsecutiveGatewayFailure;
-    }
-
-    /**
      * The failure threshold in percentage for ejecting a host.
      * @return the failure threshold in percentage for ejecting a host.
      */
@@ -259,10 +236,6 @@ public final class OutlierDetectorConfig {
 
         private int successRateStdevFactor = 1900;
 
-        private int consecutiveGatewayFailure = 5;
-
-        private int enforcingConsecutiveGatewayFailure;
-
         private int failurePercentageThreshold = 85;
 
         private int enforcingFailurePercentage;
@@ -286,7 +259,6 @@ public final class OutlierDetectorConfig {
                     maxEjectionPercentage, enforcingConsecutive5xx,
                     enforcingSuccessRate, successRateMinimumHosts,
                     successRateRequestVolume, successRateStdevFactor,
-                    consecutiveGatewayFailure, enforcingConsecutiveGatewayFailure,
                     failurePercentageThreshold, enforcingFailurePercentage,
                     failurePercentageMinimumHosts, failurePercentageRequestVolume,
                     maxEjectionTime, maxEjectionTimeJitter);
@@ -420,34 +392,6 @@ public final class OutlierDetectorConfig {
         public Builder successRateStdevFactor(final int successRateStdevFactor) {
             ensurePositive(successRateStdevFactor, "successRateStdevFactor");
             this.successRateStdevFactor = successRateStdevFactor;
-            return this;
-        }
-
-        /**
-         * Set the threshold for consecutive gateway failures before local the host is ejected.
-         * Defaults to 5.
-         * @param consecutiveGatewayFailure the threshold for consecutive gateway failures before local the host is
-         *                                  ejected.
-         * @return {@code this}.
-         */
-        public Builder consecutiveGatewayFailure(final int consecutiveGatewayFailure) {
-            ensurePositive(consecutiveGatewayFailure, "consecutiveGatewayFailure");
-            this.consecutiveGatewayFailure = consecutiveGatewayFailure;
-            return this;
-        }
-
-        /**
-         * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive
-         * gateway failure threshold.
-         * Defaults to 0.
-         * @param enforcingConsecutiveGatewayFailure the probability in percentage that a host will be marked as
-         *                                           unhealthy when a host exceeds the consecutive gateway failure
-         *                                           threshold.
-         * @return {@code this}.
-         */
-        public Builder enforcingConsecutiveGatewayFailure(final int enforcingConsecutiveGatewayFailure) {
-            ensureNonNegative(enforcingConsecutiveGatewayFailure, "enforcingConsecutiveGatewayFailure");
-            this.enforcingConsecutiveGatewayFailure = enforcingConsecutiveGatewayFailure;
             return this;
         }
 

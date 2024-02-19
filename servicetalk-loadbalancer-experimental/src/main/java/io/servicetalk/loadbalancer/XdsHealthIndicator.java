@@ -28,8 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.loadbalancer.ErrorClass.CANCELLED;
-import static io.servicetalk.loadbalancer.ErrorClass.GATEWAY_FAILURE;
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
@@ -39,7 +37,6 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private static final Logger LOGGER = LoggerFactory.getLogger(XdsHealthIndicator.class);
 
     private static final Throwable CONSECUTIVE_5XX_CAUSE = new EjectedCause("consecutive 5xx");
-    private static final Throwable CONSECUTIVE_GATEWAY_CAUSE = new EjectedCause("consecutive gateway failure");
     private static final Throwable OUTLIER_DETECTOR_CAUSE = new EjectedCause("outlier detector");
 
     private final SequentialExecutor sequentialExecutor;
@@ -48,7 +45,6 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private final ResolvedAddress address;
     private final String lbDescription;
     private final AtomicInteger consecutive5xx = new AtomicInteger();
-    private final AtomicInteger consecutiveGatewayFailures = new AtomicInteger();
     private final AtomicLong successes = new AtomicLong();
     private final AtomicLong failures = new AtomicLong();
 
@@ -127,7 +123,6 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         super.onRequestSuccess(beforeStartTimeNs);
         successes.incrementAndGet();
         consecutive5xx.set(0);
-        consecutiveGatewayFailures.set(0);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("{}-{}: observed request success", lbDescription, address);
         }
@@ -137,8 +132,8 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     public final void onRequestError(final long beforeStartTimeNs, ErrorClass errorClass) {
         super.onRequestError(beforeStartTimeNs, errorClass);
         // For now, don't consider cancellation to be an error or a success.
-        if (errorClass != CANCELLED) {
-            doOnError(errorClass == GATEWAY_FAILURE);
+        if (errorClass != ErrorClass.CANCELLED) {
+            doOnError();
         }
     }
 
@@ -152,7 +147,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // This assumes that the connect request was intended to be used for a request dispatch which
         // will have now failed. This is not strictly true: a connection can be acquired and simply not
         // used, but in practice it's a very good assumption.
-        doOnError(false);
+        doOnError();
     }
 
     @Override
@@ -160,34 +155,21 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         // noop: the request path will now determine if the request was a success or failure.
     }
 
-    private void doOnError(final boolean isGatewayFailure) {
+    private void doOnError() {
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
-        final int consecutiveGatewayFailures = isGatewayFailure ? this.consecutiveGatewayFailures.incrementAndGet() : 0;
         final OutlierDetectorConfig localConfig = currentConfig();
         if (consecutiveFailures >= localConfig.consecutive5xx() && enforcing(localConfig.enforcingConsecutive5xx())) {
             sequentialExecutor.execute(() -> {
                 if (!cancelled && evictedUntilNanos == null &&
                         sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // this performs side effects.
                         LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("{}-{}: observed error which resulted in consecutive 5xx ejection. " +
+                    LOGGER.debug("{}-{}: observed error which did result in consecutive 5xx ejection. " +
                                     "Consecutive 5xx: {}, limit: {}.", lbDescription, address, consecutiveFailures,
                             localConfig.consecutive5xx());
                 }
             });
-        } else if (isGatewayFailure && consecutiveGatewayFailures >= localConfig.consecutiveGatewayFailure() &&
-                enforcing(localConfig.enforcingConsecutiveGatewayFailure())) {
-            sequentialExecutor.execute(() -> {
-                if (!cancelled && evictedUntilNanos == null &&
-                        sequentialTryEject(currentConfig(), CONSECUTIVE_GATEWAY_CAUSE) && // this performs side effects.
-                        LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("{}-{}: observed error which resulted in consecutive gateway failure ejection. " +
-                                    "Consecutive gateway failures: {}, limit: {}.", lbDescription, address,
-                            consecutiveGatewayFailures, localConfig.consecutiveGatewayFailure());
-                }
-            });
-        }
-        else {
+        } else {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("{}-{}: observed error which didn't result in ejection. Consecutive 5xx: {}, limit: {}",
                         lbDescription, address, consecutiveFailures, localConfig.consecutive5xx());

@@ -45,12 +45,6 @@ public enum ErrorClass {
     EXT_ORIGIN_REQUEST_FAILED(false),
 
     /**
-     * Failures associated with an intermediate gateway, specifically those representable by the HTTP status
-     * codes 502 Bad Gateway, 503 Service Unavailable, and 504 Gateway Timeout.
-     */
-    GATEWAY_FAILURE(false),
-
-    /**
      * Failure due to cancellation.
      */
     CANCELLED(true);

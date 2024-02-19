@@ -71,42 +71,6 @@ class XdsHealthIndicatorTest {
     }
 
     @Test
-    void consecutiveGatewayFailures() {
-        config = baseBuilder()
-                .enforcingConsecutiveGatewayFailure(100)
-                .enforcingConsecutive5xx(0)
-                .consecutive5xx(Integer.MAX_VALUE)
-                .build();
-        initIndicator();
-
-        for (int i = 0; i < config.consecutiveGatewayFailure(); i++) {
-            healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                    ErrorClass.GATEWAY_FAILURE);
-        }
-        assertFalse(healthIndicator.isHealthy());
-    }
-
-    @Test
-    void nonConsecutiveGatewayFailuresDoesntTripIndicator() {
-        config = baseBuilder()
-                .enforcingConsecutiveGatewayFailure(100)
-                .enforcingConsecutive5xx(0)
-                .consecutive5xx(Integer.MAX_VALUE)
-                .build();
-        initIndicator();
-
-        for (int i = 0; i < config.consecutiveGatewayFailure() * 10; i++) {
-            if ((i % 2) == 0) {
-                healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                        ErrorClass.GATEWAY_FAILURE);
-            } else {
-                healthIndicator.onRequestSuccess(healthIndicator.beforeRequestStart() + 1);
-            }
-        }
-        assertTrue(healthIndicator.isHealthy());
-    }
-
-    @Test
     void nonConsecutive5xxDoesntTripIndicator() {
         for (int i = 0; i < config.consecutive5xx() * 10; i++) {
             if ((i % 2) == 0) {
