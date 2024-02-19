@@ -50,11 +50,7 @@ class XdsHealthCheckerTest {
                 // set enforcing rates to 100% so that we don't have to deal with statics
                 .enforcingConsecutive5xx(100)
                 .enforcingFailurePercentage(100)
-                .enforcingSuccessRate(100)
-                .enforcingConsecutiveGatewayFailure(100)
-                .enforcingConsecutiveLocalOriginFailure(100)
-                .enforcingFailurePercentageLocalOrigin(100)
-                .enforcingLocalOriginSuccessRate(100);
+                .enforcingSuccessRate(100);
     }
 
     @BeforeEach

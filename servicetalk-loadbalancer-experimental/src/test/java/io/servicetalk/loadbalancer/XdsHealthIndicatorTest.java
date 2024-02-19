@@ -46,12 +46,15 @@ class XdsHealthIndicatorTest {
     @BeforeEach
     void initialize() {
         testExecutor = executor.executor();
-        config = new OutlierDetectorConfig.Builder()
+        config = baseBuilder().build();
+        initIndicator();
+    }
+
+    private OutlierDetectorConfig.Builder baseBuilder() {
+        return new OutlierDetectorConfig.Builder()
                 .maxEjectionTimeJitter(Duration.ZERO)
                 .maxEjectionTime(Duration.ofSeconds(MAX_EJECTION_SECONDS))
-                .baseEjectionTime(Duration.ofSeconds(1))
-                .build();
-        initIndicator();
+                .baseEjectionTime(Duration.ofSeconds(1));
     }
 
     private void initIndicator() {
