@@ -93,7 +93,7 @@ stateDiagram-v2
 === What is xDS
 
 In addition to being more modular DefaultLoadBalancer is being introduced with resiliency features found in the xDS
-specification that was pioneered by the Envoy project and is being https://github.com/cncf/xds[advanced bythe CNCF].
+specification that was pioneered by the Envoy project and is being https://github.com/cncf/xds[advanced by the CNCF].
 xDS defines a control plane that allows for the distributed configuration of key components like certificates,
 load balancers, etc. In this documentation we will focus on the elements that are relevant to load balancing, referred
 to as CDS.
@@ -190,7 +190,7 @@ Not all hosts are created equal! Due to different underlying hardware platforms,
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can approximate this, but it is only inferred. With
 https://github.com/bryce-anderson/servicetalk/blob/bl_anderson/default_loadbalancer_docs/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
-or control-plane support we can explicitly propagate weight information to ServiceTalks DefaultLoadBalancer. Adding
+or control-plane support we can explicitly propagate weight information to ServiceTalk's DefaultLoadBalancer. Adding
 weight support to the host selection process will let users leverage this data.
 
 === Priority Groups
@@ -200,3 +200,10 @@ lets users partition backend instances into groups that have a relative priority
 use hosts from as many priority groups as necessary to maintain a minimum specified number of healthy backends. A
 common use case is to specify a primary destination, usually locally, for latency and transit cost reasons while
 maintaining a set of backup destinations to use in the case of local disruptions.
+
+=== Subsetting
+
+When the sizes of two connected clusters grow the number of connections can become burdensome if the load balancer
+maintains a full mesh network. Sub-setting can reduce the connection count by only creating connections to a subset of
+backends. There are a number of ways to determine ths subset which can range from simple random sub-setting, which is
+trivial to implement but suffers from load variance, to more intricate models.
