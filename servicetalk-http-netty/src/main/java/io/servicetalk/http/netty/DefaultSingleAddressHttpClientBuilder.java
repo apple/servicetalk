@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -761,44 +762,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         public Publisher<Collection<E>> discover(final U u) {
             // terminateOnNextException false -> LB is after this operator, if LB throws do best effort retry.
             return delegate().discover(u).retryWhen(false, retryStrategy);
-        }
-    }
-
-    private abstract static class DelegatingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
-            implements ServiceDiscoverer<U, R, E> {
-        private final ServiceDiscoverer<U, R, E> delegate;
-
-        DelegatingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate) {
-            this.delegate = requireNonNull(delegate);
-        }
-
-        final ServiceDiscoverer<U, R, E> delegate() {
-            return delegate;
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return delegate.onClosing();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public String toString() {
-            return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
         }
     }
 
