@@ -16,10 +16,13 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
@@ -30,8 +33,9 @@ import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 public final class DnsServiceDiscoverers {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DnsServiceDiscoverers.class);
-
     private static final List<DnsServiceDiscovererBuilderProvider> PROVIDERS;
+    private static final String GLOBAL_A_ID = "global-a";
+    private static final String GLOBAL_SRV_ID = "global-srv";
 
     static {
         final ClassLoader classLoader = DnsServiceDiscoverers.class.getClassLoader();
@@ -59,6 +63,70 @@ public final class DnsServiceDiscoverers {
      */
     @SuppressWarnings("deprecation")
     public static DnsServiceDiscovererBuilder builder(final String id) {
+        LOGGER.debug("Created a new {} for id={}", DnsServiceDiscovererBuilder.class.getSimpleName(), id);
         return applyProviders(id, new DefaultDnsServiceDiscovererBuilder(id));
+    }
+
+    /**
+     * Get the {@link ServiceDiscoverer} that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc1035#autoid-34">A</a>/
+     * <a href="https://datatracker.ietf.org/doc/html/rfc3596">AAAA</a> records for provided
+     * {@link HostAndPort#hostName()} with a fixed {@link HostAndPort#port()}.
+     * <p>
+     * The returned instance can be customized using {@link DnsServiceDiscovererBuilderProvider} by targeting
+     * {@value GLOBAL_A_ID} identity.
+     * <p>
+     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
+     * instance of {@link ServiceDiscoverer}.
+     *
+     * @return the singleton instance
+     */
+    public static ServiceDiscoverer<HostAndPort, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> globalARecordsDnsServiceDiscoverer() {
+        return ARecordsDnsServiceDiscoverer.INSTANCE;
+    }
+
+    /**
+     * Get the {@link ServiceDiscoverer} that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc2782">SRV</a> records for provided service name as a
+     * {@link String}.
+     * <p>
+     * The returned instance can be customized using {@link DnsServiceDiscovererBuilderProvider} by targeting
+     * {@value GLOBAL_SRV_ID} identity.
+     * <p>
+     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
+     * instance of {@link ServiceDiscoverer}.
+     *
+     * @return the singleton instance
+     */
+    public static ServiceDiscoverer<String, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> globalSrvRecordsDnsServiceDiscoverer() {
+        return SrvRecordsDnsServiceDiscoverer.INSTANCE;
+    }
+
+    private static final class ARecordsDnsServiceDiscoverer {
+        static final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+                INSTANCE = DnsServiceDiscoverers.builder(GLOBAL_A_ID).buildARecordDiscoverer();
+
+        static {
+            LOGGER.debug("Initialized {}: {}", ARecordsDnsServiceDiscoverer.class.getSimpleName(), INSTANCE);
+        }
+
+        private ARecordsDnsServiceDiscoverer() {
+            // Singleton
+        }
+    }
+
+    private static final class SrvRecordsDnsServiceDiscoverer {
+        static final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+                INSTANCE = DnsServiceDiscoverers.builder(GLOBAL_SRV_ID).buildSrvDiscoverer();
+
+        static {
+            LOGGER.debug("Initialized {}: {}", SrvRecordsDnsServiceDiscoverer.class.getSimpleName(), INSTANCE);
+        }
+
+        private SrvRecordsDnsServiceDiscoverer() {
+            // Singleton
+        }
     }
 }
