@@ -79,6 +79,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     }
 
     @Override
+    public LoadBalancer<C> newLoadBalancer(
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, C> connectionFactory,
+            final String targetResource) {
+        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
+                linearSearchSpace, healthCheckConfig);
+    }
+
+    @Override
     public ExecutionStrategy requiredOffloads() {
         // We do not block
         return ExecutionStrategy.offloadNone();
