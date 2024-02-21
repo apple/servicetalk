@@ -57,10 +57,10 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalSrvRecordsDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.resolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
@@ -301,9 +301,9 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
-        return forSingleAddress(globalDnsServiceDiscoverer(), address, discoveryStrategy,
-                GlobalDnsServiceDiscoverer::unresolvedServiceDiscoverer,
-                ResolvingConnectionFactoryFilter::withGlobalDnsServiceDiscoverer);
+        return forSingleAddress(globalARecordsDnsServiceDiscoverer(), address, discoveryStrategy,
+                InternalServiceDiscoverers::unresolvedServiceDiscoverer,
+                ResolvingConnectionFactoryFilter::withGlobalARecordsDnsServiceDiscoverer);
     }
 
     /**
@@ -321,7 +321,7 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
         final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                globalSrvDnsServiceDiscoverer();
+                globalSrvRecordsDnsServiceDiscoverer();
         return applyProviders(serviceName,
                 new DefaultSingleAddressHttpClientBuilder<>(serviceName, sd))
                 // We need to pass SD into constructor to align types, but providers won't see that.

@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 
@@ -41,36 +39,15 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 /**
- * ServiceTalk's shared DNS {@link ServiceDiscoverer} with reasonable defaults for APIs when a user doesn't provide one.
+ * ServiceTalk's internal {@link ServiceDiscoverer}s to serve specific use-cases.
  * <p>
- * A lazily initialized singleton DNS {@link ServiceDiscoverer} using a default {@link ExecutionContext}, the lifecycle
- * of this instance shouldn't need to be managed by the user. Don't attempt to close the {@link ServiceDiscoverer}.
+ * The lifecycle of these instances shouldn't need to be managed, don't attempt to close them.
  */
-final class GlobalDnsServiceDiscoverer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalDnsServiceDiscoverer.class);
+final class InternalServiceDiscoverers {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InternalServiceDiscoverers.class);
 
-    private GlobalDnsServiceDiscoverer() {
+    private InternalServiceDiscoverers() {
         // No instances
-    }
-
-    /**
-     * Get the {@link ServiceDiscoverer} targeting fixed ports.
-     *
-     * @return the singleton instance
-     */
-    static ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> globalDnsServiceDiscoverer() {
-        return HostAndPortClientInitializer.HOST_PORT_SD;
-    }
-
-    /**
-     * Get the {@link ServiceDiscoverer} targeting SRV records.
-     *
-     * @return the singleton instance
-     */
-    static ServiceDiscoverer<String, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> globalSrvDnsServiceDiscoverer() {
-        return SrvClientInitializer.SRV_SD;
     }
 
     /**
@@ -109,32 +86,6 @@ final class GlobalDnsServiceDiscoverer {
         return new MappingServiceDiscoverer<>(toResolvedAddressMapper, description);
     }
 
-    private static final class HostAndPortClientInitializer {
-        static final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-                HOST_PORT_SD = DnsServiceDiscoverers.builder("global-a").buildARecordDiscoverer();
-
-        static {
-            LOGGER.debug("Initialized {}", HostAndPortClientInitializer.class);
-        }
-
-        private HostAndPortClientInitializer() {
-            // Singleton
-        }
-    }
-
-    private static final class SrvClientInitializer {
-        static final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> SRV_SD =
-                DnsServiceDiscoverers.builder("global-srv").buildSrvDiscoverer();
-
-        static {
-            LOGGER.debug("Initialized {}", SrvClientInitializer.class);
-        }
-
-        private SrvClientInitializer() {
-            // Singleton
-        }
-    }
-
     private static final class ResolvedServiceDiscovererInitializer {
 
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
@@ -144,7 +95,8 @@ final class GlobalDnsServiceDiscoverer {
                         InetSocketAddress.class.getSimpleName());
 
         static {
-            LOGGER.debug("Initialized {}", ResolvedServiceDiscovererInitializer.class);
+            LOGGER.debug("Initialized {}: {}",
+                    ResolvedServiceDiscovererInitializer.class.getSimpleName(), RESOLVED_SD);
         }
 
         private ResolvedServiceDiscovererInitializer() {
@@ -160,7 +112,8 @@ final class GlobalDnsServiceDiscoverer {
                 HostAndPort.class.getSimpleName() + " to an unresolved " + InetSocketAddress.class.getSimpleName());
 
         static {
-            LOGGER.debug("Initialized {}", UnresolvedServiceDiscovererInitializer.class);
+            LOGGER.debug("Initialized {}: {}",
+                    UnresolvedServiceDiscovererInitializer.class.getSimpleName(), UNRESOLVED_SD);
         }
 
         private UnresolvedServiceDiscovererInitializer() {

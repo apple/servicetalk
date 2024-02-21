@@ -49,8 +49,8 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABL
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -95,8 +95,7 @@ class HttpClientResolvesOnNewConnectionTest {
              BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName(),
                      // Wrap to pretend this is a custom SD:
                      new DelegatingServiceDiscoverer<HostAndPort, InetSocketAddress,
-                             ServiceDiscovererEvent<InetSocketAddress>>(
-                                     GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer()) {
+                             ServiceDiscovererEvent<InetSocketAddress>>(globalARecordsDnsServiceDiscoverer()) {
                          @Override
                          public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
                                  HostAndPort hostAndPort) {
@@ -175,7 +174,7 @@ class HttpClientResolvesOnNewConnectionTest {
     @Test
     void attemptToOverrideServiceDiscovererThrows() {
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> otherSd =
-                globalDnsServiceDiscoverer();
+                globalARecordsDnsServiceDiscoverer();
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> HttpClients.forSingleAddress("servicetalk.io", 80, ON_NEW_CONNECTION).serviceDiscoverer(otherSd));
         assertThat(e.getMessage(), allOf(containsString(ON_NEW_CONNECTION.name()), containsString(otherSd.toString())));

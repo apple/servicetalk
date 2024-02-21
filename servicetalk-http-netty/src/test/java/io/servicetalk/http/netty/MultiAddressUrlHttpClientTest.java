@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -67,7 +68,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -151,7 +151,7 @@ class MultiAddressUrlHttpClientTest {
                     return Publisher.failed(new UnknownHostException(
                             "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
                 }
-                return globalDnsServiceDiscoverer().discover(hostAndPort);
+                return globalARecordsDnsServiceDiscoverer().discover(hostAndPort);
             }
 
             @Override

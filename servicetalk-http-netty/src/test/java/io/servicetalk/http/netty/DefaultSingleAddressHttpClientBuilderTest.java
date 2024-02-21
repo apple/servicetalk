@@ -29,7 +29,7 @@ import java.net.SocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
