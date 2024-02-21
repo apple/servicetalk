@@ -76,8 +76,8 @@ public final class DnsServiceDiscoverers {
      * The returned instance can be customized using {@link DnsServiceDiscovererBuilderProvider} by targeting
      * {@value GLOBAL_A_ID} identity.
      * <p>
-     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
-     * instance of {@link ServiceDiscoverer}.
+     * The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+     * {@link ServiceDiscoverer} must not be closed.
      *
      * @return the singleton instance
      */
@@ -94,8 +94,8 @@ public final class DnsServiceDiscoverers {
      * The returned instance can be customized using {@link DnsServiceDiscovererBuilderProvider} by targeting
      * {@value GLOBAL_SRV_ID} identity.
      * <p>
-     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
-     * instance of {@link ServiceDiscoverer}.
+     * The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+     * {@link ServiceDiscoverer} must not be closed.
      *
      * @return the singleton instance
      */

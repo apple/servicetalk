@@ -44,8 +44,8 @@ public final class Executors {
      * by calling {@link Runnable#run()} on the calling thread. {@link Executor#schedule(Runnable, long, TimeUnit)} will
      * use a global scheduler.
      * <p>
-     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
-     * instance of {@link Executor}.
+     * The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+     * {@link Executor} must not be closed.
      *
      * @return An {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)}
      * immediately on the calling thread.
@@ -60,8 +60,8 @@ public final class Executors {
      * It creates as many threads as required but reuses threads when possible. It is therefore 'safe to block' when
      * using it.
      * <p>
-     * The lifecycle of this instance shouldn't need to be managed by the user. Don't attempt to close the returned
-     * instance of {@link Executor}.
+     * The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+     * {@link Executor} must not be closed.
      *
      * @return An {@link Executor} which serves as a global mechanism for executing concurrent operations.
      */
