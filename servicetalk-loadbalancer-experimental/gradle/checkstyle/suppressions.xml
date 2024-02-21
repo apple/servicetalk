@@ -19,6 +19,8 @@
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+    <suppress id="MissedElementsAreNonnullByDefault"
+              files="io[\\/]servicetalk[\\/]loadbalancer[\\/]package-info.java"/>
     <suppress checks="LineLength"
               files="io[\\/]servicetalk[\\/]loadbalancer[\\/]OutlierDetectorConfig.java"/>
 </suppressions>
