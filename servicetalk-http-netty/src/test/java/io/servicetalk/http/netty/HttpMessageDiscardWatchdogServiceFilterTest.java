@@ -32,6 +32,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -48,6 +49,7 @@ import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled("https://github.com/apple/servicetalk/issues/2756")
 final class HttpMessageDiscardWatchdogServiceFilterTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilterTest.class);
