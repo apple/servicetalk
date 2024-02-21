@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -98,6 +98,21 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">A new <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a> instance.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#globalARecordsDnsServiceDiscoverer()" class="member-name-link">globalARecordsDnsServiceDiscoverer</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Get the <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+ <a href="https://datatracker.ietf.org/doc/html/rfc1035#autoid-34">A</a>/
+ <a href="https://datatracker.ietf.org/doc/html/rfc3596">AAAA</a> records for provided
+ <a href="../../../transport/api/HostAndPort.html#hostName()"><code>HostAndPort.hostName()</code></a> with a fixed <a href="../../../transport/api/HostAndPort.html#port()"><code>HostAndPort.port()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#globalSrvRecordsDnsServiceDiscoverer()" class="member-name-link">globalSrvRecordsDnsServiceDiscoverer</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Get the <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+ <a href="https://datatracker.ietf.org/doc/html/rfc2782">SRV</a> records for provided service name as a
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a>.</div>
+</div>
 </div>
 </div>
 </div>
@@ -127,6 +142,45 @@ loadScripts(document, 'script');</script>
 <dd><code>id</code> - a (unique) ID to identify the created <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="globalARecordsDnsServiceDiscoverer()">
+<h3>globalARecordsDnsServiceDiscoverer</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</span>&nbsp;<span class="element-name">globalARecordsDnsServiceDiscoverer</span>()</div>
+<div class="block">Get the <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+ <a href="https://datatracker.ietf.org/doc/html/rfc1035#autoid-34">A</a>/
+ <a href="https://datatracker.ietf.org/doc/html/rfc3596">AAAA</a> records for provided
+ <a href="../../../transport/api/HostAndPort.html#hostName()"><code>HostAndPort.hostName()</code></a> with a fixed <a href="../../../transport/api/HostAndPort.html#port()"><code>HostAndPort.port()</code></a>.
+ <p>
+ The returned instance can be customized using <a href="DnsServiceDiscovererBuilderProvider.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilderProvider</code></a> by targeting
+ "global-a" identity.
+ <p>
+ The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+ <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> must not be closed.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the singleton instance</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="globalSrvRecordsDnsServiceDiscoverer()">
+<h3>globalSrvRecordsDnsServiceDiscoverer</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</span>&nbsp;<span class="element-name">globalSrvRecordsDnsServiceDiscoverer</span>()</div>
+<div class="block">Get the <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> that executes <a href="https://tools.ietf.org/html/rfc1035">DNS</a> lookups for
+ <a href="https://datatracker.ietf.org/doc/html/rfc2782">SRV</a> records for provided service name as a
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a>.
+ <p>
+ The returned instance can be customized using <a href="DnsServiceDiscovererBuilderProvider.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilderProvider</code></a> by targeting
+ "global-srv" identity.
+ <p>
+ The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+ <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> must not be closed.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the singleton instance</dd>
 </dl>
 </section>
 </li>

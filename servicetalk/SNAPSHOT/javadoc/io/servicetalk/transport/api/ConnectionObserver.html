@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -81,7 +81,8 @@ loadScripts(document, 'script');</script>
 <div class="block">An observer interface that provides visibility into events associated with a network connection.
  <p>
  Either <a href="#connectionClosed()"><code>connectionClosed()</code></a> or <a href="#connectionClosed(java.lang.Throwable)"><code>connectionClosed(Throwable)</code></a> will be invoked to signal when connection
- is closed.</div>
+ is closed. The "closed" event is considered terminal and other callbacks after that can be safely discarded because
+ nothing happens on the network interface after closure.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -191,7 +191,10 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></span>&nbsp;<span class="element-name">immediate</span>()</div>
 <div class="block">Returns an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that executes all tasks submitted via <a href="../Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> immediately
  by calling <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html#run()" title="class or interface in java.lang" class="external-link"><code>Runnable.run()</code></a> on the calling thread. <a href="../Executor.html#schedule(java.lang.Runnable,long,java.util.concurrent.TimeUnit)"><code>Executor.schedule(Runnable, long, TimeUnit)</code></a> will
- use a global scheduler.</div>
+ use a global scheduler.
+ <p>
+ The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+ <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> must not be closed.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>An <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that executes all tasks submitted via <a href="../Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a>
@@ -206,7 +209,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a global <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> instance, which should be used for operations that do not involve I/O and
  are expected to happen concurrently.
  It creates as many threads as required but reuses threads when possible. It is therefore 'safe to block' when
- using it.</div>
+ using it.
+ <p>
+ The lifecycle of this instance shouldn't need to be managed by the user. The returned instance of
+ <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> must not be closed.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>An <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> which serves as a global mechanism for executing concurrent operations.</dd>
