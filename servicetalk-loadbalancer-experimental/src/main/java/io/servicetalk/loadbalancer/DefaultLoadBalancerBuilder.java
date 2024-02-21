@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -179,6 +180,12 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             return new DefaultLoadBalancer<ResolvedAddress, T>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
                     linearSearchSpace, loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            // We do not block
+            return ExecutionStrategy.offloadNone();
         }
     }
 
