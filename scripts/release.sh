@@ -224,7 +224,7 @@ fi
 echo $files_to_revert | xargs git checkout --
 
 $git add * .nojekyll
-$git commit --author="$GIT_AUTHOR" -m "Publish docs website $version_majorminor"
+$git diff-index --quiet HEAD || $git commit --author="$GIT_AUTHOR" -m "Publish docs website $version_majorminor"
 $git push docs gh-pages
 popd
 
