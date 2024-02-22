@@ -59,7 +59,7 @@ jobs:
           sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@687f107f48aa55aff279cc5ce598fd9860871a81
+        uses: scacap/action-surefire-report@a2911bd1a4412ec18dde2d93b1758b3e56d2a880
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
