@@ -226,6 +226,20 @@ on via a client filter on the client builder.
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
 on via a client filter on the client builder.
 
+[#DefaultLoadBalancer]
+== DefaultLoadBalancer
+This example demonstrates how to use the experimental link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/DefaultLoadBalancer.java[DefaultLoadBalancer]:
+
+- by setting the load balancer to DefaultLoadBalancer for a HTTP client
+- configuring xDS failure detection for that client using default settings
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/http/defaultloadbalancer/src/main/java/io/servicetalk/examples/http/defaultloadbalancer/DefaultLoadBalancerClient.java[DefaultLoadBalancerClient] - A client that uses the DefaultLoadBalancer.
+- link:{source-root}/servicetalk-examples/http/defaultloadbalancer/src/main/java/io/servicetalk/examples/http/defaultloadbalancer/HelloWorldServer.java[HelloWorldServer] - A simple server implementation.
+
+NOTE: DefaultLoadBalancer is currently considered experimental and therefore the API is subject to change.
+
 [#OpenTracing]
 == OpenTracing
 
