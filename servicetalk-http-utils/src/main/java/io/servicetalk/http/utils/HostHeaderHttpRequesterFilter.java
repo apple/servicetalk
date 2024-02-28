@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -35,6 +36,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A filter which will set a {@link HttpHeaderNames#HOST} header with the fallback value if the header is not already
@@ -42,17 +44,30 @@ import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
  */
 public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                             StreamingHttpConnectionFilterFactory {
+
+    // TODO: docs, and this feels hacky.
+    public static final ContextMap.Key<CharSequence> AUTHORITY_KEY =
+            ContextMap.Key.newKey("RequestTarget", CharSequence.class);
+
     private final CharSequence fallbackHost;
+    private final boolean preferSynthesizeFromRequest;
 
     /**
      * Create a new instance.
      *
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    public HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
-        this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
-                "[" + fallbackHost + "]" : fallbackHost.toString());
+    public HostHeaderHttpRequesterFilter(final CharSequence fallbackHost) {
+        this(fallbackHost, false);
     }
+
+    public HostHeaderHttpRequesterFilter(final CharSequence fallbackHost,
+                                         final boolean preferSynthesizeFromRequest) {
+        this.fallbackHost = newAsciiString(toHostHeader(fallbackHost));
+        this.preferSynthesizeFromRequest = preferSynthesizeFromRequest;
+    }
+
+
 
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -87,9 +102,28 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
         return defer(() -> {
             // "Host" header is not required for HTTP/1.0
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
-                request.setHeader(HOST, fallbackHost);
+                setHostHeader(request);
             }
             return delegate.request(request).shareContextOnSubscribe();
         });
+    }
+
+    private void setHostHeader(final HttpRequestMetaData request) {
+        CharSequence hostHeaderValue;
+        if (preferSynthesizeFromRequest) {
+            CharSequence requestAuthority = request.context().get(AUTHORITY_KEY);
+            hostHeaderValue = requestAuthority != null ? requestAuthority : fallbackHost;
+        } else {
+            hostHeaderValue = fallbackHost;
+        }
+        request.setHeader(HOST, hostHeaderValue);
+    }
+
+    private static CharSequence toHostHeader(CharSequence host) {
+        requireNonNull(host, "fallbackHost");
+        if (isValidIpV6Address(host) && host.charAt(0) != '[') {
+            host = "[" + host + "]";
+        }
+        return host;
     }
 }

@@ -75,6 +75,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
+import static io.servicetalk.http.utils.HostHeaderHttpRequesterFilter.AUTHORITY_KEY;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -173,6 +175,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
 
+            setRequestAuthority(metaData);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
             final String key = scheme + ':' + host + ':' + port;
@@ -487,5 +490,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
         }
         return port;
+    }
+
+    private static void setRequestAuthority(HttpRequestMetaData metaData) {
+        if (metaData.context().containsKey(AUTHORITY_KEY) || metaData.host() == null) {
+            return;
+        }
+        // the host from the metaData should already be sanitized.
+        CharSequence authority = metaData.host();
+        if (metaData.port() >= 0) {
+            authority = authority + ":" + metaData.port();
+        }
+        metaData.context().put(AUTHORITY_KEY, authority);
     }
 }

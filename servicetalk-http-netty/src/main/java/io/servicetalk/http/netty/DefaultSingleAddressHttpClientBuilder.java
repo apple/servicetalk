@@ -104,6 +104,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
+    // We use this static field instead of the lambda syntax so that we can detect if the default is in use or not.
+    private static Function<Object, CharSequence> DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION =
+            DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
+
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(8);
     static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(256);
 
@@ -117,7 +121,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction =
-            DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
+            (Function<U, CharSequence>) DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION;
     private boolean addHostHeaderFallbackFilter = true;
     private boolean addIdleTimeoutConnectionFilter = true;
     @Nullable
@@ -313,7 +317,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
             if (ctx.builder.addHostHeaderFallbackFilter) {
                 currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
-                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
+                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address),
+                        // only for the default do we want to prefer synthesizing from the request
+                        ctx.builder.hostToCharSequenceFunction == DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
