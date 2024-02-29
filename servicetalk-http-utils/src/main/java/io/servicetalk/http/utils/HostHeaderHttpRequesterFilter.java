@@ -94,7 +94,7 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
     }
 
     /**
-     * Attempt to set the host header for requests that don't already contain a host header and are not HTTP/1.0
+     * Attempt to set the host header for requests that don't already contain a host header and are not HTTP/1.0.
      * @param request the request on which to set the host header.
      */
     protected void setHostHeader(final HttpRequestMetaData request) {
