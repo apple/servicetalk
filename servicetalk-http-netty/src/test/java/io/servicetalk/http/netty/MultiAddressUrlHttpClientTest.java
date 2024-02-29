@@ -318,12 +318,6 @@ class MultiAddressUrlHttpClientTest {
     }
 
     private static void requestAndValidate(final StreamingHttpClient client, final StreamingHttpRequest request,
-                                           final HttpResponseStatus expectedStatus, final String expectedRequestTarget)
-            throws Exception {
-        requestAndValidate(client, request, expectedStatus, expectedRequestTarget, null);
-    }
-
-    private static void requestAndValidate(final StreamingHttpClient client, final StreamingHttpRequest request,
                                            final HttpResponseStatus expectedStatus, final String expectedRequestTarget,
                                            final String expectedHostHeader) throws Exception {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(client.request(request));

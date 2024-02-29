@@ -76,7 +76,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static io.servicetalk.http.utils.HostHeaderHttpRequesterFilter.AUTHORITY_KEY;
-import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -105,7 +105,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
     // We use this static field instead of the lambda syntax so that we can detect if the default is in use or not.
-    private static Function<Object, CharSequence> DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION =
+    private static final Function<Object, CharSequence> DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
 
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(8);
