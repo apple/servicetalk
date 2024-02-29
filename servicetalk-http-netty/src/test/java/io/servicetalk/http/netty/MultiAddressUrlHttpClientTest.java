@@ -270,6 +270,16 @@ class MultiAddressUrlHttpClientTest {
             request = client.get(format("http://%s:%d/200", serverHost, serverPort));
             // the host header should exactly match the authority provided.
             requestAndValidate(client, request, OK, "/200", serverHost + ":" + serverPort);
+
+            // Excludes userinfo and the '@'
+            request = client.get(format("http://user:pass@%s/200", serverHost, serverPort));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
+            // Doesn't normalize
+            request = client.get("http://LocalHost/200");
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", "LocalHost");
         }
     }
 
