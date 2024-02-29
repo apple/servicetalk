@@ -258,6 +258,22 @@ class MultiAddressUrlHttpClientTest {
     }
 
     @Test
+    void exactRequestAuthorityIsRepresentedInHostHeader() throws Exception {
+        try (StreamingHttpClient client = HttpClients
+                .forMultiAddressUrl(ID).defaultHttpPort(serverPort).buildStreaming()) {
+            // Request without a port in the authority
+            StreamingHttpRequest request = client.get(format("http://%s/200", serverHost));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
+            // Request with a port in the authority
+            request = client.get(format("http://%s:%d/200", serverHost, serverPort));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost + ":" + serverPort);
+        }
+    }
+
+    @Test
     void requestWithRedirect() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, format("http://%s/200", hostHeader));  // Location for redirect

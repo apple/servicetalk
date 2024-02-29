@@ -104,7 +104,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
-    // We use this static field instead of the lambda syntax so that we can detect if the default is in use or not.
+    // We use this static field instead of the lambda syntax so that we can use reference equality to
+    // determine if the default is in use or not.
     private static final Function<Object, CharSequence> DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
 
