@@ -67,8 +67,6 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
         this.preferSynthesizeFromRequest = preferSynthesizeFromRequest;
     }
 
-
-
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
