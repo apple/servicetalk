@@ -316,10 +316,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.proxyAbsoluteAddressFilterFactory());
             }
             if (ctx.builder.addHostHeaderFallbackFilter) {
-                currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
-                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address),
-                        // only for the default do we want to prefer synthesizing from the request
-                        ctx.builder.hostToCharSequenceFunction == DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION));
+                currClientFilterFactory = appendFilter(currClientFilterFactory,
+                        new MultiAddressCompatibleHostHeaderHttpRequestFilter(
+                            ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address),
+                            // only for the default do we want to prefer synthesizing from the request
+                            ctx.builder.hostToCharSequenceFunction == DEFAULT_HOST_TO_CHAR_SEQUENCE_FUNCTION));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(

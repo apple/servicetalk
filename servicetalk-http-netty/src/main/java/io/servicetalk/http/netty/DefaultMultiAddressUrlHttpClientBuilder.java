@@ -75,7 +75,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
-import static io.servicetalk.http.utils.HostHeaderHttpRequesterFilter.AUTHORITY_KEY;
+import static io.servicetalk.http.netty.MultiAddressCompatibleHostHeaderHttpRequestFilter.AUTHORITY_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
