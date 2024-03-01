@@ -173,8 +173,8 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         return (int) min(MAX_VALUE, max(currentEWMA, currentLatency) * penalty);
     }
 
-    // must be called while holding the lock in write mode.
     private void updateEwma(long penalty, long startTimeNanos) {
+        assert lock.isWriteLocked();
         // We capture the current time while holding the lock to exploit the monotonic time source
         // properties which prevent the time duration from going negative. This will result in a latency penalty
         // as concurrency increases, but is a trade-off for simplicity.
