@@ -30,4 +30,14 @@ public interface ServerSslConfig extends SslConfig {
      * @see SSLParameters#getWantClientAuth()
      */
     SslClientAuthMode clientAuthMode();
+
+    /**
+     * If enabled, allows both TLS and non-TLS connections on the same socket.
+     *
+     * @return if insecure connections should be allowed as well (defaults to false).
+     */
+    // FIXME 0.43 - remove default implementation
+    default boolean acceptInsecureConnections() {
+        return false;
+    }
 }

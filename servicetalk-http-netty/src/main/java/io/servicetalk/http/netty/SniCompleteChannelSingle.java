@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
+import io.servicetalk.transport.netty.internal.OptionalSslHandler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -65,6 +66,12 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
                 Subscriber<? super SniCompletionEvent> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onSuccess((SniCompletionEvent) evt);
+            }
+            if (evt instanceof OptionalSslHandler.OptionalSslHandlerRemovedEvent && subscriber != null) {
+                ctx.pipeline().remove(this);
+                Subscriber<? super SniCompletionEvent> subscriberCopy = subscriber;
+                subscriber = null;
+                subscriberCopy.onSuccess(new SniCompletionEvent(null, new SniNotNeededException()));
             }
             ctx.fireUserEventTriggered(evt);
         }

@@ -946,6 +946,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // the current netty version) gets triggered reliably at the appropriate time.
                 connection.nettyChannelPublisher.channelOnError(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
+            } else if (evt instanceof OptionalSslHandler.OptionalSslHandlerRemovedEvent) {
+                if (subscriber != null && waitForSslHandshake) {
+                    completeSubscriber();
+                }
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
                         this::tryFailSubscriber);

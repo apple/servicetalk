@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SniTest {
 
@@ -81,7 +82,7 @@ class SniTest {
     void sniSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                     HttpProtocol protocol, boolean useALPN) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                .sslConfig(untrustedServerConfig(serverSslProvider, false, alpnIds(protocol, useALPN)),
                         singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
@@ -95,8 +96,8 @@ class SniTest {
     void sniDefaultFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                    HttpProtocol protocol, boolean useALPN) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
-                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
+                .sslConfig(trustedServerConfig(serverSslProvider, false, alpnIds(protocol, useALPN)),
+                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider, false)))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
@@ -111,7 +112,7 @@ class SniTest {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
                 .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap(SNI_HOSTNAME,
-                                untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
+                                untrustedServerConfig(serverSslProvider, false, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
@@ -124,7 +125,7 @@ class SniTest {
     void sniDefaultFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                         HttpProtocol protocol, boolean useALPN) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                .sslConfig(untrustedServerConfig(serverSslProvider, false, alpnIds(protocol, useALPN)),
                         singletonMap("no_match" + SNI_HOSTNAME,
                                 trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
@@ -153,7 +154,7 @@ class SniTest {
                                                  HttpProtocol protocol, boolean useALPN) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
                 .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
-                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
+                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider, false)))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
                      getLoopbackAddress().getHostName(),
@@ -177,7 +178,7 @@ class SniTest {
     void noSniClientDefaultServerFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
                                                       HttpProtocol protocol, boolean useALPN) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                .sslConfig(untrustedServerConfig(serverSslProvider, false, alpnIds(protocol, useALPN)),
                         singletonMap(getLoopbackAddress().getHostName(),
                                 trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
@@ -206,6 +207,25 @@ class SniTest {
              BlockingHttpClient client = newClientBuilder(serverContext, CLIENT_CTX, HTTP_1).buildBlocking();
              ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
             connection.connectionContext().onClose().toFuture().get(HANDSHAKE_TIMEOUT_MILLIS * 2, MILLISECONDS);
+        }
+    }
+
+    @ParameterizedTest(name =
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniWithOptionalTls(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                    HttpProtocol protocol, boolean useALPN) throws Exception {
+        assumeTrue(protocol.version.major() == 1, "http/2 is not supported with Optional TLS");
+
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(untrustedServerConfig(serverSslProvider, true, alpnIds(protocol, useALPN)),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, true,
+                                alpnIds(protocol, useALPN))))
+                .listenBlockingAndAwait(newSslVerifyService());
+            BlockingHttpClient secureClient = newClient(serverContext, clientSslProvider, protocol, useALPN);
+            BlockingHttpClient plaintextClient = newClientBuilder(serverContext, CLIENT_CTX, protocol).buildBlocking()) {
+            assertEquals(HttpResponseStatus.OK, secureClient.request(secureClient.get("/")).status());
+            assertEquals(HttpResponseStatus.OK, plaintextClient.request(plaintextClient.get("/")).status());
         }
     }
 
@@ -243,16 +263,20 @@ class SniTest {
         return builder;
     }
 
-    private static ServerSslConfig untrustedServerConfig(SslProvider provider) {
-        return untrustedServerConfig(provider, (String[]) null);
+    private static ServerSslConfig untrustedServerConfig(SslProvider provider, final boolean allowInsecure) {
+        return untrustedServerConfig(provider, allowInsecure, (String[]) null);
     }
 
-    private static ServerSslConfig untrustedServerConfig(SslProvider provider, @Nullable String... alpn) {
+    private static ServerSslConfig untrustedServerConfig(SslProvider provider, final boolean allowInsecure,
+                                                         @Nullable String... alpn) {
         // Need a key that won't be trusted by the client, just use the client's key.
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadClientPem,
                 DefaultTestCerts::loadClientKey).provider(provider);
         if (alpn != null) {
             builder.alpnProtocols(alpn);
+        }
+        if (allowInsecure) {
+            builder.acceptInsecureConnections(true);
         }
         return builder.build();
     }
@@ -263,8 +287,16 @@ class SniTest {
     }
 
     private static ServerSslConfig trustedServerConfig(SslProvider provider, @Nullable String... alpn) {
+        return trustedServerConfig(provider, false, alpn);
+    }
+
+    private static ServerSslConfig trustedServerConfig(SslProvider provider, boolean allowInsecure,
+                                                       @Nullable String... alpn) {
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                 DefaultTestCerts::loadServerKey).provider(provider);
+        if (allowInsecure) {
+            builder.acceptInsecureConnections(true);
+        }
         if (alpn != null) {
             builder.alpnProtocols(alpn);
         }

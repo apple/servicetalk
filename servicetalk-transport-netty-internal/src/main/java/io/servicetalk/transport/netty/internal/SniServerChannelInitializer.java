@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 
 import static io.servicetalk.transport.netty.internal.SslUtils.newServerSslHandler;
@@ -65,12 +67,13 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
     private final Mapping<String, SslContext> sniMapping;
     private final int maxClientHelloLength;
     private final long clientHelloTimeoutMillis;
+    private final boolean acceptInsecureConnections;
 
     /**
      * Create a new instance.
      *
      * @param sniMapping to use for SNI configuration.
-     * @deprecated Use {@link #SniServerChannelInitializer(Mapping, int, long)}.
+     * @deprecated Use {@link #SniServerChannelInitializer(Mapping, int, long, boolean)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated constructor
     public SniServerChannelInitializer(final Mapping<String, SslContext> sniMapping) {
@@ -87,21 +90,43 @@ public final class SniServerChannelInitializer implements ChannelInitializer {
      * @param clientHelloTimeoutMillis The timeout in milliseconds for waiting until
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
      * Zero ({@code 0}) disables timeout.
-     *
+     * @deprecated Use {@link #SniServerChannelInitializer(Mapping, int, long, boolean)}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated constructor
     public SniServerChannelInitializer(final Mapping<String, SslContext> sniMapping,
                                        final int maxClientHelloLength,
                                        final long clientHelloTimeoutMillis) {
+        this(sniMapping, maxClientHelloLength, clientHelloTimeoutMillis, false);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param sniMapping to use for SNI configuration.
+     * @param maxClientHelloLength The maximum length of a
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
+     * @param clientHelloTimeoutMillis The timeout in milliseconds for waiting until
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+     * Zero ({@code 0}) disables timeout.
+     * @param acceptInsecureConnections if non-TLS connections should also be accepted.
+     */
+    public SniServerChannelInitializer(final Mapping<String, SslContext> sniMapping,
+                                       final int maxClientHelloLength,
+                                       final long clientHelloTimeoutMillis,
+                                       final boolean acceptInsecureConnections) {
         this.sniMapping = requireNonNull(sniMapping);
         this.maxClientHelloLength = maxClientHelloLength;
         this.clientHelloTimeoutMillis = clientHelloTimeoutMillis;
+        this.acceptInsecureConnections = acceptInsecureConnections;
     }
 
     @Override
     public void init(final Channel channel) {
-        channel.pipeline().addLast(CAN_SET_ALL_SETTINGS ?
+        final Supplier<ChannelHandler> supplier = () -> CAN_SET_ALL_SETTINGS ?
                 new SniHandlerWithAllSettings(sniMapping, maxClientHelloLength, clientHelloTimeoutMillis, channel) :
-                new SniHandlerWithPooledAllocator(sniMapping, channel));
+                new SniHandlerWithPooledAllocator(sniMapping, channel);
+        channel.pipeline().addLast(acceptInsecureConnections ? new OptionalSslHandler(supplier) : supplier.get());
     }
 
     /**

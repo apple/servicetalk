@@ -120,7 +120,7 @@ final class DeferredServerChannelBinder {
         return new SniCompleteChannelSingle(channel,
                 new TcpServerChannelInitializer(config.tcpConfig(), observer, httpExecutionContext)).flatMap(sniEvt -> {
             Throwable failureCause = sniEvt.cause();
-            if (failureCause != null) {
+            if (failureCause != null && !(failureCause instanceof SniNotNeededException)) {
                 return failed(failureCause);
             }
 

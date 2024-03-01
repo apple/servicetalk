@@ -85,10 +85,12 @@ public class TcpServerChannelInitializer implements ChannelInitializer {    // F
             assert config.sslConfig() != null;
             assert config.sslContext() != null;
             delegate = delegate.andThen(new SniServerChannelInitializer(config.sniMapping(),
-                    config.sniMaxClientHelloLength(), config.sniClientHelloTimeout().toMillis()));
+                    config.sniMaxClientHelloLength(), config.sniClientHelloTimeout().toMillis(),
+                    config.sslConfig().acceptInsecureConnections()));
         } else if (config.sslContext() != null) {
             assert config.sslConfig() != null;
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext(),
+                    config.sslConfig().acceptInsecureConnections()));
         }
 
         this.delegate = initWireLogger(delegate, config.wireLoggerConfig());

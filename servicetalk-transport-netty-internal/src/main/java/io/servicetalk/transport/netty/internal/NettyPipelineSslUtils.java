@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
@@ -86,7 +87,10 @@ public final class NettyPipelineSslUtils {
         }
         final SslHandler sslHandler = pipeline.get(SslHandler.class);
         if (sslHandler == null) {
-            if (pipeline.get(DeferSslHandler.class) != null) {
+            // If optionalSsl is enabled, the SslHandler might not be present based on the incoming user request
+            boolean optionalSsl = sslConfig instanceof ServerSslConfig
+                    && ((ServerSslConfig) sslConfig).acceptInsecureConnections();
+            if (pipeline.get(DeferSslHandler.class) != null || optionalSsl) {
                 return null;
             }
             throw unableToFindSslHandler();

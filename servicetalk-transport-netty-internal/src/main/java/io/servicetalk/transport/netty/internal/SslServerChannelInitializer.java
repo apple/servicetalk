@@ -16,7 +16,10 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslContext;
+
+import java.util.function.Supplier;
 
 import static io.servicetalk.transport.netty.internal.SslUtils.newServerSslHandler;
 import static java.util.Objects.requireNonNull;
@@ -26,17 +29,22 @@ import static java.util.Objects.requireNonNull;
  */
 public final class SslServerChannelInitializer implements ChannelInitializer {
     private final SslContext sslContext;
+    private final boolean acceptInsecureConnections;
 
     /**
      * New instance.
      * @param sslContext to use for default SSL configuration.
+     * @param acceptInsecureConnections if non-TLS connections should also be accepted.
      */
-    public SslServerChannelInitializer(SslContext sslContext) {
+    public SslServerChannelInitializer(final SslContext sslContext, final boolean acceptInsecureConnections) {
         this.sslContext = requireNonNull(sslContext);
+        this.acceptInsecureConnections = acceptInsecureConnections;
     }
 
     @Override
-    public void init(Channel channel) {
-        channel.pipeline().addLast(newServerSslHandler(sslContext, channel));
+    public void init(final Channel channel) {
+        final Supplier<ChannelHandler> handlerSupplier = () -> newServerSslHandler(sslContext, channel);
+        channel.pipeline().addLast(acceptInsecureConnections ?
+                new OptionalSslHandler(handlerSupplier) : handlerSupplier.get());
     }
 }

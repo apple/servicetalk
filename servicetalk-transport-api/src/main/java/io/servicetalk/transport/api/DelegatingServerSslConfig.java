@@ -31,4 +31,9 @@ public class DelegatingServerSslConfig extends DelegatingSslConfig<ServerSslConf
     public SslClientAuthMode clientAuthMode() {
         return delegate().clientAuthMode();
     }
+
+    @Override
+    public boolean acceptInsecureConnections() {
+        return delegate().acceptInsecureConnections();
+    }
 }
