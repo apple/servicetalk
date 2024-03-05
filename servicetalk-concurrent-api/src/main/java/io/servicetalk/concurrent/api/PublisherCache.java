@@ -35,17 +35,17 @@ public final class PublisherCache<K, T> {
     private final MulticastStrategy<T> multicastStrategy;
     private final Map<K, Holder<T>> publisherCache;
 
+    PublisherCache(final MulticastStrategy<T> multicastStrategy) {
+        this.multicastStrategy = multicastStrategy;
+        this.publisherCache = new HashMap<>();
+    }
+
     /**
      * Create a new PublisherCache where the cached publishers must be configured with a multicast or replay operator
      * by the multicastSupplier function.
      *
      * @param multicastStrategy a strategy used for wrapping new cache values.
      */
-    PublisherCache(final MulticastStrategy<T> multicastStrategy) {
-        this.multicastStrategy = multicastStrategy;
-        this.publisherCache = new HashMap<>();
-    }
-
     public static <K, T> PublisherCache<K, T> create() {
         return new PublisherCache<>(MulticastStrategy.identity());
     }
