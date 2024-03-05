@@ -52,7 +52,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void multipleSubscribersToSameKeyReceiveMulticastEvents() {
+    void multipleSubscribersToSameKeyReceiveMulticastEvents() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -85,7 +85,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void minSubscribersMulticastPolicySubscribesUpstreamOnce() {
+    void minSubscribersMulticastPolicySubscribesUpstreamOnce() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -110,7 +110,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void unSubscribeUpstreamAndInvalidateCacheWhenEmpty() {
+    void unSubscribeUpstreamAndInvalidateCacheWhenEmpty() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -135,7 +135,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void cacheSubscriptionAndUnsubscriptionWithMulticastMinSubscribers() {
+    void cacheSubscriptionAndUnsubscriptionWithMulticastMinSubscribers() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast(2);
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
@@ -160,7 +160,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void cacheSubscriptionAndUnsubscriptionWithReplay() {
+    void cacheSubscriptionAndUnsubscriptionWithReplay() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.replay(
                 ReplayStrategies.<Integer>historyBuilder(1)
                         .cancelUpstream(true)
@@ -194,7 +194,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    public void testErrorFromUpstreamInvalidatesCacheEntryAndRequestsANewStream() {
+    void testErrorFromUpstreamInvalidatesCacheEntryAndRequestsANewStream() {
         final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
