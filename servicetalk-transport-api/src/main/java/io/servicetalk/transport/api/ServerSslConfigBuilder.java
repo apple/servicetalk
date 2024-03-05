@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<ServerSslConfigBuilder> {
     private SslClientAuthMode clientAuthMode = NONE;
+    private boolean acceptInsecureConnections;
 
     /**
      * Create a new instance using the {@link KeyManagerFactory} for SSL/TLS handshakes.
@@ -102,14 +103,25 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     }
 
     /**
+     * Set to true to accept both TLS and non-TLS connections on the same socket.
+     *
+     * @param acceptInsecureConnections boolean to indicate whether insecure connections should also be accepted.
+     * @return {@code this}.
+     */
+    public ServerSslConfigBuilder acceptInsecureConnections(final boolean acceptInsecureConnections) {
+        this.acceptInsecureConnections = acceptInsecureConnections;
+        return this;
+    }
+
+    /**
      * Build a new {@link ServerSslConfig}.
      * @return a new {@link ServerSslConfig}.
      */
     public ServerSslConfig build() {
-        return new DefaultServerSslConfig(clientAuthMode, trustManager(), trustCertChainSupplier(), keyManager(),
-                keyCertChainSupplier(), keySupplier(), keyPassword(), sslProtocols(), alpnProtocols(), ciphers(),
-                cipherSuiteFilter(), sessionCacheSize(), sessionTimeout(), maxCertificateListBytes(), provider(),
-                certificateCompressionAlgorithms(), handshakeTimeout());
+        return new DefaultServerSslConfig(clientAuthMode, acceptInsecureConnections, trustManager(),
+                trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(), keyPassword(),
+                sslProtocols(), alpnProtocols(), ciphers(), cipherSuiteFilter(), sessionCacheSize(), sessionTimeout(),
+                maxCertificateListBytes(), provider(), certificateCompressionAlgorithms(), handshakeTimeout());
     }
 
     @Override
@@ -119,8 +131,10 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
 
     private static final class DefaultServerSslConfig extends AbstractSslConfig implements ServerSslConfig {
         private final SslClientAuthMode clientAuthMode;
+        private final boolean acceptInsecureConnections;
 
         DefaultServerSslConfig(SslClientAuthMode clientAuthMode,
+                               boolean acceptInsecureConnections,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
                                @Nullable final KeyManagerFactory keyManagerFactory,
@@ -137,11 +151,17 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
                     sessionTimeout, maxCertificateListBytes, provider, certificateCompressionAlgorithms,
                     handshakeTimeout);
             this.clientAuthMode = clientAuthMode;
+            this.acceptInsecureConnections = acceptInsecureConnections;
         }
 
         @Override
         public SslClientAuthMode clientAuthMode() {
             return clientAuthMode;
+        }
+
+        @Override
+        public boolean acceptInsecureConnections() {
+            return acceptInsecureConnections;
         }
     }
 }

@@ -31,7 +31,6 @@ import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +83,7 @@ final class DeferredServerChannelBinder {
                 });
     }
 
-    private static Single<NettyConnectionContext> alpnInitChannel(final SocketAddress listenAddress,
+    static Single<NettyConnectionContext> alpnInitChannel(final SocketAddress listenAddress,
                                                                   final Channel channel,
                                                                   final ReadOnlyHttpServerConfig config,
                                                                   final HttpExecutionContext httpExecutionContext,
@@ -96,7 +95,10 @@ final class DeferredServerChannelBinder {
                 // Force a read to get the SSL handshake started. We initialize pipeline before
                 // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
                 // initialization.
-                ChannelHandlerContext::read).flatMap(protocol -> {
+                ctx -> {
+                    ctx.pipeline().fireUserEventTriggered(PipelineInitializedEvent.INSTANCE);
+                    ctx.read();
+                }).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
@@ -110,7 +112,7 @@ final class DeferredServerChannelBinder {
         });
     }
 
-    private static Single<NettyConnectionContext> sniInitChannel(final SocketAddress listenAddress,
+    static Single<NettyConnectionContext> sniInitChannel(final SocketAddress listenAddress,
                                                                  final Channel channel,
                                                                  final ReadOnlyHttpServerConfig config,
                                                                  final HttpExecutionContext httpExecutionContext,

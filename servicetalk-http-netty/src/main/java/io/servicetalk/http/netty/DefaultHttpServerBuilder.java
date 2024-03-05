@@ -399,7 +399,11 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
-        if (roConfig.tcpConfig().isAlpnConfigured()) {
+        final ServerSslConfig sslConfig = roConfig.tcpConfig().sslConfig();
+        if (sslConfig != null && sslConfig.acceptInsecureConnections()) {
+            return OptionalSslNegotiator.bind(executionContext, config, address, connectionAcceptor, filteredService,
+                    drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
+        } else if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
                     filteredService, drainRequestPayloadBody, false, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().sniMapping() != null) {

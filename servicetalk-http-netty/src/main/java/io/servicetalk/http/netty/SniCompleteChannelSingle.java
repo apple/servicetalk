@@ -55,6 +55,7 @@ final class SniCompleteChannelSingle extends ChannelInitSingle<SniCompletionEven
             // Force a read to get the SSL handshake started. We initialize pipeline before
             // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
             // initialization.
+            ctx.pipeline().fireUserEventTriggered(PipelineInitializedEvent.INSTANCE);
             ctx.read();
         }
 

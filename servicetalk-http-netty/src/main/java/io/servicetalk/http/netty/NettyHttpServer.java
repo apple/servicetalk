@@ -195,6 +195,7 @@ final class NettyHttpServer {
             pipeline.addLast(decoder);
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler, decoder));
+            pipeline.fireUserEventTriggered(PipelineInitializedEvent.INSTANCE);
         });
     }
 

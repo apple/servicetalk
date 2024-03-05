@@ -82,6 +82,8 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 }
             });
         }
+
+        channel.pipeline().fireUserEventTriggered(PipelineInitializedEvent.INSTANCE);
     }
 
     static void initFrameLogger(final Http2FrameCodecBuilder multiplexCodecBuilder,
