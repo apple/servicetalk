@@ -44,6 +44,7 @@ public final class PublisherCache<K, T> {
      * Create a new PublisherCache where the cached publishers must be configured with a multicast or replay operator
      * by the multicastSupplier function.
      *
+     * @return a new PublisherCache that will not wrap cached values.
      */
     public static <K, T> PublisherCache<K, T> create() {
         return new PublisherCache<>(MulticastStrategy.identity());
@@ -55,7 +56,7 @@ public final class PublisherCache<K, T> {
      *
      * @param <K> a key type suitable for use as a {@link Map} key.
      * @param <T> the type of the {@link Publisher} contained in the cache.
-     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     * @return a new PublisherCache that will wrap cached values with multicast operator.
      */
     public static <K, T> PublisherCache<K, T> multicast() {
         return new PublisherCache<>(MulticastStrategy.wrapMulticast());
@@ -69,7 +70,7 @@ public final class PublisherCache<K, T> {
      * subscribe to the return value.
      * @param <K> a key type suitable for use as a {@link Map} key.
      * @param <T> the type of the {@link Publisher} contained in the cache.
-     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     * @return a new PublisherCache that will wrap cached values with multicast operator.
      */
     public static <K, T> PublisherCache<K, T> multicast(final int minSubscribers) {
         return new PublisherCache<>(MulticastStrategy.wrapMulticast(minSubscribers));
@@ -85,7 +86,7 @@ public final class PublisherCache<K, T> {
      * for unequal demand.
      * @param <K> a key type suitable for use as a {@link Map} key.
      * @param <T> the type of the {@link Publisher} contained in the cache.
-     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     * @return aa new PublisherCache that will wrap cached values with multicast operator.
      */
     public static <K, T> PublisherCache<K, T> multicast(final int minSubscribers, final int queueLimit) {
         return new PublisherCache<>(MulticastStrategy.wrapMulticast(minSubscribers, queueLimit));
@@ -98,7 +99,7 @@ public final class PublisherCache<K, T> {
      * @param replayStrategy a {@link ReplayStrategy} that determines the replay behavior and history retention logic.
      * @param <K> a key type suitable for use as a {@link Map} key.
      * @param <T> the type of the {@link Publisher} contained in the cache.
-     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     * @return a new PublisherCache that will wrap cached values with replay operator.
      */
     public static <K, T> PublisherCache<K, T> replay(ReplayStrategy<T> replayStrategy) {
         return new PublisherCache<>(MulticastStrategy.wrapReplay(replayStrategy));
