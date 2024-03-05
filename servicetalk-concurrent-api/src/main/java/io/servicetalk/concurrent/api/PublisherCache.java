@@ -232,7 +232,7 @@ public final class PublisherCache<K, T> {
      * @param <T> the type of the {@link Publisher}.
      */
     @FunctionalInterface
-    interface MulticastStrategy<T> {
+    private interface MulticastStrategy<T> {
         Publisher<T> apply(Publisher<T> cached);
 
         static <T> MulticastStrategy<T> identity() {
