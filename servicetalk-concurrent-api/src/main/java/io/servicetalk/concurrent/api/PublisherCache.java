@@ -44,7 +44,6 @@ public final class PublisherCache<K, T> {
      * Create a new PublisherCache where the cached publishers must be configured with a multicast or replay operator
      * by the multicastSupplier function.
      *
-     * @param multicastStrategy a strategy used for wrapping new cache values.
      */
     public static <K, T> PublisherCache<K, T> create() {
         return new PublisherCache<>(MulticastStrategy.identity());
