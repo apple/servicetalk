@@ -36,6 +36,14 @@ public final class PublisherCache<K, T> {
     private final Function<K, Publisher<T>> publisherSupplier;
     private final Map<K, Holder<T>> publisherCache;
 
+    /**
+     * Create a new PublisherCache using a factory function and a multicast strategy to use after {@link Publisher}
+     * creation. New publishers must be wrapped in a multicast or replay strategy in order to be shared.
+     * VisibleForTesting
+     *
+     * @param publisherSupplier a function that takes the key and returns a new {@link Publisher} for that key.
+     * @param multicastStrategy a strategy used for wrapping new cache values.
+     */
     PublisherCache(
             final Function<K, Publisher<T>> publisherSupplier,
             final MulticastStrategy<T> multicastStrategy) {
@@ -49,13 +57,49 @@ public final class PublisherCache<K, T> {
      * consumers of a specific key. The publisherSupplier will be invoked when the cache does not contain a
      * publisher for the requested key.
      *
-     * @param publisherSupplier a function that takes the key and returns a new publisher corresponding to that key.
-     * @return a new publisher from the publisherSupplier if not contained in the cache, otherwise the cached publisher.
-     * @param <K> a key type suitable for use as a Map key.
-     * @param <T> the type of the Publisher contained in the cache.
+     * @param publisherSupplier a function that takes the key and returns a new {@link Publisher} for that key.
+     * @param <K> a key type suitable for use as a {@link Map} key.
+     * @param <T> the type of the {@link Publisher} contained in the cache.
+     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
      */
-    public static <K, T> PublisherCache<K, T> multicast(Function<K, Publisher<T>> publisherSupplier) {
+    public static <K, T> PublisherCache<K, T> multicast(final Function<K, Publisher<T>> publisherSupplier) {
         return new PublisherCache<>(publisherSupplier, MulticastStrategy.wrapMulticast());
+    }
+
+    /**
+     * Create a new PublisherCache where the cached publishers will be configured for multicast for all
+     * consumers of a specific key. The publisherSupplier will be invoked when the cache does not contain a
+     * publisher for the requested key.
+     *
+     * @param publisherSupplier a function that takes the key and returns a new {@link Publisher} for that key.
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param <K> a key type suitable for use as a {@link Map} key.
+     * @param <T> the type of the {@link Publisher} contained in the cache.
+     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     */
+    public static <K, T> PublisherCache<K, T> multicast(
+            final Function<K, Publisher<T>> publisherSupplier, final int minSubscribers) {
+        return new PublisherCache<>(publisherSupplier, MulticastStrategy.wrapMulticast(minSubscribers));
+    }
+
+    /**
+     * Create a new PublisherCache where the cached publishers will be configured for multicast for all
+     * consumers of a specific key. The publisherSupplier will be invoked when the cache does not contain a
+     * publisher for the requested key.
+     *
+     * @param publisherSupplier a function that takes the key and returns a new {@link Publisher} for that key.
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @param <K> a key type suitable for use as a {@link Map} key.
+     * @param <T> the type of the {@link Publisher} contained in the cache.
+     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
+     */
+    public static <K, T> PublisherCache<K, T> multicast(
+            final Function<K, Publisher<T>> publisherSupplier, final int minSubscribers, final int queueLimit) {
+        return new PublisherCache<>(publisherSupplier, MulticastStrategy.wrapMulticast(minSubscribers, queueLimit));
     }
 
     /**
@@ -63,11 +107,11 @@ public final class PublisherCache<K, T> {
      * ReplayStrategy. The publisherSupplier will be invoked when the cache does not contain a publisher for
      * the requested key.
      *
-     * @param publisherSupplier a function that takes the key and returns a new publisher corresponding to that key.
-     * @param replayStrategy a replay strategy to be used by a newly cached publisher.
-     * @return a new publisher from the publisherSupplier if not contained in the cache, otherwise the cached publisher.
-     * @param <K> a key type suitable for use as a Map key.
-     * @param <T> the type of the Publisher contained in the cache.
+     * @param publisherSupplier a function that takes the key and returns a new {@link Publisher} for that key.
+     * @param replayStrategy a {@link ReplayStrategy} that determines the replay behavior and history retention logic.
+     * @param <K> a key type suitable for use as a {@link Map} key.
+     * @param <T> the type of the {@link Publisher} contained in the cache.
+     * @return a new PublisherCache that will use the publisherSupplier to create new entries upon request.
      */
     public static <K, T> PublisherCache<K, T> replay(
             Function<K, Publisher<T>> publisherSupplier,
@@ -75,6 +119,13 @@ public final class PublisherCache<K, T> {
         return new PublisherCache<>(publisherSupplier, MulticastStrategy.wrapReplay(replayStrategy));
     }
 
+    /**
+     * Retrieve a the value for the given key, if no value exists in the cache it will be synchronously created.
+     *
+     * @param key a key corresponding to the requested {@link Publisher}.
+     * @return a new {@link Publisher} from the publisherSupplier if not contained in the cache, otherwise
+     * the cached publisher.
+     */
     public Publisher<T> get(K key) {
         return Publisher.defer(() -> {
             synchronized (publisherCache) {
@@ -189,9 +240,18 @@ public final class PublisherCache<K, T> {
         Publisher<T> publisher;
     }
 
+    /**
+     * A series of strategies used to make cached {@link Publisher}s "shareable".
+     *
+     * @param <T> the type of the {@link Publisher}.
+     */
     @FunctionalInterface
-    private interface MulticastStrategy<T> {
+    interface MulticastStrategy<T> {
         Publisher<T> apply(Publisher<T> cached);
+
+        static <T> MulticastStrategy<T> identity() {
+            return cached -> cached;
+        }
 
         static <T> MulticastStrategy<T> wrapMulticast() {
             return cached -> cached.multicast(1, true);
