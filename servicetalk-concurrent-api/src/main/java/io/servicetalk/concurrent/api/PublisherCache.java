@@ -44,6 +44,8 @@ public final class PublisherCache<K, T> {
      * Create a new PublisherCache where the cached publishers must be configured with a multicast or replay operator
      * by the multicastSupplier function.
      *
+     * @param <K> a key type suitable for use as a {@link Map} key.
+     * @param <T> the type of the {@link Publisher} contained in the cache.
      * @return a new PublisherCache that will not wrap cached values.
      */
     public static <K, T> PublisherCache<K, T> create() {
@@ -109,6 +111,7 @@ public final class PublisherCache<K, T> {
      * Retrieve the value for the given key, if no value exists in the cache it will be synchronously created.
      *
      * @param key a key corresponding to the requested {@link Publisher}.
+     * @param publisherSupplier if the key does not exist in the cache, used to create a new publisher.
      * @return a new {@link Publisher} from the publisherSupplier if not contained in the cache, otherwise
      * the cached publisher.
      */
