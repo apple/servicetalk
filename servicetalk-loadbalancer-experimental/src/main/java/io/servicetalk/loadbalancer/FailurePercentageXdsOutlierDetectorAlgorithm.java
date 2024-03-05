@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,26 +24,23 @@ import java.util.Collection;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 
-final class FailurePercentageXdsOutlierDetector implements XdsOutlierDetector {
+final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection>
+        implements XdsOutlierDetectorAlgorithm<ResolvedAddress, C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FailurePercentageXdsOutlierDetector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FailurePercentageXdsOutlierDetectorAlgorithm.class);
 
     // We use a sentinel value to mark values as 'skipped' so we don't need to create a dynamically sized
     // data structure for doubles which would require boxing.
     private static final long NOT_EVALUATED = Long.MAX_VALUE;
 
-    public static final XdsOutlierDetector INSTANCE = new FailurePercentageXdsOutlierDetector();
-
-    private FailurePercentageXdsOutlierDetector() {
-    }
-
     @Override
-    public void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator> indicators) {
+    public void detectOutliers(final OutlierDetectorConfig config,
+                               final Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators) {
         final long[] failurePercentages = new long[indicators.size()];
         int i = 0;
         int enoughVolumeHosts = 0;
         int alreadyEjectedHosts = 0;
-        for (XdsHealthIndicator indicator : indicators) {
+        for (XdsHealthIndicator<?, ?> indicator : indicators) {
             if (!indicator.isHealthy()) {
                 failurePercentages[i] = NOT_EVALUATED;
                 alreadyEjectedHosts++;
@@ -71,7 +70,7 @@ final class FailurePercentageXdsOutlierDetector implements XdsOutlierDetector {
         final double failurePercentageThreshold = config.failurePercentageThreshold();
         int ejectedCount = 0;
         i = 0;
-        for (XdsHealthIndicator indicator : indicators) {
+        for (XdsHealthIndicator<?, ?> indicator : indicators) {
             long failurePercentage = failurePercentages[i++];
             if (indicator.updateOutlierStatus(config, failurePercentage == NOT_EVALUATED ||
                     failurePercentage >= failurePercentageThreshold &&

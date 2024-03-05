@@ -52,7 +52,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
     @Nullable
-    private HealthCheckerFactory<ResolvedAddress> healthCheckerFactory;
+    private OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory;
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
     private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
     private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -85,9 +85,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
-            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory) {
-        this.healthCheckerFactory = healthCheckerFactory;
+    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
+            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory) {
+        this.outlierDetectorFactory = outlierDetectorFactory;
         return this;
     }
 
@@ -136,13 +136,13 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         }
         final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        Function<String, HealthChecker<ResolvedAddress>> healthCheckerSupplier;
-        if (healthCheckerFactory == null) {
+        Function<String, OutlierDetector<ResolvedAddress, C>> healthCheckerSupplier;
+        if (outlierDetectorFactory == null) {
             healthCheckerSupplier = null;
         } else {
             final Executor executor = getExecutor();
             healthCheckerSupplier = (String lbDescrption) ->
-                    healthCheckerFactory.newHealthChecker(executor, lbDescrption);
+                    outlierDetectorFactory.newHealthChecker(executor, lbDescrption);
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
@@ -157,29 +157,38 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
         private final int linearSearchSpace;
         @Nullable
-        private final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory;
+        private final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
-                                   final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory) {
+                                   final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
             this.linearSearchSpace = linearSearchSpace;
             this.healthCheckConfig = healthCheckConfig;
-            this.healthCheckerFactory = healthCheckerFactory;
+            this.outlierDetectorFactory = outlierDetectorFactory;
         }
 
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(String targetResource,
              Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new DefaultLoadBalancer<ResolvedAddress, T>(id, targetResource, eventPublisher,
+            // TODO: this is a deprecated API that should be removed in 0.43
+            throw new AssertionError("Generic factory is not implemented.");
+        }
+
+        @Override
+        public LoadBalancer<C> newLoadBalancer(
+                Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+                                               ConnectionFactory<ResolvedAddress, C> connectionFactory,
+                                               String targetResource) {
+            return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
-                    linearSearchSpace, loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
+                    linearSearchSpace, loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
         }
 
         @Override

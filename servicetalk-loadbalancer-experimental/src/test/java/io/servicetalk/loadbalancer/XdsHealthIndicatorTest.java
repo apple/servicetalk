@@ -206,7 +206,7 @@ class XdsHealthIndicatorTest {
         sequentialExecutor.execute(() -> healthIndicator.updateOutlierStatus(config, isOutlier));
     }
 
-    private class TestIndicator extends XdsHealthIndicator<String> {
+    private class TestIndicator extends XdsHealthIndicator<String, TestLoadBalancedConnection> {
 
         private final OutlierDetectorConfig config;
         boolean cancelled;
@@ -215,8 +215,8 @@ class XdsHealthIndicatorTest {
         boolean mayEjectHost = true;
 
         TestIndicator(final OutlierDetectorConfig config) {
-            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10), "address",
-                    "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
+            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10),
+                    "address", "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }
 

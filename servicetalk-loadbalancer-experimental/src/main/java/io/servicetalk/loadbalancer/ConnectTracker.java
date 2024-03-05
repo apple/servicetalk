@@ -31,13 +31,13 @@ interface ConnectTracker {
     long beforeConnectStart();
 
     /**
-     * Callback to notify the parent {@link HealthChecker} that an attempt to connect to this host has succeeded.
+     * Callback to notify the parent {@link OutlierDetector} that an attempt to connect to this host has succeeded.
      * @param beforeConnectStart the time that the connection attempt was initiated.
      */
     void onConnectSuccess(long beforeConnectStart);
 
     /**
-     * Callback to notify the parent {@link HealthChecker} that an attempt to connect to this host has failed.
+     * Callback to notify the parent {@link OutlierDetector} that an attempt to connect to this host has failed.
      * @param beforeConnectStart the time that the connection attempt was initiated.
      */
     void onConnectError(long beforeConnectStart);
