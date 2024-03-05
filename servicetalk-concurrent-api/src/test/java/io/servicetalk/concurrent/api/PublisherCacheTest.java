@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.PublisherCache.MulticastStrategy;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,9 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.PublisherCache.MulticastStrategy.wrapMulticast;
-import static io.servicetalk.concurrent.api.PublisherCache.MulticastStrategy.wrapReplay;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -37,6 +35,7 @@ class PublisherCacheTest {
     private AtomicInteger upstreamSubscriptionCount;
     private AtomicBoolean isUpstreamUnsubsrcibed;
     private AtomicInteger upstreamCacheRequestCount;
+    private Function<String, Publisher<Integer>> publisherSupplier;
 
     @BeforeEach
     public void setup() {
@@ -44,23 +43,20 @@ class PublisherCacheTest {
         this.upstreamSubscriptionCount = new AtomicInteger(0);
         this.isUpstreamUnsubsrcibed = new AtomicBoolean(false);
         this.upstreamCacheRequestCount = new AtomicInteger(0);
-    }
-
-    private PublisherCache<String, Integer> publisherCache(final MulticastStrategy<Integer> strategy) {
-        return new PublisherCache<>((_ignore) -> {
+        this.publisherSupplier = (_ignore) -> {
             upstreamCacheRequestCount.incrementAndGet();
             return testPublisher.afterOnSubscribe(subscription ->
                     upstreamSubscriptionCount.incrementAndGet()
             ).afterFinally(() -> isUpstreamUnsubsrcibed.set(true));
-        }, strategy);
+        };
     }
 
     @Test
     public void multipleSubscribersToSameKeyReceiveMulticastEvents() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(wrapMulticast());
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber1);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
         // the first subscriber receives the initial event
@@ -70,7 +66,7 @@ class PublisherCacheTest {
 
         // the second subscriber receives the cached publisher
         final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber2);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber2);
         final Subscription subscription2 = subscriber2.awaitSubscription();
 
         // all subscribers receive all subsequent events
@@ -90,16 +86,16 @@ class PublisherCacheTest {
 
     @Test
     public void minSubscribersMulticastPolicySubscribesUpstreamOnce() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(wrapMulticast());
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber1);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
 
         final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber2);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber2);
         final Subscription subscription2 = subscriber2.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
@@ -115,16 +111,16 @@ class PublisherCacheTest {
 
     @Test
     public void unSubscribeUpstreamAndInvalidateCacheWhenEmpty() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(wrapMulticast());
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber1);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
 
         final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber2);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber2);
         final Subscription subscription2 = subscriber2.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
@@ -140,16 +136,16 @@ class PublisherCacheTest {
 
     @Test
     public void cacheSubscriptionAndUnsubscriptionWithMulticastMinSubscribers() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(wrapMulticast(2));
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast(2);
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber1);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(0));
 
         final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber2);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber2);
         final Subscription subscription2 = subscriber2.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
@@ -165,14 +161,14 @@ class PublisherCacheTest {
 
     @Test
     public void cacheSubscriptionAndUnsubscriptionWithReplay() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(
-                wrapReplay(ReplayStrategies.<Integer>historyBuilder(1)
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.replay(
+                ReplayStrategies.<Integer>historyBuilder(1)
                         .cancelUpstream(true)
                         .minSubscribers(1)
-                        .build()));
+                        .build());
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber1);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
         subscription1.request(3);
@@ -180,7 +176,7 @@ class PublisherCacheTest {
         assertThat(subscriber1.takeOnNext(3), is(Arrays.asList(1, 2, 3)));
 
         final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(publisherCache.get("foo")).subscribe(subscriber2);
+        toSource(publisherCache.get("foo", publisherSupplier)).subscribe(subscriber2);
         final Subscription subscription2 = subscriber2.awaitSubscription();
 
         assertThat(upstreamSubscriptionCount.get(), is(1));
@@ -199,11 +195,11 @@ class PublisherCacheTest {
 
     @Test
     public void testErrorFromUpstreamInvalidatesCacheEntryAndRequestsANewStream() {
-        final PublisherCache<String, Integer> publisherCache = publisherCache(wrapMulticast());
+        final PublisherCache<String, Integer> publisherCache = PublisherCache.multicast();
 
         final TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         // use an "always" retry policy to force the situation
-        final Publisher<Integer> discovery = publisherCache.get("foo").retry((i, cause) -> true);
+        final Publisher<Integer> discovery = publisherCache.get("foo", publisherSupplier).retry((i, cause) -> true);
         toSource(discovery).subscribe(subscriber1);
         final Subscription subscription1 = subscriber1.awaitSubscription();
 
