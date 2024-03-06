@@ -107,12 +107,6 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     }
 
     @Override
-    public final Host<ResolvedAddress, C> host() {
-        assert host != null;
-        return host;
-    }
-
-    @Override
     public final boolean isHealthy() {
         final Long evictedUntilNanos = this.evictedUntilNanos;
         if (evictedUntilNanos == null) {

@@ -80,7 +80,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         TestHealthIndicator indicator = healthChecker.getIndicators().stream()
                 .filter(i -> "address-1".equals(i.address)).findFirst().get();
-        assertNotNull(indicator.host());
+        assertNotNull(indicator.host);
     }
 
     @Test
@@ -206,11 +206,6 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         @Override
         public void setHost(final Host<String, TestLoadBalancedConnection> host) {
             this.host = host;
-        }
-
-        @Override
-        public Host<String, TestLoadBalancedConnection> host() {
-            return host;
         }
 
         @Override

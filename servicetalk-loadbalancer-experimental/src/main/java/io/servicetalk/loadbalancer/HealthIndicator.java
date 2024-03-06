@@ -42,10 +42,4 @@ interface HealthIndicator<ResolvedAddress, C extends LoadBalancedConnection> ext
      * @param host which will be associated with this health indicator.
      */
     void setHost(Host<ResolvedAddress, C> host);
-
-    /**
-     * Get the {@link Host} associated with this health indicator.
-     * @return the {@link Host} associated with this health indicator.
-     */
-    Host<ResolvedAddress, C> host();
 }
