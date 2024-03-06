@@ -34,6 +34,7 @@ dependencies {
   implementation project(":servicetalk-data-jackson-jersey")
   implementation project(":servicetalk-data-protobuf-jersey")
   implementation project(":servicetalk-http-netty")
+  implementation project(":servicetalk-encoding-netty")
   implementation project(":servicetalk-http-router-jersey")
   implementation project(":servicetalk-data-protobuf") // only for ProtobufClient
   implementation "com.google.protobuf:protobuf-java:$protobufVersion"

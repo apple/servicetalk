@@ -15,12 +15,19 @@
  */
 package io.servicetalk.examples.http.jaxrs;
 
+import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
+import io.servicetalk.http.api.ContentEncodingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ServerContext;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.servicetalk.encoding.api.Identity.identityEncoder;
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.deflateDefault;
+import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
+import static java.util.Arrays.asList;
 
 /**
  * A hello world JAX-RS server starter.
@@ -41,6 +48,13 @@ public final class HelloWorldJaxRsServer {
     public static void main(String[] args) throws Exception {
         // Create configurable starter for HTTP server.
         ServerContext serverContext = HttpServers.forPort(8080)
+            .enableWireLogging("SERVER", LogLevel.WARN, () -> true)
+            .appendServiceFilter(new ContentEncodingHttpServiceFilter(
+                asList(gzipDefault(), deflateDefault(), identityEncoder()),
+                new BufferDecoderGroupBuilder()
+                    .add(gzipDefault())
+                    .add(deflateDefault())
+                    .add(identityEncoder(), false).build()))
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder()
                         .buildStreaming(new HelloWorldJaxRsApplication()));
 
