@@ -35,6 +35,7 @@ import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
 import static io.servicetalk.http.api.ContentEncodingHttpRequesterFilterTest.assertContentLength;
 import static io.servicetalk.http.api.ContentEncodingHttpServiceFilter.matchAndRemoveEncoding;
+import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static java.util.Arrays.asList;
@@ -42,6 +43,8 @@ import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ContentEncodingHttpServiceFilterTest extends AbstractHttpServiceFilterTest {
     @Test
@@ -108,14 +111,28 @@ class ContentEncodingHttpServiceFilterTest extends AbstractHttpServiceFilterTest
                 new BufferDecoderGroupBuilder()
                         .add(gzipDefault())
                         .add(identityEncoder(), false).build()));
+        StreamingHttpRequest request;
+        StreamingHttpResponse response;
 
         // Simulate the user (or earlier filter) setting the content length before compression.
-        StreamingHttpRequest request = requester.post("/foo");
+        request = requester.post("/foo");
         String payloadBody = "bbbbbbbbbbbbbbbbbbb";
         request.payloadBody(from(requester.executionContext().bufferAllocator().fromAscii(payloadBody)));
         request.headers().add(CONTENT_LENGTH, String.valueOf(payloadBody.length()));
+        request.headers().add(ACCEPT_ENCODING, "gzip"); // Client supports compression.
         request.contentEncoding(gzipDefault());
-        StreamingHttpResponse response = requester.request(request).toFuture().get();
+        response = requester.request(request).toFuture().get();
+        assertNull(response.headers().get(CONTENT_LENGTH)); // 'Content-Length' must have been removed.
+
+        // Simulate the user (or earlier filter) setting the content length before the compression stage,
+        // but the client does not support compression so the stage is skipped.
+        request = requester.post("/foo");
+        request.payloadBody(from(requester.executionContext().bufferAllocator().fromAscii(payloadBody)));
+        request.headers().add(CONTENT_LENGTH, String.valueOf(payloadBody.length()));
+        // Client does NOT support compression.
+        request.contentEncoding(gzipDefault());
+        response = requester.request(request).toFuture().get();
+        assertNotNull(response.headers().get(CONTENT_LENGTH)); // 'Content-Length' must be preserved.
         assertContentLength(response.headers(), response.payloadBody());
     }
 }
