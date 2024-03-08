@@ -108,7 +108,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
     private final OutlierDetector<ResolvedAddress, C> healthChecker;
-    private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+    private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
     /**
@@ -131,7 +131,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final int linearSearchSpace,
-            final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
+            final LoadBalancerObserver loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
             @Nullable final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.targetResource = requireNonNull(targetResourceName);

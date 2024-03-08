@@ -80,8 +80,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or {@code null} to not use an observer.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver);
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(@Nullable LoadBalancerObserver loadBalancerObserver);
 
     /**
      * Set the {@link OutlierDetectorFactory} to use with this load balancer.
