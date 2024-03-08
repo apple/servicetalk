@@ -177,7 +177,23 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         public <T extends C> LoadBalancer<T> newLoadBalancer(String targetResource,
              Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new DefaultLoadBalancer<ResolvedAddress, T>(id, targetResource, eventPublisher,
+            throw new IllegalStateException("Generic constructor not supported by " +
+                    DefaultLoadBalancer.class.getSimpleName());
+        }
+
+        @Override
+        public <T extends C> LoadBalancer<T> newLoadBalancer(
+                Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+            throw new IllegalStateException("Generic constructor not supported by " +
+                    DefaultLoadBalancer.class.getSimpleName());
+        }
+
+        @Override
+        public LoadBalancer<C> newLoadBalancer(
+                Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+                ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
+            return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
                     linearSearchSpace, loadBalancerObserver, healthCheckConfig, healthCheckerFactory);
         }
