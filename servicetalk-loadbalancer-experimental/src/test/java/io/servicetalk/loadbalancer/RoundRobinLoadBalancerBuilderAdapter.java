@@ -38,13 +38,13 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
-            LoadBalancerObserver<String> loadBalancerObserver) {
+            LoadBalancerObserver loadBalancerObserver) {
         throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckerFactory(
-            HealthCheckerFactory<String> healthCheckerFactory) {
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> outlierDetectorFactory(
+            OutlierDetectorFactory<String, TestLoadBalancedConnection> outlierDetectorFactory) {
         throw new IllegalStateException("Cannot set a load balancer health checker for old round robin");
     }
 

@@ -50,7 +50,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -426,7 +425,6 @@ class GracefulConnectionClosureHandlingTest {
         assertNextRequestFails();
     }
 
-    @Disabled("Issue 2117")
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
     @MethodSource("data")
     void closeAfterRequestMetaDataSentResponseMetaDataReceived(HttpProtocol protocol,
@@ -519,7 +517,6 @@ class GracefulConnectionClosureHandlingTest {
         assertNextRequestFails();
     }
 
-    @Disabled("Issue 2117")
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
     @MethodSource("data")
     void closePipelinedAfterTwoRequestsSentBeforeAnyResponseReceived(HttpProtocol protocol,

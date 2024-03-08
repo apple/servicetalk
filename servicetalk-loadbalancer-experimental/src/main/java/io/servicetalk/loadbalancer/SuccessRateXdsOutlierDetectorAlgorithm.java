@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,27 +34,24 @@ import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
  * @see <a href="https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#success-rate">Envoy
  * Outlier detection</a> documentation for more details.
  */
-final class SuccessRateXdsOutlierDetector implements XdsOutlierDetector {
+final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection>
+        implements XdsOutlierDetectorAlgorithm<ResolvedAddress, C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SuccessRateXdsOutlierDetector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SuccessRateXdsOutlierDetectorAlgorithm.class);
 
     // We use a sentinel value to mark values as 'skipped' so we don't need to create a dynamically sized
     // data structure for doubles which would require boxing.
     private static final double NOT_EVALUATED = Double.MAX_VALUE;
 
-    public static final XdsOutlierDetector INSTANCE = new SuccessRateXdsOutlierDetector();
-
-    private SuccessRateXdsOutlierDetector() {
-    }
-
     @Override
-    public void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator> indicators) {
-        LOGGER.trace("Started outlier detection.");
+    public void detectOutliers(final OutlierDetectorConfig config,
+                               final Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+        LOGGER.debug("Started outlier detection.");
         final double[] successRates = new double[indicators.size()];
         int i = 0;
         int enoughVolumeHosts = 0;
         int alreadyEjectedHosts = 0;
-        for (XdsHealthIndicator indicator : indicators) {
+        for (XdsHealthIndicator<?, ?> indicator : indicators) {
             if (!indicator.isHealthy()) {
                 successRates[i] = NOT_EVALUATED;
                 alreadyEjectedHosts++;
@@ -84,7 +83,7 @@ final class SuccessRateXdsOutlierDetector implements XdsOutlierDetector {
         final double requiredSuccessRate = mean - stdev * (config.successRateStdevFactor() / 1000d);
         int ejectedCount = 0;
         i = 0;
-        for (XdsHealthIndicator indicator : indicators) {
+        for (XdsHealthIndicator<?, ?> indicator : indicators) {
             double successRate = successRates[i++];
             if (indicator.updateOutlierStatus(config, successRate == NOT_EVALUATED ||
                     successRate < requiredSuccessRate && enforcing(config.enforcingSuccessRate()))) {

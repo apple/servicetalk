@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -45,9 +46,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private Executor backgroundExecutor;
     @Nullable
-    private LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+    private LoadBalancerObserver loadBalancerObserver;
     @Nullable
-    private HealthCheckerFactory<ResolvedAddress> healthCheckerFactory;
+    private OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory;
     private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory =
             LinearSearchConnectionPoolStrategy.defaultFactory();
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -70,15 +71,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
+            @Nullable LoadBalancerObserver loadBalancerObserver) {
         this.loadBalancerObserver = loadBalancerObserver;
         return this;
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
-            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory) {
-        this.healthCheckerFactory = healthCheckerFactory;
+    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
+            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory) {
+        this.outlierDetectorFactory = outlierDetectorFactory;
         return this;
     }
 
@@ -133,15 +134,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
                     healthCheckResubscribeInterval, healthCheckResubscribeJitter);
         }
-        final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver = this.loadBalancerObserver != null ?
+        final LoadBalancerObserver loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        Function<String, HealthChecker<ResolvedAddress>> healthCheckerSupplier;
-        if (healthCheckerFactory == null) {
+        Function<String, OutlierDetector<ResolvedAddress, C>> healthCheckerSupplier;
+        if (outlierDetectorFactory == null) {
             healthCheckerSupplier = null;
         } else {
             final Executor executor = getExecutor();
             healthCheckerSupplier = (String lbDescrption) ->
-                    healthCheckerFactory.newHealthChecker(executor, lbDescrption);
+                    outlierDetectorFactory.newHealthChecker(executor, lbDescrption);
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
@@ -153,17 +154,17 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
-        private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+        private final LoadBalancerObserver loadBalancerObserver;
         @Nullable
-        private final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory;
+        private final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
         private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final HealthCheckConfig healthCheckConfig,
-                                   final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
-                                   final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory,
+                                   final LoadBalancerObserver loadBalancerObserver,
+                                   final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory,
                                    final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
@@ -171,17 +172,39 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             this.connectionPoolStrategyFactory = requireNonNull(
                     connectionPoolStrategyFactory, "connectionPoolStrategyFactory");
             this.healthCheckConfig = healthCheckConfig;
-            this.healthCheckerFactory = healthCheckerFactory;
+            this.outlierDetectorFactory = outlierDetectorFactory;
         }
 
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(String targetResource,
              Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
              ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+            throw new UnsupportedOperationException("Generic constructor not supported by " +
+                    DefaultLoadBalancer.class.getSimpleName());
+        }
+
+        @Override
+        public <T extends C> LoadBalancer<T> newLoadBalancer(
+                Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+            throw new UnsupportedOperationException("Generic constructor not supported by " +
+                    DefaultLoadBalancer.class.getSimpleName());
+        }
+
+        @Override
+        public LoadBalancer<C> newLoadBalancer(
+                Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+                ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
-                    connectionPoolStrategyFactory.buildStrategy(), connectionFactory, loadBalancerObserver,
-                    healthCheckConfig, healthCheckerFactory);
+                    connectionPoolStrategyFactory.buildStrategy(), connectionFactory,
+                    loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            // We do not block
+            return ExecutionStrategy.offloadNone();
         }
     }
 

@@ -15,26 +15,29 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Executor;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory of {@link XdsHealthChecker} instances.
- * See the {@link XdsHealthChecker} for a detailed description and history of the xDS protocol.
+ * A factory of {@link XdsOutlierDetector} instances.
+ * See the {@link XdsOutlierDetector} for a detailed description and history of the xDS protocol.
  * @param <ResolvedAddress> the type of the resolved address.
+ * @param <C> the type of the load balanced connection.
  */
-final class XdsHealthCheckerFactory<ResolvedAddress> implements HealthCheckerFactory<ResolvedAddress> {
+public final class XdsOutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection>
+        implements OutlierDetectorFactory<ResolvedAddress, C> {
 
     private final OutlierDetectorConfig config;
 
-    XdsHealthCheckerFactory(final OutlierDetectorConfig config) {
+    public XdsOutlierDetectorFactory(final OutlierDetectorConfig config) {
         this.config = requireNonNull(config, "config");
     }
 
     @Override
-    public HealthChecker<ResolvedAddress> newHealthChecker(
+    public OutlierDetector<ResolvedAddress, C> newHealthChecker(
             final Executor executor, String lbDescription) {
-        return new XdsHealthChecker<>(executor, config, lbDescription);
+        return new XdsOutlierDetector<>(executor, config, lbDescription);
     }
 }

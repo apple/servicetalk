@@ -66,7 +66,7 @@ import javax.annotation.Nullable;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
+public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
@@ -80,17 +80,16 @@ interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
      * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or {@code null} to not use an observer.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver);
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(@Nullable LoadBalancerObserver loadBalancerObserver);
 
     /**
-     * Set the {@link HealthCheckerFactory} to use with this load balancer.
-     * @param healthCheckerFactory the {@link HealthCheckerFactory} to use, or {@code null} to not use a
-     * {@link HealthChecker}.
+     * Set the {@link OutlierDetectorFactory} to use with this load balancer.
+     * @param outlierDetectorFactory the {@link OutlierDetectorFactory} to use, or {@code null} to not use a
+     * {@link OutlierDetector}.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
-            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory);
+    LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
+            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory);
 
     /**
      * Set the {@link ConnectionPoolStrategy} to use with this load balancer.

@@ -22,16 +22,16 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 /**
- * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}
- * @param <ResolvedAddress> the type of the resolved address.
+ * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}.
  */
-interface LoadBalancerObserver<ResolvedAddress> {
+public interface LoadBalancerObserver {
 
     /**
      * Get a {@link HostObserver}.
+     * @param resolvedAddress the resolved address of the host.
      * @return a {@link HostObserver}.
      */
-    HostObserver hostObserver(ResolvedAddress resolvedAddress);
+    HostObserver hostObserver(Object resolvedAddress);
 
     /**
      * Callback for when connection selection fails due to no hosts being available.
@@ -40,14 +40,19 @@ interface LoadBalancerObserver<ResolvedAddress> {
 
     /**
      * Callback for monitoring the changes due to a service discovery update.
+     * @param events the collection of {@link ServiceDiscovererEvent}s received by the load balancer.
+     * @param oldHostSetSize the size of the previous host set.
+     * @param newHostSetSize the new size of  the host set.
      */
-    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                  int oldHostSetSize, int newHostSetSize);
 
     /**
      * Callback for when connection selection fails due to all hosts being inactive.
+     * @param hostSetSize the size of the current host set.
+     * @param exception an exception with more details about the failure.
      */
-    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exn);
+    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
 
     /**
      * An observer for {@link Host} events.

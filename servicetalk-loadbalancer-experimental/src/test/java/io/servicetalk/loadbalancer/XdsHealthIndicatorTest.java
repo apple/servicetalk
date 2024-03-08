@@ -46,12 +46,15 @@ class XdsHealthIndicatorTest {
     @BeforeEach
     void initialize() {
         testExecutor = executor.executor();
-        config = new OutlierDetectorConfig.Builder()
+        config = baseBuilder().build();
+        initIndicator();
+    }
+
+    private OutlierDetectorConfig.Builder baseBuilder() {
+        return new OutlierDetectorConfig.Builder()
                 .maxEjectionTimeJitter(Duration.ZERO)
                 .maxEjectionTime(Duration.ofSeconds(MAX_EJECTION_SECONDS))
-                .baseEjectionTime(Duration.ofSeconds(1))
-                .build();
-        initIndicator();
+                .baseEjectionTime(Duration.ofSeconds(1));
     }
 
     private void initIndicator() {
@@ -203,7 +206,7 @@ class XdsHealthIndicatorTest {
         sequentialExecutor.execute(() -> healthIndicator.updateOutlierStatus(config, isOutlier));
     }
 
-    private class TestIndicator extends XdsHealthIndicator<String> {
+    private class TestIndicator extends XdsHealthIndicator<String, TestLoadBalancedConnection> {
 
         private final OutlierDetectorConfig config;
         boolean cancelled;
@@ -212,8 +215,8 @@ class XdsHealthIndicatorTest {
         boolean mayEjectHost = true;
 
         TestIndicator(final OutlierDetectorConfig config) {
-            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10), "address",
-                    "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
+            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10),
+                    "address", "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }
 

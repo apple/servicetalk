@@ -28,9 +28,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
@@ -76,7 +76,7 @@ class ForResolvedAddressTest {
     @Test
     void hostAndPortThrowIfSdChanges() {
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> otherSd =
-                globalDnsServiceDiscoverer();
+                globalARecordsDnsServiceDiscoverer();
         HostAndPort address = HostAndPort.of("127.0.0.1", 8080);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> HttpClients.forResolvedAddress(address).serviceDiscoverer(otherSd));

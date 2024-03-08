@@ -25,11 +25,10 @@ import static java.util.Objects.requireNonNull;
 /**
  * XDS outlier detector configuration.
  * <p>
- * See the <a href="https://www.envoyproxy.io/docs/envoy/v1.29.0/api-v3/config/cluster/v3/
- * outlier_detection.proto#envoy-v3-api-msg-config-cluster-v3-outlierdetection"> Envoy docs</a> for the official
- * OutlierDetector configuration definition.
+ * See the <a href="https://www.envoyproxy.io/docs/envoy/v1.29.0/api-v3/config/cluster/v3/outlier_detection.proto#envoy-v3-api-msg-config-cluster-v3-outlierdetection">Envoy docs</a>
+ * for the official OutlierDetector configuration definition.
  */
-final class OutlierDetectorConfig {
+public final class OutlierDetectorConfig {
 
     private final Duration ewmaHalfLife;
     private final int consecutive5xx;
@@ -41,33 +40,21 @@ final class OutlierDetectorConfig {
     private final int successRateMinimumHosts;
     private final int successRateRequestVolume;
     private final int successRateStdevFactor;
-    private final int consecutiveGatewayFailure;
-    private final int enforcingConsecutiveGatewayFailure;
-    private final boolean splitExternalLocalOriginErrors;
-    private final int consecutiveLocalOriginFailure;
-    private final int enforcingConsecutiveLocalOriginFailure;
-    private final int enforcingLocalOriginSuccessRate;
     private final int failurePercentageThreshold;
     private final int enforcingFailurePercentage;
-    private final int enforcingFailurePercentageLocalOrigin;
     private final int failurePercentageMinimumHosts;
     private final int failurePercentageRequestVolume;
     private final Duration maxEjectionTime;
     private final Duration maxEjectionTimeJitter;
-    private final boolean successfulActiveHealthCheckUnejectHost;
 
     OutlierDetectorConfig(final Duration ewmaHalfLife,
                           final int consecutive5xx, final Duration interval, final Duration baseEjectionTime,
                           final int maxEjectionPercentage, final int enforcingConsecutive5xx,
                           final int enforcingSuccessRate, final int successRateMinimumHosts,
                           final int successRateRequestVolume, final int successRateStdevFactor,
-                          final int consecutiveGatewayFailure, final int enforcingConsecutiveGatewayFailure,
-                          final boolean splitExternalLocalOriginErrors, final int consecutiveLocalOriginFailure,
-                          final int enforcingConsecutiveLocalOriginFailure, final int enforcingLocalOriginSuccessRate,
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
-                          final int enforcingFailurePercentageLocalOrigin, final int failurePercentageMinimumHosts,
-                          final int failurePercentageRequestVolume, final Duration maxEjectionTime,
-                          final Duration maxEjectionTimeJitter, final boolean successfulActiveHealthCheckUnejectHost) {
+                          final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
+                          final Duration maxEjectionTime, final Duration maxEjectionTimeJitter) {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.consecutive5xx = consecutive5xx;
         this.interval = requireNonNull(interval, "interval");
@@ -78,20 +65,12 @@ final class OutlierDetectorConfig {
         this.successRateMinimumHosts = successRateMinimumHosts;
         this.successRateRequestVolume = successRateRequestVolume;
         this.successRateStdevFactor = successRateStdevFactor;
-        this.consecutiveGatewayFailure = consecutiveGatewayFailure;
-        this.enforcingConsecutiveGatewayFailure = enforcingConsecutiveGatewayFailure;
-        this.splitExternalLocalOriginErrors = splitExternalLocalOriginErrors;
-        this.consecutiveLocalOriginFailure = consecutiveLocalOriginFailure;
-        this.enforcingConsecutiveLocalOriginFailure = enforcingConsecutiveLocalOriginFailure;
-        this.enforcingLocalOriginSuccessRate = enforcingLocalOriginSuccessRate;
         this.failurePercentageThreshold = failurePercentageThreshold;
         this.enforcingFailurePercentage = enforcingFailurePercentage;
-        this.enforcingFailurePercentageLocalOrigin = enforcingFailurePercentageLocalOrigin;
         this.failurePercentageMinimumHosts = failurePercentageMinimumHosts;
         this.failurePercentageRequestVolume = failurePercentageRequestVolume;
         this.maxEjectionTime = requireNonNull(maxEjectionTime, "maxEjectionTime");
         this.maxEjectionTimeJitter = requireNonNull(maxEjectionTimeJitter, "maxEjectionTimeJitter");
-        this.successfulActiveHealthCheckUnejectHost = successfulActiveHealthCheckUnejectHost;
     }
 
     /**
@@ -183,61 +162,6 @@ final class OutlierDetectorConfig {
     }
 
     /**
-     * The threshold for consecutive gateway failures before local the host is ejected.
-     * @return the threshold for consecutive gateway failures before local the host is ejected.
-     */
-    public int consecutiveGatewayFailure() {
-        return consecutiveGatewayFailure;
-    }
-
-    /**
-     * The probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive gateway
-     * failure threshold.
-     * @return the probability with which the host should be marked as unhealthy.
-     */
-    public int enforcingConsecutiveGatewayFailure() {
-        return enforcingConsecutiveGatewayFailure;
-    }
-
-    /**
-     * Whether to split local origin and remote origin failures into separate failure detectors.
-     * Note: this being true predicates the validity of many of the configuration parameters of this class.
-     * @return true if local and remote origin failures should be split, false otherwise.
-     */
-    public boolean splitExternalLocalOriginErrors() {
-        return splitExternalLocalOriginErrors;
-    }
-
-    /**
-     * The threshold for locally originated consecutive failures before ejection occurs.
-     * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-     * @return the threshold of consecutive locally originated failures for ejection.
-     */
-    public int consecutiveLocalOriginFailure() {
-        return consecutiveLocalOriginFailure;
-    }
-
-    /**
-     * The probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive local
-     * origin failure threshold.
-     * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-     * @return the probability with which the host should be marked as unhealthy.
-     */
-    public int enforcingConsecutiveLocalOriginFailure() {
-        return enforcingConsecutiveLocalOriginFailure;
-    }
-
-    /**
-     * The probability in percentage that a host will be marked as unhealthy when a host exceeds the success rate
-     * outlier detectors threshold for local origin failures.
-     * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-     * @return the probability with which the host should be marked as unhealthy.
-     */
-    public int enforcingLocalOriginSuccessRate() {
-        return enforcingLocalOriginSuccessRate;
-    }
-
-    /**
      * The failure threshold in percentage for ejecting a host.
      * @return the failure threshold in percentage for ejecting a host.
      */
@@ -252,16 +176,6 @@ final class OutlierDetectorConfig {
      */
     public int enforcingFailurePercentage() {
         return enforcingFailurePercentage;
-    }
-
-    /**
-     * The probability in percentage that a host will be marked as unhealthy when a host exceeds the failure percentage
-     * outlier detectors threshold for locally originated failures.
-     * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-     * @return the probability with which the host should be marked as unhealthy.
-     */
-    public int enforcingFailurePercentageLocalOrigin() {
-        return enforcingFailurePercentageLocalOrigin;
     }
 
     /**
@@ -300,18 +214,9 @@ final class OutlierDetectorConfig {
     }
 
     /**
-     * Whether to un-eject a host that has had a successful active health check event to be revived regardless of the
-     * remaining ejection time.
-     * @return whether to un-eject a host regardless of remaining ejection time.
-     */
-    public boolean successfulActiveHealthCheckUnejectHost() {
-        return successfulActiveHealthCheckUnejectHost;
-    }
-
-    /**
      * A builder for {@link OutlierDetectorConfig} instances.
      */
-    public static class Builder {
+    public static final class Builder {
         private Duration ewmaHalfLife = Duration.ofSeconds(10);
         private int consecutive5xx = 5;
 
@@ -331,23 +236,10 @@ final class OutlierDetectorConfig {
 
         private int successRateStdevFactor = 1900;
 
-        private int consecutiveGatewayFailure = 5;
-
-        private int enforcingConsecutiveGatewayFailure;
-
-        private boolean splitExternalLocalOriginErrors;
-
-        private int consecutiveLocalOriginFailure = 5;
-
-        private int enforcingConsecutiveLocalOriginFailure = 100;
-
-        private int enforcingLocalOriginSuccessRate = 100;
-
         private int failurePercentageThreshold = 85;
 
         private int enforcingFailurePercentage;
 
-        private int enforcingFailurePercentageLocalOrigin;
 
         private int failurePercentageMinimumHosts = 5;
 
@@ -357,22 +249,19 @@ final class OutlierDetectorConfig {
 
         private Duration maxEjectionTimeJitter = Duration.ZERO;
 
-        private boolean successfulActiveHealthCheckUnejectHost = true;
-
-        OutlierDetectorConfig build() {
+        /**
+         * Build the OutlierDetectorConfig.
+         * @return the OutlierDetectorConfig.
+         */
+        public OutlierDetectorConfig build() {
             return new OutlierDetectorConfig(ewmaHalfLife, consecutive5xx,
                     interval, baseEjectionTime,
                     maxEjectionPercentage, enforcingConsecutive5xx,
                     enforcingSuccessRate, successRateMinimumHosts,
                     successRateRequestVolume, successRateStdevFactor,
-                    consecutiveGatewayFailure, enforcingConsecutiveGatewayFailure,
-                    splitExternalLocalOriginErrors, consecutiveLocalOriginFailure,
-                    enforcingConsecutiveLocalOriginFailure, enforcingLocalOriginSuccessRate,
                     failurePercentageThreshold, enforcingFailurePercentage,
-                    enforcingFailurePercentageLocalOrigin, failurePercentageMinimumHosts,
-                    failurePercentageRequestVolume, maxEjectionTime,
-                    maxEjectionTimeJitter,
-                    successfulActiveHealthCheckUnejectHost);
+                    failurePercentageMinimumHosts, failurePercentageRequestVolume,
+                    maxEjectionTime, maxEjectionTimeJitter);
         }
 
         /**
@@ -507,93 +396,6 @@ final class OutlierDetectorConfig {
         }
 
         /**
-         * Set the threshold for consecutive gateway failures before local the host is ejected.
-         * Defaults to 5.
-         * @param consecutiveGatewayFailure the threshold for consecutive gateway failures before local the host is
-         *                                  ejected.
-         * @return {@code this}.
-         */
-        public Builder consecutiveGatewayFailure(final int consecutiveGatewayFailure) {
-            ensurePositive(consecutiveGatewayFailure, "consecutiveGatewayFailure");
-            this.consecutiveGatewayFailure = consecutiveGatewayFailure;
-            return this;
-        }
-
-        /**
-         * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive
-         * gateway failure threshold.
-         * Defaults to 0.
-         * @param enforcingConsecutiveGatewayFailure the probability in percentage that a host will be marked as
-         *                                           unhealthy when a host exceeds the consecutive gateway failure
-         *                                           threshold.
-         * @return {@code this}.
-         */
-        public Builder enforcingConsecutiveGatewayFailure(final int enforcingConsecutiveGatewayFailure) {
-            ensureNonNegative(enforcingConsecutiveGatewayFailure, "enforcingConsecutiveGatewayFailure");
-            this.enforcingConsecutiveGatewayFailure = enforcingConsecutiveGatewayFailure;
-            return this;
-        }
-
-        /**
-         * Set whether to split local origin and remote origin failures into separate failure detectors.
-         * Defaults to false.
-         * Note: this being true predicates the validity of many of the configuration parameters of this class.
-         * @param splitExternalLocalOriginErrors whether to split local origin and remote origin failures into separate
-         *                                       failure detectors.
-         * @return {@code this}.
-         */
-        public Builder splitExternalLocalOriginErrors(final boolean splitExternalLocalOriginErrors) {
-            this.splitExternalLocalOriginErrors = splitExternalLocalOriginErrors;
-            return this;
-        }
-
-        /**
-         * Set the threshold for locally originated consecutive failures before ejection occurs.
-         * Defaults to 5.
-         * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-         * @param consecutiveLocalOriginFailure the threshold for locally originated consecutive failures before
-         *                                      ejection occurs.
-         * @return {@code this}.
-         */
-        public Builder consecutiveLocalOriginFailure(final int consecutiveLocalOriginFailure) {
-            ensurePositive(consecutiveLocalOriginFailure, "consecutiveLocalOriginFailure");
-            this.consecutiveLocalOriginFailure = consecutiveLocalOriginFailure;
-            return this;
-        }
-
-        /**
-         * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the consecutive
-         * local origin failure threshold.
-         * Defaults to 100%.
-         * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-         * @param enforcingConsecutiveLocalOriginFailure the probability in percentage that a host will be marked as
-         *                                               unhealthy when a host exceeds the consecutive local origin
-         *                                               failure threshold.
-         * @return {@code this}.
-         */
-        public Builder enforcingConsecutiveLocalOriginFailure(final int enforcingConsecutiveLocalOriginFailure) {
-            ensureNonNegative(enforcingConsecutiveLocalOriginFailure, "enforcingConsecutiveLocalOriginFailure");
-            this.enforcingConsecutiveLocalOriginFailure = enforcingConsecutiveLocalOriginFailure;
-            return this;
-        }
-
-        /**
-         * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
-         * rate outlier detectors threshold for local origin failures.
-         * Defaults to 100%.
-         * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-         * @param enforcingLocalOriginSuccessRate the probability in percentage that a host will be marked as unhealthy
-         *                                        when a host exceeds the success rate outlier detectors threshold for
-         *                                        local origin failures.
-         * @return {@code this}.
-         */
-        public Builder enforcingLocalOriginSuccessRate(final int enforcingLocalOriginSuccessRate) {
-            ensureNonNegative(enforcingLocalOriginSuccessRate, "enforcingLocalOriginSuccessRate");
-            this.enforcingLocalOriginSuccessRate = enforcingLocalOriginSuccessRate;
-            return this;
-        }
-
-        /**
          * Set the failure threshold in percentage for ejecting a host.
          * Defaults to 85%.
          * @param failurePercentageThreshold the failure threshold in percentage for ejecting a host.
@@ -616,22 +418,6 @@ final class OutlierDetectorConfig {
         public Builder enforcingFailurePercentage(final int enforcingFailurePercentage) {
             ensureNonNegative(enforcingFailurePercentage, "enforcingFailurePercentage");
             this.enforcingFailurePercentage = enforcingFailurePercentage;
-            return this;
-        }
-
-        /**
-         * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
-         * percentage outlier detectors threshold for locally originated failures.
-         * Defaults to 0%.
-         * Note: this value is only considered if {@code splitExternalLocalOriginErrors()} is true.
-         * @param enforcingFailurePercentageLocalOrigin the probability in percentage that a host will be marked as
-         *                                              unhealthy when a host exceeds the failure percentage outlier
-         *                                              detectors threshold for locally originated failures.
-         * @return {@code this}.
-         */
-        public Builder enforcingFailurePercentageLocalOrigin(final int enforcingFailurePercentageLocalOrigin) {
-            ensureNonNegative(enforcingFailurePercentageLocalOrigin, "enforcingFailurePercentageLocalOrigin");
-            this.enforcingFailurePercentageLocalOrigin = enforcingFailurePercentageLocalOrigin;
             return this;
         }
 
@@ -688,23 +474,15 @@ final class OutlierDetectorConfig {
             ensureNonNegative(maxEjectionTimeJitter.toNanos(), "maxEjectionTimeJitter");
             return this;
         }
-
-        /**
-         * Set whether to un-eject a host that has had a successful active health check event to be revived regardless
-         * of the remaining ejection time.
-         * Defaults to true.
-         * @param successfulActiveHealthCheckUnejectHost whether to un-eject a host that has had a successful active
-         *                                               health check event to be revived regardless of the remaining
-         *                                               ejection time.
-         * @return {@code this}.
-         */
-        public Builder successfulActiveHealthCheckUnejectHost(final boolean successfulActiveHealthCheckUnejectHost) {
-            this.successfulActiveHealthCheckUnejectHost = successfulActiveHealthCheckUnejectHost;
-            return this;
-        }
     }
 
     static boolean enforcing(int enforcingPercentage) {
-        return enforcingPercentage >= 100 || ThreadLocalRandom.current().nextInt(100) <= enforcingPercentage;
+        if (enforcingPercentage <= 0) {
+            return false;
+        }
+        if (enforcingPercentage >= 100) {
+            return true;
+        }
+        return enforcingPercentage >= ThreadLocalRandom.current().nextInt(100) + 1;
     }
 }

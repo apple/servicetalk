@@ -29,15 +29,17 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * <p>
  * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
  * Choices in Randomized Load Balancing.
- *  @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
- *  Choices in Randomized Load Balancing</a>
  * <p>
  * This load balancing policy is characterized by the algorithm:
  * - select two hosts randomly: hosta, and hostb.
  * - if neither host is healthy, repeat selection process until max-effort.
  * - pick the 'best' host of the two options.
+ * @param <ResolvedAddress> the type of the resolved address.
+ * @param <C> the type of the load balanced connection.
+ * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
+ *  *  Choices in Randomized Load Balancing</a>
  */
-final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
@@ -52,8 +54,8 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public <T extends C> HostSelector<ResolvedAddress, T> buildSelector(
-            List<Host<ResolvedAddress, T>> hosts, String targetResource) {
+    public HostSelector<ResolvedAddress, C> buildSelector(
+            List<Host<ResolvedAddress, C>> hosts, String targetResource) {
         return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
 
@@ -109,7 +111,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
         /**
          * Construct an immutable {@link P2CLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@LoadBalancedConnection}.
+         * @param <C> the refined type of the {@link LoadBalancedConnection}.
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {

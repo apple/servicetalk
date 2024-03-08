@@ -15,19 +15,19 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.client.api.LoadBalancedConnection;
+
+import java.util.Collection;
 
 /**
- * A factory of {@link HealthChecker} instances. The factory will be used by load balancer
- * builders and may make more than one health checker per-load balancer.
- * @param <ResolvedAddress> the type of the resolved address.
+ * Logic that can detect outliers and attempts to mark them as an outlier so that the load balancer
+ * can try to route traffic to more healthy hosts.
  */
-interface HealthCheckerFactory<ResolvedAddress> {
+interface XdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
-     * Create a new {@link HealthChecker}.
-     * @param executor the {@link Executor} to use for scheduling tasks and obtaining the current time.
-     * @param lbDescription a description of the load balancer for logging purposes.
-     * @return a new {@link HealthChecker}.
+     * Analyze and potentially eject outlier hosts.
+     * @param config the current {@link OutlierDetectorConfig} to use.
+     * @param indicators an ordered list of {@link HealthIndicator} instances to collect stats from.
      */
-    HealthChecker<ResolvedAddress> newHealthChecker(Executor executor, String lbDescription);
+    void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators);
 }
