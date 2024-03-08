@@ -24,7 +24,7 @@ import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
-import io.servicetalk.loadbalancer.XdsHealthCheckerFactory;
+import io.servicetalk.loadbalancer.XdsOutlierDetectorFactory;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
@@ -49,7 +49,7 @@ public final class DefaultLoadBalancerClient {
             String id) {
         return LoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
                 builder(id)
-                .healthCheckerFactory(new XdsHealthCheckerFactory<>(
+                .outlierDetectorFactory(new XdsOutlierDetectorFactory<>(
                         new OutlierDetectorConfig.Builder().build()
                     )).build();
     }

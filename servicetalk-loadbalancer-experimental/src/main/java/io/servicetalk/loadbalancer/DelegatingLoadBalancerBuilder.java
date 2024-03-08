@@ -68,9 +68,9 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
-            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory) {
-        delegate = delegate.healthCheckerFactory(healthCheckerFactory);
+    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
+            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory) {
+        delegate = delegate.outlierDetectorFactory(outlierDetectorFactory);
         return this;
     }
 

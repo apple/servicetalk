@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class XdsHealthCheckerTest {
+class XdsOutlierDetectorAlgorithmTest {
 
     @RegisterExtension
     final ExecutorExtension<TestExecutor> executor = ExecutorExtension.withTestExecutor();
@@ -43,7 +43,7 @@ class XdsHealthCheckerTest {
     @Nullable
     TestExecutor testExecutor;
     OutlierDetectorConfig config;
-    XdsHealthChecker<String> healthChecker;
+    XdsOutlierDetector<String, TestLoadBalancedConnection> healthChecker;
 
     private OutlierDetectorConfig.Builder withAllEnforcing() {
         return new OutlierDetectorConfig.Builder()
@@ -60,8 +60,8 @@ class XdsHealthCheckerTest {
         healthChecker = buildHealthChecker();
     }
 
-    private XdsHealthChecker<String> buildHealthChecker() {
-        return new XdsHealthChecker<>(new NormalizedTimeSourceExecutor(testExecutor), config, "");
+    private XdsOutlierDetector<String, TestLoadBalancedConnection> buildHealthChecker() {
+        return new XdsOutlierDetector<>(new NormalizedTimeSourceExecutor(testExecutor), config, "");
     }
 
     private LoadBalancerObserver.HostObserver observer() {

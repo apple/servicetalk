@@ -101,7 +101,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
-    private final HealthIndicator healthIndicator;
+    private final HealthIndicator<Addr, C> healthIndicator;
     private final LoadBalancerObserver.HostObserver hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
     private final int linearSearchSpace;
@@ -111,7 +111,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 final int linearSearchSpace, final HostObserver hostObserver,
-                final @Nullable HealthCheckConfig healthCheckConfig, final @Nullable HealthIndicator healthIndicator) {
+                final @Nullable HealthCheckConfig healthCheckConfig,
+                final @Nullable HealthIndicator<Addr, C> healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.linearSearchSpace = linearSearchSpace;
