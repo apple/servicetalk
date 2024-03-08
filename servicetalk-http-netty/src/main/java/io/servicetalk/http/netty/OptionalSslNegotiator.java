@@ -57,56 +57,56 @@ final class OptionalSslNegotiator {
         final ReadOnlyTcpServerConfig roTcpConfig = roConfig.tcpConfig();
 
         final BiFunction<Channel, ConnectionObserver, Single<NettyConnectionContext>> channelInit =
-                (channel, connectionObserver) ->
-                        new OptionalSslChannelSingle(channel, OptionalSslChannelSingle.NoopChannelInitializer.INSTANCE)
-                                .flatMap(isTls -> {
-                                    if (isTls) {
-                                        if (roTcpConfig.isAlpnConfigured()) {
-                                            return DeferredServerChannelBinder.alpnInitChannel(listenAddress, channel,
-                                                    roConfig, executionContext,
-                                                    service, drainRequestPayloadBody, connectionObserver);
-                                        } else if (roTcpConfig.sniMapping() != null) {
-                                            return DeferredServerChannelBinder.sniInitChannel(listenAddress, channel,
-                                                    roConfig, executionContext,
-                                                    service, drainRequestPayloadBody, connectionObserver);
-                                        } else if (roConfig.isH2PriorKnowledge()) {
-                                            return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
-                                                    executionContext, roConfig,
-                                                    new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
-                                                            executionContext), service,
-                                                    drainRequestPayloadBody, connectionObserver);
-                                        } else {
-                                            return NettyHttpServer.initChannel(channel, executionContext, roConfig,
-                                                    new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
-                                                            executionContext), service,
-                                                    drainRequestPayloadBody, connectionObserver);
-                                        }
-                                    }
+                (channel, connectionObserver) -> new OptionalSslChannelSingle(channel).flatMap(isTls -> {
+                    if (isTls) {
+                        // Important: This code needs to be kept in-sync with the similar, but not identical
+                        // code inside DefaultHttpServerBuilder#doBind
+                        if (roTcpConfig.isAlpnConfigured()) {
+                            return DeferredServerChannelBinder.alpnInitChannel(listenAddress, channel,
+                                    roConfig, executionContext,
+                                    service, drainRequestPayloadBody, connectionObserver);
+                        } else if (roTcpConfig.sniMapping() != null) {
+                            return DeferredServerChannelBinder.sniInitChannel(listenAddress, channel,
+                                    roConfig, executionContext,
+                                    service, drainRequestPayloadBody, connectionObserver);
+                        } else if (roConfig.isH2PriorKnowledge()) {
+                            return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
+                                    executionContext, roConfig,
+                                    new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
+                                            executionContext), service,
+                                    drainRequestPayloadBody, connectionObserver);
+                        } else {
+                            return NettyHttpServer.initChannel(channel, executionContext, roConfig,
+                                    new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
+                                            executionContext), service,
+                                    drainRequestPayloadBody, connectionObserver);
+                        }
+                    } else {
+                        // TODO: need to duplicate all but SSL config
+                        final HttpServerConfig newConfig = new HttpServerConfig();
+                        if (roConfig.h1Config() != null && roConfig.h2Config() != null) {
+                            newConfig.httpConfig().protocols(roConfig.h1Config(), roConfig.h2Config());
+                        } else if (roConfig.h1Config() != null) {
+                            newConfig.httpConfig().protocols(roConfig.h1Config());
+                        } else if (roConfig.h2Config() != null) {
+                            newConfig.httpConfig().protocols(roConfig.h2Config());
+                        }
+                        final ReadOnlyHttpServerConfig roNewConfig = newConfig.asReadOnly();
 
-                                    // TODO: need to duplicate all but SSL config
-                                    final HttpServerConfig newConfig = new HttpServerConfig();
-                                    if (roConfig.h1Config() != null && roConfig.h2Config() != null) {
-                                        newConfig.httpConfig().protocols(roConfig.h1Config(), roConfig.h2Config());
-                                    } else if (roConfig.h1Config() != null) {
-                                        newConfig.httpConfig().protocols(roConfig.h1Config());
-                                    } else if (roConfig.h2Config() != null) {
-                                        newConfig.httpConfig().protocols(roConfig.h2Config());
-                                    }
-                                    final ReadOnlyHttpServerConfig roNewConfig = newConfig.asReadOnly();
-
-                                    if (roConfig.h2Config() != null) {
-                                        return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
-                                                executionContext, roNewConfig,
-                                                new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
-                                                        connectionObserver, executionContext), service,
-                                                drainRequestPayloadBody, connectionObserver);
-                                    } else {
-                                        return NettyHttpServer.initChannel(channel, executionContext, roNewConfig,
-                                                new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
-                                                        connectionObserver, executionContext), service,
-                                                drainRequestPayloadBody, connectionObserver);
-                                    }
-                                });
+                        if (roConfig.h2Config() != null) {
+                            return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
+                                    executionContext, roNewConfig,
+                                    new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
+                                            connectionObserver, executionContext), service,
+                                    drainRequestPayloadBody, connectionObserver);
+                        } else {
+                            return NettyHttpServer.initChannel(channel, executionContext, roNewConfig,
+                                    new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
+                                            connectionObserver, executionContext), service,
+                                    drainRequestPayloadBody, connectionObserver);
+                        }
+                    }
+                });
 
         final Consumer<NettyConnectionContext> connectionConsumer = serverConnection -> {
             if (serverConnection instanceof NettyHttpServer.NettyHttpServerConnection) {

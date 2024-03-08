@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -52,6 +53,7 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ServerSslConfig> sniConfig;
+    private SslListenMode sslListenMode;
     private int sniMaxClientHelloLength = MAX_CLIENT_HELLO_LENGTH;
     private Duration sniClientHelloTimeout = DEFAULT_CLIENT_HELLO_TIMEOUT;
 
@@ -76,6 +78,10 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
 
     Duration sniClientHelloTimeout() {
         return sniClientHelloTimeout;
+    }
+
+    SslListenMode sslListenMode() {
+        return sslListenMode;
     }
 
     /**
@@ -125,6 +131,11 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
         }
         this.sniMaxClientHelloLength = maxClientHelloLength;
         this.sniClientHelloTimeout = ensureNonNegative(clientHelloTimeout, "clientHelloTimeout");
+        return this;
+    }
+
+    public TcpServerConfig sslListenMode(final SslListenMode mode) {
+        this.sslListenMode = mode;
         return this;
     }
 

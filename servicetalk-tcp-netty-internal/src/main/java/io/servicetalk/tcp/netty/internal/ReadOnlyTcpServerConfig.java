@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -42,6 +43,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     private final TransportObserver transportObserver;
     @Nullable
     private final ServerSslConfig sslConfig;
+    private final SslListenMode sslListenMode;
     @Nullable
     private final SslContext sslContext;
     @Nullable
@@ -57,6 +59,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
         this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
                 asSafeObserver(transportObserver);
         this.sslConfig = from.sslConfig();
+        this.sslListenMode = from.sslListenMode();
         final Map<String, ServerSslConfig> sniMap = from.sniConfig();
         if (sniMap != null) {
             if (sslConfig == null) {
@@ -115,6 +118,10 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     @Override
     public ServerSslConfig sslConfig() {
         return sslConfig;
+    }
+
+    public SslListenMode sslListenMode() {
+        return sslListenMode;
     }
 
     /**

@@ -13,13 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.transport.api;
 
-final class PipelineInitializedEvent {
+/**
+ * Describes the different modes on how the server will accept incoming connections when SSL is enabled.
+ */
+public enum SslListenMode {
+    /**
+     * If this mode is selected and SSL is enabled, only encrypted connections will be accepted.
+     */
+    SSL_REQUIRED,
 
-    static final PipelineInitializedEvent INSTANCE = new PipelineInitializedEvent();
-
-    private PipelineInitializedEvent() {
-        // singleton
-    }
+    /**
+     * If this mode is selected and SSL is enabled, the server will accept both encrypted and unencrypted connections.
+     */
+    SSL_OPTIONAL
 }

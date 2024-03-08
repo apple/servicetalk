@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -32,8 +31,8 @@ import javax.annotation.Nullable;
 
 final class OptionalSslChannelSingle extends ChannelInitSingle<Boolean> {
 
-    OptionalSslChannelSingle(final Channel channel, final ChannelInitializer channelInitializer) {
-        super(channel, channelInitializer);
+    OptionalSslChannelSingle(final Channel channel) {
+        super(channel, NoopChannelInitializer.INSTANCE);
     }
 
     @Override
@@ -41,7 +40,7 @@ final class OptionalSslChannelSingle extends ChannelInitSingle<Boolean> {
         return new OptionalSslHandler(subscriber);
     }
 
-    static final class OptionalSslHandler extends ByteToMessageDecoder {
+    private static final class OptionalSslHandler extends ByteToMessageDecoder {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(OptionalSslHandler.class);
 
@@ -81,37 +80,7 @@ final class OptionalSslChannelSingle extends ChannelInitSingle<Boolean> {
             final SingleSource.Subscriber<? super Boolean> subscriberCopy = subscriber;
             subscriber = null;
             subscriberCopy.onSuccess(isEncrypted);
-        }
-
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
-            if (evt instanceof PipelineInitializedEvent) {
-                ctx.pipeline().remove(this);
-            } else {
-                ctx.fireUserEventTriggered(evt);
-            }
-        }
-    }
-
-    /**
-     * {@link ChannelInitializer} that does not do anything.
-     */
-    static final class NoopChannelInitializer implements ChannelInitializer {
-
-        static final ChannelInitializer INSTANCE = new NoopChannelInitializer();
-
-        private NoopChannelInitializer() {
-            // Singleton
-        }
-
-        @Override
-        public void init(final Channel channel) {
-            // NOOP
-        }
-
-        @Override
-        public ChannelInitializer andThen(final ChannelInitializer after) {
-            return after;
+            ctx.pipeline().remove(this);
         }
     }
 }

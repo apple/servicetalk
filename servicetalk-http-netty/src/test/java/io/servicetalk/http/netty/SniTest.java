@@ -25,6 +25,7 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -77,14 +78,14 @@ class SniTest {
 
     @ParameterizedTest(name =
             "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
-                    "acceptInsecure={4}")
+                    "sslListenMode={4}")
     @MethodSource("params")
     void sniSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                    HttpProtocol protocol, boolean useALPN, boolean acceptInsecure) throws Exception {
+                    HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
-                        singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, acceptInsecure,
-                                alpnIds(protocol, useALPN))))
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
@@ -92,13 +93,16 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void sniDefaultFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                                   HttpProtocol protocol, boolean useALPN, boolean acceptInsecure) throws Exception {
+                                   HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode)
+            throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
@@ -106,14 +110,16 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void sniFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                         HttpProtocol protocol, boolean useALPN, boolean acceptInsecure) throws Exception {
+                         HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap(SNI_HOSTNAME,
-                                untrustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN))))
+                                untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
@@ -121,15 +127,17 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void sniDefaultFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                                        HttpProtocol protocol, boolean useALPN, boolean acceptInsecure)
+                                        HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode)
             throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap("no_match" + SNI_HOSTNAME,
-                                trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN))))
+                                trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
@@ -137,13 +145,15 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void sniClientDefaultServerSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                                       HttpProtocol protocol, boolean useALPN, boolean acceptInsecure)
+                                       HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode)
             throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)))
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
@@ -151,14 +161,16 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void noSniClientDefaultServerFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                                                 HttpProtocol protocol, boolean useALPN, boolean acceptInsecure)
+                                                 HttpProtocol protocol, boolean useALPN, SslListenMode sslListenMode)
             throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
                      getLoopbackAddress().getHostName(),
@@ -177,15 +189,18 @@ class SniTest {
     }
 
     @ParameterizedTest(name =
-            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+            "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3} " +
+                    "sslListenMode={4}")
     @MethodSource("params")
     void noSniClientDefaultServerFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
-                                                      HttpProtocol protocol, boolean useALPN, boolean acceptInsecure)
+                                                      HttpProtocol protocol, boolean useALPN,
+                                                      SslListenMode sslListenMode)
             throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
-                .sslConfig(untrustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN)),
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap(getLoopbackAddress().getHostName(),
-                                trustedServerConfig(serverSslProvider, acceptInsecure, alpnIds(protocol, useALPN))))
+                                trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
+                .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(getLoopbackAddress().getHostName(),
                         serverHostAndPort(serverContext).port())
@@ -203,8 +218,8 @@ class SniTest {
     @EnumSource(SslProvider.class)
     void sniTimeout(SslProvider sslProvider) throws Exception {
         try (ServerContext serverContext = newServerBuilder(SERVER_CTX, HTTP_1)
-                .sslConfig(trustedServerConfig(sslProvider, false, null),
-                        singletonMap(SNI_HOSTNAME, trustedServerConfig(sslProvider, false, null)),
+                .sslConfig(trustedServerConfig(sslProvider, (String) null),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(sslProvider, (String) null)),
                         16 * 1024, Duration.ofMillis(HANDSHAKE_TIMEOUT_MILLIS))
                 .listenBlockingAndAwait(newSslVerifyService());
              // Use a non-secure client to open a new connection without sending ClientHello or any data.
@@ -221,9 +236,9 @@ class SniTest {
             for (SslProvider clientSslProvider : SslProvider.values()) {
                 for (HttpProtocol protocol : HttpProtocol.values()) {
                     for (boolean useAlpn : asList(false, true)) {
-                        for (boolean acceptInsecureConnections : asList(false, true)) {
+                        for (SslListenMode sslListenMode : SslListenMode.values()) {
                             params.add(Arguments.of(serverSslProvider, clientSslProvider, protocol, useAlpn,
-                                    acceptInsecureConnections));
+                                    sslListenMode));
                         }
                     }
                 }
@@ -253,18 +268,16 @@ class SniTest {
     }
 
     private static ServerSslConfig untrustedServerConfig(SslProvider provider) {
-        return untrustedServerConfig(provider, false, (String[]) null);
+        return untrustedServerConfig(provider, (String[]) null);
     }
 
-    private static ServerSslConfig untrustedServerConfig(SslProvider provider, boolean acceptInsecure,
-                                                         @Nullable String... alpn) {
+    private static ServerSslConfig untrustedServerConfig(SslProvider provider, @Nullable String... alpn) {
         // Need a key that won't be trusted by the client, just use the client's key.
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadClientPem,
                 DefaultTestCerts::loadClientKey).provider(provider);
         if (alpn != null) {
             builder.alpnProtocols(alpn);
         }
-        builder.acceptInsecureConnections(acceptInsecure);
         return builder.build();
     }
 
@@ -273,14 +286,12 @@ class SniTest {
         return useALPN ? new String[] {protocol.config.alpnId()} : null;
     }
 
-    private static ServerSslConfig trustedServerConfig(SslProvider provider, boolean acceptInsecure,
-                                                       @Nullable String... alpn) {
+    private static ServerSslConfig trustedServerConfig(SslProvider provider, @Nullable String... alpn) {
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                 DefaultTestCerts::loadServerKey).provider(provider);
         if (alpn != null) {
             builder.alpnProtocols(alpn);
         }
-        builder.acceptInsecureConnections(acceptInsecure);
         return builder.build();
     }
 

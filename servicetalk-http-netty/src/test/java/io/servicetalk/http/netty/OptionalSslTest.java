@@ -22,12 +22,13 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,10 +46,12 @@ import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Verifies the behavior and functionality of {@link ServerSslConfig#acceptInsecureConnections()}.
+ * Verifies the behavior and functionality of {@link ReadOnlyTcpServerConfig#sslListenMode()}.
  */
 final class OptionalSslTest {
 
@@ -61,22 +64,30 @@ final class OptionalSslTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
-    @ParameterizedTest(name = "{displayName} [{index}] acceptEnabled={0}, protocol={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] acceptInsecureConnections={0}, protocol={1}")
     @MethodSource("args")
-    void acceptsEncryptedAndNonEncryptedRequests(final boolean acceptEnabled, final HttpProtocol protocol)
+    void acceptsEncryptedAndNonEncryptedRequests(final boolean acceptInsecureConnections, final HttpProtocol protocol)
             throws Exception {
-        final HttpService service = (ctx, request, responseFactory) ->
-                succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        final HttpService service = (ctx, request, responseFactory) -> {
+            if ("/secure".equals(request.path())) {
+                assertNotNull(ctx.sslConfig());
+                assertNotNull(ctx.sslSession());
+            } else {
+                assertNull(ctx.sslConfig());
+                assertNull(ctx.sslSession());
+            }
+            return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        };
 
-        try (ServerContext server = serverBuilder(acceptEnabled, protocol).listenAndAwait(service)) {
+        try (ServerContext server = serverBuilder(acceptInsecureConnections, protocol).listenAndAwait(service)) {
             try (BlockingHttpClient client = clientBuilder(server, true, protocol).buildBlocking()) {
-                final HttpResponse response = client.request(client.get("/"));
+                final HttpResponse response = client.request(client.get("/secure"));
                 assertEquals(HttpResponseStatus.OK, response.status());
             }
 
             try (BlockingHttpClient client = clientBuilder(server, false, protocol).buildBlocking()) {
-                final HttpRequest request = client.get("/");
-                if (acceptEnabled) {
+                final HttpRequest request = client.get("/insecure");
+                if (acceptInsecureConnections) {
                     final HttpResponse response = client.request(request);
                     assertEquals(HttpResponseStatus.OK, response.status());
                 } else {
@@ -97,9 +108,10 @@ final class OptionalSslTest {
 
     private static HttpServerBuilder serverBuilder(final boolean acceptEnabled, final HttpProtocol... protocols) {
         ServerSslConfigBuilder configBuilder = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                DefaultTestCerts::loadServerKey)
-                .acceptInsecureConnections(acceptEnabled);
-        return newServerBuilder(SERVER_CTX, protocols).sslConfig(configBuilder.build());
+                DefaultTestCerts::loadServerKey);
+        return newServerBuilder(SERVER_CTX, protocols).sslConfig(configBuilder.build()).sslListenMode(acceptEnabled ?
+                SslListenMode.SSL_OPTIONAL :
+                SslListenMode.SSL_REQUIRED);
     }
 
     private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder(

@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
@@ -98,6 +99,16 @@ public interface HttpServerBuilder {
                                         int maxClientHelloLength, Duration clientHelloTimeout) {
         throw new UnsupportedOperationException(
                 "sslConfig(ServerSslConfig, Map, int, Durations) is not supported by " + getClass());
+    }
+
+    /**
+     * Allows to configure the listen mode when SSL is enabled.
+     *
+     * @param mode the mode to use.
+     * @return {@code this}.
+     */
+    default HttpServerBuilder sslListenMode(final SslListenMode mode) {
+        throw new UnsupportedOperationException("sslListenMode(SslListenMode) is not supported by " + getClass());
     }
 
     /**

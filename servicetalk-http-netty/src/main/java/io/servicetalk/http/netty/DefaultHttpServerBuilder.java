@@ -49,6 +49,7 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 
@@ -218,6 +219,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
                                        final int maxClientHelloLength, final Duration clientHelloTimeout) {
         this.config.tcpConfig().sslConfig(defaultConfig, sniMap, maxClientHelloLength, clientHelloTimeout);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder sslListenMode(final SslListenMode mode) {
+        this.config.tcpConfig().sslListenMode(mode);
         return this;
     }
 
@@ -399,8 +406,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
-        final ServerSslConfig sslConfig = roConfig.tcpConfig().sslConfig();
-        if (sslConfig != null && sslConfig.acceptInsecureConnections()) {
+        // Important: This code needs to be kept in-sync with the similar, but not identical
+        // code inside OptionalSslNegotiator#bind
+        if (roConfig.tcpConfig().sslConfig() != null &&
+                roConfig.tcpConfig().sslListenMode() == SslListenMode.SSL_OPTIONAL) {
             return OptionalSslNegotiator.bind(executionContext, config, address, connectionAcceptor, filteredService,
                     drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().isAlpnConfigured()) {
