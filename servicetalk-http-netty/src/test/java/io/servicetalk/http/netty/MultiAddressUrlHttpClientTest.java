@@ -266,13 +266,18 @@ class MultiAddressUrlHttpClientTest {
             // the host header should exactly match the authority provided.
             requestAndValidate(client, request, OK, "/200", serverHost);
 
+            // Request without a port in the authority
+            request = client.get(format("http://%s/200", serverHost));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
             // Request with a port in the authority
             request = client.get(format("http://%s:%d/200", serverHost, serverPort));
             // the host header should exactly match the authority provided.
             requestAndValidate(client, request, OK, "/200", serverHost + ":" + serverPort);
 
             // Excludes userinfo and the '@'
-            request = client.get(format("http://user:pass@%s/200", serverHost, serverPort));
+            request = client.get(format("http://user:pass@%s/200", serverHost));
             // the host header should exactly match the authority provided.
             requestAndValidate(client, request, OK, "/200", serverHost);
 
