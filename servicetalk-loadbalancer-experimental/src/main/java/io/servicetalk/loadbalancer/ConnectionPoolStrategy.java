@@ -16,21 +16,23 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
+/**
+ * A strategy for selecting connections at the {@link Host} level connection pool.
+ * @param <C> the concrete type of the connection.
+ */
+public interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
 
     /**
      * Select a connection from the ordered list of connections.
      * @param connections the list of connections to pick from.
      * @param selector a predicate used to test a connection.
-     * @param context optional {@link ContextMap} that can be used to pass information.
      * @return the selected connection, or {@code null} if no existing connection was selected.
      */
     @Nullable
-    C select(List<C> connections, Predicate<C> selector, @Nullable ContextMap context);
+    C select(List<C> connections, Predicate<C> selector);
 }

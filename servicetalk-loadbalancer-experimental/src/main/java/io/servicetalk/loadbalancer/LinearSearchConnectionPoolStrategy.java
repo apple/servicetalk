@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,25 +37,14 @@ import static java.lang.Math.min;
  */
 final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
 
-    private static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
-
-    private static final ConnectionPoolStrategy<LoadBalancedConnection> INSTANCE =
-            new LinearSearchConnectionPoolStrategy<>(DEFAULT_LINEAR_SEARCH_SPACE);
-
-    private static final ConnectionPoolStrategyFactory<LoadBalancedConnection> DEFAULT_FACTORY =
-            new ConnectionPoolStrategyFactory<LoadBalancedConnection>() {
-        @Override
-        public <T extends LoadBalancedConnection> ConnectionPoolStrategy<T> buildStrategy() {
-            return (ConnectionPoolStrategy<T>) INSTANCE;
-        }
-    };
+    static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
 
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
      * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
      * selection attempt.
      */
-    static final int MIN_RANDOM_SEARCH_SPACE = 64;
+    private static final int MIN_RANDOM_SEARCH_SPACE = 64;
 
     /**
      * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
@@ -66,17 +54,17 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
      * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
      * counts, larger connection counts, low connection churn, high connection churn.
      */
-    static final float RANDOM_SEARCH_FACTOR = 0.75f;
+    private static final float RANDOM_SEARCH_FACTOR = 0.75f;
 
     private final int linearSearchSpace;
 
-    LinearSearchConnectionPoolStrategy(final int linearSearchSpace) {
+    private LinearSearchConnectionPoolStrategy(final int linearSearchSpace) {
         this.linearSearchSpace = ensureNonNegative(linearSearchSpace, "linearSearchSpace");
     }
 
     @Nullable
     @Override
-    public C select(List<C> connections, Predicate<C> selector, @Nullable final ContextMap context) {
+    public C select(List<C> connections, Predicate<C> selector) {
         // Exhaust the linear search space first:
         final int linearAttempts = min(connections.size(), linearSearchSpace);
         for (int j = 0; j < linearAttempts; ++j) {
@@ -104,7 +92,8 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> defaultFactory() {
-        return (ConnectionPoolStrategyFactory<C>) DEFAULT_FACTORY;
+    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(final int linearSearchSpace) {
+        ensureNonNegative(linearSearchSpace, "linearSearchSpace");
+        return (targetResource) -> new LinearSearchConnectionPoolStrategy<>(linearSearchSpace);
     }
 }

@@ -176,7 +176,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
-        return connectionPoolStrategy.select(connections, selector, context);
+        return connectionPoolStrategy.select(connections, selector);
     }
 
     @Override

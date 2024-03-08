@@ -16,14 +16,13 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 
 /**
@@ -37,7 +36,7 @@ import static java.lang.Math.min;
  * <p>
  * If the core pool cannot satisfy the load traffic can spill over to extra connections which are selected in-order.
  * This has the property of minimizing traffic to the latest elements added outside the core pool size, thus let
- * them tend to idle out of the pool once they're no longer necessary.
+ * them idle out of the pool once they're no longer necessary.
  *
  * @param <C> the concrete type of the {@link LoadBalancedConnection}.
  */
@@ -50,14 +49,14 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    CorePoolConnectionPoolStrategy(final int corePoolSize, final boolean forceCorePool) {
-        this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
+    private CorePoolConnectionPoolStrategy(final int corePoolSize, final boolean forceCorePool) {
+        this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;
     }
 
     @Nullable
     @Override
-    public C select(List<C> connections, Predicate<C> selector, @Nullable final ContextMap context) {
+    public C select(List<C> connections, Predicate<C> selector) {
         final int connectionCount = connections.size();
         if (forceCorePool && connectionCount < corePoolSize) {
             // return null so the Host will create a new connection and thus populate the connection pool.
@@ -66,7 +65,7 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
         final int randomSearchSpace = min(connectionCount, corePoolSize);
         final int offset = rnd.nextInt(randomSearchSpace);
-        for (int i = 0; i < randomSearchSpace; ++i) {
+        for (int i = 0; i < randomSearchSpace; i++) {
             int ii = offset + i;
             if (ii >= randomSearchSpace) {
                 ii -= randomSearchSpace;
@@ -87,17 +86,13 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         return null;
     }
 
-    ConnectionPoolStrategyFactory<C> defaultFactory() {
+    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> defaultFactory() {
         return factory(DEFAULT_CORE_POOL_SIZE, DEFAULT_FORCE_CORE_POOL);
     }
 
-    ConnectionPoolStrategyFactory<C> factory(int corePoolSize, boolean forceCorePool) {
-        ensureNonNegative(corePoolSize, "corePoolSize");
-        return new ConnectionPoolStrategyFactory<C>() {
-            @Override
-            public <T extends C> ConnectionPoolStrategy<T> buildStrategy() {
-                return new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
-            }
-        };
+    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
+            int corePoolSize, boolean forceCorePool) {
+        ensurePositive(corePoolSize, "corePoolSize");
+        return (targetResource) -> new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
     }
 }

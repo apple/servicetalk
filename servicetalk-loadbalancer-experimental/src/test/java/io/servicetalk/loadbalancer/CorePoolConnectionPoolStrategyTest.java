@@ -17,12 +17,12 @@ package io.servicetalk.loadbalancer;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import static io.servicetalk.loadbalancer.ConnectionPoolStrategyHelpers.makeConnections;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -30,33 +30,31 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CorePoolConnectionPoolStrategyTest {
 
-    static List<TestLoadBalancedConnection> makeConnections(int size) {
-        List<TestLoadBalancedConnection> result = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            result.add(TestLoadBalancedConnection.mockConnection("address-" + i));
-        }
-        return result;
+    private ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int corePoolSize, boolean forceCorePool) {
+        return ConnectionPoolStrategies.<TestLoadBalancedConnection>corePool(corePoolSize, forceCorePool)
+                .buildStrategy("resource");
     }
 
     @Test
     void selectsHosts() {
-        List<TestLoadBalancedConnection> connections = makeConnections(1);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(1, false);
-        assertNotNull(strategy.select(connections, c -> true, null));
+        for (int i = 1; i < 10; i++) {
+            List<TestLoadBalancedConnection> connections = makeConnections(i);
+            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+            assertNotNull(strategy.select(connections, c -> true));
+        }
     }
 
     @Test
     void prefersCorePool() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         Set<TestLoadBalancedConnection> selected = new HashSet<>();
         for (int i = 0; i < 100; i++) {
-            selected.add(strategy.select(connections, c -> true, null));
+            selected.add(strategy.select(connections, c -> true));
         }
         // Commonly we should have more than one element in strategy, although we can expect it to contain a single
         // element with a probability of 0.2^99 or ~6e-70.
@@ -71,13 +69,27 @@ class CorePoolConnectionPoolStrategyTest {
     @Test
     void spillsIntoOverflow() {
         List<TestLoadBalancedConnection> connections = makeConnections(6);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new CorePoolConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         Set<TestLoadBalancedConnection> corePoolCxns = new HashSet<>();
         for (int i = 0; i < 5; i++) {
             corePoolCxns.add(connections.get(i));
         }
         Predicate<TestLoadBalancedConnection> selector = (TestLoadBalancedConnection c) -> !corePoolCxns.contains(c);
-        assertEquals(connections.get(5), strategy.select(connections, selector, null));
+        assertEquals(connections.get(5), strategy.select(connections, selector));
+    }
+
+    @Test
+    void forcingCorePoolWillEnsureCorePoolGrows() {
+        List<TestLoadBalancedConnection> connections = makeConnections(5);
+        for (int i = 1; i < 10; i++) {
+            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(i, true);
+            if (i <= 5) {
+                // core pool large enough
+                assertNotNull(strategy.select(connections, c -> true));
+            } else {
+                // We should never select a connection because the core pool isn't big enough.
+                assertNull(strategy.select(connections, c -> true));
+            }
+        }
     }
 }

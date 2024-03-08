@@ -15,18 +15,20 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.LoadBalancedConnection;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * The factory of {@link ConnectionPoolStrategy} instances.
- * @param <C> the least specific connection type necessary for properly implementing the strategy.
- */
-public interface ConnectionPoolStrategyFactory<C extends LoadBalancedConnection> {
+public final class ConnectionPoolStrategyHelpers {
 
-    /**
-     * Provide an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
-     * @param targetResource the resource name, used for logging purposes.
-     * @return an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
-     */
-    ConnectionPoolStrategy<C> buildStrategy(String targetResource);
+    private ConnectionPoolStrategyHelpers() {
+        // no instances
+    }
+
+    static List<TestLoadBalancedConnection> makeConnections(int size) {
+        List<TestLoadBalancedConnection> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            result.add(TestLoadBalancedConnection.mockConnection("address-" + i));
+        }
+        return result;
+    }
 }

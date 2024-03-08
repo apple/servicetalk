@@ -81,8 +81,8 @@ class DefaultHostTest {
 
     private void buildHost(@Nullable HealthIndicator healthIndicator) {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
-                LinearSearchConnectionPoolStrategy.defaultFactory().buildStrategy(), connectionFactory,
-                mockHostObserver, healthCheckConfig, healthIndicator);
+                ConnectionPoolStrategies.<TestLoadBalancedConnection>linearSearch().buildStrategy("resource"),
+                connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
     }
 
     private void buildHost() {

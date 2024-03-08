@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import static io.servicetalk.loadbalancer.ConnectionPoolStrategyHelpers.makeConnections;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -33,29 +34,28 @@ import static org.mockito.Mockito.when;
 
 class P2CConnectionPoolStrategyTest {
 
-    static List<TestLoadBalancedConnection> makeConnections(int size) {
-        return CorePoolConnectionPoolStrategyTest.makeConnections(size);
+    private static ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int maxEffort, boolean corePoolSize) {
+        return ConnectionPoolStrategies.<TestLoadBalancedConnection>p2c(maxEffort, corePoolSize)
+                .buildStrategy("resource");
     }
 
     @Test
     void selectsHosts() {
         // Ensure we can successfully select hosts for most sized pools
         for (int i = 1; i < 10; i++) {
-            List<TestLoadBalancedConnection> connections = makeConnections(1);
-            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                    new P2CConnectionPoolStrategy<>(5, false);
-            assertNotNull(strategy.select(connections, c -> true, null));
+            List<TestLoadBalancedConnection> connections = makeConnections(i);
+            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+            assertNotNull(strategy.select(connections, c -> true));
         }
     }
 
     @Test
     void prefersCorePool() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new P2CConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         Set<TestLoadBalancedConnection> selected = new HashSet<>();
         for (int i = 0; i < 100; i++) {
-            selected.add(strategy.select(connections, c -> true, null));
+            selected.add(strategy.select(connections, c -> true));
         }
         // Commonly we should have more than one element in strategy, although we can expect it to contain a single
         // element with a probability of 0.2^99 or ~6e-70.
@@ -70,41 +70,38 @@ class P2CConnectionPoolStrategyTest {
     @Test
     void spillsIntoOverflow() {
         List<TestLoadBalancedConnection> connections = makeConnections(6);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new P2CConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         Set<TestLoadBalancedConnection> corePoolCxns = new HashSet<>();
         for (int i = 0; i < 5; i++) {
             corePoolCxns.add(connections.get(i));
         }
         Predicate<TestLoadBalancedConnection> selector = (TestLoadBalancedConnection c) -> !corePoolCxns.contains(c);
-        assertEquals(connections.get(5), strategy.select(connections, selector, null));
+        assertEquals(connections.get(5), strategy.select(connections, selector));
     }
 
     @Test
     void prefersHigherScoringHosts() {
         List<TestLoadBalancedConnection> connections = makeConnections(2);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new P2CConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         // We should always get connection at index 1 becuase it has the higher score.
         when(connections.get(0).score()).thenReturn(0);
         when(connections.get(1).score()).thenReturn(1);
 
         for (int i = 0; i < 10; i++) {
-            assertEquals(connections.get(1), strategy.select(connections, ctx -> true, null));
+            assertEquals(connections.get(1), strategy.select(connections, ctx -> true));
         }
     }
 
     @Test
     void willSelectLowerScoringConnectionIfHigherScoredConnectionCantBeSelected() {
         List<TestLoadBalancedConnection> connections = makeConnections(2);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy =
-                new P2CConnectionPoolStrategy<>(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
         // We should always get connection at index 1 becuase it has the higher score.
         when(connections.get(0).score()).thenReturn(0);
         when(connections.get(1).score()).thenReturn(1);
 
         for (int i = 0; i < 10; i++) {
-            assertEquals(connections.get(0), strategy.select(connections, ctx -> ctx == connections.get(0), null));
+            assertEquals(connections.get(0), strategy.select(connections, ctx -> ctx == connections.get(0)));
         }
     }
 }

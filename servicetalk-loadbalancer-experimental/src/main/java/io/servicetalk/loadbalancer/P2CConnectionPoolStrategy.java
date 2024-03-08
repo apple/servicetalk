@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,22 +28,33 @@ import javax.annotation.Nullable;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 
-public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
+/**
+ * A {@link ConnectionPoolStrategy} that attempts to discern between the health of individual connections.
+ * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
+ * connections. This has the following algorithm:
+ * - Randomly select two connections from the 'core pool' (pick-two).
+ *   - Try to select the 'best' of the two connections.
+ *   - If we fail to select the best connection, try the other connection.
+ * - If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear iteration
+ *   through the remaining connections searching for an acceptable connection.
+ * @param <C> the type of the load balanced connection.
+ */
+final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolStrategy.class);
 
     static final int DEFAULT_MAX_EFFORT = 5;
 
+    private final String targetResource;
     private final int maxEffort;
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    P2CConnectionPoolStrategy(int corePoolSize, final boolean forceCorePool) {
-        this(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
-    }
-
-    P2CConnectionPoolStrategy(final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
+    private P2CConnectionPoolStrategy(final String targetResource, final int maxEffort, final int corePoolSize,
+                              final boolean forceCorePool) {
+        this.targetResource = requireNonNull(targetResource, "targetResource");
         this.maxEffort = ensureNonNegative(maxEffort, "maxEffort");
         this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;
@@ -52,7 +62,7 @@ public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> impleme
 
     @Nullable
     @Override
-    public C select(List<C> connections, Predicate<C> selector, @Nullable final ContextMap context) {
+    public C select(List<C> connections, Predicate<C> selector) {
         final int connectionCount = connections.size();
         if (forceCorePool && connectionCount < corePoolSize) {
             // return null so the Host will create a new connection and thus populate the connection pool.
@@ -81,7 +91,7 @@ public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> impleme
                 return connection;
             }
         }
-        // So sad, we didn't find an acceptable connection.
+        // So sad, we didn't find any acceptable connection.
         return null;
     }
 
@@ -89,17 +99,18 @@ public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> impleme
     private C p2CLoop(int randomSearchSpace, List<C> connections, Predicate<C> selector) {
         // attempt p2c.
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        final boolean singleIteration = randomSearchSpace == 2;
         // If there are only two connections we only need to try once to have tried them all.
-        final int attempts = randomSearchSpace == 2 ? 1 : maxEffort;
+        final int attempts = singleIteration ? 1 : maxEffort;
         for (int i = 0; i < attempts; i++) {
             C candidate = p2cPick(rnd, randomSearchSpace, connections, selector);
             if (candidate != null) {
                 return candidate;
             }
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("max effort ({}) exhausted while searching through {} candidates.",
-                    maxEffort, randomSearchSpace);
+        if (!singleIteration && LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{}: max effort ({}) exhausted while searching through {} candidates.",
+                    targetResource, maxEffort, randomSearchSpace);
         }
         return null;
     }
@@ -134,11 +145,7 @@ public class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> impleme
             final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
         ensurePositive(maxEffort, " maxEffort");
         ensureNonNegative(corePoolSize, "corePoolSize");
-        return new ConnectionPoolStrategyFactory<C>() {
-            @Override
-            public <T extends C> ConnectionPoolStrategy<T> buildStrategy() {
-                return new P2CConnectionPoolStrategy<T>(maxEffort, corePoolSize, forceCorePool);
-            }
-        };
+        return (targetResource) -> new P2CConnectionPoolStrategy<>(
+                targetResource, maxEffort, corePoolSize, forceCorePool);
     }
 }

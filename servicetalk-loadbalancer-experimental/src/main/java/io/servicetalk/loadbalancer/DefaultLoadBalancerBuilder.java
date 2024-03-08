@@ -50,7 +50,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory;
     private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory =
-            LinearSearchConnectionPoolStrategy.defaultFactory();
+            ConnectionPoolStrategies.linearSearch();
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
     private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
     private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -197,7 +197,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
-                    connectionPoolStrategyFactory.buildStrategy(), connectionFactory,
+                    connectionPoolStrategyFactory.buildStrategy(targetResource), connectionFactory,
                     loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
         }
 
