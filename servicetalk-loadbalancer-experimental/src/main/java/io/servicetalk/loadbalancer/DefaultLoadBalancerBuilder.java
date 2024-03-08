@@ -50,7 +50,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private Executor backgroundExecutor;
     @Nullable
-    private LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+    private LoadBalancerObserver loadBalancerObserver;
     @Nullable
     private HealthCheckerFactory<ResolvedAddress> healthCheckerFactory;
     private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -79,7 +79,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver<ResolvedAddress> loadBalancerObserver) {
+            @Nullable LoadBalancerObserver loadBalancerObserver) {
         this.loadBalancerObserver = loadBalancerObserver;
         return this;
     }
@@ -134,7 +134,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
                     healthCheckResubscribeInterval, healthCheckResubscribeJitter);
         }
-        final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver = this.loadBalancerObserver != null ?
+        final LoadBalancerObserver loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
         Function<String, HealthChecker<ResolvedAddress>> healthCheckerSupplier;
         if (healthCheckerFactory == null) {
@@ -154,7 +154,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
-        private final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver;
+        private final LoadBalancerObserver loadBalancerObserver;
         private final int linearSearchSpace;
         @Nullable
         private final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory;
@@ -163,7 +163,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
-                                   final LoadBalancerObserver<ResolvedAddress> loadBalancerObserver,
+                                   final LoadBalancerObserver loadBalancerObserver,
                                    final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
