@@ -23,16 +23,15 @@ import javax.annotation.Nullable;
 
 /**
  * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}.
- * @param <ResolvedAddress> the type of the resolved address.
  */
-public interface LoadBalancerObserver<ResolvedAddress> {
+public interface LoadBalancerObserver {
 
     /**
      * Get a {@link HostObserver}.
      * @param resolvedAddress the resolved address of the host.
      * @return a {@link HostObserver}.
      */
-    HostObserver hostObserver(ResolvedAddress resolvedAddress);
+    HostObserver hostObserver(Object resolvedAddress);
 
     /**
      * Callback for when connection selection fails due to no hosts being available.
@@ -45,7 +44,7 @@ public interface LoadBalancerObserver<ResolvedAddress> {
      * @param oldHostSetSize the size of the previous host set.
      * @param newHostSetSize the new size of  the host set.
      */
-    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                  int oldHostSetSize, int newHostSetSize);
 
     /**
