@@ -20,16 +20,16 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
 
-final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObserver<ResolvedAddress> {
+final class NoopLoadBalancerObserver implements LoadBalancerObserver {
 
-    private static final LoadBalancerObserver<Object> INSTANCE = new NoopLoadBalancerObserver<>();
+    private static final LoadBalancerObserver INSTANCE = new NoopLoadBalancerObserver();
 
     private NoopLoadBalancerObserver() {
         // only private instance
     }
 
     @Override
-    public HostObserver hostObserver(ResolvedAddress resolvedAddress) {
+    public HostObserver hostObserver(Object resolvedAddress) {
         return NoopHostObserver.INSTANCE;
     }
 
@@ -44,7 +44,7 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                         int oldHostSetSize, int newHostSetSize) {
         // noop
     }
@@ -87,7 +87,7 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
         }
     }
 
-    public static <T> LoadBalancerObserver<T> instance() {
-        return (LoadBalancerObserver<T>) INSTANCE;
+    public static LoadBalancerObserver instance() {
+        return INSTANCE;
     }
 }

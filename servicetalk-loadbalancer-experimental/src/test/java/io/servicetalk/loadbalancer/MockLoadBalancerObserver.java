@@ -19,10 +19,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-interface MockLoadBalancerObserver extends LoadBalancerObserver<String> {
+interface MockLoadBalancerObserver extends LoadBalancerObserver {
 
     @Override
-    MockHostObserver hostObserver(String resolvedAddress);
+    MockHostObserver hostObserver(Object resolvedAddress);
 
     interface MockHostObserver extends LoadBalancerObserver.HostObserver {
     }

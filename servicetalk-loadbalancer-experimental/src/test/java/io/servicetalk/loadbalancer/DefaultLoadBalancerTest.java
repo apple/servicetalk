@@ -279,8 +279,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public <T extends TestLoadBalancedConnection> HostSelector<String, T> buildSelector(
-                List<Host<String, T>> hosts, String targetResource) {
+        public HostSelector<String, TestLoadBalancedConnection> buildSelector(
+                List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }
 

@@ -37,8 +37,8 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
     }
 
     @Override
-    public <T extends C> HostSelector<ResolvedAddress, T>
-    buildSelector(final List<Host<ResolvedAddress, T>> hosts, final String targetResource) {
+    public HostSelector<ResolvedAddress, C>
+    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
         return new RoundRobinSelector<>(hosts, targetResource, failOpen);
     }
 

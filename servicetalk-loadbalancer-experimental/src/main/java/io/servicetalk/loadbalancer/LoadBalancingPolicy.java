@@ -36,8 +36,7 @@ public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConn
      * @param hosts          the set of {@link Host}s to select from.
      * @param targetResource the name of the target resource, useful for debugging purposes.
      * @return a {@link HostSelector}
-     * @param <T> the refined type of the connections over which to load balance
      */
-    <T extends C> HostSelector<ResolvedAddress, T> buildSelector(
-            List<Host<ResolvedAddress, T>> hosts, String targetResource);
+    HostSelector<ResolvedAddress, C> buildSelector(
+            List<Host<ResolvedAddress, C>> hosts, String targetResource);
 }
