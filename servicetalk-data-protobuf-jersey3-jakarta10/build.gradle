@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,59 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
+checkstyleMain {
+  enabled false
+}
+
+checkstyleTest {
+  enabled false
+}
+
+spotbugsMain {
+  enabled false
+}
+
+task cleanSources(type: Delete) {
+  delete 'src'
+}
+
+task copySourcesForJersey3(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-data-protobuf-jersey/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax.ws.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax.inject', 'jakarta.inject') }
+
+  // Only modify specific javax.annotations.  Some like javax.annotation.Nullable need to stay the same
+  filter { line -> line.replaceAll('javax.annotation.Priority', 'jakarta.annotation.Priority') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey3)
+tasks.sourcesJar.dependsOn(copySourcesForJersey3)
+tasks.compileJava.dependsOn(copySourcesForJersey3)
+tasks.generateTestProto.dependsOn(copySourcesForJersey3)
+tasks.processTestResources.dependsOn(copySourcesForJersey3)
+tasks.compileTestJava.dependsOn(copySourcesForJersey3)
+
+def actualJerseyVersion = "${jersey3VersionEE10}"
+def actualJavaxActivationVersion = "${javaxActivationVersionEE10}"
+def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE10}"
+def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE10}"
+def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE10}"
+def actualJaxRsVersion = "${jaxRsVersionEE10}"
+
+
 // Dependencies must remain consistent between servicetalk-data-protobuf-jerseyX modules
 dependencies {
   api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+  api platform("org.glassfish.jersey:jersey-bom:${actualJerseyVersion}")
+  api "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion"
+  api "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
+  api "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion"
+  testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api "jakarta.ws.rs:jakarta.ws.rs-api" // MediaType, Feature
@@ -38,8 +87,8 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-http-api")
-  implementation project(":servicetalk-http-router-jersey")
-  implementation project(":servicetalk-http-router-jersey-internal")
+  implementation project(":servicetalk-http-router-jersey3-jakarta10")
+  implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-netty")
   implementation "com.google.protobuf:protobuf-java"
@@ -50,13 +99,13 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testImplementation testFixtures(project(":servicetalk-http-router-jersey"))
+  testImplementation testFixtures(project(":servicetalk-http-router-jersey3-jakarta10"))
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-http-router-predicate")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty-internal")
   // BaseJerseyRouterTestSuite assumes JSON serialization is supported.
-  testImplementation project(":servicetalk-data-jackson-jersey")
+  testImplementation project(":servicetalk-data-jackson-jersey3-jakarta10")
 
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

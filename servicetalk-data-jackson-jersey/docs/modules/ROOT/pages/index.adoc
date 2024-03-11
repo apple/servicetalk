@@ -5,6 +5,10 @@ It is a replacement for `jersey-media-json-jackson` and allows avoiding the inpu
 with out-of-the-box body readers and also allows accepting/returning `Single<Pojo>` and `Publisher<Pojo>`
 from resource methods.
 
+**Note:** If using Jersey 3.X, replace all imports containing `javax.ws` with `jakarta.ws`, and replace the dependency with:
+* `servicetalk-data-jackson-jersey3-jakarta9` for Jersey 3.0.X
+* `servicetalk-data-jackson-jersey3-jakarta10` for Jersey 3.1.X
+
 CAUTION: This serializer can not currently be used with Server-Sent Events (SSE).
 
 == Using a custom ObjectMapper

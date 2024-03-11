@@ -25,12 +25,17 @@ apply plugin: "com.google.protobuf"
 apply from: "../../gradle/idea.gradle"
 
 dependencies {
+  // * To use with Jersey 3.0, replace the version with $jersey3VersionEE9
+  // * To use with Jersey 3.1, replace the version with $jersey3VersionEE10
   implementation platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
 
   implementation project(":servicetalk-annotations")
   // We could use jersey-media-json-jackson instead. Using servicetalk-data-jackson-jersey allows us to avoid the
   // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning
   // Single<Pojo> and Publisher<Pojo> from resource methods.
+
+  // * To use with Jersey 3.0, replace the below *-jersey dependencies with *-jersey3-jakarta9
+  // * To use with Jersey 3.1, replace the below *-jersey dependencies with *-jersey3-jakarta10
   implementation project(":servicetalk-data-jackson-jersey")
   implementation project(":servicetalk-data-protobuf-jersey")
   implementation project(":servicetalk-http-netty")

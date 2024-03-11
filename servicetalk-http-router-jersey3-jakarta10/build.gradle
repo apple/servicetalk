@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,61 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+checkstyleMain {
+  enabled false
+}
+
+checkstyleTest {
+  enabled false
+}
+
+checkstyleTestFixtures {
+  enabled false
+}
+
+spotbugsMain {
+  enabled false
+}
+
+task cleanSources(type: Delete) {
+  // Don't delete src/testFixtures/java/.gitkeep
+  // gitkeep used to ensure that a src/textFixtures/java exists or Gradle processing will fail
+  delete 'src/main', 'src/test', 'src/testFixtures/java/io'
+}
+
+task copySourcesForJersey3(type: Copy) {
+  dependsOn tasks.cleanSources
+  from '../servicetalk-http-router-jersey/src'
+  into 'src'
+  filter { line -> line.replaceAll('javax.ws.rs', 'jakarta.ws.rs') }
+  filter { line -> line.replaceAll('javax.inject', 'jakarta.inject') }
+
+  // Only modify specific javax.annotations.  Some like javax.annotation.Nullable need to stay the same
+  filter { line -> line.replaceAll('javax.annotation.Priority', 'jakarta.annotation.Priority') }
+}
+
+tasks.processResources.dependsOn(copySourcesForJersey3)
+tasks.sourcesJar.dependsOn(copySourcesForJersey3)
+tasks.compileJava.dependsOn(copySourcesForJersey3)
+tasks.processTestResources.dependsOn(copySourcesForJersey3)
+tasks.compileTestJava.dependsOn(copySourcesForJersey3)
+
+def actualJerseyVersion = "${jersey3VersionEE10}"
+def actualJavaxActivationVersion = "${javaxActivationVersionEE10}"
+def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE10}"
+def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE10}"
+def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE10}"
+def actualJaxRsVersion = "${jaxRsVersionEE10}"
+
 // Dependencies must remain consistent between servicetalk-http-router-jerseyX modules
 dependencies {
   api platform(project(":servicetalk-dependencies"))
+  api platform("org.glassfish.jersey:jersey-bom:${actualJerseyVersion}")
+  api "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion"
+  api "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
+  api "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion"
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation platform(project(":servicetalk-dependencies"))
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
@@ -31,7 +83,7 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-data-jackson")
-  implementation project(":servicetalk-http-router-jersey-internal")
+  implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")

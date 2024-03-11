@@ -157,6 +157,14 @@ ServiceTalk provides a JAX-RS implementation that can plugin to ServiceTalk APIs
 This example demonstrates how to use these APIs, and how different API variations (e.g. asynchronous/blocking and
 aggregated/streaming) are exposed.
 
+To use ServiceTalk with Jersey 3.X, replace the following dependencies in the sample:
+
+* `servicetalk-data-jackson-jersey` -> `servicetalk-data-jackson-jersey3-jakarta9` (3.0.X) or `servicetalk-data-jackson-jersey3-jakarta10` (3.1.X)
+* `servicetalk-data-protobuf-jersey` -> `servicetalk-data-protobuf-jersey3-jakarta9` (3.0.X) or `servicetalk-data-protobuf-jersey3-jakarta10` (3.1.X)
+* `servicetalk-http-router-jersey` -> `servicetalk-http-router-jersey3-jakarta9` (3.0.X) or `servicetalk-http-router-jersey3-jakarta10` (3.1.X)
+
+and change `jerseyVersion` to `jersey3VersionEE9` (3.0.X) or `jersey3VersionEE10` (3.1.X)
+
 === Hello world
 
 A simple "Hello World" example built using JAX-RS.
