@@ -61,7 +61,14 @@ public final class DefaultLoadBalancerClient {
                         // request count to score hosts. The net result is typically a traffic distribution that will
                         // show a preference toward faster hosts while also rapidly adjust to changes in backend
                         // performance.
-                        new P2CLoadBalancingPolicy.Builder().maxEffort(6)
+                        new P2CLoadBalancingPolicy.Builder()
+                                // Set the max effort (default: 5). This is the number of times P2C will pick a random
+                                // pair of hosts in search of a healthy host before giving up. When it gives up it will
+                                // either attempt to use one of the hosts regardless of status if `failOpen == true` or
+                                // return a `NoActiveHosts` exception if failOpen == false.
+                                .maxEffort(6)
+                                // Whether to try to use a host regardless of health status (default: false)
+                                .failOpen(true)
                                 .build())
                 .outlierDetectorFactory(new XdsOutlierDetectorFactory<>(
                         // xDS compatible outlier detection has a number of tuning knobs. There are multiple detection
