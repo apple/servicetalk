@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServerConfig {
+class HttpServerConfig {
 
     private final TcpServerConfig tcpConfig;
     private final HttpConfig httpConfig;
@@ -69,7 +69,7 @@ final class HttpServerConfig {
 
     ReadOnlyHttpServerConfig asReadOnly() {
         applySslConfigOverrides();
-        final ReadOnlyHttpServerConfig roConfig = new ReadOnlyHttpServerConfig(this);
+        final ReadOnlyHttpServerConfig roConfig = new DefaultReadOnlyHttpServerConfig(this);
         if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }

@@ -80,18 +80,20 @@ final class OptionalSslTest {
         };
 
         try (ServerContext server = serverBuilder(acceptInsecureConnections, protocol).listenAndAwait(service)) {
-            try (BlockingHttpClient client = clientBuilder(server, true, protocol).buildBlocking()) {
-                final HttpResponse response = client.request(client.get("/secure"));
-                assertEquals(HttpResponseStatus.OK, response.status());
-            }
-
-            try (BlockingHttpClient client = clientBuilder(server, false, protocol).buildBlocking()) {
-                final HttpRequest request = client.get("/insecure");
-                if (acceptInsecureConnections) {
-                    final HttpResponse response = client.request(request);
+            for (int i = 0; i < 4; i++) {
+                try (BlockingHttpClient client = clientBuilder(server, true, protocol).buildBlocking()) {
+                    final HttpResponse response = client.request(client.get("/secure"));
                     assertEquals(HttpResponseStatus.OK, response.status());
-                } else {
-                    assertThrows(ClosedChannelException.class, () -> client.request(request));
+                }
+
+                try (BlockingHttpClient client = clientBuilder(server, false, protocol).buildBlocking()) {
+                    final HttpRequest request = client.get("/insecure");
+                    if (acceptInsecureConnections) {
+                        final HttpResponse response = client.request(request);
+                        assertEquals(HttpResponseStatus.OK, response.status());
+                    } else {
+                        assertThrows(ClosedChannelException.class, () -> client.request(request));
+                    }
                 }
             }
         }

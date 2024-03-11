@@ -53,7 +53,7 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ServerSslConfig> sniConfig;
-    private SslListenMode sslListenMode;
+    private SslListenMode sslListenMode = SslListenMode.SSL_REQUIRED;
     private int sniMaxClientHelloLength = MAX_CLIENT_HELLO_LENGTH;
     private Duration sniClientHelloTimeout = DEFAULT_CLIENT_HELLO_TIMEOUT;
 
@@ -134,8 +134,16 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
         return this;
     }
 
+    /**
+     * Allows to also accept insecure (non-TLS) connections if {@link ServerSslConfig} is enabled.
+     * <p>
+     * Note that if SSL is not configured for this server, this setting has no effect.
+     *
+     * @param mode the listen mode to choose (defaults to {@link SslListenMode#SSL_REQUIRED}).
+     * @return {@code this}
+     */
     public TcpServerConfig sslListenMode(final SslListenMode mode) {
-        this.sslListenMode = mode;
+        this.sslListenMode = requireNonNull(mode, "SslListenMode");
         return this;
     }
 
@@ -161,6 +169,6 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
      * @return a read only view of this object.
      */
     public ReadOnlyTcpServerConfig asReadOnly() {
-        return new ReadOnlyTcpServerConfig(this);
+        return new DefaultReadOnlyTcpServerConfig(this);
     }
 }

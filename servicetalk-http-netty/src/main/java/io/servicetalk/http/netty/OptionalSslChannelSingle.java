@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import javax.annotation.Nullable;
 
+/**
+ * Part of a {@link io.netty.channel.ChannelInitializer} which negotiates SSL/non-SSL connections when SSL is enabled.
+ */
 final class OptionalSslChannelSingle extends ChannelInitSingle<Boolean> {
 
     OptionalSslChannelSingle(final Channel channel) {
@@ -80,6 +83,10 @@ final class OptionalSslChannelSingle extends ChannelInitSingle<Boolean> {
             final SingleSource.Subscriber<? super Boolean> subscriberCopy = subscriber;
             subscriber = null;
             subscriberCopy.onSuccess(isEncrypted);
+
+            // Need to make sure that when this handler is removed, there is another handler in the pipeline
+            // to pick up the read bytes from ByteToMessageDecoder when this handler is removed.
+            assert ctx.pipeline().last() != this;
             ctx.pipeline().remove(this);
         }
     }

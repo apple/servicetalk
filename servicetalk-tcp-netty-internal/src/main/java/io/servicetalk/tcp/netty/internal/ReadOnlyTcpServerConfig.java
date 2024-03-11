@@ -18,76 +18,20 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainWildcardMappingBuilder;
 import io.netty.util.Mapping;
 
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
-import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 
 /**
  * Read only view of {@link TcpServerConfig}.
  */
-public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<ServerSslConfig> {
-    @SuppressWarnings("rawtypes")
-    private final Map<ChannelOption, Object> listenOptions;
-    private final TransportObserver transportObserver;
-    @Nullable
-    private final ServerSslConfig sslConfig;
-    private final SslListenMode sslListenMode;
-    @Nullable
-    private final SslContext sslContext;
-    @Nullable
-    private final Mapping<String, SslContext> sniMapping;
-    private final int sniMaxClientHelloLength;
-    private final Duration sniClientHelloTimeout;
-    private final boolean alpnConfigured;
-
-    ReadOnlyTcpServerConfig(final TcpServerConfig from) {
-        super(from);
-        listenOptions = nonNullOptions(from.listenOptions());
-        final TransportObserver transportObserver = from.transportObserver();
-        this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
-                asSafeObserver(transportObserver);
-        this.sslConfig = from.sslConfig();
-        this.sslListenMode = from.sslListenMode();
-        final Map<String, ServerSslConfig> sniMap = from.sniConfig();
-        if (sniMap != null) {
-            if (sslConfig == null) {
-                throw new IllegalStateException("No default security config defined but found SNI config mappings");
-            }
-            sslContext = forServer(sslConfig);
-            boolean foundAlpn = !sslContext.applicationProtocolNegotiator().protocols().isEmpty();
-            final DomainWildcardMappingBuilder<SslContext> mappingBuilder =
-                    new DomainWildcardMappingBuilder<>(sniMap.size(), sslContext);
-            for (Entry<String, ServerSslConfig> sniConfigEntry : sniMap.entrySet()) {
-                SslContext sniContext = forServer(sniConfigEntry.getValue());
-                foundAlpn |= !sniContext.applicationProtocolNegotiator().protocols().isEmpty();
-                mappingBuilder.add(sniConfigEntry.getKey(), sniContext);
-            }
-            sniMapping = mappingBuilder.build();
-            alpnConfigured = foundAlpn;
-        } else if (sslConfig != null) {
-            sslContext = forServer(sslConfig);
-            sniMapping = null;
-            alpnConfigured = !sslContext.applicationProtocolNegotiator().protocols().isEmpty();
-        } else {
-            sslContext = null;
-            sniMapping = null;
-            alpnConfigured = false;
-        }
-        sniMaxClientHelloLength = from.sniMaxClientHelloLength();
-        sniClientHelloTimeout = from.sniClientHelloTimeout();
-    }
+public interface ReadOnlyTcpServerConfig extends ReadOnlyTcpConfig<ServerSslConfig> {
 
     /**
      * Returns {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
@@ -96,44 +40,16 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
      * @return {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
      * configured on either default or any of the SNI configurations.
      */
-    public boolean isAlpnConfigured() {
-        return alpnConfigured;
-    }
+    boolean isAlpnConfigured();
 
     /**
      * Returns the {@link TransportObserver} if any for all channels.
      *
      * @return the {@link TransportObserver} if any
      */
-    public TransportObserver transportObserver() {
-        return transportObserver;
-    }
+    TransportObserver transportObserver();
 
-    /**
-     * Get the {@link ServerSslConfig}.
-     *
-     * @return the {@link ServerSslConfig}, or {@code null} if SSL/TLS is not configured.
-     */
-    @Nullable
-    @Override
-    public ServerSslConfig sslConfig() {
-        return sslConfig;
-    }
-
-    public SslListenMode sslListenMode() {
-        return sslListenMode;
-    }
-
-    /**
-     * Returns the {@link SslContext}.
-     *
-     * @return {@link SslContext}, {@code null} if none specified
-     */
-    @Nullable
-    @Override
-    public SslContext sslContext() {
-        return sslContext;
-    }
+    SslListenMode sslListenMode();
 
     /**
      * Gets the {@link Mapping} for SNI.
@@ -141,17 +57,11 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
      * @return the {@link Mapping} for SNI, {@code null} if SNI isn't enabled.
      */
     @Nullable
-    public Mapping<String, SslContext> sniMapping() {
-        return sniMapping;
-    }
+    Mapping<String, SslContext> sniMapping();
 
-    int sniMaxClientHelloLength() {
-        return sniMaxClientHelloLength;
-    }
+    int sniMaxClientHelloLength();
 
-    Duration sniClientHelloTimeout() {
-        return sniClientHelloTimeout;
-    }
+    Duration sniClientHelloTimeout();
 
     /**
      * Returns the {@link SocketOption}s that are applied to the server socket channel which listens/accepts socket
@@ -160,7 +70,5 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
      * @return Unmodifiable map of options
      */
     @SuppressWarnings("rawtypes")
-    public Map<ChannelOption, Object> listenOptions() {
-        return listenOptions;
-    }
+    Map<ChannelOption, Object> listenOptions();
 }

@@ -618,6 +618,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
+        requireNonNull(sslConfig);
         assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
         setFallbackHostAndPort(config, address);

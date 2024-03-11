@@ -145,9 +145,9 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
     /**
      * Add SSL/TLS related config.
      *
-     * @param sslConfig the {@link SslConfigType}.
+     * @param sslConfig the {@link SslConfigType}. If set to {@code null}, it means that SSL/TLS is disabled.
      */
-    public final void sslConfig(final SslConfigType sslConfig) {
-        this.sslConfig = requireNonNull(sslConfig);
+    public final void sslConfig(final @Nullable SslConfigType sslConfig) {
+        this.sslConfig = sslConfig;
     }
 }

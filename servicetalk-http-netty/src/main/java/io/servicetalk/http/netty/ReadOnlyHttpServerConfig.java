@@ -20,50 +20,20 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 
 import javax.annotation.Nullable;
 
-final class ReadOnlyHttpServerConfig {
+interface ReadOnlyHttpServerConfig {
 
-    private final ReadOnlyTcpServerConfig tcpConfig;
-    @Nullable
-    private final H1ProtocolConfig h1Config;
-    @Nullable
-    private final H2ProtocolConfig h2Config;
-    private final boolean allowDropTrailers;
-    @Nullable
-    private final HttpLifecycleObserver lifecycleObserver;
-
-    ReadOnlyHttpServerConfig(final HttpServerConfig from) {
-        final HttpConfig configs = from.httpConfig();
-        tcpConfig = from.tcpConfig().asReadOnly();
-        h1Config = configs.h1Config();
-        h2Config = configs.h2Config();
-        allowDropTrailers = configs.allowDropTrailersReadFromTransport();
-        lifecycleObserver = from.lifecycleObserver();
-    }
-
-    ReadOnlyTcpServerConfig tcpConfig() {
-        return tcpConfig;
-    }
+    ReadOnlyTcpServerConfig tcpConfig();
 
     @Nullable
-    H1ProtocolConfig h1Config() {
-        return h1Config;
-    }
+    H1ProtocolConfig h1Config();
 
     @Nullable
-    H2ProtocolConfig h2Config() {
-        return h2Config;
-    }
+    H2ProtocolConfig h2Config();
 
-    boolean allowDropTrailersReadFromTransport() {
-        return allowDropTrailers;
-    }
+    boolean allowDropTrailersReadFromTransport();
 
-    boolean isH2PriorKnowledge() {
-        return h2Config != null && h1Config == null && !tcpConfig.isAlpnConfigured();
-    }
+    boolean isH2PriorKnowledge();
 
     @Nullable
-    HttpLifecycleObserver lifecycleObserver() {
-        return lifecycleObserver;
-    }
+    HttpLifecycleObserver lifecycleObserver();
 }

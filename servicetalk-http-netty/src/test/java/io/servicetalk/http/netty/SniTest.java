@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +62,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SniTest {
@@ -87,8 +89,15 @@ class SniTest {
                         singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .sslListenMode(sslListenMode)
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
-            assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
+             BlockingHttpClient secureClient = newClient(serverContext, clientSslProvider, protocol, useALPN);
+             BlockingHttpClient insecureClient = newClientBuilder(serverContext, CLIENT_CTX, protocol)
+                     .buildBlocking()) {
+            assertEquals(HttpResponseStatus.OK, secureClient.request(secureClient.get("/")).status());
+            if (SslListenMode.SSL_OPTIONAL == sslListenMode) {
+                assertEquals(HttpResponseStatus.OK, insecureClient.request(insecureClient.get("/insecure")).status());
+            } else {
+                assertThrows(IOException.class, () -> insecureClient.request(insecureClient.get("/insecure")));
+            }
         }
     }
 
@@ -297,16 +306,21 @@ class SniTest {
 
     private static BlockingHttpService newSslVerifyService() {
         return (ctx, request, responseFactory) -> {
-            assertThat(ctx.sslConfig(), is(notNullValue()));
-            SSLSession session = ctx.sslSession();
-            assertThat(session, is(notNullValue()));
-            assertThat(session, is(instanceOf(ExtendedSSLSession.class)));
-            assertThat(((ExtendedSSLSession) session).getRequestedServerNames().stream()
-                    .filter(sni -> sni instanceof SNIHostName)
-                    .map(SNIHostName.class::cast)
-                    .map(SNIHostName::getAsciiName)
-                    .filter(SNI_HOSTNAME::equals)
-                    .count(), is(1L));
+            if (request.path().equalsIgnoreCase("/insecure")) {
+                assertNull(ctx.sslConfig());
+                assertNull(ctx.sslSession());
+            } else {
+                assertThat(ctx.sslConfig(), is(notNullValue()));
+                SSLSession session = ctx.sslSession();
+                assertThat(session, is(notNullValue()));
+                assertThat(session, is(instanceOf(ExtendedSSLSession.class)));
+                assertThat(((ExtendedSSLSession) session).getRequestedServerNames().stream()
+                        .filter(sni -> sni instanceof SNIHostName)
+                        .map(SNIHostName.class::cast)
+                        .map(SNIHostName::getAsciiName)
+                        .filter(SNI_HOSTNAME::equals)
+                        .count(), is(1L));
+            }
             return responseFactory.ok();
         };
     }

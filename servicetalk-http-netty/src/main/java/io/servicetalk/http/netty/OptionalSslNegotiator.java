@@ -17,26 +17,41 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslListenMode;
+import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.ssl.SslContext;
+import io.netty.util.Mapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.time.Duration;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+/**
+ * Negotiates SSL/non-SSL connections when SSL is enabled and {@link SslListenMode} is set to
+ * {@link SslListenMode#SSL_OPTIONAL}.
+ */
 final class OptionalSslNegotiator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OptionalSslNegotiator.class);
@@ -82,26 +97,20 @@ final class OptionalSslNegotiator {
                                     drainRequestPayloadBody, connectionObserver);
                         }
                     } else {
-                        // TODO: need to duplicate all but SSL config
-                        final HttpServerConfig newConfig = new HttpServerConfig();
-                        if (roConfig.h1Config() != null && roConfig.h2Config() != null) {
-                            newConfig.httpConfig().protocols(roConfig.h1Config(), roConfig.h2Config());
-                        } else if (roConfig.h1Config() != null) {
-                            newConfig.httpConfig().protocols(roConfig.h1Config());
-                        } else if (roConfig.h2Config() != null) {
-                            newConfig.httpConfig().protocols(roConfig.h2Config());
-                        }
-                        final ReadOnlyHttpServerConfig roNewConfig = newConfig.asReadOnly();
+                        // Handler negotiated a non-TLS connection, so disable the SSL config for the coming
+                        // steps.
+                        final ReadOnlyHttpServerConfig roConfigWithoutSsl =
+                                new NonSslForcingReadOnlyHttpServerConfig(roConfig);
 
                         if (roConfig.h2Config() != null) {
                             return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
-                                    executionContext, roNewConfig,
-                                    new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
+                                    executionContext, roConfigWithoutSsl,
+                                    new TcpServerChannelInitializer(roConfigWithoutSsl.tcpConfig(),
                                             connectionObserver, executionContext), service,
                                     drainRequestPayloadBody, connectionObserver);
                         } else {
-                            return NettyHttpServer.initChannel(channel, executionContext, roNewConfig,
-                                    new TcpServerChannelInitializer(roNewConfig.tcpConfig(),
+                            return NettyHttpServer.initChannel(channel, executionContext, roConfigWithoutSsl,
+                                    new TcpServerChannelInitializer(roConfigWithoutSsl.tcpConfig(),
                                             connectionObserver, executionContext), service,
                                     drainRequestPayloadBody, connectionObserver);
                         }
@@ -121,5 +130,119 @@ final class OptionalSslNegotiator {
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
                     return new NettyHttpServer.NettyHttpServerContext(delegate, service, executionContext);
                 });
+    }
+
+    private static final class NonSslForcingReadOnlyHttpServerConfig implements ReadOnlyHttpServerConfig {
+
+        private final ReadOnlyHttpServerConfig delegate;
+
+        NonSslForcingReadOnlyHttpServerConfig(final ReadOnlyHttpServerConfig delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public ReadOnlyTcpServerConfig tcpConfig() {
+            final ReadOnlyTcpServerConfig delegateTcpConfig = delegate.tcpConfig();
+            return new ReadOnlyTcpServerConfig() {
+                @Nullable
+                @Override
+                public SslContext sslContext() {
+                    return null;
+                }
+
+                @Nullable
+                @Override
+                public ServerSslConfig sslConfig() {
+                    return null;
+                }
+
+                @Override
+                public boolean isAlpnConfigured() {
+                    return false;
+                }
+
+                @Nullable
+                @Override
+                public Mapping<String, SslContext> sniMapping() {
+                    return null;
+                }
+
+                @Override
+                public TransportObserver transportObserver() {
+                    return delegateTcpConfig.transportObserver();
+                }
+
+                @Override
+                public SslListenMode sslListenMode() {
+                    return delegateTcpConfig.sslListenMode();
+                }
+
+                @Override
+                public int sniMaxClientHelloLength() {
+                    return delegateTcpConfig.sniMaxClientHelloLength();
+                }
+
+                @Override
+                public Duration sniClientHelloTimeout() {
+                    return delegateTcpConfig.sniClientHelloTimeout();
+                }
+
+                @Override
+                @SuppressWarnings("rawtypes")
+                public Map<ChannelOption, Object> listenOptions() {
+                    return delegateTcpConfig.listenOptions();
+                }
+
+                @Override
+                @SuppressWarnings("rawtypes")
+                public Map<ChannelOption, Object> options() {
+                    return delegateTcpConfig.options();
+                }
+
+                @Override
+                public long idleTimeoutMs() {
+                    return delegateTcpConfig.idleTimeoutMs();
+                }
+
+                @Override
+                public FlushStrategy flushStrategy() {
+                    return delegateTcpConfig.flushStrategy();
+                }
+
+                @Nullable
+                @Override
+                public UserDataLoggerConfig wireLoggerConfig() {
+                    return delegateTcpConfig.wireLoggerConfig();
+                }
+            };
+        }
+
+        @Nullable
+        @Override
+        public H1ProtocolConfig h1Config() {
+            return delegate.h1Config();
+        }
+
+        @Nullable
+        @Override
+        public H2ProtocolConfig h2Config() {
+            return delegate.h2Config();
+        }
+
+        @Override
+        public boolean allowDropTrailersReadFromTransport() {
+            return delegate.allowDropTrailersReadFromTransport();
+        }
+
+        @Override
+        public boolean isH2PriorKnowledge() {
+            return delegate.isH2PriorKnowledge();
+        }
+
+        @Nullable
+        @Override
+        public HttpLifecycleObserver lifecycleObserver() {
+            return delegate.lifecycleObserver();
+        }
     }
 }
