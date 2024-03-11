@@ -24,12 +24,14 @@ import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
+import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
 import io.servicetalk.loadbalancer.XdsOutlierDetectorFactory;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static java.time.Duration.ofSeconds;
 
 public final class DefaultLoadBalancerClient {
 
@@ -49,8 +51,42 @@ public final class DefaultLoadBalancerClient {
             String id) {
         return LoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
                 builder(id)
+                .loadBalancingPolicy(
+                        // DefaultLoadBalancer supports multiple patterns for selecting hosts including
+                        // - Round robin: linear iteration through the host list, skipping unhealthy hosts, per request.
+                        // - Power of two choices (P2C): randomly select two hosts and take the best based on score.
+                        // Both policies consider outlier detection (see below) but only P2C can bias traffic toward
+                        // more performant hosts. It does this by tracking request latency per-host using an
+                        // exponentially weighted moving average (EWMA) and using that combined with outstanding
+                        // request count to score hosts. The net result is typically a traffic distribution that will
+                        // show a preference toward faster hosts while also rapidly adjust to changes in backend
+                        // performance.
+                        new P2CLoadBalancingPolicy.Builder().maxEffort(6)
+                                .build())
                 .outlierDetectorFactory(new XdsOutlierDetectorFactory<>(
-                        new OutlierDetectorConfig.Builder().build()
+                        // xDS compatible outlier detection has a number of tuning knobs. There are multiple detection
+                        // algorithms describe in more detail below. In addition to the limits appropriate to each
+                        // algorithm there are also parameters to tune the chances of enforcement when a particular
+                        // threshold is hit, the general intervals for periodic detection, penalty durations, etc.
+                        // See the `OutlierDetectorConfig` documentation for specific details.
+                        // The three primary detection mechanisms are:
+                        // - consecutive 5xx: Immediately mark a host as unhealthy if the specified number of failures
+                        //     happen in a row (subject to constraints). Good for rapid detection of failing hosts.
+                        // - success rate: statistical outlier detection pattern that runs on the detection interval.
+                        //     Good for true outlier detection but not as easy to reason about as failure percentage.
+                        // - failure percentage: Set a static limit on the percentage of requests that can fail before a
+                        //     host is considered unhealthy. Simple to understand and correlates well to common metrics
+                        //     but not as dynamic as success rate.
+                        new OutlierDetectorConfig.Builder()
+                                // set the interval to 30 seconds (default: to 10 seconds)
+                                .interval(ofSeconds(30))
+                                // set a more aggressive consecutive failure policy (default: 5)
+                                .consecutive5xx(3)
+                                // enabled failure percentage detection (default: 0)
+                                .enforcingFailurePercentage(100)
+                                // only allow 20% of hosts to be marked unhealthy at any one time
+                                .maxEjectionPercentage(80)
+                                .build()
                     )).build();
     }
 }
