@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.SslProvider;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,8 +65,10 @@ class MutualSslTest {
             for (SslProvider clientSslProvider : SslProvider.values()) {
                 for (Map<SocketOption, Object> serverListenOptions : SERVER_LISTEN_OPTIONS) {
                     for (Map<SocketOption, Object> clientOptions : CLIENT_OPTIONS) {
-                        params.add(Arguments.of(serverSslProvider, clientSslProvider,
-                                serverListenOptions, clientOptions));
+                        for (SslListenMode sslListenMode : SslListenMode.values()) {
+                            params.add(Arguments.of(serverSslProvider, clientSslProvider,
+                                    serverListenOptions, clientOptions, sslListenMode));
+                        }
                     }
                 }
             }
@@ -78,14 +81,16 @@ class MutualSslTest {
     void mutualSsl(SslProvider serverSslProvider,
                    SslProvider clientSslProvider,
                    @SuppressWarnings("rawtypes") Map<SocketOption, Object> serverListenOptions,
-                   @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions) throws Exception {
+                   @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions,
+                   final SslListenMode sslListenMode) throws Exception {
         assumeTcpFastOpen(clientOptions);
 
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .trustManager(DefaultTestCerts::loadClientCAPem)
-                        .clientAuthMode(REQUIRE).provider(serverSslProvider).build());
+                        .clientAuthMode(REQUIRE).provider(serverSslProvider).build())
+                .sslListenMode(sslListenMode);
         for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : serverListenOptions.entrySet()) {
             @SuppressWarnings("unchecked")
             SocketOption<Object> option = entry.getKey();
@@ -97,8 +102,12 @@ class MutualSslTest {
                      .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .provider(clientSslProvider).peerHost(serverPemHostname())
                              .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
-                     .buildBlocking()) {
+                     .buildBlocking();
+             BlockingHttpClient insecureClient = newClientBuilder(serverContext, clientOptions).buildBlocking()) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
+            if (sslListenMode == SslListenMode.SSL_OPTIONAL) {
+                assertEquals(HttpResponseStatus.OK, insecureClient.request(insecureClient.get("/")).status());
+            }
         }
     }
 

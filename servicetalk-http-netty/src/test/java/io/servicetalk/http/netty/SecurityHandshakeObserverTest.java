@@ -24,20 +24,27 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslListenMode;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
@@ -50,6 +57,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -132,23 +140,39 @@ class SecurityHandshakeObserverTest {
         }).when(observer).connectionClosed(any(Throwable.class));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void verifyHandshakeComplete(List<HttpProtocol> protocols) throws Exception {
-        verifyHandshakeObserved(protocols, false);
+    private static Stream<Arguments> arguments() {
+        List<Arguments> arguments = new ArrayList<>();
+        for (List<HttpProtocol> protocol : HttpProtocol.allCombinations()) {
+            if (protocol.size() == 1) {
+                for (SslListenMode sslListenMode : SslListenMode.values()) {
+                    arguments.add(Arguments.of(protocol, sslListenMode));
+                }
+            } else {
+                arguments.add(Arguments.of(protocol, SslListenMode.SSL_REQUIRED));
+            }
+        }
+        return arguments.stream();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void verifyHandshakeFailed(List<HttpProtocol> protocols) throws Exception {
-        verifyHandshakeObserved(protocols, true);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} sslListenMode={1}")
+    @MethodSource("arguments")
+    void verifyHandshakeComplete(List<HttpProtocol> protocols, SslListenMode sslListenMode) throws Exception {
+        verifyHandshakeObserved(protocols, false, sslListenMode);
     }
 
-    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} sslListenMode={1}")
+    @MethodSource("arguments")
+    void verifyHandshakeFailed(List<HttpProtocol> protocols, SslListenMode sslListenMode) throws Exception {
+        verifyHandshakeObserved(protocols, true, sslListenMode);
+    }
+
+    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake,
+                                         SslListenMode sslListenMode) throws Exception {
         try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
             .protocols(toConfigs(protocols))
             .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
+            .sslListenMode(sslListenMode)
             .transportObserver(serverTransportObserver)
             .listenStreamingAndAwait(new TestServiceStreaming());
 
@@ -203,5 +227,62 @@ class SecurityHandshakeObserverTest {
             }
         }
         verifyNoMoreInteractions(transportObserver, securityHandshakeObserver);
+    }
+
+    @Test
+    void optionalSslWithPlaintextDoesNotTriggerSecurityHandshake() throws Exception {
+        final CountDownLatch done = new CountDownLatch(1);
+        final AtomicBoolean securityInvoked = new AtomicBoolean(false);
+
+        try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
+                .sslConfig(new ServerSslConfigBuilder(
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
+                .sslListenMode(SslListenMode.SSL_OPTIONAL)
+                .transportObserver((localAddress, remoteAddress) -> new ConnectionObserver() {
+                    @Override
+                    public void onDataRead(final int size) {
+                    }
+
+                    @Override
+                    public void onDataWrite(final int size) {
+                    }
+
+                    @Override
+                    public void onFlush() {
+                    }
+
+                    @Override
+                    public SecurityHandshakeObserver onSecurityHandshake() {
+                        securityInvoked.set(true);
+                        return NoopTransportObserver.NoopSecurityHandshakeObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public DataObserver connectionEstablished(final ConnectionInfo info) {
+                        return NoopDataObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
+                        return NoopMultiplexedObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public void connectionClosed(final Throwable error) {
+                        done.countDown();
+                    }
+
+                    @Override
+                    public void connectionClosed() {
+                        done.countDown();
+                    }
+                })
+                .listenStreamingAndAwait(new TestServiceStreaming());
+
+             BlockingHttpClient client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX).buildBlocking()) {
+            assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
+        }
+        done.await();
+        assertFalse(securityInvoked.get());
     }
 }

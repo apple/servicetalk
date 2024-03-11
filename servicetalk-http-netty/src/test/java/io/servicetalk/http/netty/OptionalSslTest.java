@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslListenMode;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,6 +39,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -64,9 +68,10 @@ final class OptionalSslTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
-    @ParameterizedTest(name = "{displayName} [{index}] acceptInsecureConnections={0}, protocol={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] sslListenMode={0}, protocol={1} sslProvider={2}")
     @MethodSource("args")
-    void acceptsEncryptedAndNonEncryptedRequests(final boolean acceptInsecureConnections, final HttpProtocol protocol)
+    void acceptsEncryptedAndNonEncryptedRequests(final SslListenMode sslListenMode, final HttpProtocol protocol,
+                                                 final SslProvider sslProvider)
             throws Exception {
         final HttpService service = (ctx, request, responseFactory) -> {
             if ("/secure".equals(request.path())) {
@@ -79,16 +84,16 @@ final class OptionalSslTest {
             return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
         };
 
-        try (ServerContext server = serverBuilder(acceptInsecureConnections, protocol).listenAndAwait(service)) {
+        try (ServerContext server = serverBuilder(sslListenMode, sslProvider, protocol).listenAndAwait(service)) {
             for (int i = 0; i < 4; i++) {
-                try (BlockingHttpClient client = clientBuilder(server, true, protocol).buildBlocking()) {
+                try (BlockingHttpClient client = clientBuilder(server, sslProvider, true, protocol).buildBlocking()) {
                     final HttpResponse response = client.request(client.get("/secure"));
                     assertEquals(HttpResponseStatus.OK, response.status());
                 }
 
-                try (BlockingHttpClient client = clientBuilder(server, false, protocol).buildBlocking()) {
+                try (BlockingHttpClient client = clientBuilder(server, sslProvider, false, protocol).buildBlocking()) {
                     final HttpRequest request = client.get("/insecure");
-                    if (acceptInsecureConnections) {
+                    if (sslListenMode == SslListenMode.SSL_OPTIONAL) {
                         final HttpResponse response = client.request(request);
                         assertEquals(HttpResponseStatus.OK, response.status());
                     } else {
@@ -100,29 +105,35 @@ final class OptionalSslTest {
     }
 
     private static Stream<Arguments> args() {
-        return Stream.of(
-                Arguments.of(true, HttpProtocol.HTTP_1),
-                Arguments.of(false, HttpProtocol.HTTP_1),
-                Arguments.of(true, HttpProtocol.HTTP_2),
-                Arguments.of(false, HttpProtocol.HTTP_2)
-        );
+        List<Arguments> arguments = new ArrayList<>();
+        for (SslListenMode listenMode : SslListenMode.values()) {
+            for (HttpProtocol protocol : Arrays.asList(HttpProtocol.HTTP_1, HttpProtocol.HTTP_2)) {
+                for (SslProvider sslProvider : SslProvider.values()) {
+                    arguments.add(Arguments.of(listenMode, protocol, sslProvider));
+                }
+            }
+        }
+        return arguments.stream();
     }
 
-    private static HttpServerBuilder serverBuilder(final boolean acceptEnabled, final HttpProtocol... protocols) {
+    private static HttpServerBuilder serverBuilder(final SslListenMode sslListenMode, final SslProvider sslProvider,
+                                                   final HttpProtocol... protocols) {
         ServerSslConfigBuilder configBuilder = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                DefaultTestCerts::loadServerKey);
-        return newServerBuilder(SERVER_CTX, protocols).sslConfig(configBuilder.build()).sslListenMode(acceptEnabled ?
-                SslListenMode.SSL_OPTIONAL :
-                SslListenMode.SSL_REQUIRED);
+                DefaultTestCerts::loadServerKey)
+                .provider(sslProvider);
+        return newServerBuilder(SERVER_CTX, protocols)
+                .sslConfig(configBuilder.build())
+                .sslListenMode(sslListenMode);
     }
 
     private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder(
-            final ServerContext ctx, final boolean withSsl, final HttpProtocol... protocols) {
+            final ServerContext ctx, final SslProvider sslProvider, final boolean withSsl,
+            final HttpProtocol... protocols) {
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 newClientBuilder(ctx, CLIENT_CTX, protocols);
         if (withSsl) {
             builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                    .peerHost(serverPemHostname()).build());
+                    .peerHost(serverPemHostname()).provider(sslProvider).build());
         }
         return builder;
     }
