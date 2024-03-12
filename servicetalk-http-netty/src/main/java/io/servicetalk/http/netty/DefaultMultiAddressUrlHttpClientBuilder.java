@@ -175,10 +175,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
-
-            // TODO: why do we need to do the rewriting here? Can we do it later after we've selected a client?
-
-            setRequestAuthority(metaData);
+            setHostHeader(metaData);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
             final String key = scheme + ':' + host + ':' + port;
@@ -495,7 +492,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return port;
     }
 
-    private static void setRequestAuthority(HttpRequestMetaData metaData) {
+    private static void setHostHeader(HttpRequestMetaData metaData) {
         if (!HTTP_1_0.equals(metaData.version()) && !metaData.headers().contains(HOST)) {
             CharSequence authority = metaData.host();
             if (metaData.port() >= 0) {
