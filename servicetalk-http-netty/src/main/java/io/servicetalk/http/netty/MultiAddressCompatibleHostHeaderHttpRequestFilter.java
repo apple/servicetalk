@@ -24,7 +24,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 final class MultiAddressCompatibleHostHeaderHttpRequestFilter extends HostHeaderHttpRequesterFilter {
 
     static final ContextMap.Key<CharSequence> AUTHORITY_KEY =
-            ContextMap.Key.newKey("request-authority", CharSequence.class);
+            ContextMap.Key.newKey(MultiAddressCompatibleHostHeaderHttpRequestFilter.class.getName() +
+                    ".requestAuthority", CharSequence.class);
 
     private final boolean preferSynthesizeFromRequest;
 

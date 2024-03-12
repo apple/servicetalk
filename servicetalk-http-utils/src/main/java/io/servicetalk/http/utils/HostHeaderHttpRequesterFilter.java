@@ -98,6 +98,6 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
      * @param request the request on which to set the host header.
      */
     protected void setHostHeader(final HttpRequestMetaData request) {
-                request.setHeader(HOST, fallbackHost);
+        request.setHeader(HOST, fallbackHost);
     }
 }
