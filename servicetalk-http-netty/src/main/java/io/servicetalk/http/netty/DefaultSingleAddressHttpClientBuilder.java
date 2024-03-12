@@ -313,7 +313,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
             if (ctx.builder.addHostHeaderFallbackFilter) {
                 currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
-                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
+                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address), true));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(

@@ -110,10 +110,7 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
 
     private void setRequestHeader(final HttpRequestMetaData metaData) {
         CharSequence authority;
-        // TODO: for some reason this is broken for CONNECT requests. It seems that they may be rewritten already to
-        // relative form and when we try to get the `.host()` we get a IAE: `Invalid URI format: ...`.
-        // See DefaultSingleAddressHttpClientBuilder.java:308.
-        if (useAuthorityOnAbsoluteUri || (authority = metaData.host()) == null) {
+        if (!useAuthorityOnAbsoluteUri || (authority = metaData.host()) == null) {
             authority = fallbackHost;
         } else {
             final int port = metaData.port();
