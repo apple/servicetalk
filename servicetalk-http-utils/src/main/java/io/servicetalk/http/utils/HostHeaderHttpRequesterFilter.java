@@ -40,7 +40,7 @@ import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
  * A filter which will set a {@link HttpHeaderNames#HOST} header with the fallback value if the header is not already
  * present in {@link HttpRequestMetaData}.
  */
-public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                             StreamingHttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
@@ -55,7 +55,7 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
     }
 
     @Override
-    public final StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
 
             @Override
@@ -67,7 +67,7 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
     }
 
     @Override
-    public final StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
@@ -77,7 +77,7 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
     }
 
     @Override
-    public final HttpExecutionStrategy requiredOffloads() {
+    public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
         return HttpExecutionStrategies.offloadNone();
     }
@@ -87,17 +87,9 @@ public class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterF
         return defer(() -> {
             // "Host" header is not required for HTTP/1.0
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
-                setHostHeader(request);
+                request.setHeader(HOST, fallbackHost);
             }
             return delegate.request(request).shareContextOnSubscribe();
         });
-    }
-
-    /**
-     * Attempt to set the host header for requests that don't already contain a host header and are not HTTP/1.0.
-     * @param request the request on which to set the host header.
-     */
-    protected void setHostHeader(final HttpRequestMetaData request) {
-        request.setHeader(HOST, fallbackHost);
     }
 }

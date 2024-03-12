@@ -73,9 +73,10 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
-import static io.servicetalk.http.netty.MultiAddressCompatibleHostHeaderHttpRequestFilter.AUTHORITY_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -122,6 +123,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(
+                    // constructed here.
                     new CachingKeyFactory(defaultHttpPort, defaultHttpsPort));
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
@@ -156,7 +158,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.defaultHttpsPort = defaultHttpsPort;
         }
 
-        public UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
+        UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String host = metaData.host();
             if (host == null) {
                 throw new MalformedURLException(
@@ -173,6 +175,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
+
+            // TODO: why do we need to do the rewriting here? Can we do it later after we've selected a client?
 
             setRequestAuthority(metaData);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
@@ -492,14 +496,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     private static void setRequestAuthority(HttpRequestMetaData metaData) {
-        if (metaData.context().containsKey(AUTHORITY_KEY) || metaData.host() == null) {
-            return;
+        if (!HTTP_1_0.equals(metaData.version()) && !metaData.headers().contains(HOST)) {
+            CharSequence authority = metaData.host();
+            if (metaData.port() >= 0) {
+                authority = authority + ":" + metaData.port();
+            }
+            metaData.headers().add(HOST, authority);
         }
-        // the host from the metaData should already be sanitized.
-        CharSequence authority = metaData.host();
-        if (metaData.port() >= 0) {
-            authority = authority + ":" + metaData.port();
-        }
-        metaData.context().put(AUTHORITY_KEY, authority);
     }
 }
