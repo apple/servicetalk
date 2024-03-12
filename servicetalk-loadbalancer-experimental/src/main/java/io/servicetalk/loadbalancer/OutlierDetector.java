@@ -15,12 +15,14 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 /**
  * The representation of a health checking system for use with load balancing.
  */
-interface HealthChecker<ResolvedAddress> extends Cancellable {
+interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> extends Cancellable {
 
     /**
      * Construct a new {@link HealthIndicator}.
@@ -30,5 +32,5 @@ interface HealthChecker<ResolvedAddress> extends Cancellable {
      * @param address the resolved address of the destination.
      * @return new {@link HealthIndicator}.
      */
-    HealthIndicator newHealthIndicator(ResolvedAddress address, LoadBalancerObserver.HostObserver hostObserver);
+    HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver);
 }

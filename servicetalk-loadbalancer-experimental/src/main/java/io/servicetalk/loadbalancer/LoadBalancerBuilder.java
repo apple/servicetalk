@@ -83,13 +83,13 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
     LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(@Nullable LoadBalancerObserver loadBalancerObserver);
 
     /**
-     * Set the {@link HealthCheckerFactory} to use with this load balancer.
-     * @param healthCheckerFactory the {@link HealthCheckerFactory} to use, or {@code null} to not use a
-     * {@link HealthChecker}.
+     * Set the {@link OutlierDetectorFactory} to use with this load balancer.
+     * @param outlierDetectorFactory the {@link OutlierDetectorFactory} to use, or {@code null} to not use a
+     * {@link OutlierDetector}.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(
-            HealthCheckerFactory<ResolvedAddress> healthCheckerFactory);
+    LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
+            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory);
 
     /**
      * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed

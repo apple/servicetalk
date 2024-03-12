@@ -107,7 +107,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
-    private final HealthChecker<ResolvedAddress> healthChecker;
+    private final OutlierDetector<ResolvedAddress, C> healthChecker;
     private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
@@ -133,7 +133,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final int linearSearchSpace,
             final LoadBalancerObserver loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            @Nullable final Function<String, HealthChecker<ResolvedAddress>> healthCheckerFactory) {
+            @Nullable final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -149,7 +149,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-        this.healthChecker = healthCheckerFactory == null ? null : healthCheckerFactory.apply(lbDescription);
+        this.healthChecker = outlierDetectorFactory == null ? null : outlierDetectorFactory.apply(lbDescription);
         // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
         // we already have all the fields initialized.
         subscribeToEvents(false);
@@ -391,6 +391,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     null : healthChecker.newHealthIndicator(addr, hostObserver);
             final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionFactory,
                     linearSearchSpace, hostObserver, healthCheckConfig, indicator);
+            if (indicator != null) {
+                indicator.setHost(host);
+            }
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;

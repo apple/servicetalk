@@ -15,19 +15,21 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Executor;
 
 /**
- * A factory of {@link HealthChecker} instances. The factory will be used by load balancer
+ * A factory of {@link OutlierDetector} instances. The factory will be used by load balancer
  * builders and may make more than one health checker per-load balancer.
  * @param <ResolvedAddress> the type of the resolved address.
+ * @param <C> the type of the load balanced connection.
  */
-public interface HealthCheckerFactory<ResolvedAddress> {
+public interface OutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
-     * Create a new {@link HealthChecker}.
+     * Create a new {@link OutlierDetector}.
      * @param executor the {@link Executor} to use for scheduling tasks and obtaining the current time.
      * @param lbDescription a description of the load balancer for logging purposes.
-     * @return a new {@link HealthChecker}.
+     * @return a new {@link OutlierDetector}.
      */
-    HealthChecker<ResolvedAddress> newHealthChecker(Executor executor, String lbDescription);
+    OutlierDetector<ResolvedAddress, C> newHealthChecker(Executor executor, String lbDescription);
 }

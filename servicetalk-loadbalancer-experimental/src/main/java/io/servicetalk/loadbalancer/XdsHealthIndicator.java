@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
@@ -32,7 +33,8 @@ import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
-abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker implements HealthIndicator {
+abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnection> extends DefaultRequestTracker
+        implements HealthIndicator<ResolvedAddress, C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XdsHealthIndicator.class);
 
@@ -47,6 +49,9 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     private final AtomicInteger consecutive5xx = new AtomicInteger();
     private final AtomicLong successes = new AtomicLong();
     private final AtomicLong failures = new AtomicLong();
+
+    @Nullable
+    private Host<ResolvedAddress, C> host;
 
 
     // reads and writes protected by the helpers `SequentialExecutor`.
@@ -82,18 +87,23 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
     protected abstract boolean tryEjectHost();
 
     /**
-     * Alert the parent {@link XdsHealthChecker} that this host has transitions from healthy to unhealthy.
+     * Alert the parent {@link XdsOutlierDetector} that this host has transitions from healthy to unhealthy.
      */
     protected abstract void hostRevived();
 
     /**
-     * Alert the parent {@link XdsHealthChecker} that this {@link HealthIndicator} is no longer being used.
+     * Alert the parent {@link XdsOutlierDetector} that this {@link HealthIndicator} is no longer being used.
      */
     protected abstract void doCancel();
 
     @Override
     protected final long currentTimeNanos() {
         return executor.currentTime(TimeUnit.NANOSECONDS);
+    }
+
+    @Override
+    public final void setHost(Host<ResolvedAddress, C> host) {
+        this.host = requireNonNull(host, "host");
     }
 
     @Override
@@ -162,7 +172,7 @@ abstract class XdsHealthIndicator<ResolvedAddress> extends DefaultRequestTracker
         if (consecutiveFailures >= localConfig.consecutive5xx() && enforcing(localConfig.enforcingConsecutive5xx())) {
             sequentialExecutor.execute(() -> {
                 if (!cancelled && evictedUntilNanos == null &&
-                        sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // this performs side effects.
+                        sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // side effecting
                         LOGGER.isDebugEnabled()) {
                     LOGGER.debug("{}-{}: observed error which did result in consecutive 5xx ejection. " +
                                     "Consecutive 5xx: {}, limit: {}.", lbDescription, address, consecutiveFailures,
