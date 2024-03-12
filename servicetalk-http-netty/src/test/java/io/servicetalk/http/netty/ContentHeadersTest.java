@@ -78,7 +78,6 @@ import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_CONT
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_EXISTING_CONTENT_LENGTH;
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_NEITHER;
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_TRANSFER_ENCODING_CHUNKED;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
