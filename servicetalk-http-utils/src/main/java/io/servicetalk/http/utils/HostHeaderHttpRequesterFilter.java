@@ -34,6 +34,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 
 /**
@@ -42,7 +43,9 @@ import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
  */
 public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                             StreamingHttpConnectionFilterFactory {
+
     private final CharSequence fallbackHost;
+    private final boolean useAuthorityOnAbsoluteUri;
 
     /**
      * Create a new instance.
@@ -50,8 +53,20 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
     public HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
+        this(fallbackHost, false);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
+     * @param useAuthorityOnAbsoluteUri whether to use the request authority (minus user-info) if the request target
+     *                                  is in absolute form.
+     */
+    public HostHeaderHttpRequesterFilter(final CharSequence fallbackHost, final boolean useAuthorityOnAbsoluteUri) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
+        this.useAuthorityOnAbsoluteUri = useAuthorityOnAbsoluteUri;
     }
 
     @Override
@@ -87,9 +102,25 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
         return defer(() -> {
             // "Host" header is not required for HTTP/1.0
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
-                request.setHeader(HOST, fallbackHost);
+                setRequestHeader(request);
             }
             return delegate.request(request).shareContextOnSubscribe();
         });
+    }
+
+    private void setRequestHeader(final HttpRequestMetaData metaData) {
+        CharSequence authority;
+        // TODO: for some reason this is broken for CONNECT requests. It seems that they may be rewritten already to
+        // relative form and when we try to get the `.host()` we get a IAE: `Invalid URI format: ...`.
+        // See DefaultSingleAddressHttpClientBuilder.java:308.
+        if (useAuthorityOnAbsoluteUri || (authority = metaData.host()) == null) {
+            authority = fallbackHost;
+        } else {
+            final int port = metaData.port();
+            if (port >= 0) {
+                authority = authority + ":" + port;
+            }
+        }
+        metaData.headers().add(HOST, authority);
     }
 }
