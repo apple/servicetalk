@@ -84,6 +84,9 @@ public final class DefaultLoadBalancerClient {
                         // - failure percentage: Set a static limit on the percentage of requests that can fail before a
                         //     host is considered unhealthy. Simple to understand and correlates well to common metrics
                         //     but not as dynamic as success rate.
+                        // In the context of the above, failures are considered exceptions (commonly failure to
+                        // establish a connection, closed channel, etc) and HTTP responses with status 5xx and
+                        // 429 TOO MANY REQUESTS. In the future the classification of responses will be configurable.
                         new OutlierDetectorConfig.Builder()
                                 // set the interval to 30 seconds (default: to 10 seconds)
                                 .interval(ofSeconds(30))
