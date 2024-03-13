@@ -49,6 +49,12 @@ final class HttpServerConfig {
         });
     }
 
+    HttpServerConfig(final HttpServerConfig from) {
+        tcpConfig = new TcpServerConfig(from.tcpConfig);
+        httpConfig = new HttpConfig(from.httpConfig);
+        lifecycleObserver = from.lifecycleObserver;
+    }
+
     TcpServerConfig tcpConfig() {
         return tcpConfig;
     }

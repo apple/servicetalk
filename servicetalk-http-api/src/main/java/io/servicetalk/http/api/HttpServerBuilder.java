@@ -68,6 +68,18 @@ public interface HttpServerBuilder {
     HttpServerBuilder sslConfig(ServerSslConfig config);
 
     /**
+     * Set the SSL/TLS configuration and allows to specify if insecure connections should also be allowed.
+     *
+     * @param config The configuration to use.
+     * @param acceptInsecureConnections if non-TLS connections are accepted on the same socket.
+     * @return {@code this}.
+     */
+    default HttpServerBuilder sslConfig(ServerSslConfig config, boolean acceptInsecureConnections) {
+        throw new UnsupportedOperationException(
+                "sslConfig(ServerSslConfig, boolean) is not supported by " + getClass());
+    }
+
+    /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
      *
      * @param defaultConfig The configuration to use if the client certificate's SNI extension isn't present or the
@@ -93,11 +105,37 @@ public interface HttpServerBuilder {
      * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.
      * {@link Duration#ZERO Zero (0)} disables timeout.
      * @return {@code this}.
+     * @deprecated use {@link #sslConfig(ServerSslConfig, Map, int, Duration, boolean)} instead.
      */
+    @Deprecated
     default HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap,
                                         int maxClientHelloLength, Duration clientHelloTimeout) {
         throw new UnsupportedOperationException(
-                "sslConfig(ServerSslConfig, Map, int, Durations) is not supported by " + getClass());
+                "sslConfig(ServerSslConfig, Map, int, Duration) is not supported by " + getClass());
+    }
+
+    /**
+     * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
+     *
+     * @param defaultConfig The configuration to use if the client certificate's SNI extension isn't present or the
+     * SNI hostname doesn't match any values in {@code sniMap}.
+     * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
+     * to provide the corresponding {@link ServerSslConfig}.
+     * @param maxClientHelloLength The maximum length of a
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message in bytes, up to
+     * {@code 2^24 - 1} bytes. Zero ({@code 0}) disables validation.
+     * @param clientHelloTimeout The timeout for waiting until
+     * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
+     * Implementations can round the specified {@link Duration} to full time units, depending on their time granularity.
+     * @param acceptInsecureConnections if non-TLS connections are accepted on the same socket.
+     * {@link Duration#ZERO Zero (0)} disables timeout.
+     * @return {@code this}.
+     */
+    default HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap,
+                                        int maxClientHelloLength, Duration clientHelloTimeout,
+                                        boolean acceptInsecureConnections) {
+        throw new UnsupportedOperationException(
+                "sslConfig(ServerSslConfig, Map, int, Duration, boolean) is not supported by " + getClass());
     }
 
     /**

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
@@ -84,7 +83,7 @@ final class DeferredServerChannelBinder {
                 });
     }
 
-    private static Single<NettyConnectionContext> alpnInitChannel(final SocketAddress listenAddress,
+    static Single<NettyConnectionContext> alpnInitChannel(final SocketAddress listenAddress,
                                                                   final Channel channel,
                                                                   final ReadOnlyHttpServerConfig config,
                                                                   final HttpExecutionContext httpExecutionContext,
@@ -110,7 +109,7 @@ final class DeferredServerChannelBinder {
         });
     }
 
-    private static Single<NettyConnectionContext> sniInitChannel(final SocketAddress listenAddress,
+    static Single<NettyConnectionContext> sniInitChannel(final SocketAddress listenAddress,
                                                                  final Channel channel,
                                                                  final ReadOnlyHttpServerConfig config,
                                                                  final HttpExecutionContext httpExecutionContext,

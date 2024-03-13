@@ -48,6 +48,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     private final Mapping<String, SslContext> sniMapping;
     private final int sniMaxClientHelloLength;
     private final Duration sniClientHelloTimeout;
+    private final boolean acceptInsecureConnections;
     private final boolean alpnConfigured;
 
     ReadOnlyTcpServerConfig(final TcpServerConfig from) {
@@ -84,6 +85,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
         }
         sniMaxClientHelloLength = from.sniMaxClientHelloLength();
         sniClientHelloTimeout = from.sniClientHelloTimeout();
+        acceptInsecureConnections = from.acceptInsecureConnections();
     }
 
     /**
@@ -144,6 +146,15 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
 
     Duration sniClientHelloTimeout() {
         return sniClientHelloTimeout;
+    }
+
+    /**
+     * Returns {@code true} if non-TLS connections should also be accepted on TLS-enabled sockets.
+     *
+     * @return {@code true} if non-TLS connections should also be accepted on TLS-enabled sockets.
+     */
+    public boolean acceptInsecureConnections() {
+        return acceptInsecureConnections;
     }
 
     /**

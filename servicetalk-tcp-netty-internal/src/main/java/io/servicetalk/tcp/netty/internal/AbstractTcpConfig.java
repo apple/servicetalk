@@ -147,7 +147,7 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
      *
      * @param sslConfig the {@link SslConfigType}.
      */
-    public final void sslConfig(final SslConfigType sslConfig) {
-        this.sslConfig = requireNonNull(sslConfig);
+    public final void sslConfig(final @Nullable SslConfigType sslConfig) {
+        this.sslConfig = sslConfig;
     }
 }
