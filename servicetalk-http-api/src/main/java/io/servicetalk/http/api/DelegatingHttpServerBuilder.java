@@ -96,15 +96,6 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
-                                       final int maxClientHelloLength, final Duration clientHelloTimeout,
-                                       final boolean acceptInsecureConnections) {
-        delegate = delegate.sslConfig(defaultConfig, sniMap, maxClientHelloLength, clientHelloTimeout,
-                acceptInsecureConnections);
-        return this;
-    }
-
-    @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
         delegate = delegate.socketOption(option, value);
         return this;

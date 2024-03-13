@@ -113,7 +113,7 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
      * @return {@code this}.
      */
     public TcpServerConfig sslConfig(ServerSslConfig config, boolean acceptInsecureConnections) {
-        sslConfig(config);
+        sslConfig(requireNonNull(config));
         this.acceptInsecureConnections = acceptInsecureConnections;
         return this;
     }
@@ -126,10 +126,9 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
      * found the corresponding {@link ServerSslConfig} is used.
      * @return {@code this}
      */
-    public TcpServerConfig sslConfig(@Nullable ServerSslConfig defaultSslConfig,
-                                     @Nullable Map<String, ServerSslConfig> sniConfig) {
+    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig) {
         sslConfig(defaultSslConfig);
-        this.sniConfig = sniConfig;
+        this.sniConfig = requireNonNull(sniConfig);
         return this;
     }
 

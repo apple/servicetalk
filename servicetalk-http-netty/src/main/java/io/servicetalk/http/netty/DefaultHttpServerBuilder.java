@@ -224,16 +224,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
-        this.config.tcpConfig().sslConfig(requireNonNull(config), acceptInsecureConnections);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
-                                       final int maxClientHelloLength, final Duration clientHelloTimeout,
-                                       final boolean acceptInsecureConnections) {
-        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig), requireNonNull(sniMap), maxClientHelloLength,
-                requireNonNull(clientHelloTimeout), acceptInsecureConnections);
+        this.config.tcpConfig().sslConfig(config, acceptInsecureConnections);
         return this;
     }
 
@@ -416,8 +407,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
         if (roConfig.tcpConfig().sslConfig() != null && roConfig.tcpConfig().acceptInsecureConnections()) {
-            config.tcpConfig().sslConfig(null, null);
-            ReadOnlyHttpServerConfig roConfigWithoutSsl = config.asReadOnly();
+            HttpServerConfig configWithoutSsl = new HttpServerConfig(config);
+            configWithoutSsl.tcpConfig().sslConfig(null);
+            ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
             return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
                     connectionAcceptor, service, drainRequestPayloadBody, earlyConnectionAcceptor,
                     lateConnectionAcceptor);
