@@ -110,7 +110,7 @@ class Tls13Test {
                 .sslListenMode(sslListenMode)
             .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                 assertThat(request.payloadBody(textSerializerUtf8()), equalTo("request-payload-body"));
-                if (request.path().equalsIgnoreCase("/insecure")) {
+                if ("/insecure".equalsIgnoreCase(request.path())) {
                     assertNull(ctx.sslSession());
                     assertNull(ctx.sslConfig());
                     return responseFactory.ok();

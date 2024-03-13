@@ -68,6 +68,7 @@ final class DefaultReadOnlyHttpServerConfig implements ReadOnlyHttpServerConfig 
     }
 
     @Nullable
+    @Override
     public HttpLifecycleObserver lifecycleObserver() {
         return lifecycleObserver;
     }

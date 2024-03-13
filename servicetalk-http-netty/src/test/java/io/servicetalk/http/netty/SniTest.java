@@ -306,7 +306,7 @@ class SniTest {
 
     private static BlockingHttpService newSslVerifyService() {
         return (ctx, request, responseFactory) -> {
-            if (request.path().equalsIgnoreCase("/insecure")) {
+            if ("/insecure".equalsIgnoreCase(request.path())) {
                 assertNull(ctx.sslConfig());
                 assertNull(ctx.sslSession());
             } else {
