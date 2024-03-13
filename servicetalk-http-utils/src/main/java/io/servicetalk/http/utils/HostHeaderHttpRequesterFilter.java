@@ -34,7 +34,6 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
-import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 
 /**
@@ -45,7 +44,6 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
                                                             StreamingHttpConnectionFilterFactory {
 
     private final CharSequence fallbackHost;
-    private final boolean useAuthorityOnAbsoluteUri;
 
     /**
      * Create a new instance.
@@ -53,20 +51,8 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
     public HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
-        this(fallbackHost, false);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     * @param useAuthorityOnAbsoluteUri whether to use the request authority (minus user-info) if the request target
-     *                                  is in absolute form.
-     */
-    public HostHeaderHttpRequesterFilter(final CharSequence fallbackHost, final boolean useAuthorityOnAbsoluteUri) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
-        this.useAuthorityOnAbsoluteUri = useAuthorityOnAbsoluteUri;
     }
 
     @Override
@@ -109,11 +95,14 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
     }
 
     private void setRequestHeader(final HttpRequestMetaData metaData) {
-        CharSequence authority;
-        if (!useAuthorityOnAbsoluteUri || (authority = metaData.host()) == null) {
+        CharSequence authority = metaData.host();
+        if (authority == null) {
             authority = fallbackHost;
         } else {
             final int port = metaData.port();
+            // If the port was in the authority, regardless of whether it's the default or not for this scheme, we
+            // need to add it to the host header.
+            // https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
             if (port >= 0) {
                 authority = authority + ":" + port;
             }
