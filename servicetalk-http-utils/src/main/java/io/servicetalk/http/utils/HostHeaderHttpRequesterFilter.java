@@ -42,6 +42,7 @@ import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
  */
 public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                             StreamingHttpConnectionFilterFactory {
+
     private final CharSequence fallbackHost;
 
     /**
@@ -87,9 +88,25 @@ public final class HostHeaderHttpRequesterFilter implements StreamingHttpClientF
         return defer(() -> {
             // "Host" header is not required for HTTP/1.0
             if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
-                request.setHeader(HOST, fallbackHost);
+                setRequestHeader(request);
             }
             return delegate.request(request).shareContextOnSubscribe();
         });
+    }
+
+    private void setRequestHeader(final HttpRequestMetaData metaData) {
+        CharSequence authority = metaData.host();
+        if (authority == null) {
+            authority = fallbackHost;
+        } else {
+            final int port = metaData.port();
+            // If the port was in the authority, regardless of whether it's the default or not for this scheme, we
+            // need to add it to the host header.
+            // https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
+            if (port >= 0) {
+                authority = authority + ":" + port;
+            }
+        }
+        metaData.headers().add(HOST, authority);
     }
 }

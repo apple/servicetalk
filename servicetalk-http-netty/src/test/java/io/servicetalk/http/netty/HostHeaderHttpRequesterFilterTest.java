@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -176,12 +177,56 @@ class HostHeaderHttpRequesterFilterTest {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendClientFilterExplicitHostHeaderWithAuthority(HttpVersionConfig httpVersionConfig)
+            throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
+        try (ServerContext context = buildServer();
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
+                     .protocols(httpVersionConfig.config())
+                     .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
+                     .buildBlocking()) {
+            HostAndPort hostAndPort = serverHostAndPort(context);
+            final String expectedHostHeader = hostAndPort.hostName() + ":" + hostAndPort.port();
+            HttpRequest request = client.get("http://" + expectedHostHeader + "/")
+                    .version(httpVersionConfig.version());
+            assertResponse(client, request, null, expectedHostHeader);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendClientFilterExplicitHostHeaderWithAuthorityAndHostHeader(
+            HttpVersionConfig httpVersionConfig)
+            throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
+        try (ServerContext context = buildServer();
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
+                     .protocols(httpVersionConfig.config())
+                     .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
+                     .buildBlocking()) {
+            HostAndPort hostAndPort = serverHostAndPort(context);
+            final String explicitHostHeader = "foo.bar:0";
+            HttpRequest request = client.get("http://" + hostAndPort.hostName() + ":" + hostAndPort.port() + "/")
+                    .version(httpVersionConfig.version());
+            request.headers().add(HOST, explicitHostHeader);
+            assertResponse(client, request, explicitHostHeader, explicitHostHeader);
+        }
+    }
+
     private void assertResponse(BlockingHttpRequester requester, @Nullable String hostHeader, String expectedValue)
             throws Exception {
         final HttpRequest request = requester.get("/").version(httpVersionConfig.version());
         if (hostHeader != null) {
             request.setHeader(HOST, hostHeader);
         }
+        assertResponse(requester, request, hostHeader, expectedValue);
+    }
+
+    private void assertResponse(BlockingHttpRequester requester, HttpRequest request, @Nullable String hostHeader,
+                                String expectedValue)
+            throws Exception {
         HttpResponse response = requester.request(request);
         assertThat(response.status(), equalTo(OK));
         assertThat(response.version(), equalTo(httpVersionConfig.version()));
