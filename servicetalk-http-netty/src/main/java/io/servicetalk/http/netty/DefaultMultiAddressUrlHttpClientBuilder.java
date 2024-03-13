@@ -123,7 +123,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(
-                    // constructed here.
                     new CachingKeyFactory(defaultHttpPort, defaultHttpsPort));
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
