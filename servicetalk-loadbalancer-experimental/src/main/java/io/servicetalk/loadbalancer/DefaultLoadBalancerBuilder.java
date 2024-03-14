@@ -136,17 +136,17 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         }
         final LoadBalancerObserver loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        Function<String, OutlierDetector<ResolvedAddress, C>> healthCheckerSupplier;
-        if (outlierDetectorFactory == null) {
-            healthCheckerSupplier = null;
+        Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
+        if (this.outlierDetectorFactory == null) {
+            outlierDetectorFactory = null;
         } else {
             final Executor executor = getExecutor();
-            healthCheckerSupplier = (String lbDescrption) ->
-                    outlierDetectorFactory.newHealthChecker(executor, lbDescrption);
+            outlierDetectorFactory = (String lbDescrption) ->
+                    this.outlierDetectorFactory.newOutlierDetector(executor, lbDescrption);
         }
 
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
-                loadBalancerObserver, healthCheckerSupplier);
+                loadBalancerObserver, outlierDetectorFactory);
     }
 
     private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>

@@ -43,7 +43,7 @@ class XdsOutlierDetectorAlgorithmTest {
     @Nullable
     TestExecutor testExecutor;
     OutlierDetectorConfig config;
-    XdsOutlierDetector<String, TestLoadBalancedConnection> healthChecker;
+    XdsOutlierDetector<String, TestLoadBalancedConnection> outlierDetector;
 
     private OutlierDetectorConfig.Builder withAllEnforcing() {
         return new OutlierDetectorConfig.Builder()
@@ -57,10 +57,10 @@ class XdsOutlierDetectorAlgorithmTest {
     void initialize() {
         testExecutor = executor.executor();
         config = withAllEnforcing().build();
-        healthChecker = buildHealthChecker();
+        outlierDetector = buildoutlierDetector();
     }
 
-    private XdsOutlierDetector<String, TestLoadBalancedConnection> buildHealthChecker() {
+    private XdsOutlierDetector<String, TestLoadBalancedConnection> buildoutlierDetector() {
         return new XdsOutlierDetector<>(new NormalizedTimeSourceExecutor(testExecutor), config, "");
     }
 
@@ -76,14 +76,14 @@ class XdsOutlierDetectorAlgorithmTest {
     @Test
     void cancellation() {
         config = withAllEnforcing().maxEjectionPercentage(100).build();
-        healthChecker = buildHealthChecker();
-        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1", observer());
-        HealthIndicator indicator2 = healthChecker.newHealthIndicator("address-2", observer());
+        outlierDetector = buildoutlierDetector();
+        HealthIndicator indicator1 = outlierDetector.newHealthIndicator("address-1", observer());
+        HealthIndicator indicator2 = outlierDetector.newHealthIndicator("address-2", observer());
         eject(indicator1);
         eject(indicator2);
         assertFalse(indicator1.isHealthy());
         assertFalse(indicator2.isHealthy());
-        healthChecker.cancel();
+        outlierDetector.cancel();
 
         // Because they were cancelled both indicators should now consider themselves healthy.
         assertTrue(indicator1.isHealthy());
@@ -105,9 +105,9 @@ class XdsOutlierDetectorAlgorithmTest {
                 .enforcingFailurePercentage(0)
                 .enforcingSuccessRate(0)
                 .build();
-        healthChecker = buildHealthChecker();
+        outlierDetector = buildoutlierDetector();
 
-        HealthIndicator indicator1 = healthChecker.newHealthIndicator("address-1", observer());
+        HealthIndicator indicator1 = outlierDetector.newHealthIndicator("address-1", observer());
         eject(indicator1);
         assertFalse(indicator1.isHealthy());
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
@@ -129,10 +129,10 @@ class XdsOutlierDetectorAlgorithmTest {
 
     private void testEjectPercentage(int maxEjectPercentage) {
         config = withAllEnforcing().maxEjectionPercentage(maxEjectPercentage).build();
-        healthChecker = buildHealthChecker();
+        outlierDetector = buildoutlierDetector();
         List<HealthIndicator> healthIndicators = new ArrayList<>(4);
         for (int i = 0; i < 4; i++) {
-            healthIndicators.add(healthChecker.newHealthIndicator("address-" + i, observer()));
+            healthIndicators.add(outlierDetector.newHealthIndicator("address-" + i, observer()));
         }
 
         for (HealthIndicator indicator : healthIndicators) {

@@ -31,5 +31,5 @@ public interface OutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedC
      * @param lbDescription a description of the load balancer for logging purposes.
      * @return a new {@link OutlierDetector}.
      */
-    OutlierDetector<ResolvedAddress, C> newHealthChecker(Executor executor, String lbDescription);
+    OutlierDetector<ResolvedAddress, C> newOutlierDetector(Executor executor, String lbDescription);
 }
