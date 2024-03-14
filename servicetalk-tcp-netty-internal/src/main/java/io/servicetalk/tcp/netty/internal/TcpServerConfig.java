@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Configuration for TCP based servers.
  */
-public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
+public final class TcpServerConfig extends AbstractTcpConfig {
     /**
      * The maximum length of ClientHello message as defined by
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">RFC5246</a> and
@@ -52,6 +52,8 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ServerSslConfig> sniConfig;
+    @Nullable
+    private ServerSslConfig sslConfig;
     private int sniMaxClientHelloLength = MAX_CLIENT_HELLO_LENGTH;
     private Duration sniClientHelloTimeout = DEFAULT_CLIENT_HELLO_TIMEOUT;
     private boolean acceptInsecureConnections;
@@ -61,6 +63,7 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
 
     public TcpServerConfig(final TcpServerConfig from) {
         super(from);
+        sslConfig = from.sslConfig;
         listenOptions = from.listenOptions;
         transportObserver = from.transportObserver;
         sniConfig = from.sniConfig;
@@ -84,16 +87,26 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
         return sniConfig;
     }
 
-    int sniMaxClientHelloLength() {
+    public int sniMaxClientHelloLength() {
         return sniMaxClientHelloLength;
     }
 
-    Duration sniClientHelloTimeout() {
+    public Duration sniClientHelloTimeout() {
         return sniClientHelloTimeout;
     }
 
-    boolean acceptInsecureConnections() {
+    public boolean acceptInsecureConnections() {
         return acceptInsecureConnections;
+    }
+
+    /**
+     * Get the {@link ServerSslConfig}.
+     *
+     * @return the {@link ServerSslConfig}, or {@code null} if SSL/TLS is not configured.
+     */
+    @Nullable
+    public ServerSslConfig sslConfig() {
+        return sslConfig;
     }
 
     /**
@@ -103,6 +116,16 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
      */
     public void transportObserver(final TransportObserver transportObserver) {
         this.transportObserver = requireNonNull(transportObserver);
+    }
+
+    /**
+     * Add SSL/TLS related config.
+     *
+     * @param sslConfig the {@link ServerSslConfig}.
+     */
+    public void sslConfig(final @Nullable ServerSslConfig sslConfig) {
+        this.sslConfig = sslConfig;
+        this.acceptInsecureConnections = false;
     }
 
     /**

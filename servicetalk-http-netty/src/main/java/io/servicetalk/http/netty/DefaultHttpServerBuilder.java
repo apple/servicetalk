@@ -204,21 +204,23 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config) {
-        this.config.tcpConfig().sslConfig(requireNonNull(config));
+        this.config.tcpConfig().sslConfig(requireNonNull(config, "config"));
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig), requireNonNull(sniMap));
+        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
+                requireNonNull(sniMap, "sniMap"));
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
                                        final int maxClientHelloLength, final Duration clientHelloTimeout) {
-        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig), requireNonNull(sniMap), maxClientHelloLength,
-                requireNonNull(clientHelloTimeout));
+        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
+                requireNonNull(sniMap, "sniMap"), maxClientHelloLength,
+                requireNonNull(clientHelloTimeout, "clientHelloTimeout"));
         return this;
     }
 

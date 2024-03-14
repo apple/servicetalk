@@ -36,7 +36,7 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forServe
 /**
  * Read only view of {@link TcpServerConfig}.
  */
-public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<ServerSslConfig> {
+public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> listenOptions;
     private final TransportObserver transportObserver;
@@ -114,7 +114,6 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
      * @return the {@link ServerSslConfig}, or {@code null} if SSL/TLS is not configured.
      */
     @Nullable
-    @Override
     public ServerSslConfig sslConfig() {
         return sslConfig;
     }

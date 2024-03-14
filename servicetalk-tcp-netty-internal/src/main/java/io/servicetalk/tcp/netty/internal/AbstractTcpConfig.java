@@ -19,7 +19,6 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -39,10 +38,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Common configuration for TCP based clients and servers.
- *
- * @param <SslConfigType> type of {@link SslConfig}.
  */
-abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
+abstract class AbstractTcpConfig {
 
     @Nullable
     @SuppressWarnings("rawtypes")
@@ -51,19 +48,16 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private UserDataLoggerConfig wireLoggerConfig;
-    @Nullable
-    private SslConfigType sslConfig;
 
     protected AbstractTcpConfig() {
         socketOption(SO_KEEPALIVE, true);
     }
 
-    protected AbstractTcpConfig(final AbstractTcpConfig<SslConfigType> from) {
+    protected AbstractTcpConfig(final AbstractTcpConfig from) {
         options = from.options;
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
         wireLoggerConfig = from.wireLoggerConfig;
-        sslConfig = from.sslConfig;
     }
 
     @Nullable
@@ -83,16 +77,6 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
     @Nullable
     final UserDataLoggerConfig wireLoggerConfig() {
         return wireLoggerConfig;
-    }
-
-    /**
-     * Get the {@link SslConfigType}.
-     *
-     * @return the {@link SslConfigType}, or {@code null} if SSL/TLS is not configured.
-     */
-    @Nullable
-    public final SslConfigType sslConfig() {
-        return sslConfig;
     }
 
     /**
@@ -140,14 +124,5 @@ abstract class AbstractTcpConfig<SslConfigType extends SslConfig> {
                                         final LogLevel logLevel,
                                         final BooleanSupplier logUserData) {
         wireLoggerConfig = new DefaultUserDataLoggerConfig(loggerName, logLevel, logUserData);
-    }
-
-    /**
-     * Add SSL/TLS related config.
-     *
-     * @param sslConfig the {@link SslConfigType}.
-     */
-    public final void sslConfig(final @Nullable SslConfigType sslConfig) {
-        this.sslConfig = sslConfig;
     }
 }
