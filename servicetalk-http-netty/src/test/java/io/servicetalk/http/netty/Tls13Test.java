@@ -31,6 +31,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -43,16 +46,17 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static io.servicetalk.transport.api.SslProvider.JDK;
-import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class Tls13Test {
 
@@ -69,23 +73,26 @@ class Tls13Test {
     private static final String TLS1_3_REQUIRED_CIPHER = "TLS_AES_128_GCM_SHA256";
 
     @SuppressWarnings("unused")
-    private static Stream<Arguments> sslProviders() {
-        return Stream.of(
-                Arguments.of(JDK, JDK, null),
-                Arguments.of(JDK, JDK, TLS1_3_REQUIRED_CIPHER),
-                Arguments.of(JDK, OPENSSL, null),
-                Arguments.of(JDK, OPENSSL, TLS1_3_REQUIRED_CIPHER),
-                Arguments.of(OPENSSL, JDK, null),
-                Arguments.of(OPENSSL, JDK, TLS1_3_REQUIRED_CIPHER),
-                Arguments.of(OPENSSL, OPENSSL, null),
-                Arguments.of(OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER)
-        );
+    private static Stream<Arguments> arguments() {
+        List<Arguments> arguments = new ArrayList<>();
+        for (boolean acceptInsecureConnections : asList(true, false)) {
+            for (SslProvider serverSslProvider : SslProvider.values()) {
+                for (SslProvider clientSslProvider : SslProvider.values()) {
+                    for (String cipher : asList(null, TLS1_3_REQUIRED_CIPHER)) {
+                        arguments.add(Arguments.of(serverSslProvider, clientSslProvider, cipher,
+                                acceptInsecureConnections));
+                    }
+                }
+            }
+        }
+        return arguments.stream();
     }
 
-    @ParameterizedTest
-    @MethodSource("sslProviders")
-    void requiredCipher(SslProvider serverSslProvider, SslProvider clientSslProvider, @Nullable String cipher)
-        throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] serverSslProvider={0} clientSslProvider={1} cipher={2} " +
+            "acceptInsecureConnections={3}")
+    @MethodSource("arguments")
+    void requiredCipher(SslProvider serverSslProvider, SslProvider clientSslProvider, @Nullable String cipher,
+                        boolean acceptInsecureConnections) throws Exception {
         ServerSslConfigBuilder serverSslBuilder = new ServerSslConfigBuilder(
                 DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .sslProtocols(TLS1_3).provider(serverSslProvider);
@@ -97,15 +104,21 @@ class Tls13Test {
             .executor(SERVER_CTX.executor())
             .executionStrategy(defaultStrategy())
             .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
-            .sslConfig(serverSslBuilder.build())
+            .sslConfig(serverSslBuilder.build(), acceptInsecureConnections)
             .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                 assertThat(request.payloadBody(textSerializerUtf8()), equalTo("request-payload-body"));
-                SslConfig sslConfig = ctx.sslConfig();
-                assertThat(sslConfig, is(notNullValue()));
-                assertThat(sslConfig.sslProtocols(), contains(TLS1_3));
-                SSLSession sslSession = ctx.sslSession();
-                assertThat(sslSession, is(notNullValue()));
-                return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializerUtf8());
+                if ("/insecure".equalsIgnoreCase(request.path())) {
+                    assertNull(ctx.sslSession());
+                    assertNull(ctx.sslConfig());
+                    return responseFactory.ok();
+                } else {
+                    SslConfig sslConfig = ctx.sslConfig();
+                    assertThat(sslConfig, is(notNullValue()));
+                    assertThat(sslConfig.sslProtocols(), contains(TLS1_3));
+                    SSLSession sslSession = ctx.sslSession();
+                    assertThat(sslSession, is(notNullValue()));
+                    return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializerUtf8());
+                }
             })) {
 
             ClientSslConfigBuilder clientSslBuilder =
@@ -137,6 +150,18 @@ class Tls13Test {
                 assertThat(response.status(), is(OK));
                 assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
                 assertThat(response.payloadBody(textSerializerUtf8()), equalTo(TLS1_3));
+            }
+
+            try (BlockingHttpClient client = HttpClients
+                    .forSingleAddress(serverHostAndPort(serverContext))
+                    .buildBlocking()) {
+                if (acceptInsecureConnections) {
+                    HttpResponse response = client.request(client.post("/insecure")
+                            .payloadBody("request-payload-body", textSerializerUtf8()));
+                    assertThat(response.status(), is(OK));
+                } else {
+                    assertThrows(IOException.class, () -> client.request(client.post("/insecure")));
+                }
             }
         }
     }

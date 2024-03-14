@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -32,10 +31,8 @@ import static java.util.Collections.unmodifiableMap;
 
 /**
  * Read only view of {@link AbstractTcpConfig}.
- *
- * @param <SecurityConfig> type of security configuration
  */
-abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
+abstract class AbstractReadOnlyTcpConfig {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
     private final long idleTimeoutMs;
@@ -43,14 +40,14 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
 
-    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig> from) {
+    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig from) {
         options = nonNullOptions(from.options());
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
     }
 
-    AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig<SecurityConfig> from) {
+    AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig from) {
         options = from.options();
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
@@ -107,12 +104,4 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
      */
     @Nullable
     public abstract SslContext sslContext();
-
-    /**
-     * Get the {@link SslConfig}.
-     *
-     * @return the {@link SslConfig}, or {@code null} if SSL/TLS is not configured.
-     */
-    @Nullable
-    public abstract SecurityConfig sslConfig();
 }

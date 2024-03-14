@@ -68,6 +68,18 @@ public interface HttpServerBuilder {
     HttpServerBuilder sslConfig(ServerSslConfig config);
 
     /**
+     * Set the SSL/TLS configuration and allows to specify if insecure connections should also be allowed.
+     *
+     * @param config The configuration to use.
+     * @param acceptInsecureConnections if non-TLS connections are accepted on the same socket.
+     * @return {@code this}.
+     */
+    default HttpServerBuilder sslConfig(ServerSslConfig config, boolean acceptInsecureConnections) {
+        throw new UnsupportedOperationException(
+                "sslConfig(ServerSslConfig, boolean) is not supported by " + getClass());
+    }
+
+    /**
      * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
      *
      * @param defaultConfig The configuration to use if the client certificate's SNI extension isn't present or the
@@ -97,7 +109,7 @@ public interface HttpServerBuilder {
     default HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap,
                                         int maxClientHelloLength, Duration clientHelloTimeout) {
         throw new UnsupportedOperationException(
-                "sslConfig(ServerSslConfig, Map, int, Durations) is not supported by " + getClass());
+                "sslConfig(ServerSslConfig, Map, int, Duration) is not supported by " + getClass());
     }
 
     /**

@@ -90,6 +90,12 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
+        delegate = delegate.sslConfig(config, acceptInsecureConnections);
+        return this;
+    }
+
+    @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
         delegate = delegate.socketOption(option, value);
         return this;

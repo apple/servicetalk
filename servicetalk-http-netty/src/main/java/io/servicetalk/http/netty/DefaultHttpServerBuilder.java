@@ -204,20 +204,29 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config) {
-        this.config.tcpConfig().sslConfig(config);
+        this.config.tcpConfig().sslConfig(requireNonNull(config, "config"));
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        this.config.tcpConfig().sslConfig(defaultConfig, sniMap);
+        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
+                requireNonNull(sniMap, "sniMap"));
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap,
                                        final int maxClientHelloLength, final Duration clientHelloTimeout) {
-        this.config.tcpConfig().sslConfig(defaultConfig, sniMap, maxClientHelloLength, clientHelloTimeout);
+        this.config.tcpConfig().sslConfig(requireNonNull(defaultConfig, "defaultConfig"),
+                requireNonNull(sniMap, "sniMap"), maxClientHelloLength,
+                requireNonNull(clientHelloTimeout, "clientHelloTimeout"));
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
+        this.config.tcpConfig().sslConfig(config, acceptInsecureConnections);
         return this;
     }
 
@@ -399,7 +408,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
-        if (roConfig.tcpConfig().isAlpnConfigured()) {
+        if (roConfig.tcpConfig().sslConfig() != null && roConfig.tcpConfig().acceptInsecureConnections()) {
+            HttpServerConfig configWithoutSsl = new HttpServerConfig(config);
+            configWithoutSsl.tcpConfig().sslConfig(null);
+            ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
+            return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
+                    connectionAcceptor, service, drainRequestPayloadBody, earlyConnectionAcceptor,
+                    lateConnectionAcceptor);
+        } else if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
                     filteredService, drainRequestPayloadBody, false, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().sniMapping() != null) {

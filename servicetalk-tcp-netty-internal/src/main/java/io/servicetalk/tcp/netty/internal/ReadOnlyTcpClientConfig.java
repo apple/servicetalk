@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 /**
  Read only view of {@link TcpClientConfig}.
  */
-public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<ClientSslConfig> {
+public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig {
     @Nullable
     private final SslContext sslContext;
     @Nullable
@@ -82,7 +82,6 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<Cli
      * @return the {@link ClientSslConfig}, or {@code null} if SSL/TLS is not configured.
      */
     @Nullable
-    @Override
     public ClientSslConfig sslConfig() {
         return sslConfig;
     }
