@@ -36,7 +36,7 @@ public final class XdsOutlierDetectorFactory<ResolvedAddress, C extends LoadBala
     }
 
     @Override
-    public OutlierDetector<ResolvedAddress, C> newHealthChecker(
+    public OutlierDetector<ResolvedAddress, C> newOutlierDetector(
             final Executor executor, String lbDescription) {
         return new XdsOutlierDetector<>(executor, config, lbDescription);
     }
