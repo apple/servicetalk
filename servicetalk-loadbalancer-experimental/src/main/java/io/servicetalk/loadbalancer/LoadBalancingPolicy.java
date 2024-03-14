@@ -25,6 +25,12 @@ import java.util.List;
  * @param <C> the type of the load balanced connection
  */
 public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
+
+    /**
+     * The default fail-open policy to use for {@link HostSelector} implementations.
+     */
+    boolean DEFAULT_FAIL_OPEN_POLICY = false;
+
     /**
      * The name of the load balancing policy.
      * @return the name of the load balancing policy

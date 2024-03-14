@@ -52,7 +52,7 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
      */
     public static final class Builder {
 
-        private boolean failOpen;
+        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
 
         /**
          * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
