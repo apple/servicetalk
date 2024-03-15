@@ -43,8 +43,9 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">RFC5246</a> and
      * <a href="https://datatracker.ietf.org/doc/html/rfc6347#section-3.2.3">RFC6347</a> as {@code 2^24 - 1}.
      */
-    private static final int MAX_CLIENT_HELLO_LENGTH = 0xFFFFFF;
-    private static final Duration DEFAULT_CLIENT_HELLO_TIMEOUT = ofSeconds(10); // same as default in Netty SslHandler
+    static final int MAX_CLIENT_HELLO_LENGTH = 0xFFFFFF;
+    static final Duration DEFAULT_CLIENT_HELLO_TIMEOUT = ofSeconds(10); // same as default in Netty SslHandler
+    static final boolean DEFAULT_ACCEPT_INSECURE_CONNECTIONS = false;
 
     @Nullable
     @SuppressWarnings("rawtypes")
@@ -122,10 +123,10 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * Add SSL/TLS related config.
      *
      * @param sslConfig the {@link ServerSslConfig}.
+     * @return {@code this}.
      */
-    public void sslConfig(final @Nullable ServerSslConfig sslConfig) {
-        this.sslConfig = sslConfig;
-        this.acceptInsecureConnections = false;
+    public TcpServerConfig sslConfig(final @Nullable ServerSslConfig sslConfig) {
+        return sslConfig(sslConfig, DEFAULT_ACCEPT_INSECURE_CONNECTIONS);
     }
 
     /**
@@ -135,28 +136,26 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * @param acceptInsecureConnections if non-TLS connections are accepted on the same socket.
      * @return {@code this}.
      */
-    public TcpServerConfig sslConfig(ServerSslConfig config, boolean acceptInsecureConnections) {
-        sslConfig(requireNonNull(config));
-        this.acceptInsecureConnections = acceptInsecureConnections;
-        return this;
+    public TcpServerConfig sslConfig(@Nullable ServerSslConfig config, boolean acceptInsecureConnections) {
+        return sslConfig(config, null, MAX_CLIENT_HELLO_LENGTH, DEFAULT_CLIENT_HELLO_TIMEOUT,
+                acceptInsecureConnections);
     }
 
     /**
-     * Add SSL/TLS and SNI related config.
+     * Add SSL/TLS and SNI related config with default client hello settings.
      *
      * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
      * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
      * found the corresponding {@link ServerSslConfig} is used.
      * @return {@code this}
      */
-    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig) {
-        sslConfig(defaultSslConfig);
-        this.sniConfig = requireNonNull(sniConfig);
-        return this;
+    public TcpServerConfig sslConfig(@Nullable ServerSslConfig defaultSslConfig,
+                                     @Nullable Map<String, ServerSslConfig> sniConfig) {
+        return sslConfig(defaultSslConfig, sniConfig, MAX_CLIENT_HELLO_LENGTH, DEFAULT_CLIENT_HELLO_TIMEOUT);
     }
 
     /**
-     * Add SSL/TLS and SNI related config.
+     * Add SSL/TLS and SNI related config with custom client hello settings.
      *
      * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
      * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
@@ -170,20 +169,16 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * {@link Duration#ZERO Zero (0)} disables timeout.
      * @return {@code this}
      */
-    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig,
-                                     int maxClientHelloLength, Duration clientHelloTimeout) {
-        sslConfig(defaultSslConfig, sniConfig);
-        if (maxClientHelloLength < 0 || maxClientHelloLength > MAX_CLIENT_HELLO_LENGTH) {
-            throw new IllegalArgumentException("maxClientHelloLength: " + maxClientHelloLength +
-                    "(expected [0, " + MAX_CLIENT_HELLO_LENGTH + ']');
-        }
-        this.sniMaxClientHelloLength = maxClientHelloLength;
-        this.sniClientHelloTimeout = ensureNonNegative(clientHelloTimeout, "clientHelloTimeout");
-        return this;
+    public TcpServerConfig sslConfig(@Nullable ServerSslConfig defaultSslConfig,
+                                     @Nullable Map<String, ServerSslConfig> sniConfig,
+                                     int maxClientHelloLength,
+                                     Duration clientHelloTimeout) {
+        return sslConfig(defaultSslConfig, sniConfig, maxClientHelloLength, clientHelloTimeout,
+                DEFAULT_ACCEPT_INSECURE_CONNECTIONS);
     }
 
     /**
-     * Add SSL/TLS and SNI related config.
+     * Add SSL/TLS and SNI related config with custom client hello and insecure connection settings.
      *
      * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
      * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
@@ -198,10 +193,24 @@ public final class TcpServerConfig extends AbstractTcpConfig {
      * {@link Duration#ZERO Zero (0)} disables timeout.
      * @return {@code this}
      */
-    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig,
-                                     int maxClientHelloLength, Duration clientHelloTimeout,
+    public TcpServerConfig sslConfig(@Nullable ServerSslConfig defaultSslConfig,
+                                     @Nullable Map<String, ServerSslConfig> sniConfig,
+                                     int maxClientHelloLength,
+                                     Duration clientHelloTimeout,
                                      boolean acceptInsecureConnections) {
-        sslConfig(defaultSslConfig, sniConfig, maxClientHelloLength, clientHelloTimeout);
+        if (defaultSslConfig == null && sniConfig != null) {
+            throw new IllegalArgumentException("If the defaultSslConfig is null (disabled), the " +
+                    "sniConfig must also be null.");
+        }
+        if (maxClientHelloLength < 0 || maxClientHelloLength > MAX_CLIENT_HELLO_LENGTH) {
+            throw new IllegalArgumentException("maxClientHelloLength: " + maxClientHelloLength +
+                    "(expected [0, " + MAX_CLIENT_HELLO_LENGTH + ']');
+        }
+
+        this.sslConfig = defaultSslConfig;
+        this.sniConfig = sniConfig;
+        this.sniMaxClientHelloLength = maxClientHelloLength;
+        this.sniClientHelloTimeout = ensureNonNegative(clientHelloTimeout, "clientHelloTimeout");
         this.acceptInsecureConnections = acceptInsecureConnections;
         return this;
     }
