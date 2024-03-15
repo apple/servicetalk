@@ -24,17 +24,11 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_INTERVAL;
-import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_JITTER;
-import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
@@ -51,13 +45,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserver loadBalancerObserver;
-    @Nullable
-    private OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory;
-    private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
-    private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
-    private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
-    private Duration healthCheckResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
-    private Duration healthCheckResubscribeJitter = DEFAULT_HEALTH_CHECK_JITTER;
+    private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
@@ -85,9 +73,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
-            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory) {
-        this.outlierDetectorFactory = outlierDetectorFactory;
+    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig) {
+        this.outlierDetectorConfig = outlierDetectorConfig == null ?
+                OutlierDetectorConfig.DEFAULT_CONFIG : outlierDetectorConfig;
         return this;
     }
 
@@ -98,53 +86,29 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
-        validateHealthCheckIntervals(interval, jitter);
-        this.healthCheckInterval = interval;
-        this.healthCheckJitter = jitter;
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(
-            Duration interval, Duration jitter) {
-        validateHealthCheckIntervals(interval, jitter);
-        this.healthCheckResubscribeInterval = interval;
-        this.healthCheckResubscribeJitter = jitter;
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
-            int threshold) {
-        if (threshold == 0) {
-            throw new IllegalArgumentException("Invalid health-check failed connections (expected != 0)");
-        }
-        this.healthCheckFailedConnectionsThreshold = threshold;
-        return this;
-    }
-
-    @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         final HealthCheckConfig healthCheckConfig;
-        if (this.healthCheckFailedConnectionsThreshold < 0) {
+        final Executor executor = getExecutor();
+        if (OutlierDetectorConfig.allDisabled(outlierDetectorConfig)) {
             healthCheckConfig = null;
         } else {
-            healthCheckConfig = new HealthCheckConfig(getExecutor(),
-                    healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
-                    healthCheckResubscribeInterval, healthCheckResubscribeJitter);
+            healthCheckConfig = new HealthCheckConfig(
+                    executor,
+                    outlierDetectorConfig.interval(),
+                    outlierDetectorConfig.intervalJitter(),
+                    outlierDetectorConfig.failedConnectionsThreshold(),
+                    outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
+                    outlierDetectorConfig.serviceDiscoveryResubscribeJitter());
         }
         final LoadBalancerObserver loadBalancerObserver = this.loadBalancerObserver != null ?
                 this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
-        Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
-        if (this.outlierDetectorFactory == null) {
-            outlierDetectorFactory = null;
+        final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
+        if (OutlierDetectorConfig.xDSDisabled(outlierDetectorConfig)) {
+            outlierDetectorFactory = (lbDescription) -> new NoopOutlierDetector<>(outlierDetectorConfig, executor);
         } else {
-            final Executor executor = getExecutor();
-            outlierDetectorFactory = (String lbDescrption) ->
-                    this.outlierDetectorFactory.newOutlierDetector(executor, lbDescrption);
+            outlierDetectorFactory = (lbDescription) ->
+                new XdsOutlierDetector<ResolvedAddress, C>(executor, outlierDetectorConfig, lbDescription);
         }
-
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
                 loadBalancerObserver, outlierDetectorFactory);
     }

@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -172,23 +173,23 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         assertTrue(factory.currentOutlierDetector.get().cancelled);
     }
 
-    private LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
-    }
-
     @Override
-    protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final TestConnectionFactory connectionFactory) {
-        return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
-                baseLoadBalancerBuilder()
-                        .loadBalancingPolicy(loadBalancingPolicy)
-                        .outlierDetectorFactory(outlierDetectorFactory)
-                        .healthCheckFailedConnectionsThreshold(-1)
-                        .backgroundExecutor(testExecutor)
-                        .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
+    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            TestConnectionFactory connectionFactory) {
+        Function<String, OutlierDetector<String, TestLoadBalancedConnection>> factory = outlierDetectorFactory == null ?
+                    (description) -> new NoopOutlierDetector<>(OutlierDetectorConfig.DEFAULT_CONFIG, testExecutor)
+                 : (description) -> outlierDetectorFactory.newOutlierDetector(testExecutor, description);
+        return new DefaultLoadBalancer<>(
+                getClass().getSimpleName(),
+                "test-service",
+                serviceDiscoveryPublisher,
+                loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
+                connectionFactory,
+                10,
+                NoopLoadBalancerObserver.instance(),
+                null,
+                factory);
     }
 
     private static class TestHealthIndicator implements HealthIndicator<String, TestLoadBalancedConnection> {

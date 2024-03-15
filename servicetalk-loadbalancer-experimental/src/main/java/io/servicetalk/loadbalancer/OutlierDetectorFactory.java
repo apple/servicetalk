@@ -24,7 +24,7 @@ import io.servicetalk.concurrent.api.Executor;
  * @param <ResolvedAddress> the type of the resolved address.
  * @param <C> the type of the load balanced connection.
  */
-public interface OutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection> {
+interface OutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Create a new {@link OutlierDetector}.
      * @param executor the {@link Executor} to use for scheduling tasks and obtaining the current time.

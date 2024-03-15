@@ -79,6 +79,7 @@ import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -106,6 +107,13 @@ import static org.mockito.Mockito.verify;
 abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
     static final String[] EMPTY_ARRAY = {};
+
+    static final OutlierDetectorConfig BASE_CONFIG = new OutlierDetectorConfig.Builder()
+            .interval(ofSeconds(10), ZERO)
+            .enforcingFailurePercentage(0)
+            .enforcingConsecutive5xx(0)
+            .enforcingSuccessRate(0)
+            .build();
 
     private final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
             new TestSingleSubscriber<>();
@@ -440,7 +448,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .healthCheckFailedConnectionsThreshold(-1)
+                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                                .failedConnectionsThreshold(-1).build())
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
 
@@ -537,8 +546,10 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .healthCheckInterval(ofMillis(50), ofMillis(10))
-                        .healthCheckFailedConnectionsThreshold(1)
+                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                                .interval(ofMillis(50), ofMillis(10))
+                                .failedConnectionsThreshold(1)
+                                .build())
                         .backgroundExecutor(new DelegatingExecutor(testExecutor) {
 
                             @Override
@@ -711,9 +722,11 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
                 new TestConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .healthCheckInterval(ofMillis(50), ofMillis(10))
-                        // Set resubscribe interval to very large number
-                        .healthCheckResubscribeInterval(ofNanos(MAX_VALUE), ZERO)
+                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                                .interval(ofMillis(50), ofMillis(10))
+                                // Set resubscribe interval to very large number
+                                .serviceDiscoveryResubscribeInterval(ofNanos(MAX_VALUE), ZERO)
+                                .build())
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, alwaysFailConnectionFactory, "test-service");
@@ -743,7 +756,9 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .healthCheckInterval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                                .interval(ofMillis(50), ofMillis(10))
+                                .build())
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
@@ -818,7 +833,9 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
             final TestConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .healthCheckInterval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                                .interval(ofMillis(50), ofMillis(10))
+                                .build())
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");

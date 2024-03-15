@@ -24,14 +24,16 @@ import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
@@ -83,7 +85,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     @Override
     public HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver) {
         XdsHealthIndicator<ResolvedAddress, C> result = new XdsHealthIndicatorImpl(
-                address, kernel.config.ewmaHalfLife(), hostObserver);
+                address, kernel.config, hostObserver);
         sequentialExecutor.execute(() -> indicators.add(result));
         indicatorCount.incrementAndGet();
         return result;
@@ -104,8 +106,11 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress, C> {
 
-        XdsHealthIndicatorImpl(final ResolvedAddress address, Duration ewmaHalfLife, HostObserver hostObserver) {
-            super(sequentialExecutor, executor, ewmaHalfLife, address, lbDescription, hostObserver);
+        XdsHealthIndicatorImpl(final ResolvedAddress address, OutlierDetectorConfig outlierDetectorConfig,
+                               HostObserver hostObserver) {
+            super(sequentialExecutor, executor, outlierDetectorConfig.ewmaHalfLife(),
+                    outlierDetectorConfig.ewmaCancellationPenalty(), outlierDetectorConfig.ewmaErrorPenalty(),
+                    address, lbDescription, hostObserver);
         }
 
         @Override
@@ -159,7 +164,12 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
         private Cancellable scheduleNextOutliersCheck(OutlierDetectorConfig currentConfig) {
             Runnable checkOutliers = () -> sequentialExecutor.execute(this::sequentialCheckOutliers);
-            return executor.schedule(checkOutliers, currentConfig.interval());
+            final long minIntervalNanos = currentConfig.interval().toNanos() - currentConfig.intervalJitter().toNanos();
+            final long maxIntervalNanos = addWithOverflowProtection(currentConfig.interval().toNanos(),
+                    currentConfig.intervalJitter().toNanos());
+            return executor.schedule(checkOutliers, ThreadLocalRandom.current().nextLong(
+                    // + 1 to make the bound inclusive
+                    minIntervalNanos, maxIntervalNanos + 1), TimeUnit.NANOSECONDS);
         }
 
         private void sequentialCheckOutliers() {

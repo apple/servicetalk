@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
-import java.time.Duration;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,14 +38,8 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
-            LoadBalancerObserver loadBalancerObserver) {
+            @Nullable LoadBalancerObserver loadBalancerObserver) {
         throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> outlierDetectorFactory(
-            OutlierDetectorFactory<String, TestLoadBalancedConnection> outlierDetectorFactory) {
-        throw new IllegalStateException("Cannot set a load balancer health checker for old round robin");
     }
 
     @Override
@@ -61,23 +55,13 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckInterval(
-            Duration interval, Duration jitter) {
-        underlying = underlying.healthCheckInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckResubscribeInterval(
-            Duration interval, Duration jitter) {
-        underlying = underlying.healthCheckResubscribeInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckFailedConnectionsThreshold(
-            int threshold) {
-        underlying = underlying.healthCheckFailedConnectionsThreshold(threshold);
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> outlierDetectorConfig(
+            OutlierDetectorConfig config) {
+        underlying = underlying
+                .healthCheckInterval(config.interval(), config.intervalJitter())
+                .healthCheckFailedConnectionsThreshold(config.failedConnectionsThreshold())
+                .healthCheckResubscribeInterval(
+                        config.serviceDiscoveryResubscribeInterval(), config.serviceDiscoveryResubscribeJitter());
         return this;
     }
 

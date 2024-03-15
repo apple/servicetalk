@@ -21,23 +21,23 @@ import io.servicetalk.concurrent.api.Executor;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory of {@link XdsOutlierDetector} instances.
- * See the {@link XdsOutlierDetector} for a detailed description and history of the xDS protocol.
+ * A factory of {@code XdsOutlierDetector} instances.
+ * See the {@code XdsOutlierDetector} for a detailed description and history of the xDS protocol.
  * @param <ResolvedAddress> the type of the resolved address.
  * @param <C> the type of the load balanced connection.
  */
-public final class XdsOutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection>
+final class XdsOutlierDetectorFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements OutlierDetectorFactory<ResolvedAddress, C> {
 
     private final OutlierDetectorConfig config;
 
-    public XdsOutlierDetectorFactory(final OutlierDetectorConfig config) {
+    private XdsOutlierDetectorFactory(final OutlierDetectorConfig config) {
         this.config = requireNonNull(config, "config");
     }
 
     @Override
     public OutlierDetector<ResolvedAddress, C> newOutlierDetector(
             final Executor executor, String lbDescription) {
-        return new XdsOutlierDetector<>(executor, config, lbDescription);
+        return new XdsOutlierDetector<ResolvedAddress, C>(executor, config, lbDescription);
     }
 }

@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.function.LongUnaryOperator;
 
+import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_CANCEL_PENALTY;
+import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_ERROR_PENALTY;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;

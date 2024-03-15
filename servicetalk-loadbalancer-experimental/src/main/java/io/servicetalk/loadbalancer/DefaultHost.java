@@ -120,6 +120,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         requireNonNull(connectionFactory, "connectionFactory");
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
+        assert healthCheckConfig == null || healthCheckConfig.failedThreshold > 0;
         this.healthCheckConfig = healthCheckConfig;
         this.hostObserver = requireNonNull(hostObserver, "hostObserver");
         this.closeable = toAsyncCloseable(this::doClose);

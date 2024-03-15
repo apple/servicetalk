@@ -25,7 +25,6 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
 import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
-import io.servicetalk.loadbalancer.XdsOutlierDetectorFactory;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
@@ -70,7 +69,7 @@ public final class DefaultLoadBalancerClient {
                                 // Whether to try to use a host regardless of health status (default: false)
                                 .failOpen(true)
                                 .build())
-                .outlierDetectorFactory(new XdsOutlierDetectorFactory<>(
+                .outlierDetectorConfig(
                         // xDS compatible outlier detection has a number of tuning knobs. There are multiple detection
                         // algorithms describe in more detail below. In addition to the limits appropriate to each
                         // algorithm there are also parameters to tune the chances of enforcement when a particular
@@ -97,6 +96,6 @@ public final class DefaultLoadBalancerClient {
                                 // only allow 20% of hosts to be marked unhealthy at any one time
                                 .maxEjectionPercentage(80)
                                 .build()
-                    )).build();
+                    ).build();
     }
 }

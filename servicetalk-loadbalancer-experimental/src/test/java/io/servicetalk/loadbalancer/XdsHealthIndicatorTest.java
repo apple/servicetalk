@@ -22,9 +22,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import static java.time.Duration.ZERO;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,9 +53,9 @@ class XdsHealthIndicatorTest {
 
     private OutlierDetectorConfig.Builder baseBuilder() {
         return new OutlierDetectorConfig.Builder()
-                .maxEjectionTimeJitter(Duration.ZERO)
-                .maxEjectionTime(Duration.ofSeconds(MAX_EJECTION_SECONDS))
-                .baseEjectionTime(Duration.ofSeconds(1));
+                .maxEjectionTime(ofSeconds(300), ZERO)
+                .maxEjectionTime(ofSeconds(MAX_EJECTION_SECONDS))
+                .baseEjectionTime(ofSeconds(1));
     }
 
     private void initIndicator() {
@@ -143,15 +144,15 @@ class XdsHealthIndicatorTest {
     @Test
     void failureMultiplierOverflow() {
         // make sure out configuration is actually correct
-        assertEquals(Duration.ofSeconds(1), config.baseEjectionTime());
-        assertEquals(Duration.ofSeconds(MAX_EJECTION_SECONDS), config.maxEjectionTime());
-        assertEquals(Duration.ZERO, config.maxEjectionTimeJitter());
+        assertEquals(ofSeconds(1), config.baseEjectionTime());
+        assertEquals(ofSeconds(MAX_EJECTION_SECONDS), config.maxEjectionTime());
+        assertEquals(ZERO, config.maxEjectionTimeJitter());
 
         // Eject as many times in a row to get the ejection time maxed out.
         for (long i = 0; i < MAX_EJECTION_SECONDS; i++) {
             ejectIndicator(true);
             // ensure the indicator is ejected until the very last nanosecond.
-            testExecutor.advanceTimeBy(Duration.ofSeconds(i + 1).toNanos() - 1, TimeUnit.NANOSECONDS);
+            testExecutor.advanceTimeBy(ofSeconds(i + 1).toNanos() - 1, TimeUnit.NANOSECONDS);
             assertFalse(healthIndicator.isHealthy());
             testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
             // now we should be healthy again
@@ -174,7 +175,7 @@ class XdsHealthIndicatorTest {
             ejectIndicator(false);
         }
         ejectIndicator(true);
-        testExecutor.advanceTimeBy(Duration.ofSeconds(2).toNanos() - 1, TimeUnit.NANOSECONDS);
+        testExecutor.advanceTimeBy(ofSeconds(2).toNanos() - 1, TimeUnit.NANOSECONDS);
         assertFalse(healthIndicator.isHealthy());
         testExecutor.advanceTimeBy(1, TimeUnit.NANOSECONDS);
         // now we should be healthy again
@@ -215,7 +216,7 @@ class XdsHealthIndicatorTest {
         boolean mayEjectHost = true;
 
         TestIndicator(final OutlierDetectorConfig config) {
-            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), Duration.ofSeconds(10),
+            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), ofSeconds(10), 5, 10,
                     "address", "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }
