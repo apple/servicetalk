@@ -95,27 +95,27 @@ class AlpnClientAndServerTest {
 
     @SuppressWarnings("unused")
     private static Stream<Arguments> arguments() {
-        final List<Arguments> arguments = new ArrayList<>(Arrays.asList(
-                Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_2_0, null, null, false),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null, false),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null, false),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null, false),
-
-                Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null, false),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_1_1, null, null, false),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null, false),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null, false)
-        ));
+        final List<Arguments> arguments = new ArrayList<>();
         for (boolean acceptInsecureConnections : asList(true, false)) {
             arguments.addAll(Arrays.asList(
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+
                     Arguments.of(singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1),
                             HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
                     Arguments.of(singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2),

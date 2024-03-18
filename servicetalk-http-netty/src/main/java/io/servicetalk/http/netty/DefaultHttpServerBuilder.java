@@ -411,6 +411,10 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         if (roConfig.tcpConfig().sslConfig() != null && roConfig.tcpConfig().acceptInsecureConnections()) {
             HttpServerConfig configWithoutSsl = new HttpServerConfig(config);
             configWithoutSsl.tcpConfig().sslConfig(null);
+            if (roConfig.h1Config() != null && roConfig.h2Config() != null) {
+                // For non-SSL, if both H1 and H2 are configured at the same time we force-fallback to H1
+                configWithoutSsl.httpConfig().protocols(roConfig.h1Config());
+            }
             ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
             return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
                     connectionAcceptor, service, drainRequestPayloadBody, earlyConnectionAcceptor,

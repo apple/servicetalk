@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -34,6 +35,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
@@ -100,6 +102,30 @@ final class OptionalSslTest {
                         assertThrows(ClosedChannelException.class, () -> client.request(request));
                     }
                 }
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] sslProvider={0}")
+    @EnumSource(SslProvider.class)
+    void whenH1AndH2EnabledForcesH1OnInsecure(final SslProvider sslProvider) throws Exception {
+        final HttpService service = (ctx, request, responseFactory) -> {
+            assertEquals(HttpProtocolVersion.HTTP_1_1, ctx.protocol());
+            return succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
+        };
+
+        try (ServerContext server = serverBuilder(true, sslProvider, HttpProtocol.HTTP_1, HttpProtocol.HTTP_2)
+                .listenAndAwait(service)) {
+            try (BlockingHttpClient client = clientBuilder(server, sslProvider, false, HttpProtocol.HTTP_1)
+                    .buildBlocking()) {
+                final HttpResponse response = client.request(client.get("/"));
+                assertEquals(HttpResponseStatus.OK, response.status());
+            }
+
+            try (BlockingHttpClient client = clientBuilder(server, sslProvider, false, HttpProtocol.HTTP_2)
+                    .buildBlocking()) {
+                // Server will close the connection since HTTP/1 is forced in this case and a h2 request arrives.
+                assertThrows(ClosedChannelException.class, () -> client.request(client.get("/")));
             }
         }
     }
