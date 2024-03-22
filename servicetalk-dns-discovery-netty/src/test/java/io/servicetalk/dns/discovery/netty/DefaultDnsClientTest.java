@@ -1200,7 +1200,7 @@ class DefaultDnsClientTest {
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQueryWithInfRetry(String domain) {
         Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
                 .retry((__, err) -> {
-                    err.printStackTrace();
+                    LOGGER.error("Retrying error ", err);
                     return true;
                 })
                 .flatMapConcatIterable(identity());
