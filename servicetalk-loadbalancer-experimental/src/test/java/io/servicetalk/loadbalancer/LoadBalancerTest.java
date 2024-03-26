@@ -109,7 +109,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
     static final String[] EMPTY_ARRAY = {};
 
     static final OutlierDetectorConfig BASE_CONFIG = new OutlierDetectorConfig.Builder()
-            .interval(ofSeconds(10), ZERO)
+            .scanInterval(ofSeconds(10), ZERO)
             .enforcingFailurePercentage(0)
             .enforcingConsecutive5xx(0)
             .enforcingSuccessRate(0)
@@ -448,7 +448,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
+                        .outlierDetectorConfig(new OutlierDetectorConfig.Builder(BASE_CONFIG)
                                 .failedConnectionsThreshold(-1).build())
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
@@ -546,8 +546,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
-                                .interval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(new OutlierDetectorConfig.Builder(BASE_CONFIG)
+                                .scanInterval(ofMillis(50), ofMillis(10))
                                 .failedConnectionsThreshold(1)
                                 .build())
                         .backgroundExecutor(new DelegatingExecutor(testExecutor) {
@@ -722,8 +722,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
                 new TestConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
-                                .interval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(new OutlierDetectorConfig.Builder(BASE_CONFIG)
+                                .scanInterval(ofMillis(50), ofMillis(10))
                                 // Set resubscribe interval to very large number
                                 .serviceDiscoveryResubscribeInterval(ofNanos(MAX_VALUE), ZERO)
                                 .build())
@@ -756,8 +756,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         lb = (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
-                                .interval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(new OutlierDetectorConfig.Builder(BASE_CONFIG)
+                                .scanInterval(ofMillis(50), ofMillis(10))
                                 .build())
                         .backgroundExecutor(testExecutor)
                         .build()
@@ -833,8 +833,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
             final TestConnectionFactory connectionFactory) {
         return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
                 baseLoadBalancerBuilder()
-                        .outlierDetectorConfig(BASE_CONFIG.toBuilder()
-                                .interval(ofMillis(50), ofMillis(10))
+                        .outlierDetectorConfig(new OutlierDetectorConfig.Builder(BASE_CONFIG)
+                                .scanInterval(ofMillis(50), ofMillis(10))
                                 .build())
                         .backgroundExecutor(testExecutor)
                         .build()

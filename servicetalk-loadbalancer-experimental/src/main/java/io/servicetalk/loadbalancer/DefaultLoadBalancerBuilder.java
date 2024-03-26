@@ -94,8 +94,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         } else {
             healthCheckConfig = new HealthCheckConfig(
                     executor,
-                    outlierDetectorConfig.interval(),
-                    outlierDetectorConfig.intervalJitter(),
+                    outlierDetectorConfig.scanInterval(),
+                    outlierDetectorConfig.scanIntervalJitter(),
                     outlierDetectorConfig.failedConnectionsThreshold(),
                     outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
                     outlierDetectorConfig.serviceDiscoveryResubscribeJitter());
@@ -107,7 +107,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             outlierDetectorFactory = (lbDescription) -> new NoopOutlierDetector<>(outlierDetectorConfig, executor);
         } else {
             outlierDetectorFactory = (lbDescription) ->
-                new XdsOutlierDetector<ResolvedAddress, C>(executor, outlierDetectorConfig, lbDescription);
+                new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
         }
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
                 loadBalancerObserver, outlierDetectorFactory);

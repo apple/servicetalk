@@ -58,7 +58,7 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> outlierDetectorConfig(
             OutlierDetectorConfig config) {
         underlying = underlying
-                .healthCheckInterval(config.interval(), config.intervalJitter())
+                .healthCheckInterval(config.scanInterval(), config.scanIntervalJitter())
                 .healthCheckFailedConnectionsThreshold(config.failedConnectionsThreshold())
                 .healthCheckResubscribeInterval(
                         config.serviceDiscoveryResubscribeInterval(), config.serviceDiscoveryResubscribeJitter());

@@ -19,7 +19,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -48,14 +47,14 @@ public final class OutlierDetectorConfig {
     private final long ewmaCancellationPenalty;
     private final long ewmaErrorPenalty;
     private final int failedConnectionsThreshold;
-    private final Duration intervalJitter;
+    private final Duration scanIntervalJitter;
 
     private final Duration serviceDiscoveryResubscribeInterval;
     private final Duration serviceDiscoveryResubscribeJitter;
 
     // xDS defined settings
     private final int consecutive5xx;
-    private final Duration interval;
+    private final Duration scanInterval;
     private final Duration baseEjectionTime;
     private final int maxEjectionPercentage;
     private final int enforcingConsecutive5xx;
@@ -71,10 +70,10 @@ public final class OutlierDetectorConfig {
     private final Duration maxEjectionTimeJitter;
 
     OutlierDetectorConfig(final Duration ewmaHalfLife, final long ewmaCancellationPenalty, final long ewmaErrorPenalty,
-                          int failedConnectionsThreshold, final Duration intervalJitter,
+                          int failedConnectionsThreshold, final Duration scanIntervalJitter,
                           final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
-                          final int consecutive5xx, final Duration interval, final Duration baseEjectionTime,
+                          final int consecutive5xx, final Duration scanInterval, final Duration baseEjectionTime,
                           final int maxEjectionPercentage, final int enforcingConsecutive5xx,
                           final int enforcingSuccessRate, final int successRateMinimumHosts,
                           final int successRateRequestVolume, final int successRateStdevFactor,
@@ -85,14 +84,14 @@ public final class OutlierDetectorConfig {
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
         this.failedConnectionsThreshold = failedConnectionsThreshold;
-        this.intervalJitter = requireNonNull(intervalJitter, "intervalJitter");
+        this.scanIntervalJitter = requireNonNull(scanIntervalJitter, "scanIntervalJitter");
         this.serviceDiscoveryResubscribeInterval = requireNonNull(
                 serviceDiscoveryResubscribeInterval, "serviceDiscoveryResubscribeInterval");
         this.serviceDiscoveryResubscribeJitter = requireNonNull(
                 serviceDiscoveryResubscribeJitter, "serviceDiscoveryResubscribeJitter");
         // xDS settings.
         this.consecutive5xx = consecutive5xx;
-        this.interval = requireNonNull(interval, "interval");
+        this.scanInterval = requireNonNull(scanInterval, "scanInterval");
         this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
         this.maxEjectionPercentage = maxEjectionPercentage;
         this.enforcingConsecutive5xx = enforcingConsecutive5xx;
@@ -148,11 +147,11 @@ public final class OutlierDetectorConfig {
     /**
      * The jitter used along with the configured interval to determine duration between outlier detector checks.
      * @return the jitter used along with the configured interval to determine duration between outlier detector checks.
-     * @see #interval()
-     * @see Builder#interval(Duration, Duration)
+     * @see #scanInterval()
+     * @see Builder#scanInterval(Duration, Duration)
      */
-    public Duration intervalJitter() {
-        return intervalJitter;
+    public Duration scanIntervalJitter() {
+        return scanIntervalJitter;
     }
 
     /**
@@ -184,11 +183,14 @@ public final class OutlierDetectorConfig {
     }
 
     /**
-     * The interval on which to run failure percentage and success rate failure detectors.
+     * The interval on which to run failure detectors.
+     * Failure percentage and success rate outlier detectors perform periodic scans to detect outliers. Active
+     * revival mechanisms such as the layer-4 connectivity detector also use this interval to perform their periodic
+     * health check to see if a host can be considered revived.
      * @return the interval on which to run failure percentage and success rate failure detectors.
      */
-    public Duration interval() {
-        return interval;
+    public Duration scanInterval() {
+        return scanInterval;
     }
 
     /**
@@ -306,63 +308,6 @@ public final class OutlierDetectorConfig {
     }
 
     /**
-     * Make a {@link Builder} that is pre-populated with the values of this config object.
-     * @return a {@link Builder} that is pre-populated with the values of this config object.
-     */
-    public Builder toBuilder() {
-        return new Builder(
-                ewmaHalfLife, failedConnectionsThreshold, intervalJitter,
-                serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
-                consecutive5xx, interval, baseEjectionTime,
-                maxEjectionPercentage, enforcingConsecutive5xx,
-                enforcingSuccessRate, successRateMinimumHosts,
-                successRateRequestVolume, successRateStdevFactor,
-                failurePercentageThreshold, enforcingFailurePercentage,
-                failurePercentageMinimumHosts, failurePercentageRequestVolume,
-                maxEjectionTime, maxEjectionTimeJitter);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        OutlierDetectorConfig that = (OutlierDetectorConfig) o;
-        return ewmaCancellationPenalty == that.ewmaCancellationPenalty &&
-                ewmaErrorPenalty == that.ewmaErrorPenalty &&
-                failedConnectionsThreshold == that.failedConnectionsThreshold &&
-                consecutive5xx == that.consecutive5xx &&
-                maxEjectionPercentage == that.maxEjectionPercentage &&
-                enforcingConsecutive5xx == that.enforcingConsecutive5xx &&
-                enforcingSuccessRate == that.enforcingSuccessRate &&
-                successRateMinimumHosts == that.successRateMinimumHosts &&
-                successRateRequestVolume == that.successRateRequestVolume &&
-                successRateStdevFactor == that.successRateStdevFactor &&
-                failurePercentageThreshold == that.failurePercentageThreshold &&
-                enforcingFailurePercentage == that.enforcingFailurePercentage &&
-                failurePercentageMinimumHosts == that.failurePercentageMinimumHosts &&
-                failurePercentageRequestVolume == that.failurePercentageRequestVolume &&
-                intervalJitter.equals(that.intervalJitter) &&
-                ewmaHalfLife.equals(that.ewmaHalfLife) &&
-                interval.equals(that.interval) &&
-                baseEjectionTime.equals(that.baseEjectionTime) &&
-                maxEjectionTime.equals(that.maxEjectionTime) &&
-                maxEjectionTimeJitter.equals(that.maxEjectionTimeJitter);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(ewmaHalfLife, ewmaCancellationPenalty, ewmaErrorPenalty, failedConnectionsThreshold,
-                intervalJitter, consecutive5xx, interval, baseEjectionTime, maxEjectionPercentage,
-                enforcingConsecutive5xx, enforcingSuccessRate, successRateMinimumHosts, successRateRequestVolume,
-                successRateStdevFactor, failurePercentageThreshold, enforcingFailurePercentage,
-                failurePercentageMinimumHosts, failurePercentageRequestVolume, maxEjectionTime, maxEjectionTimeJitter);
-    }
-
-    /**
      * A builder for {@link OutlierDetectorConfig} instances.
      */
     public static final class Builder {
@@ -373,7 +318,7 @@ public final class OutlierDetectorConfig {
 
         // Default xDS outlier detector settings.
         private static final int DEFAULT_CONSECUTIVE_5XX = 5;
-        private static final Duration DEFAULT_INTERVAL = ofSeconds(10);
+        private static final Duration DEFAULT_SCAN_INTERVAL = ofSeconds(10);
         private static final Duration DEFAULT_BASE_EJECTION_TIME = ofSeconds(30);
         private static final int DEFAULT_MAX_EJECTION_PERCENTAGE = 10;
         private static final int DEFAULT_ENFORCING_CONSECUTIVE_5XX = 100;
@@ -403,7 +348,7 @@ public final class OutlierDetectorConfig {
         // default values (5s for L4 and 10s for xDS). We've decided to use the xDS default since it is viable for
         // both whereas choosing 5s would necessitate changing a lot of related xDS settings such as min request
         // volume, etc.
-        private Duration interval = DEFAULT_INTERVAL;
+        private Duration scanInterval = DEFAULT_SCAN_INTERVAL;
 
         private Duration baseEjectionTime = DEFAULT_BASE_EJECTION_TIME;
         private int maxEjectionPercentage = DEFAULT_MAX_EJECTION_PERCENTAGE;
@@ -421,39 +366,36 @@ public final class OutlierDetectorConfig {
         // Note that xDS defines its default jitter as 0 seconds.
         private Duration maxEjectionTimeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
-        // Constructor was generated and modified with `final` keywords.
-        Builder(final Duration ewmaHalfLife, final int failedConnectionsThreshold,
-                final Duration intervalJitter,
-                final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
-                final int consecutive5xx, final Duration interval, final Duration baseEjectionTime,
-                final int maxEjectionPercentage, final int enforcingConsecutive5xx,
-                final int enforcingSuccessRate, final int successRateMinimumHosts,
-                final int successRateRequestVolume, final int successRateStdevFactor,
-                final int failurePercentageThreshold, final int enforcingFailurePercentage,
-                final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
-                final Duration maxEjectionTime, final Duration maxEjectionTimeJitter) {
-            this.ewmaHalfLife = ewmaHalfLife;
-            this.failedConnectionsThreshold = failedConnectionsThreshold;
-            this.intervalJitter = intervalJitter;
-            this.serviceDiscoveryResubscribeInterval = serviceDiscoveryResubscribeInterval;
-            this.serviceDiscoveryResubscribeJitter = serviceDiscoveryResubscribeJitter;
-            this.consecutive5xx = consecutive5xx;
-            this.interval = interval;
-            this.baseEjectionTime = baseEjectionTime;
-            this.maxEjectionPercentage = maxEjectionPercentage;
-            this.enforcingConsecutive5xx = enforcingConsecutive5xx;
-            this.enforcingSuccessRate = enforcingSuccessRate;
-            this.successRateMinimumHosts = successRateMinimumHosts;
-            this.successRateRequestVolume = successRateRequestVolume;
-            this.successRateStdevFactor = successRateStdevFactor;
-            this.failurePercentageThreshold = failurePercentageThreshold;
-            this.enforcingFailurePercentage = enforcingFailurePercentage;
-            this.failurePercentageMinimumHosts = failurePercentageMinimumHosts;
-            this.failurePercentageRequestVolume = failurePercentageRequestVolume;
-            this.maxEjectionTime = maxEjectionTime;
-            this.maxEjectionTimeJitter = maxEjectionTimeJitter;
+        /**
+         * Construct a new builder initialized with the values of an existing {@link OutlierDetectorConfig}.
+         * @param outlierDetectorConfig the configuration to use as the initial values for this builder.
+         */
+        Builder(final OutlierDetectorConfig outlierDetectorConfig) {
+            this.ewmaHalfLife = outlierDetectorConfig.ewmaHalfLife;
+            this.failedConnectionsThreshold = outlierDetectorConfig.failedConnectionsThreshold;
+            this.intervalJitter = outlierDetectorConfig.scanIntervalJitter;
+            this.serviceDiscoveryResubscribeInterval = outlierDetectorConfig.serviceDiscoveryResubscribeInterval;
+            this.serviceDiscoveryResubscribeJitter = outlierDetectorConfig.serviceDiscoveryResubscribeJitter;
+            this.consecutive5xx = outlierDetectorConfig.consecutive5xx;
+            this.scanInterval = outlierDetectorConfig.scanInterval;
+            this.baseEjectionTime = outlierDetectorConfig.baseEjectionTime;
+            this.maxEjectionPercentage = outlierDetectorConfig.maxEjectionPercentage;
+            this.enforcingConsecutive5xx = outlierDetectorConfig.enforcingConsecutive5xx;
+            this.enforcingSuccessRate = outlierDetectorConfig.enforcingSuccessRate;
+            this.successRateMinimumHosts = outlierDetectorConfig.successRateMinimumHosts;
+            this.successRateRequestVolume = outlierDetectorConfig.successRateRequestVolume;
+            this.successRateStdevFactor = outlierDetectorConfig.successRateStdevFactor;
+            this.failurePercentageThreshold = outlierDetectorConfig.failurePercentageThreshold;
+            this.enforcingFailurePercentage = outlierDetectorConfig.enforcingFailurePercentage;
+            this.failurePercentageMinimumHosts = outlierDetectorConfig.failurePercentageMinimumHosts;
+            this.failurePercentageRequestVolume = outlierDetectorConfig.failurePercentageRequestVolume;
+            this.maxEjectionTime = outlierDetectorConfig.maxEjectionTime;
+            this.maxEjectionTimeJitter = outlierDetectorConfig.maxEjectionTimeJitter;
         }
 
+        /**
+         * Construct a new builder using the default initial values.
+         */
         public Builder() {
             // uses the defaults
         }
@@ -466,7 +408,7 @@ public final class OutlierDetectorConfig {
             return new OutlierDetectorConfig(ewmaHalfLife, ewmaCancellationPenalty, ewmaErrorPenalty,
                     failedConnectionsThreshold, intervalJitter, serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
                     // xDS settings
-                    consecutive5xx, interval, baseEjectionTime,
+                    consecutive5xx, scanInterval, baseEjectionTime,
                     maxEjectionPercentage, enforcingConsecutive5xx,
                     enforcingSuccessRate, successRateMinimumHosts,
                     successRateRequestVolume, successRateStdevFactor,
@@ -494,7 +436,7 @@ public final class OutlierDetectorConfig {
          * Set the penalty factor for local cancellation of requests.
          * The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the
          * EWMA.
-         * Defaults to 5.
+         * Defaults to {@value DEFAULT_CANCEL_PENALTY}.
          * @param ewmaCancellationPenalty the penalty factor for local cancellation of requests.
          * @return {@code this}
          */
@@ -507,7 +449,7 @@ public final class OutlierDetectorConfig {
          * Set the penalty factor for requests that were classified as an error.
          * The latency of the failed request is multiplied by the provided penalty before incorporating it into the
          * EWMA.
-         * Defaults to 10.
+         * Defaults to {@value DEFAULT_ERROR_PENALTY}.
          * See {@link OutlierDetectorConfig#ewmaErrorPenalty()}.
          * @param ewmaErrorPenalty the penalty factor for requests that were classified as an error.
          * @return {@code this}
@@ -543,7 +485,7 @@ public final class OutlierDetectorConfig {
          * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
          * consecutively fails to open connections in the amount greater or equal to the specified value,
          * the host will be marked as unhealthy and connection establishment will take place in the background
-         * repeatedly on the {@link #interval()} (with jitter {@link #intervalJitter()}) until a connection is
+         * repeatedly on the {@link #scanInterval()} (with jitter {@link #scanIntervalJitter()}) until a connection is
          * established. During that time, the host will not take part in load balancing selection.
          * <p>
          * Use a negative value of the argument to disable health checking.
@@ -563,7 +505,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the threshold for consecutive failures before a host is ejected.
-         * Defaults to 5.
+         * Defaults to {@value DEFAULT_CONSECUTIVE_5XX}.
          * @param consecutive5xx the threshold for consecutive failures before a host is ejected.
          * @return {@code this}
          */
@@ -574,29 +516,31 @@ public final class OutlierDetectorConfig {
         }
 
         /**
-         * Set the interval on which to run failure percentage and success rate failure detectors.
+         * Set the scan interval on which the outlier detector will perform periodic tasks.
+         * These tasks can include detection of outlier or the active revival checks.
          * This method will also use either the default jitter or the provided interval, whichever is smaller.
          * Defaults to 10 second interval with 3 second jitter.
          * @param interval the interval on which to run failure percentage and success rate failure detectors.
          * @return {@code this}
          */
-        public Builder interval(final Duration interval) {
+        public Builder scanInterval(final Duration interval) {
             requireNonNull(interval, "interval");
-            return interval(interval, interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ?
+            return scanInterval(interval, interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ?
                     interval.dividedBy(2) : DEFAULT_HEALTH_CHECK_JITTER);
         }
 
         /**
          * Set the interval on which to run failure percentage and success rate failure detectors.
+         * These tasks can include detection of outlier or the active revival checks.
          * Defaults to 10 second interval with 3 second jitter.
          * @param interval the interval on which to run failure percentage and success rate failure detectors.
          * @param jitter the jitter of the time interval. The next interval will have a duration of
          *               [interval - jitter, interval + jitter].
          * @return {@code this}
          */
-        public Builder interval(final Duration interval, final Duration jitter) {
+        public Builder scanInterval(final Duration interval, final Duration jitter) {
             validateHealthCheckIntervals(interval, jitter);
-            this.interval = requireNonNull(interval, "interval");
+            this.scanInterval = requireNonNull(interval, "interval");
             this.intervalJitter = jitter;
             return this;
         }
@@ -615,7 +559,8 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the maximum percentage of hosts that can be ejected due to outlier detection.
-         * Defaults to 10% but at least one host will be allowed to be ejected regardless of value.
+         * Defaults to {@value DEFAULT_MAX_EJECTION_PERCENTAGE} percent but at least one host will be allowed to be
+         * ejected regardless of value.
          * @param maxEjectionPercentage the maximum percentage of hosts that can be ejected due to outlier detection.
          * @return {@code this}.
          */
@@ -628,7 +573,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host reaches the
          * {@link #consecutive5xx()} threshold.
-         * Defaults to 100%.
+         * Defaults to {@value DEFAULT_ENFORCING_CONSECUTIVE_5XX} percent.
          * @param enforcingConsecutive5xx the probability the host will be marked as unhealthy.
          * @return {@code this}.
          */
@@ -641,7 +586,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
          * rate outlier detectors threshold.
-         * Defaults to 100%.
+         * Defaults to {@value DEFAULT_ENFORCING_SUCCESS_RATE} percent.
          * @param enforcingSuccessRate the probability the host will be marked as unhealthy.
          * @return {@code this}.
          */
@@ -653,7 +598,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the minimum number of hosts required to perform the success rate outlier detector analysis.
-         * Defaults to 5.
+         * Defaults to {@value DEFAULT_SUCCESS_RATE_MINIMUM_HOSTS}.
          * @param successRateMinimumHosts the minimum number of hosts required to perform the success rate outlier
          *                                detector analysis.
          * @return {@code this}.
@@ -667,7 +612,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the minimum number of requests in an outlier detector interval required to include it in the success rate
          * outlier detector analysis.
-         * Defaults to 100.
+         * Defaults to {@value DEFAULT_SUCCESS_RATE_REQUEST_VOLUME}.
          * @param successRateRequestVolume the minimum number of requests in an outlier detector interval required to
          *                                 include it in the success rate outlier detector analysis.
          * @return {@code this}.
@@ -681,7 +626,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the value divided by 1000 and then multiplied against the success rate standard deviation which sets the
          * threshold for ejection in the success rate outlier detector.
-         * Defaults to 1900.
+         * Defaults to {@value DEFAULT_SUCCESS_RATE_STDEV_FACTOR}.
          * @param successRateStdevFactor the value divided by 1000 and then multiplied against the success rate standard
          *                               deviation which sets the threshold for ejection in the success rate outlier
          *                               detector.
@@ -695,7 +640,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the failure threshold in percentage for ejecting a host.
-         * Defaults to 85%.
+         * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_THRESHOLD} percent.
          * @param failurePercentageThreshold the failure threshold in percentage for ejecting a host.
          * @return {@code this}.
          */
@@ -708,7 +653,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
          * percentage outlier detectors threshold.
-         * Defaults to 0%.
+         * Defaults to {@value DEFAULT_ENFORCING_FAILURE_PERCENTAGE} percent.
          * @param enforcingFailurePercentage the probability in percentage that a host will be marked as unhealthy when
          *                                   percentage outlier detectors threshold.
          * @return {@code this}.
@@ -721,7 +666,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the minimum number of hosts required to perform the failure percentage outlier detector analysis.
-         * Defaults to 5.
+         * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_MINIMUM_HOSTS}.
          * @param failurePercentageMinimumHosts the minimum number of hosts required to perform the failure percentage
          *                                      outlier detector analysis.
          * @return {@code this}.
@@ -735,7 +680,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the minimum number of requests in an outlier detector interval required to include it in the failure
          * percentage outlier detector analysis.
-         * Defaults to 50.
+         * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_REQUEST_VOLUME}.
          * @param failurePercentageRequestVolume the minimum number of requests in an outlier detector interval required
          *                                       to include it in the failure percentage outlier detector analysis.
          * @return {@code this}.
@@ -748,7 +693,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
-         * Defaults to a max ejection time of 300 seconds and 0 jitter.
+         * Defaults to a max ejection time of 300 seconds and 0 seconds jitter.
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
          * @return {@code this}.
@@ -760,7 +705,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
-         * Defaults to a max ejection time of 300 seconds and 0 jitter.
+         * Defaults to a max ejection time of 300 seconds and 0 seconds jitter.
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
          * @param maxEjectionTimeJitter the jitter added to the maxEjection time. The max ejection time will be on the

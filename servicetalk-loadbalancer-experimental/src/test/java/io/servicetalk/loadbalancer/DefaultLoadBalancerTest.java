@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
@@ -32,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -48,7 +48,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             new P2CLoadBalancingPolicy.Builder().build();
     @Nullable
-    private OutlierDetectorFactory outlierDetectorFactory;
+    private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
     @Override
     protected boolean eagerConnectionShutdown() {
@@ -179,7 +179,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             TestConnectionFactory connectionFactory) {
         Function<String, OutlierDetector<String, TestLoadBalancedConnection>> factory = outlierDetectorFactory == null ?
                     (description) -> new NoopOutlierDetector<>(OutlierDetectorConfig.DEFAULT_CONFIG, testExecutor)
-                 : (description) -> outlierDetectorFactory.newOutlierDetector(testExecutor, description);
+                 : (description) -> outlierDetectorFactory.get();
         return new DefaultLoadBalancer<>(
                 getClass().getSimpleName(),
                 "test-service",
@@ -253,12 +253,13 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestOutlierDetectorFactory implements OutlierDetectorFactory {
+    private static class TestOutlierDetectorFactory implements
+            Supplier<OutlierDetector<String, TestLoadBalancedConnection>> {
 
         final AtomicReference<TestOutlierDetector> currentOutlierDetector = new AtomicReference<>();
+
         @Override
-        public OutlierDetector<String, TestLoadBalancedConnection> newOutlierDetector(
-                Executor executor, String lbDescription) {
+        public OutlierDetector<String, TestLoadBalancedConnection> get() {
             assert currentOutlierDetector.get() == null;
             TestOutlierDetector result = new TestOutlierDetector();
             currentOutlierDetector.set(result);
