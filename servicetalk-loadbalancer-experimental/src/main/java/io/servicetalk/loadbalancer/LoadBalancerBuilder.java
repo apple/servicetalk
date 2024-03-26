@@ -67,8 +67,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
      * @return {@code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
-            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy);
 
     /**
      * Set the {@link LoadBalancerObserver} to use with this load balancer.

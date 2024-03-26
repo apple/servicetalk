@@ -53,8 +53,7 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
-            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy) {
+    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy) {
         delegate = delegate.loadBalancingPolicy(loadBalancingPolicy);
         return this;
     }

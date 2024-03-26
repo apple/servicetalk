@@ -36,25 +36,25 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * - pick the 'best' host of the two options.
  * @param <ResolvedAddress> the type of the resolved address.
  * @param <C> the type of the load balanced connection.
- * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
+ * @see <a href="https://ieeexplore.ieee.org/document/963420">Mitzenmacher (2001) The Power of Two
  *  *  Choices in Randomized Load Balancing</a>
  */
-public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements LoadBalancingPolicy<ResolvedAddress, C> {
+final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        extends BaseLoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
     private final boolean failOpen;
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final int maxEffort, final boolean failOpen, @Nullable final Random random) {
-        this.maxEffort = maxEffort;
+    P2CLoadBalancingPolicy(final boolean failOpen, final int maxEffort, @Nullable final Random random) {
+        this.maxEffort = ensurePositive(maxEffort, "maxEffort");
         this.failOpen = failOpen;
         this.random = random;
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> buildSelector(
+    HostSelector<ResolvedAddress, C> buildSelector(
             List<Host<ResolvedAddress, C>> hosts, String targetResource) {
         return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
@@ -66,56 +66,6 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     @Override
     public String toString() {
-        return name() + "(maxEffort=" + maxEffort + ')';
-    }
-
-    /**
-     * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
-     */
-    public static final class Builder {
-
-        private static final int DEFAULT_MAX_EFFORT = 5;
-
-        private int maxEffort = DEFAULT_MAX_EFFORT;
-        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
-        @Nullable
-        private Random random;
-
-        /**
-         * Set the maximum number of attempts that P2C will attempt to select a pair with at least one
-         * healthy host.
-         * @param maxEffort the maximum number of attempts.
-         * @return this {@link Builder}.
-         */
-        public Builder maxEffort(final int maxEffort) {
-            this.maxEffort = ensurePositive(maxEffort, "maxEffort");
-            return this;
-        }
-
-        /**
-         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @return this {@link Builder}.
-         */
-        public Builder failOpen(final boolean failOpen) {
-            this.failOpen = failOpen;
-            return this;
-        }
-
-        // For testing purposes only.
-        Builder random(Random random) {
-            this.random = random;
-            return this;
-        }
-
-        /**
-         * Construct an immutable {@link P2CLoadBalancingPolicy}.
-         * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@link LoadBalancedConnection}.
-         * @return the concrete {@link P2CLoadBalancingPolicy}.
-         */
-        public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
-            return new P2CLoadBalancingPolicy<>(maxEffort, failOpen, random);
-        }
+        return name() + "(failOpen=" + failOpen + ", maxEffort=" + maxEffort + ")";
     }
 }

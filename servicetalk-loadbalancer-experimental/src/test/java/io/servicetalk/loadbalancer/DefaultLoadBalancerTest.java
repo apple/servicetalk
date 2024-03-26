@@ -45,8 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
-    private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
-            new P2CLoadBalancingPolicy.Builder().build();
+    private BaseLoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
+            (BaseLoadBalancingPolicy<String, TestLoadBalancedConnection>) LoadBalancingPolicies.p2c();
     @Nullable
     private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
@@ -294,17 +294,22 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestLoadBalancerPolicy implements LoadBalancingPolicy<String, TestLoadBalancedConnection> {
+    private static class TestLoadBalancerPolicy extends BaseLoadBalancingPolicy<String, TestLoadBalancedConnection> {
 
         int rebuilds;
 
         @Override
         public String name() {
-            return "test-selector";
+            return "TestPolicy";
         }
 
         @Override
-        public HostSelector<String, TestLoadBalancedConnection> buildSelector(
+        public String toString() {
+            return name();
+        }
+
+        @Override
+        HostSelector<String, TestLoadBalancedConnection> buildSelector(
                 List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }

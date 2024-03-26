@@ -27,18 +27,18 @@ import java.util.List;
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
  */
-public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements LoadBalancingPolicy<ResolvedAddress, C> {
+final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        extends BaseLoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
 
-    private RoundRobinLoadBalancingPolicy(final boolean failOpen) {
+    RoundRobinLoadBalancingPolicy(final boolean failOpen) {
         this.failOpen = failOpen;
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C>
-    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+    HostSelector<ResolvedAddress, C> buildSelector(
+            final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
         return new RoundRobinSelector<>(hosts, targetResource, failOpen);
     }
 
@@ -47,32 +47,8 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
         return "RoundRobin";
     }
 
-    /**
-     * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
-     */
-    public static final class Builder {
-
-        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
-
-        /**
-         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @return this {@link P2CLoadBalancingPolicy.Builder}.
-         */
-        public RoundRobinLoadBalancingPolicy.Builder failOpen(final boolean failOpen) {
-            this.failOpen = failOpen;
-            return this;
-        }
-
-        /**
-         * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
-         * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@link LoadBalancedConnection}.
-         * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
-         */
-        public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
-        build() {
-            return new RoundRobinLoadBalancingPolicy<>(failOpen);
-        }
+    @Override
+    public String toString() {
+        return name() + "(failOpen=" + failOpen + ")";
     }
 }

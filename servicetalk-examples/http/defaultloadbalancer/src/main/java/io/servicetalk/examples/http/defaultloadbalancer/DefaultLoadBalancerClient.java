@@ -23,8 +23,8 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
+import io.servicetalk.loadbalancer.LoadBalancingPolicies;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
-import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
@@ -60,15 +60,12 @@ public final class DefaultLoadBalancerClient {
                         // request count to score hosts. The net result is typically a traffic distribution that will
                         // show a preference toward faster hosts while also rapidly adjust to changes in backend
                         // performance.
-                        new P2CLoadBalancingPolicy.Builder()
-                                // Set the max effort (default: 5). This is the number of times P2C will pick a random
-                                // pair of hosts in search of a healthy host before giving up. When it gives up it will
-                                // either attempt to use one of the hosts regardless of status if `failOpen == true` or
-                                // return a `NoActiveHosts` exception if failOpen == false.
-                                .maxEffort(6)
-                                // Whether to try to use a host regardless of health status (default: false)
-                                .failOpen(true)
-                                .build())
+                        //
+                        // Set the max effort (default: 5). This is the number of times P2C will pick a random
+                        // pair of hosts in search of a healthy host before giving up. When it gives up it will
+                        // either attempt to use one of the hosts regardless of status if `failOpen == true` or
+                        // return a `NoActiveHosts` exception if failOpen == false.
+                        LoadBalancingPolicies.p2c(/*failOpen*/ true, /*maxEffort*/ 6))
                 .outlierDetectorConfig(
                         // xDS compatible outlier detection has a number of tuning knobs. There are multiple detection
                         // algorithms describe in more detail below. In addition to the limits appropriate to each
