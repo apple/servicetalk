@@ -94,8 +94,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         } else {
             healthCheckConfig = new HealthCheckConfig(
                     executor,
-                    outlierDetectorConfig.scanInterval(),
-                    outlierDetectorConfig.scanIntervalJitter(),
+                    outlierDetectorConfig.failureDetectorInterval(),
+                    outlierDetectorConfig.failureDetectorIntervalJitter(),
                     outlierDetectorConfig.failedConnectionsThreshold(),
                     outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
                     outlierDetectorConfig.serviceDiscoveryResubscribeJitter());

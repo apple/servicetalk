@@ -164,10 +164,10 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
         private Cancellable scheduleNextOutliersCheck(OutlierDetectorConfig currentConfig) {
             Runnable checkOutliers = () -> sequentialExecutor.execute(this::sequentialCheckOutliers);
-            final long minIntervalNanos = currentConfig.scanInterval().toNanos() -
-                    currentConfig.scanIntervalJitter().toNanos();
-            final long maxIntervalNanos = addWithOverflowProtection(currentConfig.scanInterval().toNanos(),
-                    currentConfig.scanIntervalJitter().toNanos());
+            final long minIntervalNanos = currentConfig.failureDetectorInterval().toNanos() -
+                    currentConfig.failureDetectorIntervalJitter().toNanos();
+            final long maxIntervalNanos = addWithOverflowProtection(currentConfig.failureDetectorInterval().toNanos(),
+                    currentConfig.failureDetectorIntervalJitter().toNanos());
             return executor.schedule(checkOutliers, ThreadLocalRandom.current().nextLong(
                     // + 1 to make the bound inclusive
                     minIntervalNanos, maxIntervalNanos + 1), TimeUnit.NANOSECONDS);

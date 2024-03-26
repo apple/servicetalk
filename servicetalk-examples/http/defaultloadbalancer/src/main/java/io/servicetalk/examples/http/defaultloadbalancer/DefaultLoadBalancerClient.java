@@ -88,7 +88,7 @@ public final class DefaultLoadBalancerClient {
                         // 429 TOO MANY REQUESTS. In the future the classification of responses will be configurable.
                         new OutlierDetectorConfig.Builder()
                                 // set the interval to 30 seconds (default: to 10 seconds)
-                                .scanInterval(ofSeconds(30))
+                                .failureDetectorInterval(ofSeconds(30))
                                 // set a more aggressive consecutive failure policy (default: 5)
                                 .consecutive5xx(3)
                                 // enabled failure percentage detection (default: 0)
