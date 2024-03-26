@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
@@ -30,7 +29,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -47,7 +48,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             new P2CLoadBalancingPolicy.Builder().build();
     @Nullable
-    private OutlierDetectorFactory outlierDetectorFactory;
+    private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
     @Override
     protected boolean eagerConnectionShutdown() {
@@ -172,23 +173,23 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         assertTrue(factory.currentOutlierDetector.get().cancelled);
     }
 
-    private LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
-    }
-
     @Override
-    protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final TestConnectionFactory connectionFactory) {
-        return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
-                baseLoadBalancerBuilder()
-                        .loadBalancingPolicy(loadBalancingPolicy)
-                        .outlierDetectorFactory(outlierDetectorFactory)
-                        .healthCheckFailedConnectionsThreshold(-1)
-                        .backgroundExecutor(testExecutor)
-                        .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
+    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            TestConnectionFactory connectionFactory) {
+        Function<String, OutlierDetector<String, TestLoadBalancedConnection>> factory = outlierDetectorFactory == null ?
+                    (description) -> new NoopOutlierDetector<>(OutlierDetectorConfig.DEFAULT_CONFIG, testExecutor)
+                 : (description) -> outlierDetectorFactory.get();
+        return new DefaultLoadBalancer<>(
+                getClass().getSimpleName(),
+                "test-service",
+                serviceDiscoveryPublisher,
+                loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
+                connectionFactory,
+                10,
+                NoopLoadBalancerObserver.instance(),
+                null,
+                factory);
     }
 
     private static class TestHealthIndicator implements HealthIndicator<String, TestLoadBalancedConnection> {
@@ -252,12 +253,13 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestOutlierDetectorFactory implements OutlierDetectorFactory {
+    private static class TestOutlierDetectorFactory implements
+            Supplier<OutlierDetector<String, TestLoadBalancedConnection>> {
 
         final AtomicReference<TestOutlierDetector> currentOutlierDetector = new AtomicReference<>();
+
         @Override
-        public OutlierDetector<String, TestLoadBalancedConnection> newOutlierDetector(
-                Executor executor, String lbDescription) {
+        public OutlierDetector<String, TestLoadBalancedConnection> get() {
             assert currentOutlierDetector.get() == null;
             TestOutlierDetector result = new TestOutlierDetector();
             currentOutlierDetector.set(result);

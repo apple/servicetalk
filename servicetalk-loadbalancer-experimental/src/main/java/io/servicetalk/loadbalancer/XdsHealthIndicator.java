@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
@@ -63,9 +64,12 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     private volatile Long evictedUntilNanos;
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
-                       final Duration ewmaHalfLife, final ResolvedAddress address, String lbDescription,
+                       final Duration ewmaHalfLife, final long cancellationPenalty, final long errorPenalty,
+                       final ResolvedAddress address, String lbDescription,
                        final HostObserver hostObserver) {
-        super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos());
+        super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos(),
+                ensureNonNegative(cancellationPenalty, "cancellationPenalty"),
+                ensureNonNegative(errorPenalty, "errorPenalty"));
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");
         assert executor instanceof NormalizedTimeSourceExecutor;
