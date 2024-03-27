@@ -66,6 +66,7 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder.NX_DOMAIN_INVALIDATES;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED_RETURN_ALL;
@@ -478,7 +479,7 @@ class DefaultDnsClientTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] srvFilterDuplicateEvents={0}")
-    @ValueSource(booleans = {false})
+    @ValueSource(booleans = {false, true})
     void srvDuplicateAddresses(boolean srvFilterDuplicateEvents) throws Exception {
         setup(builder -> builder.srvFilterDuplicateEvents(srvFilterDuplicateEvents));
         final String domain = "sd.servicetalk.io";
@@ -593,26 +594,36 @@ class DefaultDnsClientTest {
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
-    @Test
-    void unknownHostAfterKnownDiscover() throws Exception {
-        setup();
-        final String targetDomain1 = "sd.domain.com";
-        final String ip1 = nextIp();
+    @ParameterizedTest(name = "{displayName} [{index}] cache={0}")
+    @ValueSource(booleans = {false, true})
+    void unknownHostAfterKnownDiscover(boolean nxInvalidation) throws Exception {
+        boolean restore = NX_DOMAIN_INVALIDATES;
+        try {
+            NX_DOMAIN_INVALIDATES = nxInvalidation;
+            setup();
+            final String targetDomain1 = "sd.domain.com";
+            final String ip1 = nextIp();
 
-        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+            recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
 
-        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(targetDomain1);
-        Subscription subscription = subscriber.awaitSubscription();
-        subscription.request(Long.MAX_VALUE);
+            TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(targetDomain1);
+            Subscription subscription = subscriber.awaitSubscription();
+            subscription.request(Long.MAX_VALUE);
 
-        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(1);
-        assertHasEvent(signals, ip1, AVAILABLE);
+            List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(1);
+            assertHasEvent(signals, ip1, AVAILABLE);
 
-        recordStore.removeIPv4Addresses(targetDomain1);
-        advanceTime();
+            recordStore.removeIPv4Addresses(targetDomain1);
+            advanceTime();
 
-        signals = subscriber.takeOnNext(1);
-        assertHasEvent(signals, ip1, EXPIRED);
+            if (NX_DOMAIN_INVALIDATES) {
+                signals = subscriber.takeOnNext(1);
+                assertHasEvent(signals, ip1, EXPIRED);
+            }
+            assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+        } finally {
+            NX_DOMAIN_INVALIDATES = restore;
+        }
     }
 
     @Test

@@ -46,7 +46,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
-import io.netty.resolver.dns.DnsErrorCauseException;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.NameServerComparator;
@@ -97,6 +96,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder.NX_DOMAIN_INVALIDATES;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
@@ -121,8 +121,6 @@ import static java.util.function.Function.identity;
 
 final class DefaultDnsClient implements DnsClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsClient.class);
-    private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
-    private static final boolean NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, true);
     private static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
     private static final Comparator<HostAndPort> HOST_AND_PORT_COMPARATOR = comparing(HostAndPort::hostName)
             .thenComparingInt(HostAndPort::port);
@@ -782,7 +780,7 @@ final class DefaultDnsClient implements DnsClient {
 
             private void cancelAndTerminate0(Throwable cause) {
                 assertInEventloop();
-                LOGGER.warn("{} subscription for {} will be cancelled and terminated with an error.",
+                LOGGER.debug("{} subscription for {} will be cancelled and terminated with an error.",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, cause);
                 try {
                     cancel0();
@@ -974,8 +972,9 @@ final class DefaultDnsClient implements DnsClient {
         // ISE => Subscriber exceptions (downstream of retry)
         return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
                 t instanceof ClosedDnsServiceDiscovererException || (NX_DOMAIN_INVALIDATES &&
-                t.getCause() instanceof DnsErrorCauseException &&
-                NXDOMAIN.equals(((DnsErrorCauseException) t.getCause()).getCode()));
+                // string matching is done on purpose to avoid the hard Netty dependency
+                (t.getCause() != null && t.getCause().getClass().getSimpleName().contains("DnsErrorCauseException")) &&
+                NXDOMAIN.equals(((io.netty.resolver.dns.DnsErrorCauseException) t.getCause()).getCode()));
     }
 
     private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
@@ -1109,14 +1108,5 @@ final class DefaultDnsClient implements DnsClient {
         static SrvAddressRemovedException newInstance(Class<?> clazz, String method) {
             return unknownStackTrace(new SrvAddressRemovedException(), clazz, method);
         }
-    }
-
-    @Nullable
-    private static boolean parseProperty(final String name, final boolean defaultValue) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return defaultValue;
-        }
-        return Boolean.parseBoolean(value);
     }
 }

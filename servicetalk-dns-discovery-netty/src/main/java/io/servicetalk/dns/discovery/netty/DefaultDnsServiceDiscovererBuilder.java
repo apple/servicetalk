@@ -62,6 +62,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
+    private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
+    static boolean NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, true);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
@@ -101,6 +103,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
+            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, NX_DOMAIN_INVALIDATES);
         }
     }
 
@@ -311,10 +314,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
             Duration initialDelay, Duration jitter) {
-        this.srvHostNameRepeatInitialDelay = requireNonNull(initialDelay);
-        this.srvHostNameRepeatJitter = requireNonNull(jitter);
-        ensurePositive(srvHostNameRepeatInitialDelay, "srvHostNameRepeatInitialDelay");
-        ensurePositive(srvHostNameRepeatJitter, "srvHostNameRepeatJitter");
+        this.srvHostNameRepeatInitialDelay = ensurePositive(initialDelay, "srvHostNameRepeatInitialDelay");
+        this.srvHostNameRepeatJitter = ensurePositive(jitter, "srvHostNameRepeatJitter");
         if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
             throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
         }
@@ -387,5 +388,13 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.error("Can not parse the value of -D{}={}, using {} as a default", name, value, defaultValue, e);
             return defaultValue;
         }
+    }
+
+    private static boolean parseProperty(final String name, final boolean defaultValue) {
+        final String value = getProperty(name);
+        if (value == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value);
     }
 }
