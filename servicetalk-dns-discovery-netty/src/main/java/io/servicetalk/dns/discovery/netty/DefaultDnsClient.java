@@ -107,7 +107,6 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.toHexString;
-import static java.lang.System.getProperty;
 import static java.lang.System.identityHashCode;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;

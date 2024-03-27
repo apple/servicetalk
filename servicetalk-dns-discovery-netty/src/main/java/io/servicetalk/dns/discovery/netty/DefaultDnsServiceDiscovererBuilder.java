@@ -63,6 +63,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
     private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
+    @SuppressWarnings("PMD.MutableStaticState")
     static boolean NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, true);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
