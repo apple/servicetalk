@@ -29,15 +29,19 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
@@ -45,6 +49,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpProtocol.toConfigs;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.hasItemInArray;
@@ -55,6 +60,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -132,23 +139,55 @@ class SecurityHandshakeObserverTest {
         }).when(observer).connectionClosed(any(Throwable.class));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void verifyHandshakeComplete(List<HttpProtocol> protocols) throws Exception {
-        verifyHandshakeObserved(protocols, false);
+    private static Stream<Arguments> arguments() {
+        List<Arguments> arguments = new ArrayList<>();
+        for (List<HttpProtocol> protocol : HttpProtocol.allCombinations()) {
+            if (protocol.size() == 1) {
+                for (boolean acceptInsecureConnection : asList(true, false)) {
+                    arguments.add(Arguments.of(protocol, acceptInsecureConnection));
+                }
+            } else {
+                arguments.add(Arguments.of(protocol, false));
+            }
+        }
+        return arguments.stream();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocols={0}")
-    @MethodSource("io.servicetalk.http.netty.HttpProtocol#allCombinations")
-    void verifyHandshakeFailed(List<HttpProtocol> protocols) throws Exception {
-        verifyHandshakeObserved(protocols, true);
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} acceptInsecureConnections={1}")
+    @MethodSource("arguments")
+    void verifyHandshakeComplete(List<HttpProtocol> protocols, boolean acceptInsecureConnection) throws Exception {
+        verifyHandshakeObserved(protocols, false, acceptInsecureConnection);
     }
 
-    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] protocols={0} acceptInsecureConnections={1}")
+    @MethodSource("arguments")
+    void verifyHandshakeFailed(List<HttpProtocol> protocols, boolean acceptInsecureConnection) throws Exception {
+        verifyHandshakeObserved(protocols, true, acceptInsecureConnection);
+    }
+
+    @Test
+    void optionalSslWithPlaintextDoesNotTriggerSecurityHandshake() throws Exception {
+        try (ServerContext serverContext = BuilderUtils
+                .newServerBuilder(SERVER_CTX)
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).build(), true)
+                .transportObserver(serverTransportObserver)
+                .listenStreamingAndAwait(new TestServiceStreaming());
+             BlockingHttpClient client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX).buildBlocking()) {
+            assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
+        }
+
+        verify(serverConnectionObserver, never()).onSecurityHandshake();
+        verifyNoMoreInteractions(serverSecurityHandshakeObserver);
+    }
+
+    private void verifyHandshakeObserved(List<HttpProtocol> protocols, boolean failHandshake,
+                                         boolean acceptInsecureConnection) throws Exception {
         try (ServerContext serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
             .protocols(toConfigs(protocols))
             .sslConfig(new ServerSslConfigBuilder(
-                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build(),
+                    acceptInsecureConnection)
             .transportObserver(serverTransportObserver)
             .listenStreamingAndAwait(new TestServiceStreaming());
 

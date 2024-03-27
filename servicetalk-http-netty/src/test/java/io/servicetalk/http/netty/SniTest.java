@@ -156,8 +156,8 @@ class SniTest {
                         singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
-                     getLoopbackAddress().getHostName(),
-                     serverHostAndPort(serverContext).port())
+                             getLoopbackAddress().getHostName(),
+                             serverHostAndPort(serverContext).port())
                      .protocols(protocol.config)
                      .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .peerHost(serverPemHostname()).provider(clientSslProvider), protocol, useALPN).build())
@@ -182,10 +182,10 @@ class SniTest {
                                 trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(getLoopbackAddress().getHostName(),
-                        serverHostAndPort(serverContext).port())
+                             serverHostAndPort(serverContext).port())
                      .protocols(protocol.config)
                      .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                                     .provider(clientSslProvider), protocol, useALPN).build())
+                             .provider(clientSslProvider), protocol, useALPN).build())
                      .inferPeerHost(false)
                      .inferSniHostname(false)
                      .buildBlocking()) {
@@ -227,9 +227,9 @@ class SniTest {
                                                 HttpProtocol protocol, boolean useALPN) {
         return newClientBuilder(serverContext, CLIENT_CTX, protocol)
                 .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                        .provider(provider)
-                        .sniHostname(SNI_HOSTNAME)
-                        .peerHost(serverPemHostname()),
+                                .provider(provider)
+                                .sniHostname(SNI_HOSTNAME)
+                                .peerHost(serverPemHostname()),
                         protocol, useALPN)
                         .build())
                 .buildBlocking();

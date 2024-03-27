@@ -86,6 +86,7 @@ class MultiAddressUrlHttpClientTest {
     private static final String INVALID_HOSTNAME = "invalid.";
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
+    private static final String X_RECEIVED_HOST_HEADER = "X-Received-Host-Header";
 
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
@@ -124,6 +125,9 @@ class MultiAddressUrlHttpClientTest {
                 }
             } catch (Exception e) {
                 response = factory.badRequest();
+            }
+            if (request.headers().contains(HOST)) {
+                response.setHeader(X_RECEIVED_HOST_HEADER, request.headers().get(HOST));
             }
             return succeeded(response.setHeader(CONTENT_LENGTH, ZERO)
                     .setHeader(X_RECEIVED_REQUEST_TARGET, request.requestTarget()));
@@ -195,25 +199,25 @@ class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
         // value in the HOST header should be ignored:
         request.headers().set(HOST, format("%s:%d", INVALID_HOSTNAME, 8080));
-        requestAndValidate(client, request, OK, "/200?param=value#tag");
+        requestAndValidate(client, request, OK, "/200?param=value#tag", INVALID_HOSTNAME + ":" + 8080);
     }
 
     @Test
     void requestWithAbsoluteFormRequestTargetWithoutHostHeader() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
-        requestAndValidate(client, request, OK, "/200?param=value#tag");
+        requestAndValidate(client, request, OK, "/200?param=value#tag", hostHeader);
     }
 
     @Test
     void requestWithAbsoluteFormRequestTargetWithoutPath() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s", hostHeader));
-        requestAndValidate(client, request, BAD_REQUEST, "/");
+        requestAndValidate(client, request, BAD_REQUEST, "/", hostHeader);
     }
 
     @Test
     void requestWithAbsoluteFormRequestTargetWithoutPathWithParams() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s?param=value", hostHeader));
-        requestAndValidate(client, request, BAD_REQUEST, "/?param=value");
+        requestAndValidate(client, request, BAD_REQUEST, "/?param=value", hostHeader);
     }
 
     @Test
@@ -254,17 +258,48 @@ class MultiAddressUrlHttpClientTest {
     }
 
     @Test
+    void exactRequestAuthorityIsRepresentedInHostHeader() throws Exception {
+        try (StreamingHttpClient client = HttpClients
+                .forMultiAddressUrl(ID).defaultHttpPort(serverPort).buildStreaming()) {
+            // Request without a port in the authority
+            StreamingHttpRequest request = client.get(format("http://%s/200", serverHost));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
+            // Request without a port in the authority
+            request = client.get(format("http://%s/200", serverHost));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
+            // Request with a port in the authority
+            request = client.get(format("http://%s:%d/200", serverHost, serverPort));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost + ":" + serverPort);
+
+            // Excludes userinfo and the '@'
+            request = client.get(format("http://user:pass@%s/200", serverHost));
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost);
+
+            // Doesn't normalize
+            request = client.get("http://LocalHost/200");
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", "LocalHost");
+        }
+    }
+
+    @Test
     void requestWithRedirect() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, format("http://%s/200", hostHeader));  // Location for redirect
-        requestAndValidate(client, request, OK, "/200");
+        requestAndValidate(client, request, OK, "/200", hostHeader);
     }
 
     @Test
     void requestWithRelativeRedirect() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, "/200");  // Location for redirect
-        requestAndValidate(client, request, OK, "/200");
+        requestAndValidate(client, request, OK, "/200", hostHeader);
     }
 
     @Test
@@ -272,7 +307,7 @@ class MultiAddressUrlHttpClientTest {
         try (StreamingHttpClient client = HttpClients
                 .forMultiAddressUrl(ID).defaultHttpPort(serverPort).buildStreaming()) {
             StreamingHttpRequest request = client.get(format("http://%s/200", serverHost));
-            requestAndValidate(client, request, OK, "/200");
+            requestAndValidate(client, request, OK, "/200", serverHost);
         }
     }
 
@@ -282,7 +317,8 @@ class MultiAddressUrlHttpClientTest {
         try (StreamingHttpClient client = HttpClients
                 .forMultiAddressUrl(ID).defaultHttpPort(illegalPort).buildStreaming()) {
             StreamingHttpRequest request = client.get(format("http://%s:%d/200", serverHost, serverPort));
-            requestAndValidate(client, request, OK, "/200");
+            // the host header should exactly match the authority provided.
+            requestAndValidate(client, request, OK, "/200", serverHost + ":" + serverPort);
         }
     }
 
@@ -309,17 +345,20 @@ class MultiAddressUrlHttpClientTest {
     private static void makeGetRequestAndValidate(final StreamingHttpClient client, final String hostHeader,
                                                   final HttpResponseStatus status) throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/%d?param=value#tag", hostHeader, status.code()));
-        requestAndValidate(client, request, status, format("/%d?param=value#tag", status.code()));
+        requestAndValidate(client, request, status, format("/%d?param=value#tag", status.code()), hostHeader);
     }
 
     private static void requestAndValidate(final StreamingHttpClient client, final StreamingHttpRequest request,
-                                           final HttpResponseStatus expectedStatus, final String expectedRequestTarget)
-            throws Exception {
+                                           final HttpResponseStatus expectedStatus, final String expectedRequestTarget,
+                                           final String expectedHostHeader) throws Exception {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(client.request(request));
+        // Our request should be modified with the host header at this point.
         assertThat(response.status(), is(expectedStatus));
         final CharSequence receivedRequestTarget = response.headers().get(X_RECEIVED_REQUEST_TARGET);
         assertThat(receivedRequestTarget, is(notNullValue()));
         assertThat(receivedRequestTarget.toString(), is(expectedRequestTarget));
+        final CharSequence receivedHostHeader = response.headers().get(X_RECEIVED_HOST_HEADER);
+            assertThat(receivedHostHeader.toString(), is(expectedHostHeader));
     }
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,

@@ -17,10 +17,15 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
 
+import javax.annotation.Nullable;
+
 /**
  * Configuration for TCP based clients.
  */
-public final class TcpClientConfig extends AbstractTcpConfig<ClientSslConfig> {
+public final class TcpClientConfig extends AbstractTcpConfig {
+
+    @Nullable
+    private ClientSslConfig sslConfig;
 
     /**
      * New instance.
@@ -35,6 +40,17 @@ public final class TcpClientConfig extends AbstractTcpConfig<ClientSslConfig> {
      */
     public TcpClientConfig(final TcpClientConfig from) {
         super(from);
+        sslConfig = from.sslConfig;
+    }
+
+    /**
+     * Get the {@link ClientSslConfig}.
+     *
+     * @return the {@link ClientSslConfig}, or {@code null} if SSL/TLS is not configured.
+     */
+    @Nullable
+    public ClientSslConfig sslConfig() {
+        return sslConfig;
     }
 
     /**
@@ -43,5 +59,14 @@ public final class TcpClientConfig extends AbstractTcpConfig<ClientSslConfig> {
      */
     public ReadOnlyTcpClientConfig asReadOnly() {
         return new ReadOnlyTcpClientConfig(this);
+    }
+
+    /**
+     * Add SSL/TLS related config.
+     *
+     * @param sslConfig the {@link ClientSslConfig}.
+     */
+    public void sslConfig(final @Nullable ClientSslConfig sslConfig) {
+        this.sslConfig = sslConfig;
     }
 }

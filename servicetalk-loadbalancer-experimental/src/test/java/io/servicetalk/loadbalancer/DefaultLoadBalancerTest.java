@@ -16,7 +16,6 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
@@ -30,7 +29,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -47,7 +48,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             new P2CLoadBalancingPolicy.Builder().build();
     @Nullable
-    private OutlierDetectorFactory outlierDetectorFactory;
+    private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
     @Override
     protected boolean eagerConnectionShutdown() {
@@ -76,9 +77,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         outlierDetectorFactory = factory;
         lb = newTestLoadBalancer();
 
-        TestHealthChecker healthChecker = factory.currentHealthChecker.get();
+        TestOutlierDetector outlierDetector = factory.currentOutlierDetector.get();
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        TestHealthIndicator indicator = healthChecker.getIndicators().stream()
+        TestHealthIndicator indicator = outlierDetector.getIndicators().stream()
                 .filter(i -> "address-1".equals(i.address)).findFirst().get();
         assertNotNull(indicator.host);
     }
@@ -128,18 +129,18 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         outlierDetectorFactory = factory;
         lb = newTestLoadBalancer();
 
-        TestHealthChecker healthChecker = factory.currentHealthChecker.get();
-        assertNotNull(healthChecker);
-        assertThat(healthChecker.getIndicators(), empty());
+        TestOutlierDetector outlierDetector = factory.currentOutlierDetector.get();
+        assertNotNull(outlierDetector);
+        assertThat(outlierDetector.getIndicators(), empty());
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(healthChecker.getIndicators(), hasSize(1));
+        assertThat(outlierDetector.getIndicators(), hasSize(1));
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        assertThat(healthChecker.getIndicators(), hasSize(2));
+        assertThat(outlierDetector.getIndicators(), hasSize(2));
         // now for the removals.
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(healthChecker.getIndicators(), hasSize(1));
+        assertThat(outlierDetector.getIndicators(), hasSize(1));
         sendServiceDiscoveryEvents(downEvent("address-2"));
-        assertThat(healthChecker.getIndicators(), empty());
+        assertThat(outlierDetector.getIndicators(), empty());
     }
 
     @Test
@@ -149,10 +150,10 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         outlierDetectorFactory = factory;
         lb = newTestLoadBalancer();
 
-        TestHealthChecker healthChecker = factory.currentHealthChecker.get();
+        TestOutlierDetector outlierDetector = factory.currentOutlierDetector.get();
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        TestHealthIndicator indicator = healthChecker.getIndicators().stream()
+        TestHealthIndicator indicator = outlierDetector.getIndicators().stream()
                 .filter(i -> "address-1".equals(i.address)).findFirst().get();
         indicator.isHealthy = false;
         // Now we should always bias toward address-2.
@@ -163,32 +164,33 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     }
 
     @Test
-    void healthCheckerIsClosedOnShutdown() throws Exception {
+    void outlierDetectorIsClosedOnShutdown() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
         outlierDetectorFactory = factory;
         lb = newTestLoadBalancer();
         lb.closeAsync().toFuture().get();
-        assertTrue(factory.currentHealthChecker.get().cancelled);
-    }
-
-    private LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
-        return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(new P2CLoadBalancingPolicy.Builder().build());
+        assertTrue(factory.currentOutlierDetector.get().cancelled);
     }
 
     @Override
-    protected final TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
-            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final TestConnectionFactory connectionFactory) {
-        return (TestableLoadBalancer<String, TestLoadBalancedConnection>)
-                baseLoadBalancerBuilder()
-                        .loadBalancingPolicy(loadBalancingPolicy)
-                        .outlierDetectorFactory(outlierDetectorFactory)
-                        .healthCheckFailedConnectionsThreshold(-1)
-                        .backgroundExecutor(testExecutor)
-                        .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
+    TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
+            TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
+            TestConnectionFactory connectionFactory) {
+        Function<String, OutlierDetector<String, TestLoadBalancedConnection>> factory = outlierDetectorFactory == null ?
+                    (description) -> new NoopOutlierDetector<>(OutlierDetectorConfig.DEFAULT_CONFIG, testExecutor)
+                 : (description) -> outlierDetectorFactory.get();
+        return new DefaultLoadBalancer<>(
+                getClass().getSimpleName(),
+                "test-service",
+                serviceDiscoveryPublisher,
+                loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
+                ConnectionPoolStrategies.<TestLoadBalancedConnection>linearSearch()
+                        .buildStrategy("test-service"),
+                connectionFactory,
+                NoopLoadBalancerObserver.instance(),
+                null,
+                factory);
     }
 
     private static class TestHealthIndicator implements HealthIndicator<String, TestLoadBalancedConnection> {
@@ -252,19 +254,21 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestOutlierDetectorFactory implements OutlierDetectorFactory {
+    private static class TestOutlierDetectorFactory implements
+            Supplier<OutlierDetector<String, TestLoadBalancedConnection>> {
 
-        final AtomicReference<TestHealthChecker> currentHealthChecker = new AtomicReference<>();
+        final AtomicReference<TestOutlierDetector> currentOutlierDetector = new AtomicReference<>();
+
         @Override
-        public OutlierDetector newHealthChecker(Executor executor, String lbDescription) {
-            assert currentHealthChecker.get() == null;
-            TestHealthChecker result = new TestHealthChecker();
-            currentHealthChecker.set(result);
+        public OutlierDetector<String, TestLoadBalancedConnection> get() {
+            assert currentOutlierDetector.get() == null;
+            TestOutlierDetector result = new TestOutlierDetector();
+            currentOutlierDetector.set(result);
             return result;
         }
     }
 
-    private static class TestHealthChecker implements OutlierDetector<String, TestLoadBalancedConnection> {
+    private static class TestOutlierDetector implements OutlierDetector<String, TestLoadBalancedConnection> {
 
         private final Set<TestHealthIndicator> indicatorSet = new HashSet<>();
         volatile boolean cancelled;

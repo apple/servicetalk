@@ -310,13 +310,13 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     private static HttpRequest newAggregatedRequest(final HttpRequestMethod requestMethod) {
-        return awaitSingleIndefinitelyNonNull(newRequest(requestMethod, "/", HTTP_1_1,
+        return awaitSingleIndefinitelyNonNull(newRequest(requestMethod, requestTarget(requestMethod), HTTP_1_1,
                 headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest())
                 .payloadBody(PAYLOAD, textSerializerUtf8());
     }
 
     private static StreamingHttpRequest newStreamingRequest(final HttpRequestMethod requestMethod) {
-        return newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
+        return newRequest(requestMethod, requestTarget(requestMethod), HTTP_1_1, headersFactory.newHeaders(),
                 DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
     }
 
@@ -329,6 +329,12 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
         return newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
                 DEFAULT_ALLOCATOR, headersFactory)
                 .payloadBody(from(PAYLOAD), appSerializerUtf8FixLen());
+    }
+
+    private static String requestTarget(HttpRequestMethod requestMethod) {
+        // CONNECT requests MUST have a request target in authority form.
+        // https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.3
+        return CONNECT.equals(requestMethod) ? "localhost:8080" : "/";
     }
 
     private static <T> UnaryOperator<T> describe(UnaryOperator<T> operator, String description) {

@@ -106,8 +106,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    @Nullable
-    private final OutlierDetector<ResolvedAddress, C> healthChecker;
+    private final OutlierDetector<ResolvedAddress, C> outlierDetector;
     private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
@@ -133,7 +132,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserver loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
-            @Nullable final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
+            final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
@@ -149,7 +148,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.asyncCloseable = toAsyncCloseable(this::doClose);
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
-        this.healthChecker = outlierDetectorFactory == null ? null : outlierDetectorFactory.apply(lbDescription);
+        this.outlierDetector = requireNonNull(outlierDetectorFactory, "outlierDetectorFactory").apply(lbDescription);
         // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
         // we already have all the fields initialized.
         subscribeToEvents(false);
@@ -178,9 +177,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (!isClosed) {
                     discoveryCancellable.cancel();
                     eventStreamProcessor.onComplete();
-                    if (healthChecker != null) {
-                        healthChecker.cancel();
-                    }
+                    outlierDetector.cancel();
                 }
                 isClosed = true;
                 List<Host<ResolvedAddress, C>> currentList = usedHosts;
@@ -386,11 +383,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
             final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
-            // All hosts will share the healthcheck config of the parent RR loadbalancer.
-            final HealthIndicator indicator = healthChecker == null ?
-                    null : healthChecker.newHealthIndicator(addr, hostObserver);
+            // All hosts will share the health check config of the parent load balancer.
+            final HealthIndicator indicator = outlierDetector.newHealthIndicator(addr, hostObserver);
+            // We don't need the host level health check if we are either not health checking at all or if the
+            // failed connect threshold is negative, meaning disabled.
+            final HealthCheckConfig hostHealthCheckConfig =
+                    healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
             final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
-                    connectionFactory, hostObserver, healthCheckConfig, indicator);
+                    connectionFactory, hostObserver, hostHealthCheckConfig, indicator);
             if (indicator != null) {
                 indicator.setHost(host);
             }

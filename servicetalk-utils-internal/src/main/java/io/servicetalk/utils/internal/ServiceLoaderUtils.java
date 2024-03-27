@@ -47,7 +47,11 @@ public final class ServiceLoaderUtils {
         for (T provider : ServiceLoader.load(clazz, classLoader)) {
             list.add(provider);
         }
-        logger.debug("Registered {} {}(s): {}", list.size(), clazz.getSimpleName(), list);
-        return list.isEmpty() ? emptyList() : unmodifiableList(list);
+        if (list.isEmpty()) {
+            logger.debug("ServiceLoader {}(s) registered: []", clazz.getSimpleName());
+            return emptyList();
+        }
+        logger.info("ServiceLoader {}(s) registered: {}", clazz.getSimpleName(), list);
+        return unmodifiableList(list);
     }
 }

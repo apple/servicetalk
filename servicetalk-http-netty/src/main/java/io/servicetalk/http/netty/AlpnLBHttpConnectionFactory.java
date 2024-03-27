@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;

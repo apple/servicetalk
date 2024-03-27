@@ -39,8 +39,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private static final long MAX_MS_TO_NS = NANOSECONDS.convert(MAX_VALUE, MILLISECONDS);
-    static final long DEFAULT_CANCEL_PENALTY = 5L;
-    static final long DEFAULT_ERROR_PENALTY = 10L;
 
     private final StampedLock lock = new StampedLock();
     /**
@@ -60,10 +58,6 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private int ewma;
     private int pendingCount;
     private long pendingStamp = Long.MIN_VALUE;
-
-    DefaultRequestTracker(final long halfLifeNanos) {
-        this(halfLifeNanos, DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);
-    }
 
     DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty) {
         ensurePositive(halfLifeNanos, "halfLifeNanos");

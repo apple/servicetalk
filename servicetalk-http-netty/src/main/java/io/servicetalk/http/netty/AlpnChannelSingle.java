@@ -135,26 +135,4 @@ final class AlpnChannelSingle extends ChannelInitSingle<String> {
             return false;
         }
     }
-
-    /**
-     * {@link ChannelInitializer} that does not do anything.
-     */
-    static final class NoopChannelInitializer implements ChannelInitializer {
-
-        static final ChannelInitializer INSTANCE = new NoopChannelInitializer();
-
-        private NoopChannelInitializer() {
-            // Singleton
-        }
-
-        @Override
-        public void init(final Channel channel) {
-            // NOOP
-        }
-
-        @Override
-        public ChannelInitializer andThen(final ChannelInitializer after) {
-            return after;
-        }
-    }
 }

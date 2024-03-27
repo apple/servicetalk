@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
  * A strategy for selecting connections at the {@link Host} level connection pool.
  * @param <C> the concrete type of the connection.
  */
-public interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
+interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
 
     /**
      * Select a connection from the ordered list of connections.

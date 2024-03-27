@@ -19,7 +19,6 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
-import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -68,9 +67,8 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorFactory(
-            OutlierDetectorFactory<ResolvedAddress, C> outlierDetectorFactory) {
-        delegate = delegate.outlierDetectorFactory(outlierDetectorFactory);
+    public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig) {
+        delegate = delegate.outlierDetectorConfig(outlierDetectorConfig);
         return this;
     }
 
@@ -84,24 +82,6 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolStrategyFactory(
             ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
         delegate = delegate.connectionPoolStrategyFactory(connectionPoolStrategyFactory);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
-        delegate = delegate.healthCheckInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter) {
-        delegate = delegate.healthCheckResubscribeInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold) {
-        delegate = delegate.healthCheckFailedConnectionsThreshold(threshold);
         return this;
     }
 

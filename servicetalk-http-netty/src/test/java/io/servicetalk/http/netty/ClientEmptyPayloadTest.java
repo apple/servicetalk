@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,14 +59,14 @@ class ClientEmptyPayloadTest {
                 .listenBlockingAndAwait((ctx1, request, responseFactory) ->
                         responseFactory.ok().payloadBody(request.payloadBody()));
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking()) {
-            HttpRequest req1 = client.newRequest(method1, "/");
+            HttpRequest req1 = client.newRequest(method1, requestTarget(ctx, method1, "/"));
             setEncoding(req1.headers(), type1, 0);
             HttpResponse resp1 = client.request(req1.payloadBody(
                     client.executionContext().bufferAllocator().newBuffer()));
 
             // Supply a non-empty payload if the method supports it.
             String payload2 = method2 == HEAD || method2 == CONNECT || method2 == TRACE ? "" : "hello world2";
-            HttpRequest req2 = client.newRequest(method2, "/");
+            HttpRequest req2 = client.newRequest(method2, requestTarget(ctx, method2, "/"));
             setEncoding(req2.headers(), type2, payload2.length());
             HttpResponse resp2 = client.request(req2.payloadBody(
                     client.executionContext().bufferAllocator().fromAscii(payload2)));
@@ -73,6 +74,16 @@ class ClientEmptyPayloadTest {
             assertResponse(resp1, "");
             assertResponse(resp2, payload2);
         }
+    }
+
+    private static String requestTarget(ServerContext ctx, HttpRequestMethod method, String relativeTarget) {
+        if (method != CONNECT) {
+            return relativeTarget;
+        }
+        // CONNECT requests MUST have a request target in authority form.
+        // https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.3
+        HostAndPort hostAndPort = serverHostAndPort(ctx);
+        return hostAndPort.hostName() + ":" + hostAndPort.port();
     }
 
     private static void assertResponse(HttpResponse resp, String payloadBody) {
