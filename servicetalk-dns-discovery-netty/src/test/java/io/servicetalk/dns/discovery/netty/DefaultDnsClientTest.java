@@ -456,12 +456,12 @@ class DefaultDnsClientTest {
         final int targetPort = 9876;
         final String ip1 = nextIp();
         final int ttl = DEFAULT_TTL + 10;
-        final int IP1_TTL = 2;
-        final int IP2_TTL = 5;
+        final int ip1Ttl = 2;
+        final int ip2Ttl = 5;
         recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
         recordStore.addSrv(domain, targetDomain2, targetPort, ttl);
-        recordStore.addIPv4Address(targetDomain1, IP1_TTL, ip1);
-        recordStore.addIPv4Address(targetDomain2, IP2_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain1, ip1Ttl, ip1);
+        recordStore.addIPv4Address(targetDomain2, ip2Ttl, ip1);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
@@ -470,18 +470,18 @@ class DefaultDnsClientTest {
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
         if (srvFilterDuplicateEvents) {
             assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
-            recordStore.removeIPv4Address(targetDomain1, IP1_TTL, ip1);
-            advanceTime(IP1_TTL);
+            recordStore.removeIPv4Address(targetDomain1, ip1Ttl, ip1);
+            advanceTime(ip1Ttl);
             assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
         } else {
             assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
-            recordStore.removeIPv4Address(targetDomain1, IP1_TTL, ip1);
-            advanceTime(IP1_TTL);
+            recordStore.removeIPv4Address(targetDomain1, ip1Ttl, ip1);
+            advanceTime(ip1Ttl);
             assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
         }
 
-        recordStore.removeIPv4Address(targetDomain2, IP2_TTL, ip1);
-        advanceTime(IP2_TTL);
+        recordStore.removeIPv4Address(targetDomain2, ip2Ttl, ip1);
+        advanceTime(ip2Ttl);
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
     }
 
