@@ -40,7 +40,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  *  *  Choices in Randomized Load Balancing</a>
  */
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements LoadBalancingPolicy<ResolvedAddress, C> {
+        extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
     private final boolean failOpen;
@@ -54,7 +54,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     }
 
     @Override
-    public HostSelector<ResolvedAddress, C> buildSelector(
+    HostSelector<ResolvedAddress, C> buildSelector(
             List<Host<ResolvedAddress, C>> hosts, String targetResource) {
         return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
@@ -66,7 +66,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     @Override
     public String toString() {
-        return name() + "(maxEffort=" + maxEffort + ')';
+        return name() + "(failOpen=" + failOpen + ", maxEffort=" + maxEffort + ')';
     }
 
     /**

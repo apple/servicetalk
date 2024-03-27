@@ -24,18 +24,25 @@ import java.util.List;
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
  */
-public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
+public abstract class LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
      * The default fail-open policy to use for {@link HostSelector} implementations.
      */
-    boolean DEFAULT_FAIL_OPEN_POLICY = false;
+    static final boolean DEFAULT_FAIL_OPEN_POLICY = false;
+
+    LoadBalancingPolicy() {
+        // package private constructor to control proliferation.
+    }
 
     /**
      * The name of the load balancing policy.
      * @return the name of the load balancing policy
      */
-    String name();
+    public abstract String name();
+
+    @Override
+    public abstract String toString();
 
     /**
      * Construct a {@link HostSelector}.
@@ -43,6 +50,6 @@ public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConn
      * @param targetResource the name of the target resource, useful for debugging purposes.
      * @return a {@link HostSelector}
      */
-    HostSelector<ResolvedAddress, C> buildSelector(
+    abstract HostSelector<ResolvedAddress, C> buildSelector(
             List<Host<ResolvedAddress, C>> hosts, String targetResource);
 }

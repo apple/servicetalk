@@ -294,17 +294,22 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestLoadBalancerPolicy implements LoadBalancingPolicy<String, TestLoadBalancedConnection> {
+    private static class TestLoadBalancerPolicy extends LoadBalancingPolicy<String, TestLoadBalancedConnection> {
 
         int rebuilds;
 
         @Override
         public String name() {
-            return "test-selector";
+            return "TestPolicy";
         }
 
         @Override
-        public HostSelector<String, TestLoadBalancedConnection> buildSelector(
+        public String toString() {
+            return name() + "()";
+        }
+
+        @Override
+        HostSelector<String, TestLoadBalancedConnection> buildSelector(
                 List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }
