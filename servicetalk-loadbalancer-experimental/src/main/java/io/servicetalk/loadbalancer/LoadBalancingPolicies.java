@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
+
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 public final class LoadBalancingPolicies {
@@ -42,12 +44,15 @@ public final class LoadBalancingPolicies {
      *  - select two hosts randomly: hosta, and hostb.
      *  - if neither host is healthy, repeat selection process until max-effort.
      *  - pick the 'best' host of the two options.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
      * @return a P2C load balancing policy with fail-open policy of {@value DEFAULT_FAIL_OPEN_POLICY} and a max-effort
      * of {@value DEFAULT_MAX_EFFORT}.
      * @see <a href="https://ieeexplore.ieee.org/document/963420">Mitzenmacher (2001) The Power of Two
      * Choices in Randomized Load Balancing</a>
      */
-    public static LoadBalancingPolicy p2c() {
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> p2c() {
         return p2c(DEFAULT_FAIL_OPEN_POLICY, DEFAULT_MAX_EFFORT);
     }
 
@@ -60,13 +65,16 @@ public final class LoadBalancingPolicies {
      *  - select two hosts randomly: hosta, and hostb.
      *  - if neither host is healthy, repeat selection process until max-effort.
      *  - pick the 'best' host of the two options.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
      * @param failOpen whether to attempt connection selection even if a health host cannot be found.
      * @return a P2C load balancing policy with the configured fail-open policy and a max effort of
      * {@value DEFAULT_MAX_EFFORT}.
      * @see <a href="https://ieeexplore.ieee.org/document/963420">Mitzenmacher (2001) The Power of Two
      * Choices in Randomized Load Balancing</a>
      */
-    public static LoadBalancingPolicy p2c(boolean failOpen) {
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> p2c(boolean failOpen) {
         return p2c(failOpen, DEFAULT_MAX_EFFORT);
     }
 
@@ -79,13 +87,16 @@ public final class LoadBalancingPolicies {
      *  - select two hosts randomly: hosta, and hostb.
      *  - if neither host is healthy, repeat selection process until max-effort.
      *  - pick the 'best' host of the two options.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
      * @param maxEffort the maximum number of attempts to find a healthy host before giving up.
      * @return a P2C load balancing policy with the configured max effort and fail-open policy of
      * {@value DEFAULT_FAIL_OPEN_POLICY}.
      * @see <a href="https://ieeexplore.ieee.org/document/963420">Mitzenmacher (2001) The Power of Two
      * Choices in Randomized Load Balancing</a>
      */
-    public static LoadBalancingPolicy p2c(int maxEffort) {
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> p2c(int maxEffort) {
         return p2c(DEFAULT_FAIL_OPEN_POLICY, maxEffort);
     }
 
@@ -98,13 +109,16 @@ public final class LoadBalancingPolicies {
      *  - select two hosts randomly: hosta, and hostb.
      *  - if neither host is healthy, repeat selection process until max-effort.
      *  - pick the 'best' host of the two options.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
      * @param failOpen whether to attempt connection selection even if a health host cannot be found.
      * @param maxEffort the maximum number of attempts to find a healthy host before giving up.
      * @return a P2C load balancing policy with the configured parameters.
      * @see <a href="https://ieeexplore.ieee.org/document/963420">Mitzenmacher (2001) The Power of Two
      * Choices in Randomized Load Balancing</a>
      */
-    public static LoadBalancingPolicy p2c(boolean failOpen, int maxEffort) {
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> p2c(boolean failOpen, int maxEffort) {
         ensurePositive(maxEffort, "maxEffort");
         return new P2CLoadBalancingPolicy<>(failOpen, maxEffort, null);
     }
@@ -112,13 +126,25 @@ public final class LoadBalancingPolicies {
     /**
      * Round-Robin load balancing policy.
      * Round-Robin selection consists of iterating around the endpoint set in a circular pattern.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
      * @return a round-robin load balancing policy with a fail-open policy of {@value DEFAULT_FAIL_OPEN_POLICY}.
      */
-    public static LoadBalancingPolicy roundRobin() {
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> roundRobin() {
         return roundRobin(DEFAULT_FAIL_OPEN_POLICY);
     }
 
-    public static LoadBalancingPolicy roundRobin(boolean failOpen) {
+    /**
+     * Round-Robin load balancing policy.
+     * Round-Robin selection consists of iterating around the endpoint set in a circular pattern.
+     * @param <ResolvedAddress> the concrete type of the resolved address.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
+     * @param failOpen whether to attempt connection selection even if a health host cannot be found.
+     * @return a round-robin load balancing policy with the specified fail-open policy.
+     */
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> roundRobin(boolean failOpen) {
         return new RoundRobinLoadBalancingPolicy<>(failOpen);
     }
 }

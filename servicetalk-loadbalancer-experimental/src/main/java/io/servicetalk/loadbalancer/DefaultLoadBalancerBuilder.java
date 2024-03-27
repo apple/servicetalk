@@ -38,7 +38,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private static final int DEFAULT_LINEAR_SEARCH_SPACE = Integer.MAX_VALUE;
 
     private final String id;
-    private BaseLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
+    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
     private int linearSearchSpace = DEFAULT_LINEAR_SEARCH_SPACE;
 
     @Nullable
@@ -59,12 +59,10 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy) {
-        if (requireNonNull(loadBalancingPolicy, "loadBalancingPolicy") instanceof BaseLoadBalancingPolicy) {
-            this.loadBalancingPolicy = (BaseLoadBalancingPolicy<ResolvedAddress, C>) loadBalancingPolicy;
-            return this;
-        }
-        throw new IllegalArgumentException("Unsupported LoadBalancingPolicy type: " + loadBalancingPolicy.name());
+    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
+            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy) {
+        this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
+        return this;
     }
 
     @Override
@@ -119,7 +117,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             implements LoadBalancerFactory<ResolvedAddress, C> {
 
         private final String id;
-        private final BaseLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
+        private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final LoadBalancerObserver loadBalancerObserver;
         private final int linearSearchSpace;
         @Nullable
@@ -128,7 +126,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final HealthCheckConfig healthCheckConfig;
 
         DefaultLoadBalancerFactory(final String id,
-                                   final BaseLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
+                                   final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver loadBalancerObserver,
                                    final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
@@ -178,7 +176,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>
-    BaseLoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
-        return (BaseLoadBalancingPolicy<ResolvedAddress, C>) LoadBalancingPolicies.roundRobin();
+    LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
+        return LoadBalancingPolicies.roundRobin();
     }
 }

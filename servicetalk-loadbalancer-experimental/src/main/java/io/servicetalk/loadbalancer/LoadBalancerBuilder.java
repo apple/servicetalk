@@ -63,11 +63,15 @@ import javax.annotation.Nullable;
  */
 public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
-     * Set the {@code loadBalancingPolicy} to use with this load balancer.
+     * Set the {@link LoadBalancingPolicy} to use with this load balancer.
+     * The {@link LoadBalancingPolicy} is responsible for selecting endpoints from the set of available endpoints
+     * taking into consideration health, load, and other factors relevant to distributing load across endpoints.
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
      * @return {@code this}
+     * @see LoadBalancingPolicies for available load balancing policies.
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(LoadBalancingPolicy loadBalancingPolicy);
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
+            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
 
     /**
      * Set the {@link LoadBalancerObserver} to use with this load balancer.

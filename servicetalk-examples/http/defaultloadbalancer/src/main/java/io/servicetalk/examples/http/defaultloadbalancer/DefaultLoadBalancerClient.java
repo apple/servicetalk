@@ -61,11 +61,11 @@ public final class DefaultLoadBalancerClient {
                         // show a preference toward faster hosts while also rapidly adjust to changes in backend
                         // performance.
                         //
-                        // Set the max effort (default: 5). This is the number of times P2C will pick a random
-                        // pair of hosts in search of a healthy host before giving up. When it gives up it will
+                        // Set the max effort to 10 (the default is 5). This is the number of times P2C will pick a
+                        // random pair of hosts in search of a healthy host before giving up. When it gives up it will
                         // either attempt to use one of the hosts regardless of status if `failOpen == true` or
                         // return a `NoActiveHosts` exception if failOpen == false.
-                        LoadBalancingPolicies.p2c(/*failOpen*/ true, /*maxEffort*/ 6))
+                        LoadBalancingPolicies.p2c(/*failOpen*/ true, /*maxEffort*/ 10))
                 .outlierDetectorConfig(
                         // xDS compatible outlier detection has a number of tuning knobs. There are multiple detection
                         // algorithms describe in more detail below. In addition to the limits appropriate to each

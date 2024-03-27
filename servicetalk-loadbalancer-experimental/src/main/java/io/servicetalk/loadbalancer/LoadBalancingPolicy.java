@@ -15,14 +15,36 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
+
+import java.util.List;
+
 /**
- * Definition of the selector mechanism used for load balancing.
+ * Base class defining the selector mechanism used for load balancing.
+ * <p>
+ * The load balancing policy defines how selection happens over the set of available endpoints. Common examples
+ * include Power of Two Choices (P2C), RoundRobin, random, heap, etc. Configurable implementations can be found in
+ * {@link LoadBalancingPolicies}.
+ * @param <ResolvedAddress> the concrete type of the resolved address.
+ * @param <C> the concrete type of the {@link LoadBalancedConnection}.
+ * @see LoadBalancingPolicies for definitions of usable policies
  */
-public interface LoadBalancingPolicy {
+public abstract class LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
+
+    LoadBalancingPolicy() {
+        // package private to limit implementations.
+    }
 
     /**
      * The name of the load balancing policy.
      * @return the name of the load balancing policy
      */
-    String name();
+    public abstract String name();
+
+    @Override
+    public abstract String toString();
+
+    // package private to limit visibility of HostSelector
+    abstract HostSelector<ResolvedAddress, C> buildSelector(
+            List<Host<ResolvedAddress, C>> hosts, String targetResource);
 }

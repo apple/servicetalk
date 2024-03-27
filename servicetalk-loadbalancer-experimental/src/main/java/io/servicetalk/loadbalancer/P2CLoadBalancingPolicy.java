@@ -40,7 +40,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  *  *  Choices in Randomized Load Balancing</a>
  */
 final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        extends BaseLoadBalancingPolicy<ResolvedAddress, C> {
+        extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final int maxEffort;
     private final boolean failOpen;
