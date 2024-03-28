@@ -62,6 +62,9 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
+    private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
+    @SuppressWarnings("PMD.MutableStaticState")
+    static boolean NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, true);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
@@ -101,6 +104,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
+            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, NX_DOMAIN_INVALIDATES);
         }
     }
 
@@ -128,7 +132,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private int negativeTTLCacheSeconds = DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private Duration ttlJitter = ofSeconds(DEFAULT_TTL_POLL_JITTER_SECONDS);
     private int srvConcurrency = 2048;
-    private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
     private boolean srvFilterDuplicateEvents;
     private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
@@ -300,11 +303,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return asHostAndPortDiscoverer(build());
     }
 
-    DefaultDnsServiceDiscovererBuilder inactiveEventsOnError(boolean inactiveEventsOnError) {
-        this.inactiveEventsOnError = inactiveEventsOnError;
-        return this;
-    }
-
     DefaultDnsServiceDiscovererBuilder srvConcurrency(int srvConcurrency) {
         this.srvConcurrency = ensurePositive(srvConcurrency, "srvConcurrency");
         return this;
@@ -317,8 +315,11 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
             Duration initialDelay, Duration jitter) {
-        this.srvHostNameRepeatInitialDelay = requireNonNull(initialDelay);
-        this.srvHostNameRepeatJitter = requireNonNull(jitter);
+        this.srvHostNameRepeatInitialDelay = ensurePositive(initialDelay, "srvHostNameRepeatInitialDelay");
+        this.srvHostNameRepeatJitter = ensurePositive(jitter, "srvHostNameRepeatJitter");
+        if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
+            throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
+        }
         return this;
     }
 
@@ -369,7 +370,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, consolidateCacheSize,
                 minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, negativeTTLCacheSeconds,
                 ttlJitter.toNanos(),
-                srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
+                srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
                 missingRecordStatus);
@@ -388,5 +389,13 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.error("Can not parse the value of -D{}={}, using {} as a default", name, value, defaultValue, e);
             return defaultValue;
         }
+    }
+
+    private static boolean parseProperty(final String name, final boolean defaultValue) {
+        final String value = getProperty(name);
+        if (value == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value);
     }
 }

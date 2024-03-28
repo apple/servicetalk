@@ -80,6 +80,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
+import static io.netty.handler.codec.dns.DnsResponseCode.NXDOMAIN;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -95,6 +96,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder.NX_DOMAIN_INVALIDATES;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
@@ -135,7 +137,6 @@ final class DefaultDnsClient implements DnsClient {
     private final IntFunction<? extends Completable> srvHostNameRepeater;
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
-    private final boolean inactiveEventsOnError;
     private final DnsResolverAddressTypes addressTypes;
     private final String id;
     private boolean closed;
@@ -143,7 +144,7 @@ final class DefaultDnsClient implements DnsClient {
     DefaultDnsClient(final String id, final IoExecutor ioExecutor, final int consolidateCacheSize,
                      final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
                      final int negativeTTLCacheSeconds, final long ttlJitterNanos,
-                     final int srvConcurrency, final boolean inactiveEventsOnError,
+                     final int srvConcurrency,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
@@ -155,7 +156,6 @@ final class DefaultDnsClient implements DnsClient {
                      final ServiceDiscovererEvent.Status missingRecordStatus) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
-        this.inactiveEventsOnError = inactiveEventsOnError;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         // We must use nettyIoExecutor for the repeater for thread safety!
@@ -252,9 +252,8 @@ final class DefaultDnsClient implements DnsClient {
         return defer(() -> {
             final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
             ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
-            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events = inactiveEventsOnError ?
-                    recoverWithInactiveEvents(pub, false) :
-                    pub;
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
+                    recoverWithInactiveEvents(pub, false);
             return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
                     @Override
                     public void onComplete() {
@@ -338,7 +337,7 @@ final class DefaultDnsClient implements DnsClient {
                     return empty();
                 }
             }, srvConcurrency)
-            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
+            .liftSync(SrvInactiveCombinerOperator.EMIT);
 
             return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
                 @Override
@@ -955,7 +954,7 @@ final class DefaultDnsClient implements DnsClient {
             AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
         return pub.onErrorResume(cause -> {
             AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
-            if (subscription != null) {
+            if (subscription != null && shouldRevokeState(cause)) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
                 if (!events.isEmpty()) {
                     return (generateAggregateEvent ? Publisher.<List<ServiceDiscovererEvent<T>>>from(
@@ -966,6 +965,15 @@ final class DefaultDnsClient implements DnsClient {
             }
             return failed(cause);
         });
+    }
+
+    private static boolean shouldRevokeState(final Throwable t) {
+        // ISE => Subscriber exceptions (downstream of retry)
+        return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
+                t instanceof ClosedDnsServiceDiscovererException || (NX_DOMAIN_INVALIDATES &&
+                // string matching is done on purpose to avoid the hard Netty dependency
+                (t.getCause() != null && t.getCause().getClass().getSimpleName().contains("DnsErrorCauseException")) &&
+                NXDOMAIN.equals(((io.netty.resolver.dns.DnsErrorCauseException) t.getCause()).getCode()));
     }
 
     private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
@@ -982,7 +990,6 @@ final class DefaultDnsClient implements DnsClient {
                             PublisherOperator<Collection<ServiceDiscovererEvent<InetSocketAddress>>,
                                               Collection<ServiceDiscovererEvent<InetSocketAddress>>> {
         static final SrvInactiveCombinerOperator EMIT = new SrvInactiveCombinerOperator(true);
-        static final SrvInactiveCombinerOperator NO_EMIT = new SrvInactiveCombinerOperator(false);
         private final boolean emitAggregatedEvents;
 
         private SrvInactiveCombinerOperator(boolean emitAggregatedEvents) {
