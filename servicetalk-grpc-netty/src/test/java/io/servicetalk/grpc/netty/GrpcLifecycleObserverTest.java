@@ -163,6 +163,7 @@ class GrpcLifecycleObserverTest {
                             .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                             .protocols(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger",
                                     TRACE, () -> true).build())
+                            // This is how a Grpc lifecycle observer is added
                             .appendClientFilter(new GrpcLifecycleObserverRequesterFilter(
                                     combine(clientLifecycleObserver, LOGGING))))
                 .buildBlocking(new ClientFactory());
