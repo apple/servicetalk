@@ -24,7 +24,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -35,13 +34,9 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.ReservedBlockingHttpConnection;
-import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
@@ -51,20 +46,15 @@ import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
-import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
 import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Default implementation of {@link HttpLoadBalancerFactory}.
@@ -115,32 +105,30 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
     @Override
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
-            final FilterableStreamingHttpConnection connection,
+            FilterableStreamingHttpConnection connection,
             final ReservableRequestConcurrencyController concurrencyController,
             @Nullable final ContextMap context) {
 
-        RequestTracker hostHealthIndicator = null;
+        RequestTracker requestTracker = null;
         if (context == null) {
             LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
                     ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
                     ", health-monitor of this connection, the context must not be null.");
         } else {
-            hostHealthIndicator = context.get(REQUEST_TRACKER_KEY);
-            if (hostHealthIndicator == null) {
+            requestTracker = context.get(REQUEST_TRACKER_KEY);
+            if (requestTracker == null) {
                 LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
                         "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
                         ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
                         ", health-monitor of this connection, the context must be properly wired.");
             }
         }
-
-        if (hostHealthIndicator == null) {
-            return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection,
-                    concurrencyController);
+        if (requestTracker != null) {
+            connection = HttpRequestTracker.observe(
+                    peerResponseErrorClassifier, errorClassFunction, requestTracker, connection);
         }
-
-        return new DefaultHttpLoadBalancedConnection(connection, concurrencyController,
-                errorClassFunction, peerResponseErrorClassifier, hostHealthIndicator);
+        return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection,
+                concurrencyController);
     }
 
     @Override
@@ -281,195 +269,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         @Override
         public String toString() {
             return delegate.toString();
-        }
-    }
-
-    private static final class DefaultHttpLoadBalancedConnection
-            implements FilterableStreamingHttpLoadBalancedConnection {
-        private final FilterableStreamingHttpConnection delegate;
-        private final ReservableRequestConcurrencyController concurrencyController;
-        private final Function<Throwable, ErrorClass> errorClassFunction;
-        private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
-        @Nullable
-        private final RequestTracker tracker;
-
-        DefaultHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate,
-                                          final ReservableRequestConcurrencyController concurrencyController,
-                                          final Function<Throwable, ErrorClass> errorClassFunction,
-                                          final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
-                                          @Nullable final RequestTracker tracker) {
-            this.delegate = delegate;
-            this.concurrencyController = concurrencyController;
-            this.errorClassFunction = errorClassFunction;
-            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-            this.tracker = tracker;
-        }
-
-        @Override
-        public int score() {
-            return 1;
-        }
-
-        @Override
-        public ReservedHttpConnection asConnection() {
-            return toReservedConnection(this, executionContext().executionStrategy());
-        }
-
-        @Override
-        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return toReservedBlockingStreamingConnection(this, executionContext().executionStrategy());
-        }
-
-        @Override
-        public ReservedBlockingHttpConnection asBlockingConnection() {
-            return toReservedBlockingConnection(this, executionContext().executionStrategy());
-        }
-
-        @Override
-        public Completable releaseAsync() {
-            return concurrencyController.releaseAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public Result tryRequest() {
-            return concurrencyController.tryRequest();
-        }
-
-        @Override
-        public boolean tryReserve() {
-            return concurrencyController.tryReserve();
-        }
-
-        @Override
-        public void requestFinished() {
-            concurrencyController.requestFinished();
-        }
-
-        @Override
-        public HttpConnectionContext connectionContext() {
-            return delegate.connectionContext();
-        }
-
-        @Override
-        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return delegate.transportEventStream(eventKey);
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            if (tracker == null) {
-                return delegate.request(request).shareContextOnSubscribe();
-            }
-
-            return Single.defer(() -> {
-                final RequestTracker theTracker = new AtMostOnceDeliveryRequestTracker(tracker);
-                final long startTime = theTracker.beforeRequestStart();
-
-                return delegate.request(request)
-                        .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
-                            @Override
-                            public void onComplete() {
-                                theTracker.onRequestSuccess(startTime);
-                            }
-
-                            @Override
-                            public void onError(final Throwable throwable) {
-                                theTracker.onRequestError(startTime, errorClassFunction.apply(throwable));
-                            }
-
-                            @Override
-                            public void cancel() {
-                                theTracker.onRequestError(startTime, ErrorClass.CANCELLED);
-                            }
-                        }, /*discardEventsAfterCancel*/ true))
-
-                        // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
-                        // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed
-                        // before completion of Meta. It also transforms the original Publisher<Data> to discard
-                        // signals after cancel. So in order for downstream operators to get a consistent view of the
-                        // data path map() needs to be applied last.
-                        .map(response -> {
-                            final ErrorClass eClass = peerResponseErrorClassifier.apply(response);
-                            if (eClass != null) {
-                                // The onError is triggered before the body is actually consumed.
-                                theTracker.onRequestError(startTime, eClass);
-                            }
-                            return response;
-                        })
-                        .shareContextOnSubscribe();
-            });
-        }
-
-        @Override
-        public HttpExecutionContext executionContext() {
-            return delegate.executionContext();
-        }
-
-        @Override
-        public StreamingHttpResponseFactory httpResponseFactory() {
-            return delegate.httpResponseFactory();
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return delegate.onClosing();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            return delegate.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public String toString() {
-            return delegate.toString();
-        }
-
-        private static final class AtMostOnceDeliveryRequestTracker implements RequestTracker {
-
-            private static final AtomicIntegerFieldUpdater<AtMostOnceDeliveryRequestTracker> doneUpdater =
-                    newUpdater(AtMostOnceDeliveryRequestTracker.class, "done");
-
-            private final RequestTracker original;
-            private volatile int done;
-
-            private AtMostOnceDeliveryRequestTracker(final RequestTracker original) {
-                this.original = original;
-            }
-
-            @Override
-            public long beforeRequestStart() {
-                return original.beforeRequestStart();
-            }
-
-            @Override
-            public void onRequestSuccess(final long beforeStartTimeNs) {
-                if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    original.onRequestSuccess(beforeStartTimeNs);
-                }
-            }
-
-            @Override
-            public void onRequestError(final long beforeStartTimeNs, final ErrorClass errorClass) {
-                if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    original.onRequestError(beforeStartTimeNs, errorClass);
-                }
-            }
         }
     }
 }
