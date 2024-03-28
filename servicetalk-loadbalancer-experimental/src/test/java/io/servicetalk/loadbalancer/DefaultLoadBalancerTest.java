@@ -185,8 +185,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 "test-service",
                 serviceDiscoveryPublisher,
                 loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
+                ConnectionPoolStrategies.<TestLoadBalancedConnection>linearSearch()
+                        .buildStrategy("test-service"),
                 connectionFactory,
-                10,
                 NoopLoadBalancerObserver.instance(),
                 null,
                 factory);

@@ -102,8 +102,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
+    private final ConnectionPoolStrategy<C> connectionPoolStrategy;
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
-    private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     private final OutlierDetector<ResolvedAddress, C> outlierDetector;
@@ -128,19 +128,19 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final HostSelector<ResolvedAddress, C> hostSelector,
+            final ConnectionPoolStrategy<C> connectionPoolStrategy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-            final int linearSearchSpace,
             final LoadBalancerObserver loadBalancerObserver,
             @Nullable final HealthCheckConfig healthCheckConfig,
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
+        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
-        this.linearSearchSpace = linearSearchSpace;
         this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
@@ -389,8 +389,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // failed connect threshold is negative, meaning disabled.
             final HealthCheckConfig hostHealthCheckConfig =
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
-            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionFactory,
-                    linearSearchSpace, hostObserver, hostHealthCheckConfig, indicator);
+            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
+                    connectionFactory, hostObserver, hostHealthCheckConfig, indicator);
             if (indicator != null) {
                 indicator.setHost(host);
             }
