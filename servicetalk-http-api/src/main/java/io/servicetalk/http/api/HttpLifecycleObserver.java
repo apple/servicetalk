@@ -174,8 +174,6 @@ public interface HttpLifecycleObserver {
      */
     interface HttpResponseObserver {
 
-        // TODO: this should be a primary vector into the outlier detector.
-
         /**
          * Callback when subscriber requests {@code n} items of the response payload body.
          * <p>

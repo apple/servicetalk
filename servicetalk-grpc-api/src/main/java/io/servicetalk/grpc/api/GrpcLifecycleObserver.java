@@ -93,8 +93,6 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
      */
     interface GrpcResponseObserver extends HttpResponseObserver {
 
-        // TODO: this should be a primary vector into the outlier detector.
-
         /**
          * Callback when {@link GrpcStatus} was observed.
          *
