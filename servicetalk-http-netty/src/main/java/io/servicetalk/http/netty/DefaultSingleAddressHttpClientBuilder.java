@@ -266,6 +266,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             connectionFilterFactory = appendConnectionFilter(connectionFilterFactory,
                     HttpMessageDiscardWatchdogClientFilter.INSTANCE);
 
+            // TODO: maybe response classification is a more broad concept and we really need to be able to do
+            //  apply it to the ConnectionFactory.
+
             if (roConfig.isH2PriorKnowledge() &&
                     // Direct connection or HTTP proxy
                     (!roConfig.hasProxy() || sslContext == null)) {

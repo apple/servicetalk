@@ -84,6 +84,8 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     @Override
     public <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory) {
+        // TODO: how can we get the response classifier down to the LoadBalancer since we don't even know
+        //  what load balancer we have?
         return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
     }
 
