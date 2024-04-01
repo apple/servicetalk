@@ -79,10 +79,7 @@ final class HttpRequestTracker {
 
             @Override
             public void onExchangeFinally() {
-                final long startTime = finish();
-                if (checkOnce(startTime)) {
-                    tracker.onRequestSuccess(startTime);
-                }
+                // noop
             }
 
             // Shared interface methods
@@ -117,7 +114,10 @@ final class HttpRequestTracker {
 
             @Override
             public void onResponseComplete() {
-                // noop
+                final long startTime = finish();
+                if (checkOnce(startTime)) {
+                    tracker.onRequestSuccess(startTime);
+                }
             }
 
             private long finish() {

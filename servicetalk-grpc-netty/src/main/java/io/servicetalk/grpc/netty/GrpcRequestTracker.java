@@ -92,10 +92,7 @@ final class GrpcRequestTracker {
 
             @Override
             public void onExchangeFinally() {
-                final long startTime = finish();
-                if (checkOnce(startTime)) {
-                    tracker.onRequestSuccess(startTime);
-                }
+                // noop
             }
 
             @Override
@@ -121,7 +118,10 @@ final class GrpcRequestTracker {
 
             @Override
             public void onResponseComplete() {
-                // noop: covered by `onExchangeFinally`.
+                final long startTime = finish();
+                if (checkOnce(startTime)) {
+                    tracker.onRequestSuccess(startTime);
+                }
             }
 
             private long finish() {

@@ -24,6 +24,7 @@ import io.servicetalk.grpc.api.GrpcClientFactory;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -34,6 +35,8 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
+import io.servicetalk.loadbalancer.LoadBalancers;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -114,7 +117,17 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     }
 
     private GrpcClientCallFactory newGrpcClientCallFactory() {
-        SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
+        SingleAddressHttpClientBuilder<U, R> builder = GrpcRequestTrackerInstaller.wrap(httpClientBuilderSupplier.get())
+                // We have to set _a_ load balancer so that we can wrap it. It's safe to set a default here because
+                // there isn't a user accessible way to mutate the load balancer until we get down to using
+                // `httpInitializer` which can then override it, but the builder wrapper will re-decorate in that case.
+                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
+                        // TODO: this isn't really the default load balancer but I set it so that I can see that
+                        //  we activate the right code paths.
+                                LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder("grpc-client").build()
+                        )
+                        .build())
+                .protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
