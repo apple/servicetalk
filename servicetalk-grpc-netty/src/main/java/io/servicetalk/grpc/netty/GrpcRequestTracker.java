@@ -51,7 +51,8 @@ final class GrpcRequestTracker {
             return new Observer.RequestTrackerExchangeObserver();
         }
 
-        private final class RequestTrackerExchangeObserver implements GrpcLifecycleObserver.GrpcExchangeObserver {
+        private final class RequestTrackerExchangeObserver implements GrpcLifecycleObserver.GrpcExchangeObserver,
+                GrpcLifecycleObserver.GrpcResponseObserver {
 
             // TODO: cleanup.
             private final AtomicLong startTime = new AtomicLong(Long.MIN_VALUE);
@@ -70,43 +71,7 @@ final class GrpcRequestTracker {
             @Override
             public GrpcLifecycleObserver.GrpcResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
                 // TODO: should we _also_ check the HttpResponseMetadata?
-                return new GrpcLifecycleObserver.GrpcResponseObserver() {
-                    @Override
-                    public void onGrpcStatus(GrpcStatus status) {
-                        ErrorClass error = peerResponseErrorClassifier.apply(status);
-                        if (error != null) {
-                            final long startTime = finish();
-                            if (checkOnce(startTime)) {
-                                tracker.onRequestError(startTime, error);
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onResponseData(Buffer data) {
-                        // noop
-                    }
-
-                    @Override
-                    public void onResponseTrailers(HttpHeaders trailers) {
-                        // noop
-                    }
-
-                    @Override
-                    public void onResponseComplete() {
-                        // noop
-                    }
-
-                    @Override
-                    public void onResponseError(Throwable cause) {
-                        // noop
-                    }
-
-                    @Override
-                    public void onResponseCancel() {
-                        // noop
-                    }
-                };
+                return this;
             }
 
             @Override
@@ -131,6 +96,32 @@ final class GrpcRequestTracker {
                 if (checkOnce(startTime)) {
                     tracker.onRequestSuccess(startTime);
                 }
+            }
+
+            @Override
+            public void onGrpcStatus(GrpcStatus status) {
+                ErrorClass error = peerResponseErrorClassifier.apply(status);
+                if (error != null) {
+                    final long startTime = finish();
+                    if (checkOnce(startTime)) {
+                        tracker.onRequestError(startTime, error);
+                    }
+                }
+            }
+
+            @Override
+            public void onResponseData(Buffer data) {
+                // noop
+            }
+
+            @Override
+            public void onResponseTrailers(HttpHeaders trailers) {
+                // noop: this is called right before `onGrpcStatus` in the GrpcToHttpLifecycleObserverBridge.
+            }
+
+            @Override
+            public void onResponseComplete() {
+                // noop: covered by `onExchangeFinally`.
             }
 
             private long finish() {

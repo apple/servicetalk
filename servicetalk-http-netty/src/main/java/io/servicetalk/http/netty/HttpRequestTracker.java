@@ -1,6 +1,8 @@
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -44,10 +46,13 @@ final class HttpRequestTracker {
             return new RequestTrackerExchangeObserver();
         }
 
-        private final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver {
+        private final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver,
+                HttpLifecycleObserver.HttpResponseObserver {
 
             // TODO: cleanup.
             private final AtomicLong startTime = new AtomicLong(Long.MIN_VALUE);
+
+            // HttpExchangeObserver methods
 
             @Override
             public void onConnectionSelected(ConnectionInfo info) {
@@ -69,8 +74,18 @@ final class HttpRequestTracker {
                         tracker.onRequestError(startTime, error);
                     }
                 }
-                return NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE;
+                return this;
             }
+
+            @Override
+            public void onExchangeFinally() {
+                final long startTime = finish();
+                if (checkOnce(startTime)) {
+                    tracker.onRequestSuccess(startTime);
+                }
+            }
+
+            // Shared interface methods
 
             @Override
             public void onResponseError(Throwable cause) {
@@ -88,12 +103,21 @@ final class HttpRequestTracker {
                 }
             }
 
+            // HttpResponseObserver methods
+
             @Override
-            public void onExchangeFinally() {
-                final long startTime = finish();
-                if (checkOnce(startTime)) {
-                    tracker.onRequestSuccess(startTime);
-                }
+            public void onResponseData(Buffer data) {
+                // noop
+            }
+
+            @Override
+            public void onResponseTrailers(HttpHeaders trailers) {
+                // noop
+            }
+
+            @Override
+            public void onResponseComplete() {
+                // noop
             }
 
             private long finish() {
