@@ -15,14 +15,18 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.LoadBalancedConnection;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
-import static io.servicetalk.loadbalancer.LinearSearchConnectionPoolStrategy.DEFAULT_LINEAR_SEARCH_SPACE;
+/**
+ * Configuration of the strategy for selecting connections from a pool to the same endpoint.
+ */
+public abstract class ConnectionPoolConfig {
 
-public final class ConnectionPoolStrategies {
+    static final int DEFAULT_MAX_EFFORT = 5;
+    static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
 
-    private ConnectionPoolStrategies() {
-        // no instances
+    private ConnectionPoolConfig() {
+        // only instances are in this class.
     }
 
     /**
@@ -42,12 +46,10 @@ public final class ConnectionPoolStrategies {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
-     * @return the configured {@link ConnectionPoolStrategyFactory}.
+     * @return the configured {@link ConnectionPoolConfig}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> corePool(
-            final int corePoolSize, final boolean forceCorePool) {
-        return CorePoolConnectionPoolStrategy.factory(corePoolSize, forceCorePool);
+    public static ConnectionPoolConfig corePool(final int corePoolSize, final boolean forceCorePool) {
+        return new CorePoolStrategy(corePoolSize, forceCorePool);
     }
 
     /**
@@ -57,10 +59,9 @@ public final class ConnectionPoolStrategies {
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
-     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
-     * @return the configured {@link ConnectionPoolStrategyFactory}.
+     * @return the configured {@link ConnectionPoolConfig}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> linearSearch() {
+    public static ConnectionPoolConfig linearSearch() {
         return linearSearch(DEFAULT_LINEAR_SEARCH_SPACE);
     }
 
@@ -73,12 +74,10 @@ public final class ConnectionPoolStrategies {
      * to the existing connections will let tailing connections be removed due to idleness.
      * @param linearSearchSpace the space to search linearly before resorting to random selection for remaining
      *                          connections.
-     * @param <C> the concrete type of the {@link LoadBalancedConnection}.
-     * @return the configured {@link ConnectionPoolStrategyFactory}.
+     * @return the configured {@link ConnectionPoolConfig}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> linearSearch(
-            int linearSearchSpace) {
-        return LinearSearchConnectionPoolStrategy.factory(linearSearchSpace);
+    public static ConnectionPoolConfig linearSearch(int linearSearchSpace) {
+        return new LinearSearchStrategy(linearSearchSpace);
     }
 
     /**
@@ -93,12 +92,10 @@ public final class ConnectionPoolStrategies {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @param <C> the type of the load balanced connection.
-     * @return the configured {@link ConnectionPoolStrategyFactory}.
+     * @return the configured {@link ConnectionPoolConfig}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> p2c(
-            int corePoolSize, boolean forceCorePool) {
-        return p2c(P2CConnectionPoolStrategy.DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
+    public static ConnectionPoolConfig p2c(int corePoolSize, boolean forceCorePool) {
+        return p2c(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
     }
 
     /**
@@ -114,11 +111,40 @@ public final class ConnectionPoolStrategies {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @param <C> the type of the load balanced connection.
-     * @return the configured {@link ConnectionPoolStrategyFactory}.
+     * @return the configured {@link ConnectionPoolConfig}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> p2c(
-            int maxEffort, int corePoolSize, boolean forceCorePool) {
-        return P2CConnectionPoolStrategy.factory(maxEffort, corePoolSize, forceCorePool);
+    public static ConnectionPoolConfig p2c(int maxEffort, int corePoolSize, boolean forceCorePool) {
+        return new P2CStrategy(maxEffort, corePoolSize, forceCorePool);
+    }
+
+    // instance types
+    static final class CorePoolStrategy extends ConnectionPoolConfig {
+        final int corePoolSize;
+        final boolean forceCorePool;
+
+        CorePoolStrategy(final int corePoolSize, final boolean forceCorePool) {
+            this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
+            this.forceCorePool = forceCorePool;
+        }
+    }
+
+    static final class P2CStrategy extends ConnectionPoolConfig {
+        final int maxEffort;
+        final int corePoolSize;
+        final boolean forceCorePool;
+
+        P2CStrategy(final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
+            this.maxEffort = ensurePositive(maxEffort, "maxEffort");
+            this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
+            this.forceCorePool = forceCorePool;
+        }
+    }
+
+    static final class LinearSearchStrategy extends ConnectionPoolConfig {
+        final int linearSearchSpace;
+
+        LinearSearchStrategy(int linearSearchSpace) {
+            this.linearSearchSpace = ensurePositive(linearSearchSpace, "linearSearchSpace");
+        }
     }
 }

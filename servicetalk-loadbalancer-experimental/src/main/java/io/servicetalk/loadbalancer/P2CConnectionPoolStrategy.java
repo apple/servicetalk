@@ -45,8 +45,6 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
 
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolStrategy.class);
 
-    static final int DEFAULT_MAX_EFFORT = 5;
-
     private final String targetResource;
     private final int maxEffort;
     private final int corePoolSize;

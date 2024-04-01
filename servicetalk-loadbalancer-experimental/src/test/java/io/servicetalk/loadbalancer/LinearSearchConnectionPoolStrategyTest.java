@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class LinearSearchConnectionPoolStrategyTest {
 
     ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int linearSearchSpace) {
-        return ConnectionPoolStrategies.<TestLoadBalancedConnection>linearSearch(linearSearchSpace)
+        return LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(linearSearchSpace)
                 .buildStrategy("resource");
     }
 

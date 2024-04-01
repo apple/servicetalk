@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class CorePoolConnectionPoolStrategyTest {
 
     private ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int corePoolSize, boolean forceCorePool) {
-        return ConnectionPoolStrategies.<TestLoadBalancedConnection>corePool(corePoolSize, forceCorePool)
+        return CorePoolConnectionPoolStrategy.<TestLoadBalancedConnection>factory(corePoolSize, forceCorePool)
                 .buildStrategy("resource");
     }
 

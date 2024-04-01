@@ -37,8 +37,6 @@ import static java.lang.Math.min;
  */
 final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
 
-    static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
-
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
      * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per

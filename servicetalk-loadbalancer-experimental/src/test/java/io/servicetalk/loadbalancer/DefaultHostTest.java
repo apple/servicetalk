@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.loadbalancer.ConnectionPoolConfig.DEFAULT_LINEAR_SEARCH_SPACE;
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,7 +82,8 @@ class DefaultHostTest {
 
     private void buildHost(@Nullable HealthIndicator healthIndicator) {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
-                ConnectionPoolStrategies.<TestLoadBalancedConnection>linearSearch().buildStrategy("resource"),
+                LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
+                        .buildStrategy("resource"),
                 connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
     }
 

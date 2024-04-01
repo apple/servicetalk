@@ -34,8 +34,8 @@ import static org.mockito.Mockito.when;
 
 class P2CConnectionPoolStrategyTest {
 
-    private static ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int maxEffort, boolean corePoolSize) {
-        return ConnectionPoolStrategies.<TestLoadBalancedConnection>p2c(maxEffort, corePoolSize)
+    private static ConnectionPoolStrategy<TestLoadBalancedConnection> strategy() {
+        return P2CConnectionPoolStrategy.<TestLoadBalancedConnection>factory(5, 5, false)
                 .buildStrategy("resource");
     }
 
@@ -44,7 +44,7 @@ class P2CConnectionPoolStrategyTest {
         // Ensure we can successfully select hosts for most sized pools
         for (int i = 1; i < 10; i++) {
             List<TestLoadBalancedConnection> connections = makeConnections(i);
-            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy();
             assertNotNull(strategy.select(connections, c -> true));
         }
     }
@@ -52,7 +52,7 @@ class P2CConnectionPoolStrategyTest {
     @Test
     void prefersCorePool() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy();
         Set<TestLoadBalancedConnection> selected = new HashSet<>();
         for (int i = 0; i < 100; i++) {
             selected.add(strategy.select(connections, c -> true));
@@ -70,7 +70,7 @@ class P2CConnectionPoolStrategyTest {
     @Test
     void spillsIntoOverflow() {
         List<TestLoadBalancedConnection> connections = makeConnections(6);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy();
         Set<TestLoadBalancedConnection> corePoolCxns = new HashSet<>();
         for (int i = 0; i < 5; i++) {
             corePoolCxns.add(connections.get(i));
@@ -82,7 +82,7 @@ class P2CConnectionPoolStrategyTest {
     @Test
     void prefersHigherScoringHosts() {
         List<TestLoadBalancedConnection> connections = makeConnections(2);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy();
         // We should always get connection at index 1 becuase it has the higher score.
         when(connections.get(0).score()).thenReturn(0);
         when(connections.get(1).score()).thenReturn(1);
@@ -95,7 +95,7 @@ class P2CConnectionPoolStrategyTest {
     @Test
     void willSelectLowerScoringConnectionIfHigherScoredConnectionCantBeSelected() {
         List<TestLoadBalancedConnection> connections = makeConnections(2);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5, false);
+        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy();
         // We should always get connection at index 1 becuase it has the higher score.
         when(connections.get(0).score()).thenReturn(0);
         when(connections.get(1).score()).thenReturn(1);

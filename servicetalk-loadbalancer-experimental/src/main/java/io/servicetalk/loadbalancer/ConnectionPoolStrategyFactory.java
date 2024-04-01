@@ -20,9 +20,9 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 /**
  * The factory of {@link ConnectionPoolStrategy} instances.
  * @param <C> the least specific connection type necessary for properly implementing the strategy.
- * @see ConnectionPoolStrategies for available strategies.
+ * @see ConnectionPoolStrategy for available strategies.
  */
-public interface ConnectionPoolStrategyFactory<C extends LoadBalancedConnection> {
+interface ConnectionPoolStrategyFactory<C extends LoadBalancedConnection> {
 
     /**
      * Provide an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
