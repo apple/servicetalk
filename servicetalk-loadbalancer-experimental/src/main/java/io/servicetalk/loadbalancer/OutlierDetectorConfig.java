@@ -28,7 +28,6 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
-import static java.time.Duration.ZERO;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -56,6 +55,7 @@ public final class OutlierDetectorConfig {
     private final int consecutive5xx;
     private final Duration failureDetectorInterval;
     private final Duration baseEjectionTime;
+    private final Duration ejectionTimeJitter;
     private final int maxEjectionPercentage;
     private final int enforcingConsecutive5xx;
     private final int enforcingSuccessRate;
@@ -67,7 +67,6 @@ public final class OutlierDetectorConfig {
     private final int failurePercentageMinimumHosts;
     private final int failurePercentageRequestVolume;
     private final Duration maxEjectionTime;
-    private final Duration maxEjectionTimeJitter;
 
     OutlierDetectorConfig(final Duration ewmaHalfLife, final long ewmaCancellationPenalty, final long ewmaErrorPenalty,
                           int failedConnectionsThreshold, final Duration failureDetectorIntervalJitter,
@@ -79,7 +78,7 @@ public final class OutlierDetectorConfig {
                           final int successRateRequestVolume, final int successRateStdevFactor,
                           final int failurePercentageThreshold, final int enforcingFailurePercentage,
                           final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
-                          final Duration maxEjectionTime, final Duration maxEjectionTimeJitter) {
+                          final Duration maxEjectionTime, final Duration ejectionTimeJitter) {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
@@ -94,6 +93,7 @@ public final class OutlierDetectorConfig {
         this.consecutive5xx = consecutive5xx;
         this.failureDetectorInterval = requireNonNull(failureDetectorInterval, "failureDetectorInterval");
         this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
+        this.ejectionTimeJitter = requireNonNull(ejectionTimeJitter, "ejectionTimeJitter");
         this.maxEjectionPercentage = maxEjectionPercentage;
         this.enforcingConsecutive5xx = enforcingConsecutive5xx;
         this.enforcingSuccessRate = enforcingSuccessRate;
@@ -105,7 +105,6 @@ public final class OutlierDetectorConfig {
         this.failurePercentageMinimumHosts = failurePercentageMinimumHosts;
         this.failurePercentageRequestVolume = failurePercentageRequestVolume;
         this.maxEjectionTime = requireNonNull(maxEjectionTime, "maxEjectionTime");
-        this.maxEjectionTimeJitter = requireNonNull(maxEjectionTimeJitter, "maxEjectionTimeJitter");
     }
 
     /**
@@ -304,8 +303,8 @@ public final class OutlierDetectorConfig {
      * are ejected at the time.
      * @return the maximum amount of jitter to add to the ejection time.
      */
-    public Duration maxEjectionTimeJitter() {
-        return maxEjectionTimeJitter;
+    public Duration ejectionTimeJitter() {
+        return ejectionTimeJitter;
     }
 
     /**
@@ -365,7 +364,7 @@ public final class OutlierDetectorConfig {
         private Duration maxEjectionTime = DEFAULT_MAX_EJECTION_TIME;
 
         // Note that xDS defines its default jitter as 0 seconds.
-        private Duration maxEjectionTimeJitter = DEFAULT_HEALTH_CHECK_JITTER;
+        private Duration ejectionTimeJitter = DEFAULT_HEALTH_CHECK_JITTER;
 
         /**
          * Construct a new builder initialized with the values of an existing {@link OutlierDetectorConfig}.
@@ -391,7 +390,7 @@ public final class OutlierDetectorConfig {
             this.failurePercentageMinimumHosts = outlierDetectorConfig.failurePercentageMinimumHosts;
             this.failurePercentageRequestVolume = outlierDetectorConfig.failurePercentageRequestVolume;
             this.maxEjectionTime = outlierDetectorConfig.maxEjectionTime;
-            this.maxEjectionTimeJitter = outlierDetectorConfig.maxEjectionTimeJitter;
+            this.ejectionTimeJitter = outlierDetectorConfig.ejectionTimeJitter;
         }
 
         /**
@@ -415,7 +414,7 @@ public final class OutlierDetectorConfig {
                     successRateRequestVolume, successRateStdevFactor,
                     failurePercentageThreshold, enforcingFailurePercentage,
                     failurePercentageMinimumHosts, failurePercentageRequestVolume,
-                    maxEjectionTime, maxEjectionTimeJitter);
+                    maxEjectionTime, ejectionTimeJitter);
         }
 
         /**
@@ -525,7 +524,7 @@ public final class OutlierDetectorConfig {
          * @return {@code this}
          */
         public Builder failureDetectorInterval(final Duration interval) {
-            requireNonNull(interval, "interval");
+            this.failureDetectorInterval = requireNonNull(interval, "interval");
             return failureDetectorInterval(interval, interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ?
                     interval.dividedBy(2) : DEFAULT_HEALTH_CHECK_JITTER);
         }
@@ -555,6 +554,19 @@ public final class OutlierDetectorConfig {
         public Builder baseEjectionTime(final Duration baseEjectionTime) {
             this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
             ensurePositive(baseEjectionTime.toNanos(), "baseEjectionTime");
+            return this;
+        }
+
+        /**
+         * Set the ejection time jitter.
+         * Defaults to 3 seconds.
+         * @param ejectionTimeJitter the maximum jitter to add to the calculated ejection time.
+         * @return {@code this}.
+         */
+        public Builder ejectionTimeJitter(final Duration ejectionTimeJitter) {
+            ensureNonNegative(requireNonNull(ejectionTimeJitter, "ejectionTimeJitter").toNanos(),
+                    "ejectionTimeJitter");
+            this.ejectionTimeJitter = ejectionTimeJitter;
             return this;
         }
 
@@ -698,27 +710,10 @@ public final class OutlierDetectorConfig {
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
          * @return {@code this}.
-         * @see #maxEjectionTime(Duration, Duration)
          */
         public Builder maxEjectionTime(final Duration maxEjectionTime) {
-            return maxEjectionTime(requireNonNull(maxEjectionTime, "maxEjectionTime"), ZERO);
-        }
-
-        /**
-         * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
-         * Defaults to a max ejection time of 300 seconds and 0 seconds jitter.
-         * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
-         *                        consecutive ejections.
-         * @param maxEjectionTimeJitter the jitter added to the maxEjection time. The max ejection time will be on the
-         *                              interval [maxEjectionTime, maxEjectionTime + maxEjectionTimeJitter].
-         * @return {@code this}.
-         */
-        public Builder maxEjectionTime(final Duration maxEjectionTime, final Duration maxEjectionTimeJitter) {
             ensureNonNegative(requireNonNull(maxEjectionTime, "maxEjectionTime").toNanos(), "maxEjectionTime");
-            ensureNonNegative(requireNonNull(maxEjectionTimeJitter, "maxEjectionTimeJitter").toNanos(),
-                    "maxEjectionTimeJitter");
             this.maxEjectionTime = maxEjectionTime;
-            this.maxEjectionTimeJitter = maxEjectionTimeJitter;
             return this;
         }
     }
