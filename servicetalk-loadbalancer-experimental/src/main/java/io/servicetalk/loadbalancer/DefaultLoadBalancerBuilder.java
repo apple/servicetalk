@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.loadbalancer.ConnectionPoolStrategy.ConnectionPoolStrategyFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.Collection;
@@ -41,8 +42,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserver loadBalancerObserver;
-    private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory =
-            defaultConnectionPoolStrategyFactory();
+    private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory = defaultConnectionPoolStrategyFactory();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
@@ -72,7 +72,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolStrategy(
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(
             ConnectionPoolConfig connectionPoolConfig) {
         this.connectionPoolStrategyFactory = convertPoolStrategy(requireNonNull(connectionPoolConfig,
                 "connectionPoolConfig"));
@@ -183,10 +183,12 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             ConnectionPoolConfig.P2CStrategy strategy = (ConnectionPoolConfig.P2CStrategy) connectionPoolStrategyConfig;
             return P2CConnectionPoolStrategy.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
         } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.CorePoolStrategy) {
-            ConnectionPoolConfig.CorePoolStrategy strategy = (ConnectionPoolConfig.CorePoolStrategy) connectionPoolStrategyConfig;
+            ConnectionPoolConfig.CorePoolStrategy strategy =
+                    (ConnectionPoolConfig.CorePoolStrategy) connectionPoolStrategyConfig;
             return CorePoolConnectionPoolStrategy.factory(strategy.corePoolSize, strategy.forceCorePool);
         } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.LinearSearchStrategy) {
-            ConnectionPoolConfig.LinearSearchStrategy strategy = (ConnectionPoolConfig.LinearSearchStrategy) connectionPoolStrategyConfig;
+            ConnectionPoolConfig.LinearSearchStrategy strategy =
+                    (ConnectionPoolConfig.LinearSearchStrategy) connectionPoolStrategyConfig;
             return LinearSearchConnectionPoolStrategy.factory(strategy.linearSearchSpace);
         } else {
             throw new IllegalStateException("Unexpected ConnectionPoolConfig: " +

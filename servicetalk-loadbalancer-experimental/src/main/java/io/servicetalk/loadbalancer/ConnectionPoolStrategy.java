@@ -35,4 +35,20 @@ interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
      */
     @Nullable
     C select(List<C> connections, Predicate<C> selector);
+
+    /**
+     * The factory of {@link ConnectionPoolStrategy} instances.
+     * @param <C> the least specific connection type necessary for properly implementing the strategy.
+     * @see ConnectionPoolStrategy for available strategies.
+     */
+
+    interface ConnectionPoolStrategyFactory<C extends LoadBalancedConnection> {
+
+        /**
+         * Provide an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
+         * @param targetResource the resource name, used for logging purposes.
+         * @return an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
+         */
+        ConnectionPoolStrategy<C> buildStrategy(String targetResource);
+    }
 }
