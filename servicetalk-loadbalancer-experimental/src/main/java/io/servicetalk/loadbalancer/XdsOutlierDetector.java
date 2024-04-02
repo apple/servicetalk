@@ -74,9 +74,18 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     // reads and writes are protected by `sequentialExecutor`.
     private int ejectedHostCount;
 
+    XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig config, final String lbDescription,
+                       SequentialExecutor.ExceptionHandler exceptionHandler) {
+        this.sequentialExecutor = new SequentialExecutor(exceptionHandler);
+        this.executor = requireNonNull(executor, "executor");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
+        this.kernel = new Kernel(config);
+    }
+
     XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig config, final String lbDescription) {
-        this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
-            LOGGER.error("{}: Uncaught exception in " + this.getClass().getSimpleName(), this, uncaughtException));
+        SequentialExecutor.ExceptionHandler exceptionHandler = (uncaughtException) ->
+                LOGGER.error("{}: Uncaught exception in {}", this, getClass().getSimpleName(), uncaughtException);
+        this.sequentialExecutor = new SequentialExecutor(exceptionHandler);
         this.executor = requireNonNull(executor, "executor");
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.kernel = new Kernel(config);
@@ -97,11 +106,16 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         sequentialExecutor.execute(() -> {
             List<XdsHealthIndicator<ResolvedAddress, C>> indicatorList = new ArrayList<>(indicators);
             for (XdsHealthIndicator indicator : indicatorList) {
-                indicator.cancel();
+                indicator.sequentialCancel();
             }
             assert indicators.isEmpty();
             assert indicatorCount.get() == 0;
         });
+    }
+
+    // Exposed for testing. Not thread safe.
+    int ejectedHostCount() {
+        return ejectedHostCount;
     }
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress, C> {

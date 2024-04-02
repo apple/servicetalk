@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.loadbalancer.ConnectionPoolStrategy.ConnectionPoolStrategyFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.Collection;
@@ -29,33 +30,24 @@ import java.util.Collections;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
-    private static final int DEFAULT_LINEAR_SEARCH_SPACE = Integer.MAX_VALUE;
-
     private final String id;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
-    private int linearSearchSpace = DEFAULT_LINEAR_SEARCH_SPACE;
 
     @Nullable
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserver loadBalancerObserver;
+    private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory = defaultConnectionPoolStrategyFactory();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
         this.id = requireNonNull(id, "id");
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
-        this.linearSearchSpace = ensurePositive(linearSearchSpace, "linearSearchSpace");
-        return this;
     }
 
     @Override
@@ -76,6 +68,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig) {
         this.outlierDetectorConfig = outlierDetectorConfig == null ?
                 OutlierDetectorConfig.DEFAULT_CONFIG : outlierDetectorConfig;
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(
+            ConnectionPoolConfig connectionPoolConfig) {
+        this.connectionPoolStrategyFactory = convertPoolStrategy(requireNonNull(connectionPoolConfig,
+                "connectionPoolConfig"));
         return this;
     }
 
@@ -109,8 +109,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             outlierDetectorFactory = (lbDescription) ->
                 new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
         }
-        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, linearSearchSpace, healthCheckConfig,
-                loadBalancerObserver, outlierDetectorFactory);
+        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
+                loadBalancerObserver, outlierDetectorFactory, connectionPoolStrategyFactory);
     }
 
     private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -119,20 +119,22 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final LoadBalancerObserver loadBalancerObserver;
-        private final int linearSearchSpace;
         @Nullable
         private final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
         @Nullable
         private final HealthCheckConfig healthCheckConfig;
+        private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   final int linearSearchSpace, final HealthCheckConfig healthCheckConfig,
+                                   final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver loadBalancerObserver,
-                                   final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
+                                   final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory,
+                                   final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
-            this.linearSearchSpace = linearSearchSpace;
+            this.connectionPoolStrategyFactory = requireNonNull(
+                    connectionPoolStrategyFactory, "connectionPoolStrategyFactory");
             this.healthCheckConfig = healthCheckConfig;
             this.outlierDetectorFactory = outlierDetectorFactory;
         }
@@ -158,8 +160,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
-                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource), connectionFactory,
-                    linearSearchSpace, loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
+                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
+                    connectionPoolStrategyFactory.buildStrategy(targetResource), connectionFactory,
+                    loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
         }
 
         @Override
@@ -174,8 +177,32 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : backgroundExecutor;
     }
 
+    private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> convertPoolStrategy(
+            ConnectionPoolConfig connectionPoolStrategyConfig) {
+        if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.P2CStrategy) {
+            ConnectionPoolConfig.P2CStrategy strategy = (ConnectionPoolConfig.P2CStrategy) connectionPoolStrategyConfig;
+            return P2CConnectionPoolStrategy.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
+        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.CorePoolStrategy) {
+            ConnectionPoolConfig.CorePoolStrategy strategy =
+                    (ConnectionPoolConfig.CorePoolStrategy) connectionPoolStrategyConfig;
+            return CorePoolConnectionPoolStrategy.factory(strategy.corePoolSize, strategy.forceCorePool);
+        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.LinearSearchStrategy) {
+            ConnectionPoolConfig.LinearSearchStrategy strategy =
+                    (ConnectionPoolConfig.LinearSearchStrategy) connectionPoolStrategyConfig;
+            return LinearSearchConnectionPoolStrategy.factory(strategy.linearSearchSpace);
+        } else {
+            throw new IllegalStateException("Unexpected ConnectionPoolConfig: " +
+                    connectionPoolStrategyConfig.getClass().getName());
+        }
+    }
+
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
         return new RoundRobinLoadBalancingPolicy.Builder().build();
+    }
+
+    private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C>
+    defaultConnectionPoolStrategyFactory() {
+        return convertPoolStrategy(ConnectionPoolConfig.linearSearch());
     }
 }

@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.loadbalancer.ConnectionPoolConfig.DEFAULT_LINEAR_SEARCH_SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -185,8 +186,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 "test-service",
                 serviceDiscoveryPublisher,
                 loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
+                LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
+                        .buildStrategy("test-service"),
                 connectionFactory,
-                10,
                 NoopLoadBalancerObserver.instance(),
                 null,
                 factory);

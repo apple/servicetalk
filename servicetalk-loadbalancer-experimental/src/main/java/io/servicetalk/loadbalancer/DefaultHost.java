@@ -37,7 +37,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -50,29 +49,11 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
-import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<Addr, C> {
-
-    /**
-     * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
-     * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
-     * selection attempt.
-     */
-    private static final int MIN_RANDOM_SEARCH_SPACE = 64;
-
-    /**
-     * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
-     * trying to locate an available connection when most connections are in use. This increases tail latencies, thus
-     * after some number of failed attempts it appears to be more beneficial to open a new connection instead.
-     * <p>
-     * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
-     * counts, larger connection counts, low connection churn, high connection churn.
-     */
-    private static final float RANDOM_SEARCH_FACTOR = 0.75f;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHost.class);
 
@@ -101,22 +82,23 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
+    private final ConnectionPoolStrategy<C> connectionPoolStrategy;
+    @Nullable
     private final HealthIndicator<Addr, C> healthIndicator;
     private final LoadBalancerObserver.HostObserver hostObserver;
     private final ConnectionFactory<Addr, ? extends C> connectionFactory;
-    private final int linearSearchSpace;
     private final ListenableAsyncCloseable closeable;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
+                final ConnectionPoolStrategy<C> connectionPoolStrategy,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                final int linearSearchSpace, final HostObserver hostObserver,
-                final @Nullable HealthCheckConfig healthCheckConfig,
-                final @Nullable HealthIndicator<Addr, C> healthIndicator) {
+                final HostObserver hostObserver, final @Nullable HealthCheckConfig healthCheckConfig,
+                final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
-        this.linearSearchSpace = linearSearchSpace;
         this.healthIndicator = healthIndicator;
+        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         requireNonNull(connectionFactory, "connectionFactory");
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
@@ -195,31 +177,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
-        // Exhaust the linear search space first:
-        final int linearAttempts = min(connections.size(), linearSearchSpace);
-        for (int j = 0; j < linearAttempts; ++j) {
-            final C connection = connections.get(j);
-            if (selector.test(connection)) {
-                return connection;
-            }
-        }
-        // Try other connections randomly:
-        if (connections.size() > linearAttempts) {
-            final int diff = connections.size() - linearAttempts;
-            // With small enough search space, attempt number of times equal to number of remaining connections.
-            // Back off after exploring most of the search space, it gives diminishing returns.
-            final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
-                    (int) (diff * RANDOM_SEARCH_FACTOR);
-            final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-            for (int j = 0; j < randomAttempts; ++j) {
-                final C connection = connections.get(rnd.nextInt(linearAttempts, connections.size()));
-                if (selector.test(connection)) {
-                    return connection;
-                }
-            }
-        }
-        // So sad, we didn't find a healthy connection.
-        return null;
+        return connectionPoolStrategy.select(connections, selector);
     }
 
     @Override
