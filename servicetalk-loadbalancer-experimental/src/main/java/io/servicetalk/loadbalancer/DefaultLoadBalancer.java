@@ -62,6 +62,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;
@@ -212,7 +213,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         final long upperNanos = config.healthCheckResubscribeUpperBound;
         final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
         final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
-                ThreadLocalRandom.current().nextLong(lowerNanos, upperNanos));
+                ThreadLocalRandom.current().nextLong(lowerNanos,
+                        // add 1 because the upper bound is not inclusive.
+                        addWithOverflowProtection(upperNanos, 1)));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTimeNanos, result);
         return result;

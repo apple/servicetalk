@@ -184,7 +184,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
                     currentConfig.failureDetectorIntervalJitter().toNanos());
             return executor.schedule(checkOutliers, ThreadLocalRandom.current().nextLong(
                     // + 1 to make the bound inclusive
-                    minIntervalNanos, maxIntervalNanos + 1), TimeUnit.NANOSECONDS);
+                    minIntervalNanos, addWithOverflowProtection(maxIntervalNanos, 1)), TimeUnit.NANOSECONDS);
         }
 
         private void sequentialCheckOutliers() {

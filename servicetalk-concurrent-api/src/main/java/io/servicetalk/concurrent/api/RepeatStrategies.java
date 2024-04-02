@@ -71,7 +71,7 @@ public final class RepeatStrategies {
         requireNonNull(timerExecutor);
         final long delayNanos = delay.toNanos();
         checkFullJitter(delayNanos);
-        return repeatCount -> timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS);
+        return repeatCount -> timerExecutor.timer(nextLongInclusive(0, delayNanos), NANOSECONDS);
     }
 
     /**
@@ -94,7 +94,7 @@ public final class RepeatStrategies {
         final long delayNanos = delay.toNanos();
         checkFullJitter(delayNanos);
         return repeatCount -> repeatCount <= maxRepeats ?
-                timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : terminateRepeat();
+                timerExecutor.timer(nextLongInclusive(0, delayNanos), NANOSECONDS) : terminateRepeat();
     }
 
     /**
@@ -117,7 +117,7 @@ public final class RepeatStrategies {
         checkJitterDelta(jitterNanos, delayNanos);
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
-        return repeatCount -> timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS);
+        return repeatCount -> timerExecutor.timer(nextLongInclusive(lowerBound, upperBound), NANOSECONDS);
     }
 
     /**
@@ -145,7 +145,7 @@ public final class RepeatStrategies {
         final long lowerBound = delayNanos - jitterNanos;
         final long upperBound = delayNanos + jitterNanos;
         return repeatCount -> repeatCount <= maxRepeats ?
-                timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS) : terminateRepeat();
+                timerExecutor.timer(nextLongInclusive(lowerBound, upperBound), NANOSECONDS) : terminateRepeat();
     }
 
     /**
@@ -169,7 +169,7 @@ public final class RepeatStrategies {
         final long initialDelayNanos = initialDelay.toNanos();
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
-        return repeatCount -> timerExecutor.timer(current().nextLong(0,
+        return repeatCount -> timerExecutor.timer(nextLongInclusive(0,
                 baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount)), NANOSECONDS);
     }
 
@@ -199,7 +199,7 @@ public final class RepeatStrategies {
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> repeatCount <= maxRepeats ?
-                timerExecutor.timer(current().nextLong(0,
+                timerExecutor.timer(nextLongInclusive(0,
                         baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount)), NANOSECONDS) :
                 terminateRepeat();
     }
@@ -229,7 +229,7 @@ public final class RepeatStrategies {
         return repeatCount -> {
             final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount);
             return timerExecutor.timer(
-                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
+                    nextLongInclusive(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
                     NANOSECONDS);
         };
@@ -267,7 +267,7 @@ public final class RepeatStrategies {
             }
             final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount);
             return timerExecutor.timer(
-                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
+                    nextLongInclusive(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
                     NANOSECONDS);
         };
@@ -275,5 +275,11 @@ public final class RepeatStrategies {
 
     private static Completable terminateRepeat() {
         return failed(TerminateRepeatException.INSTANCE);
+    }
+
+    static long nextLongInclusive(long lowerBound, long upperBound) {
+        return current().nextLong(lowerBound,
+                // Add 1 because the upper bound is non-inclusive in `ThreadLocalRandom.nextLong(lower,upper)`.
+                addWithOverflowProtection(upperBound, 1));
     }
 }

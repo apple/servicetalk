@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Math.max;
@@ -280,7 +281,9 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             failureMultiplier++;
         }
         // Finally we add jitter to the ejection time.
-        final long jitterNanos = ThreadLocalRandom.current().nextLong(config.maxEjectionTimeJitter().toNanos() + 1);
+        final long jitterNanos = ThreadLocalRandom.current().nextLong(
+                // add 1 because the upper bound is not inclusive.
+                addWithOverflowProtection(config.maxEjectionTimeJitter().toNanos(), 1));
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
         hostObserver.onHostMarkedUnhealthy(cause);
         if (LOGGER.isDebugEnabled()) {

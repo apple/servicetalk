@@ -797,7 +797,10 @@ final class DefaultDnsClient implements DnsClient {
                 assertInEventloop();
 
                 final long delay = ThreadLocalRandom.current()
-                        .nextLong(remainingTtlNanos, addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
+                        .nextLong(remainingTtlNanos,
+                                // add 1 because the upper bound is not inclusive.
+                                addWithOverflowProtection(
+                                        addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos), 1));
                 LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));
