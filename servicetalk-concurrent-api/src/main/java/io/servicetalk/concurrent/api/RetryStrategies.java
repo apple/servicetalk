@@ -19,8 +19,8 @@ import java.time.Duration;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static io.servicetalk.concurrent.api.RepeatStrategies.nextLongInclusive;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Math.max;
 import static java.lang.Math.min;

@@ -37,6 +37,7 @@ import io.servicetalk.loadbalancer.Exceptions.StacklessConnectionRejectedExcepti
 import io.servicetalk.loadbalancer.Exceptions.StacklessNoActiveHostException;
 import io.servicetalk.loadbalancer.Exceptions.StacklessNoAvailableHostException;
 
+import io.servicetalk.utils.internal.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,9 +222,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         final long lower = config.healthCheckResubscribeLowerBound;
         final long upper = config.healthCheckResubscribeUpperBound;
         final long currentTime = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower,
-                // add 1 because the upper bound is not inclusive.
-                addWithOverflowProtection(upper, 1)));
+        final long result = currentTime + (lower == upper ? lower : RandomUtils.nextLongInclusive(lower, upper));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTime, result);
         return result;

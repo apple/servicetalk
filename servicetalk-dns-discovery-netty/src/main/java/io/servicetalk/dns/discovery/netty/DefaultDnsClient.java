@@ -56,6 +56,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.servicetalk.utils.internal.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -796,11 +797,8 @@ final class DefaultDnsClient implements DnsClient {
             private void scheduleQuery0(final long remainingTtlNanos, final long originalTtlNanos) {
                 assertInEventloop();
 
-                final long delay = ThreadLocalRandom.current()
-                        .nextLong(remainingTtlNanos,
-                                // add 1 because the upper bound is not inclusive.
-                                addWithOverflowProtection(
-                                        addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos), 1));
+                final long delay = RandomUtils.nextLongInclusive(remainingTtlNanos,
+                                addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
                 LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));

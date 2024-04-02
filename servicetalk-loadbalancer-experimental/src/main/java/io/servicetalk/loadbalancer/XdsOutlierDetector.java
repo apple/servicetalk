@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
+import io.servicetalk.utils.internal.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,9 +183,8 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
                     currentConfig.failureDetectorIntervalJitter().toNanos();
             final long maxIntervalNanos = addWithOverflowProtection(currentConfig.failureDetectorInterval().toNanos(),
                     currentConfig.failureDetectorIntervalJitter().toNanos());
-            return executor.schedule(checkOutliers, ThreadLocalRandom.current().nextLong(
-                    // + 1 to make the bound inclusive
-                    minIntervalNanos, addWithOverflowProtection(maxIntervalNanos, 1)), TimeUnit.NANOSECONDS);
+            return executor.schedule(checkOutliers, RandomUtils.nextLongInclusive(minIntervalNanos, maxIntervalNanos),
+                    TimeUnit.NANOSECONDS);
         }
 
         private void sequentialCheckOutliers() {

@@ -25,6 +25,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.checkJitterDelta;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkMaxRetries;
 import static io.servicetalk.concurrent.api.RetryStrategies.maxShift;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -275,11 +276,5 @@ public final class RepeatStrategies {
 
     private static Completable terminateRepeat() {
         return failed(TerminateRepeatException.INSTANCE);
-    }
-
-    static long nextLongInclusive(long lowerBound, long upperBound) {
-        return current().nextLong(lowerBound,
-                // Add 1 because the upper bound is non-inclusive in `ThreadLocalRandom.nextLong(lower,upper)`.
-                addWithOverflowProtection(upperBound, 1));
     }
 }

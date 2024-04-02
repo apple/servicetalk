@@ -35,6 +35,7 @@ import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.context.api.ContextMap;
 
+import io.servicetalk.utils.internal.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,9 +214,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         final long upperNanos = config.healthCheckResubscribeUpperBound;
         final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
         final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
-                ThreadLocalRandom.current().nextLong(lowerNanos,
-                        // add 1 because the upper bound is not inclusive.
-                        addWithOverflowProtection(upperNanos, 1)));
+                RandomUtils.nextLongInclusive(lowerNanos, upperNanos));
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTimeNanos, result);
         return result;
