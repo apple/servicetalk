@@ -90,6 +90,13 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
     LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig);
 
     /**
+     * Set the {@link ConnectionPoolStrategy} to use with this load balancer.
+     * @param connectionPoolConfig the factory of connection pooling strategies to use.
+     * @return {@code this}
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(ConnectionPoolConfig connectionPoolConfig);
+
+    /**
      * Set the background {@link Executor} to use for determining time and scheduling background tasks such
      * as those associated with outlier detection.
      *
@@ -97,22 +104,6 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}.
      */
     LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor);
-
-    /**
-     * Sets the linear search space to find an available connection for the next host.
-     * <p>
-     * When the next host has already opened connections, this {@link LoadBalancer} will perform a linear search for
-     * a connection that can serve the next request up to a specified number of attempts. If there are more open
-     * connections, selection of remaining connections will be attempted randomly.
-     * <p>
-     * Higher linear search space may help to better identify excess connections in highly concurrent environments,
-     * but may result in slightly increased selection time.
-     *
-     * @param linearSearchSpace the number of attempts for a linear search space, {@code 0} enforces random
-     * selection all the time.
-     * @return {@code this}.
-     */
-    LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace);
 
     /**
      * Builds the {@link LoadBalancerFactory} configured by this builder.

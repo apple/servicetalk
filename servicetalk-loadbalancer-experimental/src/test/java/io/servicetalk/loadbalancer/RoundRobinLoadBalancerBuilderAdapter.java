@@ -43,14 +43,14 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> backgroundExecutor(Executor backgroundExecutor) {
-        underlying = underlying.backgroundExecutor(backgroundExecutor);
-        return this;
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolConfig(
+            ConnectionPoolConfig connectionPoolConfig) {
+        throw new IllegalStateException("Cannot set a connection pool strategy for old round robin");
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> linearSearchSpace(int linearSearchSpace) {
-        underlying = underlying.linearSearchSpace(linearSearchSpace);
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> backgroundExecutor(Executor backgroundExecutor) {
+        underlying = underlying.backgroundExecutor(backgroundExecutor);
         return this;
     }
 

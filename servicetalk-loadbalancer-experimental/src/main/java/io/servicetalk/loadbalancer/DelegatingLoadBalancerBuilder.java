@@ -79,8 +79,9 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
-        delegate = delegate.linearSearchSpace(linearSearchSpace);
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(
+            ConnectionPoolConfig connectionPoolConfig) {
+        delegate = delegate.connectionPoolConfig(connectionPoolConfig);
         return this;
     }
 
