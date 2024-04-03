@@ -34,8 +34,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.context.api.ContextMap;
-
 import io.servicetalk.utils.internal.RandomUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -63,7 +62,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;

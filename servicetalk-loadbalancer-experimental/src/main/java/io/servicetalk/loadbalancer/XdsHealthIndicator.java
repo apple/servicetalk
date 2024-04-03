@@ -23,13 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;

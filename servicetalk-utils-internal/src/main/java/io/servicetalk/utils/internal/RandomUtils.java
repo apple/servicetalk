@@ -20,7 +20,7 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 /**
  * Internal random utilities.
  */
-public class RandomUtils {
+public final class RandomUtils {
 
     private RandomUtils() {
         // no instances

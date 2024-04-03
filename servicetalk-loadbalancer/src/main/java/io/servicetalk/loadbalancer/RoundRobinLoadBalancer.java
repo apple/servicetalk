@@ -36,8 +36,8 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.Exceptions.StacklessConnectionRejectedException;
 import io.servicetalk.loadbalancer.Exceptions.StacklessNoActiveHostException;
 import io.servicetalk.loadbalancer.Exceptions.StacklessNoAvailableHostException;
-
 import io.servicetalk.utils.internal.RandomUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

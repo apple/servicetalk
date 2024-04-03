@@ -35,6 +35,7 @@ import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.Resolutio
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.utils.internal.RandomUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
@@ -56,7 +57,6 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.servicetalk.utils.internal.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 

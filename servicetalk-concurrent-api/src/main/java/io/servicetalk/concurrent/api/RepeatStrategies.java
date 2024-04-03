@@ -29,7 +29,6 @@ import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
