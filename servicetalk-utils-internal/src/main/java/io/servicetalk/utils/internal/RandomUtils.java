@@ -45,16 +45,19 @@ public final class RandomUtils {
         if (lowerBound > upperBound) {
             throw new IllegalArgumentException("Lower bound cannot be greater than upper bound.");
         }
-        if (upperBound == Long.MAX_VALUE) {
+        if (upperBound == lowerBound) {
+            return upperBound;
+        } else if (upperBound != Long.MAX_VALUE) {
+            // simply add 1 to upper bound to make it inclusive
+            return current().nextLong(lowerBound, upperBound + 1);
+        } else {
             if (lowerBound == Long.MIN_VALUE) {
                 // full range possible which is the simply `nextLong()`.
                 return current().nextLong();
             } else {
-                // be inclusive of MAX_VALUE by shifting lower bound 1 lower and adding 1 to the result.
+                // be inclusive of upperBound == MAX_VALUE by shifting lower bound down by 1 and adding 1 to the result.
                 return current().nextLong(lowerBound - 1, Long.MAX_VALUE) + 1;
             }
-        } else {
-            return current().nextLong(lowerBound, upperBound + 1);
         }
     }
 }
