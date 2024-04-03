@@ -15,7 +15,7 @@
  */
 package io.servicetalk.utils.internal;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,40 +25,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RandomUtilsTest {
 
-    @Test
+    @RepeatedTest(100)
     void illegalArguments() {
-        repeated(() -> {
-            long lowerBound = current().nextLong(Long.MIN_VALUE + 1, Long.MAX_VALUE);
-            assertThrows(IllegalArgumentException.class, () ->
-                    RandomUtils.nextLongInclusive(lowerBound, lowerBound - 1));
-        });
+        long lowerBound = current().nextLong(Long.MIN_VALUE + 1, Long.MAX_VALUE);
+        assertThrows(IllegalArgumentException.class, () ->
+                RandomUtils.nextLongInclusive(lowerBound, lowerBound - 1));
     }
 
-    @Test
+    @RepeatedTest(100)
     void lowerEqualsUpperBound() {
-        repeated(() -> {
-            final long bound = current().nextLong();
-            assertThat(RandomUtils.nextLongInclusive(bound, bound), equalTo(bound));
-        });
+        final long bound = current().nextLong();
+        assertThat(RandomUtils.nextLongInclusive(bound, bound), equalTo(bound));
     }
 
-    @Test
+    @RepeatedTest(100)
     void longMaxValue() {
-        repeated(() ->
-            assertThat(RandomUtils.nextLongInclusive(Long.MAX_VALUE - 1, Long.MAX_VALUE),
-                    anyOf(equalTo(Long.MAX_VALUE - 1), equalTo(Long.MAX_VALUE))));
+        assertThat(RandomUtils.nextLongInclusive(Long.MAX_VALUE - 1, Long.MAX_VALUE),
+                anyOf(equalTo(Long.MAX_VALUE - 1), equalTo(Long.MAX_VALUE)));
     }
 
-    @Test
+    @RepeatedTest(100)
     void longMinValue() {
-        repeated(() ->
-            assertThat(RandomUtils.nextLongInclusive(Long.MIN_VALUE, Long.MIN_VALUE + 1),
-                    anyOf(equalTo(Long.MIN_VALUE), equalTo(Long.MIN_VALUE + 1))));
-    }
-
-    private static void repeated(Runnable r) {
-        for (int i = 0; i < 100; i++) {
-            r.run();
-        }
+        assertThat(RandomUtils.nextLongInclusive(Long.MIN_VALUE, Long.MIN_VALUE + 1),
+                anyOf(equalTo(Long.MIN_VALUE), equalTo(Long.MIN_VALUE + 1)));
     }
 }
