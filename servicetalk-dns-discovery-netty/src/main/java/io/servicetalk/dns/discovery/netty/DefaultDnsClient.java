@@ -35,6 +35,7 @@ import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.Resolutio
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.utils.internal.RandomUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
@@ -74,7 +75,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -796,8 +796,8 @@ final class DefaultDnsClient implements DnsClient {
             private void scheduleQuery0(final long remainingTtlNanos, final long originalTtlNanos) {
                 assertInEventloop();
 
-                final long delay = ThreadLocalRandom.current()
-                        .nextLong(remainingTtlNanos, addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
+                final long delay = RandomUtils.nextLongInclusive(remainingTtlNanos,
+                                addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
                 LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));

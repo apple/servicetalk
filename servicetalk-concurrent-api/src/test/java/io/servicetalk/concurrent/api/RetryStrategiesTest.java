@@ -42,7 +42,7 @@ class RetryStrategiesTest extends RedoStrategiesTest {
     void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true, backoff,
-                ofNanos(1), timerExecutor));
+                ofNanos(0), timerExecutor));
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
                 strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithDeltaJitter(backoff.toNanos(), 1, 1);

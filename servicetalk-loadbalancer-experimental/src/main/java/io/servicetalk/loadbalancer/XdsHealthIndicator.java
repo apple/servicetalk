@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +30,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.enforcing;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.RandomUtils.nextLongInclusive;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
@@ -280,7 +280,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             failureMultiplier++;
         }
         // Finally we add jitter to the ejection time.
-        final long jitterNanos = ThreadLocalRandom.current().nextLong(config.ejectionTimeJitter().toNanos() + 1);
+        final long jitterNanos = nextLongInclusive(config.ejectionTimeJitter().toNanos());
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
         hostObserver.onHostMarkedUnhealthy(cause);
         if (LOGGER.isDebugEnabled()) {
