@@ -22,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static java.lang.Math.max;
-import static java.time.Duration.ofSeconds;
+import static java.time.Duration.ZERO;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -50,7 +49,7 @@ class XdsOutlierDetectorAlgorithmTest {
     private OutlierDetectorConfig.Builder withAllEnforcing() {
         return new OutlierDetectorConfig.Builder()
                 // set the jitters to zero to make time more predictable
-                .maxEjectionTime(ofSeconds(300), Duration.ZERO)
+                .ejectionTimeJitter(ZERO)
                 // set enforcing rates to 100% so that we don't have to deal with statics
                 .enforcingConsecutive5xx(100)
                 .enforcingFailurePercentage(100)

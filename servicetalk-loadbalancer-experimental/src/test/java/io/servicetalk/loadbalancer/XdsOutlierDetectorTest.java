@@ -31,7 +31,7 @@ class XdsOutlierDetectorTest {
     private final TestExecutor executor = new TestExecutor();
     OutlierDetectorConfig config = new OutlierDetectorConfig.Builder()
             .failureDetectorInterval(Duration.ofSeconds(5), Duration.ZERO)
-            .maxEjectionTime(Duration.ofMinutes(5), Duration.ZERO)
+            .ejectionTimeJitter(Duration.ZERO)
             .build();
 
     @Nullable

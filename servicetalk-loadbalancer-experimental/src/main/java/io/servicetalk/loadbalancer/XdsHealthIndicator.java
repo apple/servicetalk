@@ -280,7 +280,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             failureMultiplier++;
         }
         // Finally we add jitter to the ejection time.
-        final long jitterNanos = nextLongInclusive(config.maxEjectionTimeJitter().toNanos());
+        final long jitterNanos = nextLongInclusive(config.ejectionTimeJitter().toNanos());
         evictedUntilNanos = currentTimeNanos() + ejectTimeNanos + jitterNanos;
         hostObserver.onHostMarkedUnhealthy(cause);
         if (LOGGER.isDebugEnabled()) {
