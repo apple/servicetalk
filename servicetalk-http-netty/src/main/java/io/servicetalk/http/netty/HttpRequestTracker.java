@@ -25,7 +25,7 @@ import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 
 final class HttpRequestTracker {
@@ -58,14 +58,28 @@ final class HttpRequestTracker {
 
         @Override
         public HttpExchangeObserver onNewExchange() {
-            return new RequestTrackerExchangeObserver();
+            return new RequestTrackerExchangeObserver(peerResponseErrorClassifier, errorClassFunction, tracker);
         }
 
-        private final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver,
+        private static final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver,
                 HttpLifecycleObserver.HttpResponseObserver {
 
-            // TODO: cleanup.
-            private final AtomicLong startTime = new AtomicLong(Long.MIN_VALUE);
+            private static final AtomicLongFieldUpdater<RequestTrackerExchangeObserver> START_TIME_UPDATER =
+                    AtomicLongFieldUpdater.newUpdater(RequestTrackerExchangeObserver.class, "startTime");
+
+            private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
+            private final Function<Throwable, ErrorClass> errorClassFunction;
+            private final RequestTracker tracker;
+            @SuppressWarnings("unused")
+            private volatile long startTime = Long.MIN_VALUE;
+
+            RequestTrackerExchangeObserver(
+                    final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
+                    final Function<Throwable, ErrorClass> errorClassFunction, final RequestTracker tracker) {
+                this.peerResponseErrorClassifier = peerResponseErrorClassifier;
+                this.errorClassFunction = errorClassFunction;
+                this.tracker = tracker;
+            }
 
             // HttpExchangeObserver methods
 
@@ -76,7 +90,7 @@ final class HttpRequestTracker {
 
             @Override
             public HttpLifecycleObserver.HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
-                startTime.set(tracker.beforeRequestStart());
+                START_TIME_UPDATER.set(this, tracker.beforeRequestStart());
                 return NoopHttpLifecycleObserver.NoopHttpRequestObserver.INSTANCE;
             }
 
@@ -136,7 +150,7 @@ final class HttpRequestTracker {
             }
 
             private long finish() {
-                return this.startTime.getAndSet(Long.MAX_VALUE);
+                return START_TIME_UPDATER.getAndSet(this, Long.MAX_VALUE);
             }
 
             private boolean checkOnce(long startTime) {
