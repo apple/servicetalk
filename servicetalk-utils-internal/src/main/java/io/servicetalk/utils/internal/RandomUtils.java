@@ -31,10 +31,8 @@ public final class RandomUtils {
      * @param upperBound the inclusive upper bound.
      * @return a random long between 0 and the upper bound, both inclusive.
      */
-    public static long nextLongInclusive(long upperBound) {
-        return current().nextLong(
-                // Add 1 because the upper bound is non-inclusive in `ThreadLocalRandom.nextLong(lower,upper)`.
-                addWithOverflowProtection(upperBound, 1));
+    public static long nextLongInclusive(final long upperBound) {
+        return nextLongInclusive(0, upperBound);
     }
 
     /**
@@ -43,15 +41,20 @@ public final class RandomUtils {
      * @param upperBound the inclusive upper bound.
      * @return a random long between the specified lower and upper bound, both inclusive.
      */
-    public static long nextLongInclusive(long lowerBound, long upperBound) {
-        return current().nextLong(lowerBound,
-                // Add 1 because the upper bound is non-inclusive in `ThreadLocalRandom.nextLong(lower,upper)`.
-                addWithOverflowProtection(upperBound, 1));
-    }
-
-    private static long addWithOverflowProtection(long x, final long y) {
-        //noinspection SuspiciousNameCombination
-        x += y;
-        return x >= 0 ? x : Long.MAX_VALUE;
+    public static long nextLongInclusive(final long lowerBound, final long upperBound) {
+        if (lowerBound > upperBound) {
+            throw new IllegalArgumentException("Lower bound cannot be greater than upper bound.");
+        }
+        if (upperBound == Long.MAX_VALUE) {
+            if (lowerBound == Long.MIN_VALUE) {
+                // full range possible which is the simply `nextLong()`.
+                return current().nextLong();
+            } else {
+                // be inclusive of MAX_VALUE by shifting lower bound 1 lower and adding 1 to the result.
+                return current().nextLong(lowerBound - 1, Long.MAX_VALUE) + 1;
+            }
+        } else {
+            return current().nextLong(lowerBound, upperBound + 1);
+        }
     }
 }

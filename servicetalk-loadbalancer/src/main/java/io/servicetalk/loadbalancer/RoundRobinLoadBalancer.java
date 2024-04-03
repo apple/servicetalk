@@ -222,7 +222,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         final long lower = config.healthCheckResubscribeLowerBound;
         final long upper = config.healthCheckResubscribeUpperBound;
         final long currentTime = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTime + (lower == upper ? lower : RandomUtils.nextLongInclusive(lower, upper));
+        final long result = currentTime + RandomUtils.nextLongInclusive(lower, upper);
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTime, result);
         return result;

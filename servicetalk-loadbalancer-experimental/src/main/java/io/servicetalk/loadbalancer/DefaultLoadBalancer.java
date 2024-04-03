@@ -211,8 +211,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         final long lowerNanos = config.healthCheckResubscribeLowerBound;
         final long upperNanos = config.healthCheckResubscribeUpperBound;
         final long currentTimeNanos = config.executor.currentTime(NANOSECONDS);
-        final long result = currentTimeNanos + (lowerNanos == upperNanos ? lowerNanos :
-                RandomUtils.nextLongInclusive(lowerNanos, upperNanos));
+        final long result = currentTimeNanos + RandomUtils.nextLongInclusive(lowerNanos, upperNanos);
         LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
                 lb, currentTimeNanos, result);
         return result;
