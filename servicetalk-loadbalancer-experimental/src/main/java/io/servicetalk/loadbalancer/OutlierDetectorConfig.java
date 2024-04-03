@@ -198,6 +198,7 @@ public final class OutlierDetectorConfig {
      * The base ejection time is multiplied by the number of consecutive times the host has been ejected to get the
      * total ejection time, capped by the {@link #maxEjectionTime()}.
      * @return the base ejection time.
+     * @see #ejectionTimeJitter()
      */
     public Duration baseEjectionTime() {
         return baseEjectionTime;
@@ -298,10 +299,11 @@ public final class OutlierDetectorConfig {
     }
 
     /**
-     * The maximum amount of jitter to add to the ejection time.
+     * The amount of jitter to add to the ejection time.
      * An additional amount of 'jitter' is added to the ejection time to prevent connection storms if multiple hosts
      * are ejected at the time.
-     * @return the maximum amount of jitter to add to the ejection time.
+     * @return the amount of jitter to add to the ejection time.
+     * @see #baseEjectionTime()
      */
     public Duration ejectionTimeJitter() {
         return ejectionTimeJitter;
@@ -550,6 +552,7 @@ public final class OutlierDetectorConfig {
          * Defaults to 30 seconds.
          * @param baseEjectionTime the base ejection time.
          * @return {@code this}.
+         * @see #ejectionTimeJitter(Duration)
          */
         public Builder baseEjectionTime(final Duration baseEjectionTime) {
             this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
@@ -560,8 +563,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the ejection time jitter.
          * Defaults to 3 seconds.
-         * @param ejectionTimeJitter the maximum jitter to add to the calculated ejection time.
+         * @param ejectionTimeJitter the jitter to add to the calculated ejection time.
          * @return {@code this}.
+         * @see #baseEjectionTime(Duration)
          */
         public Builder ejectionTimeJitter(final Duration ejectionTimeJitter) {
             ensureNonNegative(requireNonNull(ejectionTimeJitter, "ejectionTimeJitter").toNanos(),
