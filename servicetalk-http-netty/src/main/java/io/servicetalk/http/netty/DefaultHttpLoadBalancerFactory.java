@@ -33,27 +33,17 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.ErrorClass;
-import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
 import java.util.Collection;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
-import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
-import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
-import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
-import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -65,18 +55,12 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerFactory.class);
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-    private final Function<Throwable, ErrorClass> errorClassFunction;
-    private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
     private final HttpExecutionStrategy strategy;
 
     DefaultHttpLoadBalancerFactory(
             final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-            final Function<Throwable, ErrorClass> errorClassFunction,
-            final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
             final HttpExecutionStrategy strategy) {
         this.rawFactory = rawFactory;
-        this.errorClassFunction = errorClassFunction;
-        this.peerResponseErrorClassifier = peerResponseErrorClassifier;
         this.strategy = strategy;
     }
 
@@ -108,25 +92,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             FilterableStreamingHttpConnection connection,
             final ReservableRequestConcurrencyController concurrencyController,
             @Nullable final ContextMap context) {
-
-        RequestTracker requestTracker = null;
-        if (context == null) {
-            LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                    ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                    ", health-monitor of this connection, the context must not be null.");
-        } else {
-            requestTracker = context.get(REQUEST_TRACKER_KEY);
-            if (requestTracker == null) {
-                LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
-                        "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                        ", health-monitor of this connection, the context must be properly wired.");
-            }
-        }
-        if (requestTracker != null) {
-            connection = HttpRequestTracker.observe(
-                    peerResponseErrorClassifier, errorClassFunction, requestTracker, connection);
-        }
         return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection,
                 concurrencyController);
     }
@@ -145,11 +110,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     public static final class Builder<ResolvedAddress> {
         private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
         private final HttpExecutionStrategy strategy;
-        private final Function<Throwable, ErrorClass> errorClassifier = t -> t instanceof ConnectException ?
-                LOCAL_ORIGIN_CONNECT_FAILED : LOCAL_ORIGIN_REQUEST_FAILED;
-        private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier = resp ->
-                (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
-                        ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
 
         private Builder(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
@@ -164,8 +124,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, errorClassifier, peerResponseErrorClassifier,
-                    strategy);
+            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
         }
 
         /**

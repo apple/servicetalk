@@ -52,6 +52,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
+import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -251,6 +252,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 assert !proxy.requiredOffloads().hasOffloads();
                 connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
+
+            // Add request tracking.
+            connectionFactoryFilter = appendConnectionFilter(HttpRequestTracker.filter(), connectionFactoryFilter);
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer

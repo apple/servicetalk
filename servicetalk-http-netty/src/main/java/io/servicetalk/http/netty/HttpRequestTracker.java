@@ -16,6 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
@@ -24,41 +29,98 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.TransportObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
+import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
+import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
+import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
+
 final class HttpRequestTracker {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestTracker.class);
+
+    private static final Function<Throwable, ErrorClass> ERROR_CLASSIFIER = t -> t instanceof ConnectException ?
+            LOCAL_ORIGIN_CONNECT_FAILED : LOCAL_ORIGIN_REQUEST_FAILED;
+    private static final Function<HttpResponseMetaData, ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = resp ->
+            (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
+                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
 
     private HttpRequestTracker() {
         // no instances
     }
 
-    static FilterableStreamingHttpConnection observe(
+    static <ResolvedAddress> ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> filter() {
+        return (connection) -> new RequestTrackerConnectionFactory<>(connection);
+    }
+
+    private static final class RequestTrackerConnectionFactory<ResolvedAddress>
+            extends DelegatingConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+
+        public RequestTrackerConnectionFactory(
+                ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public Single<FilterableStreamingHttpConnection> newConnection(
+                ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            if (context == null) {
+                LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                        ", health-monitor of this connection, the context must not be null.");
+                return delegate().newConnection(resolvedAddress, context, observer);
+            } else {
+                return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
+                        transformConnection(connection, context));
+            }
+        }
+    }
+
+    private static FilterableStreamingHttpConnection transformConnection(
+            FilterableStreamingHttpConnection connection, ContextMap context) {
+        RequestTracker requestTracker = context.remove(REQUEST_TRACKER_KEY);
+        if (requestTracker == null) {
+            LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
+                    "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                    ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                    ", health-monitor of this connection, the context must be properly wired.");
+            return connection;
+        } else {
+            LOGGER.debug("Added request tracker to connection {}.", connection.connectionContext());
+            HttpLifecycleObserverRequesterFilter filter = new HttpLifecycleObserverRequesterFilter(
+                    new Observer(requestTracker));
+            return filter.create(connection);
+        }
+    }
+
+    private static FilterableStreamingHttpConnection observe(
             Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
             Function<Throwable, ErrorClass> errorClassFunction,
             RequestTracker requestTracker, FilterableStreamingHttpConnection connection) {
         HttpLifecycleObserverRequesterFilter filter = new HttpLifecycleObserverRequesterFilter(
-                new Observer(peerResponseErrorClassifier, errorClassFunction, requestTracker));
+                new Observer(requestTracker));
         return filter.create(connection);
     }
 
     private static class Observer implements HttpLifecycleObserver {
-
-        private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
-        private final Function<Throwable, ErrorClass> errorClassFunction;
         private final RequestTracker tracker;
 
-        Observer(final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
-                 final Function<Throwable, ErrorClass> errorClassFunction, final RequestTracker tracker) {
-            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-            this.errorClassFunction = errorClassFunction;
+        Observer(final RequestTracker tracker) {
             this.tracker = tracker;
         }
 
         @Override
         public HttpExchangeObserver onNewExchange() {
-            return new RequestTrackerExchangeObserver(peerResponseErrorClassifier, errorClassFunction, tracker);
+            return new RequestTrackerExchangeObserver(tracker);
         }
 
         private static final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver,
@@ -67,17 +129,11 @@ final class HttpRequestTracker {
             private static final AtomicLongFieldUpdater<RequestTrackerExchangeObserver> START_TIME_UPDATER =
                     AtomicLongFieldUpdater.newUpdater(RequestTrackerExchangeObserver.class, "startTime");
 
-            private final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier;
-            private final Function<Throwable, ErrorClass> errorClassFunction;
             private final RequestTracker tracker;
             @SuppressWarnings("unused")
             private volatile long startTime = Long.MIN_VALUE;
 
-            RequestTrackerExchangeObserver(
-                    final Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
-                    final Function<Throwable, ErrorClass> errorClassFunction, final RequestTracker tracker) {
-                this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-                this.errorClassFunction = errorClassFunction;
+            RequestTrackerExchangeObserver(final RequestTracker tracker) {
                 this.tracker = tracker;
             }
 
@@ -96,7 +152,7 @@ final class HttpRequestTracker {
 
             @Override
             public HttpLifecycleObserver.HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
-                ErrorClass error = peerResponseErrorClassifier.apply(responseMetaData);
+                ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(responseMetaData);
                 if (error != null) {
                     final long startTime = finish();
                     if (checkOnce(startTime)) {
@@ -117,7 +173,7 @@ final class HttpRequestTracker {
             public void onResponseError(Throwable cause) {
                 final long startTime = finish();
                 if (checkOnce(startTime)) {
-                    tracker.onRequestError(startTime, errorClassFunction.apply(cause));
+                    tracker.onRequestError(startTime, ERROR_CLASSIFIER.apply(cause));
                 }
             }
 

@@ -34,7 +34,6 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -113,18 +112,13 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     }
 
     private GrpcClientCallFactory newGrpcClientCallFactory() {
-        SingleAddressHttpClientBuilder<U, R> builder = new HttpClientBuilderWrapper(httpClientBuilderSupplier.get())
-            // We have to set _a_ load balancer so that we can wrap it. It's safe to set a default here because
-            // there isn't a user accessible way to mutate the load balancer until we get down to using
-            // `httpInitializer` which can then override it, but the builder wrapper will re-decorate in that case.
-            .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
-                    DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build())
-                .build())
+        SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get()
             .protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
         }
+        builder.appendConnectionFactoryFilter(GrpcRequestTracker.filter());
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         return GrpcClientCallFactory.from(builder.buildStreaming(), timeout);

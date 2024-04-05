@@ -16,55 +16,111 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcStatus;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.TransportObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 
+import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
+
 final class GrpcRequestTracker {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRequestTracker.class);
     private static final GrpcLifecycleObserver.GrpcRequestObserver NOOP_REQUEST_OBSERVER =
             new NoopGrpcRequestObserver();
+
+    private static final Function<GrpcStatus, ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = (status) -> {
+        // TODO: this needs to be gone over with more detail.
+        switch (status.code()) {
+            case OK:
+                return null;
+            case CANCELLED:
+                return ErrorClass.CANCELLED;
+            default:
+                return ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
+        }
+    };
+
+    // TODO: this needs to be gone over with more detail.
+    private static final Function<Throwable, ErrorClass> ERROR_CLASS_FUNCTION = (exn) ->
+            ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
 
     private GrpcRequestTracker() {
         // no instances
     }
 
-    static FilterableStreamingHttpConnection observe(
-            Function<GrpcStatus, ErrorClass> peerResponseErrorClassifier,
-            Function<Throwable, ErrorClass> errorClassFunction,
-            RequestTracker requestTracker, FilterableStreamingHttpConnection connection) {
-        HttpLifecycleObserverRequesterFilter filter = new GrpcLifecycleObserverRequesterFilter(
-                new Observer(peerResponseErrorClassifier, errorClassFunction, requestTracker));
-        return filter.create(connection);
+    static <ResolvedAddress> ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> filter() {
+        return (connection) -> new ConnectionFactoryWrapper<>(connection);
+    }
+
+    private static class ConnectionFactoryWrapper<ResolvedAddress>
+            extends DelegatingConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+
+        public ConnectionFactoryWrapper(ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public Single<FilterableStreamingHttpConnection> newConnection(
+                ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            if (context == null) {
+                LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                        ", health-monitor of this connection, the context must not be null.");
+                return delegate().newConnection(resolvedAddress, context, observer);
+            } else {
+                return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
+                                transformConnection(connection, context));
+            }
+        }
+
+        private FilterableStreamingHttpConnection transformConnection(
+                FilterableStreamingHttpConnection connection, ContextMap context) {
+            RequestTracker requestTracker = context.remove(REQUEST_TRACKER_KEY);
+            if (requestTracker == null) {
+                LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
+                        "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
+                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
+                        ", health-monitor of this connection, the context must be properly wired.");
+                return connection;
+            } else {
+                LOGGER.debug("Added request tracker to connection {}.", connection.connectionContext());
+                HttpLifecycleObserverRequesterFilter filter = new GrpcLifecycleObserverRequesterFilter(
+                        new Observer(requestTracker));
+                return filter.create(connection);
+            }
+        }
     }
 
     private static class Observer implements GrpcLifecycleObserver {
-
-        private final Function<GrpcStatus, ErrorClass> peerResponseErrorClassifier;
-        private final Function<Throwable, ErrorClass> errorClassFunction;
         private final RequestTracker tracker;
 
-        Observer(final Function<GrpcStatus, ErrorClass> peerResponseErrorClassifier,
-                 final Function<Throwable, ErrorClass> errorClassFunction, final RequestTracker tracker) {
-            this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-            this.errorClassFunction = errorClassFunction;
+        Observer(final RequestTracker tracker) {
             this.tracker = tracker;
         }
 
         @Override
         public GrpcExchangeObserver onNewExchange() {
-            return new Observer.RequestTrackerExchangeObserver(
-                    peerResponseErrorClassifier, errorClassFunction, tracker);
+            return new Observer.RequestTrackerExchangeObserver(tracker);
         }
 
         private static final class RequestTrackerExchangeObserver implements GrpcLifecycleObserver.GrpcExchangeObserver,
@@ -72,17 +128,11 @@ final class GrpcRequestTracker {
 
             private static final AtomicLongFieldUpdater<RequestTrackerExchangeObserver> START_TIME_UPDATER =
                     AtomicLongFieldUpdater.newUpdater(RequestTrackerExchangeObserver.class, "startTime");
-
-            private final Function<GrpcStatus, ErrorClass> peerResponseErrorClassifier;
-            private final Function<Throwable, ErrorClass> errorClassFunction;
             private final RequestTracker tracker;
             @SuppressWarnings("unused")
             private volatile long startTime = Long.MIN_VALUE;
 
-            RequestTrackerExchangeObserver(final Function<GrpcStatus, ErrorClass> peerResponseErrorClassifier,
-                    final Function<Throwable, ErrorClass> errorClassFunction, final RequestTracker tracker) {
-                this.peerResponseErrorClassifier = peerResponseErrorClassifier;
-                this.errorClassFunction = errorClassFunction;
+            RequestTrackerExchangeObserver(final RequestTracker tracker) {
                 this.tracker = tracker;
             }
 
@@ -107,7 +157,7 @@ final class GrpcRequestTracker {
             public void onResponseError(Throwable cause) {
                 final long startTime = finish();
                 if (checkOnce(startTime)) {
-                    tracker.onRequestError(startTime, errorClassFunction.apply(cause));
+                    tracker.onRequestError(startTime, ERROR_CLASS_FUNCTION.apply(cause));
                 }
             }
 
@@ -126,7 +176,7 @@ final class GrpcRequestTracker {
 
             @Override
             public void onGrpcStatus(GrpcStatus status) {
-                ErrorClass error = peerResponseErrorClassifier.apply(status);
+                ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(status);
                 if (error != null) {
                     final long startTime = finish();
                     if (checkOnce(startTime)) {
