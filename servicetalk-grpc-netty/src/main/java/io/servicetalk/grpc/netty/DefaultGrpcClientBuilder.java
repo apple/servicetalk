@@ -118,6 +118,9 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         if (appendTimeoutFilter) {
             builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
         }
+        // We append the GrpcRequestTracker filter before we let the `httpInitializer` see the client because we
+        // extract the RequestTracker on the way back, therefore filters in the front will be the last to do the
+        // extraction, letting user override it if they like.
         builder.appendConnectionFactoryFilter(GrpcRequestTracker.filter());
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;

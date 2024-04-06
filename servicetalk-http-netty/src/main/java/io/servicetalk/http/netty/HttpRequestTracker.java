@@ -74,9 +74,9 @@ final class HttpRequestTracker {
         public Single<FilterableStreamingHttpConnection> newConnection(
                 ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
             if (context == null) {
-                LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                        ", health-monitor of this connection, the context must not be null.");
+                LOGGER.debug("Context is null. In order for {} to get access to the {}" +
+                        ", health-monitor of this connection, the context must not be null.",
+                        HttpRequestTracker.class.getSimpleName(), RequestTracker.class.getSimpleName());
                 return delegate().newConnection(resolvedAddress, context, observer);
             } else {
                 return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
@@ -89,10 +89,10 @@ final class HttpRequestTracker {
             FilterableStreamingHttpConnection connection, ContextMap context) {
         RequestTracker requestTracker = context.remove(REQUEST_TRACKER_KEY);
         if (requestTracker == null) {
-            LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
-                    "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                    ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                    ", health-monitor of this connection, the context must be properly wired.");
+            LOGGER.debug("{} is not set in context. In order for {} to get access to the {}" +
+                    ", health-monitor of this connection, the context must be properly wired.",
+                    REQUEST_TRACKER_KEY.name(), HttpRequestTracker.class.getSimpleName(),
+                    RequestTracker.class.getSimpleName());
             return connection;
         } else {
             LOGGER.debug("Added request tracker to connection {}.", connection.connectionContext());
@@ -100,15 +100,6 @@ final class HttpRequestTracker {
                     new Observer(requestTracker));
             return filter.create(connection);
         }
-    }
-
-    private static FilterableStreamingHttpConnection observe(
-            Function<HttpResponseMetaData, ErrorClass> peerResponseErrorClassifier,
-            Function<Throwable, ErrorClass> errorClassFunction,
-            RequestTracker requestTracker, FilterableStreamingHttpConnection connection) {
-        HttpLifecycleObserverRequesterFilter filter = new HttpLifecycleObserverRequesterFilter(
-                new Observer(requestTracker));
-        return filter.create(connection);
     }
 
     private static class Observer implements HttpLifecycleObserver {

@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
+import io.servicetalk.http.netty.HttpRequestTracker;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
@@ -83,9 +84,9 @@ final class GrpcRequestTracker {
         public Single<FilterableStreamingHttpConnection> newConnection(
                 ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
             if (context == null) {
-                LOGGER.debug("Context is null. In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                        ", health-monitor of this connection, the context must not be null.");
+                LOGGER.debug("Context is null. In order for {} to get access to the {}" +
+                                ", health-monitor of this connection, the context must not be null.",
+                        GrpcRequestTracker.class.getSimpleName(), RequestTracker.class.getSimpleName());
                 return delegate().newConnection(resolvedAddress, context, observer);
             } else {
                 return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
@@ -97,10 +98,10 @@ final class GrpcRequestTracker {
                 FilterableStreamingHttpConnection connection, ContextMap context) {
             RequestTracker requestTracker = context.remove(REQUEST_TRACKER_KEY);
             if (requestTracker == null) {
-                LOGGER.debug(REQUEST_TRACKER_KEY.name() + " is not set in context. " +
-                        "In order for " + DefaultHttpLoadBalancerFactory.class.getSimpleName() +
-                        ":toLoadBalancedConnection to get access to the " + RequestTracker.class.getSimpleName() +
-                        ", health-monitor of this connection, the context must be properly wired.");
+                LOGGER.debug("{} is not set in context. In order for {} to get access to the {}" +
+                                ", health-monitor of this connection, the context must be properly wired.",
+                        REQUEST_TRACKER_KEY.name(), GrpcRequestTracker.class.getSimpleName(),
+                        RequestTracker.class.getSimpleName());
                 return connection;
             } else {
                 LOGGER.debug("Added request tracker to connection {}.", connection.connectionContext());
