@@ -27,19 +27,18 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
-import io.servicetalk.http.netty.HttpRequestTracker;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.TransportObserver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 
@@ -76,22 +75,24 @@ final class GrpcRequestTracker {
     private static class ConnectionFactoryWrapper<ResolvedAddress>
             extends DelegatingConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
 
-        public ConnectionFactoryWrapper(ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> delegate) {
+        ConnectionFactoryWrapper(
+                ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> delegate) {
             super(delegate);
         }
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(
                 ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            Single<FilterableStreamingHttpConnection> result = delegate()
+                    .newConnection(resolvedAddress, context, observer);
             if (context == null) {
                 LOGGER.debug("Context is null. In order for {} to get access to the {}" +
                                 ", health-monitor of this connection, the context must not be null.",
                         GrpcRequestTracker.class.getSimpleName(), RequestTracker.class.getSimpleName());
-                return delegate().newConnection(resolvedAddress, context, observer);
             } else {
-                return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
-                                transformConnection(connection, context));
+                result = result.map(connection -> transformConnection(connection, context));
             }
+            return result;
         }
 
         private FilterableStreamingHttpConnection transformConnection(

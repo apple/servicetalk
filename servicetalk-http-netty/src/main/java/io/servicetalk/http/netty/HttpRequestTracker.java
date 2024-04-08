@@ -30,13 +30,14 @@ import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.TransportObserver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
@@ -65,7 +66,7 @@ final class HttpRequestTracker {
     private static final class RequestTrackerConnectionFactory<ResolvedAddress>
             extends DelegatingConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
 
-        public RequestTrackerConnectionFactory(
+        RequestTrackerConnectionFactory(
                 ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> delegate) {
             super(delegate);
         }
@@ -73,15 +74,16 @@ final class HttpRequestTracker {
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(
                 ResolvedAddress resolvedAddress, @Nullable ContextMap context, @Nullable TransportObserver observer) {
+            Single<FilterableStreamingHttpConnection> result = delegate()
+                    .newConnection(resolvedAddress, context, observer);
             if (context == null) {
                 LOGGER.debug("Context is null. In order for {} to get access to the {}" +
                         ", health-monitor of this connection, the context must not be null.",
                         HttpRequestTracker.class.getSimpleName(), RequestTracker.class.getSimpleName());
-                return delegate().newConnection(resolvedAddress, context, observer);
             } else {
-                return delegate().newConnection(resolvedAddress, context, observer).map(connection ->
-                        transformConnection(connection, context));
+                result = result.map(connection -> transformConnection(connection, context));
             }
+            return result;
         }
     }
 
