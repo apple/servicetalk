@@ -53,9 +53,9 @@ class XdsHealthIndicatorTest {
 
     private OutlierDetectorConfig.Builder baseBuilder() {
         return new OutlierDetectorConfig.Builder()
-                .maxEjectionTime(ofSeconds(300), ZERO)
                 .maxEjectionTime(ofSeconds(MAX_EJECTION_SECONDS))
-                .baseEjectionTime(ofSeconds(1));
+                .baseEjectionTime(ofSeconds(1))
+                .ejectionTimeJitter(ZERO);
     }
 
     private void initIndicator() {
@@ -146,7 +146,7 @@ class XdsHealthIndicatorTest {
         // make sure out configuration is actually correct
         assertEquals(ofSeconds(1), config.baseEjectionTime());
         assertEquals(ofSeconds(MAX_EJECTION_SECONDS), config.maxEjectionTime());
-        assertEquals(ZERO, config.maxEjectionTimeJitter());
+        assertEquals(ZERO, config.ejectionTimeJitter());
 
         // Eject as many times in a row to get the ejection time maxed out.
         for (long i = 0; i < MAX_EJECTION_SECONDS; i++) {

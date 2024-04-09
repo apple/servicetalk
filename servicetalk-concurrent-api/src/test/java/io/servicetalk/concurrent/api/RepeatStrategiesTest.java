@@ -40,7 +40,7 @@ class RepeatStrategiesTest extends RedoStrategiesTest {
     @Test
     void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffDeltaJitter(2, backoff, ofNanos(1),
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffDeltaJitter(2, backoff, ofNanos(0),
                 timerExecutor));
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyDelayWithDeltaJitter(backoff.toNanos(), 1, 1);
