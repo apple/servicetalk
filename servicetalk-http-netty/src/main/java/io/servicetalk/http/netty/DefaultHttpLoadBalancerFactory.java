@@ -38,9 +38,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import javax.annotation.Nullable;
 
@@ -53,7 +50,6 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerFactory.class);
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
     private final HttpExecutionStrategy strategy;
 
@@ -89,7 +85,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
     @Override
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
-            FilterableStreamingHttpConnection connection,
+            final FilterableStreamingHttpConnection connection,
             final ReservableRequestConcurrencyController concurrencyController,
             @Nullable final ContextMap context) {
         return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection,
