@@ -96,7 +96,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
-import static io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder.NX_DOMAIN_INVALIDATES;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
@@ -134,6 +133,7 @@ final class DefaultDnsClient implements DnsClient {
     @Nullable
     private final DnsServiceDiscovererObserver observer;
     private final ServiceDiscovererEvent.Status missingRecordStatus;
+    private final boolean nxInvalidation;
     private final IntFunction<? extends Completable> srvHostNameRepeater;
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
@@ -153,7 +153,8 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable final SocketAddress localAddress,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     final ServiceDiscovererEvent.Status missingRecordStatus) {
+                     final ServiceDiscovererEvent.Status missingRecordStatus,
+                     final boolean nxInvalidation) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
@@ -170,6 +171,7 @@ final class DefaultDnsClient implements DnsClient {
         this.addressTypes = dnsResolverAddressTypes;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
+        this.nxInvalidation = nxInvalidation;
         this.id = id + '@' + toHexString(identityHashCode(this));
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
@@ -253,7 +255,7 @@ final class DefaultDnsClient implements DnsClient {
             final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
             ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
             Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
-                    recoverWithInactiveEvents(pub, false);
+                    recoverWithInactiveEvents(pub, false, nxInvalidation);
             return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
                     @Override
                     public void onComplete() {
@@ -297,7 +299,7 @@ final class DefaultDnsClient implements DnsClient {
         // any pending scheduled tasks. SrvInactiveCombinerOperator is used to filter the aggregated collection of
         // inactive events if necessary.
         Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> events =
-                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
+                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true, nxInvalidation)
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
@@ -311,8 +313,10 @@ final class DefaultDnsClient implements DnsClient {
                             return newDuplicateSrv(serviceName, srvEvent.address().hostName());
                         }
 
+                        // NXDOMAIN = invalidation for A queries part of SRV lookups for backwards compatibility.
+                        // This is a behavior difference between plain A lookups and SRV rooted A lookups.
                         Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
-                                recoverWithInactiveEvents(aPublisher, false);
+                                recoverWithInactiveEvents(aPublisher, false, true);
                         return srvFilterDuplicateEvents ?
                                 srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
                                 returnPub.map(ev -> mapEventList(ev, inetAddress ->
@@ -951,10 +955,10 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private static <T, A> Publisher<? extends Collection<ServiceDiscovererEvent<T>>> recoverWithInactiveEvents(
-            AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
+            AbstractDnsPublisher<T> pub, boolean generateAggregateEvent, boolean nxInvalidation) {
         return pub.onErrorResume(cause -> {
             AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
-            if (subscription != null && shouldRevokeState(cause)) {
+            if (subscription != null && shouldRevokeState(cause, nxInvalidation)) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
                 if (!events.isEmpty()) {
                     return (generateAggregateEvent ? Publisher.<List<ServiceDiscovererEvent<T>>>from(
@@ -967,12 +971,13 @@ final class DefaultDnsClient implements DnsClient {
         });
     }
 
-    private static boolean shouldRevokeState(final Throwable t) {
+    private static boolean shouldRevokeState(final Throwable t, final boolean nxInvalidation) {
         // ISE => Subscriber exceptions (downstream of retry)
         return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
-                t instanceof ClosedDnsServiceDiscovererException || (NX_DOMAIN_INVALIDATES &&
+                t instanceof ClosedDnsServiceDiscovererException || (nxInvalidation &&
                 // string matching is done on purpose to avoid the hard Netty dependency
-                (t.getCause() != null && t.getCause().getClass().getSimpleName().contains("DnsErrorCauseException")) &&
+                (t.getCause() != null && t.getCause().getClass().getName()
+                        .equals("io.netty.resolver.dns.DnsErrorCauseException")) &&
                 NXDOMAIN.equals(((io.netty.resolver.dns.DnsErrorCauseException) t.getCause()).getCode()));
     }
 

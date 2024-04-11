@@ -63,8 +63,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
     private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
-    @SuppressWarnings("PMD.MutableStaticState")
-    static boolean NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, true);
+    static final boolean DEFAULT_NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, false);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
@@ -104,7 +103,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
-            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, NX_DOMAIN_INVALIDATES);
+            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, DEFAULT_NX_DOMAIN_INVALIDATES);
         }
     }
 
@@ -141,6 +140,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Nullable
     private DnsServiceDiscovererObserver observer;
     private ServiceDiscovererEvent.Status missingRecordStatus = DEFAULT_MISSING_RECOREDS_STATUS;
+    private boolean nxInvalidation = DEFAULT_NX_DOMAIN_INVALIDATES;
 
     /**
      * Creates a new {@link DefaultDnsServiceDiscovererBuilder}.
@@ -291,6 +291,18 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return this;
     }
 
+    /**
+     * Modify the behavior of the system flag about invalidating DNS state when NXDOMAIN is seen.
+     * Default behavior is controlled through {@link #NX_DOMAIN_INVALIDATES_PROPERTY}.
+     *
+     * @param nxInvalidation Flag to enable/disable behavior.
+     * @return {@code this} builder.
+     */
+    DefaultDnsServiceDiscovererBuilder nxInvalidates(final boolean nxInvalidation) {
+        this.nxInvalidation = nxInvalidation;
+        return this;
+    }
+
     @Override
     public ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
     buildSrvDiscoverer() {
@@ -373,7 +385,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
-                missingRecordStatus);
+                missingRecordStatus, nxInvalidation);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 
