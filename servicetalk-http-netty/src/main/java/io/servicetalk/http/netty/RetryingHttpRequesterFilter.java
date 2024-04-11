@@ -65,6 +65,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -384,7 +385,7 @@ public final class RetryingHttpRequesterFilter
                       final boolean exponential,
                       final int maxRetries) {
             this.initialDelay = ensurePositive(initialDelay, "Initial delay should be a positive value.");
-            this.jitter = ensurePositive(jitter, "jitter should be a positive value.");
+            this.jitter = ensureNonNegative(jitter, "jitter should be a non-negative value.");
             this.maxDelay = maxDelay != null ? ensurePositive(maxDelay, "Max delay (if provided), should be a " +
                     "positive value.") : null;
             this.timerExecutor = timerExecutor;

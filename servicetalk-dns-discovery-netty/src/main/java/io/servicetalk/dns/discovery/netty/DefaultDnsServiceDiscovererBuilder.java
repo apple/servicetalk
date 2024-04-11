@@ -35,7 +35,7 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscove
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemDefault;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
@@ -217,7 +217,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     @Override
     public DefaultDnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
-        ensurePositive(ttlJitter, "jitter");
+        ensureNonNegative(ttlJitter, "jitter");
         this.ttlJitter = ttlJitter;
         return this;
     }
