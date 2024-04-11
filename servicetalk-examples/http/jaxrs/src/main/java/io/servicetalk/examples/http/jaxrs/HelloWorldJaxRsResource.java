@@ -146,6 +146,28 @@ public class HelloWorldJaxRsResource {
     }
 
     /**
+     * Resource that uses Java's CompletionStage to produce an error response.
+     * Note that the {@link ConnectionContext} could also be injected into a class-level {@code @Context} field.
+     * <p>
+     * Test with:
+     * <pre>
+     * curl -v http://localhost:8080/greetings/error-hello
+     * curl -v http://localhost:8080/greetings/error-hello?mapped=false
+     * </pre>
+     *
+     * @param mapped whether the exception is mapped or not.
+     * @param ctx the {@link ConnectionContext}.
+     * @return future greetings as a {@link CompletionStage} of {@link String}.
+     */
+    @GET
+    @Path("error-hello")
+    @Produces(TEXT_PLAIN)
+    public CompletionStage<String> errorHello(@DefaultValue("true") @QueryParam("mapped") final boolean mapped,
+                                              @Context final ConnectionContext ctx) {
+        return CompletableFuture.failedFuture(mapped ? new IllegalStateException() : new Exception());
+    }
+
+    /**
      * Resource that only relies on {@link Single}s for consuming and producing data, and operators for processing it.
      * No OIO adaptation is involved when requests are dispatched to it,
      * allowing it to fully benefit from ReactiveStream's features like flow control.

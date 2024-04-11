@@ -21,7 +21,10 @@ import javax.ws.rs.ext.ExceptionMapper;
 public class HelloWorldExceptionMapper implements ExceptionMapper<Throwable> {
     @Override
     public Response toResponse(final Throwable exception) {
-        exception.printStackTrace();
+        if (exception instanceof IllegalStateException) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
         return Response.serverError().build();
     }
 }
