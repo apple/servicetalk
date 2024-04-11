@@ -164,7 +164,7 @@ public class HelloWorldJaxRsResource {
     @Produces(TEXT_PLAIN)
     public CompletionStage<String> errorHello(@DefaultValue("true") @QueryParam("mapped") final boolean mapped,
                                               @Context final ConnectionContext ctx) {
-        return CompletableFuture.failedFuture(mapped ? new IllegalStateException() : new Exception());
+        return Single.<String>failed(mapped ? new IllegalStateException() : new Exception()).toCompletionStage();
     }
 
     /**
