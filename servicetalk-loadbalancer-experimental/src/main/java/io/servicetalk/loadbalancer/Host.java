@@ -78,4 +78,12 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      * @return true if the host is now in the closed state, false otherwise.
      */
     boolean markExpired();
+
+    /**
+     * The weight of the host, relative to the weights of associated hosts.
+     * @return
+     */
+    default double weight() {
+        return 1.0;
+    }
 }
