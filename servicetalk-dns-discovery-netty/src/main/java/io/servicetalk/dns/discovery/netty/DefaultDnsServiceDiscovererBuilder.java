@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.utils.internal.DurationUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
+    private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
+    private static final boolean DEFAULT_NX_DOMAIN_INVALIDATES = getBoolean(NX_DOMAIN_INVALIDATES_PROPERTY);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
@@ -101,6 +104,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("-D{}={}", NEGATIVE_TTL_CACHE_SECONDS_PROPERTY, negativeCacheTtlValue);
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
+            LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, DEFAULT_NX_DOMAIN_INVALIDATES);
         }
     }
 
@@ -128,7 +132,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private int negativeTTLCacheSeconds = DEFAULT_NEGATIVE_TTL_CACHE_SECONDS;
     private Duration ttlJitter = ofSeconds(DEFAULT_TTL_POLL_JITTER_SECONDS);
     private int srvConcurrency = 2048;
-    private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
     private boolean srvFilterDuplicateEvents;
     private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
@@ -138,6 +141,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Nullable
     private DnsServiceDiscovererObserver observer;
     private ServiceDiscovererEvent.Status missingRecordStatus = DEFAULT_MISSING_RECOREDS_STATUS;
+    private boolean nxInvalidation = DEFAULT_NX_DOMAIN_INVALIDATES;
 
     /**
      * Creates a new {@link DefaultDnsServiceDiscovererBuilder}.
@@ -288,6 +292,18 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return this;
     }
 
+    /**
+     * Modify the behavior of the system flag about invalidating DNS state when NXDOMAIN is seen.
+     * Default behavior is controlled through {@link #NX_DOMAIN_INVALIDATES_PROPERTY}.
+     *
+     * @param nxInvalidation Flag to enable/disable behavior.
+     * @return {@code this} builder.
+     */
+    DefaultDnsServiceDiscovererBuilder nxInvalidates(final boolean nxInvalidation) {
+        this.nxInvalidation = nxInvalidation;
+        return this;
+    }
+
     @Override
     public ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
     buildSrvDiscoverer() {
@@ -298,11 +314,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
     buildARecordDiscoverer() {
         return asHostAndPortDiscoverer(build());
-    }
-
-    DefaultDnsServiceDiscovererBuilder inactiveEventsOnError(boolean inactiveEventsOnError) {
-        this.inactiveEventsOnError = inactiveEventsOnError;
-        return this;
     }
 
     DefaultDnsServiceDiscovererBuilder srvConcurrency(int srvConcurrency) {
@@ -317,8 +328,11 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
             Duration initialDelay, Duration jitter) {
-        this.srvHostNameRepeatInitialDelay = requireNonNull(initialDelay);
-        this.srvHostNameRepeatJitter = requireNonNull(jitter);
+        this.srvHostNameRepeatInitialDelay = ensurePositive(initialDelay, "srvHostNameRepeatInitialDelay");
+        this.srvHostNameRepeatJitter = DurationUtils.ensureNonNegative(jitter, "srvHostNameRepeatJitter");
+        if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
+            throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
+        }
         return this;
     }
 
@@ -369,10 +383,10 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, consolidateCacheSize,
                 minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, negativeTTLCacheSeconds,
                 ttlJitter.toNanos(),
-                srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
+                srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
-                missingRecordStatus);
+                missingRecordStatus, nxInvalidation);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 
