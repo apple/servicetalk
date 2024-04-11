@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.utils.internal.DurationUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemDefault;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Boolean.getBoolean;
@@ -329,7 +329,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
             Duration initialDelay, Duration jitter) {
         this.srvHostNameRepeatInitialDelay = ensurePositive(initialDelay, "srvHostNameRepeatInitialDelay");
-        this.srvHostNameRepeatJitter = DurationUtils.ensureNonNegative(jitter, "srvHostNameRepeatJitter");
+        this.srvHostNameRepeatJitter = ensureNonNegative(jitter, "srvHostNameRepeatJitter");
         if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
             throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
         }
