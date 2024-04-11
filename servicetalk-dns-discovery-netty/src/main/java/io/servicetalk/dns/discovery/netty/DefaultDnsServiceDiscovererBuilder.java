@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.utils.internal.DurationUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +64,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     @Deprecated // FIXME: 0.43 - consider removing this system property
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
     private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
-    static final boolean DEFAULT_NX_DOMAIN_INVALIDATES = parseProperty(NX_DOMAIN_INVALIDATES_PROPERTY, false);
+    private static final boolean DEFAULT_NX_DOMAIN_INVALIDATES = getBoolean(NX_DOMAIN_INVALIDATES_PROPERTY);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
             getBoolean(SKIP_BINDING_PROPERTY) ? null : new InetSocketAddress(0);
@@ -328,7 +329,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
             Duration initialDelay, Duration jitter) {
         this.srvHostNameRepeatInitialDelay = ensurePositive(initialDelay, "srvHostNameRepeatInitialDelay");
-        this.srvHostNameRepeatJitter = ensurePositive(jitter, "srvHostNameRepeatJitter");
+        this.srvHostNameRepeatJitter = DurationUtils.ensureNonNegative(jitter, "srvHostNameRepeatJitter");
         if (srvHostNameRepeatJitter.toNanos() >= srvHostNameRepeatInitialDelay.toNanos()) {
             throw new IllegalArgumentException("The jitter value should be less than the initial delay.");
         }
@@ -401,13 +402,5 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.error("Can not parse the value of -D{}={}, using {} as a default", name, value, defaultValue, e);
             return defaultValue;
         }
-    }
-
-    private static boolean parseProperty(final String name, final boolean defaultValue) {
-        final String value = getProperty(name);
-        if (value == null) {
-            return defaultValue;
-        }
-        return Boolean.parseBoolean(value);
     }
 }
