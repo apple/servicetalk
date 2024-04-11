@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.Logger;
@@ -60,7 +61,22 @@ final class HttpRequestTracker {
     }
 
     static <ResolvedAddress> ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> filter() {
-        return (connection) -> new RequestTrackerConnectionFactory<>(connection);
+        return new ConnectionFactoryFilterImpl<>();
+    }
+
+    private static final class ConnectionFactoryFilterImpl<ResolvedAddress>
+            implements ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> {
+
+        @Override
+        public ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> create(
+                ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> original) {
+            return new RequestTrackerConnectionFactory<>(original);
+        }
+
+        @Override
+        public ExecutionStrategy requiredOffloads() {
+            return ExecutionStrategy.offloadNone();
+        }
     }
 
     private static final class RequestTrackerConnectionFactory<ResolvedAddress>
