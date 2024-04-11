@@ -990,7 +990,8 @@ class DefaultDnsClientTest {
     @ParameterizedTest(name = "{displayName} [{index}] dnsResolverAddressTypes={0}")
     @CsvSource({"IPV4_PREFERRED, true", "IPV4_PREFERRED, false",
             "IPV4_PREFERRED_RETURN_ALL, true", "IPV4_PREFERRED_RETURN_ALL, false"})
-    void preferIpv4ButOnlyAAAARecordIsPresent(DnsResolverAddressTypes addressTypes, boolean nxInvalidation) throws Exception {
+    void preferIpv4ButOnlyAAAARecordIsPresent(DnsResolverAddressTypes addressTypes, boolean nxInvalidation)
+            throws Exception {
         setup(builder -> builder.dnsResolverAddressTypes(addressTypes).nxInvalidates(nxInvalidation));
         final String ipv6 = nextIp6();
         final String domain = "servicetalk.io";
