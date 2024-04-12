@@ -19,22 +19,23 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
 
     private static final EntrySelector EMPTY_SELECTOR = new EqualWeightTable(0);
 
-    private final List<? extends Host<ResolvedAddress, C>> hosts;
-    // null if the weights are all the same or if the list is empty.
     @Nullable
+    private final Random random;
+    private final List<? extends Host<ResolvedAddress, C>> hosts;
     private final EntrySelector entrySelector;
     private final int maxEffort;
     private final boolean failOpen;
     private final String targetResource;
 
-    public WeightedP2CSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final int maxEffort,
-                               final boolean failOpen, final String targetResource) {
+    public WeightedP2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
+                               final int maxEffort, final boolean failOpen, @Nullable final Random random) {
         super(hosts, targetResource);
         this.hosts = hosts;
         this.entrySelector = makeAliasTable(hosts);
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
         this.targetResource = targetResource;
+        this.random = random;
     }
 
     @Override
@@ -60,21 +61,16 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 }
                 return noActiveHostsFailure(hosts);
             default:
-                return p2c(size, hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
+                return p2c(hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
         }
-    }
-
-    // for testing purposes.
-    protected Random getRandom() {
-        return ThreadLocalRandom.current();
     }
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts) {
-        return new WeightedP2CSelector<>(hosts, maxEffort, failOpen, targetResource);
+        return new WeightedP2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
     }
 
-    private Single<C> p2c(int size, List<? extends Host<ResolvedAddress, C>> hosts, Random random,
+    private Single<C> p2c(List<? extends Host<ResolvedAddress, C>> hosts, Random random,
                           Predicate<C> selector, boolean forceNewConnectionAndReserve,
                           @Nullable ContextMap contextMap) {
         // If there are only two hosts we only try once since there is no chance we'll select different hosts
@@ -82,16 +78,8 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
         Host<ResolvedAddress, C> failOpenHost = null;
         for (int j = hosts.size() == 2 ? 1 : maxEffort; j > 0; j--) {
             // Pick two random indexes that don't collide.
-            final int i1 = entrySelector.randomEntry(random);
-            int i2 = entrySelector.randomEntry(random);
-            // re-pick i2 up to maxEffort times to avoid collisions.
-            for (int i = 0; i2 == i1 && i < maxEffort; i++) {
-                i2 = entrySelector.randomEntry(random);
-            }
-            if (i1 == i2) {
-                LOGGER.debug("{}: failed to pick two unique indices after {} selection attempts",
-                        targetResource, maxEffort);
-            }
+            final int i1 = entrySelector.firstEntry(random);
+            final int i2 = entrySelector.secondEntry(random, i1);
 
             Host<ResolvedAddress, C> t1 = hosts.get(i1);
             Host<ResolvedAddress, C> t2 = hosts.get(i2);
@@ -149,8 +137,11 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return noActiveHostsFailure(hosts);
     }
 
-    @Nullable
-    static EntrySelector makeAliasTable(List<? extends Host<?, ?>> hosts) {
+    private Random getRandom() {
+        return random == null ? ThreadLocalRandom.current() : random;
+    }
+
+    EntrySelector makeAliasTable(List<? extends Host<?, ?>> hosts) {
         if (hosts.isEmpty()) {
             return EMPTY_SELECTOR;
         }
@@ -177,10 +168,90 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
                 probs[i] *= invPTotal;
             }
         }
-        return makeAliasTable(probs);
+        return new AliasTableEntrySelector(makeAliasTable(probs));
+    }
+
+    static abstract class EntrySelector {
+        abstract int firstEntry(Random random);
+        abstract int secondEntry(Random random, int firstEntry);
+    }
+
+    // An EntrySelector that represents equally weighted entries. In this case no alias table is needed.
+    static final class EqualWeightTable extends EntrySelector {
+        private final int size;
+
+        EqualWeightTable(final int size) {
+            this.size = size;
+        }
+
+        @Override
+        int firstEntry(Random random) {
+            return random.nextInt(size);
+        }
+
+        @Override
+        int secondEntry(Random random, int firstEntry) {
+            assert size >= 2;
+            int result = random.nextInt(size - 1);
+            if (result >= firstEntry) {
+                result++;
+            }
+            return result;
+        }
+    }
+
+    // An EntrySelector that represents equally un-evenly weighted entries.
+    final class AliasTableEntrySelector extends EntrySelector {
+
+        private final AliasTable aliasTable;
+
+        public AliasTableEntrySelector(final AliasTable aliasTable) {
+            this.aliasTable = aliasTable;
+        }
+
+        @Override
+        int secondEntry(Random random, int firstPick) {
+            int result;
+            int iteration = 0;
+            do {
+                result = aliasTable.pick(random);
+            } while (result == firstPick && iteration++ < maxEffort);
+            if (firstPick == result) {
+                LOGGER.debug("{}: failed to pick two unique indices after {} selection attempts",
+                        targetResource, maxEffort);
+            }
+            return 0;
+        }
+
+        @Override
+        int firstEntry(Random random) {
+            return aliasTable.pick(random);
+        }
+    }
+
+    private static final class AliasTable {
+
+        private final double[] aliasProbabilities;
+        private final int[] aliases;
+
+        public AliasTable(double[] aliasProbabilities, int[] aliases) {
+            this.aliasProbabilities = aliasProbabilities;
+            this.aliases = aliases;
+        }
+
+        int pick(Random random) {
+            int i = random.nextInt(aliases.length);
+            double pp = aliasProbabilities[i];
+            if (pp != 1.0 && random.nextDouble() > pp) {
+                // use the alias.
+                i = aliases[i];
+            }
+            return i;
+        }
     }
 
     private static AliasTable makeAliasTable(double[] pin) {
+        assert isNormalized(pin);
         // We use the Vose alias method to compute the alias table with linear complexity.
         // M. D. Vose, "A linear algorithm for generating random numbers with a given distribution,"
         // IEEE Transactions on Software Engineering, vol. 17, no. 9, pp. 972-975, Sept. 1991, doi: 10.1109/32.92917.
@@ -227,51 +298,19 @@ final class WeightedP2CSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return new AliasTable(pout, aliases);
     }
 
-    static abstract class EntrySelector {
-        abstract int randomEntry(Random random);
-    }
-
-    // An EntrySelector that represents equally weighted entries. In this case no alias table is needed.
-    static final class EqualWeightTable extends EntrySelector {
-        private final int size;
-
-        EqualWeightTable(final int size) {
-            this.size = size;
-        }
-
-        @Override
-        int randomEntry(Random random) {
-            return random.nextInt(size);
-        }
-    }
-
-    // An EntrySelector that represents equally un-evenly weighted entries.
-    static final class AliasTable extends EntrySelector {
-        private final double[] aliasProbabilities;
-        private final int[] aliases;
-
-        public AliasTable(double[] aliasProbabilities, int[] aliases) {
-            this.aliasProbabilities = aliasProbabilities;
-            this.aliases = aliases;
-        }
-
-        @Override
-        int randomEntry(Random random) {
-            int i = random.nextInt(aliases.length);
-            double pp = aliasProbabilities[i];
-            if (pp != 1.0 && random.nextDouble() > pp) {
-                // use the alias.
-                i = aliases[i];
-            }
-            return i;
-        }
-    }
-
     private static boolean approxEqual(double a, double b) {
         double diff = a - b;
         if (diff < 0) {
             diff = -diff;
         }
         return diff < 0.01;
+    }
+
+    private static boolean isNormalized(double[] probabilities) {
+        double ptotal = 0;
+        for (double p : probabilities) {
+            ptotal += p;
+        }
+        return approxEqual(ptotal, 1);
     }
 }
