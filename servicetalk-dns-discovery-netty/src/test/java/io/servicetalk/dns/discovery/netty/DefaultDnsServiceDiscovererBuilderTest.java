@@ -74,7 +74,7 @@ class DefaultDnsServiceDiscovererBuilderTest {
     @Test
     void ttlJitter() {
         assertThrows(IllegalArgumentException.class, () -> builder.ttlJitter(Duration.ofNanos(1).negated()));
-        assertThrows(IllegalArgumentException.class, () -> builder.ttlJitter(Duration.ZERO));
+        assertDoesNotThrow(() -> builder.ttlJitter(Duration.ZERO));
         assertDoesNotThrow(() -> builder.ttlJitter(Duration.ofNanos(1)));
     }
 

@@ -252,6 +252,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
 
+            // Add HTTP request tracking. Extracting the RequestTracker from the context is done on the return
+            // path once we have a connection so that we want the HttpRequestTracker filter to prepended so that it is
+            // _last_ to see the newly created connection and try and extract the RequestTracker from the context.
+            connectionFactoryFilter = appendConnectionFilter(HttpRequestTracker.filter(), connectionFactoryFilter);
+
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, FilterableStreamingHttpLoadBalancedConnection> connectionFactory;
