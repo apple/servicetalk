@@ -104,7 +104,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
-    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(8);
+    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(2);
     static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(256);
 
     @Nullable
