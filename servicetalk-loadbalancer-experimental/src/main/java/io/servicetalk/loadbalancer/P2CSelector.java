@@ -46,34 +46,30 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     @Nullable
     private final Random random;
     private final boolean supportWeights;
-    private final List<? extends Host<ResolvedAddress, C>> hosts;
     private final EntrySelector entrySelector;
     private final int maxEffort;
     private final boolean failOpen;
-    private final String targetResource;
 
     P2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
                        final boolean supportWeights, final int maxEffort, final boolean failOpen,
                        @Nullable final Random random) {
         super(hosts, targetResource);
         this.supportWeights = supportWeights;
-        this.hosts = hosts;
         this.entrySelector = supportWeights ? buildAliasTable(hosts) : new EqualWeightTable(hosts.size());
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
-        this.targetResource = targetResource;
         this.random = random;
     }
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts) {
-        return new P2CSelector<>(hosts, targetResource, supportWeights, maxEffort, failOpen, random);
+        return new P2CSelector<>(hosts, getTargetResource(), supportWeights, maxEffort, failOpen, random);
     }
 
     @Override
     protected Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
                                           boolean forceNewConnectionAndReserve) {
-        final int size = hosts.size();
+        final int size = hostSetSize();
         switch (size) {
             case 0:
                 // We shouldn't get called if the load balancer doesn't have any hosts.
@@ -81,7 +77,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                         " received an empty host set");
             case 1:
                 // There is only a single host, so we don't need to do any of the looping or comparison logic.
-                Host<ResolvedAddress, C> host = hosts.get(0);
+                Host<ResolvedAddress, C> host = hosts().get(0);
                 // If we're going to fail open we just yo-lo it, otherwise check if it's considered
                 // healthy.
                 if (failOpen || host.isHealthy()) {
@@ -91,9 +87,9 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                         return result;
                     }
                 }
-                return noActiveHostsFailure(hosts);
+                return noActiveHostsFailure(hosts());
             default:
-                return p2c(hosts, getRandom(), selector, forceNewConnectionAndReserve, context);
+                return p2c(hosts(), getRandom(), selector, forceNewConnectionAndReserve, context);
         }
     }
 
@@ -180,7 +176,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             final double pi = hosts.get(i).weight();
             if (pi < 0) {
                 LOGGER.warn("{}: host at address {} has negative weight ({}). Using unweighted selection.",
-                        targetResource, hosts.get(i).address(), pi);
+                        getTargetResource(), hosts.get(i).address(), pi);
                 return new EqualWeightTable(hosts.size());
             }
             probs[i] = pi;
@@ -253,7 +249,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             } while (result == firstPick && iteration++ < maxEffort);
             if (firstPick == result) {
                 LOGGER.debug("{}: failed to pick two unique indices after {} selection attempts",
-                        targetResource, maxEffort);
+                        getTargetResource(), maxEffort);
             }
             return 0;
         }
