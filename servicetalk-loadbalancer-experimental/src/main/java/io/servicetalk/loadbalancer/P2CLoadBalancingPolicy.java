@@ -42,12 +42,15 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
+    private final boolean supportWeights;
     private final int maxEffort;
     private final boolean failOpen;
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final int maxEffort, final boolean failOpen, @Nullable final Random random) {
+    private P2CLoadBalancingPolicy(final boolean supportWeights, final int maxEffort,
+                                   final boolean failOpen, @Nullable final Random random) {
+        this.supportWeights = supportWeights;
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
         this.random = random;
@@ -56,7 +59,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     @Override
     HostSelector<ResolvedAddress, C> buildSelector(
             List<Host<ResolvedAddress, C>> hosts, String targetResource) {
-        return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
+        return new P2CSelector<>(hosts, targetResource, supportWeights, maxEffort, failOpen, random);
     }
 
     @Override
@@ -74,8 +77,10 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
      */
     public static final class Builder {
 
+        private static final boolean DEFAULT_SUPPORT_WEIGHTS = true;
         private static final int DEFAULT_MAX_EFFORT = 5;
 
+        private boolean supportWeights = DEFAULT_SUPPORT_WEIGHTS;
         private int maxEffort = DEFAULT_MAX_EFFORT;
         private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
         @Nullable
@@ -84,8 +89,9 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         /**
          * Set the maximum number of attempts that P2C will attempt to select a pair with at least one
          * healthy host.
+         * Defaults to {@value DEFAULT_MAX_EFFORT}.
          * @param maxEffort the maximum number of attempts.
-         * @return this {@link Builder}.
+         * @return {@code this}
          */
         public Builder maxEffort(final int maxEffort) {
             this.maxEffort = ensurePositive(maxEffort, "maxEffort");
@@ -94,11 +100,26 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
         /**
          * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
          * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @return this {@link Builder}.
+         * @return {@code this}
          */
         public Builder failOpen(final boolean failOpen) {
             this.failOpen = failOpen;
+            return this;
+        }
+
+        /**
+         * Set whether the host selector should support unequally weighted hosts.
+         * Host weight influences the probability it will be selected to server a request. The host weight can come
+         * from many sources including known host capacity, priority groups, among others, so disabling weight support
+         * can lead to other features not working properly.
+         * Defaults to {@value DEFAULT_SUPPORT_WEIGHTS}.
+         * @param supportWeights whether the host selector should support unequally weighted hosts.
+         * @return {@code this}
+         */
+        public Builder supportWeights(final boolean supportWeights) {
+            this.supportWeights = supportWeights;
             return this;
         }
 
@@ -115,7 +136,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
-            return new P2CLoadBalancingPolicy<>(maxEffort, failOpen, random);
+            return new P2CLoadBalancingPolicy<>(supportWeights, maxEffort, failOpen, random);
         }
     }
 }

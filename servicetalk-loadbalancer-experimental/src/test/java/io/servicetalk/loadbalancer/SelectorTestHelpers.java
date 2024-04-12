@@ -50,11 +50,8 @@ final class SelectorTestHelpers {
         final List<Host<String, TestLoadBalancedConnection>> results = new ArrayList<>(addresses.length);
         for (String addr : addresses) {
             Host<String, TestLoadBalancedConnection> host = mockHost(addr, TestLoadBalancedConnection.mockConnection(addr));
-            if (!equalWeights) {
-                // give the host a random weight between 0.5 and 1.5
-                double weight = ThreadLocalRandom.current().nextDouble() + 0.5;
-                when(host.weight()).thenReturn(weight);
-            }
+            double weight = equalWeights ? 1.0 : ThreadLocalRandom.current().nextDouble() + 0.5;
+            when(host.weight()).thenReturn(weight);
             results.add(host);
         }
         return results;
