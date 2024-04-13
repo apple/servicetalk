@@ -81,7 +81,7 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
 
     /**
      * The weight of the host, relative to the weights of associated hosts.
-     * @return
+     * @return the relative weight of the host.
      */
     default double weight() {
         return 1.0;

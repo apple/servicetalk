@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -90,7 +91,7 @@ class P2CSelectorTest {
         selector = new P2CSelector<>(hosts, "testResource", false, maxEffort, failOpen, new Random(0L));
         int[] counts = runIterations(hosts);
 
-        double expected = Arrays.stream(counts).reduce(0, (a, b) -> a + b) / hosts.size();
+        double expected = Arrays.stream(counts).reduce(0, (a, b) -> a + b) / (double) hosts.size();
         for (int i = 0; i < hosts.size(); i++) {
             assertThat((double) counts[i], closeTo(expected, expected * 0.05));
         }
@@ -103,7 +104,7 @@ class P2CSelectorTest {
         init(hosts);
         int[] counts = runIterations(hosts);
 
-        double expected = Arrays.stream(counts).reduce(0, (a, b) -> a + b) / hosts.size();
+        double expected = Arrays.stream(counts).reduce(0, (a, b) -> a + b) / (double) hosts.size();
         for (int i = 0; i < hosts.size(); i++) {
             assertThat((double) counts[i], closeTo(expected, expected * 0.05));
         }
@@ -316,7 +317,7 @@ class P2CSelectorTest {
         int[] counts = runIterations(hosts);
 
         double totalProbability = hosts.stream().map(Host::weight).reduce(0d, (a, b) -> a + b);
-        Integer[] expected = hosts.stream().map(host -> (int)(ITERATIONS * (host.weight() / totalProbability)))
+        Integer[] expected = hosts.stream().map(host -> (int) (ITERATIONS * (host.weight() / totalProbability)))
                 .toArray(Integer[]::new);
 
         // calculate the rough counts we should expect

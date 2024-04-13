@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CSelector.class);
 
-    private static double ACCEPTABLE_PERCENT_ERROR = 0.01;
+    private static final double ACCEPTABLE_PERCENT_ERROR = 0.01;
     private static final EntrySelector EMPTY_SELECTOR = new EqualWeightTable(0);
 
     @Nullable
@@ -200,8 +201,9 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         return buildAliasTable(probs);
     }
 
-    private static abstract class EntrySelector {
+    private abstract static class EntrySelector {
         abstract int firstEntry(Random random);
+
         abstract int secondEntry(Random random, int firstEntry);
     }
 
