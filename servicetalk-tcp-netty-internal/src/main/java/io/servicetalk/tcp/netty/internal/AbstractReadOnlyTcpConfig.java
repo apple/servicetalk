@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -104,4 +105,12 @@ abstract class AbstractReadOnlyTcpConfig {
      */
     @Nullable
     public abstract SslContext sslContext();
+
+    /**
+     * Get the {@link SslConfig}.
+     *
+     * @return the {@link SslConfig}, or {@code null} if SSL/TLS is not configured.
+     */
+    @Nullable
+    public abstract SslConfig sslConfig();
 }
