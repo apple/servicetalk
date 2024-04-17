@@ -92,8 +92,11 @@ loadScripts(document, 'script');</script>
  <p>
  The created instances have the following behaviour:
  <ul>
-     <li>Host selection is performed based upon the provided <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>. If no policy is provided
-     the default policy is round-robin.</li>
+     <li>Host selection is performed based upon the provided <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>. If no policy is provided
+     the default policy is round-robin. While it can be policy specific, most policies will avoid unhealthy
+     hosts.</li>
+     <li>Host health is determined by the configured <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a>. This is inferred from the
+     results of requests and from actively probing for connectivity in accordance with the config.</li>
      <li>Connections are created lazily, without any concurrency control on their creation. This can lead to
      over-provisioning connections when dealing with a requests surge.</li>
      <li>Existing connections are reused unless a selector passed to
@@ -107,14 +110,8 @@ loadScripts(document, 'script');</script>
      <a href="../client/api/ServiceDiscovererEvent.Status.html#EXPIRED"><code>ServiceDiscovererEvent.Status.EXPIRED</code></a>, already established connections to
      <a href="../client/api/ServiceDiscovererEvent.html#address()"><code>ServiceDiscovererEvent.address()</code></a> continue to be used for requests, but no new connections are created.
      In case the address' connections are busy, another host is tried. If all hosts are busy based on the selection
-     mechanism of the <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>, selection fails with a
+     mechanism of the <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>, selection fails with a
      <a href="../client/api/NoActiveHostException.html" title="class in io.servicetalk.client.api"><code>NoActiveHostException</code></a>.</li>
-     <li>If health checking is configured, for hosts to which consecutive connection attempts fail, a background
-     health checking task is created and the host is not considered for opening new connections until the background
-     check succeeds to create a connection. Upon such event, the connection can immediately be reused and future
-     attempts will again consider this host. This behaviour can be disabled using a negative argument for
-     <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> and the failing host will take
-     part in the regular host selection cycle for trying to establish a connection on the request path.</li>
  </ul></div>
 </section>
 <section class="summary">
@@ -133,8 +130,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#backgroundExecutor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">backgroundExecutor</a><wbr>(<a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;backgroundExecutor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">This <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> may monitor hosts to which connection establishment has failed
- using health checks that run in the background.</div>
+<div class="block">Set the background <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for determining time and scheduling background tasks such
+ as those associated with outlier detection.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
@@ -142,42 +139,24 @@ loadScripts(document, 'script');</script>
 <div class="block">Builds the <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> configured by this builder.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#healthCheckerFactory(io.servicetalk.loadbalancer.HealthCheckerFactory)" class="member-name-link">healthCheckerFactory</a><wbr>(<a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer">HealthCheckerFactory</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>&gt;&nbsp;healthCheckerFactory)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)" class="member-name-link">connectionPoolConfig</a><wbr>(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set the <a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer"><code>HealthCheckerFactory</code></a> to use with this load balancer.</div>
+<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#healthCheckFailedConnectionsThreshold(int)" class="member-name-link">healthCheckFailedConnectionsThreshold</a><wbr>(int&nbsp;threshold)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Configure a threshold for consecutive connection failures to a host.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#healthCheckInterval(java.time.Duration,java.time.Duration)" class="member-name-link">healthCheckInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Configure an interval for health checking a host that failed to open connections.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)" class="member-name-link">healthCheckResubscribeInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
- unhealthy.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#linearSearchSpace(int)" class="member-name-link">linearSearchSpace</a><wbr>(int&nbsp;linearSearchSpace)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Sets the linear search space to find an available connection for the next host.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserver)" class="member-name-link">loadBalancerObserver</a><wbr>(<a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>&gt;&nbsp;loadBalancerObserver)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserver)" class="member-name-link">loadBalancerObserver</a><wbr>(<a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a>&nbsp;loadBalancerObserver)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the <a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver</code></a> to use with this load balancer.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#loadBalancingPolicy(io.servicetalk.loadbalancer.LoadBalancingPolicy)" class="member-name-link">loadBalancingPolicy</a><wbr>(<a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;loadBalancingPolicy)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#loadBalancingPolicy(io.servicetalk.loadbalancer.LoadBalancingPolicy)" class="member-name-link">loadBalancingPolicy</a><wbr>(<a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;loadBalancingPolicy)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the <code>loadBalancingPolicy</code> to use with this load balancer.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)" class="member-name-link">outlierDetectorConfig</a><wbr>(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.</div>
 </div>
 </div>
 </div>
@@ -196,7 +175,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="loadBalancingPolicy(io.servicetalk.loadbalancer.LoadBalancingPolicy)">
 <h3>loadBalancingPolicy</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">loadBalancingPolicy</span><wbr><span class="parameters">(<a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;loadBalancingPolicy)</span></div>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">loadBalancingPolicy</span><wbr><span class="parameters">(<a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;loadBalancingPolicy)</span></div>
 <div class="block">Set the <code>loadBalancingPolicy</code> to use with this load balancer.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -210,7 +189,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserver)">
 <h3>loadBalancerObserver</h3>
 <div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">loadBalancerObserver</span><wbr><span class="parameters">(@Nullable
- <a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>&gt;&nbsp;loadBalancerObserver)</span></div>
+ <a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a>&nbsp;loadBalancerObserver)</span></div>
 <div class="block">Set the <a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver</code></a> to use with this load balancer.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -221,16 +200,38 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="healthCheckerFactory(io.servicetalk.loadbalancer.HealthCheckerFactory)">
-<h3>healthCheckerFactory</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckerFactory</span><wbr><span class="parameters">(<a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer">HealthCheckerFactory</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>&gt;&nbsp;healthCheckerFactory)</span></div>
-<div class="block">Set the <a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer"><code>HealthCheckerFactory</code></a> to use with this load balancer.</div>
+<section class="detail" id="outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)">
+<h3>outlierDetectorConfig</h3>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">outlierDetectorConfig</span><wbr><span class="parameters">(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</span></div>
+<div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.
+ The outlier detection system works in conjunction with the load balancing policy to attempt to avoid hosts
+ that have been determined to be unhealthy or slow. The details of the selection process are determined by the
+ <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> while the health status is determined by the outlier detection configuration.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>healthCheckerFactory</code> - the <a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer"><code>HealthCheckerFactory</code></a> to use, or <code>null</code> to not use a
- <code>HealthChecker</code>.</dd>
+<dd><code>outlierDetectorConfig</code> - the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use, or <code>null</code> to use the default
+                              outlier detection.</dd>
 <dt>Returns:</dt>
 <dd>{code this}</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#loadBalancingPolicy(io.servicetalk.loadbalancer.LoadBalancingPolicy)"><code>loadBalancingPolicy(LoadBalancingPolicy)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)">
+<h3>connectionPoolConfig</h3>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionPoolConfig</span><wbr><span class="parameters">(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</span></div>
+<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connectionPoolConfig</code> - the factory of connection pooling strategies to use.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>
@@ -238,127 +239,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="backgroundExecutor(io.servicetalk.concurrent.api.Executor)">
 <h3>backgroundExecutor</h3>
 <div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">backgroundExecutor</span><wbr><span class="parameters">(<a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;backgroundExecutor)</span></div>
-<div class="block">This <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> may monitor hosts to which connection establishment has failed
- using health checks that run in the background. The health check tries to establish a new connection
- and if it succeeds, the host is returned to the load balancing pool. As long as the connection
- establishment fails, the host is not considered for opening new connections for processed requests.
- If an <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> is not provided using this method, a default shared instance is used
- for all <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancers</code></a> created by this factory.
- <p>
- <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable this mechanism and always
- consider all hosts for establishing new connections.</div>
+<div class="block">Set the background <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for determining time and scheduling background tasks such
+ as those associated with outlier detection.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>backgroundExecutor</code> - <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> on which to schedule health checking.</dd>
+<dd><code>backgroundExecutor</code> - <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use as a time source and for scheduling background tasks.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list-long">
-<li><a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="linearSearchSpace(int)">
-<h3>linearSearchSpace</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">linearSearchSpace</span><wbr><span class="parameters">(int&nbsp;linearSearchSpace)</span></div>
-<div class="block">Sets the linear search space to find an available connection for the next host.
- <p>
- When the next host has already opened connections, this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will perform a linear search for
- a connection that can serve the next request up to a specified number of attempts. If there are more open
- connections, selection of remaining connections will be attempted randomly.
- <p>
- Higher linear search space may help to better identify excess connections in highly concurrent environments,
- but may result in slightly increased selection time.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>linearSearchSpace</code> - the number of attempts for a linear search space, <code>0</code> enforces random
- selection all the time.</dd>
-<dt>Returns:</dt>
-<dd><code>this</code>.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="healthCheckInterval(java.time.Duration,java.time.Duration)">
-<h3>healthCheckInterval</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
-<div class="block">Configure an interval for health checking a host that failed to open connections. If no interval is provided
- using this method, a default value will be used.
- <p>
- <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable the health checking mechanism
- and always consider all hosts for establishing new connections.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>interval</code> - interval at which a background health check will be scheduled.</dd>
-<dd><code>jitter</code> - the amount of jitter to apply to each retry <code>interval</code>.</dd>
-<dt>Returns:</dt>
-<dd><code>this</code>.</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list-long">
-<li><a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)">
-<h3>healthCheckResubscribeInterval</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckResubscribeInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
-<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
- unhealthy.
- <p>
- In situations when there is a latency between <a href="../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> propagating the updated state and all
- known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribe to the
- events stream can help to exit from a dead state.
- <p>
- <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable the health checking mechanism
- and always consider all hosts for establishing new connections.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>interval</code> - interval at which re-subscribes will be scheduled.</dd>
-<dd><code>jitter</code> - the amount of jitter to apply to each re-subscribe <code>interval</code>.</dd>
-<dt>Returns:</dt>
-<dd><code>this</code>.</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list-long">
-<li><a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="healthCheckFailedConnectionsThreshold(int)">
-<h3>healthCheckFailedConnectionsThreshold</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckFailedConnectionsThreshold</span><wbr><span class="parameters">(int&nbsp;threshold)</span></div>
-<div class="block">Configure a threshold for consecutive connection failures to a host. When the <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
- consecutively fails to open connections in the amount greater or equal to the specified value,
- the host will be marked as unhealthy and connection establishment will take place in the background
- repeatedly until a connection is established. During that time, the host will not take part in
- load balancing selection.
- <p>
- Use a negative value of the argument to disable health checking.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>threshold</code> - number of consecutive connection failures to consider a host unhealthy and eligible for
- background health checking. Use negative value to disable the health checking mechanism.</dd>
-<dt>Returns:</dt>
-<dd><code>this</code>.</dd>
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="#backgroundExecutor(io.servicetalk.concurrent.api.Executor)"><code>backgroundExecutor(Executor)</code></a></li>
-</ul>
-</dd>
 </dl>
 </section>
 </li>

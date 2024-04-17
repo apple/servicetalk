@@ -74,21 +74,21 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Configuration of the strategy for selecting connections from a pool to the same endpoint.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> that delegates all methods to another <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingRoundRobinLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingRoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingRoundRobinLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingRoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> that delegates all methods to another <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">ErrorClass</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">ErrorClass</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Enumeration of the main failure classes.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="HealthCheckerFactory.html" title="interface in io.servicetalk.loadbalancer">HealthCheckerFactory</a>&lt;ResolvedAddress&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">A factory of <code>HealthChecker</code> instances.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
@@ -98,7 +98,7 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Provider for <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a>&lt;ResolvedAddress&gt;</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer that provides visibility into a <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
@@ -110,8 +110,8 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A factory to create <code>DefaultLoadBalancers</code>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Definition of the selector mechanism used for load balancing.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></div>
@@ -164,10 +164,6 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A builder for immutable <a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancingPolicy</code></a> instances.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="XdsHealthCheckerFactory.html" title="class in io.servicetalk.loadbalancer">XdsHealthCheckerFactory</a>&lt;ResolvedAddress&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A factory of <code>XdsHealthChecker</code> instances.</div>
 </div>
 </div>
 </div>

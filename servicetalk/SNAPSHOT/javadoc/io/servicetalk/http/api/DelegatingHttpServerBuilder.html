@@ -276,25 +276,31 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="block">Set the SSL/TLS configuration.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config,
+ boolean&nbsp;acceptInsecureConnections)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+<div class="block">Set the SSL/TLS configuration and allows to specify if insecure connections should also be allowed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map,int,java.time.Duration)" class="member-name-link">sslConfig</a><wbr>(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap,
  int&nbsp;maxClientHelloLength,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;clientHelloTimeout)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -434,6 +440,24 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
  <a href="https://www.rfc-editor.org/rfc/rfc5246#section-7.4.1.2">ClientHello</a> message is received.
  Implementations can round the specified <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> to full time units, depending on their time granularity.
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Zero (0)</code></a> disables timeout.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config,
+ boolean&nbsp;acceptInsecureConnections)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)">HttpServerBuilder</a></code></span></div>
+<div class="block">Set the SSL/TLS configuration and allows to specify if insecure connections should also be allowed.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,boolean)">sslConfig</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>config</code> - The configuration to use.</dd>
+<dd><code>acceptInsecureConnections</code> - if non-TLS connections are accepted on the same socket.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

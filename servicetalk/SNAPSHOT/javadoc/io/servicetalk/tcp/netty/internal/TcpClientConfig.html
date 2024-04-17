@@ -135,13 +135,13 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a> that is applied.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig()" class="member-name-link">sslConfig</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Get the <code>AbstractTcpConfig</code>.</div>
+<div class="block">Get the <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(SslConfigType)" class="member-name-link">sslConfig</a><wbr>(<a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)" class="member-name-link">sslConfig</a><wbr>(<a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add SSL/TLS related config.</div>
 </div>
@@ -189,6 +189,18 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="sslConfig()">
+<h3>sslConfig</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></span>&nbsp;<span class="element-name">sslConfig</span>()</div>
+<div class="block">Get the <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>, or <code>null</code> if SSL/TLS is not configured.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="asReadOnly()">
 <h3>asReadOnly</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a></span>&nbsp;<span class="element-name">asReadOnly</span>()</div>
@@ -200,14 +212,14 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="sslConfig()">
+<section class="detail" id="sslConfig(io.servicetalk.transport.api.ClientSslConfig)">
 <h3>sslConfig</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></span>&nbsp;<span class="element-name">sslConfig</span>()</div>
-<div class="block">Get the <code>AbstractTcpConfig</code>.</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(@Nullable
+ <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</span></div>
+<div class="block">Add SSL/TLS related config.</div>
 <dl class="notes">
-<dt>Returns:</dt>
-<dd>the <code>AbstractTcpConfig</code>, or <code>null</code> if SSL/TLS is not configured.</dd>
+<dt>Parameters:</dt>
+<dd><code>sslConfig</code> - the <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>.</dd>
 </dl>
 </section>
 </li>
@@ -259,17 +271,6 @@ loadScripts(document, 'script');</script>
 <dd><code>logLevel</code> - the level to log data/events to/from the wire.</dd>
 <dd><code>logUserData</code> - <code>true</code> to include user data (e.g. data, headers, etc.). <code>false</code> to exclude user
  data and log only network events. This method is invoked for each data object allowing for dynamic behavior.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="sslConfig(SslConfigType)">
-<h3 id="sslConfig(io.servicetalk.transport.api.SslConfig)">sslConfig</h3>
-<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">sslConfig</span><wbr><span class="parameters">(<a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</span></div>
-<div class="block">Add SSL/TLS related config.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>sslConfig</code> - the <code>AbstractTcpConfig</code>.</dd>
 </dl>
 </section>
 </li>

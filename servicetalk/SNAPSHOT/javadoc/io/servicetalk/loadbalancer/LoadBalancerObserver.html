@@ -69,15 +69,11 @@ loadScripts(document, 'script');</script>
 <!-- ======== START OF CLASS DATA ======== -->
 <div class="header">
 <div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">io.servicetalk.loadbalancer</a></div>
-<h1 title="Interface LoadBalancerObserver" class="title">Interface LoadBalancerObserver&lt;ResolvedAddress&gt;</h1>
+<h1 title="Interface LoadBalancerObserver" class="title">Interface LoadBalancerObserver</h1>
 </div>
 <section class="class-description" id="class-description">
-<dl class="notes">
-<dt>Type Parameters:</dt>
-<dd><code>ResolvedAddress</code> - the type of the resolved address.</dd>
-</dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">LoadBalancerObserver&lt;ResolvedAddress&gt;</span></div>
+<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">LoadBalancerObserver</span></div>
 <div class="block">An observer that provides visibility into a <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </section>
 <section class="summary">
@@ -111,7 +107,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#hostObserver(ResolvedAddress)" class="member-name-link">hostObserver</a><wbr>(<a href="LoadBalancerObserver.html" title="type parameter in LoadBalancerObserver">ResolvedAddress</a>&nbsp;resolvedAddress)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#hostObserver(java.lang.Object)" class="member-name-link">hostObserver</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;resolvedAddress)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Get a <a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver.HostObserver</code></a>.</div>
 </div>
@@ -127,7 +123,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Callback for when connection selection fails due to no hosts being available.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onServiceDiscoveryEvent(java.util.Collection,int,int)" class="member-name-link">onServiceDiscoveryEvent</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerObserver.html" title="type parameter in LoadBalancerObserver">ResolvedAddress</a>&gt;&gt;&nbsp;events,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onServiceDiscoveryEvent(java.util.Collection,int,int)" class="member-name-link">onServiceDiscoveryEvent</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;?&gt;&gt;&nbsp;events,
  int&nbsp;oldHostSetSize,
  int&nbsp;newHostSetSize)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
@@ -148,9 +144,9 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="hostObserver(ResolvedAddress)">
-<h3 id="hostObserver(java.lang.Object)">hostObserver</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a></span>&nbsp;<span class="element-name">hostObserver</span><wbr><span class="parameters">(<a href="LoadBalancerObserver.html" title="type parameter in LoadBalancerObserver">ResolvedAddress</a>&nbsp;resolvedAddress)</span></div>
+<section class="detail" id="hostObserver(java.lang.Object)">
+<h3>hostObserver</h3>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a></span>&nbsp;<span class="element-name">hostObserver</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;resolvedAddress)</span></div>
 <div class="block">Get a <a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver.HostObserver</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -170,7 +166,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="onServiceDiscoveryEvent(java.util.Collection,int,int)">
 <h3>onServiceDiscoveryEvent</h3>
-<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onServiceDiscoveryEvent</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerObserver.html" title="type parameter in LoadBalancerObserver">ResolvedAddress</a>&gt;&gt;&nbsp;events,
+<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onServiceDiscoveryEvent</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;?&gt;&gt;&nbsp;events,
  int&nbsp;oldHostSetSize,
  int&nbsp;newHostSetSize)</span></div>
 <div class="block">Callback for monitoring the changes due to a service discovery update.</div>

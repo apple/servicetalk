@@ -72,7 +72,9 @@ loadScripts(document, 'script');</script>
 <h1 title="Class P2CLoadBalancingPolicy" class="title">Class P2CLoadBalancingPolicy&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
+<div class="inheritance"><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">io.servicetalk.loadbalancer.LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;
 <div class="inheritance">io.servicetalk.loadbalancer.P2CLoadBalancingPolicy&lt;ResolvedAddress,<wbr>C&gt;</div>
+</div>
 </div>
 <section class="class-description" id="class-description">
 <dl class="notes">
@@ -80,14 +82,9 @@ loadScripts(document, 'script');</script>
 <dd><code>ResolvedAddress</code> - the type of the resolved address.</dd>
 <dd><code>C</code> - the type of the load balanced connection.</dd>
 </dl>
-<dl class="notes">
-<dt>All Implemented Interfaces:</dt>
-<dd><code><a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</code></dd>
-</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">P2CLoadBalancingPolicy&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
-implements <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</span></div>
+<span class="extends-implements">extends <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</span></div>
 <div class="block">A random selection "power of two choices" load balancing policy.
  <p>
  This <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
@@ -137,20 +134,14 @@ implements <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T extends <a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a>&gt;<br>io.servicetalk.loadbalancer.HostSelector&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr>T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#buildSelector(java.util.List,java.lang.String)" class="member-name-link">buildSelector</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;io.servicetalk.loadbalancer.Host&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr>T&gt;&gt;&nbsp;hosts,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#name()" class="member-name-link">name</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Construct a <code>HostSelector</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#name()" class="member-name-link">name</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The name of the load balancing policy.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -169,35 +160,14 @@ implements <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="buildSelector(java.util.List,java.lang.String)">
-<h3>buildSelector</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T extends <a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a>&gt;</span>
-<span class="return-type">io.servicetalk.loadbalancer.HostSelector&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr>T&gt;</span>&nbsp;<span class="element-name">buildSelector</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;io.servicetalk.loadbalancer.Host&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr>T&gt;&gt;&nbsp;hosts,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancingPolicy.html#buildSelector(java.util.List,java.lang.String)">LoadBalancingPolicy</a></code></span></div>
-<div class="block">Construct a <code>HostSelector</code>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="LoadBalancingPolicy.html#buildSelector(java.util.List,java.lang.String)">buildSelector</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
-<dt>Type Parameters:</dt>
-<dd><code>T</code> - the refined type of the connections over which to load balance</dd>
-<dt>Parameters:</dt>
-<dd><code>hosts</code> - the set of <code>Host</code>s to select from.</dd>
-<dd><code>targetResource</code> - the name of the target resource, useful for debugging purposes.</dd>
-<dt>Returns:</dt>
-<dd>a <code>HostSelector</code></dd>
-</dl>
-</section>
-</li>
-<li>
 <section class="detail" id="name()">
 <h3>name</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">name</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancingPolicy.html#name()">LoadBalancingPolicy</a></code></span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from class:&nbsp;<code><a href="LoadBalancingPolicy.html#name()">LoadBalancingPolicy</a></code></span></div>
 <div class="block">The name of the load balancing policy.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="LoadBalancingPolicy.html#name()">name</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancingPolicy.html" title="interface in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
+<dd><code><a href="LoadBalancingPolicy.html#name()">name</a></code>&nbsp;in class&nbsp;<code><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Returns:</dt>
 <dd>the name of the load balancing policy</dd>
 </dl>
@@ -208,8 +178,8 @@ implements <a href="LoadBalancingPolicy.html" title="interface in io.servicetalk
 <h3>toString</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toString</span>()</div>
 <dl class="notes">
-<dt>Overrides:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="LoadBalancingPolicy.html#toString()">toString</a></code>&nbsp;in class&nbsp;<code><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="P2CLoadBalancingPolicy.html" title="type parameter in P2CLoadBalancingPolicy">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 </dl>
 </section>
 </li>

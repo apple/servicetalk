@@ -123,28 +123,58 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The number of consecutive failures before the attempt to suspect the host.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingConsecutive5xx()" class="member-name-link">enforcingConsecutive5xx</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ejectionTimeJitter()" class="member-name-link">ejectionTimeJitter</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The amount of jitter to add to the ejection time.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingConsecutive5xx()" class="member-name-link">enforcingConsecutive5xx</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The probability in percentage that a host will be marked as unhealthy when a host reaches the
  <a href="#consecutive5xx()"><code>consecutive5xx()</code></a> threshold.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingFailurePercentage()" class="member-name-link">enforcingFailurePercentage</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingFailurePercentage()" class="member-name-link">enforcingFailurePercentage</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The probability in percentage that a host will be marked as unhealthy when a host exceeds the failure percentage
  outlier detectors threshold.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingSuccessRate()" class="member-name-link">enforcingSuccessRate</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingSuccessRate()" class="member-name-link">enforcingSuccessRate</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The probability in percentage that a host will be marked as unhealthy when a host exceeds the success rate
  outlier detectors threshold.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaHalfLife()" class="member-name-link">ewmaHalfLife</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaCancellationPenalty()" class="member-name-link">ewmaCancellationPenalty</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The penalty factor for local cancellation of requests.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaErrorPenalty()" class="member-name-link">ewmaErrorPenalty</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The penalty factor for requests that were classified as an error.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaHalfLife()" class="member-name-link">ewmaHalfLife</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The Exponentially Weighted Moving Average (EWMA) half-life.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failedConnectionsThreshold()" class="member-name-link">failedConnectionsThreshold</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The threshold for consecutive connection failures to a host.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failureDetectorInterval()" class="member-name-link">failureDetectorInterval</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The interval on which to run failure detectors.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failureDetectorIntervalJitter()" class="member-name-link">failureDetectorIntervalJitter</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The jitter used along with the configured interval to determine duration between outlier detector checks.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageMinimumHosts()" class="member-name-link">failurePercentageMinimumHosts</a>()</code></div>
@@ -162,25 +192,25 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The failure threshold in percentage for ejecting a host.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#interval()" class="member-name-link">interval</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionPercentage()" class="member-name-link">maxEjectionPercentage</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The interval on which to run failure percentage and success rate failure detectors.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionPercentage()" class="member-name-link">maxEjectionPercentage</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The maximum percentage of hosts that can be ejected due to outlier detection.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionTime()" class="member-name-link">maxEjectionTime</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionTime()" class="member-name-link">maxEjectionTime</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The maximum amount of time a host can be ejected regardless of the number of consecutive ejections.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#serviceDiscoveryResubscribeInterval()" class="member-name-link">serviceDiscoveryResubscribeInterval</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The interval between service discovery resubscribes.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionTimeJitter()" class="member-name-link">maxEjectionTimeJitter</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#serviceDiscoveryResubscribeJitter()" class="member-name-link">serviceDiscoveryResubscribeJitter</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The maximum amount of jitter to add to the ejection time.</div>
+<div class="block">The jitter to use along with the service discovery resubscribe interval.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#successRateMinimumHosts()" class="member-name-link">successRateMinimumHosts</a>()</code></div>
@@ -230,6 +260,101 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="ewmaCancellationPenalty()">
+<h3>ewmaCancellationPenalty</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">long</span>&nbsp;<span class="element-name">ewmaCancellationPenalty</span>()</div>
+<div class="block">The penalty factor for local cancellation of requests.
+ The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the EWMA.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the penalty factor for local cancellation of requests.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ewmaErrorPenalty()">
+<h3>ewmaErrorPenalty</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">long</span>&nbsp;<span class="element-name">ewmaErrorPenalty</span>()</div>
+<div class="block">The penalty factor for requests that were classified as an error.
+ The latency of the failed request is multiplied by the provided penalty before incorporating it into the EWMA.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the penalty factor for requests that were classified as an error.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="failedConnectionsThreshold()">
+<h3>failedConnectionsThreshold</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">failedConnectionsThreshold</span>()</div>
+<div class="block">The threshold for consecutive connection failures to a host.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the threshold for consecutive connection failures to a host.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><code>OutlierDetectorConfig.Builder.failedConnectionsThreshold(int)</code></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="failureDetectorIntervalJitter()">
+<h3>failureDetectorIntervalJitter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">failureDetectorIntervalJitter</span>()</div>
+<div class="block">The jitter used along with the configured interval to determine duration between outlier detector checks.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the jitter used along with the configured interval to determine duration between outlier detector checks.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#failureDetectorInterval()"><code>failureDetectorInterval()</code></a></li>
+<li><a href="OutlierDetectorConfig.Builder.html#failureDetectorInterval(java.time.Duration,java.time.Duration)"><code>OutlierDetectorConfig.Builder.failureDetectorInterval(Duration, Duration)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="serviceDiscoveryResubscribeInterval()">
+<h3>serviceDiscoveryResubscribeInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">serviceDiscoveryResubscribeInterval</span>()</div>
+<div class="block">The interval between service discovery resubscribes.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the interval between service discovery resubscribes.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#serviceDiscoveryResubscribeJitter()"><code>serviceDiscoveryResubscribeJitter()</code></a></li>
+<li><a href="OutlierDetectorConfig.Builder.html#serviceDiscoveryResubscribeInterval(java.time.Duration,java.time.Duration)"><code>OutlierDetectorConfig.Builder.serviceDiscoveryResubscribeInterval(Duration, Duration)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="serviceDiscoveryResubscribeJitter()">
+<h3>serviceDiscoveryResubscribeJitter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">serviceDiscoveryResubscribeJitter</span>()</div>
+<div class="block">The jitter to use along with the service discovery resubscribe interval.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the jitter to use along with the service discovery resubscribe interval.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#serviceDiscoveryResubscribeInterval()"><code>serviceDiscoveryResubscribeInterval()</code></a></li>
+<li><a href="OutlierDetectorConfig.Builder.html#serviceDiscoveryResubscribeInterval(java.time.Duration,java.time.Duration)"><code>OutlierDetectorConfig.Builder.serviceDiscoveryResubscribeInterval(Duration, Duration)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="consecutive5xx()">
 <h3>consecutive5xx</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">consecutive5xx</span>()</div>
@@ -241,10 +366,13 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="interval()">
-<h3>interval</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">interval</span>()</div>
-<div class="block">The interval on which to run failure percentage and success rate failure detectors.</div>
+<section class="detail" id="failureDetectorInterval()">
+<h3>failureDetectorInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span>()</div>
+<div class="block">The interval on which to run failure detectors.
+ Failure percentage and success rate outlier detectors perform periodic scans to detect outliers. Active
+ revival mechanisms such as the layer-4 connectivity detector also use this interval to perform their periodic
+ health check to see if a host can be considered revived.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the interval on which to run failure percentage and success rate failure detectors.</dd>
@@ -261,6 +389,12 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the base ejection time.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#ejectionTimeJitter()"><code>ejectionTimeJitter()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -392,15 +526,21 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="maxEjectionTimeJitter()">
-<h3>maxEjectionTimeJitter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">maxEjectionTimeJitter</span>()</div>
-<div class="block">The maximum amount of jitter to add to the ejection time.
+<section class="detail" id="ejectionTimeJitter()">
+<h3>ejectionTimeJitter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">ejectionTimeJitter</span>()</div>
+<div class="block">The amount of jitter to add to the ejection time.
  An additional amount of 'jitter' is added to the ejection time to prevent connection storms if multiple hosts
  are ejected at the time.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the maximum amount of jitter to add to the ejection time.</dd>
+<dd>the amount of jitter to add to the ejection time.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#baseEjectionTime()"><code>baseEjectionTime()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

@@ -95,7 +95,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">Builder</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">Construct a new builder using the default initial values.</div>
+</div>
 </div>
 </section>
 </li>
@@ -126,48 +128,69 @@ loadScripts(document, 'script');</script>
 <div class="block">Set the threshold for consecutive failures before a host is ejected.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingConsecutive5xx(int)" class="member-name-link">enforcingConsecutive5xx</a><wbr>(int&nbsp;enforcingConsecutive5xx)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ejectionTimeJitter(java.time.Duration)" class="member-name-link">ejectionTimeJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ejectionTimeJitter)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the ejection time jitter.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingConsecutive5xx(int)" class="member-name-link">enforcingConsecutive5xx</a><wbr>(int&nbsp;enforcingConsecutive5xx)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host reaches the
  <a href="OutlierDetectorConfig.html#consecutive5xx()"><code>OutlierDetectorConfig.consecutive5xx()</code></a> threshold.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingFailurePercentage(int)" class="member-name-link">enforcingFailurePercentage</a><wbr>(int&nbsp;enforcingFailurePercentage)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingFailurePercentage(int)" class="member-name-link">enforcingFailurePercentage</a><wbr>(int&nbsp;enforcingFailurePercentage)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
  percentage outlier detectors threshold.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingSuccessRate(int)" class="member-name-link">enforcingSuccessRate</a><wbr>(int&nbsp;enforcingSuccessRate)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#enforcingSuccessRate(int)" class="member-name-link">enforcingSuccessRate</a><wbr>(int&nbsp;enforcingSuccessRate)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
  rate outlier detectors threshold.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaCancellationPenalty(long)" class="member-name-link">ewmaCancellationPenalty</a><wbr>(long&nbsp;ewmaCancellationPenalty)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the penalty factor for local cancellation of requests.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaHalfLife(java.time.Duration)" class="member-name-link">ewmaHalfLife</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ewmaHalfLife)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaErrorPenalty(long)" class="member-name-link">ewmaErrorPenalty</a><wbr>(long&nbsp;ewmaErrorPenalty)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the Exponentially Weighted Moving Average (EWMA) half-life.</div>
+<div class="block">Set the penalty factor for requests that were classified as an error.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageMinimumHosts(int)" class="member-name-link">failurePercentageMinimumHosts</a><wbr>(int&nbsp;failurePercentageMinimumHosts)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ewmaHalfLife(java.time.Duration)" class="member-name-link">ewmaHalfLife</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ewmaHalfLife)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the minimum number of hosts required to perform the failure percentage outlier detector analysis.</div>
+<div class="block">Set the Exponentially Weighted Moving Average (EWMA) half-life.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageRequestVolume(int)" class="member-name-link">failurePercentageRequestVolume</a><wbr>(int&nbsp;failurePercentageRequestVolume)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failureDetectorInterval(java.time.Duration)" class="member-name-link">failureDetectorInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the failure detector interval on which the outlier detector will perform periodic tasks.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failureDetectorInterval(java.time.Duration,java.time.Duration)" class="member-name-link">failureDetectorInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the interval on which to run failure percentage and success rate failure detectors.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageMinimumHosts(int)" class="member-name-link">failurePercentageMinimumHosts</a><wbr>(int&nbsp;failurePercentageMinimumHosts)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the minimum number of hosts required to perform the failure percentage outlier detector analysis.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageRequestVolume(int)" class="member-name-link">failurePercentageRequestVolume</a><wbr>(int&nbsp;failurePercentageRequestVolume)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the minimum number of requests in an outlier detector interval required to include it in the failure
  percentage outlier detector analysis.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageThreshold(int)" class="member-name-link">failurePercentageThreshold</a><wbr>(int&nbsp;failurePercentageThreshold)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the failure threshold in percentage for ejecting a host.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#interval(java.time.Duration)" class="member-name-link">interval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failurePercentageThreshold(int)" class="member-name-link">failurePercentageThreshold</a><wbr>(int&nbsp;failurePercentageThreshold)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the interval on which to run failure percentage and success rate failure detectors.</div>
+<div class="block">Set the failure threshold in percentage for ejecting a host.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionPercentage(int)" class="member-name-link">maxEjectionPercentage</a><wbr>(int&nbsp;maxEjectionPercentage)</code></div>
@@ -180,9 +203,11 @@ loadScripts(document, 'script');</script>
 <div class="block">Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxEjectionTimeJitter(java.time.Duration)" class="member-name-link">maxEjectionTimeJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;maxEjectionTimeJitter)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#serviceDiscoveryResubscribeInterval(java.time.Duration,java.time.Duration)" class="member-name-link">serviceDiscoveryResubscribeInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the maximum amount of jitter to add to the ejection time.</div>
+<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
+ unhealthy.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#successRateMinimumHosts(int)" class="member-name-link">successRateMinimumHosts</a><wbr>(int&nbsp;successRateMinimumHosts)</code></div>
@@ -222,6 +247,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>Builder</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span>()</div>
+<div class="block">Construct a new builder using the default initial values.</div>
 </section>
 </li>
 </ul>
@@ -260,6 +286,62 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="ewmaCancellationPenalty(long)">
+<h3>ewmaCancellationPenalty</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaCancellationPenalty</span><wbr><span class="parameters">(long&nbsp;ewmaCancellationPenalty)</span></div>
+<div class="block">Set the penalty factor for local cancellation of requests.
+ The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the
+ EWMA.
+ Defaults to 5L.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ewmaCancellationPenalty</code> - the penalty factor for local cancellation of requests.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ewmaErrorPenalty(long)">
+<h3>ewmaErrorPenalty</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaErrorPenalty</span><wbr><span class="parameters">(long&nbsp;ewmaErrorPenalty)</span></div>
+<div class="block">Set the penalty factor for requests that were classified as an error.
+ The latency of the failed request is multiplied by the provided penalty before incorporating it into the
+ EWMA.
+ Defaults to 10L.
+ See <a href="OutlierDetectorConfig.html#ewmaErrorPenalty()"><code>OutlierDetectorConfig.ewmaErrorPenalty()</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ewmaErrorPenalty</code> - the penalty factor for requests that were classified as an error.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="serviceDiscoveryResubscribeInterval(java.time.Duration,java.time.Duration)">
+<h3>serviceDiscoveryResubscribeInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">serviceDiscoveryResubscribeInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
+<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
+ unhealthy.
+ <p>
+ In situations when there is a latency between <a href="../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> propagating the updated state and all
+ known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribing to the
+ events stream can help to exit from a dead state.
+ <p>
+ Note: setting the interval to <code>Duration.ofNanos(Long.MAX_VALUE)</code> will effectively disable health check
+ resubscribes.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>interval</code> - interval at which re-subscribes will be scheduled.</dd>
+<dd><code>jitter</code> - the amount of jitter to apply to each re-subscribe <code>interval</code>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="consecutive5xx(int)">
 <h3>consecutive5xx</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">consecutive5xx</span><wbr><span class="parameters">(int&nbsp;consecutive5xx)</span></div>
@@ -274,14 +356,34 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="interval(java.time.Duration)">
-<h3>interval</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">interval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval)</span></div>
-<div class="block">Set the interval on which to run failure percentage and success rate failure detectors.
- Defaults to 10 seconds.</div>
+<section class="detail" id="failureDetectorInterval(java.time.Duration)">
+<h3>failureDetectorInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval)</span></div>
+<div class="block">Set the failure detector interval on which the outlier detector will perform periodic tasks.
+ These tasks can include detection of outlier or the active revival checks.
+ This method will also use either the default jitter or the provided interval, whichever is smaller.
+ Defaults to 10 second interval with 3 second jitter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>interval</code> - the interval on which to run failure percentage and success rate failure detectors.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="failureDetectorInterval(java.time.Duration,java.time.Duration)">
+<h3>failureDetectorInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
+<div class="block">Set the interval on which to run failure percentage and success rate failure detectors.
+ These tasks can include detection of outlier or the active revival checks.
+ Defaults to 10 second interval with 3 second jitter.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>interval</code> - the interval on which to run failure percentage and success rate failure detectors.</dd>
+<dd><code>jitter</code> - the jitter of the time interval. The next interval will have a duration of
+               [interval - jitter, interval + jitter].</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>
@@ -298,6 +400,32 @@ loadScripts(document, 'script');</script>
 <dd><code>baseEjectionTime</code> - the base ejection time.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#ejectionTimeJitter(java.time.Duration)"><code>ejectionTimeJitter(Duration)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ejectionTimeJitter(java.time.Duration)">
+<h3>ejectionTimeJitter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ejectionTimeJitter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ejectionTimeJitter)</span></div>
+<div class="block">Set the ejection time jitter.
+ Defaults to 3 seconds.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ejectionTimeJitter</code> - the jitter to add to the calculated ejection time.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#baseEjectionTime(java.time.Duration)"><code>baseEjectionTime(Duration)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -306,7 +434,8 @@ loadScripts(document, 'script');</script>
 <h3>maxEjectionPercentage</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">maxEjectionPercentage</span><wbr><span class="parameters">(int&nbsp;maxEjectionPercentage)</span></div>
 <div class="block">Set the maximum percentage of hosts that can be ejected due to outlier detection.
- Defaults to 10% but at least one host will be allowed to be ejected regardless of value.</div>
+ Defaults to 10 percent but at least one host will be allowed to be
+ ejected regardless of value.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>maxEjectionPercentage</code> - the maximum percentage of hosts that can be ejected due to outlier detection.</dd>
@@ -321,7 +450,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingConsecutive5xx</span><wbr><span class="parameters">(int&nbsp;enforcingConsecutive5xx)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host reaches the
  <a href="OutlierDetectorConfig.html#consecutive5xx()"><code>OutlierDetectorConfig.consecutive5xx()</code></a> threshold.
- Defaults to 100%.</div>
+ Defaults to 100 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>enforcingConsecutive5xx</code> - the probability the host will be marked as unhealthy.</dd>
@@ -336,7 +465,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingSuccessRate</span><wbr><span class="parameters">(int&nbsp;enforcingSuccessRate)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
  rate outlier detectors threshold.
- Defaults to 100%.</div>
+ Defaults to 100 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>enforcingSuccessRate</code> - the probability the host will be marked as unhealthy.</dd>
@@ -398,7 +527,7 @@ loadScripts(document, 'script');</script>
 <h3>failurePercentageThreshold</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failurePercentageThreshold</span><wbr><span class="parameters">(int&nbsp;failurePercentageThreshold)</span></div>
 <div class="block">Set the failure threshold in percentage for ejecting a host.
- Defaults to 85%.</div>
+ Defaults to 85 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>failurePercentageThreshold</code> - the failure threshold in percentage for ejecting a host.</dd>
@@ -413,7 +542,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingFailurePercentage</span><wbr><span class="parameters">(int&nbsp;enforcingFailurePercentage)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
  percentage outlier detectors threshold.
- Defaults to 0%.</div>
+ Defaults to 0 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>enforcingFailurePercentage</code> - the probability in percentage that a host will be marked as unhealthy when
@@ -459,27 +588,11 @@ loadScripts(document, 'script');</script>
 <h3>maxEjectionTime</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">maxEjectionTime</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;maxEjectionTime)</span></div>
 <div class="block">Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
- Defaults to 300 seconds.</div>
+ Defaults to a max ejection time of 300 seconds and 0 seconds jitter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>maxEjectionTime</code> - the maximum amount of time a host can be ejected regardless of the number of
                         consecutive ejections.</dd>
-<dt>Returns:</dt>
-<dd><code>this</code>.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="maxEjectionTimeJitter(java.time.Duration)">
-<h3>maxEjectionTimeJitter</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">maxEjectionTimeJitter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;maxEjectionTimeJitter)</span></div>
-<div class="block">Set the maximum amount of jitter to add to the ejection time.
- An additional amount of 'jitter' is added to the ejection time to prevent connection storms if multiple hosts
- are ejected at the time.
- Defaults to 0 seconds.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>maxEjectionTimeJitter</code> - the maximum amount of jitter to add to the ejection time.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>
