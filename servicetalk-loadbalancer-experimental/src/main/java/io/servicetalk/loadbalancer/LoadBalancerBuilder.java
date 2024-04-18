@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.context.api.ContextMap;
 
+import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -62,6 +63,7 @@ import javax.annotation.Nullable;
  * @param <C> The type of connection.
  */
 public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
+
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
@@ -88,6 +90,21 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @see #loadBalancingPolicy(LoadBalancingPolicy)
      */
     LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig);
+
+    // TODO: note that these are deprecated.
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory);
+
+    // TODO: note that these are deprecated.
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold);
+
+    // TODO: note that these are deprecated.
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter);
+
+    // TODO: note that these are deprecated.
+    LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter);
+
+    // TODO: note that these are deprecated.
+    LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int searchSpace);
 
     /**
      * Set the {@link ConnectionPoolStrategy} to use with this load balancer.

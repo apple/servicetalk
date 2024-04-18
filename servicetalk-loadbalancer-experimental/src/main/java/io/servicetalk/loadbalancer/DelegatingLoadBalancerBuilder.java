@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Executor;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -82,6 +84,36 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(
             ConnectionPoolConfig connectionPoolConfig) {
         delegate = delegate.connectionPoolConfig(connectionPoolConfig);
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory) {
+        delegate = delegate.healthCheckerFactory(healthCheckerFactory);
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold) {
+        delegate = delegate.healthCheckFailedConnectionsThreshold(threshold);
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
+        delegate = delegate.healthCheckInterval(interval, jitter);
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter) {
+        delegate = delegate.healthCheckResubscribeInterval(interval, jitter);
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int searchSpace) {
+        delegate = delegate.linearSearchSpace(searchSpace);
         return this;
     }
 

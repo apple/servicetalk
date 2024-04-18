@@ -197,8 +197,9 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private static class TestHealthIndicator implements HealthIndicator<String, TestLoadBalancedConnection> {
 
         private final Set<TestHealthIndicator> indicatorSet;
-        private Host<String, TestLoadBalancedConnection> host;
         final String address;
+        @Nullable
+        private Host<String, TestLoadBalancedConnection> host;
         volatile boolean isHealthy = true;
 
         TestHealthIndicator(final Set<TestHealthIndicator> indicatorSet, final String address) {
@@ -296,7 +297,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestLoadBalancerPolicy extends LoadBalancingPolicy<String, TestLoadBalancedConnection> {
+    private static class TestLoadBalancerPolicy implements LoadBalancingPolicy<String, TestLoadBalancedConnection> {
 
         int rebuilds;
 
@@ -311,7 +312,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        HostSelector<String, TestLoadBalancedConnection> buildSelector(
+        public HostSelector<String, TestLoadBalancedConnection> buildSelector(
                 List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
             return new TestSelector(hosts);
         }

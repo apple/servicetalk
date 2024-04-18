@@ -193,6 +193,16 @@ public final class OutlierDetectorConfig {
         return failureDetectorInterval;
     }
 
+    // TODO: deprecate this API.
+    public Duration interval() {
+        return failureDetectorInterval();
+    }
+
+    // TODO: deprecate this API.
+    public Duration maxEjectionTimeJitter() {
+        return failureDetectorIntervalJitter();
+    }
+
     /**
      * The base ejection time.
      * The base ejection time is multiplied by the number of consecutive times the host has been ejected to get the
@@ -529,6 +539,16 @@ public final class OutlierDetectorConfig {
             this.failureDetectorInterval = requireNonNull(interval, "interval");
             return failureDetectorInterval(interval, interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ?
                     interval.dividedBy(2) : DEFAULT_HEALTH_CHECK_JITTER);
+        }
+
+        // TODO: deprecate this API.
+        public Builder interval(final Duration interval) {
+            return failureDetectorInterval(interval, this.intervalJitter);
+        }
+
+        // TODO: deprecate this API.
+        public Builder maxEjectionTimeJitter(Duration jitter) {
+            return failureDetectorInterval(this.failureDetectorInterval, jitter);
         }
 
         /**

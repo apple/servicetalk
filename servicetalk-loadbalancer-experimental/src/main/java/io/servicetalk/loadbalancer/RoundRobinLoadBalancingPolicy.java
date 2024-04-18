@@ -28,7 +28,7 @@ import java.util.List;
  * @param <C> the type of the load balanced connection
  */
 public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        extends LoadBalancingPolicy<ResolvedAddress, C> {
+        implements LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
 
@@ -37,7 +37,7 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
     }
 
     @Override
-    HostSelector<ResolvedAddress, C>
+    public HostSelector<ResolvedAddress, C>
     buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
         return new RoundRobinSelector<>(hosts, targetResource, failOpen);
     }

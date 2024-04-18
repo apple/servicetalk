@@ -24,7 +24,10 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.ConnectionPoolStrategy.ConnectionPoolStrategyFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
@@ -34,6 +37,8 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerBuilder<ResolvedAddress, C> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancerBuilder.class);
 
     private final String id;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
@@ -111,6 +116,41 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         }
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
                 loadBalancerObserver, outlierDetectorFactory, connectionPoolStrategyFactory);
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckerFactory(HealthCheckerFactory healthCheckerFactory) {
+        if (healthCheckerFactory instanceof XdsHealthCheckerFactory) {
+            XdsHealthCheckerFactory factory = (XdsHealthCheckerFactory) healthCheckerFactory;
+            outlierDetectorConfig(factory.config());
+        } else {
+            LOGGER.info("Ignoring unknown HealthCheckerFactory of type {}",
+                    healthCheckerFactory.getClass().getName());
+        }
+        return this;
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold) {
+        OutlierDetectorConfig.Builder builder = new OutlierDetectorConfig.Builder(outlierDetectorConfig);
+        return outlierDetectorConfig(builder.failedConnectionsThreshold(threshold).build());
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckInterval(Duration interval, Duration jitter) {
+        OutlierDetectorConfig.Builder builder = new OutlierDetectorConfig.Builder(outlierDetectorConfig);
+        return outlierDetectorConfig(builder.failureDetectorInterval(interval, jitter).build());
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> healthCheckResubscribeInterval(Duration interval, Duration jitter) {
+        OutlierDetectorConfig.Builder builder = new OutlierDetectorConfig.Builder(outlierDetectorConfig);
+        return outlierDetectorConfig(builder.serviceDiscoveryResubscribeInterval(interval, jitter).build());
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(int searchSpace) {
+        return this.connectionPoolConfig(ConnectionPoolConfig.linearSearch(searchSpace));
     }
 
     private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
