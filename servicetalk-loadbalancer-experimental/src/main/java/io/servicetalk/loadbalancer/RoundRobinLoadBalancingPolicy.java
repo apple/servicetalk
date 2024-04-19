@@ -57,6 +57,8 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
      */
     public static final class Builder {
 
+        private static final boolean DEFAULT_FAIL_OPEN_POLICY = false;
+
         private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
 
         /**

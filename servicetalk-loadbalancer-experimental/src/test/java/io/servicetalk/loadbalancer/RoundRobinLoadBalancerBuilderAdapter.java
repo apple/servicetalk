@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -46,6 +47,35 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolConfig(
             ConnectionPoolConfig connectionPoolConfig) {
         throw new IllegalStateException("Cannot set a connection pool strategy for old round robin");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckerFactory(
+            HealthCheckerFactory healthCheckerFactory) {
+        throw new IllegalStateException("Method is deprecated and shouldn't be used.");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckFailedConnectionsThreshold(
+            int threshold) {
+        throw new IllegalStateException("Method is deprecated and shouldn't be used.");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckInterval(
+            Duration interval, Duration jitter) {
+        throw new IllegalStateException("Method is deprecated and shouldn't be used.");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckResubscribeInterval(
+            Duration interval, Duration jitter) {
+        throw new IllegalStateException("Method is deprecated and shouldn't be used.");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> linearSearchSpace(int searchSpace) {
+        throw new IllegalStateException("Method is deprecated and shouldn't be used.");
     }
 
     @Override

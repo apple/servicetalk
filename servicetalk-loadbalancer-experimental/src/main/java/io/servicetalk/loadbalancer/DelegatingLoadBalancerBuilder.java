@@ -19,9 +19,8 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
-import javax.annotation.Nullable;
-
 import java.time.Duration;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 

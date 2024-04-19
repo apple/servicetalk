@@ -75,6 +75,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     public static final class Builder {
 
         private static final int DEFAULT_MAX_EFFORT = 5;
+        private static final boolean DEFAULT_FAIL_OPEN_POLICY = false;
 
         private int maxEffort = DEFAULT_MAX_EFFORT;
         private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
