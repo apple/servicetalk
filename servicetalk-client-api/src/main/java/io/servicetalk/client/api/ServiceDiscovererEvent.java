@@ -40,6 +40,20 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     Status status();
 
     /**
+     * Meta-data associated with the specified address.
+     * <p>
+     * Metadata is data that is not strictly necessary for load balancing purposes but can be useful for making more
+     * intelligent decisions. As described in {@link #address()}, updates to an addresses meta-data can be accomplished
+     * by sending another {@link ServiceDiscovererEvent} with the same address and {@link Status} but with different
+     * metadata. This also means that updates to status must also propagate the desired meta-data state or the empty
+     * meta-data state is assumed.
+     * @return
+     */
+    default Metadata metadata() {
+        return DefaultMetadata.EMPTY_METADATA;
+    }
+
+    /**
      * Status provided by the {@link ServiceDiscoverer} system that guides the actions of {@link LoadBalancer} upon the
      * bound {@link ServiceDiscovererEvent#address()} (via {@link ServiceDiscovererEvent}).
      */
