@@ -49,4 +49,7 @@ public interface Metadata {
     }
 
     <T> T get(Key<T> key);
+
+    <T> Metadata put(Key<T> key, T value);
+    <T> Metadata remove(Key<T> key);
 }

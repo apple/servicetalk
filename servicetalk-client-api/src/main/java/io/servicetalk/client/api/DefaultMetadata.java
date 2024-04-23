@@ -3,6 +3,7 @@ package io.servicetalk.client.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -15,7 +16,7 @@ final class DefaultMetadata implements Metadata {
 
     private final Map<String, Object> values;
 
-    DefaultMetadata(final Map<String, Object> values) {
+    private DefaultMetadata(final Map<String, Object> values) {
         this.values = requireNonNull(values, "values");
     }
 
@@ -33,11 +34,40 @@ final class DefaultMetadata implements Metadata {
         }
     }
 
+    @Override
+    public <T> Metadata put(Key<T> key, T value) {
+        Map<String, Object> next = new HashMap<>(values);
+        next.put(key.name(), value);
+        return new DefaultMetadata(next);
+    }
+
+    @Override
+    public <T> Metadata remove(Key<T> key) {
+        if (!values.containsKey(key.name())) {
+            return this;
+        }
+        Map<String, Object> next = new HashMap<>(values);
+        next.remove(key.name());
+        return new DefaultMetadata(next);
+    }
+
     // A simple implementation of the always-empty Metadata.
     private static final class EmptyMetadata implements Metadata {
         @Override
         public <T> T get(Key<T> key) {
             return key.defaultValue();
+        }
+
+        @Override
+        public <T> Metadata put(Key<T> key, T value) {
+            Map<String, Object> next = new HashMap<>();
+            next.put(key.name(), value);
+            return new DefaultMetadata(next);
+        }
+
+        @Override
+        public <T> Metadata remove(Key<T> key) {
+            return this;
         }
     }
 }
