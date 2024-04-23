@@ -309,7 +309,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     } else {
                         // It's a new host, so the set changed.
                         hostSetChanged = true;
-                        nextHosts.add(createHost(event.address()));
+                        nextHosts.add(createHost(event.address(), event.weight()));
                     }
                 } else if (EXPIRED.equals(event.status())) {
                     if (!host.markExpired()) {
@@ -336,7 +336,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (AVAILABLE.equals(event.status())) {
                     sendReadyEvent = true;
                     hostSetChanged = true;
-                    nextHosts.add(createHost(event.address()));
+                    nextHosts.add(createHost(event.address(), event.weight()));
                 }
             }
 
@@ -380,7 +380,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
         }
 
-        private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
+        private Host<ResolvedAddress, C> createHost(ResolvedAddress addr, double weight) {
             final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
             // All hosts will share the health check config of the parent load balancer.
             final HealthIndicator indicator = outlierDetector.newHealthIndicator(addr, hostObserver);
@@ -388,7 +388,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // failed connect threshold is negative, meaning disabled.
             final HealthCheckConfig hostHealthCheckConfig =
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
-            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
+            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, weight, connectionPoolStrategy,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator);
             if (indicator != null) {
                 indicator.setHost(host);

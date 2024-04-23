@@ -79,6 +79,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     private final String lbDescription;
     private final Addr address;
+    private final double weight;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     @Nullable
@@ -90,13 +91,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final ListenableAsyncCloseable closeable;
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
-    DefaultHost(final String lbDescription, final Addr address,
+    DefaultHost(final String lbDescription, final Addr address, final double weight,
                 final ConnectionPoolStrategy<C> connectionPoolStrategy,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 final HostObserver hostObserver, final @Nullable HealthCheckConfig healthCheckConfig,
                 final @Nullable HealthIndicator healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
+        this.weight = weight;
         this.healthIndicator = healthIndicator;
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         requireNonNull(connectionFactory, "connectionFactory");
@@ -111,6 +113,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public Addr address() {
         return address;
+    }
+
+    @Override
+    public double weight() {
+        return weight;
     }
 
     @Override

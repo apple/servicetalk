@@ -40,6 +40,14 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     Status status();
 
     /**
+     * The weight of endpoint.
+     * @return the weight of endpoint.
+     */
+    default double weight() {
+        return 1.0;
+    }
+
+    /**
      * Status provided by the {@link ServiceDiscoverer} system that guides the actions of {@link LoadBalancer} upon the
      * bound {@link ServiceDiscovererEvent#address()} (via {@link ServiceDiscovererEvent}).
      */

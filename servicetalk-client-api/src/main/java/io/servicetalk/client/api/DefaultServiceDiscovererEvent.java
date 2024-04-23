@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscovererEvent<T> {
     private final T address;
+    private final double weight;
     private final Status status;
 
     /**
@@ -31,13 +32,32 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
      * @param status Value returned by {@link #status()}.
      */
     public DefaultServiceDiscovererEvent(T address, Status status) {
+        this(address, 1.0, status);
+    }
+
+    /**
+     * Create a new instance.
+     * @param address The address returned by {@link #address()}.
+     * @param weight The relative weight of the address.
+     * @param status Value returned by {@link #status()}.
+     */
+    public DefaultServiceDiscovererEvent(T address, double weight, Status status) {
+        if (weight < 0 || Double.isNaN(weight) || !Double.isFinite(weight)) {
+            throw new IllegalArgumentException("Weight value most be a finite positive number: " + weight);
+        }
         this.address = requireNonNull(address);
+        this.weight = weight;
         this.status = requireNonNull(status);
     }
 
     @Override
     public T address() {
         return address;
+    }
+
+    @Override
+    public double weight() {
+        return weight;
     }
 
     @Override
