@@ -52,6 +52,12 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
     ResolvedAddress address();
 
     /**
+     * The relative weight of the endpoint.
+     * @return the relative weight of the endpoint.
+     */
+    double weight();
+
+    /**
      * Determine the health status of this host.
      * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
      *         guarantee that the request will succeed.

@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.MetadataKeys;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -52,6 +53,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
+import static io.servicetalk.client.api.MetadataKeys.WEIGHT;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
@@ -309,7 +311,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     } else {
                         // It's a new host, so the set changed.
                         hostSetChanged = true;
-                        nextHosts.add(createHost(event.address()));
+                        nextHosts.add(createHost(event.address(), event.metadata().get(WEIGHT)));
                     }
                 } else if (EXPIRED.equals(event.status())) {
                     if (!host.markExpired()) {
@@ -336,7 +338,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (AVAILABLE.equals(event.status())) {
                     sendReadyEvent = true;
                     hostSetChanged = true;
-                    nextHosts.add(createHost(event.address()));
+                    nextHosts.add(createHost(event.address(), event.metadata().get(WEIGHT)));
                 }
             }
 
@@ -380,7 +382,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
         }
 
-        private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
+        private Host<ResolvedAddress, C> createHost(ResolvedAddress addr, double weight) {
             final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
             // All hosts will share the health check config of the parent load balancer.
             final HealthIndicator indicator = outlierDetector.newHealthIndicator(addr, hostObserver);
@@ -388,7 +390,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // failed connect threshold is negative, meaning disabled.
             final HealthCheckConfig hostHealthCheckConfig =
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
-            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
+            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, weight, connectionPoolStrategy,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator);
             if (indicator != null) {
                 indicator.setHost(host);
