@@ -3,6 +3,9 @@
 This package provides providers for enabling the DefaultLoadBalancer via system properties to allow for easy
 experimentation that doesn't require a recompilation of the application.
 
+> WARNING: this package is only for experimentation and will be removed in the future.
+
+
 == Enabling DefaultLoadBalancer via System Properties
 
 === Dynamically Loading the DefaultHttpLoadBalancerProvider
