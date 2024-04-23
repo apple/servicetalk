@@ -13,4 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ElementsAreNonnullByDefault
 package io.servicetalk.loadbalancer;
+
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

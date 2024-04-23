@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProviders;
@@ -52,7 +53,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
             try {
                 HttpLoadBalancerFactory<R> loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>from(
                         defaultLoadBalancer(serviceName)).build();
-                return builder.loadBalancerFactory(loadBalancerFactory);
+                builder = builder.loadBalancerFactory(loadBalancerFactory);
+                return new LoadBalancerIgnoringBuilder(builder, serviceName);
             } catch (Throwable ex) {
                 LOGGER.warn("Failed to enabled DefaultLoadBalancer for client to address {}.", address, ex);
             }
@@ -90,5 +92,24 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
             serviceName = address.toString();
         }
         return serviceName;
+    }
+
+    private static final class LoadBalancerIgnoringBuilder<U, R>
+            extends DelegatingSingleAddressHttpClientBuilder<U, R> {
+
+        private final String serviceName;
+
+        LoadBalancerIgnoringBuilder(final SingleAddressHttpClientBuilder<U, R> delegate, final String serviceName) {
+            super(delegate);
+            this.serviceName = serviceName;
+        }
+
+        @Override
+        public SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
+                HttpLoadBalancerFactory<R> loadBalancerFactory) {
+            LOGGER.info("Ignoring load balancer factory for client to {} which has DefaultLoadBalancer enabled.",
+                    serviceName);
+            return this;
+        }
     }
 }

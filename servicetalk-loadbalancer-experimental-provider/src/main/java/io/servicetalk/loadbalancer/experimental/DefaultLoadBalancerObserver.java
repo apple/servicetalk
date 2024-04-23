@@ -33,7 +33,7 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     private final String clientName;
 
-    public DefaultLoadBalancerObserver(final String clientName) {
+    DefaultLoadBalancerObserver(final String clientName) {
         this.clientName = requireNonNull(clientName, "clientName");
     }
 
