@@ -16,19 +16,16 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-
 import io.servicetalk.loadbalancer.LoadBalancingPolicy;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
 import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancingPolicy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -99,15 +96,13 @@ final class DefaultLoadBalancerProviderConfig {
     private final Duration maxEjectionTime;
     private final Duration ejectionTimeJitter;
 
-    private final Map<String, String> fields;
-
     private DefaultLoadBalancerProviderConfig() {
         this(System.getProperties());
     }
 
     private DefaultLoadBalancerProviderConfig(Properties properties) {
         this.properties = requireNonNull(properties, "properties");
-        rawClientsEnabledFor = getString(PROP_CLIENTS_ENABLED_FOR, "");
+        rawClientsEnabledFor = getString(PROP_CLIENTS_ENABLED_FOR, "").trim();
         clientsEnabledFor = getClientsEnabledFor(rawClientsEnabledFor);
         failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, 5 /*ST default*/);
         lbPolicy = getLBPolicy();
@@ -127,37 +122,6 @@ final class DefaultLoadBalancerProviderConfig {
         failurePercentageRequestVolume = getInt(PROP_FAILURE_PERCENTAGE_REQUEST_VOL, 50);
         maxEjectionTime = ofMillis(getLong(PROP_MAX_EJECTION_TIME_MS, ofSeconds(90).toMillis()));
         ejectionTimeJitter = ofMillis(getLong(PROP_EJECTION_TIME_JITTER_MS, ZERO.toMillis()));
-
-        fields = populateEventFields();
-    }
-
-    private Map<String, String> populateEventFields() {
-        Map<String, String> fields = new HashMap<>();
-        fields.put("clientsEnabledFor", String.valueOf(clientsEnabledFor));
-        fields.put("failedConnectionsThreshold", String.valueOf(failedConnectionsThreshold));
-        fields.put("loadBalancingPolicy", String.valueOf(lbPolicy));
-        fields.put("ewmaHalfLifeMillis", String.valueOf(ewmaHalfLife.toMillis()));
-        fields.put("consecutive5xx", String.valueOf(consecutive5xx));
-        fields.put("intervalMillis", String.valueOf(interval.toMillis()));
-        fields.put("baseEjectionTimeMillis", String.valueOf(baseEjectionTime.toMillis()));
-        fields.put("ejectionTimeJitterMillis", String.valueOf(ejectionTimeJitter.toMillis()));
-        fields.put("maxEjectionPercentage", String.valueOf(maxEjectionPercentage));
-        fields.put("enforcingConsecutive5xx", String.valueOf(enforcingConsecutive5xx));
-        fields.put("enforcingSuccessRate", String.valueOf(enforcingSuccessRate));
-        fields.put("successRateMinimumHosts", String.valueOf(successRateMinimumHosts));
-        fields.put("successRateRequestVolume", String.valueOf(successRateRequestVolume));
-        fields.put("successRateStdevFactor", String.valueOf(successRateStdevFactor));
-        fields.put("failurePercentageThreshold", String.valueOf(failurePercentageThreshold));
-        fields.put("enforcingFailurePercentage", String.valueOf(enforcingFailurePercentage));
-        fields.put("failurePercentageMinimumHosts", String.valueOf(failurePercentageMinimumHosts));
-        fields.put("failurePercentageRequestVolume", String.valueOf(failurePercentageRequestVolume));
-        fields.put("maxEjectionTimeMillis", String.valueOf(maxEjectionTime.toMillis()));
-        return fields;
-    }
-
-    // TODO: what can we do with this?
-    Map<String, String> getEventFields() {
-        return fields;
     }
 
     private LBPolicy getLBPolicy() {
@@ -165,16 +129,14 @@ final class DefaultLoadBalancerProviderConfig {
                 .equalsIgnoreCase(LBPolicy.P2C.name()) ? LBPolicy.P2C : LBPolicy.RoundRobin;
     }
 
-    @Nullable
     private Set<String> getClientsEnabledFor(String propertyValue) {
-        propertyValue = propertyValue.trim();
         final Set<String> result = new HashSet<>();
         // if enabled for all there is no need to parse.
         if (!"all".equals(propertyValue)) {
             for (String serviceName : propertyValue.split(",")) {
-                serviceName = serviceName.trim();
-                if (!serviceName.isEmpty()) {
-                    result.add(serviceName);
+                String trimmed = serviceName.trim();
+                if (!trimmed.isEmpty()) {
+                    result.add(trimmed);
                 }
             }
         }
@@ -190,7 +152,7 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     boolean enabledForServiceName(String serviceName) {
-        return clientsEnabledFor == null || clientsEnabledFor.contains(serviceName);
+        return "all".equals(rawClientsEnabledFor) || clientsEnabledFor.contains(serviceName);
     }
 
     OutlierDetectorConfig outlierDetectorConfig() {
@@ -218,7 +180,7 @@ final class DefaultLoadBalancerProviderConfig {
     @Override
     public String toString() {
         return "ExperimentalOutlierDetectorConfig{" +
-                "clientsEnabledFor=" + rawClientsEnabledFor  +
+                "clientsEnabledFor=" + rawClientsEnabledFor +
                 ", failedConnectionsThreshold=" + failedConnectionsThreshold +
                 ", lbPolicy=" + lbPolicy +
                 ", ewmaHalfLife=" + ewmaHalfLife +
@@ -252,8 +214,8 @@ final class DefaultLoadBalancerProviderConfig {
         try {
             return Long.parseLong(propertyValue.trim());
         } catch (Exception ex) {
-            LOGGER.warn("Exception parsing property {} with value {} into integral value. Using default.",
-                    name, propertyValue, ex);
+            LOGGER.warn("Exception parsing property {} with value {} to an integral value. Using the default of {}.",
+                    name, propertyValue, defaultValue, ex);
             return defaultValue;
         }
     }

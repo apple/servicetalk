@@ -39,6 +39,13 @@ The specific names will depend on how the client is build. If the client is buil
 only the host component. If the client is built using some other unresolved address form then the string representation
 of that is used.
 
+=== Customizing Name Extraction
+
+The provider depends on the service name for selecting which client to use. If you're using a custom naming system
+the default implementation may not be able to decode the unresolved address type to the appropriate name. Custom naming
+schemes can be supported by extending the `DefaultHttpLoadBalancerProvider` and overriding the `clientNameFromAddress`
+method. Then this custom provider can be added to the service load list as described in the section above.
+
 === All Supported Properties
 
 All system properties contain the prefix "io.servicetalk.loadbalancer.experimental.". A comprehensive list of the

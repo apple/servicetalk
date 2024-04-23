@@ -45,7 +45,7 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
     }
 
     @Override
-    public <U, R> SingleAddressHttpClientBuilder<U, R> newBuilder(U address,
+    public final <U, R> SingleAddressHttpClientBuilder<U, R> newBuilder(U address,
                                                                   SingleAddressHttpClientBuilder<U, R> builder) {
         final String serviceName = clientNameFromAddress(address);
         if (config.enabledForServiceName(serviceName)) {
@@ -71,7 +71,14 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
                 .build();
     }
 
-    private static String clientNameFromAddress(Object address) {
+    /**
+     * Extract the service name from the address object.
+     * Note: this is a protected method to allow overriding for custom address types.
+     * @param <U> the unresolved type of the address.
+     * @param address the address from which to extract the service name.
+     * @return the String representation of the provided address.
+     */
+    protected <U> String clientNameFromAddress(U address) {
         String serviceName;
         if (address instanceof HostAndPort) {
             serviceName = ((HostAndPort) address).hostName();

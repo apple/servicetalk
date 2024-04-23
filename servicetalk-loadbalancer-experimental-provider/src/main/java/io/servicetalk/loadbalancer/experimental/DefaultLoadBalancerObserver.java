@@ -17,8 +17,8 @@ package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-
 import io.servicetalk.loadbalancer.LoadBalancerObserver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-public class DefaultLoadBalancerObserver implements LoadBalancerObserver {
+final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancerObserver.class);
 
