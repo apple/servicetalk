@@ -30,6 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A client builder provider that supports enabling the new `DefaultLoadBalancer` in applications via property flags.
+ * See the packages README.md for more details.
+ */
 public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddressHttpClientBuilderProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerProvider.class);
