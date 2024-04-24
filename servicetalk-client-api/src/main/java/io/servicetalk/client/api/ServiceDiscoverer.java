@@ -40,7 +40,7 @@ public interface ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      * <p>
      * In general a call to this method will continue to discover changes related to {@code address} until the
      * {@link Subscription} corresponding to the return value is cancelled via {@link Subscription#cancel()} or there
-     * are no more changes to publish.
+     * are no more changes to be published.
      * @param address the service address to discover. Examples of what this address maybe are:
      * <ul>
      * <li>hostname/port (e.g. InetAddress)</li>

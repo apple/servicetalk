@@ -22,9 +22,8 @@ import java.util.Locale;
  * <p>
  * Interpreting Events
  * <ul>
- *     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial state is
- *         considered to be an empty set and the first events received will represent the current state of the world.
- *         </li>
+ *     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial collection of
+ *         events is considered to be the current state of the world.</li>
  *     <li>Each event represents the current state of the {@link ResolvedAddress} overriding any previously known
  *         {@link Status} and any associated meta-data.</li>
  * </ul>
@@ -40,7 +39,7 @@ import java.util.Locale;
  * Say the meta-data for address changes resulting in a system state {addr1, (AVAILABLE, meta-2)}. The state change is
  * be represented by the event (addr1, (AVAILABLE, meta-2)).
  *
- * Next the address is removed from the system resulting in the empty state {}. It is up to the
+ * Next the address is removed from the system resulting in an empty state {}. It is up to the
  * {@link ServiceDiscoverer} whether this will be represented by the {@link Status#UNAVAILABLE} or
  * {@link Status#EXPIRED} but both are logically equivalent to removal, only with different meanings for how
  * resources already acquired to the address should be used. Picking UNAVAILABLE, the transition back to the empty state
