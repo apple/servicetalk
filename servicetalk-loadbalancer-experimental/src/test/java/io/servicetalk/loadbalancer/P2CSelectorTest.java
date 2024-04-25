@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -116,6 +118,17 @@ class P2CSelectorTest {
         TestLoadBalancedConnection connection = selector.selectConnection(
                 PREDICATE, null, false).toFuture().get();
         assertThat(connection.address(), equalTo("addr-1"));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
+    @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
+    void emptyHostSet(boolean failOpen, boolean equalWeights) {
+        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights);
+        this.failOpen = failOpen;
+        init(hosts);
+        ExecutionException ex = assertThrows(ExecutionException.class,
+            () -> selector.selectConnection(PREDICATE, null, false).toFuture().get());
+        assertThat(ex.getCause(), instanceOf(NoAvailableHostException.class));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")

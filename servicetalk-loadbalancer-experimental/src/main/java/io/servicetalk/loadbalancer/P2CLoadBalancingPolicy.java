@@ -110,11 +110,13 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         }
 
         /**
-         * Set whether the host selector should support unequally weighted hosts.
+         * Set whether the host selector should honor a {@link Host}s weight.
+         *
          * Host weight influences the probability it will be selected to server a request. The host weight can come
          * from many sources including known host capacity, priority groups, among others, so disabling weight support
          * can lead to other features not working properly.
          * Defaults to {@value DEFAULT_SUPPORT_WEIGHTS}.
+         *
          * @param supportWeights whether the host selector should support unequally weighted hosts.
          * @return {@code this}
          */

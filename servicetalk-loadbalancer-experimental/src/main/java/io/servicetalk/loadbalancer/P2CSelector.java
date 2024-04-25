@@ -29,6 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static java.lang.Math.abs;
+
 /**
  * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
  * Choices in Randomized Load Balancing.
@@ -42,7 +44,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CSelector.class);
 
     private static final double ACCEPTABLE_PERCENT_ERROR = 0.01;
-    private static final EntrySelector EMPTY_SELECTOR = new EqualWeightTable(0);
+    private static final EntrySelector EMPTY_SELECTOR = new EqualWeightEntrySelector(0);
 
     @Nullable
     private final Random random;
@@ -56,7 +58,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
                        @Nullable final Random random) {
         super(hosts, targetResource);
         this.supportWeights = supportWeights;
-        this.entrySelector = supportWeights ? buildAliasTable(hosts) : new EqualWeightTable(hosts.size());
+        this.entrySelector = supportWeights ? buildAliasTable(hosts) : new EqualWeightEntrySelector(hosts.size());
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
         this.random = random;
@@ -178,7 +180,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             if (pi < 0) {
                 LOGGER.warn("{}: host at address {} has negative weight ({}). Using unweighted selection.",
                         getTargetResource(), hosts.get(i).address(), pi);
-                return new EqualWeightTable(hosts.size());
+                return new EqualWeightEntrySelector(hosts.size());
             }
             probs[i] = pi;
             pTotal += pi;
@@ -187,7 +189,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
         if (allSameProbability) {
             // no need for a DRV table.
-            return new EqualWeightTable(hosts.size());
+            return new EqualWeightEntrySelector(hosts.size());
         }
 
         // make sure our probability is normalized to less than 1% error.
@@ -208,10 +210,10 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     // An EntrySelector that represents equally weighted entries. In this case no alias table is needed.
-    private static final class EqualWeightTable extends EntrySelector {
+    private static final class EqualWeightEntrySelector extends EntrySelector {
         private final int size;
 
-        EqualWeightTable(final int size) {
+        EqualWeightEntrySelector(final int size) {
             this.size = size;
         }
 
@@ -319,11 +321,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     private static boolean approxEqual(double a, double b) {
-        double diff = a - b;
-        if (diff < 0) {
-            diff = -diff;
-        }
-        return diff < ACCEPTABLE_PERCENT_ERROR;
+        return abs(a - b) < ACCEPTABLE_PERCENT_ERROR;
     }
 
     private static boolean isNormalized(double[] probabilities) {
