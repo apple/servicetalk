@@ -111,8 +111,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
         @Override
         public SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
                 HttpLoadBalancerFactory<R> loadBalancerFactory) {
-            LOGGER.info("Ignoring load balancer factory for client to {} which has DefaultLoadBalancer enabled.",
-                    serviceName);
+            LOGGER.info("Ignoring http load balancer factory of type {} for client to {} which has " +
+                    "DefaultLoadBalancer enabled.", loadBalancerFactory.getClass(), serviceName);
             return this;
         }
     }

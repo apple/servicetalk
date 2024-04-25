@@ -16,7 +16,7 @@ part of your application bundle and also include a file in the resources as foll
 resources/META-INF/services/io.servicetalk.http.api.HttpProviders$SingleAddressHttpClientBuilderProvider
 ```
 
-The contents of this must should contain the line
+The contents of this must contain the line
 
 ```
 io.servicetalk.loadbalancer.experimental.DefaultHttpLoadBalancerProvider
@@ -38,7 +38,7 @@ system property to a comma separated list:
 io.servicetalk.loadbalancer.experimental.clientsEnabledFor=service1,service2
 ```
 
-The specific names will depend on how the client is build. If the client is built using a `HostAndPort`, the names are
+The specific names will depend on how the client is built. If the client is built using a `HostAndPort`, the names are
 only the host component. If the client is built using some other unresolved address form then the string representation
 of that is used.
 

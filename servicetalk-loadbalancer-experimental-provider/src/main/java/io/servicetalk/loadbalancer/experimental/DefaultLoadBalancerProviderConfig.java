@@ -125,14 +125,21 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     private LBPolicy getLBPolicy() {
-        return getString(PROP_LOAD_BALANCING_POLICY, "p2c")
-                .equalsIgnoreCase(LBPolicy.P2C.name()) ? LBPolicy.P2C : LBPolicy.RoundRobin;
+        final String configuredLbName = getString(PROP_LOAD_BALANCING_POLICY, LBPolicy.P2C.name());
+        if (configuredLbName.equalsIgnoreCase(LBPolicy.P2C.name())) {
+            return LBPolicy.P2C;
+        } else if (configuredLbName.equalsIgnoreCase(LBPolicy.RoundRobin.name())) {
+            return LBPolicy.RoundRobin;
+        } else {
+            LOGGER.warn("Unrecognized load balancer policy name: {}. Defaulting to P2C.", configuredLbName);
+            return LBPolicy.P2C;
+        }
     }
 
     private Set<String> getClientsEnabledFor(String propertyValue) {
         final Set<String> result = new HashSet<>();
         // if enabled for all there is no need to parse.
-        if (!"all".equals(propertyValue)) {
+        if (!"*".equals(propertyValue)) {
             for (String serviceName : propertyValue.split(",")) {
                 String trimmed = serviceName.trim();
                 if (!trimmed.isEmpty()) {
@@ -152,7 +159,7 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     boolean enabledForServiceName(String serviceName) {
-        return "all".equals(rawClientsEnabledFor) || clientsEnabledFor.contains(serviceName);
+        return "*".equals(rawClientsEnabledFor) || clientsEnabledFor.contains(serviceName);
     }
 
     OutlierDetectorConfig outlierDetectorConfig() {
