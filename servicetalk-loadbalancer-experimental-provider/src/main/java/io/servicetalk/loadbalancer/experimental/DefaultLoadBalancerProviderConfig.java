@@ -49,27 +49,23 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_CLIENTS_ENABLED_FOR = "clientsEnabledFor";
 
     private static final String PROP_FAILED_CONNECTIONS_THRESHOLD = "healthCheckFailedConnectionsThreshold";
-    private static final String PROP_LOAD_BALANCING_POLICY = "clientExperimentalLoadBalancerPolicy";
-    private static final String PROP_EWMA_HALF_LIFE_MS = "experimentalLoadBalancerEwmaHalfLifeMs";
-    private static final String PROP_CONSECUTIVE_5XX = "experimentalLoadBalancerConsecutive5xx";
-    private static final String PROP_INTERVAL_MS = "experimentalLoadBalancerIntervalMs";
-    private static final String PROP_BASE_EJECTION_TIME_MS = "experimentalLoadBalancerBaseEjectionTimeMs";
-    private static final String PROP_MAX_EJECTION_PERCENT = "experimentalLoadBalancerMaxEjectionPercent";
-    private static final String PROP_ENFORCING_CONSECUTIVE_5XX = "experimentalLoadBalancerEnforcingConsecutive5xx";
-    private static final String PROP_ENFORCING_SUCCESS_RATE = "experimentalLoadBalancerEnforcingSuccessRate";
-    private static final String PROP_SUCCESS_RATE_MIN_HOSTS = "experimentalLoadBalancerSuccessRateMinimumHosts";
-    private static final String PROP_SUCCESS_RATE_REQUEST_VOL = "experimentalLoadBalancerSuccessRateRequestVolume";
-    private static final String PROP_SUCCESS_RATE_STDEV_FACTOR = "experimentalLoadBalancerSuccessRateStdevFactor";
-    private static final String PROP_FAILURE_PERCENTAGE_THRESHOLD =
-            "experimentalLoadBalancerFailurePercentageThreshold";
-    private static final String PROP_ENFORCING_FAILURE_PERCENTAGE =
-            "experimentalLoadBalancerEnforcingFailurePercentage";
-    private static final String PROP_FAILURE_PERCENTAGE_MIN_HOSTS =
-            "experimentalLoadBalancerFailurePercentageMinimumHosts";
-    private static final String PROP_FAILURE_PERCENTAGE_REQUEST_VOL =
-            "experimentalLoadBalancerFailurePercentageRequestVolume";
-    private static final String PROP_MAX_EJECTION_TIME_MS = "experimentalLoadBalancerMaxEjectionTimeMs";
-    private static final String PROP_EJECTION_TIME_JITTER_MS = "experimentalLoadBalancerEjectionTimeJitterMs";
+    private static final String PROP_LOAD_BALANCING_POLICY = "policy";
+    private static final String PROP_EWMA_HALF_LIFE_MS = "ewmaHalfLifeMs";
+    private static final String PROP_CONSECUTIVE_5XX = "consecutive5xx";
+    private static final String PROP_INTERVAL_MS = "intervalMs";
+    private static final String PROP_BASE_EJECTION_TIME_MS = "baseEjectionTimeMs";
+    private static final String PROP_MAX_EJECTION_PERCENT = "maxEjectionPercent";
+    private static final String PROP_ENFORCING_CONSECUTIVE_5XX = "enforcingConsecutive5xx";
+    private static final String PROP_ENFORCING_SUCCESS_RATE = "enforcingSuccessRate";
+    private static final String PROP_SUCCESS_RATE_MIN_HOSTS = "successRateMinimumHosts";
+    private static final String PROP_SUCCESS_RATE_REQUEST_VOL = "successRateRequestVolume";
+    private static final String PROP_SUCCESS_RATE_STDEV_FACTOR = "successRateStdevFactor";
+    private static final String PROP_FAILURE_PERCENTAGE_THRESHOLD = "failurePercentageThreshold";
+    private static final String PROP_ENFORCING_FAILURE_PERCENTAGE = "enforcingFailurePercentage";
+    private static final String PROP_FAILURE_PERCENTAGE_MIN_HOSTS = "failurePercentageMinimumHosts";
+    private static final String PROP_FAILURE_PERCENTAGE_REQUEST_VOL = "failurePercentageRequestVolume";
+    private static final String PROP_MAX_EJECTION_TIME_MS = "maxEjectionTimeMs";
+    private static final String PROP_EJECTION_TIME_JITTER_MS = "ejectionTimeJitterMs";
 
     static final DefaultLoadBalancerProviderConfig INSTANCE = new DefaultLoadBalancerProviderConfig();
 
