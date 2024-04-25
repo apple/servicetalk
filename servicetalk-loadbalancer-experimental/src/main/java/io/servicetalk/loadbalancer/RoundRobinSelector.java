@@ -28,7 +28,10 @@ import javax.annotation.Nullable;
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
+    private static final int MAX_WEIGHT = 0xffff;
+
     private final AtomicInteger index;
+    private final Scheduler scheduler;
     private final boolean failOpen;
 
     RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
@@ -40,6 +43,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
                                final String targetResource, final boolean failOpen) {
         super(hosts, targetResource);
         this.index = index;
+        this.scheduler = buildScheduler(index, hosts());
         this.failOpen = failOpen;
     }
 
@@ -48,7 +52,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             final Predicate<C> selector, @Nullable final ContextMap context,
             final boolean forceNewConnectionAndReserve) {
         // try one loop over hosts and if all are expired, give up
-        final int cursor = (index.getAndIncrement() & Integer.MAX_VALUE) % hosts().size();
+        final int cursor = scheduler.nextHost();
         Host<ResolvedAddress, C> failOpenHost = null;
         for (int i = 0; i < hosts().size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
@@ -79,5 +83,86 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<? extends Host<ResolvedAddress, C>> hosts) {
         return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen);
+    }
+
+    private static Scheduler buildScheduler(AtomicInteger index, List<? extends Host<?, ?>> hosts) {
+
+        boolean allEqualWeights = true;
+        double maxWeight = 0;
+
+        for (Host<?, ?> host : hosts) {
+            double hostWeight = host.weight();
+            maxWeight = Math.max(maxWeight, hostWeight);
+            allEqualWeights = allEqualWeights && approxEqual(hosts.get(0).weight(), hostWeight);
+        }
+
+        if (allEqualWeights) {
+            return new ConstantScheduler(index, hosts.size());
+        } else {
+            double scaleFactor = MAX_WEIGHT / maxWeight;
+            int[] scaledWeights = new int[hosts.size()];
+
+            for (int i = 0; i < scaledWeights.length; i++) {
+                // Using ceil ensures both that our max weighted element is picked on every round and that
+                // hosts with weights near zero will never be truly zero.
+                scaledWeights[i] = Math.min(MAX_WEIGHT, (int) Math.ceil(hosts.get(i).weight() * scaleFactor));
+            }
+            return new StrideScheduler(index, scaledWeights);
+        }
+    }
+
+    private static abstract class Scheduler {
+        abstract int nextHost();
+    }
+
+    private static final class ConstantScheduler extends Scheduler {
+
+        private final AtomicInteger index;
+        private final int hostsSize;
+
+        ConstantScheduler(AtomicInteger index, int hostsSize) {
+            this.index = index;
+            this.hostsSize = hostsSize;
+        }
+
+        @Override
+        int nextHost() {
+            return (int) (Integer.toUnsignedLong(index.getAndIncrement()) % hostsSize);
+        }
+    }
+
+    private static final class StrideScheduler extends Scheduler {
+
+        private final AtomicInteger index;
+        private final int[] weights;
+
+        StrideScheduler(AtomicInteger index, int[] weights) {
+            this.index = index;
+            this.weights = weights;
+        }
+
+        @Override
+        int nextHost() {
+            while (true) {
+                long counter = Integer.toUnsignedLong(index.getAndIncrement());
+                long pass = counter / weights.length;
+                int i = (int) counter % weights.length;
+                // We add an offset, which could be anything so long as it's constant throughout iteration. We choose
+                // an arbitrary multiple of the index that is on the order of the MAX_WEIGHT. This is helpful in the
+                // case where weights are [1, .. 1, 5] since the scheduling could otherwise look something like this:
+                //  ....
+                //  [t, .., t, t]
+                //  [f, .., f, t]
+                //  [f, .., f, t]
+                //  [f, .., f, t]
+                //  [f, .., f, t]
+                //  [t, .., t, t]
+                //  ....
+                long offset = MAX_WEIGHT / 2 * i;
+                if ((weights[i] * pass + offset) % MAX_WEIGHT >= MAX_WEIGHT - weights[i]) {
+                    return i;
+                }
+            }
+        }
     }
 }
