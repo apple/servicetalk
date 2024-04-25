@@ -66,7 +66,7 @@ class P2CSelectorTest {
     void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
         // Seed the random so that we don't have flaky test when we randomly get a bad roll.
         selector = new P2CSelector<>(hosts, "testResource",
-                true, maxEffort, failOpen, new Random(1L));
+                false, maxEffort, failOpen, new Random(1L));
     }
 
     @Test
@@ -90,7 +90,7 @@ class P2CSelectorTest {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections(2);
         when(hosts.get(0).weight()).thenReturn(2.0);
         when(hosts.get(1).weight()).thenReturn(0.5);
-        selector = new P2CSelector<>(hosts, "testResource", false, maxEffort, failOpen, new Random(0L));
+        selector = new P2CSelector<>(hosts, "testResource", true, maxEffort, failOpen, new Random(0L));
         int[] counts = runIterations(hosts);
 
         double expected = Arrays.stream(counts).reduce(0, (a, b) -> a + b) / (double) hosts.size();

@@ -42,15 +42,15 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
-    private final boolean supportWeights;
+    private final boolean ignoreWeights;
     private final int maxEffort;
     private final boolean failOpen;
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final boolean supportWeights, final int maxEffort,
+    private P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
                                    final boolean failOpen, @Nullable final Random random) {
-        this.supportWeights = supportWeights;
+        this.ignoreWeights = ignoreWeights;
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
         this.random = random;
@@ -59,7 +59,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     @Override
     HostSelector<ResolvedAddress, C> buildSelector(
             List<Host<ResolvedAddress, C>> hosts, String targetResource) {
-        return new P2CSelector<>(hosts, targetResource, supportWeights, maxEffort, failOpen, random);
+        return new P2CSelector<>(hosts, targetResource, ignoreWeights, maxEffort, failOpen, random);
     }
 
     @Override
@@ -77,10 +77,10 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
      */
     public static final class Builder {
 
-        private static final boolean DEFAULT_SUPPORT_WEIGHTS = true;
+        private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
         private static final int DEFAULT_MAX_EFFORT = 5;
 
-        private boolean supportWeights = DEFAULT_SUPPORT_WEIGHTS;
+        private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
         private int maxEffort = DEFAULT_MAX_EFFORT;
         private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
         @Nullable
@@ -110,18 +110,17 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         }
 
         /**
-         * Set whether the host selector should honor a {@link Host}s weight.
+         * Set whether the host selector should ignore {@link Host}s weight.
+         * Host weight influences the probability it will be selected to serve a request. The host weight can come
+         * from many sources including known host capacity, priority groups, and others, so ignoring weight
+         * information can lead to other features not working properly and should be used with care.
+         * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
          *
-         * Host weight influences the probability it will be selected to server a request. The host weight can come
-         * from many sources including known host capacity, priority groups, among others, so disabling weight support
-         * can lead to other features not working properly.
-         * Defaults to {@value DEFAULT_SUPPORT_WEIGHTS}.
-         *
-         * @param supportWeights whether the host selector should support unequally weighted hosts.
+         * @param ignoreWeights whether the host selector should ignore host weight information.
          * @return {@code this}
          */
-        public Builder supportWeights(final boolean supportWeights) {
-            this.supportWeights = supportWeights;
+        public Builder ignoreWeights(final boolean ignoreWeights) {
+            this.ignoreWeights = ignoreWeights;
             return this;
         }
 
@@ -138,7 +137,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
-            return new P2CLoadBalancingPolicy<>(supportWeights, maxEffort, failOpen, random);
+            return new P2CLoadBalancingPolicy<>(ignoreWeights, maxEffort, failOpen, random);
         }
     }
 }
