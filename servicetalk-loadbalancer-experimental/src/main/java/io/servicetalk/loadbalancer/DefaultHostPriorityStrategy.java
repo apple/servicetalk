@@ -43,7 +43,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
     }
 
     @Override
-    public List<? extends Host<ResolvedAddress, C>> rebuild(List<EndpointHost<ResolvedAddress, C>> hosts) {
+    public List<? extends Host<ResolvedAddress, C>> prioritize(List<EndpointHost<ResolvedAddress, C>> hosts) {
         // no need to compute priorities if there are no hosts.
         return hosts.isEmpty() ? hosts : rebuildWithPriorities(hosts);
     }
@@ -60,10 +60,9 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         //  balancer.
         List<Group> groups = new ArrayList<>();
         // First consolidate our hosts into their respective priority groups.
-        for (int i = 0; i < hosts.size(); i++) {
-            EndpointHost<ResolvedAddress, C> host = hosts.get(i);
+        for (EndpointHost<ResolvedAddress, C> host : hosts) {
             if (host.priority() < 0) {
-                LOGGER.warn("Found illegal priority: {}. Dropping priority grouping data.", i);
+                LOGGER.warn("Found illegal priority: {}. Dropping priority grouping data.", host.priority());
                 return hosts;
             }
             Group group = getGroup(groups, host.priority());
@@ -77,7 +76,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         int totalHealthPercentage = 0;
         for (Group group : groups) {
             group.healthPercentage = Math.min(100, overProvisionPercentage * group.healthyCount / group.hosts.size());
-            totalHealthPercentage = Math.min(totalHealthPercentage, totalHealthPercentage + group.healthPercentage);
+            totalHealthPercentage += group.healthPercentage;
         }
 
         if (totalHealthPercentage == 0) {

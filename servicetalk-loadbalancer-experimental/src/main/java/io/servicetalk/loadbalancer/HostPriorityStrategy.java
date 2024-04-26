@@ -23,5 +23,5 @@ import java.util.List;
 interface HostPriorityStrategy<ResolvedAddress, C extends LoadBalancedConnection> {
 
     // This construct doesn't own the hosts, it just consumes them.
-    List<? extends Host<ResolvedAddress, C>> rebuild(List<EndpointHost<ResolvedAddress, C>> hosts);
+    List<? extends Host<ResolvedAddress, C>> prioritize(List<EndpointHost<ResolvedAddress, C>> hosts);
 }

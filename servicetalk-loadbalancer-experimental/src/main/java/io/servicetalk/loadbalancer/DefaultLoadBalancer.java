@@ -481,7 +481,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // must be called from within the SequentialExecutor
     private void sequentialUpdateUsedHosts(List<EndpointHost<ResolvedAddress, C>> nextHosts) {
         this.usedHosts = nextHosts;
-        this.hostSelector = hostSelector.rebuildWithHosts(priorityStrategy.rebuild(usedHosts));
+        this.hostSelector = hostSelector.rebuildWithHosts(priorityStrategy.prioritize(usedHosts));
     }
 
     @Override
