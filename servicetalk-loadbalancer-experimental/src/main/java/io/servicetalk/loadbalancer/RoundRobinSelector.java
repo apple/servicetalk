@@ -33,18 +33,20 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     private final AtomicInteger index;
     private final Scheduler scheduler;
     private final boolean failOpen;
+    private final boolean ignoreWeights;
 
     RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
-                       final boolean failOpen) {
-        this(new AtomicInteger(), hosts, targetResource, failOpen);
+                       final boolean failOpen, final boolean ignoreWeights) {
+        this(new AtomicInteger(), hosts, targetResource, failOpen, ignoreWeights);
     }
 
     private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
-                               final String targetResource, final boolean failOpen) {
+                               final String targetResource, final boolean failOpen, final boolean ignoreWeights) {
         super(hosts, targetResource);
         this.index = index;
-        this.scheduler = buildScheduler(index, hosts());
+        this.scheduler = ignoreWeights ? new ConstantScheduler(index, hosts.size()) : buildScheduler(index, hosts());
         this.failOpen = failOpen;
+        this.ignoreWeights = ignoreWeights;
     }
 
     @Override
@@ -82,14 +84,12 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<? extends Host<ResolvedAddress, C>> hosts) {
-        return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen);
+        return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen, ignoreWeights);
     }
 
     private static Scheduler buildScheduler(AtomicInteger index, List<? extends Host<?, ?>> hosts) {
-
         boolean allEqualWeights = true;
         double maxWeight = 0;
-
         for (Host<?, ?> host : hosts) {
             double hostWeight = host.weight();
             maxWeight = Math.max(maxWeight, hostWeight);
@@ -103,8 +103,10 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             int[] scaledWeights = new int[hosts.size()];
 
             for (int i = 0; i < scaledWeights.length; i++) {
-                // Using ceil ensures both that our max weighted element is picked on every round and that
-                // hosts with weights near zero will never be truly zero.
+                // Using ceil ensures a few things:
+                // - our max weighted element is picked on every round
+                // - hosts with weights near zero will never be truly zero
+                // - true zero weights will still be truly zero
                 scaledWeights[i] = Math.min(MAX_WEIGHT, (int) Math.ceil(hosts.get(i).weight() * scaleFactor));
             }
             return new StrideScheduler(index, scaledWeights);
@@ -131,7 +133,13 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         }
     }
 
+    // The stride scheduler is heavily inspired by the Google gRPC implementations with some minor modifications.
+    // The stride scheduler algorithm is convenient in that  it doesn't require synchronization like a priority queue
+    // based solution would which fits well with highly concurrent nature of our HostSelector abstraction.
+    // See the java-grpc library for more details:
+    // https://github.com/grpc/grpc-java/blob/da619e2b/xds/src/main/java/io/grpc/xds/WeightedRoundRobinLoadBalancer.java
     private static final class StrideScheduler extends Scheduler {
+
 
         private final AtomicInteger index;
         private final int[] weights;

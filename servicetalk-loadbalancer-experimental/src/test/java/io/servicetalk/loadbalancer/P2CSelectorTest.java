@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
-import static io.servicetalk.loadbalancer.SelectorTestHelpers.connections;
+import static io.servicetalk.loadbalancer.SelectorTestHelpers.generateHosts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.either;
@@ -71,14 +71,14 @@ class P2CSelectorTest {
 
     @Test
     void equalWeightDistribution() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(5);
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(5);
         init(hosts);
         checkProbabilities(hosts);
     }
 
     @Test
     void unequalWeightDistribution() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(5);
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(5);
         when(hosts.get(0).weight()).thenReturn(2.0);
         when(hosts.get(1).weight()).thenReturn(0.5);
         init(hosts);
@@ -87,7 +87,7 @@ class P2CSelectorTest {
 
     @Test
     void unequalWeightsButWeightsDisabled() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(2);
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(2);
         when(hosts.get(0).weight()).thenReturn(2.0);
         when(hosts.get(1).weight()).thenReturn(0.5);
         selector = new P2CSelector<>(hosts, "testResource", true, maxEffort, failOpen, new Random(0L));
@@ -101,7 +101,7 @@ class P2CSelectorTest {
 
     @Test
     void negativeWeightsTurnIntoUnweightedSelection() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(2);
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(2);
         when(hosts.get(0).weight()).thenReturn(-1.0);
         init(hosts);
         int[] counts = runIterations(hosts);
@@ -114,7 +114,7 @@ class P2CSelectorTest {
 
     @Test
     void singleHealthyHost() throws Exception {
-        init(connections("addr-1"));
+        init(SelectorTestHelpers.generateHosts("addr-1"));
         TestLoadBalancedConnection connection = selector.selectConnection(
                 PREDICATE, null, false).toFuture().get();
         assertThat(connection.address(), equalTo("addr-1"));
@@ -123,7 +123,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void emptyHostSet(boolean failOpen, boolean equalWeights) {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights);
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights);
         this.failOpen = failOpen;
         init(hosts);
         ExecutionException ex = assertThrows(ExecutionException.class,
@@ -134,7 +134,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void singleUnhealthyHost(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
@@ -152,7 +152,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void singleInactiveAndUnhealthyHostWithConnection(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         this.failOpen = failOpen;
@@ -171,7 +171,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void singleInactiveAndUnhealthyHostWithoutConnection(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
@@ -186,7 +186,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void twoHealthyActiveHosts(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         this.failOpen = failOpen;
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
@@ -197,7 +197,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void twoHealthyInactiveHostsWithConnections(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
             when(host.canMakeNewConnections()).thenReturn(false);
         }
@@ -211,7 +211,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void twoHealthyInactiveHostsWithoutConnections(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
             when(host.canMakeNewConnections()).thenReturn(false);
             when(host.pickConnection(PREDICATE, null)).thenReturn(null);
@@ -226,7 +226,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void twoUnHealthyActiveHosts(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
             when(host.isHealthy()).thenReturn(false);
         }
@@ -246,7 +246,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void twoUnHealthyInactiveHosts(boolean failOpen, boolean equalWeights) {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         for (Host<String, TestLoadBalancedConnection> host : hosts) {
             when(host.isHealthy()).thenReturn(false);
             when(host.canMakeNewConnections()).thenReturn(false);
@@ -261,7 +261,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void doesntBiasTowardHostsWithConnections(boolean failOpen, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         // we setup the first host to always be preferred by score, but it also doesn't have any connections.
         when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
         when(hosts.get(0).score()).thenReturn(10);
@@ -276,7 +276,7 @@ class P2CSelectorTest {
 
     @Test
     void selectsExistingConnectionsFromNonPreferredHost() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
         // we setup the first host to always be preferred by score, but it also doesn't have any connections
         // and is unhealthy.
         when(hosts.get(0).pickConnection(any(), any())).thenReturn(null);
@@ -292,7 +292,7 @@ class P2CSelectorTest {
 
     @Test
     void biasesTowardsHealthyHostWhenMakingConnections() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         init(hosts);
         TestLoadBalancedConnection connection = selector.selectConnection(
@@ -303,7 +303,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: forceNewConnection={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void biasesTowardTheHighestWeightHost(boolean forceNewConnection, boolean equalWeights) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1", "addr-2");
         // Host 0 has the highest score, so it should always get the new connection.
         when(hosts.get(0).score()).thenReturn(10);
         init(hosts);
@@ -315,7 +315,7 @@ class P2CSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: unhealthy={0}, equalWeights={1}")
     @CsvSource({"true, true,", "true, false", "false, true", "false, false"})
     void singleInactiveHostFailOpen(boolean unhealthy, boolean equalWeights) {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections(equalWeights, "addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = generateHosts(equalWeights, "addr-1");
         when(hosts.get(0).isHealthy()).thenReturn(unhealthy);
         when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
