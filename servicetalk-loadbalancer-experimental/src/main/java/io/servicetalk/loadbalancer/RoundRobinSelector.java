@@ -29,19 +29,17 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         extends BaseHostSelector<ResolvedAddress, C> {
 
     private final AtomicInteger index;
-    private final List<? extends Host<ResolvedAddress, C>> usedHosts;
     private final boolean failOpen;
 
-    RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> usedHosts, final String targetResource,
+    RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
                        final boolean failOpen) {
-        this(new AtomicInteger(), usedHosts, targetResource, failOpen);
+        this(new AtomicInteger(), hosts, targetResource, failOpen);
     }
 
-    private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> usedHosts,
+    private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
                                final String targetResource, final boolean failOpen) {
-        super(usedHosts, targetResource);
+        super(hosts, targetResource);
         this.index = index;
-        this.usedHosts = usedHosts;
         this.failOpen = failOpen;
     }
 
@@ -50,12 +48,12 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             final Predicate<C> selector, @Nullable final ContextMap context,
             final boolean forceNewConnectionAndReserve) {
         // try one loop over hosts and if all are expired, give up
-        final int cursor = (index.getAndIncrement() & Integer.MAX_VALUE) % usedHosts.size();
+        final int cursor = (index.getAndIncrement() & Integer.MAX_VALUE) % hosts().size();
         Host<ResolvedAddress, C> failOpenHost = null;
-        for (int i = 0; i < usedHosts.size(); ++i) {
+        for (int i = 0; i < hosts().size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
-            final int localCursor = (cursor + i) % usedHosts.size();
-            final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
+            final int localCursor = (cursor + i) % hosts().size();
+            final Host<ResolvedAddress, C> host = hosts().get(localCursor);
             if (host.isHealthy()) {
                 Single<C> result = selectFromHost(host, selector, forceNewConnectionAndReserve, context);
                 if (result != null) {
@@ -75,7 +73,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         // We were unable to find a suitable host.
-        return noActiveHostsFailure(usedHosts);
+        return noActiveHostsFailure(hosts());
     }
 
     @Override

@@ -58,6 +58,10 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return anyHealthy(hosts);
     }
 
+    protected final List<? extends Host<ResolvedAddress, C>> hosts() {
+        return hosts;
+    }
+
     protected final String getTargetResource() {
         return targetResource;
     }
