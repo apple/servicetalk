@@ -44,14 +44,14 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onNoHostsAvailable() {
-        LOGGER.debug("{}- No hosts available", clientName);
+        LOGGER.debug("{}- onNoHostsAvailable()", clientName);
     }
 
     @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events, int oldHostSetSize,
                                         int newHostSetSize) {
-        LOGGER.debug("{}- service discovery events. Old host set size: {}, new host set size: {}, events: {}",
-                clientName, oldHostSetSize, newHostSetSize, events);
+        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, oldHostSetSize: {}, newHostSetSize: {})",
+                clientName, events, oldHostSetSize, newHostSetSize);
     }
 
     @Override
@@ -93,7 +93,7 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
         @Override
         public void onHostMarkedUnhealthy(@Nullable Throwable cause) {
-            LOGGER.debug("{}:{}- onExpiredHostRemoved(ex)", clientName, resolvedAddress, cause);
+            LOGGER.debug("{}:{}- onHostMarkedUnhealthy(ex)", clientName, resolvedAddress, cause);
         }
 
         @Override
