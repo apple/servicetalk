@@ -91,7 +91,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // writes are protected by `sequentialExecutor` but the field can be read by any thread.
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
     // reads and writes are protected by `sequentialExecutor`.
-    private List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    private List<EndpointHost<ResolvedAddress, C>> usedHosts = emptyList();
     // reads and writes are protected by `sequentialExecutor`.
     private boolean isClosed;
 
@@ -106,6 +106,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
+    private final HostPriorityStrategy<ResolvedAddress, C> priorityStrategy;
     private final OutlierDetector<ResolvedAddress, C> outlierDetector;
     private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
@@ -136,6 +137,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
+        this.priorityStrategy = new DefaultHostPriorityStrategy<>();
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
@@ -152,6 +154,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
         // we already have all the fields initialized.
         subscribeToEvents(false);
+
+        // When we get a health-status event we should update the host set.
+        this.outlierDetector.healthStatusChanged().forEach((ignored) ->
+            sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts)));
     }
 
     private void subscribeToEvents(boolean resubscribe) {
@@ -180,7 +186,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     outlierDetector.cancel();
                 }
                 isClosed = true;
-                List<Host<ResolvedAddress, C>> currentList = usedHosts;
+                List<EndpointHost<ResolvedAddress, C>> currentList = usedHosts;
                 final CompositeCloseable compositeCloseable = newCompositeCloseable()
                         .appendAll(currentList)
                         .appendAll(connectionFactory);
@@ -278,8 +284,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
 
             boolean sendReadyEvent = false;
-            final List<Host<ResolvedAddress, C>> nextHosts = new ArrayList<>(usedHosts.size() + events.size());
-            final List<Host<ResolvedAddress, C>> oldUsedHosts = usedHosts;
+            final List<EndpointHost<ResolvedAddress, C>> nextHosts = new ArrayList<>(usedHosts.size() + events.size());
+            final List<EndpointHost<ResolvedAddress, C>> oldUsedHosts = usedHosts;
             // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
             final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
             for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
@@ -294,12 +300,18 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // will be all existing hosts that either don't have a matching discovery event or are not marked
             // as unavailable. If they are marked unavailable, we need to close them.
             boolean hostSetChanged = false;
-            for (Host<ResolvedAddress, C> host : oldUsedHosts) {
+            for (EndpointHost<ResolvedAddress, C> host : oldUsedHosts) {
                 ServiceDiscovererEvent<ResolvedAddress> event = eventMap.remove(host.address());
                 if (event == null) {
                     // Host doesn't have a SD update so just copy it over.
                     nextHosts.add(host);
-                } else if (AVAILABLE.equals(event.status())) {
+                    continue;
+                }
+                // Set the new weight and priority of the endpoint.
+                host.weight(getWeight(event));
+                host.priority(getPriority(event));
+
+                if (AVAILABLE.equals(event.status())) {
                     // We only send the ready event if the previous host list was empty.
                     sendReadyEvent = oldUsedHosts.isEmpty();
                     // If the host is already in CLOSED state, we should discard it and create a new entry.
@@ -309,7 +321,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     } else {
                         // It's a new host, so the set changed.
                         hostSetChanged = true;
-                        nextHosts.add(createHost(event.address()));
+                        nextHosts.add(createHost(event));
                     }
                 } else if (EXPIRED.equals(event.status())) {
                     if (!host.markExpired()) {
@@ -336,7 +348,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (AVAILABLE.equals(event.status())) {
                     sendReadyEvent = true;
                     hostSetChanged = true;
-                    nextHosts.add(createHost(event.address()));
+                    nextHosts.add(createHost(event));
                 }
             }
 
@@ -380,7 +392,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
         }
 
-        private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
+        private EndpointHost<ResolvedAddress, C> createHost(ServiceDiscovererEvent<ResolvedAddress> event) {
+            ResolvedAddress addr = event.address();
             final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
             // All hosts will share the health check config of the parent load balancer.
             final HealthIndicator indicator = outlierDetector.newHealthIndicator(addr, hostObserver);
@@ -388,19 +401,22 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // failed connect threshold is negative, meaning disabled.
             final HealthCheckConfig hostHealthCheckConfig =
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
-            final Host<ResolvedAddress, C> host = new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
-                    connectionFactory, hostObserver, hostHealthCheckConfig, indicator);
+            final EndpointHost<ResolvedAddress, C> host = new EndpointHost<>(
+                    new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
+                    connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
+                    getWeight(event), getPriority(event));
             if (indicator != null) {
                 indicator.setHost(host);
             }
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
-                        final List<Host<ResolvedAddress, C>> currentHosts = usedHosts;
+                        final List<EndpointHost<ResolvedAddress, C>> currentHosts = usedHosts;
                         if (currentHosts.isEmpty()) {
                             // Can't remove an entry from an empty list.
                             return;
                         }
-                        final List<Host<ResolvedAddress, C>> nextHosts = listWithHostRemoved(currentHosts, host);
+                        final List<EndpointHost<ResolvedAddress, C>> nextHosts = listWithHostRemoved(
+                                currentHosts, host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
                             sequentialUpdateUsedHosts(nextHosts);
@@ -413,8 +429,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             return host;
         }
 
-        private List<Host<ResolvedAddress, C>> listWithHostRemoved(List<Host<ResolvedAddress, C>> oldHostsTyped,
-                                                                   Host<ResolvedAddress, C> toRemove) {
+        private List<EndpointHost<ResolvedAddress, C>> listWithHostRemoved(
+                List<EndpointHost<ResolvedAddress, C>> oldHostsTyped, EndpointHost<ResolvedAddress, C> toRemove) {
             final int index = oldHostsTyped.indexOf(toRemove);
             if (index < 0) {
                 // Element doesn't exist: just return the old list.
@@ -425,7 +441,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 return emptyList();
             }
             // Copy the remaining live elements to a new list.
-            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
+            final List<EndpointHost<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
             for (int i = 0; i < oldHostsTyped.size(); ++i) {
                 if (i != index) {
                     newHosts.add(oldHostsTyped.get(i));
@@ -441,7 +457,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     // Terminate processor only if we will never re-subscribe
                     eventStreamProcessor.onError(t);
                 }
-                List<Host<ResolvedAddress, C>> hosts = usedHosts;
+                List<EndpointHost<ResolvedAddress, C>> hosts = usedHosts;
                 LOGGER.error(
                     "{}: service discoverer {} emitted an error. Last seen addresses (size={}): {}.",
                         DefaultLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
@@ -451,7 +467,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public void onComplete() {
             sequentialExecutor.execute(() -> {
-                List<Host<ResolvedAddress, C>> hosts = usedHosts;
+                List<EndpointHost<ResolvedAddress, C>> hosts = usedHosts;
                 if (healthCheckConfig == null) {
                     // Terminate processor only if we will never re-subscribe
                     eventStreamProcessor.onComplete();
@@ -463,9 +479,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     // must be called from within the SequentialExecutor
-    private void sequentialUpdateUsedHosts(List<Host<ResolvedAddress, C>> nextHosts) {
+    private void sequentialUpdateUsedHosts(List<EndpointHost<ResolvedAddress, C>> nextHosts) {
         this.usedHosts = nextHosts;
-        this.hostSelector = hostSelector.rebuildWithHosts(usedHosts);
+        this.hostSelector = hostSelector.rebuildWithHosts(priorityStrategy.rebuild(usedHosts));
     }
 
     @Override
@@ -550,7 +566,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     // must be called from within the sequential executor.
     private List<Entry<ResolvedAddress, List<C>>> sequentialUsedAddresses() {
-        return usedHosts.stream().map(host -> ((DefaultHost<ResolvedAddress, C>) host).asEntry()).collect(toList());
+        return usedHosts.stream().map(host ->
+                ((DefaultHost<ResolvedAddress, C>) host.delegate()).asEntry()).collect(toList());
     }
 
     private String makeDescription(String id, String targetResource) {
@@ -581,5 +598,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         public int hostSetSize() {
             return 0;
         }
+    }
+
+    private static double getWeight(ServiceDiscovererEvent<?> event) {
+        LOGGER.debug("Weights not supported for event with address {}", event.address());
+        return 1.0;
+    }
+
+    private static int getPriority(ServiceDiscovererEvent<?> event) {
+        LOGGER.debug("Priorities not supported for event with address {}", event.address());
+        return 0;
     }
 }
