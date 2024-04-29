@@ -97,6 +97,112 @@ public class DefaultHostPriorityStrategyTest {
         }
     }
 
+    @Test
+    void priorityGroupsWithoutUnhealthyNodes() {
+        List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(6);
+        for (int i = 3; i < hosts.size(); i++) {
+            hosts.get(i).priority(1);
+        }
+        List<? extends Host<String, TestLoadBalancedConnection>> result =
+                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+
+        assertThat(result.size(), equalTo(3));
+
+        // We should only have the first three hosts because they were all healthy, so they are the only group.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(0).weight()));
+        }
+    }
+
+    @Test
+    void priorityGroupsWithUnhealthyNodes() {
+        List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(6);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        for (int i = 3; i < hosts.size(); i++) {
+            hosts.get(i).priority(1);
+        }
+        List<? extends Host<String, TestLoadBalancedConnection>> result =
+                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+
+        assertThat(result.size(), equalTo(6));
+
+        // We should only have the first three hosts because they were all healthy, so they are the only group.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(0).weight()));
+        }
+        for (int i = 3; i < 6; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(3).weight()));
+        }
+        // Now the relative weights between the two groups should be 66 / 34 as the first group will have 66% health
+        // and the second, while having 100% healthy, will only be able to pick up the slack.
+        assertThat(result.get(0).weight(), approxEqual(result.get(3).weight() * 66 / 34));
+    }
+
+    @Test
+    void priorityGroupsWithUnhealthyNodesTotallingLessThan100Percent() {
+        List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(6);
+        for (int i = 0; i < hosts.size(); i++) {
+            if (i >= 3) {
+                hosts.get(i).priority(1);
+            }
+            when(hosts.get(i).isHealthy()).thenReturn(false);
+        }
+        when(hosts.get(0).isHealthy()).thenReturn(true);
+        List<? extends Host<String, TestLoadBalancedConnection>> result =
+                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+
+        assertThat(result.size(), equalTo(3));
+
+        // We should only have the first three hosts because while they didn't form a full healthy set the P1 group
+        // didn't provide _any_ healthy nodes, so no need to spill over.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(0).weight()));
+        }
+    }
+
+    @Test
+    void priorityGroupsWithWeightedUnhealthyNodes() {
+        List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(6);
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        for (int i = 0; i < hosts.size(); i++) {
+            if (i >= 3) {
+                when(hosts.get(i).delegate().weight()).thenReturn(i - 3 + 1d);
+                hosts.get(i).priority(1);
+            } else {
+                when(hosts.get(i).delegate().weight()).thenReturn(i + 1d);
+            }
+        }
+        List<? extends Host<String, TestLoadBalancedConnection>> result =
+                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+
+        assertThat(result.size(), equalTo(6));
+
+        // We should only have the first three hosts because they were all healthy, so they are the only group.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(0).weight() * (i + 1)));
+        }
+        for (int i = 3; i < 6; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).weight(), approxEqual(result.get(3).weight() * (i + 1 - 3)));
+        }
+        // Now the relative weights between the two groups should be 66 / 34 as the first group will have 66% health
+        // and the second, while having 100% healthy, will only be able to pick up the slack.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).weight(), approxEqual(result.get(i + 3).weight() * 66 / 34));
+        }
+    }
+
     private static List<EndpointHost<String, TestLoadBalancedConnection>> makeHosts(int count) {
         String[] addresses = new String[count];
         for (int i = 0; i < count; i++) {

@@ -38,7 +38,8 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         this(DEFAULT_OVER_PROVISION_FACTOR);
     }
 
-    private DefaultHostPriorityStrategy(final int overProvisionPercentage) {
+    // exposed for testing
+    DefaultHostPriorityStrategy(final int overProvisionPercentage) {
         this.overProvisionPercentage = ensurePositive(overProvisionPercentage, "overProvisionPercentage");
     }
 
@@ -76,9 +77,8 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         int totalHealthPercentage = 0;
         for (Group group : groups) {
             group.healthPercentage = Math.min(100, overProvisionPercentage * group.healthyCount / group.hosts.size());
-            totalHealthPercentage += group.healthPercentage;
+            totalHealthPercentage = Math.min(100, totalHealthPercentage + group.healthPercentage);
         }
-
         if (totalHealthPercentage == 0) {
             // nothing is considered healthy so everything is considered healthy.
             return hosts;
@@ -103,7 +103,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
             if (groupProbability == 0) {
                 // TODO: this means all hosts for this group are unhealthy. This may be worth some logging.
             } else {
-                remainingProbability -= group.healthPercentage;
+                remainingProbability -= groupProbability;
                 normalizeGroup(groupProbability, group, weightedResults);
             }
         }
