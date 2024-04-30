@@ -135,14 +135,14 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         if (groupTotalWeight == 0) {
             double weight = ((double) groupProbability) / group.hosts.size();
             for (EndpointHost<ResolvedAddress, C> host : group.hosts) {
-                host.weight(weight);
+                host.loadBalancedWeight(weight);
                 results.add(host);
             }
         } else {
             double scalingFactor = groupProbability / groupTotalWeight;
             for (EndpointHost<ResolvedAddress, C> host : group.hosts) {
-                double hostWeight = host.underlyingWeight() * scalingFactor;
-                host.weight(hostWeight);
+                double hostWeight = host.intrinsicWeight() * scalingFactor;
+                host.loadBalancedWeight(hostWeight);
                 if (hostWeight > 0) {
                     results.add(host);
                 }
@@ -153,7 +153,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
     private static double totalWeight(Iterable<? extends EndpointHost<?, ?>> hosts) {
         double sum = 0;
         for (EndpointHost<?, ?> host : hosts) {
-            sum += host.underlyingWeight();
+            sum += host.intrinsicWeight();
         }
         return sum;
     }

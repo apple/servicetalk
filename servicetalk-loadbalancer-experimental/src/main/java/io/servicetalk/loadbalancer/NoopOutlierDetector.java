@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +45,11 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
     public HealthIndicator<ResolvedAddress, C> newHealthIndicator(
             ResolvedAddress resolvedAddress, LoadBalancerObserver.HostObserver hostObserver) {
         return new BasicHealthIndicator();
+    }
+
+    @Override
+    public Publisher<Void> healthStatusChanged() {
+        return Publisher.never();
     }
 
     private final class BasicHealthIndicator extends DefaultRequestTracker

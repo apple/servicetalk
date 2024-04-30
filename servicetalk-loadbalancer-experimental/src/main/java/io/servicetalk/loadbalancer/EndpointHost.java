@@ -31,12 +31,13 @@ import static java.util.Objects.requireNonNull;
 final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> implements Host<ResolvedAddress, C> {
     private final Host<ResolvedAddress, C> delegate;
     private int priority;
-    private double weight;
+    private double intrinsicWeight;
+    private double loadBalancedWeight;
 
-    EndpointHost(final Host<ResolvedAddress, C> delegate, final double weight, final int priority) {
+    EndpointHost(final Host<ResolvedAddress, C> delegate, final double intrinsicWeight, final int priority) {
         this.delegate = requireNonNull(delegate, "delegate");
         this.priority = ensureNonNegative(priority, "priority");
-        this.weight = weight;
+        this.intrinsicWeight = intrinsicWeight;
     }
 
     Host<ResolvedAddress, C> delegate() {
@@ -51,17 +52,24 @@ final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> impl
         this.priority = priority;
     }
 
-    void weight(final double weight) {
-        this.weight = weight;
+    // Set the intrinsic weight of the endpoint. This is the information from service discovery.
+    void intrinsicWeight(final double weight) {
+        this.intrinsicWeight = weight;
+    }
+
+    // Set the weight to use in load balancing. This includes derived weight information such as prioritization
+    // and is what the host selectors will use when picking endpoints.
+    void loadBalancedWeight(final double weight) {
+        this.loadBalancedWeight = weight;
     }
 
     @Override
     public double weight() {
-        return weight;
+        return loadBalancedWeight;
     }
 
-    double underlyingWeight() {
-        return delegate.weight();
+    double intrinsicWeight() {
+        return intrinsicWeight;
     }
 
     @Override

@@ -209,7 +209,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             if (evictedUntilNanos <= currentTimeNanos()) {
                 sequentialRevive();
             }
-            // If we are evicted or just transitioned out of eviction we shouldn't be marked as  an outlier this round.
+            // If we are evicted or just transitioned out of eviction we shouldn't be marked as an outlier this round.
             // Note that this differs from the envoy behavior. If we want to mimic it, then I think we need to just
             // fall through and maybe attempt to eject again.
             LOGGER.trace("{}-{}: markAsOutlier(..) resulted in host revival.", lbDescription, address);

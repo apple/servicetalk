@@ -17,7 +17,10 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import io.servicetalk.utils.internal.RandomUtils;
@@ -27,12 +30,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
@@ -67,6 +73,8 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
     private final String lbDescription;
+    private final PublisherSource.Processor<Void, Void> eventStreamProcessor =
+            newPublisherProcessorDropHeadOnOverflow(1);
     private final Kernel kernel;
     private final AtomicInteger indicatorCount = new AtomicInteger();
     // Protected by `sequentialExecutor`.
@@ -111,6 +119,11 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
             assert indicators.isEmpty();
             assert indicatorCount.get() == 0;
         });
+    }
+
+    @Override
+    public Publisher<Void> healthStatusChanged() {
+        return SourceAdapters.fromSource(eventStreamProcessor);
     }
 
     // Exposed for testing. Not thread safe.
@@ -188,10 +201,26 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
         private void sequentialCheckOutliers() {
             assert sequentialExecutor.isCurrentThreadDraining();
+            Map<HealthIndicator<?, ?>, Boolean> beforeState = new HashMap<>(indicators.size());
+            for (HealthIndicator<?, ?> indicator : indicators) {
+                beforeState.put(indicator, indicator.isHealthy());
+            }
             for (XdsOutlierDetectorAlgorithm<ResolvedAddress, C> outlierDetector : algorithms) {
                 outlierDetector.detectOutliers(config, indicators);
             }
             cancellable.nextCancellable(scheduleNextOutliersCheck(config));
+
+            // now check to see if any of our health states changed
+            boolean healthStatusChanged = false;
+            for (HealthIndicator<?, ?> indicator : indicators) {
+                if (beforeState.get(indicator) != indicator.isHealthy()) {
+                    healthStatusChanged = true;
+                    break;
+                }
+            }
+            if (healthStatusChanged) {
+                eventStreamProcessor.onNext(null);
+            }
         }
     }
 

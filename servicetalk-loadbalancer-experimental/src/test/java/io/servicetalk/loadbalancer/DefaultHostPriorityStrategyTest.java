@@ -49,7 +49,7 @@ public class DefaultHostPriorityStrategyTest {
     void noPrioritiesWithWeights() {
         List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(4);
         for (int i = 0; i < hosts.size(); i++) {
-            when(hosts.get(i).delegate().weight()).thenReturn(i + 1d);
+            hosts.get(i).intrinsicWeight(i + 1d);
         }
         List<? extends Host<String, TestLoadBalancedConnection>> result = defaultHostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(hosts.size()));
@@ -81,7 +81,7 @@ public class DefaultHostPriorityStrategyTest {
     void twoPrioritiesWithWeights() {
         List<EndpointHost<String, TestLoadBalancedConnection>> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
-            when(hosts.get(i).delegate().weight()).thenReturn(i + 1d);
+            hosts.get(i).intrinsicWeight(i + 1d);
             if (i >= 3) {
                 hosts.get(i).priority(1);
             }
@@ -174,10 +174,10 @@ public class DefaultHostPriorityStrategyTest {
         when(hosts.get(0).isHealthy()).thenReturn(false);
         for (int i = 0; i < hosts.size(); i++) {
             if (i >= 3) {
-                when(hosts.get(i).delegate().weight()).thenReturn(i - 3 + 1d);
+                hosts.get(i).intrinsicWeight(i - 3 + 1d);
                 hosts.get(i).priority(1);
             } else {
-                when(hosts.get(i).delegate().weight()).thenReturn(i + 1d);
+                hosts.get(i).intrinsicWeight(i + 1d);
             }
         }
         List<? extends Host<String, TestLoadBalancedConnection>> result =

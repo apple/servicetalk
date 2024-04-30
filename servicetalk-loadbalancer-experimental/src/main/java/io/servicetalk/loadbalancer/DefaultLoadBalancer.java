@@ -308,11 +308,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     continue;
                 }
                 // Set the new weight and priority of the endpoint.
-                double oldWeight = host.weight();
-                double oldPriority = host.priority();
-                host.weight(getWeight(event));
+                double oldWeight = host.intrinsicWeight();
+                int oldPriority = host.priority();
+                host.intrinsicWeight(getWeight(event));
                 host.priority(getPriority(event));
-                hostSetChanged = hostSetChanged || oldPriority != host.priority() || oldWeight != host.weight();
+                hostSetChanged = hostSetChanged || oldPriority != host.priority() || oldWeight != host.intrinsicWeight();
 
                 if (AVAILABLE.equals(event.status())) {
                     // We only send the ready event if the previous host list was empty.
