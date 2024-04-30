@@ -16,12 +16,14 @@
 package io.servicetalk.client.api;
 
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
  * @param <ResolvedAddress> the type of address after resolution.
  */
 public interface ServiceDiscovererEvent<ResolvedAddress> {
+
     /**
      * Get the resolved address which is the subject of this event.
      * <p>
@@ -40,17 +42,12 @@ public interface ServiceDiscovererEvent<ResolvedAddress> {
     Status status();
 
     /**
-     * Meta-data associated with the specified address.
-     * <p>
-     * Metadata is data that is not strictly necessary for load balancing purposes but can be useful for making more
-     * intelligent decisions. As described in {@link #address()}, updates to an addresses meta-data can be accomplished
-     * by sending another {@link ServiceDiscovererEvent} with the same address and {@link Status} but with different
-     * metadata. This also means that updates to status must also propagate the desired meta-data state or the empty
-     * meta-data state is assumed.
-     * @return
+     * The raw meta-data associated with this ServiceDiscovererEvent.
+     * Note: the result will be an unmodifiable collection.
+     * @return the raw meta-data associated with this ServiceDiscovererEvent.
      */
-    default Metadata metadata() {
-        return DefaultMetadata.EMPTY_METADATA;
+    default Map<String, Object> metadata() {
+        return ServiceDiscovererMetadata.EMPTY_MAP;
     }
 
     /**

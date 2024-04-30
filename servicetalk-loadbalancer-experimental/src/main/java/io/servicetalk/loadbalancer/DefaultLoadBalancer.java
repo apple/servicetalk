@@ -17,7 +17,6 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.MetadataKeys;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -53,7 +52,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
-import static io.servicetalk.client.api.MetadataKeys.WEIGHT;
+import static io.servicetalk.client.api.ServiceDiscovererMetadata.WEIGHT;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
@@ -311,7 +310,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     } else {
                         // It's a new host, so the set changed.
                         hostSetChanged = true;
-                        nextHosts.add(createHost(event.address(), event.metadata().get(WEIGHT)));
+                        nextHosts.add(createHost(event.address(), WEIGHT.getValue(event)));
                     }
                 } else if (EXPIRED.equals(event.status())) {
                     if (!host.markExpired()) {
@@ -338,7 +337,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (AVAILABLE.equals(event.status())) {
                     sendReadyEvent = true;
                     hostSetChanged = true;
-                    nextHosts.add(createHost(event.address(), event.metadata().get(WEIGHT)));
+                    nextHosts.add(createHost(event.address(), WEIGHT.getValue(event)));
                 }
             }
 
