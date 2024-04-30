@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,10 +34,26 @@ final class SelectorTestHelpers {
     private SelectorTestHelpers() {
     }
 
+    static List<Host<String, TestLoadBalancedConnection>> connections(int count) {
+        String[] addresses = new String[count];
+        for (int i = 0; i < count; i++) {
+            addresses[i] = "address-" + i;
+        }
+        return connections(addresses);
+    }
+
     static List<Host<String, TestLoadBalancedConnection>> connections(String... addresses) {
+        return connections(true, addresses);
+    }
+
+    static List<Host<String, TestLoadBalancedConnection>> connections(boolean equalWeights, String... addresses) {
         final List<Host<String, TestLoadBalancedConnection>> results = new ArrayList<>(addresses.length);
         for (String addr : addresses) {
-            results.add(mockHost(addr, TestLoadBalancedConnection.mockConnection(addr)));
+            Host<String, TestLoadBalancedConnection> host = mockHost(addr,
+                    TestLoadBalancedConnection.mockConnection(addr));
+            double weight = equalWeights ? 1.0 : ThreadLocalRandom.current().nextDouble() + 0.5;
+            when(host.weight()).thenReturn(weight);
+            results.add(host);
         }
         return results;
     }

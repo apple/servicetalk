@@ -497,7 +497,7 @@ public final class OutlierDetectorConfig {
          *                                   health checking mechanism.
          * @return {@code this}.
          */
-        Builder failedConnectionsThreshold(int failedConnectionsThreshold) {
+        public Builder failedConnectionsThreshold(int failedConnectionsThreshold) {
             this.failedConnectionsThreshold = failedConnectionsThreshold;
             if (failedConnectionsThreshold == 0) {
                 throw new IllegalArgumentException("Not valid value: 0");

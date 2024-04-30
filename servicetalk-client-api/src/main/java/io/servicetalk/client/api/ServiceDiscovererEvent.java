@@ -20,16 +20,40 @@ import java.util.Map;
 
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
+ * <p>
+ * Interpreting Events
+ * <ul>
+ *     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial collection of
+ *         events is considered to be the current state of the world.</li>
+ *     <li>Each event represents the current state of the {@link ResolvedAddress} overriding any previously known
+ *         {@link Status} and any associated meta-data.</li>
+ * </ul>
+ * <p>
+ * Example
+ * <p>
+ * We can represent a {@link ServiceDiscovererEvent} as map entries of the form
+ * ({@link ResolvedAddress}, ({@link Status}, meta-data)) where the {@link ResolvedAddress} is the map key.
+ * <pre>
+ * Starting with the initial state of {addr1, (AVAILABLE, meta-1)}. Upon subscribing to the event stream the initial
+ * state is populated via the event (addr1, (AVAILABLE, meta-1)).
+ *
+ * Say the meta-data for address changes resulting in a system state {addr1, (AVAILABLE, meta-2)}. The state change is
+ * be represented by the event (addr1, (AVAILABLE, meta-2)).
+ *
+ * Next the address is removed from the system resulting in an empty state {}. It is up to the
+ * {@link ServiceDiscoverer} whether this will be represented by the {@link Status#UNAVAILABLE} or
+ * {@link Status#EXPIRED} but both are logically equivalent to removal, only with different meanings for how
+ * resources already acquired to the address should be used. Picking UNAVAILABLE, the transition back to the empty state
+ * would be represented by the event (addr1, (UNAVAILABLE, meta-2)).
+ * </pre>
+ * See {@link ServiceDiscoverer} for the interface that defines the source of event streams.
+ *
  * @param <ResolvedAddress> the type of address after resolution.
  */
 public interface ServiceDiscovererEvent<ResolvedAddress> {
 
     /**
      * Get the resolved address which is the subject of this event.
-     * <p>
-     * Note: all subsequent events for the same address override its {@link #status()} or any additional meta-data
-     * associated with the address.
-     *
      * @return a resolved address that can be used for connecting.
      */
     ResolvedAddress address();
