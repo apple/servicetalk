@@ -79,8 +79,8 @@ class P2CSelectorTest {
     @Test
     void unequalWeightDistribution() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections(5);
-        when(hosts.get(0).weight()).thenReturn(2.0);
-        when(hosts.get(1).weight()).thenReturn(0.5);
+        when(hosts.get(0).loadBalancedWeight()).thenReturn(2.0);
+        when(hosts.get(1).loadBalancedWeight()).thenReturn(0.5);
         init(hosts);
         checkProbabilities(hosts);
     }
@@ -88,8 +88,8 @@ class P2CSelectorTest {
     @Test
     void unequalWeightsButWeightsDisabled() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections(2);
-        when(hosts.get(0).weight()).thenReturn(2.0);
-        when(hosts.get(1).weight()).thenReturn(0.5);
+        when(hosts.get(0).loadBalancedWeight()).thenReturn(2.0);
+        when(hosts.get(1).loadBalancedWeight()).thenReturn(0.5);
         selector = new P2CSelector<>(hosts, "testResource", true, maxEffort, failOpen, new Random(0L));
         int[] counts = runIterations(hosts);
 
@@ -102,7 +102,7 @@ class P2CSelectorTest {
     @Test
     void negativeWeightsTurnIntoUnweightedSelection() throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = connections(2);
-        when(hosts.get(0).weight()).thenReturn(-1.0);
+        when(hosts.get(0).loadBalancedWeight()).thenReturn(-1.0);
         init(hosts);
         int[] counts = runIterations(hosts);
 
@@ -329,8 +329,8 @@ class P2CSelectorTest {
     private void checkProbabilities(List<Host<String, TestLoadBalancedConnection>> hosts) throws Exception {
         int[] counts = runIterations(hosts);
 
-        double totalProbability = hosts.stream().map(Host::weight).reduce(0d, (a, b) -> a + b);
-        Integer[] expected = hosts.stream().map(host -> (int) (ITERATIONS * (host.weight() / totalProbability)))
+        double totalProbability = hosts.stream().map(Host::loadBalancedWeight).reduce(0d, (a, b) -> a + b);
+        Integer[] expected = hosts.stream().map(host -> (int) (ITERATIONS * (host.loadBalancedWeight() / totalProbability)))
                 .toArray(Integer[]::new);
 
         // calculate the rough counts we should expect
