@@ -117,7 +117,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         return groups.get(priority);
     }
 
-    private class Group<H extends PrioritizedHost> {
+    private static class Group<H extends PrioritizedHost> {
         final List<H> hosts = new ArrayList<>();
         int healthyCount;
 

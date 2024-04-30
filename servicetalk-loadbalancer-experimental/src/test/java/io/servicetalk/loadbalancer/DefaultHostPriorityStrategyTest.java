@@ -25,7 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 
-public class DefaultHostPriorityStrategyTest {
+class DefaultHostPriorityStrategyTest {
 
     private final HostPriorityStrategy defaultHostPriorityStrategy = new DefaultHostPriorityStrategy();
 
@@ -187,12 +187,14 @@ public class DefaultHostPriorityStrategyTest {
         for (int i = 3; i < 6; i++) {
             assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
             // It doesn't matter what they are exactly so long as all weights are equal.
-            assertThat(result.get(i).loadBalancedWeight(), approxEqual(result.get(3).loadBalancedWeight() * (i + 1 - 3)));
+            assertThat(result.get(i).loadBalancedWeight(),
+                    approxEqual(result.get(3).loadBalancedWeight() * (i + 1 - 3)));
         }
         // Now the relative weights between the two groups should be 66 / 34 as the first group will have 66% health
         // and the second, while having 100% healthy, will only be able to pick up the slack.
         for (int i = 0; i < 3; i++) {
-            assertThat(result.get(i).loadBalancedWeight(), approxEqual(result.get(i + 3).loadBalancedWeight() * 66 / 34));
+            assertThat(result.get(i).loadBalancedWeight(),
+                    approxEqual(result.get(i + 3).loadBalancedWeight() * 66 / 34));
         }
     }
 
@@ -221,7 +223,7 @@ public class DefaultHostPriorityStrategyTest {
         private final String address;
 
         private boolean isHealthy = true;
-        private int priority = 0;
+        private int priority;
         private double intrinsicWeight = 1;
         private double loadBalancedWeight = 1;
 

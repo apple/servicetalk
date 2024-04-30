@@ -285,7 +285,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
 
             boolean sendReadyEvent = false;
-            final List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts = new ArrayList<>(usedHosts.size() + events.size());
+            final List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts = new ArrayList<>(
+                    usedHosts.size() + events.size());
             final List<PrioritizedHostImpl<ResolvedAddress, C>> oldUsedHosts = usedHosts;
             // First we make a map of addresses to events so that we don't get quadratic behavior for diffing.
             final Map<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> eventMap = new HashMap<>();
@@ -313,7 +314,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 int oldPriority = host.priority();
                 host.intrinsicWeight(getWeight(event));
                 host.priority(getPriority(event));
-                hostSetChanged = hostSetChanged || oldPriority != host.priority() || oldWeight != host.intrinsicWeight();
+                hostSetChanged = hostSetChanged
+                        || oldPriority != host.priority() || oldWeight != host.intrinsicWeight();
 
                 if (AVAILABLE.equals(event.status())) {
                     // We only send the ready event if the previous host list was empty.
@@ -434,7 +436,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         private List<PrioritizedHostImpl<ResolvedAddress, C>> listWithHostRemoved(
-                List<PrioritizedHostImpl<ResolvedAddress, C>> oldHostsTyped, PrioritizedHostImpl<ResolvedAddress, C> toRemove) {
+                List<PrioritizedHostImpl<ResolvedAddress, C>> oldHostsTyped,
+                PrioritizedHostImpl<ResolvedAddress, C> toRemove) {
             final int index = oldHostsTyped.indexOf(toRemove);
             if (index < 0) {
                 // Element doesn't exist: just return the old list.
@@ -445,7 +448,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 return emptyList();
             }
             // Copy the remaining live elements to a new list.
-            final List<PrioritizedHostImpl<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
+            final List<PrioritizedHostImpl<ResolvedAddress, C>> newHosts =
+                    new ArrayList<>(oldHostsTyped.size() - 1);
             for (int i = 0; i < oldHostsTyped.size(); ++i) {
                 if (i != index) {
                     newHosts.add(oldHostsTyped.get(i));
@@ -722,6 +726,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public boolean markExpired() {
             return delegate.markExpired();
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "(priority: " + priority +
+                ", intrinsicWeight: " + intrinsicWeight +
+                ", loadBalancedWeight: " + loadBalancedWeight +
+                ", host: " + delegate +
+                ")";
         }
     }
 }
