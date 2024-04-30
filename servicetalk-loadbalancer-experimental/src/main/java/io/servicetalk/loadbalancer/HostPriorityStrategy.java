@@ -15,13 +15,11 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.LoadBalancedConnection;
-
 import java.util.List;
 
 @FunctionalInterface
-interface HostPriorityStrategy<ResolvedAddress, C extends LoadBalancedConnection> {
+interface HostPriorityStrategy {
 
     // This construct doesn't own the hosts, it just consumes them.
-    List<? extends Host<ResolvedAddress, C>> prioritize(List<EndpointHost<ResolvedAddress, C>> hosts);
+    <T extends PrioritizedHost> List<T> prioritize(List<T> hosts);
 }

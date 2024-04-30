@@ -15,8 +15,6 @@
  */
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.client.api.LoadBalancedConnection;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +23,7 @@ import java.util.List;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
-final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements HostPriorityStrategy<ResolvedAddress, C> {
+final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHostPriorityStrategy.class);
     private static final int DEFAULT_OVER_PROVISION_FACTOR = 140;
@@ -44,13 +41,12 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
     }
 
     @Override
-    public List<? extends Host<ResolvedAddress, C>> prioritize(List<EndpointHost<ResolvedAddress, C>> hosts) {
+    public <T extends PrioritizedHost> List<T> prioritize(List<T> hosts) {
         // no need to compute priorities if there are no hosts.
         return hosts.isEmpty() ? hosts : rebuildWithPriorities(hosts);
     }
 
-    private List<? extends Host<ResolvedAddress, C>> rebuildWithPriorities(
-            final List<EndpointHost<ResolvedAddress, C>> hosts) {
+    private <T extends PrioritizedHost> List<T> rebuildWithPriorities(final List<T> hosts) {
         assert !hosts.isEmpty();
 
         // TODO: this precludes having an expected amount of traffic favor local zones and the rest routed to
@@ -61,7 +57,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         //  balancer.
         List<Group> groups = new ArrayList<>();
         // First consolidate our hosts into their respective priority groups.
-        for (EndpointHost<ResolvedAddress, C> host : hosts) {
+        for (T host : hosts) {
             if (host.priority() < 0) {
                 LOGGER.warn("Found illegal priority: {}. Dropping priority grouping data.", host.priority());
                 return hosts;
@@ -86,7 +82,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
 
         // We require that we have a continuous priority set. We could relax this if we wanted by using a tree map to
         // traverse in order. However, I think it's also a requirement of other xDS compatible implementations.
-        List<Host<ResolvedAddress, C>> weightedResults = new ArrayList<>();
+        List<T> weightedResults = new ArrayList<>();
         int remainingProbability = 100;
         for (int i = 0; i < groups.size() && remainingProbability > 0; i++) {
             Group group = groups.get(i);
@@ -104,7 +100,7 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
                 // TODO: this means all hosts for this group are unhealthy. This may be worth some logging.
             } else {
                 remainingProbability -= groupProbability;
-                normalizeGroup(groupProbability, group, weightedResults);
+                group.normalize(groupProbability, weightedResults);
             }
         }
         // What to do if we don't have any healthy nodes at all?
@@ -121,38 +117,38 @@ final class DefaultHostPriorityStrategy<ResolvedAddress, C extends LoadBalancedC
         return groups.get(priority);
     }
 
-    private class Group {
-        final List<EndpointHost<ResolvedAddress, C>> hosts = new ArrayList<>();
+    private class Group<H extends PrioritizedHost> {
+        final List<H> hosts = new ArrayList<>();
         int healthyCount;
 
         int healthPercentage;
-    }
 
-    private void normalizeGroup(int groupProbability, Group group, List<? super Host<ResolvedAddress, C>> results) {
-        // Add all the members of the group after we recompute their weights. To recompute the weights we're going
-        // to normalize against their group probability.
-        double groupTotalWeight = totalWeight(group.hosts);
-        if (groupTotalWeight == 0) {
-            double weight = ((double) groupProbability) / group.hosts.size();
-            for (EndpointHost<ResolvedAddress, C> host : group.hosts) {
-                host.loadBalancedWeight(weight);
-                results.add(host);
-            }
-        } else {
-            double scalingFactor = groupProbability / groupTotalWeight;
-            for (EndpointHost<ResolvedAddress, C> host : group.hosts) {
-                double hostWeight = host.intrinsicWeight() * scalingFactor;
-                host.loadBalancedWeight(hostWeight);
-                if (hostWeight > 0) {
+        private void normalize(int groupProbability, List<H> results) {
+            // Add all the members of the group after we recompute their weights. To recompute the weights we're going
+            // to normalize against their group probability.
+            double groupTotalWeight = totalWeight(hosts);
+            if (groupTotalWeight == 0) {
+                double weight = ((double) groupProbability) / hosts.size();
+                for (H host : hosts) {
+                    host.loadBalancedWeight(weight);
                     results.add(host);
+                }
+            } else {
+                double scalingFactor = groupProbability / groupTotalWeight;
+                for (H host : hosts) {
+                    double hostWeight = host.intrinsicWeight() * scalingFactor;
+                    host.loadBalancedWeight(hostWeight);
+                    if (hostWeight > 0) {
+                        results.add(host);
+                    }
                 }
             }
         }
     }
 
-    private static double totalWeight(Iterable<? extends EndpointHost<?, ?>> hosts) {
+    private static double totalWeight(Iterable<? extends PrioritizedHost> hosts) {
         double sum = 0;
-        for (EndpointHost<?, ?> host : hosts) {
+        for (PrioritizedHost host : hosts) {
             sum += host.intrinsicWeight();
         }
         return sum;

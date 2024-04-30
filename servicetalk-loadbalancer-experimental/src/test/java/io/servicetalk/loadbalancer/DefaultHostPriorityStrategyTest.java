@@ -29,8 +29,7 @@ import static org.mockito.Mockito.when;
 
 public class DefaultHostPriorityStrategyTest {
 
-    private final HostPriorityStrategy<String, TestLoadBalancedConnection> defaultHostPriorityStrategy =
-            new DefaultHostPriorityStrategy<>();
+    private final HostPriorityStrategy defaultHostPriorityStrategy = new DefaultHostPriorityStrategy();
 
     @Test
     void noPriorities() {
@@ -104,7 +103,7 @@ public class DefaultHostPriorityStrategyTest {
             hosts.get(i).priority(1);
         }
         List<? extends Host<String, TestLoadBalancedConnection>> result =
-                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+                new DefaultHostPriorityStrategy(100).prioritize(hosts);
 
         assertThat(result.size(), equalTo(3));
 
@@ -124,7 +123,7 @@ public class DefaultHostPriorityStrategyTest {
             hosts.get(i).priority(1);
         }
         List<? extends Host<String, TestLoadBalancedConnection>> result =
-                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+                new DefaultHostPriorityStrategy(100).prioritize(hosts);
 
         assertThat(result.size(), equalTo(6));
 
@@ -155,7 +154,7 @@ public class DefaultHostPriorityStrategyTest {
         }
         when(hosts.get(0).isHealthy()).thenReturn(true);
         List<? extends Host<String, TestLoadBalancedConnection>> result =
-                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+                new DefaultHostPriorityStrategy(100).prioritize(hosts);
 
         assertThat(result.size(), equalTo(3));
 
@@ -181,7 +180,7 @@ public class DefaultHostPriorityStrategyTest {
             }
         }
         List<? extends Host<String, TestLoadBalancedConnection>> result =
-                new DefaultHostPriorityStrategy<String, TestLoadBalancedConnection>(100).prioritize(hosts);
+                new DefaultHostPriorityStrategy(100).prioritize(hosts);
 
         assertThat(result.size(), equalTo(6));
 

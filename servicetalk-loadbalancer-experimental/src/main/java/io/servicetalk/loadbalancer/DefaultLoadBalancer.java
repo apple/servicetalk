@@ -106,7 +106,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    private final HostPriorityStrategy<ResolvedAddress, C> priorityStrategy;
+    private final HostPriorityStrategy priorityStrategy;
     private final OutlierDetector<ResolvedAddress, C> outlierDetector;
     private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
@@ -137,7 +137,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
-        this.priorityStrategy = new DefaultHostPriorityStrategy<>(); // TODO: how to configure this?
+        this.priorityStrategy = new DefaultHostPriorityStrategy(); // TODO: how to configure this?
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)

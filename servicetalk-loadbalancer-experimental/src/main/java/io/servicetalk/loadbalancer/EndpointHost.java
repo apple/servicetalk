@@ -28,7 +28,8 @@ import static java.util.Objects.requireNonNull;
 
 // Really just decorates a Host with additional data. So far it's just priority but in the future it could also
 // be weight information.
-final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> implements Host<ResolvedAddress, C> {
+final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> implements Host<ResolvedAddress, C>,
+        PrioritizedHost {
     private final Host<ResolvedAddress, C> delegate;
     private int priority;
     private double intrinsicWeight;
@@ -44,7 +45,8 @@ final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> impl
         return delegate;
     }
 
-    int priority() {
+    @Override
+    public int priority() {
         return priority;
     }
 
@@ -59,7 +61,8 @@ final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> impl
 
     // Set the weight to use in load balancing. This includes derived weight information such as prioritization
     // and is what the host selectors will use when picking endpoints.
-    void loadBalancedWeight(final double weight) {
+    @Override
+    public void loadBalancedWeight(final double weight) {
         this.loadBalancedWeight = weight;
     }
 
@@ -68,7 +71,8 @@ final class EndpointHost<ResolvedAddress, C extends LoadBalancedConnection> impl
         return loadBalancedWeight;
     }
 
-    double intrinsicWeight() {
+    @Override
+    public double intrinsicWeight() {
         return intrinsicWeight;
     }
 
