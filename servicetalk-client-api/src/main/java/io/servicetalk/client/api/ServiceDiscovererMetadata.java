@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.client.api;
 
 import java.util.Collections;
@@ -16,7 +31,7 @@ public final class ServiceDiscovererMetadata {
     /**
      * Metadata that describes the relative weight of an endpoint.
      */
-    public static final Key<Double> WEIGHT = new ServiceDiscovererMetadata.Key<>(Double.class, "endpoint.weight", 1.0);
+    public static final Key<Double> WEIGHT = new ServiceDiscovererMetadata.Key<>(Double.class, "endpoint.weight", 1d);
 
     /**
      * Metadata describing the priority class of an endpoint.
@@ -44,18 +59,36 @@ public final class ServiceDiscovererMetadata {
             this.defaultValue = requireNonNull(defaultValue, "defaultValue");
         }
 
+        /**
+         * Get the name associated with the meta-data.
+         * @return the name associated with the meta-data.
+         */
         public String name() {
             return name;
         }
 
+        /**
+         * The java class that is expected to be associated with the meta-data.
+         * @return the java class that is expected to be associated with the meta-data.
+         */
         public Class<T> clazz() {
             return clazz;
         }
 
-        public <T> boolean exists(ServiceDiscovererEvent<?> event) {
-            return event.metadata().containsKey(name);
+        /**
+         * Determine whether the meta-data both contains an entry with the keys name and that entry is the correct type.
+         * @param event the {@link ServiceDiscovererEvent} for which to check if the meta-data exists.
+         * @return true if the meta-data contains an entry with the keys name and the value is the correct type.
+         */
+        public boolean contains(ServiceDiscovererEvent<?> event) {
+            return clazz.isInstance(event.metadata().get(name));
         }
 
+        /**
+         * Extract the meta-data from a {@link ServiceDiscovererEvent}, or get the default.
+         * @param event the {@link ServiceDiscovererEvent} from which to extract the meta-data.
+         * @return the value contained in the meta-data, or the default if it doesn't exist or has the wrong type.
+         */
         public T getValue(ServiceDiscovererEvent<?> event) {
             Object result = event.metadata().get(name);
             if (clazz.isInstance(result)) {
