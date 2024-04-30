@@ -138,7 +138,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
-        this.priorityStrategy = new DefaultHostPriorityStrategy(); // TODO: how to configure this?
+        this.priorityStrategy = DefaultHostPriorityStrategy.INSTANCE; // TODO: how to configure this?
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
@@ -310,12 +310,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     continue;
                 }
                 // Set the new weight and priority of the host.
-                double oldWeight = host.intrinsicWeight();
+                double oldSDWeight = host.serviceDiscoveryWeight();
                 int oldPriority = host.priority();
-                host.intrinsicWeight(getWeight(event));
+                host.serviceDiscoveryWeight(getWeight(event));
                 host.priority(getPriority(event));
                 hostSetChanged = hostSetChanged
-                        || oldPriority != host.priority() || oldWeight != host.intrinsicWeight();
+                        || oldPriority != host.priority() || oldSDWeight != host.serviceDiscoveryWeight();
 
                 if (AVAILABLE.equals(event.status())) {
                     // We only send the ready event if the previous host list was empty.
@@ -622,13 +622,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             implements Host<ResolvedAddress, C>, PrioritizedHost {
         private final Host<ResolvedAddress, C> delegate;
         private int priority;
-        private double intrinsicWeight;
+        private double serviceDiscoveryWeight;
         private double loadBalancedWeight;
 
         PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double intrinsicWeight, final int priority) {
             this.delegate = requireNonNull(delegate, "delegate");
             this.priority = ensureNonNegative(priority, "priority");
-            this.intrinsicWeight = intrinsicWeight;
+            this.serviceDiscoveryWeight = intrinsicWeight;
+            this.loadBalancedWeight = intrinsicWeight;
         }
 
         Host<ResolvedAddress, C> delegate() {
@@ -645,25 +646,25 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         // Set the intrinsic weight of the host. This is the information from service discovery.
-        void intrinsicWeight(final double weight) {
-            this.intrinsicWeight = weight;
+        void serviceDiscoveryWeight(final double weight) {
+            this.serviceDiscoveryWeight = weight;
+            this.loadBalancedWeight = weight;
+        }
+
+        double serviceDiscoveryWeight() {
+            return serviceDiscoveryWeight;
         }
 
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking hosts.
         @Override
-        public void loadBalancedWeight(final double weight) {
+        public void weight(final double weight) {
             this.loadBalancedWeight = weight;
         }
 
         @Override
-        public double loadBalancedWeight() {
+        public double weight() {
             return loadBalancedWeight;
-        }
-
-        @Override
-        public double intrinsicWeight() {
-            return intrinsicWeight;
         }
 
         @Override
@@ -731,7 +732,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public String toString() {
             return getClass().getSimpleName() + "(priority: " + priority +
-                ", intrinsicWeight: " + intrinsicWeight +
+                ", intrinsicWeight: " + serviceDiscoveryWeight +
                 ", loadBalancedWeight: " + loadBalancedWeight +
                 ", host: " + delegate +
                 ")";

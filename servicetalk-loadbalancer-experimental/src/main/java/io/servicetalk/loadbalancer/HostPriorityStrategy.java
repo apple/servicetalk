@@ -20,6 +20,11 @@ import java.util.List;
 @FunctionalInterface
 interface HostPriorityStrategy {
 
-    // This construct doesn't own the hosts, it just consumes them.
+    /**
+     * Adjust the host set to account for priority.
+     * @param hosts the set of hosts to prioritize.
+     * @return the collection of hosts that should be used and have had their weights adjusted.
+     * @param <T> the refined type of the {@link PrioritizedHost}.
+     */
     <T extends PrioritizedHost> List<T> prioritize(List<T> hosts);
 }

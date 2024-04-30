@@ -176,7 +176,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         boolean allSameProbability = true;
         double pTotal = 0;
         for (int i = 0; i < hosts.size(); i++) {
-            final double pi = hosts.get(i).loadBalancedWeight();
+            final double pi = hosts.get(i).weight();
             if (pi < 0) {
                 LOGGER.warn("{}: host at address {} has negative weight ({}). Using unweighted selection.",
                         getTargetResource(), hosts.get(i).address(), pi);

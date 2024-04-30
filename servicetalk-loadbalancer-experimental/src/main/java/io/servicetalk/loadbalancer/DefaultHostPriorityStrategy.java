@@ -25,6 +25,8 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
+    static final HostPriorityStrategy INSTANCE = new DefaultHostPriorityStrategy();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHostPriorityStrategy.class);
     private static final int DEFAULT_OVER_PROVISION_FACTOR = 140;
 
@@ -69,6 +71,11 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
             group.hosts.add(host);
         }
 
+        // If there is only a single group we don't need to adjust weights.
+        if (groups.size() == 1) {
+            return hosts;
+        }
+
         // Compute the health percentage for each group.
         int totalHealthPercentage = 0;
         for (Group group : groups) {
@@ -100,7 +107,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
                 // TODO: this means all hosts for this group are unhealthy. This may be worth some logging.
             } else {
                 remainingProbability -= groupProbability;
-                group.normalize(groupProbability, weightedResults);
+                group.addToResults(groupProbability, weightedResults);
             }
         }
         // What to do if we don't have any healthy nodes at all?
@@ -120,24 +127,23 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
     private static class Group<H extends PrioritizedHost> {
         final List<H> hosts = new ArrayList<>();
         int healthyCount;
-
         int healthPercentage;
 
-        private void normalize(int groupProbability, List<H> results) {
+        private void addToResults(int groupProbability, List<H> results) {
             // Add all the members of the group after we recompute their weights. To recompute the weights we're going
             // to normalize against their group probability.
             double groupTotalWeight = totalWeight(hosts);
             if (groupTotalWeight == 0) {
                 double weight = ((double) groupProbability) / hosts.size();
                 for (H host : hosts) {
-                    host.loadBalancedWeight(weight);
+                    host.weight(weight);
                     results.add(host);
                 }
             } else {
                 double scalingFactor = groupProbability / groupTotalWeight;
                 for (H host : hosts) {
-                    double hostWeight = host.intrinsicWeight() * scalingFactor;
-                    host.loadBalancedWeight(hostWeight);
+                    double hostWeight = host.weight() * scalingFactor;
+                    host.weight(hostWeight);
                     if (hostWeight > 0) {
                         results.add(host);
                     }
@@ -149,7 +155,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
     private static double totalWeight(Iterable<? extends PrioritizedHost> hosts) {
         double sum = 0;
         for (PrioritizedHost host : hosts) {
-            sum += host.intrinsicWeight();
+            sum += host.weight();
         }
         return sum;
     }

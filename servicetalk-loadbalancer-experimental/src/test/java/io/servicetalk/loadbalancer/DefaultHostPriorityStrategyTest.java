@@ -27,12 +27,12 @@ import static org.hamcrest.Matchers.equalTo;
 
 class DefaultHostPriorityStrategyTest {
 
-    private final HostPriorityStrategy defaultHostPriorityStrategy = new DefaultHostPriorityStrategy();
+    private final HostPriorityStrategy hostPriorityStrategy = new DefaultHostPriorityStrategy(100);
 
     @Test
     void noPriorities() {
         List<TestPrioritizedHost> hosts = makeHosts(4);
-        List<TestPrioritizedHost> result = defaultHostPriorityStrategy.prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(hosts.size()));
 
         for (int i = 0; i < hosts.size(); i++) {
@@ -46,9 +46,9 @@ class DefaultHostPriorityStrategyTest {
     void noPrioritiesWithWeights() {
         List<TestPrioritizedHost> hosts = makeHosts(4);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).intrinsicWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
         }
-        List<TestPrioritizedHost> result = defaultHostPriorityStrategy.prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(hosts.size()));
 
         for (int i = 0; i < hosts.size(); i++) {
@@ -64,7 +64,7 @@ class DefaultHostPriorityStrategyTest {
         for (int i = 3; i < 6; i++) {
             hosts.get(i).priority(1);
         }
-        List<TestPrioritizedHost> result = defaultHostPriorityStrategy.prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(3));
 
         for (int i = 0; i < 3; i++) {
@@ -78,12 +78,12 @@ class DefaultHostPriorityStrategyTest {
     void twoPrioritiesWithWeights() {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).intrinsicWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
             if (i >= 3) {
                 hosts.get(i).priority(1);
             }
         }
-        List<TestPrioritizedHost> result = defaultHostPriorityStrategy.prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(3));
 
         // We should only have the first three hosts because they were all healthy, so they are the only group.
@@ -100,7 +100,7 @@ class DefaultHostPriorityStrategyTest {
         for (int i = 3; i < hosts.size(); i++) {
             hosts.get(i).priority(1);
         }
-        List<TestPrioritizedHost> result = new DefaultHostPriorityStrategy(100).prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
 
         assertThat(result.size(), equalTo(3));
 
@@ -119,7 +119,7 @@ class DefaultHostPriorityStrategyTest {
         for (int i = 3; i < hosts.size(); i++) {
             hosts.get(i).priority(1);
         }
-        List<TestPrioritizedHost> result = new DefaultHostPriorityStrategy(100).prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
 
         assertThat(result.size(), equalTo(6));
 
@@ -149,7 +149,7 @@ class DefaultHostPriorityStrategyTest {
             hosts.get(i).isHealthy(false);
         }
         hosts.get(0).isHealthy(true);
-        List<TestPrioritizedHost> result = new DefaultHostPriorityStrategy(100).prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
 
         assertThat(result.size(), equalTo(3));
 
@@ -168,13 +168,13 @@ class DefaultHostPriorityStrategyTest {
         hosts.get(0).isHealthy(false);
         for (int i = 0; i < hosts.size(); i++) {
             if (i >= 3) {
-                hosts.get(i).intrinsicWeight(i - 3 + 1d);
+                hosts.get(i).weight(i - 3 + 1d);
                 hosts.get(i).priority(1);
             } else {
-                hosts.get(i).intrinsicWeight(i + 1d);
+                hosts.get(i).weight(i + 1d);
             }
         }
-        List<TestPrioritizedHost> result = new DefaultHostPriorityStrategy(100).prioritize(hosts);
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
 
         assertThat(result.size(), equalTo(6));
 
@@ -224,7 +224,6 @@ class DefaultHostPriorityStrategyTest {
 
         private boolean isHealthy = true;
         private int priority;
-        private double intrinsicWeight = 1;
         private double loadBalancedWeight = 1;
 
         TestPrioritizedHost(String address) {
@@ -244,15 +243,10 @@ class DefaultHostPriorityStrategyTest {
             this.priority = priority;
         }
 
-        // Set the intrinsic weight of the endpoint. This is the information from service discovery.
-        void intrinsicWeight(final double weight) {
-            this.intrinsicWeight = weight;
-        }
-
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking endpoints.
         @Override
-        public void loadBalancedWeight(final double weight) {
+        public void weight(final double weight) {
             this.loadBalancedWeight = weight;
         }
 
@@ -270,8 +264,8 @@ class DefaultHostPriorityStrategyTest {
         }
 
         @Override
-        public double intrinsicWeight() {
-            return intrinsicWeight;
+        public double weight() {
+            return loadBalancedWeight;
         }
     }
 }

@@ -36,11 +36,11 @@ public interface PrioritizedHost {
      * The intrinsic weight of the host.
      * @return the intrinsic weight of the host.
      */
-    double intrinsicWeight();
+    double weight();
 
     /**
      * Set the weight of the host to use during load balancing.
      * @param weight the weight of the host to use during load balancing.
      */
-    void loadBalancedWeight(double weight);
+    void weight(double weight);
 }
