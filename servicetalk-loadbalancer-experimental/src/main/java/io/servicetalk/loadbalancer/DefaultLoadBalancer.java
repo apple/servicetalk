@@ -608,13 +608,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
     }
 
+    // TODO: weight and priority need representation on the ServiceDiscovererEvent.
     private static double getWeight(ServiceDiscovererEvent<?> event) {
-        LOGGER.debug("Weights not supported for event with address {}", event.address());
+        assert event != null; // to make PMD happy.
         return 1.0;
     }
 
     private static int getPriority(ServiceDiscovererEvent<?> event) {
-        LOGGER.debug("Priorities not supported for event with address {}", event.address());
+        assert event != null; // to make PMD happy.
         return 0;
     }
 
