@@ -48,6 +48,7 @@ import static org.mockito.Mockito.when;
 class DefaultHostTest {
 
     private static final String DEFAULT_ADDRESS = "address";
+    private static final double DEFAULT_WEIGHT = 1.0;
 
     @RegisterExtension
     final ExecutorExtension<TestExecutor> executor = ExecutorExtension.withTestExecutor();
@@ -81,7 +82,7 @@ class DefaultHostTest {
     }
 
     private void buildHost(@Nullable HealthIndicator healthIndicator) {
-        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
+        host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS, DEFAULT_WEIGHT,
                 LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
                         .buildStrategy("resource"),
                 connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
