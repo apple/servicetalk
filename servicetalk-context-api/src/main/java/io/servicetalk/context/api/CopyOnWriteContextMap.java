@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
-
-import io.servicetalk.concurrent.internal.ContextMapUtils;
-import io.servicetalk.context.api.ContextMap;
+package io.servicetalk.context.api;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +26,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ContextMapUtils.ensureType;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
@@ -2923,7 +2919,7 @@ final class CopyOnWriteContextMap implements ContextMap {
 
         @Override
         public void accept(final Key<?> key, @Nullable final Object value) {
-            ensureType(key, value);
+            ContextMapUtils.ensureType(key, value);
             test(key, value);
         }
 

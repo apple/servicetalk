@@ -24,9 +24,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMaps;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -186,7 +186,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return Single.defer(() -> {
             ContextMap actualContext = context;
             if (actualContext == null) {
-                actualContext = new DefaultContextMap();
+                actualContext = ContextMaps.newDefaultMap();
             }
 
             // We need to put our address latency tracker in the context for consumption.
