@@ -608,15 +608,20 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
     }
 
-    // TODO: weight and priority need representation on the ServiceDiscovererEvent.
     private static double eventWeight(ServiceDiscovererEvent<?> event) {
-        assert event != null; // to make PMD happy.
-        return 1.0;
+        if (event instanceof RichServiceDiscovererEvent<?>) {
+            return ((RichServiceDiscovererEvent<?>) event).loadBalancingWeight();
+        } else {
+            return 1.0;
+        }
     }
 
     private static int eventPriority(ServiceDiscovererEvent<?> event) {
-        assert event != null; // to make PMD happy.
-        return 0;
+        if (event instanceof RichServiceDiscovererEvent<?>) {
+            return ((RichServiceDiscovererEvent<?>) event).priority();
+        } else {
+            return 0;
+        }
     }
 
     static final class PrioritizedHostImpl<ResolvedAddress, C extends LoadBalancedConnection>
