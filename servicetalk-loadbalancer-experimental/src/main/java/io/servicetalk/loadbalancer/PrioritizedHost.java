@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 /**
  * Handles for determining the weight of a host based on it's underlying weight and priority.
  */
-public interface PrioritizedHost {
+interface PrioritizedHost {
 
     /**
      * The current priority of the host.
