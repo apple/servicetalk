@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 /**
@@ -33,4 +34,6 @@ interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> ext
      * @return new {@link HealthIndicator}.
      */
     HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver);
+
+    Publisher<Void> healthStatusChanged();
 }

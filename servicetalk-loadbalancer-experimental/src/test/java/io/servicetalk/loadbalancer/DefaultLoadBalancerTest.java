@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
@@ -293,6 +294,11 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             synchronized (indicatorSet) {
                 return new ArrayList<>(indicatorSet);
             }
+        }
+
+        @Override
+        public Publisher<Void> healthStatusChanged() {
+            return Publisher.never();
         }
     }
 

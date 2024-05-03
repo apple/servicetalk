@@ -330,7 +330,8 @@ class P2CSelectorTest {
         int[] counts = runIterations(hosts);
 
         double totalProbability = hosts.stream().map(Host::weight).reduce(0d, (a, b) -> a + b);
-        Integer[] expected = hosts.stream().map(host -> (int) (ITERATIONS * (host.weight() / totalProbability)))
+        Integer[] expected = hosts.stream()
+                .map(host -> (int) (ITERATIONS * (host.weight() / totalProbability)))
                 .toArray(Integer[]::new);
 
         // calculate the rough counts we should expect
