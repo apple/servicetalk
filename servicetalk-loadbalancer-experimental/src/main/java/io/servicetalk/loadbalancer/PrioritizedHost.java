@@ -33,14 +33,14 @@ public interface PrioritizedHost {
     boolean isHealthy();
 
     /**
-     * The intrinsic weight of the host.
-     * @return the intrinsic weight of the host.
+     * The weight of the host to use for load balancing.
+     * @return the weight of the host to use for load balancing.
      */
-    double weight();
+    double loadBalancingWeight();
 
     /**
      * Set the weight of the host to use during load balancing.
      * @param weight the weight of the host to use during load balancing.
      */
-    void weight(double weight);
+    void loadBalancingWeight(double weight);
 }

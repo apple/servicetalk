@@ -312,8 +312,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 // Set the new weight and priority of the host.
                 double oldSDWeight = host.serviceDiscoveryWeight();
                 int oldPriority = host.priority();
-                host.serviceDiscoveryWeight(getWeight(event));
-                host.priority(getPriority(event));
+                host.serviceDiscoveryWeight(eventWeight(event));
+                host.priority(eventPriority(event));
                 hostSetChanged = hostSetChanged
                         || oldPriority != host.priority() || oldSDWeight != host.serviceDiscoveryWeight();
 
@@ -410,7 +410,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final PrioritizedHostImpl<ResolvedAddress, C> host = new PrioritizedHostImpl<>(
                     new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
-                    getWeight(event), getPriority(event));
+                    eventWeight(event), eventPriority(event));
             if (indicator != null) {
                 indicator.setHost(host);
             }
@@ -609,12 +609,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     // TODO: weight and priority need representation on the ServiceDiscovererEvent.
-    private static double getWeight(ServiceDiscovererEvent<?> event) {
+    private static double eventWeight(ServiceDiscovererEvent<?> event) {
         assert event != null; // to make PMD happy.
         return 1.0;
     }
 
-    private static int getPriority(ServiceDiscovererEvent<?> event) {
+    private static int eventPriority(ServiceDiscovererEvent<?> event) {
         assert event != null; // to make PMD happy.
         return 0;
     }
@@ -624,13 +624,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         private final Host<ResolvedAddress, C> delegate;
         private int priority;
         private double serviceDiscoveryWeight;
-        private double loadBalancedWeight;
+        private double loadBalancingWeight;
 
-        PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double intrinsicWeight, final int priority) {
+        PrioritizedHostImpl(final Host<ResolvedAddress, C> delegate, final double serviceDiscoveryWeight,
+                            final int priority) {
             this.delegate = requireNonNull(delegate, "delegate");
             this.priority = ensureNonNegative(priority, "priority");
-            this.serviceDiscoveryWeight = intrinsicWeight;
-            this.loadBalancedWeight = intrinsicWeight;
+            this.serviceDiscoveryWeight = serviceDiscoveryWeight;
+            this.loadBalancingWeight = serviceDiscoveryWeight;
         }
 
         Host<ResolvedAddress, C> delegate() {
@@ -647,9 +648,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         // Set the intrinsic weight of the host. This is the information from service discovery.
+        // When this is set it also overwrites the load balancing weight which must then be recalculated.
         void serviceDiscoveryWeight(final double weight) {
             this.serviceDiscoveryWeight = weight;
-            this.loadBalancedWeight = weight;
+            this.loadBalancingWeight = weight;
         }
 
         double serviceDiscoveryWeight() {
@@ -659,13 +661,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking hosts.
         @Override
-        public void weight(final double weight) {
-            this.loadBalancedWeight = weight;
+        public void loadBalancingWeight(final double weight) {
+            this.loadBalancingWeight = weight;
         }
 
         @Override
-        public double weight() {
-            return loadBalancedWeight;
+        public double loadBalancingWeight() {
+            return loadBalancingWeight;
         }
 
         @Override
@@ -734,7 +736,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         public String toString() {
             return getClass().getSimpleName() + "(priority: " + priority +
                 ", intrinsicWeight: " + serviceDiscoveryWeight +
-                ", loadBalancedWeight: " + loadBalancedWeight +
+                ", loadBalancedWeight: " + loadBalancingWeight +
                 ", host: " + delegate +
                 ")";
         }

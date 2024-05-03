@@ -71,7 +71,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
     private final String lbDescription;
-    private final PublisherSource.Processor<Void, Void> eventStreamProcessor =
+    private final PublisherSource.Processor<Void, Void> healthStatusChangeProcessor =
             newPublisherProcessorDropHeadOnOverflow(1);
     private final Kernel kernel;
     private final AtomicInteger indicatorCount = new AtomicInteger();
@@ -117,12 +117,13 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
             }
             assert indicators.isEmpty();
             assert indicatorCount.get() == 0;
+            healthStatusChangeProcessor.onComplete();
         });
     }
 
     @Override
     public Publisher<Void> healthStatusChanged() {
-        return SourceAdapters.fromSource(eventStreamProcessor);
+        return SourceAdapters.fromSource(healthStatusChangeProcessor);
     }
 
     // Exposed for testing. Not thread safe.
@@ -214,7 +215,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
             i = 0;
             for (HealthIndicator<?, ?> indicator : indicators) {
                 if (beforeState[i++] != indicator.isHealthy()) {
-                    eventStreamProcessor.onNext(null);
+                    healthStatusChangeProcessor.onNext(null);
                     break;
                 }
             }
