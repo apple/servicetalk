@@ -1,11 +1,26 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
+ * Copyright 2023 The gRPC Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +40,11 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * A round-robin {@link HostSelector} based on the Static Stride Scheduler used in the grpc suite of libraries.
+ * @param <ResolvedAddress> the concrete type of the resolved address.
+ * @param <C> the concrete type of the load balanced address.
+ */
 final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
@@ -113,7 +133,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         }
     }
 
-    private static abstract class Scheduler {
+    private abstract static class Scheduler {
         abstract int nextHost();
     }
 
@@ -140,7 +160,6 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     // https://github.com/grpc/grpc-java/blob/da619e2b/xds/src/main/java/io/grpc/xds/WeightedRoundRobinLoadBalancer.java
     private static final class StrideScheduler extends Scheduler {
 
-
         private final AtomicInteger index;
         private final int[] weights;
 
@@ -155,18 +174,18 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
                 long counter = Integer.toUnsignedLong(index.getAndIncrement());
                 long pass = counter / weights.length;
                 int i = (int) counter % weights.length;
-                // We add an offset, which could be anything so long as it's constant throughout iteration. We choose
-                // an arbitrary multiple of the index that is on the order of the MAX_WEIGHT. This is helpful in the
-                // case where weights are [1, .. 1, 5] since the scheduling could otherwise look something like this:
+                // We add a unique offset for each offset which could be anything so long as it's constant throughout
+                // iteration. This is helpful in the  case where weights are [1, .. 1, 5] since the scheduling could
+                // otherwise look something like this:
                 //  ....
                 //  [t, .., t, t]
-                //  [f, .., f, t]
+                //  [f, .., f, t] <- we will see all elements false except the last for 5x iterations.
                 //  [f, .., f, t]
                 //  [f, .., f, t]
                 //  [f, .., f, t]
                 //  [t, .., t, t]
                 //  ....
-                long offset = MAX_WEIGHT / 2 * i;
+                int offset = MAX_WEIGHT / 2 * i;
                 if ((weights[i] * pass + offset) % MAX_WEIGHT >= MAX_WEIGHT - weights[i]) {
                     return i;
                 }

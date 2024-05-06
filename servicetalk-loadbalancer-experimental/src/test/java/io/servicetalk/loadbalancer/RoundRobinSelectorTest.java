@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
-import static io.servicetalk.loadbalancer.SelectorTestHelpers.generateHosts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -69,7 +68,8 @@ class RoundRobinSelectorTest {
 
     @Test
     void roundRobiningWithUnequalWeights() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2", "addr-3");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(
+                "addr-1", "addr-2", "addr-3");
         when(hosts.get(0).weight()).thenReturn(1.0);
         when(hosts.get(1).weight()).thenReturn(2.0);
         when(hosts.get(2).weight()).thenReturn(3.0);
@@ -81,9 +81,9 @@ class RoundRobinSelectorTest {
             addresses.add(connection.address());
         }
 
-        assertThat(addresses.stream().filter("addr-1"::equals).count(), equalTo(3l));
-        assertThat(addresses.stream().filter("addr-2"::equals).count(), equalTo(6l));
-        assertThat(addresses.stream().filter("addr-3"::equals).count(), equalTo(9l));
+        assertThat(addresses.stream().filter("addr-1"::equals).count(), equalTo(3L));
+        assertThat(addresses.stream().filter("addr-2"::equals).count(), equalTo(6L));
+        assertThat(addresses.stream().filter("addr-3"::equals).count(), equalTo(9L));
 
         // The stream of selections should be should be
         // addr-1, addr-2, addr-3
