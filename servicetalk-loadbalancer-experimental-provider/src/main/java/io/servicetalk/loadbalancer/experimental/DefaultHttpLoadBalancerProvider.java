@@ -58,7 +58,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
                 HttpLoadBalancerFactory<R> loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>from(
                         defaultLoadBalancer(serviceName)).build();
                 builder = builder.loadBalancerFactory(loadBalancerFactory);
-                return new LoadBalancerIgnoringBuilder(builder, serviceName);
+                builder = new LoadBalancerIgnoringBuilder(builder, serviceName);
+                LOGGER.info("Enabled DefaultLoadBalancer for service with name {}", serviceName);
             } catch (Throwable ex) {
                 LOGGER.warn("Failed to enabled DefaultLoadBalancer for client to address {}.", address, ex);
             }
@@ -91,7 +92,7 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
         } else if (address instanceof String) {
             serviceName = (String) address;
         } else {
-            LOGGER.warn("Unknown service address type={} was provided, "
+            LOGGER.debug("Unknown service address type={} was provided, "
                     + "default 'toString()' will be used as serviceName", address.getClass());
             serviceName = address.toString();
         }
