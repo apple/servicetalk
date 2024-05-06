@@ -434,15 +434,18 @@ final class DefaultDnsClient implements DnsClient {
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
+                    final Future<List<DnsRecord>> resolveFuture =
+                            resolver.resolveAll(new DefaultDnsQuestion(name, SRV));
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
                         if (promise.isDone()) {
                             return;
                         }
-                        promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
-                                name, resolutionTimeoutMillis, SRV.toString(), SrvRecordPublisher.class, "doDnsQuery"));
+                        if (promise.tryFailure(DnsNameResolverTimeoutException.newInstance(name,
+                                resolutionTimeoutMillis, SRV.toString(), SrvRecordPublisher.class, "doDnsQuery"))) {
+                            resolveFuture.cancel(true);
+                        }
                     }, resolutionTimeoutMillis, MILLISECONDS);
-                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
-                            .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
+                    resolveFuture.addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 if (timeoutFuture != null) {
                                     timeoutFuture.cancel(true);
                                 }
@@ -522,15 +525,19 @@ final class DefaultDnsClient implements DnsClient {
                     }
                     final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
                     final Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = eventLoop.newPromise();
+                    final Future<List<InetAddress>> resolveFuture = resolver.resolveAll(name);
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
                         if (dnsAnswerPromise.isDone()) {
                             return;
                         }
-                        dnsAnswerPromise.tryFailure(DnsNameResolverTimeoutException.newInstance(
+                        if (dnsAnswerPromise.tryFailure(DnsNameResolverTimeoutException.newInstance(
                                 name, resolutionTimeoutMillis, toRecordTypeNames(addressTypes),
-                                ARecordPublisher.class, "doDnsQuery"));
+                                ARecordPublisher.class, "doDnsQuery"))) {
+                            resolveFuture.cancel(true);
+                        }
                     }, resolutionTimeoutMillis, MILLISECONDS);
-                    resolver.resolveAll(name).addListener(completedFuture -> {
+
+                    resolveFuture.addListener(completedFuture -> {
                         if (timeoutFuture != null) {
                             timeoutFuture.cancel(true);
                         }
