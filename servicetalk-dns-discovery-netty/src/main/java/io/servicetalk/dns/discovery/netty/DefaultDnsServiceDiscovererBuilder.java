@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.utils.internal.DurationUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +125,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
+    @Nullable
+    private Duration resolutionTimeout;
     private int consolidateCacheSize = DEFAULT_CONSOLIDATE_CACHE_SIZE;
     private int minTTLSeconds = DEFAULT_MIN_TTL_POLL_SECONDS;
     private int maxTTLSeconds = DEFAULT_MAX_TTL_POLL_SECONDS;
@@ -258,8 +261,15 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     @Override
-    public DefaultDnsServiceDiscovererBuilder queryTimeout(final Duration queryTimeout) {
-        this.queryTimeout = queryTimeout;
+    public DefaultDnsServiceDiscovererBuilder queryTimeout(final @Nullable Duration queryTimeout) {
+        this.queryTimeout = queryTimeout == null ? null : DurationUtils.ensureNonNegative(queryTimeout, "queryTimeout");
+        return this;
+    }
+
+    @Override
+    public DefaultDnsServiceDiscovererBuilder resolutionTimeout(final @Nullable Duration resolutionTimeout) {
+        this.resolutionTimeout = resolutionTimeout == null ? null :
+                DurationUtils.ensureNonNegative(resolutionTimeout, "resolutionTimeout");
         return this;
     }
 
@@ -267,7 +277,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     public DefaultDnsServiceDiscovererBuilder dnsResolverAddressTypes(
             @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes) {
         this.dnsResolverAddressTypes = dnsResolverAddressTypes != null ? dnsResolverAddressTypes :
-                systemDefault();
+                DEFAULT_DNS_RESOLVER_ADDRESS_TYPES;
         return this;
     }
 
@@ -385,8 +395,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 ttlJitter.toNanos(),
                 srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
-                queryTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider, observer,
-                missingRecordStatus, nxInvalidation);
+                queryTimeout, resolutionTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider,
+                observer, missingRecordStatus, nxInvalidation);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 

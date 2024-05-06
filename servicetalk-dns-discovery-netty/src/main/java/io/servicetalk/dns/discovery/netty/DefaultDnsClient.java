@@ -100,6 +100,7 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.preferredAddressType;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.toRecordTypeNames;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -113,6 +114,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
@@ -129,6 +131,7 @@ final class DefaultDnsClient implements DnsClient {
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
+    private final long resolutionTimeoutMillis;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -149,6 +152,7 @@ final class DefaultDnsClient implements DnsClient {
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
+                     @Nullable Duration resolutionTimeout,
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final SocketAddress localAddress,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
@@ -222,6 +226,10 @@ final class DefaultDnsClient implements DnsClient {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
         resolver = builder.build();
+        this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
+                // Default value is chosen based on a combination of default "timeout" and "attempts" options of
+                // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
+                resolver.queryTimeoutMillis() * 2;
     }
 
     @Override
@@ -424,9 +432,20 @@ final class DefaultDnsClient implements DnsClient {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
-                    Promise<DnsAnswer<HostAndPort>> promise = nettyIoExecutor.eventLoopGroup().next().newPromise();
+                    final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
+                    final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
+                    final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
+                        if (promise.isDone()) {
+                            return;
+                        }
+                        promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
+                                name, resolutionTimeoutMillis, SRV.toString(), SrvRecordPublisher.class, "doDnsQuery"));
+                    }, resolutionTimeoutMillis, MILLISECONDS);
                     resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
+                                if (timeoutFuture != null) {
+                                    timeoutFuture.cancel(true);
+                                }
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
                                     promise.tryFailure(cause);
@@ -501,9 +520,20 @@ final class DefaultDnsClient implements DnsClient {
                     if (scheduledQuery) {
                         ttlCache.prepareForResolution(name);
                     }
-                    Promise<DnsAnswer<InetAddress>> dnsAnswerPromise =
-                            nettyIoExecutor.eventLoopGroup().next().newPromise();
+                    final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
+                    final Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = eventLoop.newPromise();
+                    final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
+                        if (dnsAnswerPromise.isDone()) {
+                            return;
+                        }
+                        dnsAnswerPromise.tryFailure(DnsNameResolverTimeoutException.newInstance(
+                                name, resolutionTimeoutMillis, toRecordTypeNames(addressTypes),
+                                ARecordPublisher.class, "doDnsQuery"));
+                    }, resolutionTimeoutMillis, MILLISECONDS);
                     resolver.resolveAll(name).addListener(completedFuture -> {
+                        if (timeoutFuture != null) {
+                            timeoutFuture.cancel(true);
+                        }
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
                             dnsAnswerPromise.tryFailure(cause);

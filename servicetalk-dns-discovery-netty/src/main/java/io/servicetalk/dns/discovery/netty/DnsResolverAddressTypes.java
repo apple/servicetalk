@@ -16,6 +16,7 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.netty.channel.socket.InternetProtocolFamily;
+import io.netty.handler.codec.dns.DnsRecordType;
 import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 
@@ -51,6 +52,9 @@ public enum DnsResolverAddressTypes {
      * Failure to resolve IPv4 won't result in an error.
      */
     IPV6_PREFERRED_RETURN_ALL;
+
+    private static final String A_AAAA_STRING = DnsRecordType.A + ", " + DnsRecordType.AAAA;
+    private static final String AAAA_A_STRING = DnsRecordType.AAAA + ", " + DnsRecordType.A;
 
     /**
      * The default value, based on "java.net" system properties: {@code java.net.preferIPv4Stack} and
@@ -107,6 +111,24 @@ public enum DnsResolverAddressTypes {
             default:
                 throw new IllegalArgumentException("Unknown value for " + ResolvedAddressTypes.class.getName() +
                         ": " + resolvedAddressTypes);
+        }
+    }
+
+    static String toRecordTypeNames(DnsResolverAddressTypes dnsResolverAddressType) {
+        switch (dnsResolverAddressType) {
+            case IPV4_ONLY:
+                return DnsRecordType.A.toString();
+            case IPV6_ONLY:
+                return DnsRecordType.AAAA.toString();
+            case IPV4_PREFERRED:
+            case IPV4_PREFERRED_RETURN_ALL:
+                return A_AAAA_STRING;
+            case IPV6_PREFERRED:
+            case IPV6_PREFERRED_RETURN_ALL:
+                return AAAA_A_STRING;
+            default:
+                throw new IllegalArgumentException("Unknown value for " + DnsResolverAddressTypes.class.getName() +
+                        ": " + dnsResolverAddressType);
         }
     }
 }
