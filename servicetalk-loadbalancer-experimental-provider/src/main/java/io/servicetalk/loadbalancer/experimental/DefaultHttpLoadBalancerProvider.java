@@ -16,12 +16,12 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProviders;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.transport.api.HostAndPort;
 

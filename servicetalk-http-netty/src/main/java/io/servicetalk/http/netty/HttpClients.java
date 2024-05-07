@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;

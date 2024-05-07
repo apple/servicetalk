@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
@@ -25,18 +25,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpConnectionContext;
-import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -47,9 +35,7 @@ import static java.util.Objects.requireNonNull;
  * Default implementation of {@link HttpLoadBalancerFactory}.
  *
  * @param <ResolvedAddress> The type of address after resolution.
- * @deprecated use {@link io.servicetalk.http.api.DefaultHttpLoadBalancerFactory} instead.
  */
-@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
@@ -121,21 +107,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          *
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
-        public HttpLoadBalancerFactory<ResolvedAddress> build() {
+        public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
             return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
-        }
-
-        /**
-         * Creates a new {@link Builder} instance using the default {@link LoadBalancer} implementation.
-         *
-         * @param <ResolvedAddress> The type of address after resolution for the {@link LoadBalancerFactory} built by
-         * the returned builder.
-         * @return A new {@link Builder}.
-         */
-        public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
-            return from(RoundRobinLoadBalancers
-                    .<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                            DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
         }
 
         /**

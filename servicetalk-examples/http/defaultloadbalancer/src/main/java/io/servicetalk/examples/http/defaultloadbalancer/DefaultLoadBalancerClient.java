@@ -17,10 +17,10 @@ package io.servicetalk.examples.http.defaultloadbalancer;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;

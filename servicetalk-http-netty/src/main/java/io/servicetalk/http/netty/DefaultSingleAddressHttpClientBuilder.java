@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -52,6 +53,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -140,7 +142,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
+        this.loadBalancerFactory = defaultLoadBalancer();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
 
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
@@ -834,5 +836,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         default StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
             return create(client, null, null);
         }
+    }
+
+    private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer() {
+        return DefaultHttpLoadBalancerFactory.Builder.from(
+                RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build()).build();
     }
 }

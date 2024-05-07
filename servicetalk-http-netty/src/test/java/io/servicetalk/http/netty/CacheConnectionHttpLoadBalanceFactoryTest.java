@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.Http2SettingsBuilder;
 import io.servicetalk.http.api.HttpProtocolConfig;
