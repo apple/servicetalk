@@ -121,7 +121,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          *
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
-        public HttpLoadBalancerFactory<ResolvedAddress> build() {
+        public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
             return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,11 +103,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         /**
-         * Builds a {@link DefaultHttpLoadBalancerFactory} using the properties configured on this builder.
+         * Builds a {@link HttpLoadBalancerFactory} using the properties configured on this builder.
          *
-         * @return A {@link DefaultHttpLoadBalancerFactory}.
+         * @return A {@link HttpLoadBalancerFactory}.
          */
-        public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
+        public HttpLoadBalancerFactory<ResolvedAddress> build() {
             return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
         }
 
