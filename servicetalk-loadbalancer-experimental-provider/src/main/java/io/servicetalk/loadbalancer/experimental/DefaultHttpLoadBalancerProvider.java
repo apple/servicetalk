@@ -58,7 +58,7 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
                 HttpLoadBalancerFactory<R> loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>from(
                         defaultLoadBalancer(serviceName)).build();
                 builder = builder.loadBalancerFactory(loadBalancerFactory);
-                builder = new LoadBalancerIgnoringBuilder(builder, serviceName);
+                builder = new LoadBalancerIgnoringBuilder<>(builder, serviceName);
                 LOGGER.info("Enabled DefaultLoadBalancer for service with name {}", serviceName);
             } catch (Throwable ex) {
                 LOGGER.warn("Failed to enabled DefaultLoadBalancer for client to address {}.", address, ex);
