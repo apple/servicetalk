@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,17 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
-import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpConnectionContext;
-import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
 import java.util.Collection;
 import javax.annotation.Nullable;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link HttpLoadBalancerFactory}.
@@ -52,14 +40,9 @@ import static java.util.Objects.requireNonNull;
 @Deprecated // FIXME: 0.43 - remove deprecated class
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
-    private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-    private final HttpExecutionStrategy strategy;
 
-    DefaultHttpLoadBalancerFactory(
-            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-            final HttpExecutionStrategy strategy) {
-        this.rawFactory = rawFactory;
-        this.strategy = strategy;
+    private DefaultHttpLoadBalancerFactory() {
+        // no instances.
     }
 
     @SuppressWarnings("deprecation")
@@ -68,7 +51,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return rawFactory.newLoadBalancer(targetResource, eventPublisher, connectionFactory);
+        throw new UnsupportedOperationException("No instances.");
     }
 
     @Override
@@ -76,13 +59,13 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory,
             final String targetResource) {
-        return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
+        throw new UnsupportedOperationException("No instances.");
     }
 
     @Override   // FIXME: 0.43 - remove deprecated method
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             final FilterableStreamingHttpConnection connection) {
-        return new DefaultFilterableStreamingHttpLoadBalancedConnection(connection);
+        throw new UnsupportedOperationException("No instances.");
     }
 
     @Override
@@ -90,13 +73,12 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             final FilterableStreamingHttpConnection connection,
             final ReservableRequestConcurrencyController concurrencyController,
             @Nullable final ContextMap context) {
-        return new HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection(connection,
-                concurrencyController);
+        throw new UnsupportedOperationException("No instances.");
     }
 
     @Override
     public HttpExecutionStrategy requiredOffloads() {
-        return strategy;
+        throw new UnsupportedOperationException("No instances.");
     }
 
     /**
@@ -106,14 +88,12 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
      * this builder.
      */
     public static final class Builder<ResolvedAddress> {
-        private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-        private final HttpExecutionStrategy strategy;
+
+        private final io.servicetalk.http.api.DefaultHttpLoadBalancerFactory.Builder<ResolvedAddress> delegate;
 
         private Builder(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-                final HttpExecutionStrategy strategy) {
-            this.rawFactory = rawFactory;
-            this.strategy = strategy;
+                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
+            this.delegate = io.servicetalk.http.api.DefaultHttpLoadBalancerFactory.Builder.from(rawFactory);
         }
 
         /**
@@ -122,7 +102,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public HttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
+            return delegate.build();
         }
 
         /**
@@ -150,82 +130,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         @SuppressWarnings("deprecation")
         public static <ResolvedAddress> Builder<ResolvedAddress> from(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
-            final HttpExecutionStrategy strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
-            return new Builder<>(rawFactory, strategy);
-        }
-    }
-
-    private static final class DefaultFilterableStreamingHttpLoadBalancedConnection
-            implements FilterableStreamingHttpLoadBalancedConnection {
-
-        private final FilterableStreamingHttpConnection delegate;
-
-        DefaultFilterableStreamingHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate) {
-            this.delegate = requireNonNull(delegate);
-        }
-
-        @Override
-        public int score() {
-            throw new UnsupportedOperationException(
-                    DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
-                            " doesn't support scoring. " + ScoreSupplier.class.getName() +
-                            " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
-                            " implementations that support scoring.");
-        }
-
-        @Override
-        public HttpConnectionContext connectionContext() {
-            return delegate.connectionContext();
-        }
-
-        @Override
-        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return delegate.transportEventStream(eventKey);
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return delegate.request(request);
-        }
-
-        @Override
-        public HttpExecutionContext executionContext() {
-            return delegate.executionContext();
-        }
-
-        @Override
-        public StreamingHttpResponseFactory httpResponseFactory() {
-            return delegate.httpResponseFactory();
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return delegate.onClosing();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            return delegate.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public String toString() {
-            return delegate.toString();
+            return new Builder<>(rawFactory);
         }
     }
 }
