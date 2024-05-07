@@ -21,7 +21,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProviders;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.transport.api.HostAndPort;
 
