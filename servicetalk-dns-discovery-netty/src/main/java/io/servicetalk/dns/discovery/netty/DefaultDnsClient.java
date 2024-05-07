@@ -437,11 +437,9 @@ final class DefaultDnsClient implements DnsClient {
                     final Future<List<DnsRecord>> resolveFuture =
                             resolver.resolveAll(new DefaultDnsQuestion(name, SRV));
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
-                        if (promise.isDone()) {
-                            return;
-                        }
-                        if (promise.tryFailure(DnsNameResolverTimeoutException.newInstance(name,
-                                resolutionTimeoutMillis, SRV.toString(), SrvRecordPublisher.class, "doDnsQuery"))) {
+                        if (!promise.isDone() && promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
+                                name, resolutionTimeoutMillis, SRV.toString(),
+                                SrvRecordPublisher.class, "doDnsQuery"))) {
                             resolveFuture.cancel(true);
                         }
                     }, resolutionTimeoutMillis, MILLISECONDS);
@@ -527,12 +525,9 @@ final class DefaultDnsClient implements DnsClient {
                     final Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = eventLoop.newPromise();
                     final Future<List<InetAddress>> resolveFuture = resolver.resolveAll(name);
                     final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
-                        if (dnsAnswerPromise.isDone()) {
-                            return;
-                        }
-                        if (dnsAnswerPromise.tryFailure(DnsNameResolverTimeoutException.newInstance(
-                                name, resolutionTimeoutMillis, toRecordTypeNames(addressTypes),
-                                ARecordPublisher.class, "doDnsQuery"))) {
+                        if (!dnsAnswerPromise.isDone() && dnsAnswerPromise.tryFailure(
+                                DnsNameResolverTimeoutException.newInstance(name, resolutionTimeoutMillis,
+                                        toRecordTypeNames(addressTypes), ARecordPublisher.class, "doDnsQuery"))) {
                             resolveFuture.cancel(true);
                         }
                     }, resolutionTimeoutMillis, MILLISECONDS);
