@@ -55,8 +55,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
         final String serviceName = clientNameFromAddress(address);
         if (config.enabledForServiceName(serviceName)) {
             try {
-                HttpLoadBalancerFactory<R> loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>from(
-                        defaultLoadBalancer(serviceName)).build();
+                HttpLoadBalancerFactory<R> loadBalancerFactory = new DefaultHttpLoadBalancerFactory<>(
+                        defaultLoadBalancer(serviceName));
                 builder = builder.loadBalancerFactory(loadBalancerFactory);
                 return new LoadBalancerIgnoringBuilder(builder, serviceName);
             } catch (Throwable ex) {

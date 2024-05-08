@@ -37,8 +37,8 @@ public final class DefaultLoadBalancerClient {
     public static void main(String[] args) throws Exception {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("localhost", 8080)
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
-                        loadBalancer("localhost-defaultloadbalancer")).build());
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
+                        loadBalancer("localhost-defaultloadbalancer")));
         try (BlockingHttpClient client = builder.buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));

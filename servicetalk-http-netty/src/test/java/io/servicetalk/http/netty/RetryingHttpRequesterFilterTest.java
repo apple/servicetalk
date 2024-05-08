@@ -119,12 +119,10 @@ class RetryingHttpRequesterFilterTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                         .addHeader(RETRYABLE_HEADER, "yes"));
         failingConnClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
-                        .from(new InspectingLoadBalancerFactory<>()).build())
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()))
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
         normalClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
-                        .from(new InspectingLoadBalancerFactory<>()).build());
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()));
         lbSelectInvoked = new AtomicInteger();
     }
 

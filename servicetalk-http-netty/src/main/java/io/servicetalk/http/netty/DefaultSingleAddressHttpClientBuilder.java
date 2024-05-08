@@ -839,8 +839,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer() {
-        return DefaultHttpLoadBalancerFactory.Builder.from(
+        return new DefaultHttpLoadBalancerFactory<>(
                 RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build()).build();
+                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
     }
 }

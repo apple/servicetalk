@@ -41,11 +41,15 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
     private final HttpExecutionStrategy strategy;
 
-    DefaultHttpLoadBalancerFactory(
-            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-            final HttpExecutionStrategy strategy) {
+    /**
+     * Creates a new instance with execution strategy adapted from the underlying factory.
+     *
+     * @param rawFactory {@link LoadBalancerFactory} to use
+     */
+    public DefaultHttpLoadBalancerFactory(
+            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
         this.rawFactory = rawFactory;
-        this.strategy = strategy;
+        this.strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
     }
 
     @SuppressWarnings("deprecation")
@@ -83,49 +87,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return strategy;
-    }
-
-    /**
-     * A builder for creating instances of {@link DefaultHttpLoadBalancerFactory}.
-     *
-     * @param <ResolvedAddress> The type of address after resolution for the {@link HttpLoadBalancerFactory} built by
-     * this builder.
-     */
-    public static final class Builder<ResolvedAddress> {
-        private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-        private final HttpExecutionStrategy strategy;
-
-        private Builder(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-                final HttpExecutionStrategy strategy) {
-            this.rawFactory = rawFactory;
-            this.strategy = strategy;
-        }
-
-        /**
-         * Builds a {@link HttpLoadBalancerFactory} using the properties configured on this builder.
-         *
-         * @return A {@link HttpLoadBalancerFactory}.
-         */
-        public HttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
-        }
-
-        /**
-         * Creates a new {@link Builder} using the passed {@link LoadBalancerFactory}.
-         *
-         * @param rawFactory {@link LoadBalancerFactory} to use for creating a {@link HttpLoadBalancerFactory} from the
-         * returned {@link Builder}.
-         * @param <ResolvedAddress> The type of address after resolution for a {@link HttpLoadBalancerFactory} created
-         * by the returned {@link Builder}.
-         * @return A new {@link Builder}.
-         */
-        @SuppressWarnings("deprecation")
-        public static <ResolvedAddress> Builder<ResolvedAddress> from(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
-            final HttpExecutionStrategy strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
-            return new Builder<>(rawFactory, strategy);
-        }
     }
 
     private static final class DefaultFilterableStreamingHttpLoadBalancedConnection

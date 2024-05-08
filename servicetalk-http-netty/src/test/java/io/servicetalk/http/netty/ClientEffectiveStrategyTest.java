@@ -255,13 +255,13 @@ class ClientEffectiveStrategyTest {
                     }
                     if (null != lbStrategy) {
                         HttpLoadBalancerFactory<InetSocketAddress> lfFactory =
-                                DefaultHttpLoadBalancerFactory.Builder.from(
+                                new DefaultHttpLoadBalancerFactory<>(
                                 new LoadBalancerFactoryImpl() {
                                     @Override
                                     public ExecutionStrategy requiredOffloads() {
                                         return lbStrategy;
                                     }
-                                }).build();
+                                });
                         clientBuilder.loadBalancerFactory(lfFactory);
                     }
                     if (null != cfStrategy) {
