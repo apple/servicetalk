@@ -131,7 +131,10 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @param <ResolvedAddress> The type of address after resolution for the {@link LoadBalancerFactory} built by
          * the returned builder.
          * @return A new {@link Builder}.
+         * @deprecated use {@link io.servicetalk.http.api.DefaultHttpLoadBalancerFactory} and wrap the raw load balancer
+         *             factory you're interested in using.
          */
+        @Deprecated
         public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
             return from(RoundRobinLoadBalancers
                     .<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(

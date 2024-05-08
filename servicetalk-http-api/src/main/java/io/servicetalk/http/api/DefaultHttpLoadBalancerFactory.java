@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
     }
 
+    @SuppressWarnings("deprecation")
     @Override   // FIXME: 0.43 - remove deprecated method
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             final FilterableStreamingHttpConnection connection) {
