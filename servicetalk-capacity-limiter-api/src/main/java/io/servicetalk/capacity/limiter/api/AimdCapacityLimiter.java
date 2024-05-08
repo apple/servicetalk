@@ -31,6 +31,7 @@
 
 package io.servicetalk.capacity.limiter.api;
 
+import io.servicetalk.capacity.limiter.api.AimdCapacityLimiterBuilder.StateObserver;
 import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
@@ -73,14 +74,14 @@ final class AimdCapacityLimiter implements CapacityLimiter {
     private final long coolDownPeriodNs;
     private final LongSupplier timeSource;
     @Nullable
-    private final AimdCapacityLimiterBuilder.StateObserver observer;
+    private final StateObserver observer;
     private int pending;
     private double limit;
     private long lastIncreaseTimestampNs;
     private volatile int state;
     AimdCapacityLimiter(final String name, final int min, final int max, final int initial, final float increment,
                         final float backoffRatioOnLimit, final float backoffRatioOnLoss,
-                        final Duration cooldown, @Nullable final AimdCapacityLimiterBuilder.StateObserver observer,
+                        final Duration cooldown, @Nullable final StateObserver observer,
                         final LongSupplier timeSource) {
         this.name = name;
         this.min = min;
@@ -249,11 +250,11 @@ final class AimdCapacityLimiter implements CapacityLimiter {
         }
     }
 
-    private static final class CatchAllStateObserver implements AimdCapacityLimiterBuilder.StateObserver {
+    private static final class CatchAllStateObserver implements StateObserver {
 
-        private final AimdCapacityLimiterBuilder.StateObserver delegate;
+        private final StateObserver delegate;
 
-        CatchAllStateObserver(final AimdCapacityLimiterBuilder.StateObserver delegate) {
+        CatchAllStateObserver(final StateObserver delegate) {
             this.delegate = delegate;
         }
 

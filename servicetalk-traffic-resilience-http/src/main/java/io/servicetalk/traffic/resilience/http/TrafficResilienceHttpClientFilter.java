@@ -51,6 +51,8 @@ import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrac
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
+import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT;
+import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT_PASSTHROUGH;
 import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT_RETRY;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.lang.Integer.MAX_VALUE;
@@ -214,9 +216,9 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         if (type == REJECT_RETRY) {
             final Duration delay = peerCapacityRejectionPolicy.delayProvider().apply(resp);
             return new DelayedRetryRequestRejectedException(delay);
-        } else if (type == PeerCapacityRejectionPolicy.Type.REJECT) {
+        } else if (type == REJECT) {
             return super.peerCapacityRejection(resp);
-        } else if (type == PeerCapacityRejectionPolicy.Type.REJECT_PASSTHROUGH) {
+        } else if (type == REJECT_PASSTHROUGH) {
             return new PassthroughRequestRejectedException("Service under heavy load", resp);
         } else {
             return new IllegalStateException("Unexpected PeerCapacityRejectionPolicy.Type: " + type);

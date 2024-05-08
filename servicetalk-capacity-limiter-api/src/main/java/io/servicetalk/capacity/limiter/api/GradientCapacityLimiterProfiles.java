@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterUtils.blastRadius;
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterUtils.occupancyFactor;
 import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Math.sqrt;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 
@@ -51,7 +50,7 @@ public final class GradientCapacityLimiterProfiles {
     static final BiPredicate<Integer, Double> DEFAULT_SUSPEND_DEC = (__, ___) -> false;
     static final BiPredicate<Integer, Double> EXPERIMENTAL_SUSPEND_DEC = occupancyFactor(.9f);
     static final BiFunction<Double, Double, Double> DEFAULT_HEADROOM = (__, ___) -> 0.0;
-    static final BiFunction<Double, Double, Double> GREEDY_HEADROOM = (grad, limit) -> sqrt(grad * limit);
+    static final BiFunction<Double, Double, Double> GREEDY_HEADROOM = (grad, limit) -> Math.sqrt(grad * limit);
     static final Duration MIN_SAMPLING_DURATION = Duration.ofMillis(50);
     static final LatencyTracker SHORT_LATENCY_CALMER_TRACKER = new EMA(Duration.ofMillis(500).toNanos());
     static final LatencyTracker LONG_LATENCY_CALMER_TRACKER = new EMA(ofSeconds(1).toNanos());
