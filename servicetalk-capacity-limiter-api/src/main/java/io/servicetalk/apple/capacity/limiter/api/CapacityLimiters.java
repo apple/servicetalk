@@ -44,16 +44,16 @@ public final class CapacityLimiters {
      * Returns a {@link CapacityLimiter} that will reject all requests till the current pending request count is equal
      * or less to the passed {@code capacity}.
      * This {@link CapacityLimiter} takes into consideration the {@link Classification} of a given request and will
-     * variate the effective {@code capacity} according to the {@link Classification#weight() weight} before
+     * variate the effective {@code capacity} according to the {@link Classification#priority() weight} before
      * attempting to grant access to the request. The effective {@code capacity} will never be more than the given
      * {@code capacity}.
      * <p>
-     * Requests with {@link Classification#weight() weight} equal to or greater than {@code 100} will enjoy
-     * the full capacity (100%), while requests with {@link Classification#weight() weight} less than {@code 100}
+     * Requests with {@link Classification#priority() weight} equal to or greater than {@code 100} will enjoy
+     * the full capacity (100%), while requests with {@link Classification#priority() weight} less than {@code 100}
      * will be mapped to a percentage point of the given {@code capacity} and be granted access only if the {@code
      * consumed capacity} is less than that percentage.
      * <br>
-     * Example: With a {@code capacity} = 10, and incoming {@link Classification#weight()} = 70, then the effective
+     * Example: With a {@code capacity} = 10, and incoming {@link Classification#priority()} = 70, then the effective
      * target limit for this request will be 70% of the 10 = 7. If current consumption is less than 7, the request
      * will be permitted.
      *

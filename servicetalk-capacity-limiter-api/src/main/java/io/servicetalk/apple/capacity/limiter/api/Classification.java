@@ -32,12 +32,12 @@ package io.servicetalk.apple.capacity.limiter.api;
 @FunctionalInterface
 public interface Classification {
     /**
-     * The weight should be a positive number between 0.1 and 1.0 (inclusive), which hints to a {@link CapacityLimiter}
+     * The priority should be a positive number between 0 and 100 (inclusive), which hints to a {@link CapacityLimiter}
      * the importance of a {@link Classification}.
      * Higher value represents the most important {@link Classification}, while lower value represents less important
      * {@link Classification}.
-     * @return A positive value between 0.1 and 1.0 (inclusive) that hints importance of a request to a
+     * @return A positive value between 0 and 100 (inclusive) that hints importance of a request to a
      * {@link CapacityLimiter}.
      */
-    int weight();
+    int priority();
 }

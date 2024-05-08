@@ -46,7 +46,7 @@ public final class FixedCapacityLimiterBuilder {
     /**
      * Defines the fixed capacity for the {@link CapacityLimiter}.
      * Concurrent requests above this figure will be rejected. Requests with particular
-     * {@link Classification#weight() weight} will be respected and the total capacity for them will be adjusted
+     * {@link Classification#priority() weight} will be respected and the total capacity for them will be adjusted
      * accordingly.
      * @param capacity The max allowed concurrent requests that this {@link CapacityLimiter} should allow.
      * @return {@code this}.
