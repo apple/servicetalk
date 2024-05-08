@@ -35,7 +35,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
 public final class UseDefaultLoadBalancerProvider implements RoundRobinLoadBalancerBuilderProvider {
 
-    private static final String PROPERTY_NAME = "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
+    static final String PROPERTY_NAME = "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
     private static final boolean DEFAULT_PROPERTY_VALUE = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UseDefaultLoadBalancerProvider.class);
@@ -141,10 +141,12 @@ public final class UseDefaultLoadBalancerProvider implements RoundRobinLoadBalan
                     .ignoreWeights(true)
                     .build();
 
-            return LoadBalancers.<ResolvedAddress, C>builder(id)
-                    .outlierDetectorConfig(outlierDetectorConfig)
+            LoadBalancerBuilder<ResolvedAddress, C> builder = LoadBalancers.builder(id);
+            if (backgroundExecutor != null) {
+                builder = builder.backgroundExecutor(backgroundExecutor);
+            }
+            return builder.outlierDetectorConfig(outlierDetectorConfig)
                     .loadBalancingPolicy(loadBalancingPolicy)
-                    .backgroundExecutor(backgroundExecutor)
                     .connectionPoolConfig(ConnectionPoolConfig.linearSearch(linearSearchSpace))
                     .build();
         }
