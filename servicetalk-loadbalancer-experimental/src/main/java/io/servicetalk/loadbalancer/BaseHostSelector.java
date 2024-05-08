@@ -30,6 +30,8 @@ import static java.util.Objects.requireNonNull;
 abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnection>
         implements HostSelector<ResolvedAddress, C> {
 
+    private static final double ACCEPTABLE_PERCENT_ERROR = 0.01;
+
     private final String targetResource;
     private final List<? extends Host<ResolvedAddress, C>> hosts;
     BaseHostSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource) {
@@ -93,6 +95,18 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
                 "No hosts are available to connect for " + targetResource + ".",
                 this.getClass(), "selectConnection(...)"));
+    }
+
+    static boolean approxEqual(double a, double b) {
+        return Math.abs(a - b) < ACCEPTABLE_PERCENT_ERROR;
+    }
+
+    static boolean isNormalized(double[] probabilities) {
+        double ptotal = 0;
+        for (double p : probabilities) {
+            ptotal += p;
+        }
+        return approxEqual(ptotal, 1);
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection> boolean anyHealthy(

@@ -34,19 +34,19 @@ final class SelectorTestHelpers {
     private SelectorTestHelpers() {
     }
 
-    static List<Host<String, TestLoadBalancedConnection>> connections(int count) {
+    static List<Host<String, TestLoadBalancedConnection>> generateHosts(int count) {
         String[] addresses = new String[count];
         for (int i = 0; i < count; i++) {
             addresses[i] = "address-" + i;
         }
-        return connections(addresses);
+        return generateHosts(addresses);
     }
 
-    static List<Host<String, TestLoadBalancedConnection>> connections(String... addresses) {
-        return connections(true, addresses);
+    static List<Host<String, TestLoadBalancedConnection>> generateHosts(String... addresses) {
+        return generateHosts(true, addresses);
     }
 
-    static List<Host<String, TestLoadBalancedConnection>> connections(boolean equalWeights, String... addresses) {
+    static List<Host<String, TestLoadBalancedConnection>> generateHosts(boolean equalWeights, String... addresses) {
         final List<Host<String, TestLoadBalancedConnection>> results = new ArrayList<>(addresses.length);
         for (String addr : addresses) {
             Host<String, TestLoadBalancedConnection> host = mockHost(addr,

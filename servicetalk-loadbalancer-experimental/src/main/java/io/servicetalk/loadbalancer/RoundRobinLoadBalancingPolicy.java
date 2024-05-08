@@ -35,15 +35,17 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
+    private final boolean ignoreWeights;
 
-    private RoundRobinLoadBalancingPolicy(final boolean failOpen) {
+    private RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
         this.failOpen = failOpen;
+        this.ignoreWeights = ignoreWeights;
     }
 
     @Override
     HostSelector<ResolvedAddress, C>
     buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
-        return new RoundRobinSelector<>(hosts, targetResource, failOpen);
+        return new RoundRobinSelector<>(hosts, targetResource, failOpen, ignoreWeights);
     }
 
     @Override
@@ -61,15 +63,33 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
      */
     public static final class Builder {
 
+        private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
+
         private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
+        private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
 
         /**
          * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
          * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
          * @return this {@link P2CLoadBalancingPolicy.Builder}.
          */
-        public RoundRobinLoadBalancingPolicy.Builder failOpen(final boolean failOpen) {
+        public Builder failOpen(final boolean failOpen) {
             this.failOpen = failOpen;
+            return this;
+        }
+
+        /**
+         * Set whether the host selector should ignore {@link Host}s weight.
+         * Host weight influences the probability it will be selected to serve a request. The host weight can come
+         * from many sources including known host capacity, priority groups, and others, so ignoring weight
+         * information can lead to other features not working properly and should be used with care.
+         * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
+         *
+         * @param ignoreWeights whether the host selector should ignore host weight information.
+         * @return {@code this}
+         */
+        public Builder ignoreWeights(final boolean ignoreWeights) {
+            this.ignoreWeights = ignoreWeights;
             return this;
         }
 
@@ -81,7 +101,7 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
         build() {
-            return new RoundRobinLoadBalancingPolicy<>(failOpen);
+            return new RoundRobinLoadBalancingPolicy<>(failOpen, ignoreWeights);
         }
     }
 }

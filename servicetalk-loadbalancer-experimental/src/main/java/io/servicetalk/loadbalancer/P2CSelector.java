@@ -29,8 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static java.lang.Math.abs;
-
 /**
  * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
  * Choices in Randomized Load Balancing.
@@ -42,8 +40,6 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         extends BaseHostSelector<ResolvedAddress, C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CSelector.class);
-
-    private static final double ACCEPTABLE_PERCENT_ERROR = 0.01;
     private static final EntrySelector EMPTY_SELECTOR = new EqualWeightEntrySelector(0);
 
     @Nullable
@@ -318,17 +314,5 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             pout[large[--l]] = 1;
         }
         return new AliasTableEntrySelector(pout, aliases);
-    }
-
-    private static boolean approxEqual(double a, double b) {
-        return abs(a - b) < ACCEPTABLE_PERCENT_ERROR;
-    }
-
-    private static boolean isNormalized(double[] probabilities) {
-        double ptotal = 0;
-        for (double p : probabilities) {
-            ptotal += p;
-        }
-        return approxEqual(ptotal, 1);
     }
 }
