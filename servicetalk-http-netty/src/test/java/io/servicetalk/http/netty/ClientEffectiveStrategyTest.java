@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -254,13 +255,13 @@ class ClientEffectiveStrategyTest {
                     }
                     if (null != lbStrategy) {
                         HttpLoadBalancerFactory<InetSocketAddress> lfFactory =
-                                DefaultHttpLoadBalancerFactory.Builder.from(
+                                new DefaultHttpLoadBalancerFactory<>(
                                 new LoadBalancerFactoryImpl() {
                                     @Override
                                     public ExecutionStrategy requiredOffloads() {
                                         return lbStrategy;
                                     }
-                                }).build();
+                                });
                         clientBuilder.loadBalancerFactory(lfFactory);
                     }
                     if (null != cfStrategy) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
@@ -25,18 +25,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpConnectionContext;
-import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -47,19 +35,21 @@ import static java.util.Objects.requireNonNull;
  * Default implementation of {@link HttpLoadBalancerFactory}.
  *
  * @param <ResolvedAddress> The type of address after resolution.
- * @deprecated use {@link io.servicetalk.http.api.DefaultHttpLoadBalancerFactory} instead.
  */
-@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress> {
     private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
     private final HttpExecutionStrategy strategy;
 
-    DefaultHttpLoadBalancerFactory(
-            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-            final HttpExecutionStrategy strategy) {
+    /**
+     * Creates a new instance with execution strategy adapted from the underlying factory.
+     *
+     * @param rawFactory {@link LoadBalancerFactory} to use
+     */
+    public DefaultHttpLoadBalancerFactory(
+            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
         this.rawFactory = rawFactory;
-        this.strategy = strategy;
+        this.strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
     }
 
     @SuppressWarnings("deprecation")
@@ -79,6 +69,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
     }
 
+    @SuppressWarnings("deprecation")
     @Override   // FIXME: 0.43 - remove deprecated method
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             final FilterableStreamingHttpConnection connection) {
@@ -97,65 +88,6 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return strategy;
-    }
-
-    /**
-     * A builder for creating instances of {@link DefaultHttpLoadBalancerFactory}.
-     *
-     * @param <ResolvedAddress> The type of address after resolution for the {@link HttpLoadBalancerFactory} built by
-     * this builder.
-     */
-    public static final class Builder<ResolvedAddress> {
-        private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-        private final HttpExecutionStrategy strategy;
-
-        private Builder(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-                final HttpExecutionStrategy strategy) {
-            this.rawFactory = rawFactory;
-            this.strategy = strategy;
-        }
-
-        /**
-         * Builds a {@link DefaultHttpLoadBalancerFactory} using the properties configured on this builder.
-         *
-         * @return A {@link DefaultHttpLoadBalancerFactory}.
-         */
-        public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategy);
-        }
-
-        /**
-         * Creates a new {@link Builder} instance using the default {@link LoadBalancer} implementation.
-         *
-         * @param <ResolvedAddress> The type of address after resolution for the {@link LoadBalancerFactory} built by
-         * the returned builder.
-         * @return A new {@link Builder}.
-         * @deprecated use {@link io.servicetalk.http.api.DefaultHttpLoadBalancerFactory} and wrap the raw load balancer
-         *             factory you're interested in using.
-         */
-        @Deprecated
-        public static <ResolvedAddress> Builder<ResolvedAddress> fromDefaults() {
-            return from(RoundRobinLoadBalancers
-                    .<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                            DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
-        }
-
-        /**
-         * Creates a new {@link Builder} using the passed {@link LoadBalancerFactory}.
-         *
-         * @param rawFactory {@link LoadBalancerFactory} to use for creating a {@link HttpLoadBalancerFactory} from the
-         * returned {@link Builder}.
-         * @param <ResolvedAddress> The type of address after resolution for a {@link HttpLoadBalancerFactory} created
-         * by the returned {@link Builder}.
-         * @return A new {@link Builder}.
-         */
-        @SuppressWarnings("deprecation")
-        public static <ResolvedAddress> Builder<ResolvedAddress> from(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
-            final HttpExecutionStrategy strategy = HttpExecutionStrategy.from(rawFactory.requiredOffloads());
-            return new Builder<>(rawFactory, strategy);
-        }
     }
 
     private static final class DefaultFilterableStreamingHttpLoadBalancedConnection

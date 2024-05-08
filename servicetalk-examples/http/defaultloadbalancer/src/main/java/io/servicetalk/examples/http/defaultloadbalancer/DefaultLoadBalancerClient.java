@@ -17,10 +17,10 @@ package io.servicetalk.examples.http.defaultloadbalancer;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.netty.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
@@ -37,8 +37,8 @@ public final class DefaultLoadBalancerClient {
     public static void main(String[] args) throws Exception {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("localhost", 8080)
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
-                        loadBalancer("localhost-defaultloadbalancer")).build());
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
+                        loadBalancer("localhost-defaultloadbalancer")));
         try (BlockingHttpClient client = builder.buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
