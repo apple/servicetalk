@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -483,14 +484,13 @@ public final class HttpClients {
                         .serviceDiscoverer(usd)
                         .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
                         // Disable health-checking:
-                        .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
+                        .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
                                 RoundRobinLoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
                                         // Use a different ID to let providers distinguish this LB from the default one
                                         DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
                                                 DiscoveryStrategy.ON_NEW_CONNECTION.name())
                                         .healthCheckFailedConnectionsThreshold(-1)
-                                        .build())
-                                .build())
+                                        .build()))
                         .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
