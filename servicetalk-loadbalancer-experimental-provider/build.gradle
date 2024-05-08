@@ -17,6 +17,9 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
+  api project(":servicetalk-http-api")
+
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-loadbalancer")
   implementation project(":servicetalk-loadbalancer-experimental")
