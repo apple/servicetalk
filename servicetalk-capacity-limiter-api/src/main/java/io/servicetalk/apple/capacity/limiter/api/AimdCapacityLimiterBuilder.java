@@ -15,16 +15,17 @@
  */
 package io.servicetalk.apple.capacity.limiter.api;
 
+import io.servicetalk.utils.internal.DurationUtils;
+import io.servicetalk.utils.internal.NumberUtils;
+
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkBetweenZeroAndOneExclusive;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkPositive;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkRange;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkZeroOrPositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureRange;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
@@ -98,7 +99,7 @@ public final class AimdCapacityLimiterBuilder {
             throw new IllegalArgumentException("min: " + min + ", max: " + max + " (expected: min < max)");
         }
 
-        this.initial = checkRange("initial", initial, min, max);
+        this.initial = ensureRange(initial, min, max, "initial");
         this.min = min;
         this.max = max;
         return this;
@@ -123,8 +124,8 @@ public final class AimdCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public AimdCapacityLimiterBuilder backoffRatio(final float onDrop, final float onLimit) {
-        this.onDrop = checkBetweenZeroAndOneExclusive("onDrop", onDrop);
-        this.onLimit = checkBetweenZeroAndOneExclusive("onLimit", onLimit);
+        this.onDrop = ensureBetweenZeroAndOneExclusive(onDrop, "onDrop");
+        this.onLimit = ensureBetweenZeroAndOneExclusive(onLimit, "onLimit");
         return this;
     }
 
@@ -137,7 +138,7 @@ public final class AimdCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public AimdCapacityLimiterBuilder increment(final float increment) {
-        this.increment = checkPositive("increment", increment);
+        this.increment = NumberUtils.ensurePositive(increment, "increment");
         return this;
     }
 
@@ -150,7 +151,7 @@ public final class AimdCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public AimdCapacityLimiterBuilder cooldown(final Duration duration) {
-        this.cooldown = checkZeroOrPositive("cooldown", duration);
+        this.cooldown = DurationUtils.ensureNonNegative(duration, "cooldown");
         return this;
     }
 

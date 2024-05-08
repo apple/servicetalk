@@ -96,7 +96,7 @@ class TrafficResilienceHttpServiceFilterTest {
             final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                     new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity()
                             .capacity(1)
-                            .stateObserver(consumed -> {
+                            .stateObserver((capacity, consumed) -> {
                                 consumption.set(consumed);
                                 latch.countDown();
                             })

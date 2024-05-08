@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,18 @@
  */
 package io.servicetalk.apple.capacity.limiter.api;
 
+import io.servicetalk.utils.internal.NumberUtils;
+
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkPositive;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A tracker of latency values at certain points in time.
- *
+ * <p>
  * This helps observe latency behavior and different implementation can offer their own interpretation of the latency
  * tracker, allowing a way to enhance the algorithm's behavior according to the observations.
  * Implementations must provide thread-safety guarantees.
@@ -91,7 +92,7 @@ interface LatencyTracker {
          */
         EMA(final long halfLifeNs, final LatencyTracker calmTracker,
             final BiFunction<Double, Double, Float> calmRatio) {
-            checkPositive("halfLifeNs", halfLifeNs);
+            NumberUtils.ensurePositive(halfLifeNs, "halfLifeNs");
             this.tau = halfLifeNs / log(2);
             this.calmTracker = requireNonNull(calmTracker);
             this.calmRatio = requireNonNull(calmRatio);

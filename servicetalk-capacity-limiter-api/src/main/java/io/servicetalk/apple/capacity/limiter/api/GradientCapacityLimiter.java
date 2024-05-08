@@ -129,14 +129,12 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         Ticket ticket = null;
         synchronized (lock) {
             newLimit = (int) limit;
-            newPending = pending;
             if (pending < limit) {
                 newPending = ++pending;
                 ticket = new DefaultTicket(this, newLimit - newPending);
             }
         }
 
-        observer.onStateChange(newLimit, newPending);
         if (ticket != null) {
             observer.onActiveRequestsIncr();
         }
@@ -187,10 +185,6 @@ final class GradientCapacityLimiter implements CapacityLimiter {
             }
         }
 
-        if (limit > -1) {
-            observer.onStateChange(limit, newPending);
-        }
-
         observer.onActiveRequestsDecr();
         return limit - newPending;
     }
@@ -205,7 +199,6 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         }
 
         observer.onActiveRequestsDecr();
-        observer.onStateChange((int) newLimit, newPending);
         return (int) (newLimit - newPending);
     }
 
@@ -218,7 +211,6 @@ final class GradientCapacityLimiter implements CapacityLimiter {
             newPending = --pending;
         }
         observer.onActiveRequestsDecr();
-        observer.onStateChange((int) newLimit, newPending);
         return (int) (newLimit - newPending);
     }
 
@@ -291,17 +283,6 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
         CatchAllObserver(Observer observer) {
             this.delegate = observer;
-        }
-
-        @Deprecated
-        @Override
-        public void onStateChange(final int limit, final int consumed) {
-            try {
-                delegate.onStateChange(limit, consumed);
-            } catch (Throwable t) {
-                LOGGER.warn("Unexpected exception from {}.onStateChange({}, {})",
-                        delegate.getClass().getSimpleName(), limit, consumed, t);
-            }
         }
 
         @Override

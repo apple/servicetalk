@@ -94,20 +94,9 @@ public final class FixedCapacityLimiterBuilder {
         /**
          * Callback that gives access to internal state of the {@link CapacityLimiter} with fixed capacity.
          *
-         * @param consumed The current consumption (portion of the capacity) of the limiter.
-         * @deprecated Use {@link #observe(int, int)}.
-         */
-        @Deprecated // FIXME: 0.43 - remove deprecated method or change default impl
-        void observe(int consumed);
-
-        /**
-         * Callback that gives access to internal state of the {@link CapacityLimiter} with fixed capacity.
-         *
          * @param capacity The max allowed concurrent requests that {@link CapacityLimiter} should allow.
          * @param consumed The current consumption (portion of the capacity) of the limiter.
          */
-        default void observe(int capacity, int consumed) {
-            observe(consumed);
-        }
+        void observe(int capacity, int consumed);
     }
 }

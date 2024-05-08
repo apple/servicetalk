@@ -15,8 +15,8 @@
  */
 package io.servicetalk.apple.capacity.limiter.api;
 
-import io.servicetalk.apple.capacity.limiter.api.CapacityLimiter.Ticket;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.utils.internal.NumberUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +44,9 @@ import static io.servicetalk.apple.capacity.limiter.api.GradientCapacityLimiterP
 import static io.servicetalk.apple.capacity.limiter.api.GradientCapacityLimiterProfiles.DEFAULT_SUSPEND_INCR;
 import static io.servicetalk.apple.capacity.limiter.api.GradientCapacityLimiterProfiles.GREEDY_HEADROOM;
 import static io.servicetalk.apple.capacity.limiter.api.GradientCapacityLimiterProfiles.MIN_SAMPLING_DURATION;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkBetweenZeroAndOne;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkBetweenZeroAndOneExclusive;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkGreaterThan;
-import static io.servicetalk.apple.capacity.limiter.api.Preconditions.checkPositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOne;
+import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureGreaterThan;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -60,11 +59,6 @@ public final class GradientCapacityLimiterBuilder {
     private static final AtomicInteger SEQ_GEN = new AtomicInteger();
 
     private static final Observer LOGGING_OBSERVER = new Observer() {
-        @Override
-        public void onStateChange(final int limit, final int consumed) {
-            LOGGER.debug("GradientCapacityLimiter: limit {} consumption {}", limit, consumed);
-        }
-
         @Override
         public void onActiveRequestsDecr() {
         }
@@ -131,7 +125,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder limits(final int initial, final int min, final int max) {
-        checkPositive("min", min);
+        NumberUtils.ensurePositive(min, "min");
         if (initial < min || initial > max) {
             throw new IllegalArgumentException("initial: " + initial + " (expected: min <= initial <= max)");
         }
@@ -164,8 +158,8 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder backoffRatio(final float onDrop, final float onLimit) {
-        checkBetweenZeroAndOneExclusive("onDrop", onDrop);
-        checkBetweenZeroAndOneExclusive("onLimit", onLimit);
+        ensureBetweenZeroAndOneExclusive(onDrop, "onDrop");
+        ensureBetweenZeroAndOneExclusive(onLimit, "onLimit");
 
         this.onDrop = onDrop;
         this.onLimit = onLimit;
@@ -249,7 +243,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder minGradient(final float minGradient) {
-        checkBetweenZeroAndOne("minGradient", minGradient);
+        ensureBetweenZeroAndOne(minGradient, "minGradient");
         this.minGradient = minGradient;
         return this;
     }
@@ -264,7 +258,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder maxGradient(final float maxPositiveGradient) {
-        checkGreaterThan("maxGradient", maxPositiveGradient, 1.0f);
+        ensureGreaterThan(maxPositiveGradient, 1.0f, "maxGradient");
         this.maxGradient = maxPositiveGradient;
         return this;
     }
@@ -342,21 +336,6 @@ public final class GradientCapacityLimiterBuilder {
      * A state observer for Gradient {@link CapacityLimiter} to monitor internal state changes.
      */
     public interface Observer {
-        /**
-         * Callback that gives access to internal state of the Gradient {@link CapacityLimiter}.
-         * Useful to capture all consumption changes along with the limit in use, but can be very noisy,
-         * since consumption changes twice in the lifecycle of a {@link Ticket}.
-         * <p>
-         * The rate of reporting to the observer is based on the rate of change to this
-         * {@link CapacityLimiter}.
-         * @param limit The current limit (dynamically computed) of the limiter.
-         * @param consumed The current consumption (portion of the limit) of the limiter.
-         * @deprecated alternative for consumed available through {@link #onActiveRequestsIncr}
-         * and {@link #onActiveRequestsDecr}, similarly alternative for limit changes available through
-         * {@link #onLimitChange(double, double, double, double, double)}.
-         */
-        @Deprecated
-        void onStateChange(int limit, int consumed);
 
         /**
          * Callback that informs when the active requests increased by 1.

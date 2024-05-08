@@ -151,16 +151,6 @@ final class FixedCapacityLimiter implements CapacityLimiter {
         }
 
         @Override
-        public void observe(final int consumed) {
-            try {
-                delegate.observe(consumed);
-            } catch (Throwable t) {
-                LOGGER.warn("Unexpected exception from {}.observe({})",
-                        delegate.getClass().getSimpleName(), consumed, t);
-            }
-        }
-
-        @Override
         public void observe(final int capacity, final int consumed) {
             try {
                 delegate.observe(capacity, consumed);

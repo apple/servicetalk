@@ -28,8 +28,6 @@ import static java.util.stream.Collectors.joining;
  * such as overall capacity control along with "specific" (i.e. customer based) partitioned quotas.
  * The order of the {@link CapacityLimiter} is the same as provided by the user, and the same order is applied
  * when tickets acquired are released back to their owner.
- *
- * @param <Meta> Contextual metadata of the request a {@link CapacityLimiter} supports for evaluation.
  */
 final class CompositeCapacityLimiter implements CapacityLimiter {
 
