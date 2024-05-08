@@ -132,22 +132,8 @@ final class DefaultLoadBalancerProviderConfig {
         }
     }
 
-    private Set<String> getClientsEnabledFor(String propertyValue) {
-        final Set<String> result = new HashSet<>();
-        // if enabled for all there is no need to parse.
-        if (!"*".equals(propertyValue)) {
-            for (String serviceName : propertyValue.split(",")) {
-                String trimmed = serviceName.trim();
-                if (!trimmed.isEmpty()) {
-                    result.add(trimmed);
-                }
-            }
-        }
-        return result;
-    }
-
     <U, C extends LoadBalancedConnection> LoadBalancingPolicy<U, C> getLoadBalancingPolicy() {
-        if (lbPolicy == lbPolicy.P2C) {
+        if (lbPolicy == LBPolicy.P2C) {
             return new P2CLoadBalancingPolicy.Builder().build();
         } else {
             return new RoundRobinLoadBalancingPolicy.Builder().build();
@@ -229,5 +215,19 @@ final class DefaultLoadBalancerProviderConfig {
             throw new IllegalArgumentException("Integer overflow for value " + name + ": " + value);
         }
         return (int) value;
+    }
+
+    private static Set<String> getClientsEnabledFor(String propertyValue) {
+        final Set<String> result = new HashSet<>();
+        // if enabled for all there is no need to parse.
+        if (!"*".equals(propertyValue)) {
+            for (String serviceName : propertyValue.split(",")) {
+                String trimmed = serviceName.trim();
+                if (!trimmed.isEmpty()) {
+                    result.add(trimmed);
+                }
+            }
+        }
+        return result;
     }
 }

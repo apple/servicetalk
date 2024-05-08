@@ -5,23 +5,6 @@ experimentation that doesn't require a recompilation of the application.
 
 > WARNING: this package is only for experimentation and will be removed in the future.
 
-
-== Enabling DefaultLoadBalancer via System Properties
-
-=== Dynamically Loading the DefaultHttpLoadBalancerProvider
-
-This package uses the standard providers pattern. To enable the provider you need to both include this package as
-part of your application bundle and also include a file in the resources as follows:
-```
-resources/META-INF/services/io.servicetalk.http.api.HttpProviders$SingleAddressHttpClientBuilderProvider
-```
-
-The contents of this must contain the line
-
-```
-io.servicetalk.loadbalancer.experimental.DefaultHttpLoadBalancerProvider
-```
-
 === Targeting Clients for Which to Enable DefaultLoadBalancer
 
 The `DefaultHttpLoadBalancerProvider` supports enabling the load balancer either for all clients or only a set of
@@ -41,13 +24,6 @@ io.servicetalk.loadbalancer.experimental.clientsEnabledFor=service1,service2
 The specific names will depend on how the client is built. If the client is built using a `HostAndPort`, the names are
 only the host component. If the client is built using some other unresolved address form then the string representation
 of that is used.
-
-=== Customizing Name Extraction
-
-The provider depends on the service name for selecting which client to use. If you're using a custom naming system
-the default implementation may not be able to decode the unresolved address type to the appropriate name. Custom naming
-schemes can be supported by extending the `DefaultHttpLoadBalancerProvider` and overriding the `clientNameFromAddress`
-method. Then this custom provider can be added to the service load list as described in the section above.
 
 === All Supported Properties
 
