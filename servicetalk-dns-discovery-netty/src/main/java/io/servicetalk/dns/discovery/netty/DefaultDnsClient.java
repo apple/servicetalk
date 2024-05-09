@@ -47,7 +47,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DefaultDnsCnameCache;
-import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.NameServerComparator;
 import io.netty.resolver.dns.NoopAuthoritativeDnsServerCache;
@@ -75,6 +74,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -125,7 +125,7 @@ final class DefaultDnsClient implements DnsClient {
     private static final Cancellable TERMINATED = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final DnsNameResolver resolver;
+    private final HedgingDnsNameResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
@@ -221,7 +221,7 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = builder.build();
+        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor.eventLoopGroup().next());
     }
 
     @Override

@@ -1,59 +1,80 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.netty.channel.EventLoop;
+import io.netty.handler.codec.dns.DnsQuestion;
+import io.netty.handler.codec.dns.DnsRecord;
+import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+import java.io.Closeable;
+import java.net.InetAddress;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-final class HedgingWrapper<T, R> implements Function<T, Future<R>> {
+final class HedgingDnsNameResolver implements Closeable {
 
+    private final DnsNameResolver delegate;
     private final EventLoop eventLoop;
-    private final Function<T, Future<R>> computation;
     private final PercentileTracker percentile;
     private final Budget budget;
 
-    HedgingWrapper(EventLoop eventLoop, Function<T, Future<R>> computation) {
-        this(eventLoop, computation, defaultTracker(), defaultBudget());
+    HedgingDnsNameResolver(DnsNameResolver delegate, EventLoop eventLoop) {
+        this(delegate, eventLoop, defaultTracker(), defaultBudget());
     }
 
-    HedgingWrapper(EventLoop eventLoop, Function<T, Future<R>> computation, PercentileTracker percentile,
+    HedgingDnsNameResolver(DnsNameResolver delegate, EventLoop eventLoop, PercentileTracker percentile,
                    Budget budget) {
+        this.delegate = delegate;
         this.eventLoop = eventLoop;
-        this.computation = computation;
         this.percentile = percentile;
         this.budget = budget;
     }
 
-    @Override
-    public Future<R> apply(T t) {
-        return doApply(t, eventLoop.newPromise());
+    public Future<List<DnsRecord>> resolveAll(DnsQuestion t) {
+        return applyHedge(delegate::resolveAll, t);
     }
 
-    private Future<R> doApply(T t, Promise<R> promise) {
-        // Only add tokens for organic requests, not retries.
+    public Future<List<InetAddress>> resolveAll(String t) {
+        return applyHedge(delegate::resolveAll, t);
+    }
+
+    @Override
+    public void close() {
+        delegate.close();
+    }
+
+    private <T, R> Future<R> applyHedge(Function<T, Future<R>> computation, T t) {
+        // Only add tokens for organic requests and not retries.
         budget.deposit();
         Future<R> underlyingResult = computation.apply(t);
         final long startTime = System.currentTimeMillis();
-        final long deadline = startTime + percentile.getValue();
-        Future<?> hedgeTimer = eventLoop.schedule(() -> maybeApplyHedge(t, underlyingResult, promise),
-                deadline, TimeUnit.MILLISECONDS);
-        underlyingResult.addListener(completedFuture -> {
-            measureRequest(System.currentTimeMillis() - startTime, completedFuture.isSuccess());
-            if (complete(underlyingResult, promise)) {
-                hedgeTimer.cancel(true);
-            }
-        });
-
-        return promise;
+        final long deadline = addWithOverflowProtection(startTime, percentile.getValue());
+        if (deadline == Long.MAX_VALUE) {
+            // no need to attempt a hedge that will wait that long: just return the value.
+            return underlyingResult;
+        } else {
+            Promise<R> promise = eventLoop.newPromise();
+            Future<?> hedgeTimer = eventLoop.schedule(() -> maybeApplyHedge(computation, t, underlyingResult, promise),
+                    deadline, TimeUnit.MILLISECONDS);
+            underlyingResult.addListener(completedFuture -> {
+                measureRequest(System.currentTimeMillis() - startTime, completedFuture.isSuccess());
+                if (complete(underlyingResult, promise)) {
+                    hedgeTimer.cancel(true);
+                }
+            });
+            return promise;
+        }
     }
 
-    private void maybeApplyHedge(T t, Future<R> original, Promise<R> promise) {
+    private <T, R> void maybeApplyHedge(
+            Function<T, Future<R>> computation, T t, Future<R> original, Promise<R> promise) {
         if (budget.withdraw() && !original.isDone()) {
             Future<R> backupResult = computation.apply(t);
             backupResult.addListener(done -> {
@@ -71,7 +92,7 @@ final class HedgingWrapper<T, R> implements Function<T, Future<R>> {
         }
     }
 
-    private boolean complete(Future<R> f, Promise<R> p) {
+    private <T, R> boolean complete(Future<R> f, Promise<R> p) {
         assert f.isDone();
         if (f.isSuccess()) {
             return p.trySuccess(f.getNow());
@@ -108,7 +129,7 @@ final class HedgingWrapper<T, R> implements Function<T, Future<R>> {
             this.depositAmount = depositAmount;
             this.withDrawAmount = withDrawAmount;
             this.maxTokens = maxTokens;
-            initialTokens = initialTokens;
+            this.tokens = initialTokens;
         }
 
 
@@ -186,7 +207,7 @@ final class HedgingWrapper<T, R> implements Function<T, Future<R>> {
                 buckets[i] = 0;
             }
             assert result != -1; // we should have found a bucket.
-            return result;
+            return max(1, result);
         }
 
         private long bucketToValue(int bucket) {
@@ -203,6 +224,7 @@ final class HedgingWrapper<T, R> implements Function<T, Future<R>> {
     }
 
     private static Budget defaultBudget() {
+        // 5% extra load and a max burst of 5 hedges.
         return new DefaultBudgetImpl(1, 20, 100);
     }
 }
