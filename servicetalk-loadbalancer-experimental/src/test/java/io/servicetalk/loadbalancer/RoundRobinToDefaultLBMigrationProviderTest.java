@@ -19,15 +19,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
-import static io.servicetalk.loadbalancer.UseDefaultLoadBalancerProvider.PROPERTY_NAME;
+import static io.servicetalk.loadbalancer.RoundRobinToDefaultLBMigrationProvider.PROPERTY_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
 
-final class UseDefaultLoadBalancerProviderTest {
+final class RoundRobinToDefaultLBMigrationProviderTest {
 
     private final Properties properties = new Properties();
-    private final UseDefaultLoadBalancerProvider provider = new UseDefaultLoadBalancerProvider(properties);
+    private final RoundRobinToDefaultLBMigrationProvider provider = new RoundRobinToDefaultLBMigrationProvider(properties);
 
     @Test
     void enabled() {

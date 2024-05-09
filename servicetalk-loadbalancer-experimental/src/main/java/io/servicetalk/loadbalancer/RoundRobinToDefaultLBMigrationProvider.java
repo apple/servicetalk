@@ -33,21 +33,21 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
-public final class UseDefaultLoadBalancerProvider implements RoundRobinLoadBalancerBuilderProvider {
+public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinLoadBalancerBuilderProvider {
 
     static final String PROPERTY_NAME = "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
     private static final boolean DEFAULT_PROPERTY_VALUE = false;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UseDefaultLoadBalancerProvider.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinToDefaultLBMigrationProvider.class);
 
     private final Properties properties;
 
-    public UseDefaultLoadBalancerProvider() {
+    public RoundRobinToDefaultLBMigrationProvider() {
         this(System.getProperties());
     }
 
     // Exposed for testing.
-    UseDefaultLoadBalancerProvider(final Properties properties) {
+    RoundRobinToDefaultLBMigrationProvider(final Properties properties) {
         this.properties = properties;
     }
 

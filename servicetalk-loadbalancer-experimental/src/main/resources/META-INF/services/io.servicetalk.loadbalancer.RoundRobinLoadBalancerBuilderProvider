@@ -1,1 +1,1 @@
-io.servicetalk.loadbalancer.UseDefaultLoadBalancerProvider
+io.servicetalk.loadbalancer.RoundRobinToDefaultLBMigrationProvider
