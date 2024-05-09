@@ -27,7 +27,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.apple.capacity.limiter.api.GradientCapacityLimiterProfiles.DEFAULT_INITIAL_LIMIT;
@@ -176,8 +175,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder headroom(final BiFunction<Double, Double, Double> headroom) {
-        requireNonNull(headroom);
-        this.headroom = headroom;
+        this.headroom = requireNonNull(headroom);
         return this;
     }
 
@@ -243,8 +241,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder minGradient(final float minGradient) {
-        ensureBetweenZeroAndOne(minGradient, "minGradient");
-        this.minGradient = minGradient;
+        this.minGradient = ensureBetweenZeroAndOne(minGradient, "minGradient");
         return this;
     }
 
@@ -258,8 +255,7 @@ public final class GradientCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public GradientCapacityLimiterBuilder maxGradient(final float maxPositiveGradient) {
-        ensureGreaterThan(maxPositiveGradient, 1.0f, "maxGradient");
-        this.maxGradient = maxPositiveGradient;
+        this.maxGradient = ensureGreaterThan(maxPositiveGradient, 1.0f, "maxGradient");
         return this;
     }
 
@@ -327,9 +323,8 @@ public final class GradientCapacityLimiterBuilder {
                 suspendLimitInc, suspendLimitDec, headroom, timeSource);
     }
 
-    @Nonnull
     private String name() {
-        return name == null ? GradientCapacityLimiter.class.getSimpleName() + "_" + SEQ_GEN.incrementAndGet() : name;
+        return name == null ? GradientCapacityLimiter.class.getSimpleName() + '-' + SEQ_GEN.incrementAndGet() : name;
     }
 
     /**

@@ -15,16 +15,14 @@
  */
 package io.servicetalk.apple.capacity.limiter.api;
 
-import io.servicetalk.utils.internal.DurationUtils;
-import io.servicetalk.utils.internal.NumberUtils;
-
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static io.servicetalk.utils.internal.NumberUtils.ensureRange;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
@@ -138,7 +136,7 @@ public final class AimdCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public AimdCapacityLimiterBuilder increment(final float increment) {
-        this.increment = NumberUtils.ensurePositive(increment, "increment");
+        this.increment = ensurePositive(increment, "increment");
         return this;
     }
 
@@ -151,7 +149,7 @@ public final class AimdCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public AimdCapacityLimiterBuilder cooldown(final Duration duration) {
-        this.cooldown = DurationUtils.ensureNonNegative(duration, "cooldown");
+        this.cooldown = ensureNonNegative(duration, "cooldown");
         return this;
     }
 
@@ -190,9 +188,8 @@ public final class AimdCapacityLimiterBuilder {
                 timeSource);
     }
 
-    @Nonnull
     private String name() {
-        return name == null ? AimdCapacityLimiter.class.getSimpleName() + "_" + SEQ_GEN.incrementAndGet() : name;
+        return name == null ? AimdCapacityLimiter.class.getSimpleName() + '-' + SEQ_GEN.incrementAndGet() : name;
     }
 
     /**

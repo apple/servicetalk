@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
  * tracker, allowing a way to enhance the algorithm's behavior according to the observations.
  * Implementations must provide thread-safety guarantees.
  */
+@FunctionalInterface
 interface LatencyTracker {
 
     /**

@@ -116,7 +116,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     /**
      * Default rejection observer for dropped requests from an external sourced.
      * see. {@link Builder#peerCapacityRejection(PeerCapacityRejectionPolicy)}.
-     *
+     * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>
      *     <li>{@link HttpResponseStatus#TOO_MANY_REQUESTS}</li>
@@ -135,7 +135,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     /**
      * Default rejection observer for dropped requests from an external sourced due to service unavailability.
      * see. {@link Builder#peerBreakerRejection(HttpResponseMetaData, CircuitBreaker)}}.
-     *
+     * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>
      *     <li>{@link HttpResponseStatus#SERVICE_UNAVAILABLE}</li>
@@ -197,14 +197,14 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     }
 
     @Override
-    protected Single<StreamingHttpResponse> handleLocalBreakerRejection(
+    Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request, @Nullable StreamingHttpResponseFactory responseFactory,
             @Nullable CircuitBreaker breaker) {
         return DEFAULT_BREAKER_REJECTION;
     }
 
     @Override
-    protected Single<StreamingHttpResponse> handleLocalCapacityRejection(
+    Single<StreamingHttpResponse> handleLocalCapacityRejection(
             @Nullable final ServerListenContext serverListenContext,
             StreamingHttpRequest request, @Nullable StreamingHttpResponseFactory responseFactory) {
         return RETRYABLE_LOCAL_CAPACITY_REJECTION;
@@ -276,7 +276,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * @param capacityLimiterSupplier The {@link Supplier} to create a new {@link CapacityLimiter} for each new
          * filter created by this {@link StreamingHttpClientFilterFactory factory}.
          */
-        public Builder(Supplier<CapacityLimiter> capacityLimiterSupplier) {
+        public Builder(final Supplier<CapacityLimiter> capacityLimiterSupplier) {
             requireNonNull(capacityLimiterSupplier);
             this.capacityPartitionsSupplier = () -> {
                 CapacityLimiter capacityLimiter = capacityLimiterSupplier.get();
@@ -450,8 +450,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * peer-rejection or not.
          * @return {@code this}.
          */
-        public Builder peerUnavailableRejectionPredicate(
-                final Predicate<HttpResponseMetaData> rejectionPredicate) {
+        public Builder peerUnavailableRejectionPredicate(final Predicate<HttpResponseMetaData> rejectionPredicate) {
             this.peerUnavailableRejectionPredicate = requireNonNull(rejectionPredicate);
             return this;
         }
@@ -531,7 +530,6 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * @return {@code this}.
          */
         public Builder observer(final TrafficResiliencyObserver observer) {
-            requireNonNull(observer);
             this.observer = new SafeTrafficResiliencyObserver(observer);
             return this;
         }

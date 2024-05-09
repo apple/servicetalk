@@ -127,12 +127,12 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
     }
 
     @Override
-    protected Ticket wrapTicket(@Nullable final ServerListenContext serverListenContext, final Ticket ticket) {
+    Ticket wrapTicket(@Nullable final ServerListenContext serverListenContext, final Ticket ticket) {
         return serverListenContext == null ? ticket : new ServerResumptionTicketWrapper(serverListenContext, ticket);
     }
 
     @Override
-    protected Single<StreamingHttpResponse> handleLocalCapacityRejection(
+    Single<StreamingHttpResponse> handleLocalCapacityRejection(
             @Nullable final ServerListenContext serverListenContext,
             final StreamingHttpRequest request,
             @Nullable final StreamingHttpResponseFactory responseFactory) {
@@ -154,7 +154,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
     }
 
     @Override
-    protected Single<StreamingHttpResponse> handleLocalBreakerRejection(
+    Single<StreamingHttpResponse> handleLocalBreakerRejection(
             final StreamingHttpRequest request,
             @Nullable final StreamingHttpResponseFactory responseFactory,
             @Nullable final CircuitBreaker breaker) {
@@ -392,7 +392,6 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
          * @return {@code this}.
          */
         public Builder observer(final TrafficResiliencyObserver observer) {
-            requireNonNull(observer, "observer");
             this.observer = new SafeTrafficResiliencyObserver(observer);
             return this;
         }
@@ -644,6 +643,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
             this.listenContext = listenContext;
         }
 
+        @Nullable
         @Override
         public CapacityLimiter.LimiterState state() {
             return ticket.state();

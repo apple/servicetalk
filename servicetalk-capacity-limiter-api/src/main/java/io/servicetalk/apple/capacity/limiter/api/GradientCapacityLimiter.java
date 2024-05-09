@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
+import javax.annotation.Nullable;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.max;
@@ -122,7 +123,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
     }
 
     @Override
-    public Ticket tryAcquire(final Classification classification, final ContextMap meta) {
+    public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap meta) {
         int newPending;
         int newLimit;
 
@@ -153,7 +154,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         // When positive gradient, and limit already above initial,
         // avoid increasing the limit when we are far from meeting it - i.e. blast radius.
         final boolean isPositiveSuspended = !isNaN(gradient) &&
-                (gradient > 1.0 && limit > initial && suspendLimitInc.test(pending, limit));
+                gradient > 1.0 && limit > initial && suspendLimitInc.test(pending, limit);
         // When negative gradient, and consumption not close to limit,
         // avoid decreasing the limit. Low RPS & noisy environments (RTT deviations > 500ms) tend to bring the limit
         // down to "min" even though there aren't many pending requests to justify the decision.

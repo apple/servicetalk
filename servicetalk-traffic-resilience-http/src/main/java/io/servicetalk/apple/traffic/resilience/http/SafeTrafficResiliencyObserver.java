@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.apple.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
+import static java.util.Objects.requireNonNull;
 
 final class SafeTrafficResiliencyObserver implements TrafficResiliencyObserver {
 
@@ -33,7 +34,7 @@ final class SafeTrafficResiliencyObserver implements TrafficResiliencyObserver {
     private static final Logger LOGGER = LoggerFactory.getLogger(SafeTrafficResiliencyObserver.class);
 
     SafeTrafficResiliencyObserver(final TrafficResiliencyObserver original) {
-        this.original = original;
+        this.original = requireNonNull(original);
     }
 
     @Override
@@ -65,7 +66,6 @@ final class SafeTrafficResiliencyObserver implements TrafficResiliencyObserver {
         }
     }
 
-    @Nullable
     @Override
     public TicketObserver onAllowedThrough(final StreamingHttpRequest request,
                                            @Nullable final CapacityLimiter.LimiterState state) {

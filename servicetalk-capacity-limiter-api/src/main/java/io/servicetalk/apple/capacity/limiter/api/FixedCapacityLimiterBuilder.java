@@ -16,7 +16,6 @@
 package io.servicetalk.apple.capacity.limiter.api;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -46,7 +45,7 @@ public final class FixedCapacityLimiterBuilder {
     /**
      * Defines the fixed capacity for the {@link CapacityLimiter}.
      * Concurrent requests above this figure will be rejected. Requests with particular
-     * {@link Classification#priority() weight} will be respected and the total capacity for them will be adjusted
+     * {@link Classification#priority() priority} will be respected and the total capacity for them will be adjusted
      * accordingly.
      * @param capacity The max allowed concurrent requests that this {@link CapacityLimiter} should allow.
      * @return {@code this}.
@@ -81,9 +80,8 @@ public final class FixedCapacityLimiterBuilder {
         return new FixedCapacityLimiter(name(), capacity, observer);
     }
 
-    @Nonnull
     private String name() {
-        return name == null ? FixedCapacityLimiter.class.getSimpleName() + "_" + SEQ_GEN.incrementAndGet() : name;
+        return name == null ? FixedCapacityLimiter.class.getSimpleName() + '-' + SEQ_GEN.incrementAndGet() : name;
     }
 
     /**
