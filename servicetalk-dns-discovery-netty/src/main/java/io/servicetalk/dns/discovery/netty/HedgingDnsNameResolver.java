@@ -6,6 +6,8 @@ import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
+import io.servicetalk.concurrent.api.Executor;
 
 import java.io.Closeable;
 import java.net.InetAddress;
@@ -17,21 +19,26 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class HedgingDnsNameResolver implements Closeable {
 
     private final DnsNameResolver delegate;
+    private final Executor executor;
+
     private final EventLoop eventLoop;
     private final PercentileTracker percentile;
     private final Budget budget;
 
-    HedgingDnsNameResolver(DnsNameResolver delegate, EventLoop eventLoop) {
-        this(delegate, eventLoop, defaultTracker(), defaultBudget());
+    HedgingDnsNameResolver(DnsNameResolver delegate, Executor executor, EventLoop eventLoop) {
+        this(delegate, executor, eventLoop, defaultTracker(), defaultBudget());
     }
 
-    HedgingDnsNameResolver(DnsNameResolver delegate, EventLoop eventLoop, PercentileTracker percentile,
-                   Budget budget) {
+    HedgingDnsNameResolver(DnsNameResolver delegate, Executor executor, EventLoop eventLoop,
+                           PercentileTracker percentile, Budget budget) {
         this.delegate = delegate;
+        this.executor = executor instanceof NormalizedTimeSourceExecutor ?
+                executor : new NormalizedTimeSourceExecutor(executor);
         this.eventLoop = eventLoop;
         this.percentile = percentile;
         this.budget = budget;
@@ -50,11 +57,15 @@ final class HedgingDnsNameResolver implements Closeable {
         delegate.close();
     }
 
+    private long currentTimeMillis() {
+        return executor.currentTime(TimeUnit.MILLISECONDS);
+    }
+
     private <T, R> Future<R> applyHedge(Function<T, Future<R>> computation, T t) {
         // Only add tokens for organic requests and not retries.
         budget.deposit();
         Future<R> underlyingResult = computation.apply(t);
-        final long startTime = System.currentTimeMillis();
+        final long startTime = currentTimeMillis();
         final long deadline = addWithOverflowProtection(startTime, percentile.getValue());
         if (deadline == Long.MAX_VALUE) {
             // no need to attempt a hedge that will wait that long: just return the value.
@@ -64,7 +75,7 @@ final class HedgingDnsNameResolver implements Closeable {
             Future<?> hedgeTimer = eventLoop.schedule(() -> maybeApplyHedge(computation, t, underlyingResult, promise),
                     deadline, TimeUnit.MILLISECONDS);
             underlyingResult.addListener(completedFuture -> {
-                measureRequest(System.currentTimeMillis() - startTime, completedFuture.isSuccess());
+                measureRequest(currentTimeMillis() - startTime, completedFuture.isSuccess());
                 if (complete(underlyingResult, promise)) {
                     hedgeTimer.cancel(true);
                 }
@@ -226,5 +237,22 @@ final class HedgingDnsNameResolver implements Closeable {
     private static Budget defaultBudget() {
         // 5% extra load and a max burst of 5 hedges.
         return new DefaultBudgetImpl(1, 20, 100);
+    }
+
+    // TODO: copied from servicetalk-loadbalancer.
+    private static final class NormalizedTimeSourceExecutor extends DelegatingExecutor {
+
+        private final long offsetNanos;
+
+        NormalizedTimeSourceExecutor(final Executor delegate) {
+            super(delegate);
+            offsetNanos = delegate.currentTime(NANOSECONDS);
+        }
+
+        @Override
+        public long currentTime(final TimeUnit unit) {
+            final long elapsedNanos = delegate().currentTime(NANOSECONDS) - offsetNanos;
+            return unit.convert(elapsedNanos, NANOSECONDS);
+        }
     }
 }

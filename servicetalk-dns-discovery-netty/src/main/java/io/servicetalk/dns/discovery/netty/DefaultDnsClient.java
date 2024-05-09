@@ -221,7 +221,7 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor.eventLoopGroup().next());
+        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor, nettyIoExecutor.eventLoopGroup().next());
     }
 
     @Override
