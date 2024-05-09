@@ -27,7 +27,8 @@ import static org.hamcrest.Matchers.sameInstance;
 final class RoundRobinToDefaultLBMigrationProviderTest {
 
     private final Properties properties = new Properties();
-    private final RoundRobinToDefaultLBMigrationProvider provider = new RoundRobinToDefaultLBMigrationProvider(properties);
+    private final RoundRobinToDefaultLBMigrationProvider provider =
+            new RoundRobinToDefaultLBMigrationProvider(properties);
 
     @Test
     void enabled() {
