@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,8 @@ public final class Resilience4jAdapters {
         private R4jCircuitBreaker(final io.github.resilience4j.circuitbreaker.CircuitBreaker breaker) {
             this.breaker = breaker;
             this.breaker.getEventPublisher().onStateTransition(event -> {
-                if (STATE_TRANSITION.equals(event.getEventType()) &&
-                        OPEN.equals(event.getStateTransition().getToState())) {
+                if (event.getEventType() == STATE_TRANSITION &&
+                        event.getStateTransition().getToState() == OPEN) {
                         breakerOpenedAtMillis = NANOSECONDS.toMillis(nanoTime());
                 }
             });

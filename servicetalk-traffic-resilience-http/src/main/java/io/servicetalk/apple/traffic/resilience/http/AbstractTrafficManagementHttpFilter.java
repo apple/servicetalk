@@ -170,7 +170,6 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
             // reactive flow isn't followed) we still complete ticket lifetime.
             try {
                 final TicketObserver ticketObserver = observer.onAllowedThrough(request, ticket.state());
-                assert ticketObserver != null;
                 return handleAllow(delegate, request, wrapTicket(serverListenContext, ticket), ticketObserver,
                         breaker, startTime).shareContextOnSubscribe();
             } catch (Throwable cause) {
@@ -180,16 +179,16 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
         });
     }
 
-    protected Ticket wrapTicket(@Nullable final ServerListenContext serverListenContext, final Ticket ticket) {
+    Ticket wrapTicket(@Nullable final ServerListenContext serverListenContext, final Ticket ticket) {
         return ticket;
     }
 
-    protected abstract Single<StreamingHttpResponse> handleLocalCapacityRejection(
+    abstract Single<StreamingHttpResponse> handleLocalCapacityRejection(
             @Nullable ServerListenContext serverListenContext,
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory);
 
-    protected abstract Single<StreamingHttpResponse> handleLocalBreakerRejection(
+    abstract Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory,
             @Nullable CircuitBreaker breaker);
@@ -245,18 +244,14 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                             }
                         } finally {
                             onSuccessTicketTerminal.accept(ticket);
-                            if (ticketObserver != null) {
-                                ticketObserver.onComplete();
-                            }
+                            ticketObserver.onComplete();
                         }
                     }
 
                     @Override
                     public void onError(final Throwable throwable) {
                         AbstractTrafficManagementHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
-                        if (ticketObserver != null) {
-                            ticketObserver.onError(throwable);
-                        }
+                        ticketObserver.onError(throwable);
                     }
 
                     @Override
@@ -267,9 +262,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                             }
                         } finally {
                             onCancellationTicketTerminal.accept(ticket);
-                            if (ticketObserver != null) {
-                                ticketObserver.onCancel();
-                            }
+                            ticketObserver.onCancel();
                         }
                     }
                 }, true));
@@ -318,6 +311,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
             this.requestHashCode = requestHashCode;
         }
 
+        @Nullable
         @Override
         public CapacityLimiter.LimiterState state() {
             return delegate.state();

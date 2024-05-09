@@ -17,6 +17,7 @@ package io.servicetalk.apple.capacity.limiter.api;
 
 /**
  * Classification of requests.
+ * <p>
  * In the context of capacity, classification can be used to allow prioritization of requests under
  * certain conditions. When a system is load-shedding, it can still choose to accommodate important demand.
  * The classification is not a feature supported by all {@link CapacityLimiter}s but rather the
@@ -34,8 +35,10 @@ public interface Classification {
     /**
      * The priority should be a positive number between 0 and 100 (inclusive), which hints to a {@link CapacityLimiter}
      * the importance of a {@link Classification}.
+     * <p>
      * Higher value represents the most important {@link Classification}, while lower value represents less important
      * {@link Classification}.
+     *
      * @return A positive value between 0 and 100 (inclusive) that hints importance of a request to a
      * {@link CapacityLimiter}.
      */

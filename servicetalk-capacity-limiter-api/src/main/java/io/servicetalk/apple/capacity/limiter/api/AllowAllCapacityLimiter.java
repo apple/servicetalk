@@ -50,6 +50,7 @@ final class AllowAllCapacityLimiter implements CapacityLimiter {
     };
 
     private AllowAllCapacityLimiter() {
+        // Singleton
     }
 
     @Override
@@ -64,6 +65,6 @@ final class AllowAllCapacityLimiter implements CapacityLimiter {
 
     @Override
     public String toString() {
-        return AllowAllCapacityLimiter.class.getSimpleName();
+        return name();
     }
 }

@@ -45,7 +45,6 @@ final class NoOpTrafficResiliencyObserver implements TrafficResiliencyObserver {
                                       final ContextMap meta, final Classification classification) {
     }
 
-    @Nullable
     @Override
     public TicketObserver onAllowedThrough(final StreamingHttpRequest request,
                                            @Nullable final CapacityLimiter.LimiterState state) {

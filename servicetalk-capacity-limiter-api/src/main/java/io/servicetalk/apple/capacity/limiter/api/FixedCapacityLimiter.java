@@ -61,9 +61,9 @@ final class FixedCapacityLimiter implements CapacityLimiter {
     }
 
     @Override
-    public Ticket tryAcquire(final Classification classification, final ContextMap meta) {
-        final int weight = min(max(classification.priority(), 0), 100);
-        final int effectiveLimit = (capacity * weight) / 100;
+    public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap meta) {
+        final int priority = min(max(classification.priority(), 0), 100);
+        final int effectiveLimit = (capacity * priority) / 100;
         for (;;) {
             final int currPending = pending;
             if (currPending == effectiveLimit &&

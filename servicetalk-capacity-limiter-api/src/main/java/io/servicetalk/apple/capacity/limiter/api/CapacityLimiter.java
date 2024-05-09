@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
  * {@link Classification} is used as hint from the user of the importance of the incoming request, and are not
  * guaranteed to have an influence to the decision if the {@link CapacityLimiter} doesn't support them or chooses to
  * ignore them.
- *
  */
 public interface CapacityLimiter {
 
@@ -67,7 +66,7 @@ public interface CapacityLimiter {
      * {@link ContextMap context}.
      *
      * @param classification A class tha represents the <i>importance</i> of a request, to be evaluated upon permit.
-     * @param context Contextual metadata supported for evaluation from the call-site. This, in an Http context
+     * @param context Contextual metadata supported for evaluation from the call-site. This, in an HTTP context
      * would typically be the {@code HttpRequest#context()}.
      * @return {@link Ticket} when capacity is enough to satisfy the demand or {@code null} when not.
      * @see CapacityLimiter

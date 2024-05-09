@@ -52,7 +52,7 @@ import static java.lang.Math.max;
  * represent a constant rate (i.e., has no notion of time).
  * <p>
  * The solution is based on the <a href="https://en.wikipedia.org/wiki/Additive_increase/multiplicative_decrease">
- * AIMD feedback control algorithm</a>
+ * AIMD feedback control algorithm</a>.
  */
 final class AimdCapacityLimiter implements CapacityLimiter {
 
@@ -214,7 +214,6 @@ final class AimdCapacityLimiter implements CapacityLimiter {
             this.remaining = remaining;
         }
 
-        @Nullable
         @Override
         public LimiterState state() {
             return this;

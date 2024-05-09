@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
 
-  api "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
   api project(":servicetalk-circuit-breaker-api")
+  api "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
 
   implementation project(":servicetalk-annotations")
 
