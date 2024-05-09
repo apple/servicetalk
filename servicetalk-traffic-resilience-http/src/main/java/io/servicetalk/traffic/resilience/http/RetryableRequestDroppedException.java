@@ -15,7 +15,7 @@
  */
 package io.servicetalk.traffic.resilience.http;
 
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.transport.api.RetryableException;
 
 import javax.annotation.Nullable;
@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
  * not touch the "wire" (network) yet, meaning that its safe to be retried. Retries are useful in the context of
  * capacity, to maximize chances for a request to succeed.
  */
-public final class RetryableRequestRejectedException extends RequestRejectedException
+public final class RetryableRequestDroppedException extends RequestDroppedException
         implements RetryableException {
 
     private static final long serialVersionUID = -1968209429496611665L;
@@ -34,7 +34,7 @@ public final class RetryableRequestRejectedException extends RequestRejectedExce
     /**
      * Creates a new instance.
      */
-    public RetryableRequestRejectedException() {
+    public RetryableRequestDroppedException() {
     }
 
     /**
@@ -42,7 +42,7 @@ public final class RetryableRequestRejectedException extends RequestRejectedExce
      *
      * @param message the detail message.
      */
-    public RetryableRequestRejectedException(@Nullable final String message) {
+    public RetryableRequestDroppedException(@Nullable final String message) {
         super(message);
     }
 
@@ -52,7 +52,7 @@ public final class RetryableRequestRejectedException extends RequestRejectedExce
      * @param message the detail message.
      * @param cause of this exception.
      */
-    public RetryableRequestRejectedException(@Nullable final String message, @Nullable final Throwable cause) {
+    public RetryableRequestDroppedException(@Nullable final String message, @Nullable final Throwable cause) {
         super(message, cause);
     }
 
@@ -61,7 +61,7 @@ public final class RetryableRequestRejectedException extends RequestRejectedExce
      *
      * @param cause of this exception.
      */
-    public RetryableRequestRejectedException(@Nullable final Throwable cause) {
+    public RetryableRequestDroppedException(@Nullable final Throwable cause) {
         super(cause);
     }
 
@@ -73,8 +73,8 @@ public final class RetryableRequestRejectedException extends RequestRejectedExce
      * @param enableSuppression {@code true} if suppression should be enabled.
      * @param writableStackTrace {@code true} if the stack trace should be writable
      */
-    public RetryableRequestRejectedException(@Nullable final String message, @Nullable final Throwable cause,
-                                             final boolean enableSuppression, final boolean writableStackTrace) {
+    public RetryableRequestDroppedException(@Nullable final String message, @Nullable final Throwable cause,
+                                            final boolean enableSuppression, final boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

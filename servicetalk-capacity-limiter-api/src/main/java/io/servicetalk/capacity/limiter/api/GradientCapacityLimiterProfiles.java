@@ -39,7 +39,6 @@ public final class GradientCapacityLimiterProfiles {
     static final float DEFAULT_ON_DROP = 0.5f;
     static final float DEFAULT_ON_LIMIT = 0.2f;
     static final float DEFAULT_MIN_GRADIENT = 0.2f;
-    static final float GREEDY_MIN_GRADIENT = 0.5f;
     static final float DEFAULT_MAX_GRADIENT = 1.2f;
     static final float GREEDY_MAX_GRADIENT = 1.8f;
     static final float EXPERIMENTAL_GREEDY_ON_LIMIT = 0.9f;
@@ -86,29 +85,11 @@ public final class GradientCapacityLimiterProfiles {
      * that tries to push the limit higher until a significant gradient change is noticed. It will allow limit increases
      * while latency is changing, favouring throughput overall, so latency sensitive application may not want to use
      * this profile.
-     * @return Settings for the {@link GradientCapacityLimiterBuilder} for an aggressive Gradient
-     * {@link CapacityLimiter}.
-     */
-    public static Consumer<GradientCapacityLimiterBuilder> preferThroughput() {
-        return builder ->
-                builder.minGradient(GREEDY_MIN_GRADIENT)
-                        .maxGradient(GREEDY_MAX_GRADIENT)
-                        .headroom(GREEDY_HEADROOM);
-    }
-
-    /**
-     * The settings applied from this profile demonstrate aggressive behaviour of the {@link CapacityLimiter},
-     * that tries to push the limit higher until a significant gradient change is noticed. It will allow limit increases
-     * while latency is changing, favouring throughput overall, so latency sensitive application may not want to use
-     * this profile.
-     * <p>
-     * <strong>Note: This experimental profile is a new configuration that we are trying to collect metrics
-     * on the behavior and how it compares against the exiting offer.</strong>
      *
      * @return Settings for the {@link GradientCapacityLimiterBuilder} for an aggressive Gradient
      * {@link CapacityLimiter}.
      */
-    public static Consumer<GradientCapacityLimiterBuilder> preferThroughputExperimental() {
+    public static Consumer<GradientCapacityLimiterBuilder> preferThroughput() {
         return builder ->
                 builder.minGradient(EXPERIMENTAL_GREEDY_MIN_GRADIENT)
                         .maxGradient(GREEDY_MAX_GRADIENT)

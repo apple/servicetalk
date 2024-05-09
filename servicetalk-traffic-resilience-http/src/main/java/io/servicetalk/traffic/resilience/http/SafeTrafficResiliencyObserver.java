@@ -15,15 +15,13 @@
  */
 package io.servicetalk.traffic.resilience.http;
 
-import io.servicetalk.capacity.limiter.api.CapacityLimiter;
+import io.servicetalk.capacity.limiter.api.CapacityLimiter.LimiterState;
 import io.servicetalk.capacity.limiter.api.Classification;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 
 import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
 import static java.util.Objects.requireNonNull;
@@ -68,7 +66,7 @@ final class SafeTrafficResiliencyObserver implements TrafficResiliencyObserver {
 
     @Override
     public TicketObserver onAllowedThrough(final StreamingHttpRequest request,
-                                           @Nullable final CapacityLimiter.LimiterState state) {
+                                           final LimiterState state) {
         try {
             return this.original.onAllowedThrough(request, state);
         } catch (Throwable t) {

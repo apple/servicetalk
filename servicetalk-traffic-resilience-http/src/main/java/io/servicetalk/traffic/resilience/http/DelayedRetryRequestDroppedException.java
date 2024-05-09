@@ -15,7 +15,7 @@
  */
 package io.servicetalk.traffic.resilience.http;
 
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * its up to the application to declare whether a {@link HttpResponseStatus#TOO_MANY_REQUESTS} is a safe-to-retry
  * response, and if so after how much {@link #delay()}.
  */
-public final class DelayedRetryRequestRejectedException extends RequestRejectedException
+public final class DelayedRetryRequestDroppedException extends RequestDroppedException
         implements RetryingHttpRequesterFilter.DelayedRetry {
 
     private static final long serialVersionUID = -7933994513110803151L;
@@ -41,7 +41,7 @@ public final class DelayedRetryRequestRejectedException extends RequestRejectedE
      *
      * @param delay The delay to be provided as input to a retry mechanism.
      */
-    public DelayedRetryRequestRejectedException(final Duration delay) {
+    public DelayedRetryRequestDroppedException(final Duration delay) {
         this.delay = requireNonNull(delay);
     }
 
@@ -51,7 +51,7 @@ public final class DelayedRetryRequestRejectedException extends RequestRejectedE
      * @param delay The delay to be provided as input to a retry mechanism.
      * @param message the detail message.
      */
-    public DelayedRetryRequestRejectedException(final Duration delay, @Nullable final String message) {
+    public DelayedRetryRequestDroppedException(final Duration delay, @Nullable final String message) {
         super(message);
         this.delay = requireNonNull(delay);
     }
@@ -63,8 +63,8 @@ public final class DelayedRetryRequestRejectedException extends RequestRejectedE
      * @param message the detail message.
      * @param cause of this exception.
      */
-    public DelayedRetryRequestRejectedException(final Duration delay,
-                                                @Nullable final String message, @Nullable final Throwable cause) {
+    public DelayedRetryRequestDroppedException(final Duration delay,
+                                               @Nullable final String message, @Nullable final Throwable cause) {
         super(message, cause);
         this.delay = requireNonNull(delay);
     }
@@ -75,7 +75,7 @@ public final class DelayedRetryRequestRejectedException extends RequestRejectedE
      * @param delay The delay to be provided as input to a retry mechanism.
      * @param cause of this exception.
      */
-    public DelayedRetryRequestRejectedException(final Duration delay, @Nullable final Throwable cause) {
+    public DelayedRetryRequestDroppedException(final Duration delay, @Nullable final Throwable cause) {
         super(cause);
         this.delay = requireNonNull(delay);
     }
@@ -89,9 +89,9 @@ public final class DelayedRetryRequestRejectedException extends RequestRejectedE
      * @param enableSuppression {@code true} if suppression should be enabled.
      * @param writableStackTrace {@code true} if the stack trace should be writable
      */
-    public DelayedRetryRequestRejectedException(final Duration delay,
-                                                @Nullable final String message, @Nullable final Throwable cause,
-                                                final boolean enableSuppression, final boolean writableStackTrace) {
+    public DelayedRetryRequestDroppedException(final Duration delay,
+                                               @Nullable final String message, @Nullable final Throwable cause,
+                                               final boolean enableSuppression, final boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
         this.delay = requireNonNull(delay);
     }

@@ -16,7 +16,7 @@
 package io.servicetalk.traffic.resilience.http;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
@@ -29,7 +29,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter.RejectionPolicy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -111,8 +110,8 @@ class CapacityClientServerTest {
     }
 
     static Stream<Arguments> data() {
-        return Stream.of(newParam(true, () -> fixedCapacity().capacity(1).build()),
-                newParam(false, () -> fixedCapacity().capacity(1).build()));
+        return Stream.of(newParam(true, () -> fixedCapacity(1).build()),
+                newParam(false, () -> fixedCapacity(1).build()));
     }
 
     private static Arguments newParam(
@@ -146,7 +145,7 @@ class CapacityClientServerTest {
         serverResponseQueue.take(); // Ensure the request reaches the server.
 
         if (applyOnClient) {
-            assertThrows(RequestRejectedException.class, () -> client.asBlockingClient().request(client.get("/")));
+            assertThrows(RequestDroppedException.class, () -> client.asBlockingClient().request(client.get("/")));
         } else {
             final HttpResponse response2 = client.asBlockingClient().request(client.get("/"));
             assertThat("Unexpected result.", response2.status(), is(SERVICE_UNAVAILABLE));

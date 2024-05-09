@@ -57,16 +57,19 @@ public final class CapacityLimiters {
      * target limit for this request will be 70% of the 10 = 7. If current consumption is less than 7, the request
      * will be permitted.
      *
+     * @param capacity The fixed capacity value for this limiter.
      * @return A {@link CapacityLimiter} builder to configure the available parameters.
      */
-    public static FixedCapacityLimiterBuilder fixedCapacity() {
-        return new FixedCapacityLimiterBuilder();
+    public static FixedCapacityLimiterBuilder fixedCapacity(final int capacity) {
+        return new FixedCapacityLimiterBuilder(capacity);
     }
 
     /**
      * AIMD is a request drop based dynamic {@link CapacityLimiter} for clients,
      * that adapts its limit based on a configurable range of concurrency and re-evaluates this limit upon
      * a {@link Ticket#dropped() request-drop event (eg. timeout or rejection due to capacity)}.
+     * It's not ideal for server-side solutions, due to the slow recover mechanism it offers, which can lead in
+     * significant traffic loss during the recovery window.
      * <p>
      * The limit translates to a concurrency figure, e.g. how many requests can be in-flight simultaneously and doesn't
      * represent a constant rate (i.e. has no notion of time). Requests per second when that limit is met will be
