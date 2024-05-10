@@ -31,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-import io.servicetalk.traffic.resilience.http.PeerRejectionPolicy.PassthroughRequestDroppedException;
+import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver.TicketObserver;
 import io.servicetalk.transport.api.ServerListenContext;
 
@@ -193,7 +193,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
             @Nullable StreamingHttpResponseFactory responseFactory,
             CircuitBreaker breaker);
 
-    RuntimeException peerCapacityRejection(final StreamingHttpResponse resp) {
+    RuntimeException peerRejection(final StreamingHttpResponse resp) {
         return CAPACITY_REJECTION;
     }
 
@@ -225,7 +225,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                                 .concat(Single.<StreamingHttpResponse>failed(peerBreakerRejection(resp, breaker)))
                                 .shareContextOnSubscribe();
                     } else if (capacityRejectionPredicate.test(resp)) {
-                        final RuntimeException rejection = peerCapacityRejection(resp);
+                        final RuntimeException rejection = peerRejection(resp);
                         if (PassthroughRequestDroppedException.class.equals(rejection.getClass())) {
                             return Single.<StreamingHttpResponse>failed(rejection).shareContextOnSubscribe();
                         }

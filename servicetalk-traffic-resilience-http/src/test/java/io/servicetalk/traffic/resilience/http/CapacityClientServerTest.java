@@ -79,8 +79,8 @@ class CapacityClientServerTest {
         if (!applyOnClient) {
             TrafficResilienceHttpServiceFilter serviceFilter =
                     new TrafficResilienceHttpServiceFilter.Builder(limiterSupplier)
-                            .onRejectionPolicy(new RejectionPolicy.Builder()
-                                    .onLimitResponseBuilder(RejectionPolicy.serviceUnavailable()).build())
+                            .onRejectionPolicy(new ServiceRejectionPolicy.Builder()
+                                    .onLimitResponseBuilder(ServiceRejectionPolicy.serviceUnavailable()).build())
                             .build();
 
             serverBuilder.appendServiceFilter(serviceFilter);

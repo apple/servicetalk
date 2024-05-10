@@ -149,14 +149,14 @@ class TrafficResilienceHttpServiceFilterTest {
     @EnumSource(Protocol.class)
     void testStopAcceptingConnections(final Protocol protocol) throws Exception {
         final CapacityLimiter limiter = fixedCapacity(1).build();
-        final RejectionPolicy rejectionPolicy = new RejectionPolicy.Builder()
+        final ServiceRejectionPolicy serviceRejectionPolicy = new ServiceRejectionPolicy.Builder()
                 .onLimitStopAcceptingConnections(true)
                 // Custom response to validate during assertion stage
                 .onLimitResponseBuilder((meta, respFactory) -> Single.succeeded(respFactory.gatewayTimeout()))
                 .build();
         TrafficResilienceHttpServiceFilter filter = new TrafficResilienceHttpServiceFilter
                 .Builder(() -> limiter)
-                .onRejectionPolicy(rejectionPolicy)
+                .onRejectionPolicy(serviceRejectionPolicy)
                 .build();
 
         final HttpServerContext serverContext = forAddress(localAddress(0))

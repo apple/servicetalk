@@ -41,14 +41,29 @@ import static java.util.Objects.requireNonNull;
 /**
  * Rejection Policy to rule the behavior of service rejections due to capacity or open circuit.
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * @see TrafficResilienceHttpServiceFilter.Builder#onRejectionPolicy(RejectionPolicy)
+ * @see TrafficResilienceHttpServiceFilter.Builder#onRejectionPolicy(ServiceRejectionPolicy)
  */
-public final class RejectionPolicy {
+public final class ServiceRejectionPolicy {
 
     /**
      * Custom retry-after header that supports milliseconds resolution, rather than seconds.
      */
     public static final CharSequence RETRY_AFTER_MILLIS = newAsciiString("retry-after-millis");
+
+    /**
+     * Default response rejection policy.
+     * <ul>
+     *     <li>When a request is rejected due to capacity, the service will respond
+     *     {@link ServiceRejectionPolicy#tooManyRequests()}.</li>
+     *     <li>When a request is rejected due to capacity, the service will NOT include a retry-after header.</li>
+     *     <li>When a request is rejected due to breaker, the service will respond
+     *     {@link ServiceRejectionPolicy#serviceUnavailable()}.</li>
+     *     <li>When a request is rejected due to breaker, the service will respond with Retry-After header hinting
+     *     the duration the breaker will remain open.</li>
+     * </ul>
+     */
+    public static final ServiceRejectionPolicy DEFAULT_REJECTION_POLICY =
+            new ServiceRejectionPolicy.Builder().build();
 
     private final BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory, Single<StreamingHttpResponse>>
             onLimitResponseBuilder;
@@ -62,13 +77,13 @@ public final class RejectionPolicy {
 
     private final BiConsumer<HttpResponseMetaData, StateContext> onOpenCircuitRetryAfter;
 
-    private RejectionPolicy(final BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory,
+    private ServiceRejectionPolicy(final BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory,
             Single<StreamingHttpResponse>> onLimitResponseBuilder,
-                            final Consumer<HttpResponseMetaData> onLimitRetryAfter,
-                            final boolean onLimitStopAcceptingConnections,
-                            final BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory,
+                                   final Consumer<HttpResponseMetaData> onLimitRetryAfter,
+                                   final boolean onLimitStopAcceptingConnections,
+                                   final BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory,
                                     Single<StreamingHttpResponse>> onOpenCircuitResponseBuilder,
-                            final BiConsumer<HttpResponseMetaData, StateContext>
+                                   final BiConsumer<HttpResponseMetaData, StateContext>
                                     onOpenCircuitRetryAfter) {
         this.onLimitResponseBuilder = onLimitResponseBuilder;
         this.onLimitRetryAfter = onLimitRetryAfter;
@@ -97,24 +112,6 @@ public final class RejectionPolicy {
 
     BiConsumer<HttpResponseMetaData, StateContext> onOpenCircuitRetryAfter() {
         return onOpenCircuitRetryAfter;
-    }
-
-    /**
-     * Default response rejection policy.
-     * <ul>
-     *     <li>When a request is rejected due to capacity, the service will respond
-     *     {@link RejectionPolicy#tooManyRequests()}.</li>
-     *     <li>When a request is rejected due to capacity, the service will NOT include a retry-after header.</li>
-     *     <li>When a request is rejected due to breaker, the service will respond
-     *     {@link RejectionPolicy#serviceUnavailable()}.</li>
-     *     <li>When a request is rejected due to breaker, the service will respond with Retry-After header hinting
-     *     the duration the breaker will remain open.</li>
-     * </ul>
-     *
-     * @return The default {@link RejectionPolicy}.
-     */
-    public static RejectionPolicy defaultRejectionResponsePolicy() {
-        return new RejectionPolicy.Builder().build();
     }
 
     /**
@@ -180,7 +177,7 @@ public final class RejectionPolicy {
     }
 
     /**
-     * A {@link RejectionPolicy} builder to support a custom policy.
+     * A {@link ServiceRejectionPolicy} builder to support a custom policy.
      */
     public static final class Builder {
         private BiFunction<HttpRequestMetaData, StreamingHttpResponseFactory, Single<StreamingHttpResponse>>
@@ -290,13 +287,13 @@ public final class RejectionPolicy {
         }
 
         /**
-         * Return a custom {@link RejectionPolicy} based on the options of this builder.
+         * Return a custom {@link ServiceRejectionPolicy} based on the options of this builder.
          *
-         * @return A custom {@link RejectionPolicy} based on the options of this builder.
+         * @return A custom {@link ServiceRejectionPolicy} based on the options of this builder.
          */
-        public RejectionPolicy build() {
-            return new RejectionPolicy(onLimitResponseBuilder, onLimitRetryAfter, onLimitStopAcceptingConnections,
-                    onOpenCircuitResponseBuilder, onOpenCircuitRetryAfter);
+        public ServiceRejectionPolicy build() {
+            return new ServiceRejectionPolicy(onLimitResponseBuilder, onLimitRetryAfter,
+                    onLimitStopAcceptingConnections, onOpenCircuitResponseBuilder, onOpenCircuitRetryAfter);
         }
     }
 }

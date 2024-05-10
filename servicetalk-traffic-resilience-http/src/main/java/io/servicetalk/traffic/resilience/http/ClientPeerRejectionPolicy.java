@@ -29,22 +29,22 @@ import java.util.function.Predicate;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
-import static io.servicetalk.traffic.resilience.http.PeerRejectionPolicy.Type.REJECT;
-import static io.servicetalk.traffic.resilience.http.PeerRejectionPolicy.Type.REJECT_PASSTHROUGH;
-import static io.servicetalk.traffic.resilience.http.PeerRejectionPolicy.Type.REJECT_RETRY;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT_PASSTHROUGH;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT_RETRY;
 import static java.time.Duration.ZERO;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Policy for peer capacity rejections that allows customization of behavior (retries or pass-through).
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * @see TrafficResilienceHttpClientFilter.Builder#peerRejection(PeerRejectionPolicy)
+ * @see TrafficResilienceHttpClientFilter.Builder#peerRejection(ClientPeerRejectionPolicy)
  */
-public final class PeerRejectionPolicy {
+public final class ClientPeerRejectionPolicy {
 
     /**
      * Default rejection observer for dropped requests from an external sourced.
-     * see. {@link TrafficResilienceHttpClientFilter.Builder#peerRejection(PeerRejectionPolicy)}.
+     * see. {@link TrafficResilienceHttpClientFilter.Builder#peerRejection(ClientPeerRejectionPolicy)}.
      * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>
@@ -73,8 +73,8 @@ public final class PeerRejectionPolicy {
      * The default behavior upon such a case, is to issue a retryable exception with no pre-set offset delay (outside
      * the default backoff policy of configured retry filter).
      */
-    public static final PeerRejectionPolicy DEFAULT_PEER_REJECTION_POLICY =
-            new PeerRejectionPolicy(DEFAULT_CAPACITY_REJECTION_PREDICATE, REJECT_RETRY, __ -> ZERO);
+    public static final ClientPeerRejectionPolicy DEFAULT_PEER_REJECTION_POLICY =
+            new ClientPeerRejectionPolicy(DEFAULT_CAPACITY_REJECTION_PREDICATE, REJECT_RETRY, __ -> ZERO);
 
     enum Type {
         REJECT,
@@ -86,16 +86,16 @@ public final class PeerRejectionPolicy {
     private final Type type;
     private final Function<HttpResponseMetaData, Duration> delayProvider;
 
-    private PeerRejectionPolicy(final Predicate<HttpResponseMetaData> predicate,
-                                final Type type) {
+    private ClientPeerRejectionPolicy(final Predicate<HttpResponseMetaData> predicate,
+                                      final Type type) {
         this.predicate = predicate;
         this.type = type;
         this.delayProvider = __ -> ZERO;
     }
 
-    PeerRejectionPolicy(final Predicate<HttpResponseMetaData> predicate,
-                        final Type type,
-                        final Function<HttpResponseMetaData, Duration> delayProvider) {
+    ClientPeerRejectionPolicy(final Predicate<HttpResponseMetaData> predicate,
+                              final Type type,
+                              final Function<HttpResponseMetaData, Duration> delayProvider) {
         this.predicate = predicate;
         this.type = type;
         this.delayProvider = delayProvider;
@@ -119,10 +119,10 @@ public final class PeerRejectionPolicy {
      * @param predicate The {@link Predicate} to evaluate responses.
      * Returning <code>true</code> from this {@link Predicate} signifies that the response was capacity
      * related rejection from the peer.
-     * @return A {@link PeerRejectionPolicy}.
+     * @return A {@link ClientPeerRejectionPolicy}.
      */
-    public static PeerRejectionPolicy ofPassthrough(final Predicate<HttpResponseMetaData> predicate) {
-        return new PeerRejectionPolicy(predicate, REJECT_PASSTHROUGH);
+    public static ClientPeerRejectionPolicy ofPassthrough(final Predicate<HttpResponseMetaData> predicate) {
+        return new ClientPeerRejectionPolicy(predicate, REJECT_PASSTHROUGH);
     }
 
     /**
@@ -131,11 +131,11 @@ public final class PeerRejectionPolicy {
      * @param rejectionPredicate The {@link Predicate} to evaluate responses.
      * Returning <code>true</code> from this {@link Predicate} signifies that the response was capacity
      * related rejection from the peer.
-     * @return A {@link PeerRejectionPolicy}.
+     * @return A {@link ClientPeerRejectionPolicy}.
      */
-    public static PeerRejectionPolicy ofRejection(
+    public static ClientPeerRejectionPolicy ofRejection(
             final Predicate<HttpResponseMetaData> rejectionPredicate) {
-        return new PeerRejectionPolicy(rejectionPredicate, REJECT);
+        return new ClientPeerRejectionPolicy(rejectionPredicate, REJECT);
     }
 
     /**
@@ -146,12 +146,12 @@ public final class PeerRejectionPolicy {
      * Returning <code>true</code> from this {@link Predicate} signifies that the response was capacity
      * related rejection from the peer.
      * @param delayProvider A {@link Duration} provider for delay purposes when retrying.
-     * @return A {@link PeerRejectionPolicy}.
+     * @return A {@link ClientPeerRejectionPolicy}.
      */
-    public static PeerRejectionPolicy ofRejectionWithRetries(
+    public static ClientPeerRejectionPolicy ofRejectionWithRetries(
             final Predicate<HttpResponseMetaData> rejectionPredicate,
             final Function<HttpResponseMetaData, Duration> delayProvider) {
-        return new PeerRejectionPolicy(rejectionPredicate, REJECT_RETRY, delayProvider);
+        return new ClientPeerRejectionPolicy(rejectionPredicate, REJECT_RETRY, delayProvider);
     }
 
     static final class PassthroughRequestDroppedException extends RequestDroppedException {

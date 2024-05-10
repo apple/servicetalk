@@ -41,13 +41,13 @@ public final class GradientCapacityLimiterProfiles {
     static final float DEFAULT_MIN_GRADIENT = 0.2f;
     static final float DEFAULT_MAX_GRADIENT = 1.2f;
     static final float GREEDY_MAX_GRADIENT = 1.8f;
-    static final float EXPERIMENTAL_GREEDY_ON_LIMIT = 0.9f;
-    static final float EXPERIMENTAL_GREEDY_ON_DROP = 0.95f;
-    static final float EXPERIMENTAL_GREEDY_MIN_GRADIENT = 0.90f;
+    static final float GREEDY_ON_LIMIT = 0.9f;
+    static final float GREEDY_ON_DROP = 0.95f;
+    static final float GREEDY_MIN_GRADIENT = 0.90f;
     static final Duration DEFAULT_LIMIT_UPDATE_INTERVAL = ofSeconds(1);
     static final BiPredicate<Integer, Double> DEFAULT_SUSPEND_INCR = blastRadius(2);
     static final BiPredicate<Integer, Double> DEFAULT_SUSPEND_DEC = (__, ___) -> false;
-    static final BiPredicate<Integer, Double> EXPERIMENTAL_SUSPEND_DEC = occupancyFactor(.9f);
+    static final BiPredicate<Integer, Double> SUSPEND_DEC = occupancyFactor(.9f);
     static final BiFunction<Double, Double, Double> DEFAULT_HEADROOM = (__, ___) -> 0.0;
     static final BiFunction<Double, Double, Double> GREEDY_HEADROOM = (grad, limit) -> Math.sqrt(grad * limit);
     static final Duration MIN_SAMPLING_DURATION = Duration.ofMillis(50);
@@ -56,7 +56,7 @@ public final class GradientCapacityLimiterProfiles {
     static final BiFunction<Double, Double, Float> CALMER_RATIO =
             (tracker, calmer) -> calmer < (tracker / 2) ? .90f : -1f;
     static final LatencyTracker DEFAULT_SHORT_LATENCY_TRACKER = new LatencyTracker.LastSample();
-    static final LatencyTracker EXPERIMENTAL_SHORT_LATENCY_TRACKER = new EMA(ofSeconds(10).toNanos(),
+    static final LatencyTracker SHORT_LATENCY_TRACKER = new EMA(ofSeconds(10).toNanos(),
             SHORT_LATENCY_CALMER_TRACKER, CALMER_RATIO);
     static final LatencyTracker DEFAULT_LONG_LATENCY_TRACKER = new EMA(ofMinutes(10).toNanos(),
             LONG_LATENCY_CALMER_TRACKER, CALMER_RATIO);
@@ -91,11 +91,11 @@ public final class GradientCapacityLimiterProfiles {
      */
     public static Consumer<GradientCapacityLimiterBuilder> preferThroughput() {
         return builder ->
-                builder.minGradient(EXPERIMENTAL_GREEDY_MIN_GRADIENT)
+                builder.minGradient(GREEDY_MIN_GRADIENT)
                         .maxGradient(GREEDY_MAX_GRADIENT)
-                        .backoffRatio(EXPERIMENTAL_GREEDY_ON_DROP, EXPERIMENTAL_GREEDY_ON_LIMIT)
-                        .shortLatencyTracker(EXPERIMENTAL_SHORT_LATENCY_TRACKER)
-                        .suspendLimitDecrease(EXPERIMENTAL_SUSPEND_DEC)
+                        .backoffRatio(GREEDY_ON_DROP, GREEDY_ON_LIMIT)
+                        .shortLatencyTracker(SHORT_LATENCY_TRACKER)
+                        .suspendLimitDecrease(SUSPEND_DEC)
                         .headroom(GREEDY_HEADROOM);
     }
 }

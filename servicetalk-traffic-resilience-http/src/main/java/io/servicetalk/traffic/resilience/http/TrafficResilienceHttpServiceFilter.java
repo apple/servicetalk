@@ -40,7 +40,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.traffic.resilience.http.RejectionPolicy.defaultRejectionResponsePolicy;
+import static io.servicetalk.traffic.resilience.http.ServiceRejectionPolicy.DEFAULT_REJECTION_POLICY;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
@@ -79,7 +79,7 @@ import static java.util.Objects.requireNonNull;
 public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficManagementHttpFilter
         implements StreamingHttpServiceFilterFactory {
 
-    private final RejectionPolicy rejectionPolicy;
+    private final ServiceRejectionPolicy serviceRejectionPolicy;
 
     private TrafficResilienceHttpServiceFilter(final Supplier<Function<HttpRequestMetaData, CapacityLimiter>>
                                                        capacityPartitionsSupplier,
@@ -90,11 +90,11 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
                                                final BiConsumer<Ticket, Throwable> onError,
                                                final Supplier<Function<HttpRequestMetaData, CircuitBreaker>>
                                                        circuitBreakerPartitionsSupplier,
-                                               final RejectionPolicy onRejectionPolicy,
+                                               final ServiceRejectionPolicy onServiceRejectionPolicy,
                                                final TrafficResiliencyObserver observer) {
         super(capacityPartitionsSupplier, rejectNotMatched, classifier, __ -> false, __ -> false,
                 onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer);
-        this.rejectionPolicy = onRejectionPolicy;
+        this.serviceRejectionPolicy = onServiceRejectionPolicy;
     }
 
     @Override
@@ -130,15 +130,15 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
             final StreamingHttpRequest request,
             @Nullable final StreamingHttpResponseFactory responseFactory) {
         assert serverListenContext != null;
-        if (rejectionPolicy.onLimitStopAcceptingConnections()) {
+        if (serviceRejectionPolicy.onLimitStopAcceptingConnections()) {
             serverListenContext.acceptConnections(false);
         }
 
         if (responseFactory != null) {
-            return rejectionPolicy.onLimitResponseBuilder()
+            return serviceRejectionPolicy.onLimitResponseBuilder()
                     .apply(request, responseFactory)
                     .map(resp -> {
-                        rejectionPolicy.onLimitRetryAfter().accept(resp);
+                        serviceRejectionPolicy.onLimitRetryAfter().accept(resp);
                         return resp;
                     });
         }
@@ -152,10 +152,10 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
             @Nullable final StreamingHttpResponseFactory responseFactory,
             final CircuitBreaker breaker) {
         if (responseFactory != null) {
-            return rejectionPolicy.onOpenCircuitResponseBuilder()
+            return serviceRejectionPolicy.onOpenCircuitResponseBuilder()
                     .apply(request, responseFactory)
                     .map(resp -> {
-                        rejectionPolicy.onOpenCircuitRetryAfter()
+                        serviceRejectionPolicy.onOpenCircuitRetryAfter()
                                 .accept(resp, new StateContext(breaker));
                         return resp;
                     })
@@ -175,7 +175,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
         private Function<HttpRequestMetaData, Classification> classifier = __ -> () -> MAX_VALUE;
         private Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier =
                 () -> __ -> null;
-        private RejectionPolicy onRejectionPolicy = defaultRejectionResponsePolicy();
+        private ServiceRejectionPolicy onServiceRejectionPolicy = DEFAULT_REJECTION_POLICY;
         private final Consumer<Ticket> onCompletionTicketTerminal = Ticket::completed;
         private Consumer<Ticket> onCancellationTicketTerminal = Ticket::ignored;
         private BiConsumer<Ticket, Throwable> onErrorTicketTerminal = (ticket, throwable) -> {
@@ -302,7 +302,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
          * <p>
          * Once a matching {@link CircuitBreaker} transitions to open state, requests that match the same breaker
          * will fail (e.g., {@link io.servicetalk.http.api.HttpResponseStatus#SERVICE_UNAVAILABLE}) and
-         * {@link RejectionPolicy#onOpenCircuitRetryAfter()} can be used to hint peers about the fact that
+         * {@link ServiceRejectionPolicy#onOpenCircuitRetryAfter()} can be used to hint peers about the fact that
          * the circuit will remain open for a certain amount of time.
          *
          * @param circuitBreakerPartitionsSupplier A {@link Supplier} to create a new {@link Function} for each new
@@ -350,14 +350,15 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
         }
 
         /**
-         * Defines the {@link RejectionPolicy} which in turn defines the behavior of the service when a
+         * Defines the {@link ServiceRejectionPolicy} which in turn defines the behavior of the service when a
          * rejection occurs due to {@link CapacityLimiter capacity} or {@link CircuitBreaker breaker}.
          *
          * @param policy The policy to put into effect when a rejection occurs.
          * @return {@code this}.
+         * @see ServiceRejectionPolicy#DEFAULT_REJECTION_POLICY
          */
-        public Builder onRejectionPolicy(final RejectionPolicy policy) {
-            this.onRejectionPolicy = requireNonNull(policy, "policy");
+        public Builder onRejectionPolicy(final ServiceRejectionPolicy policy) {
+            this.onServiceRejectionPolicy = requireNonNull(policy, "policy");
             return this;
         }
 
@@ -380,7 +381,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
         public TrafficResilienceHttpServiceFilter build() {
             return new TrafficResilienceHttpServiceFilter(capacityPartitionsSupplier, rejectNotMatched,
                     classifier, onCompletionTicketTerminal, onCancellationTicketTerminal,
-                    onErrorTicketTerminal, circuitBreakerPartitionsSupplier, onRejectionPolicy, observer);
+                    onErrorTicketTerminal, circuitBreakerPartitionsSupplier, onServiceRejectionPolicy, observer);
         }
     }
 
@@ -393,7 +394,6 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
             this.listenContext = listenContext;
         }
 
-        @Nullable
         @Override
         public CapacityLimiter.LimiterState state() {
             return ticket.state();
