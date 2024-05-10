@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.emptySet;
@@ -47,6 +48,9 @@ final class TestRecordStore implements RecordStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
     private static final int SRV_DEFAULT_WEIGHT = 10;
     private static final int SRV_DEFAULT_PRIORITY = 10;
+
+    private final Set<ServFail> failSet = new HashSet<>();
+    private final Map<QuestionRecord, CountDownLatch> timeouts = new ConcurrentHashMap<>();
     private final Map<String, Map<RecordType, List<ResourceRecord>>> recordsToReturnByDomain =
             new ConcurrentHashMap<>();
 
@@ -89,14 +93,23 @@ final class TestRecordStore implements RecordStore {
         }
     }
 
-    private final Set<ServFail> failSet = new HashSet<>();
-
     public synchronized void addFail(final ServFail fail) {
         failSet.add(fail);
     }
 
     public synchronized void removeFail(final ServFail fail) {
         failSet.remove(fail);
+    }
+
+    public void addTimeout(final String domain, final RecordType recordType) {
+        timeouts.put(new QuestionRecord(domain, recordType, RecordClass.IN), new CountDownLatch(1));
+    }
+
+    public void removeTimeout(final String domain, final RecordType recordType) {
+        CountDownLatch latch = timeouts.remove(new QuestionRecord(domain, recordType, RecordClass.IN));
+        if (latch != null) {
+            latch.countDown();
+        }
     }
 
     public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
@@ -218,9 +231,19 @@ final class TestRecordStore implements RecordStore {
         return removed;
     }
 
-    @Nullable
     @Override
     public synchronized Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) throws DnsException {
+        final CountDownLatch timeoutLatch = timeouts.get(questionRecord);
+        if (timeoutLatch != null && timeoutLatch.getCount() > 0) {
+            LOGGER.debug("Holding a thread to generate a timeout for {}", questionRecord);
+            try {
+                timeoutLatch.await();
+            } catch (InterruptedException e) {
+                DnsException dnsException = new DnsException(SERVER_FAILURE);
+                dnsException.initCause(e);
+                throw dnsException;
+            }
+        }
         final String domain = questionRecord.getDomainName();
         if (failSet.contains(ServFail.of(questionRecord))) {
             throw new DnsException(SERVER_FAILURE);

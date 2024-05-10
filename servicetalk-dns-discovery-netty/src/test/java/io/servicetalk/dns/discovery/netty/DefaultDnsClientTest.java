@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.utils.internal.DurationUtils;
 
 import io.netty.channel.EventLoopGroup;
 import org.apache.directory.server.dns.messages.RecordType;
@@ -67,6 +68,7 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED_RETURN_ALL;
@@ -85,7 +87,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -99,6 +104,7 @@ import static org.mockito.Mockito.mock;
 class DefaultDnsClientTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsClientTest.class);
     private static final int DEFAULT_TTL = 1;
+    private static final Duration DEFAULT_TIMEOUT = ofMillis(CI ? 500 : 100);
 
     @RegisterExtension
     static final ExecutorExtension<TestExecutor> timerExecutor = ExecutorExtension.withTestExecutor()
@@ -1208,6 +1214,74 @@ class DefaultDnsClientTest {
         assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] recordType={0}")
+    @EnumSource(value = RecordType.class, names = {"A", "AAAA", "SRV"})
+    void testQueryTimeout(RecordType recordType) throws Exception {
+        testTimeout(DEFAULT_TIMEOUT, Duration.ZERO, recordType);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] recordType={0}")
+    @EnumSource(value = RecordType.class, names = {"A", "AAAA", "SRV"})
+    void testResolutionTimeout(RecordType recordType) throws Exception {
+        testTimeout(Duration.ZERO, DEFAULT_TIMEOUT, recordType);
+    }
+
+    void testTimeout(Duration queryTimeout, Duration resolutionTimeout, RecordType recordType) throws Exception {
+        setup(builder -> builder
+                .queryTimeout(queryTimeout)
+                .resolutionTimeout(resolutionTimeout)
+                .dnsResolverAddressTypes(recordType == RecordType.AAAA ? IPV6_PREFERRED : IPV4_PREFERRED));
+        String srvDomain = "srv.apple.com";
+        String aDomain = "a.apple.com";
+        String aaaaDomain = "aaaa.apple.com";
+        String ipv4 = nextIp();
+        String ipv6 = nextIp6();
+        recordStore.addSrv(srvDomain, aDomain, 80, DEFAULT_TTL);
+        recordStore.addSrv(srvDomain, aaaaDomain, 80, DEFAULT_TTL);
+        recordStore.addIPv4Address(aDomain, DEFAULT_TTL, ipv4);
+        recordStore.addIPv6Address(aaaaDomain, DEFAULT_TTL, ipv6);
+
+        String domain;
+        try {
+            TestPublisherSubscriber<?> subscriber;
+            switch (recordType) {
+                case A:
+                    domain = aDomain;
+                    recordStore.addTimeout(aDomain, RecordType.A);
+                    subscriber = dnsQuery(aDomain);
+                    break;
+                case AAAA:
+                    domain = aaaaDomain;
+                    recordStore.addTimeout(aaaaDomain, RecordType.AAAA);
+                    subscriber = dnsQuery(aaaaDomain);
+                    break;
+                case SRV:
+                    domain = srvDomain;
+                    recordStore.addTimeout(srvDomain, RecordType.SRV);
+                    subscriber = dnsSrvQuery(srvDomain);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown RecordType: " + recordType);
+            }
+            Subscription subscription = subscriber.awaitSubscription();
+            long startTime = System.nanoTime();
+            subscription.request(1);
+            Throwable error = subscriber.awaitOnError();
+            assertThat(error, instanceOf(UnknownHostException.class));
+            assertThat(error.getMessage(), allOf(containsString(domain), containsString(recordType.name())));
+            if (DurationUtils.isPositive(queryTimeout)) {
+                assertThat(error.getCause(), instanceOf(io.netty.resolver.dns.DnsNameResolverTimeoutException.class));
+                assertThat(error.getCause().getMessage(),
+                        allOf(containsString(domain), containsString(Long.toString(DEFAULT_TIMEOUT.toMillis()))));
+            }
+            assertThat(System.nanoTime() - startTime, greaterThanOrEqualTo(DEFAULT_TIMEOUT.toNanos()));
+        } finally {
+            recordStore.removeTimeout(aDomain, RecordType.A);
+            recordStore.removeTimeout(aaaaDomain, RecordType.AAAA);
+            recordStore.removeTimeout(srvDomain, RecordType.SRV);
+        }
+    }
+
     private static <T> Subscriber<ServiceDiscovererEvent<T>> mockThrowSubscriber(
             CountDownLatch latchOnError, Queue<ServiceDiscovererEvent<T>> queue) {
         @SuppressWarnings("unchecked")
@@ -1233,7 +1307,13 @@ class DefaultDnsClientTest {
     }
 
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(String domain) {
+        return dnsSrvQuery(domain, (i, t) -> Completable.failed(t));
+    }
+
+    private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(String domain,
+                BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
+                .retryWhen(retryStrategy)
                 .flatMapConcatIterable(identity());
         TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber =
                 new TestPublisherSubscriber<>();
@@ -1242,16 +1322,10 @@ class DefaultDnsClientTest {
     }
 
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQueryWithInfRetry(String domain) {
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .retry((__, err) -> {
-                    LOGGER.error("Retrying error ", err);
-                    return true;
-                })
-                .flatMapConcatIterable(identity());
-        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber =
-                new TestPublisherSubscriber<>();
-        toSource(publisher).subscribe(subscriber);
-        return subscriber;
+        return dnsSrvQuery(domain, (__, err) -> {
+            LOGGER.error("Retrying error ", err);
+            return Completable.completed();
+        });
     }
 
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> dnsQuery(String domain) {

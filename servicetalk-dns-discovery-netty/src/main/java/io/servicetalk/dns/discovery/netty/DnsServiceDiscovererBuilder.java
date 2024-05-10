@@ -41,8 +41,8 @@ public interface DnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     default DnsServiceDiscovererBuilder consolidateCacheSize(int consolidateCacheSize) {
-        throw new UnsupportedOperationException("DnsServiceDiscovererBuilder#consolidateCacheSize(int) is not " +
-                "supported by " + getClass());
+        throw new UnsupportedOperationException(
+                "DnsServiceDiscovererBuilder#consolidateCacheSize(int) is not supported by " + getClass());
     }
 
     /**
@@ -123,8 +123,8 @@ public interface DnsServiceDiscovererBuilder {
      */
     default DnsServiceDiscovererBuilder ttl(int minSeconds, int maxSeconds, int minCacheSeconds, int maxCacheSeconds,
                                             int negativeCacheSeconds) {
-        throw new UnsupportedOperationException("DnsServiceDiscovererBuilder#ttl(int, int, int, int, int) is not " +
-                "supported by " + getClass());
+        throw new UnsupportedOperationException(
+                "DnsServiceDiscovererBuilder#ttl(int, int, int, int, int) is not supported by " + getClass());
     }
 
     /**
@@ -146,8 +146,8 @@ public interface DnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     default DnsServiceDiscovererBuilder localAddress(@Nullable SocketAddress localAddress) {
-        throw new UnsupportedOperationException("DnsServiceDiscovererBuilder#localAddress(SocketAddress) is not " +
-                "supported by " + getClass());
+        throw new UnsupportedOperationException(
+                "DnsServiceDiscovererBuilder#localAddress(SocketAddress) is not supported by " + getClass());
     }
 
     /**
@@ -182,6 +182,8 @@ public interface DnsServiceDiscovererBuilder {
 
     /**
      * Set the number of dots which must appear in a name before an initial absolute query is made.
+     * <p>
+     * If not set, the default value is read from {@code ndots} option of {@code /etc/resolv.conf}).
      *
      * @param ndots the ndots value.
      * @return {@code this}.
@@ -189,12 +191,37 @@ public interface DnsServiceDiscovererBuilder {
     DnsServiceDiscovererBuilder ndots(int ndots);
 
     /**
-     * Sets the timeout of each DNS query performed by this service discoverer.
+     * Sets the timeout of each DNS query performed by this service discoverer as part of a resolution request.
+     * <p>
+     * Zero ({@code 0}) disables the timeout. If not set, the default value is read from {@code timeout} option of
+     * {@code /etc/resolv.conf}). Similar to linux systems, this value may be silently capped.
      *
      * @param queryTimeout the query timeout value
-     * @return {@code this}.
+     * @return {@code this}
+     * @see #resolutionTimeout(Duration)
      */
-    DnsServiceDiscovererBuilder queryTimeout(Duration queryTimeout);
+    DnsServiceDiscovererBuilder queryTimeout(@Nullable Duration queryTimeout);
+
+    /**
+     * Sets the total timeout of each DNS resolution performed by this service discoverer.
+     * <p>
+     * Each resolution may execute one or more DNS queries, like following multiple CNAME(s) or trying different search
+     * domains. This is the total timeout for all intermediate queries involved in a single resolution request. Note,
+     * that <a href="https://tools.ietf.org/html/rfc2782">SRV</a> resolutions may generate independent resolutions for
+     * {@code A/AAAA} records. In this case, this timeout will be applied to an {@code SRV} resolution and each
+     * {@code A/AAAA} resolution independently.
+     * <p>
+     * Zero ({@code 0}) disables the timeout. If not set, it defaults to {@link #queryTimeout(Duration) query timeout}
+     * value multiplied by {@code 2}.
+     *
+     * @param resolutionTimeout the query timeout value
+     * @return {@code this}
+     * @see #queryTimeout(Duration)
+     */
+    default DnsServiceDiscovererBuilder resolutionTimeout(@Nullable Duration resolutionTimeout) {
+        throw new UnsupportedOperationException(
+                "DnsServiceDiscovererBuilder#resolutionTimeout(Duration) is not supported by " + getClass());
+    }
 
     /**
      * Sets the list of the protocol families of the address resolved.
