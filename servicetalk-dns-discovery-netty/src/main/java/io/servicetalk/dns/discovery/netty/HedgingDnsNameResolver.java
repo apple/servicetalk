@@ -103,6 +103,7 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
     private <T, R> void tryHedge(
             Function<T, Future<R>> computation, T t, Future<R> original, Promise<R> promise) {
         if (!original.isDone() && budget.withdraw()) {
+            System.out.println("" + System.currentTimeMillis() + ": sending backup request.");
             Future<R> backupResult = computation.apply(t);
             final long startTime = currentTimeMillis();
             backupResult.addListener(done -> {
@@ -256,5 +257,33 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
     private static Budget defaultBudget() {
         // 5% extra load and a max burst of 5 hedges.
         return new DefaultBudgetImpl(1, 20, 100);
+    }
+
+    static PercentileTracker constantTracker(int value) {
+        return new PercentileTracker() {
+            @Override
+            public void addSample(long sample) {
+                // noop
+            }
+
+            @Override
+            public long getValue() {
+                return value;
+            }
+        };
+    }
+
+    static Budget alwaysBudget() {
+        return new Budget() {
+            @Override
+            public void deposit() {
+                // noop
+            }
+
+            @Override
+            public boolean withdraw() {
+                return true;
+            }
+        };
     }
 }

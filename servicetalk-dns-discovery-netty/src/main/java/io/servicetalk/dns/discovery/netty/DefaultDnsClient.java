@@ -223,7 +223,10 @@ final class DefaultDnsClient implements DnsClient {
         if (true /* hedging enabled */) { // need to wire this in.
             DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, 0);
             resolver = new HedgingDnsNameResolver(
-                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor);
+//                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor);
+                    // TODO: this is just for hacking together tests.
+                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor,
+                    HedgingDnsNameResolver.constantTracker(100), HedgingDnsNameResolver.alwaysBudget());
         } else {
             resolver = new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build());
         }

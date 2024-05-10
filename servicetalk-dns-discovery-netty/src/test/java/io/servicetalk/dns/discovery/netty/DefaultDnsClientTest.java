@@ -43,6 +43,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -169,6 +172,51 @@ class DefaultDnsClientTest {
     static Stream<ServiceDiscovererEvent.Status> missingRecordStatus() {
         return Stream.of(ServiceDiscovererEvent.Status.EXPIRED, ServiceDiscovererEvent.Status.UNAVAILABLE);
     }
+
+    @Test
+    void hedging() throws Exception {
+        // should be bound now.
+        DatagramSocket datagramSocket = new DatagramSocket(new InetSocketAddress("127.0.0.1", 5657));
+        Thread t = new Thread(() -> {
+            while (true) {
+                byte[] buf = new byte[2048];
+                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                try {
+                    datagramSocket.receive(packet);
+                } catch (IOException ex) {
+                    System.out.println("Exception: " + ex);
+                    return;
+                }
+                String packetStr = new String(buf, 0, packet.getLength());
+                System.out.println("" + System.currentTimeMillis() + ": Received packet- " + packetStr);
+                packet.getLength();
+            }
+        });
+        t.start();
+
+        setup(builder -> builder.dnsServerAddressStreamProvider(
+                new SingletonDnsServerAddressStreamProvider((InetSocketAddress) datagramSocket.getLocalSocketAddress())));
+//        recordStore.addStall("unknown.com", latch);
+
+        final String targetDomain1 = "sd.domain.com";
+        final String ip1 = nextIp();
+
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(targetDomain1);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        Thread.sleep(100); // just add an actual delay so our println messages don't stack atop one another.
+        advanceTime();
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(1);
+        assertHasEvent(signals, ip1, AVAILABLE);
+
+
+        t.interrupt();
+    }
+
 
     @Test
     void singleSrvSingleADiscover() throws Exception {
