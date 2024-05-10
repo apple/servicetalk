@@ -18,7 +18,7 @@ package io.servicetalk.capacity.limiter.api;
 /**
  * Number utilities
  */
-class Preconditions {
+final class Preconditions {
 
     private Preconditions() {
     }
