@@ -20,10 +20,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensureRange;
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOneExclusive;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
-import static io.servicetalk.utils.internal.NumberUtils.ensureRange;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 

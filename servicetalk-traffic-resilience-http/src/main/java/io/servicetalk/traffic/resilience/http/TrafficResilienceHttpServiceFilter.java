@@ -357,7 +357,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
          * @return {@code this}.
          * @see ServiceRejectionPolicy#DEFAULT_REJECTION_POLICY
          */
-        public Builder onRejectionPolicy(final ServiceRejectionPolicy policy) {
+        public Builder rejectionPolicy(final ServiceRejectionPolicy policy) {
             this.onServiceRejectionPolicy = requireNonNull(policy, "policy");
             return this;
         }

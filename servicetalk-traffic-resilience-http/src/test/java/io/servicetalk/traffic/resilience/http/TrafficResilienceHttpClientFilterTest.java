@@ -88,7 +88,7 @@ class TrafficResilienceHttpClientFilterTest {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
                         () -> CapacityLimiters.fixedCapacity(1).build())
-                        .peerRejection(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
+                        .rejectionPolicy(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
@@ -114,7 +114,7 @@ class TrafficResilienceHttpClientFilterTest {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
                         () -> CapacityLimiters.fixedCapacity(1).build())
-                        .peerRejection(ofPassthrough(resp -> BAD_GATEWAY.equals(resp.status())))
+                        .rejectionPolicy(ofPassthrough(resp -> BAD_GATEWAY.equals(resp.status())))
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);

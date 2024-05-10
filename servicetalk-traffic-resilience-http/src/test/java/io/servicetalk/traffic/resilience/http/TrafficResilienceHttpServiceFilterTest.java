@@ -156,7 +156,7 @@ class TrafficResilienceHttpServiceFilterTest {
                 .build();
         TrafficResilienceHttpServiceFilter filter = new TrafficResilienceHttpServiceFilter
                 .Builder(() -> limiter)
-                .onRejectionPolicy(serviceRejectionPolicy)
+                .rejectionPolicy(serviceRejectionPolicy)
                 .build();
 
         final HttpServerContext serverContext = forAddress(localAddress(0))

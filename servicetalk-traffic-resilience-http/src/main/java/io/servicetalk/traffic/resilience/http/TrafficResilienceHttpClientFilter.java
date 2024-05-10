@@ -405,7 +405,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * @return {@code this}.
          * @see ClientPeerRejectionPolicy#DEFAULT_PEER_REJECTION_POLICY
          */
-        public Builder peerRejection(final ClientPeerRejectionPolicy policy) {
+        public Builder rejectionPolicy(final ClientPeerRejectionPolicy policy) {
             this.clientPeerRejectionPolicy = requireNonNull(policy);
             return this;
         }
@@ -476,7 +476,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         /**
          * {@link Ticket Ticket} terminal callback override upon erroneous completion of the request operation.
          * Erroneous completion in this context means, that an error occurred as part of the operation or the
-         * {@link #peerRejection(ClientPeerRejectionPolicy)} triggered an exception.
+         * {@link #rejectionPolicy(ClientPeerRejectionPolicy)} triggered an exception.
          * By default the terminal callback is {@link Ticket#failed(Throwable)}.
          *
          * @param onError Callback to override default {@link Ticket ticket} terminal event for an erroneous

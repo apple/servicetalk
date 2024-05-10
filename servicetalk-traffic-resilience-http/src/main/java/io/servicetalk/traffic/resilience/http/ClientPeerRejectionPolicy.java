@@ -38,13 +38,13 @@ import static java.util.Objects.requireNonNull;
 /**
  * Policy for peer capacity rejections that allows customization of behavior (retries or pass-through).
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * @see TrafficResilienceHttpClientFilter.Builder#peerRejection(ClientPeerRejectionPolicy)
+ * @see TrafficResilienceHttpClientFilter.Builder#rejectionPolicy(ClientPeerRejectionPolicy)
  */
 public final class ClientPeerRejectionPolicy {
 
     /**
      * Default rejection observer for dropped requests from an external sourced.
-     * see. {@link TrafficResilienceHttpClientFilter.Builder#peerRejection(ClientPeerRejectionPolicy)}.
+     * see. {@link TrafficResilienceHttpClientFilter.Builder#rejectionPolicy(ClientPeerRejectionPolicy)}.
      * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>

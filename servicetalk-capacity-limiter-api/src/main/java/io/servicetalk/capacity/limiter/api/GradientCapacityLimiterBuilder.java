@@ -43,9 +43,9 @@ import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfile
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.DEFAULT_SUSPEND_INCR;
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.GREEDY_HEADROOM;
 import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.MIN_SAMPLING_DURATION;
-import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOne;
-import static io.servicetalk.utils.internal.NumberUtils.ensureBetweenZeroAndOneExclusive;
-import static io.servicetalk.utils.internal.NumberUtils.ensureGreaterThan;
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensureBetweenZeroAndOne;
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensureGreaterThan;
 import static java.util.Objects.requireNonNull;
 
 /**

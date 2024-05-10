@@ -41,7 +41,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Rejection Policy to rule the behavior of service rejections due to capacity or open circuit.
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * @see TrafficResilienceHttpServiceFilter.Builder#onRejectionPolicy(ServiceRejectionPolicy)
+ * @see TrafficResilienceHttpServiceFilter.Builder#rejectionPolicy(ServiceRejectionPolicy)
  */
 public final class ServiceRejectionPolicy {
 
