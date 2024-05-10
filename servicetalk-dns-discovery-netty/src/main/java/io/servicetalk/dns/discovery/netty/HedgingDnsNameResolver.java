@@ -1,4 +1,22 @@
+/*
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.dns.discovery.netty;
+
+import io.servicetalk.concurrent.api.DelegatingExecutor;
+import io.servicetalk.concurrent.api.Executor;
 
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.dns.DnsQuestion;
@@ -6,8 +24,6 @@ import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
-import io.servicetalk.concurrent.api.DelegatingExecutor;
-import io.servicetalk.concurrent.api.Executor;
 
 import java.io.Closeable;
 import java.net.InetAddress;
@@ -23,7 +39,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class HedgingDnsNameResolver implements Closeable {
 
-    private final DnsNameResolver delegate;
+    private final DnsResolverIface delegate;
     private final Executor executor;
 
     private final EventLoop eventLoop;
@@ -31,10 +47,14 @@ final class HedgingDnsNameResolver implements Closeable {
     private final Budget budget;
 
     HedgingDnsNameResolver(DnsNameResolver delegate, Executor executor, EventLoop eventLoop) {
+        this(new NettyDnsNameResolver(delegate), executor, eventLoop);
+    }
+
+    HedgingDnsNameResolver(DnsResolverIface delegate, Executor executor, EventLoop eventLoop) {
         this(delegate, executor, eventLoop, defaultTracker(), defaultBudget());
     }
 
-    HedgingDnsNameResolver(DnsNameResolver delegate, Executor executor, EventLoop eventLoop,
+    HedgingDnsNameResolver(DnsResolverIface delegate, Executor executor, EventLoop eventLoop,
                            PercentileTracker percentile, Budget budget) {
         this.delegate = delegate;
         this.executor = executor instanceof NormalizedTimeSourceExecutor ?
@@ -68,7 +88,7 @@ final class HedgingDnsNameResolver implements Closeable {
         final long startTime = currentTimeMillis();
         final long deadline = addWithOverflowProtection(startTime, percentile.getValue());
         if (deadline == Long.MAX_VALUE) {
-            // no need to attempt a hedge that will wait that long: just return the value.
+            // basically forever: just return the value.
             return underlyingResult;
         } else {
             Promise<R> promise = eventLoop.newPromise();
@@ -124,7 +144,7 @@ final class HedgingDnsNameResolver implements Closeable {
         boolean withdraw();
     }
 
-    // TODO: both these implementations rely on access being serialized by the netty event loop.
+    // TODO: both these implementations are un-synchronized and rely on netty using only a single event loop.
     private static final class DefaultBudgetImpl implements Budget {
 
         private final int depositAmount;
@@ -142,7 +162,6 @@ final class HedgingDnsNameResolver implements Closeable {
             this.maxTokens = maxTokens;
             this.tokens = initialTokens;
         }
-
 
         @Override
         public void deposit() {
@@ -170,7 +189,7 @@ final class HedgingDnsNameResolver implements Closeable {
         private long lastValue;
         private int sampleCount;
 
-        public DefaultPercentileTracker(int buckets, double percentile, int sampleThreshold) {
+        DefaultPercentileTracker(int buckets, double percentile, int sampleThreshold) {
             if (percentile < 0 || percentile > 1) {
                 throw new IllegalArgumentException("Unexpected percentile value: " + percentile);
             }
@@ -194,18 +213,18 @@ final class HedgingDnsNameResolver implements Closeable {
             return lastValue;
         }
 
-
         private void maybeSwap() {
             if (shouldSwap()) {
                 lastValue = compute();
             }
         }
+
         private boolean shouldSwap() {
             return sampleCount >= sampleThreshold;
         }
 
         private long compute() {
-            long targetCount = (long)(sampleCount * percentile);
+            long targetCount = (long) (sampleCount * percentile);
             sampleCount = 0;
             long result = -1;
             for (int i = 0; i < buckets.length; i++) {
@@ -253,6 +272,38 @@ final class HedgingDnsNameResolver implements Closeable {
         public long currentTime(final TimeUnit unit) {
             final long elapsedNanos = delegate().currentTime(NANOSECONDS) - offsetNanos;
             return unit.convert(elapsedNanos, NANOSECONDS);
+        }
+    }
+
+    interface DnsResolverIface extends Closeable {
+        Future<List<DnsRecord>> resolveAll(DnsQuestion t);
+
+        Future<List<InetAddress>> resolveAll(String t);
+
+        @Override
+        void close();
+    }
+
+    private static final class NettyDnsNameResolver implements DnsResolverIface {
+        private final DnsNameResolver resolver;
+
+        NettyDnsNameResolver(final DnsNameResolver resolver) {
+            this.resolver = resolver;
+        }
+
+        @Override
+        public Future<List<DnsRecord>> resolveAll(DnsQuestion t) {
+            return resolver.resolveAll(t);
+        }
+
+        @Override
+        public Future<List<InetAddress>> resolveAll(String t) {
+            return resolver.resolveAll(t);
+        }
+
+        @Override
+        public void close() {
+            resolver.close();
         }
     }
 }

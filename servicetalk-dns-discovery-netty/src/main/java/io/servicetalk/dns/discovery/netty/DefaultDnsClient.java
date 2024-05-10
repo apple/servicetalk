@@ -74,7 +74,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -221,7 +220,8 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor, nettyIoExecutor.eventLoopGroup().next());
+        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor,
+                nettyIoExecutor.eventLoopGroup().next());
     }
 
     @Override
