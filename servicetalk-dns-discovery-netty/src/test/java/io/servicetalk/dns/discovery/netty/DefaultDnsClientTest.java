@@ -1307,7 +1307,7 @@ class DefaultDnsClientTest {
                 new InetSocketAddress(getByName(ip), port), status)));
     }
 
-    private static final class NettyIoExecutorWithTestTimer implements EventLoopAwareNettyIoExecutor {
+    static final class NettyIoExecutorWithTestTimer implements EventLoopAwareNettyIoExecutor {
 
         private final EventLoopAwareNettyIoExecutor delegate;
         private final TestExecutor timer;
