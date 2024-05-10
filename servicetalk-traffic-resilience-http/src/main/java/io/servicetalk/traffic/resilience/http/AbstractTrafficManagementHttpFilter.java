@@ -191,7 +191,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
     abstract Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory,
-            @Nullable CircuitBreaker breaker);
+            CircuitBreaker breaker);
 
     RuntimeException peerCapacityRejection(final StreamingHttpResponse resp) {
         return CAPACITY_REJECTION;

@@ -38,7 +38,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * Policy for peer capacity rejections that allows customization of behavior (retries or pass-through).
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * <p>
  * @see TrafficResilienceHttpClientFilter.Builder#peerRejection(PeerRejectionPolicy)
  */
 public final class PeerRejectionPolicy {

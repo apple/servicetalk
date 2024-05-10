@@ -17,17 +17,13 @@ package io.servicetalk.traffic.resilience.http;
 
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 
-import javax.annotation.Nullable;
-
 /**
  * State information of the {@link TrafficResilienceHttpServiceFilter traffic-resilience} service filter.
  */
 public final class StateContext {
-
-    @Nullable
     private final CircuitBreaker breaker;
 
-    StateContext(@Nullable final CircuitBreaker breaker) {
+    StateContext(final CircuitBreaker breaker) {
         this.breaker = breaker;
     }
 
@@ -35,7 +31,6 @@ public final class StateContext {
      * Returns the {@link CircuitBreaker} in-use for the currently evaluated request.
      * @return The {@link CircuitBreaker} in-use for the currently evaluated request.
      */
-    @Nullable
     public CircuitBreaker breaker() {
         return breaker;
     }

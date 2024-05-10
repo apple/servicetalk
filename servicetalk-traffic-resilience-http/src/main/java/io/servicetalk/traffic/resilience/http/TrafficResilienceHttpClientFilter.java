@@ -178,7 +178,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     @Override
     Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request, @Nullable StreamingHttpResponseFactory responseFactory,
-            @Nullable CircuitBreaker breaker) {
+            CircuitBreaker breaker) {
         return DEFAULT_BREAKER_REJECTION;
     }
 

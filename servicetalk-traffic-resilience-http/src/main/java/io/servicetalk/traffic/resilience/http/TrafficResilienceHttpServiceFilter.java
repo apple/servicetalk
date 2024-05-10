@@ -150,7 +150,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficMan
     Single<StreamingHttpResponse> handleLocalBreakerRejection(
             final StreamingHttpRequest request,
             @Nullable final StreamingHttpResponseFactory responseFactory,
-            @Nullable final CircuitBreaker breaker) {
+            final CircuitBreaker breaker) {
         if (responseFactory != null) {
             return rejectionPolicy.onOpenCircuitResponseBuilder()
                     .apply(request, responseFactory)

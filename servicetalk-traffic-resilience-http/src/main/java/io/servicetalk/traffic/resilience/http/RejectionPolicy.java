@@ -41,7 +41,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * Rejection Policy to rule the behavior of service rejections due to capacity or open circuit.
  * This is meant to be used as a policy on the {@link TrafficResilienceHttpServiceFilter}.
- * <p>
  * @see TrafficResilienceHttpServiceFilter.Builder#onRejectionPolicy(RejectionPolicy)
  */
 public final class RejectionPolicy {
@@ -134,19 +133,13 @@ public final class RejectionPolicy {
      * A delay in seconds to be supplied as a Retry-After HTTP header in a {@link HttpResponseMetaData} based on the
      * {@link CircuitBreaker} that matched the {@link HttpRequestMetaData}.
      *
-     * @param fallbackSeconds The value (in seconds) to be used if no {@link CircuitBreaker} matched.
      * @return A {@link HttpResponseMetaData} consumer, that enhances the headers with a Retry-After figure in
      * seconds based on the duration the matching {@link CircuitBreaker} will remain open, or a fallback period.
      */
     public static BiConsumer<HttpResponseMetaData, StateContext>
-    retryAfterHintOfBreaker(final int fallbackSeconds) {
-        final CharSequence secondsSeq = newAsciiString(valueOf(fallbackSeconds));
-        return (resp, state) -> {
-            if (state.breaker() != null || fallbackSeconds > 0) {
-                resp.setHeader(RETRY_AFTER, state.breaker() != null ? newAsciiString(valueOf(
-                        state.breaker().remainingDurationInOpenState().getSeconds())) : secondsSeq);
-            }
-        };
+    retryAfterHintOfBreaker() {
+        return (resp, state) -> resp.setHeader(RETRY_AFTER, newAsciiString(valueOf(
+                state.breaker().remainingDurationInOpenState().getSeconds())));
     }
 
     /**
@@ -201,7 +194,7 @@ public final class RejectionPolicy {
                 onOpenCircuitResponseBuilder = serviceUnavailable();
 
         private BiConsumer<HttpResponseMetaData, StateContext> onOpenCircuitRetryAfter =
-                retryAfterHintOfBreaker(-1);
+                retryAfterHintOfBreaker();
 
         /**
          * Determines the {@link StreamingHttpResponse} when a capacity limit is met.
