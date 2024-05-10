@@ -124,7 +124,7 @@ final class DefaultDnsClient implements DnsClient {
     private static final Cancellable TERMINATED = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final HedgingDnsNameResolver resolver;
+    private final UnderlyingDnsResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
@@ -220,7 +220,13 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        resolver = new HedgingDnsNameResolver(builder.build(), nettyIoExecutor);
+        if (true /* hedging enabled */) { // need to wire this in.
+            DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, 0);
+            resolver = new HedgingDnsNameResolver(
+                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor);
+        } else {
+            resolver = new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build());
+        }
     }
 
     @Override
@@ -424,7 +430,7 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
                     Promise<DnsAnswer<HostAndPort>> promise = nettyIoExecutor.eventLoopGroup().next().newPromise();
-                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
+                    resolver.resolveAllQuestion(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {

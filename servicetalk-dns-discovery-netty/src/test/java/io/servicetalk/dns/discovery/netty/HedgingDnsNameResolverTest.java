@@ -41,7 +41,7 @@ class HedgingDnsNameResolverTest {
     HedgingDnsNameResolver.PercentileTracker percentileTracker;
     HedgingDnsNameResolver.Budget budget;
 
-    HedgingDnsNameResolver.DnsResolverIface underlying;
+    UnderlyingDnsResolver underlying;
     HedgingDnsNameResolver resolver;
 
     void setup() {
@@ -53,7 +53,7 @@ class HedgingDnsNameResolverTest {
             budget = mock(HedgingDnsNameResolver.Budget.class);
             when(budget.withdraw()).thenReturn(true);
         }
-        underlying = mock(HedgingDnsNameResolver.DnsResolverIface.class);
+        underlying = mock(UnderlyingDnsResolver.class);
         // DnsResolverIface delegate, Executor executor, EventLoop eventLoop,
         //                           PercentileTracker percentile, Budget budget
         resolver = new HedgingDnsNameResolver(underlying,

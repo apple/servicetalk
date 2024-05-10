@@ -16,8 +16,6 @@
 package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.DelegatingExecutor;
-import io.servicetalk.concurrent.api.Executor;
 
 import io.netty.handler.codec.dns.DnsQuestion;
 import io.netty.handler.codec.dns.DnsRecord;
@@ -27,25 +25,20 @@ import io.netty.util.concurrent.Promise;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
-import java.io.Closeable;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-final class HedgingDnsNameResolver implements Closeable {
+final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
 
-    private final DnsResolverIface delegate;
+    private final UnderlyingDnsResolver delegate;
     private final EventLoopAwareNettyIoExecutor executor;
-
-//    private final EventLoop eventLoop;
     private final PercentileTracker percentile;
     private final Budget budget;
 
@@ -53,11 +46,11 @@ final class HedgingDnsNameResolver implements Closeable {
         this(new NettyDnsNameResolver(delegate), executor);
     }
 
-    HedgingDnsNameResolver(DnsResolverIface delegate, IoExecutor executor) {
+    HedgingDnsNameResolver(UnderlyingDnsResolver delegate, IoExecutor executor) {
         this(delegate, executor, defaultTracker(), defaultBudget());
     }
 
-    HedgingDnsNameResolver(DnsResolverIface delegate, IoExecutor executor,
+    HedgingDnsNameResolver(UnderlyingDnsResolver delegate, IoExecutor executor,
                            PercentileTracker percentile, Budget budget) {
         this.delegate = delegate;
         this.executor = toEventLoopAwareNettyIoExecutor(executor).next();
@@ -65,10 +58,12 @@ final class HedgingDnsNameResolver implements Closeable {
         this.budget = budget;
     }
 
-    public Future<List<DnsRecord>> resolveAll(DnsQuestion t) {
+    @Override
+    public Future<List<DnsRecord>> resolveAllQuestion(DnsQuestion t) {
         return setupHedge(delegate::resolveAllQuestion, t);
     }
 
+    @Override
     public Future<List<InetAddress>> resolveAll(String t) {
         return setupHedge(delegate::resolveAll, t);
     }
@@ -96,7 +91,7 @@ final class HedgingDnsNameResolver implements Closeable {
             Cancellable hedgeTimer = executor.schedule(() -> tryHedge(computation, t, underlyingResult, promise),
                     delay, TimeUnit.MILLISECONDS);
             underlyingResult.addListener(completedFuture -> {
-                measureRequest(currentTimeMillis() - startTimeMs, completedFuture.isSuccess());
+                measureRequest(currentTimeMillis() - startTimeMs, completedFuture);
                 if (complete(underlyingResult, promise)) {
                     hedgeTimer.cancel();
                 }
@@ -113,15 +108,17 @@ final class HedgingDnsNameResolver implements Closeable {
             backupResult.addListener(done -> {
                 if (complete(backupResult, promise)) {
                     original.cancel(true);
-                    measureRequest(currentTimeMillis() - startTime, done.isSuccess());
+                    measureRequest(currentTimeMillis() - startTime, done);
                 }
             });
             promise.addListener(complete -> backupResult.cancel(true));
         }
     }
 
-    private void measureRequest(long durationMs, boolean succeeded) {
-        if (succeeded) {
+    private void measureRequest(long durationMs, Future<?> future) {
+        // Cancelled responses don't count but we do consider failed responses because failure
+        // is a legitimate response.
+        if (!future.isCancelled()) {
             percentile.addSample(durationMs);
         }
     }
@@ -259,54 +256,5 @@ final class HedgingDnsNameResolver implements Closeable {
     private static Budget defaultBudget() {
         // 5% extra load and a max burst of 5 hedges.
         return new DefaultBudgetImpl(1, 20, 100);
-    }
-
-    // TODO: copied from servicetalk-loadbalancer.
-    private static final class NormalizedTimeSourceExecutor extends DelegatingExecutor {
-
-        private final long offsetNanos;
-
-        NormalizedTimeSourceExecutor(final Executor delegate) {
-            super(delegate);
-            offsetNanos = delegate.currentTime(NANOSECONDS);
-        }
-
-        @Override
-        public long currentTime(final TimeUnit unit) {
-            final long elapsedNanos = delegate().currentTime(NANOSECONDS) - offsetNanos;
-            return unit.convert(elapsedNanos, NANOSECONDS);
-        }
-    }
-
-    interface DnsResolverIface extends Closeable {
-        Future<List<DnsRecord>> resolveAllQuestion(DnsQuestion t);
-
-        Future<List<InetAddress>> resolveAll(String t);
-
-        @Override
-        void close();
-    }
-
-    private static final class NettyDnsNameResolver implements DnsResolverIface {
-        private final DnsNameResolver resolver;
-
-        NettyDnsNameResolver(final DnsNameResolver resolver) {
-            this.resolver = resolver;
-        }
-
-        @Override
-        public Future<List<DnsRecord>> resolveAllQuestion(DnsQuestion t) {
-            return resolver.resolveAll(t);
-        }
-
-        @Override
-        public Future<List<InetAddress>> resolveAll(String t) {
-            return resolver.resolveAll(t);
-        }
-
-        @Override
-        public void close() {
-            resolver.close();
-        }
     }
 }
