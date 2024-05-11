@@ -49,7 +49,6 @@ import io.servicetalk.transport.api.RetryableException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -105,14 +104,14 @@ public final class RetryingHttpRequesterFilter
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
     private final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor;
     @Nullable
-    private final BiConsumer<HttpRequestMetaData, Throwable> onRequestRetry;
+    private final RetryCallbacks onRequestRetry;
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
             final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
-            @Nullable final BiConsumer<HttpRequestMetaData, Throwable> onRequestRetry) {
+            @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
@@ -158,7 +157,7 @@ public final class RetryingHttpRequesterFilter
             private final Executor executor;
             private final HttpRequestMetaData requestMetaData;
             @Nullable
-            private final BiConsumer<HttpRequestMetaData, Throwable> onRetry;
+            private final RetryCallbacks retryCallbacks;
             /**
              * The outer retry strategy handles both "load balancer not ready" and "request failed" cases. This count
              * discounts the former so the ladder strategies only count actual request attempts.
@@ -167,10 +166,10 @@ public final class RetryingHttpRequesterFilter
 
             private OuterRetryStrategy(final Executor executor,
                                        final HttpRequestMetaData requestMetaData,
-                                       @Nullable final BiConsumer<HttpRequestMetaData, Throwable> onRetry) {
+                                       @Nullable final RetryCallbacks retryCallbacks) {
                 this.executor = executor;
                 this.requestMetaData = requestMetaData;
-                this.onRetry = onRetry;
+                this.retryCallbacks = retryCallbacks;
             }
 
             @Override
@@ -190,8 +189,8 @@ public final class RetryingHttpRequesterFilter
                                     !(lbEvent instanceof LoadBalancerReadyEvent &&
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
-                    return applyOnRetryCallback(
-                            sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), t);
+                    return applyRetryCallbacks(
+                            sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
                 }
 
                 final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
@@ -203,15 +202,15 @@ public final class RetryingHttpRequesterFilter
                         retryWhen = retryWhen.concat(executor.timer(constant));
                     }
 
-                    return applyOnRetryCallback(retryWhen, t);
+                    return applyRetryCallbacks(retryWhen, count, t);
                 }
 
                 return failed(t);
             }
 
-            Completable applyOnRetryCallback(final Completable completable, final Throwable t) {
-                return onRetry == null ? completable :
-                        completable.whenOnComplete(() -> onRetry.accept(requestMetaData, t));
+            Completable applyRetryCallbacks(final Completable completable, final int retryCount, final Throwable t) {
+                return retryCallbacks == null ? completable :
+                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t));
             }
         }
 
@@ -674,6 +673,22 @@ public final class RetryingHttpRequesterFilter
     }
 
     /**
+     * Callbacks invoked on a retry attempt.
+     */
+    @FunctionalInterface
+    public interface RetryCallbacks {
+
+        /**
+         * Called before a retry is performed.
+         *
+         * @param retryCount a current retry counter value for this attempt
+         * @param requestMetaData {@link HttpRequestMetaData} that is being retried
+         * @param cause {@link Throwable} cause for the retry
+         */
+        void beforeRetry(int retryCount, HttpRequestMetaData requestMetaData, Throwable cause);
+    }
+
+    /**
      * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
      * To configure the maximum number of retry attempts see {@link #maxTotalRetries(int)}.
      */
@@ -708,7 +723,7 @@ public final class RetryingHttpRequesterFilter
         private BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryOther;
 
         @Nullable
-        private BiConsumer<HttpRequestMetaData, Throwable> onRequestRetry;
+        private RetryCallbacks onRequestRetry;
 
         /**
          * By default, automatic retries wait for the associated {@link LoadBalancer} to be
@@ -878,12 +893,11 @@ public final class RetryingHttpRequesterFilter
          * This can be used to track when {@link BackOffPolicy} actually decides to retry a request, to update
          * {@link HttpRequestMetaData request meta-data} before a retry, or implement logging/metrics.
          *
-         * @param onRequestRetry {@link BiConsumer} with {@link HttpRequestMetaData request meta-data} and
-         * {@link Throwable cause} that is invoked before every
+         * @param onRequestRetry {@link RetryCallbacks} to get notified on every
          * {@link StreamingHttpClient#request(StreamingHttpRequest) request} retry attempt
          * @return {@code this}
          */
-        public Builder onRequestRetry(final BiConsumer<HttpRequestMetaData, Throwable> onRequestRetry) {
+        public Builder onRequestRetry(final RetryCallbacks onRequestRetry) {
             this.onRequestRetry = requireNonNull(onRequestRetry);
             return this;
         }

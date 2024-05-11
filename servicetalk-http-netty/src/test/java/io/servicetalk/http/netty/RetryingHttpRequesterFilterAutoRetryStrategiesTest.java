@@ -105,7 +105,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
                 .retryRetryableExceptions((__, ___) -> ofNoRetries())
-                .onRequestRetry((req, t) -> onRequestRetryCounter.incrementAndGet()), offloading);
+                .onRequestRetry((count, req, t) -> assertThat(onRequestRetryCounter.incrementAndGet(), is(count))),
+                offloading);
 
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
@@ -175,7 +176,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     void defaultForNoAvailableHost(boolean offloading) {
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
-                .onRequestRetry((req, t) -> onRequestRetryCounter.incrementAndGet()), offloading);
+                .onRequestRetry((count, req, t) -> assertThat(onRequestRetryCounter.incrementAndGet(), is(count))),
+                offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));

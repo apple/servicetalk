@@ -205,7 +205,8 @@ class RetryingHttpRequesterFilterTest {
         failingClient = failingConnClientBuilder
                 .appendClientFilter(new Builder()
                         .maxTotalRetries(maxTotalRetries)
-                        .onRequestRetry((req, t) -> onRequestRetryCounter.incrementAndGet())
+                        .onRequestRetry((count, req, t) ->
+                                assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
@@ -265,7 +266,8 @@ class RetryingHttpRequesterFilterTest {
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1))
-                        .onRequestRetry((req, t) -> onRequestRetryCounter.incrementAndGet())
+                        .onRequestRetry((count, req, t) ->
+                                assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
                 .appendConnectionFilter(c -> {
                     newConnectionCreated.incrementAndGet();
