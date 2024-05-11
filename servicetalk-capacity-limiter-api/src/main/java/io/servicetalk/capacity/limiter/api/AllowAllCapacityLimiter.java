@@ -19,13 +19,36 @@ import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
+
 final class AllowAllCapacityLimiter implements CapacityLimiter {
     static final CapacityLimiter INSTANCE = new AllowAllCapacityLimiter();
     private static final int UNSUPPORTED = -1;
-    private final Ticket noOpToken = new Ticket() {
+    private static final Ticket noOpToken = new DefaultTicket();
+
+    private AllowAllCapacityLimiter() {
+        // Singleton
+    }
+
+    @Override
+    public String name() {
+        return AllowAllCapacityLimiter.class.getSimpleName();
+    }
+
+    @Override
+    public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap context) {
+        return noOpToken;
+    }
+
+    @Override
+    public String toString() {
+        return name();
+    }
+
+    private static final class DefaultTicket implements Ticket, LimiterState {
         @Override
         public LimiterState state() {
-            return null;
+            return this;
         }
 
         @Override
@@ -47,24 +70,15 @@ final class AllowAllCapacityLimiter implements CapacityLimiter {
         public int ignored() {
             return UNSUPPORTED;
         }
-    };
 
-    private AllowAllCapacityLimiter() {
-        // Singleton
-    }
+        @Override
+        public int pending() {
+            return -1;
+        }
 
-    @Override
-    public String name() {
-        return AllowAllCapacityLimiter.class.getSimpleName();
-    }
-
-    @Override
-    public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap context) {
-        return noOpToken;
-    }
-
-    @Override
-    public String toString() {
-        return name();
+        @Override
+        public int remaining() {
+            return MAX_VALUE;
+        }
     }
 }

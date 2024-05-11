@@ -18,7 +18,7 @@ package io.servicetalk.traffic.resilience.http;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter.Ticket;
 import io.servicetalk.capacity.limiter.api.Classification;
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -35,7 +35,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
-import io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.PassthroughRequestRejectedException;
+import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.transport.api.ServerListenContext;
 
 import java.time.Duration;
@@ -48,21 +48,19 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
-import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
-import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT;
-import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT_PASSTHROUGH;
-import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.Type.REJECT_RETRY;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.DEFAULT_PEER_REJECTION_POLICY;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT_PASSTHROUGH;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.Type.REJECT_RETRY;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.lang.Integer.MAX_VALUE;
-import static java.time.Duration.ZERO;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link StreamingHttpClientFilterFactory} to enforce capacity and circuit-breaking control for a client.
  * Requests that are not able to acquire a capacity ticket or a circuit permit,
- * will fail with a {@link RequestRejectedException}.
+ * will fail with a {@link RequestDroppedException}.
  * <br><br>
  * <h2>Ordering of filters</h2>
  * Ordering of the {@link TrafficResilienceHttpClientFilter capacity-filter} is important for various reasons:
@@ -74,8 +72,8 @@ import static java.util.Objects.requireNonNull;
  *     <li>The traffic control filter should be ordered after a
  *     {@link RetryingHttpRequesterFilter retry-filter} if one is used, to avail the
  *     benefit of retrying requests that failed due to (local or remote) capacity issues.
- *     {@link RetryableRequestRejectedException} are safely retry-able errors, since they occur on the outgoing
- *     side before they even touch the network. {@link DelayedRetryRequestRejectedException} errors on the other
+ *     {@link RetryableRequestDroppedException} are safely retry-able errors, since they occur on the outgoing
+ *     side before they even touch the network. {@link DelayedRetryRequestDroppedException} errors on the other
  *     side, are remote rejections, and its up to the application logic to opt-in for them to be retryable, by
  *     configuring the relevant predicate of the {@link RetryingHttpRequesterFilter retry
  *     -filter}</li>
@@ -106,31 +104,12 @@ import static java.util.Objects.requireNonNull;
 public final class TrafficResilienceHttpClientFilter extends AbstractTrafficManagementHttpFilter
         implements StreamingHttpClientFilterFactory {
 
-    private static final RequestRejectedException LOCAL_REJECTION_RETRYABLE_EXCEPTION = unknownStackTrace(
-            new RetryableRequestRejectedException("Local capacity rejection", null, false, true),
+    private static final RequestDroppedException LOCAL_REJECTION_RETRYABLE_EXCEPTION = unknownStackTrace(
+            new RetryableRequestDroppedException("Local capacity rejection", null, false, true),
             TrafficResilienceHttpClientFilter.class, "localRejection");
 
     private static final Single<StreamingHttpResponse> RETRYABLE_LOCAL_CAPACITY_REJECTION =
             Single.failed(LOCAL_REJECTION_RETRYABLE_EXCEPTION);
-
-    /**
-     * Default rejection observer for dropped requests from an external sourced.
-     * see. {@link Builder#peerCapacityRejection(PeerCapacityRejectionPolicy)}.
-     * <p>
-     * The default predicate matches the following HTTP response codes:
-     * <ul>
-     *     <li>{@link HttpResponseStatus#TOO_MANY_REQUESTS}</li>
-     *     <li>{@link HttpResponseStatus#BAD_GATEWAY}</li>
-     *     <li>{@link HttpResponseStatus#SERVICE_UNAVAILABLE}</li>
-     * </ul>
-     * <p>
-     * If a {@link CircuitBreaker} is used consider adjusting this predicate to avoid considering
-     * {@link HttpResponseStatus#SERVICE_UNAVAILABLE} as a capacity issue.
-     */
-    public static final Predicate<HttpResponseMetaData> DEFAULT_CAPACITY_REJECTION_PREDICATE = metaData ->
-            // Some proxies are known to return BAD_GATEWAY when the upstream is unresponsive (i.e. heavy load).
-            metaData.status().code() == TOO_MANY_REQUESTS.code() || metaData.status().code() == BAD_GATEWAY.code() ||
-            metaData.status().code() == SERVICE_UNAVAILABLE.code();
 
     /**
      * Default rejection observer for dropped requests from an external sourced due to service unavailability.
@@ -144,7 +123,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     public static final Predicate<HttpResponseMetaData> DEFAULT_BREAKER_REJECTION_PREDICATE = metaData ->
             metaData.status().code() == SERVICE_UNAVAILABLE.code();
 
-    private final PeerCapacityRejectionPolicy peerCapacityRejectionPolicy;
+    private final ClientPeerRejectionPolicy clientPeerRejectionPolicy;
     private final boolean forceOpenCircuitOnPeerCircuitRejections;
     @Nullable
     private final Function<HttpResponseMetaData, Duration> focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
@@ -157,7 +136,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
                                               final Supplier<Function<HttpRequestMetaData, CircuitBreaker>>
                                                       circuitBreakerPartitionsSupplier,
                                               final Function<HttpRequestMetaData, Classification> classifier,
-                                              final PeerCapacityRejectionPolicy peerCapacityRejectionPolicy,
+                                              final ClientPeerRejectionPolicy clientPeerRejectionPolicy,
                                               final Predicate<HttpResponseMetaData> breakerRejectionPredicate,
                                               final Consumer<Ticket> onCompletion,
                                               final Consumer<Ticket> onCancellation,
@@ -168,9 +147,9 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
                                               @Nullable final Executor circuitBreakerResetExecutor,
                                               final TrafficResiliencyObserver observer) {
         super(capacityPartitionsSupplier, rejectWhenNotMatchedCapacityPartition, classifier,
-                peerCapacityRejectionPolicy.predicate(), breakerRejectionPredicate, onCompletion, onCancellation,
+                clientPeerRejectionPolicy.predicate(), breakerRejectionPredicate, onCompletion, onCancellation,
                 onError, circuitBreakerPartitionsSupplier, observer);
-        this.peerCapacityRejectionPolicy = peerCapacityRejectionPolicy;
+        this.clientPeerRejectionPolicy = clientPeerRejectionPolicy;
         this.forceOpenCircuitOnPeerCircuitRejections = forceOpenCircuitOnPeerCircuitRejections;
         this.focreOpenCircuitOnPeerCircuitRejectionsDelayProvider =
                 focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
@@ -191,7 +170,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
                                                             final StreamingHttpRequest request) {
                 return applyCapacityControl(capacityPartitions, circuitBreakerPartitions,
                         null, request, null, delegate::request)
-                        .onErrorResume(PassthroughRequestRejectedException.class, t -> Single.succeeded(t.response()));
+                        .onErrorResume(PassthroughRequestDroppedException.class, t -> Single.succeeded(t.response()));
             }
         });
     }
@@ -199,7 +178,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     @Override
     Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request, @Nullable StreamingHttpResponseFactory responseFactory,
-            @Nullable CircuitBreaker breaker) {
+            CircuitBreaker breaker) {
         return DEFAULT_BREAKER_REJECTION;
     }
 
@@ -211,17 +190,17 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
     }
 
     @Override
-    RuntimeException peerCapacityRejection(final StreamingHttpResponse resp) {
-        final PeerCapacityRejectionPolicy.Type type = peerCapacityRejectionPolicy.type();
+    RuntimeException peerRejection(final StreamingHttpResponse resp) {
+        final ClientPeerRejectionPolicy.Type type = clientPeerRejectionPolicy.type();
         if (type == REJECT_RETRY) {
-            final Duration delay = peerCapacityRejectionPolicy.delayProvider().apply(resp);
-            return new DelayedRetryRequestRejectedException(delay);
+            final Duration delay = clientPeerRejectionPolicy.delayProvider().apply(resp);
+            return new DelayedRetryRequestDroppedException(delay);
         } else if (type == REJECT) {
-            return super.peerCapacityRejection(resp);
+            return super.peerRejection(resp);
         } else if (type == REJECT_PASSTHROUGH) {
-            return new PassthroughRequestRejectedException("Service under heavy load", resp);
+            return new PassthroughRequestDroppedException("Service under heavy load", resp);
         } else {
-            return new IllegalStateException("Unexpected PeerCapacityRejectionPolicy.Type: " + type);
+            return new IllegalStateException("Unexpected ClientPeerRejectionPolicy.Type: " + type);
         }
     }
 
@@ -249,13 +228,12 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         private Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier =
                 () -> __ -> null;
         private Function<HttpRequestMetaData, Classification> classifier = __ -> () -> MAX_VALUE;
-        private PeerCapacityRejectionPolicy peerCapacityRejectionPolicy =
-                new PeerCapacityRejectionPolicy(DEFAULT_CAPACITY_REJECTION_PREDICATE, REJECT_RETRY, __ -> ZERO);
+        private ClientPeerRejectionPolicy clientPeerRejectionPolicy = DEFAULT_PEER_REJECTION_POLICY;
         private Predicate<HttpResponseMetaData> peerUnavailableRejectionPredicate = DEFAULT_BREAKER_REJECTION_PREDICATE;
         private final Consumer<Ticket> onCompletionTicketTerminal = Ticket::completed;
         private Consumer<Ticket> onCancellationTicketTerminal = Ticket::dropped;
         private BiConsumer<Ticket, Throwable> onErrorTicketTerminal = (ticket, throwable) -> {
-            if (throwable instanceof RequestRejectedException || throwable instanceof TimeoutException) {
+            if (throwable instanceof RequestDroppedException || throwable instanceof TimeoutException) {
                 ticket.dropped();
             } else {
                 ticket.failed(throwable);
@@ -298,7 +276,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * <p>
          * If a {@code partitions} doesn't return a {@link CapacityLimiter} for the given {@link HttpRequestMetaData}
          * then the {@code rejectNotMatched} is evaluated to decide what the filter should do with this request.
-         * If {@code true} then the request will be {@link RequestRejectedException rejected}.
+         * If {@code true} then the request will be {@link RequestDroppedException rejected}.
          * <p>
          * <b>It's important that instances returned from this {@link Function mapper} are singletons and shared
          * across the same matched partitions. Otherwise, capacity will not be controlled as expected, and there
@@ -329,7 +307,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * <p>
          * If a {@code partitions} doesn't return a {@link CapacityLimiter} for the given {@link HttpRequestMetaData}
          * then the {@code rejectNotMatched} is evaluated to decide what the filter should do with this request.
-         * If {@code true} then the request will be {@link RequestRejectedException rejected}.
+         * If {@code true} then the request will be {@link RequestDroppedException rejected}.
          * <p>
          * <b>It's important that instances returned from this {@link Function mapper} are singletons and shared
          * across the same matched partitions. Otherwise, capacity will not be controlled as expected, and there
@@ -403,7 +381,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         /**
          * Peers can reject and exception due to capacity reasons based on their own principals and implementation
          * details. A {@link TrafficResilienceHttpClientFilter} can benefit from this input as feedback for the
-         * {@link CapacityLimiter} in use, that the request was dropped (ie. rejected), thus it can also bring its
+         * {@link CapacityLimiter} in use, that the request was dropped (i.e., rejected), thus it can also bring its
          * local limit down to help with the overloaded peer. Since what defines a rejection/drop or request for
          * backpressure is not universally common, one can define what response characteristics define that state.
          * <p>
@@ -418,16 +396,17 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * </ul>
          *
          * <p>
-         * Allowing retry, requests will fail with a {@link DelayedRetryRequestRejectedException} to support
+         * Allowing retry, requests will fail with a {@link DelayedRetryRequestDroppedException} to support
          * retrying mechanisms (like retry-filters or retry operators) to re-attempt the same request.
          * Requests that fail due to capacity limitation, are good candidates for a retry, since we anticipate they are
          * safe to be executed again (no previous invocation actually started) and because this maximizes the success
          * chances.
-         * @param policy The {@link PeerCapacityRejectionPolicy} that represents the peer capacity rejection behavior.
+         * @param policy The {@link ClientPeerRejectionPolicy} that represents the peer capacity rejection behavior.
          * @return {@code this}.
+         * @see ClientPeerRejectionPolicy#DEFAULT_PEER_REJECTION_POLICY
          */
-        public Builder peerCapacityRejection(final PeerCapacityRejectionPolicy policy) {
-            this.peerCapacityRejectionPolicy = requireNonNull(policy);
+        public Builder rejectionPolicy(final ClientPeerRejectionPolicy policy) {
+            this.clientPeerRejectionPolicy = requireNonNull(policy);
             return this;
         }
 
@@ -463,7 +442,8 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * the {@code delayProvider}.
          * <p>
          * If the delay provided is not a positive value, then the {@link CircuitBreaker} will not be modified.
-         *
+         * <p>
+         * To disable this behaviour see {@link #dontForceOpenCircuitOnPeerCircuitRejections()}.
          * @param delayProvider A function to provide / extract a delay in milliseconds for the
          * {@link CircuitBreaker} to remain open.
          * @param executor A {@link Executor} used to re-close the {@link CircuitBreaker} once the delay expires.
@@ -482,7 +462,8 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
          * When a peer rejects a {@link HttpRequestMetaData request} due to an open-circuit (see.
          * {@link #peerUnavailableRejectionPredicate(Predicate)}), ignore feedback and leave local matching
          * {@link CircuitBreaker circuit-breake partition} closed.
-         *
+         * <p>
+         * To opt-in for this behaviour see {@link #forceOpenCircuitOnPeerCircuitRejections(Function, Executor)}.
          * @return {@code this}.
          */
         public Builder dontForceOpenCircuitOnPeerCircuitRejections() {
@@ -495,7 +476,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         /**
          * {@link Ticket Ticket} terminal callback override upon erroneous completion of the request operation.
          * Erroneous completion in this context means, that an error occurred as part of the operation or the
-         * {@link #peerCapacityRejection(PeerCapacityRejectionPolicy)} triggered an exception.
+         * {@link #rejectionPolicy(ClientPeerRejectionPolicy)} triggered an exception.
          * By default the terminal callback is {@link Ticket#failed(Throwable)}.
          *
          * @param onError Callback to override default {@link Ticket ticket} terminal event for an erroneous
@@ -544,7 +525,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficMana
         public TrafficResilienceHttpClientFilter build() {
             return new TrafficResilienceHttpClientFilter(capacityPartitionsSupplier,
                     rejectWhenNotMatchedCapacityPartition,
-                    circuitBreakerPartitionsSupplier, classifier, peerCapacityRejectionPolicy,
+                    circuitBreakerPartitionsSupplier, classifier, clientPeerRejectionPolicy,
                     peerUnavailableRejectionPredicate, onCompletionTicketTerminal, onCancellationTicketTerminal,
                     onErrorTicketTerminal, forceOpenCircuitOnPeerCircuitRejections,
                     focreOpenCircuitOnPeerCircuitRejectionsDelayProvider, circuitBreakerResetExecutor, observer);

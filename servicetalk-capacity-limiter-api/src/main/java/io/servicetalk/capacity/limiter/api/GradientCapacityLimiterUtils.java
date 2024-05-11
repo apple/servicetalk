@@ -17,7 +17,7 @@ package io.servicetalk.capacity.limiter.api;
 
 import java.util.function.BiPredicate;
 
-public final class GradientCapacityLimiterUtils {
+final class GradientCapacityLimiterUtils {
 
     private GradientCapacityLimiterUtils() {
         // No instances

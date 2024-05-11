@@ -18,7 +18,7 @@ package io.servicetalk.traffic.resilience.http;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter.Ticket;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
@@ -43,8 +43,8 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
-import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.ofPassthrough;
-import static io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.ofRejection;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.ofPassthrough;
+import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.ofRejection;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -68,13 +68,13 @@ class TrafficResilienceHttpClientFilterTest {
     void verifyPeerRetryableRejection() {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
-                        () -> CapacityLimiters.fixedCapacity().capacity(1).build()).build();
+                        () -> CapacityLimiters.fixedCapacity(1).build()).build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
         when(client.request(any())).thenReturn(Single.succeeded(REQ_RES_FACTORY.newResponse(BAD_GATEWAY)));
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
-        assertThrows(DelayedRetryRequestRejectedException.class, () -> {
+        assertThrows(DelayedRetryRequestDroppedException.class, () -> {
             try {
                 clientWithFilter.request(REQUEST).toFuture().get();
             } catch (ExecutionException e) {
@@ -87,8 +87,8 @@ class TrafficResilienceHttpClientFilterTest {
     void verifyPeerRejection() {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
-                        () -> CapacityLimiters.fixedCapacity().capacity(1).build())
-                        .peerCapacityRejection(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
+                        () -> CapacityLimiters.fixedCapacity(1).build())
+                        .rejectionPolicy(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
@@ -99,7 +99,7 @@ class TrafficResilienceHttpClientFilterTest {
                         .map(DEFAULT_ALLOCATOR::wrap).whenOnComplete(() -> payloadDrained.set(true)))));
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
-        assertThrows(RequestRejectedException.class, () -> {
+        assertThrows(RequestDroppedException.class, () -> {
             try {
                 clientWithFilter.request(REQUEST).toFuture().get();
             } catch (ExecutionException e) {
@@ -113,8 +113,8 @@ class TrafficResilienceHttpClientFilterTest {
     void verifyPeerRejectionPassthrough() throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
-                        () -> CapacityLimiters.fixedCapacity().capacity(1).build())
-                        .peerCapacityRejection(ofPassthrough(resp -> BAD_GATEWAY.equals(resp.status())))
+                        () -> CapacityLimiters.fixedCapacity(1).build())
+                        .rejectionPolicy(ofPassthrough(resp -> BAD_GATEWAY.equals(resp.status())))
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);

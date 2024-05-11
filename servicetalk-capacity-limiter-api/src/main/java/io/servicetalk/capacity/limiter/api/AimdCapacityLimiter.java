@@ -46,7 +46,8 @@ import static java.lang.Math.max;
 /**
  * A client side dynamic {@link CapacityLimiter} that adapts its limit based on a configurable range of concurrency
  * {@link #min} and {@link #max}, and re-evaluates this limit upon a request-drop event
- * (e.g., timeout or rejection due to capacity).
+ * (e.g., timeout or rejection due to capacity). It's not ideal for server-side solutions, due to the slow recover
+ * mechanism it offers, which can lead in significant traffic loss during the recovery window.
  * <p>
  * The limit translates to a concurrency figure, e.g., how many requests can be in-flight simultaneously and doesn't
  * represent a constant rate (i.e., has no notion of time).
@@ -112,7 +113,7 @@ final class AimdCapacityLimiter implements CapacityLimiter {
                 if (pending >= limit || pending == max) {   // prevent pending going above max if limit is fractional
                     ticket = null;
                 } else {
-                    ticket = new DefaultTicket(this, (int) limit - pending);
+                    ticket = new DefaultTicket(this, (int) limit - pending, pending);
                     pending++;
                 }
                 l = limit;
@@ -208,10 +209,12 @@ final class AimdCapacityLimiter implements CapacityLimiter {
         private static final int UNSUPPORTED = -1;
         private final AimdCapacityLimiter provider;
         private final int remaining;
+        private final int pending;
 
-        DefaultTicket(final AimdCapacityLimiter provider, final int remaining) {
+        DefaultTicket(final AimdCapacityLimiter provider, final int remaining, final int pending) {
             this.provider = provider;
             this.remaining = remaining;
+            this.pending = pending;
         }
 
         @Override
@@ -222,6 +225,11 @@ final class AimdCapacityLimiter implements CapacityLimiter {
         @Override
         public int remaining() {
             return remaining;
+        }
+
+        @Override
+        public int pending() {
+            return pending;
         }
 
         @Override

@@ -35,7 +35,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter.RejectionPolicy;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
@@ -82,7 +81,7 @@ class TrafficResilienceHttpServiceFilterTest {
     @Test
     void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(
-                new TrafficResilienceHttpServiceFilter.Builder(() -> fixedCapacity().capacity(1).build())
+                new TrafficResilienceHttpServiceFilter.Builder(() -> fixedCapacity(1).build())
                         .build());
     }
 
@@ -94,8 +93,7 @@ class TrafficResilienceHttpServiceFilterTest {
         try (ServerContext serverContext = HttpServers.forPort(0).listenAndAwait((ctx, request, responseFactory) ->
                 succeeded(responseFactory.serviceUnavailable()))) {
             final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
-                    new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity()
-                            .capacity(1)
+                    new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(1)
                             .stateObserver((capacity, consumed) -> {
                                 consumption.set(consumed);
                                 latch.countDown();
@@ -150,15 +148,15 @@ class TrafficResilienceHttpServiceFilterTest {
     @ParameterizedTest
     @EnumSource(Protocol.class)
     void testStopAcceptingConnections(final Protocol protocol) throws Exception {
-        final CapacityLimiter limiter = fixedCapacity().capacity(1).build();
-        final RejectionPolicy rejectionPolicy = new RejectionPolicy.Builder()
+        final CapacityLimiter limiter = fixedCapacity(1).build();
+        final ServiceRejectionPolicy serviceRejectionPolicy = new ServiceRejectionPolicy.Builder()
                 .onLimitStopAcceptingConnections(true)
                 // Custom response to validate during assertion stage
                 .onLimitResponseBuilder((meta, respFactory) -> Single.succeeded(respFactory.gatewayTimeout()))
                 .build();
         TrafficResilienceHttpServiceFilter filter = new TrafficResilienceHttpServiceFilter
                 .Builder(() -> limiter)
-                .onRejectionPolicy(rejectionPolicy)
+                .rejectionPolicy(serviceRejectionPolicy)
                 .build();
 
         final HttpServerContext serverContext = forAddress(localAddress(0))

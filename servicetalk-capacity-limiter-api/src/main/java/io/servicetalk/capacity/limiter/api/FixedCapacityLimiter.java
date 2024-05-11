@@ -74,7 +74,7 @@ final class FixedCapacityLimiter implements CapacityLimiter {
                 final int newPending = currPending + 1;
                 if (pendingUpdater.compareAndSet(this, currPending, newPending)) {
                     notifyObserver(newPending);
-                    return new DefaultTicket(this, effectiveLimit - newPending);
+                    return new DefaultTicket(this, effectiveLimit - newPending, newPending);
                 }
             }
         }
@@ -99,10 +99,12 @@ final class FixedCapacityLimiter implements CapacityLimiter {
 
         private final FixedCapacityLimiter fixedCapacityProvider;
         private final int remaining;
+        private final int pending;
 
-        DefaultTicket(final FixedCapacityLimiter fixedCapacityProvider, int remaining) {
+        DefaultTicket(final FixedCapacityLimiter fixedCapacityProvider, final int remaining, final int pending) {
             this.fixedCapacityProvider = fixedCapacityProvider;
             this.remaining = remaining;
+            this.pending = pending;
         }
 
         @Override
@@ -113,6 +115,11 @@ final class FixedCapacityLimiter implements CapacityLimiter {
         @Override
         public int remaining() {
             return remaining;
+        }
+
+        @Override
+        public int pending() {
+            return pending;
         }
 
         private int release() {

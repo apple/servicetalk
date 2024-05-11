@@ -18,16 +18,17 @@ package io.servicetalk.capacity.limiter.api;
 import javax.annotation.Nullable;
 
 /**
- * An {@link Exception} to indicate that a request was rejected by a client/server due to capacity constraints.
+ * An {@link Exception} to indicate that a request was dropped by a client/server likely due to capacity constraints or
+ * as-such interpretation of peer feedback according to configuration.
  */
-public class RequestRejectedException extends RuntimeException {
+public class RequestDroppedException extends RuntimeException {
 
     private static final long serialVersionUID = 2152182132883133067L;
 
     /**
      * Creates a new instance.
      */
-    public RequestRejectedException() {
+    public RequestDroppedException() {
     }
 
     /**
@@ -35,7 +36,7 @@ public class RequestRejectedException extends RuntimeException {
      *
      * @param message the detail message.
      */
-    public RequestRejectedException(@Nullable final String message) {
+    public RequestDroppedException(@Nullable final String message) {
         super(message);
     }
 
@@ -45,7 +46,7 @@ public class RequestRejectedException extends RuntimeException {
      * @param message the detail message.
      * @param cause of this exception.
      */
-    public RequestRejectedException(@Nullable final String message, @Nullable final Throwable cause) {
+    public RequestDroppedException(@Nullable final String message, @Nullable final Throwable cause) {
         super(message, cause);
     }
 
@@ -54,7 +55,7 @@ public class RequestRejectedException extends RuntimeException {
      *
      * @param cause of this exception.
      */
-    public RequestRejectedException(@Nullable final Throwable cause) {
+    public RequestDroppedException(@Nullable final Throwable cause) {
         super(cause);
     }
 
@@ -66,8 +67,8 @@ public class RequestRejectedException extends RuntimeException {
      * @param enableSuppression {@code true} if suppression should be enabled.
      * @param writableStackTrace {@code true} if the stack trace should be writable
      */
-    public RequestRejectedException(@Nullable final String message, @Nullable final Throwable cause,
-                                    final boolean enableSuppression, final boolean writableStackTrace) {
+    public RequestDroppedException(@Nullable final String message, @Nullable final Throwable cause,
+                                   final boolean enableSuppression, final boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

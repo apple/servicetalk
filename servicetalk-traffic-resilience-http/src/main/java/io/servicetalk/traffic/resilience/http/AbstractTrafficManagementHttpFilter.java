@@ -18,7 +18,7 @@ package io.servicetalk.traffic.resilience.http;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter.Ticket;
 import io.servicetalk.capacity.limiter.api.Classification;
-import io.servicetalk.capacity.limiter.api.RequestRejectedException;
+import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -31,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-import io.servicetalk.traffic.resilience.http.PeerCapacityRejectionPolicy.PassthroughRequestRejectedException;
+import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver.TicketObserver;
 import io.servicetalk.transport.api.ServerListenContext;
 
@@ -55,11 +55,11 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrategyInfluencer {
-    private static final RequestRejectedException CAPACITY_REJECTION = unknownStackTrace(
-            new RequestRejectedException("Service under heavy load", null, false, true),
+    private static final RequestDroppedException CAPACITY_REJECTION = unknownStackTrace(
+            new RequestDroppedException("Service under heavy load", null, false, true),
             AbstractTrafficManagementHttpFilter.class, "remoteRejection");
-    private static final RequestRejectedException BREAKER_REJECTION = unknownStackTrace(
-            new RequestRejectedException("Service Unavailable", null, false, true),
+    private static final RequestDroppedException BREAKER_REJECTION = unknownStackTrace(
+            new RequestDroppedException("Service Unavailable", null, false, true),
             AbstractTrafficManagementHttpFilter.class, "breakerRejection");
 
     protected static final Single<StreamingHttpResponse> DEFAULT_CAPACITY_REJECTION =
@@ -191,9 +191,9 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
     abstract Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory,
-            @Nullable CircuitBreaker breaker);
+            CircuitBreaker breaker);
 
-    RuntimeException peerCapacityRejection(final StreamingHttpResponse resp) {
+    RuntimeException peerRejection(final StreamingHttpResponse resp) {
         return CAPACITY_REJECTION;
     }
 
@@ -225,8 +225,8 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                                 .concat(Single.<StreamingHttpResponse>failed(peerBreakerRejection(resp, breaker)))
                                 .shareContextOnSubscribe();
                     } else if (capacityRejectionPredicate.test(resp)) {
-                        final RuntimeException rejection = peerCapacityRejection(resp);
-                        if (PassthroughRequestRejectedException.class.equals(rejection.getClass())) {
+                        final RuntimeException rejection = peerRejection(resp);
+                        if (PassthroughRequestDroppedException.class.equals(rejection.getClass())) {
                             return Single.<StreamingHttpResponse>failed(rejection).shareContextOnSubscribe();
                         }
                         return resp.payloadBody().ignoreElements()
@@ -311,7 +311,6 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
             this.requestHashCode = requestHashCode;
         }
 
-        @Nullable
         @Override
         public CapacityLimiter.LimiterState state() {
             return delegate.state();

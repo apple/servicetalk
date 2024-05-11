@@ -83,6 +83,13 @@ public interface CapacityLimiter {
          * @return the remaining allowance of the {@link CapacityLimiter} when the {@link Ticket} was issued.
          */
         int remaining();
+
+        /**
+         * Returns the current pending (in use capacity) demand.
+         * If the pending is unknown a negative value i.e., -1 is allowed to express this.
+         * @return the current pending (in use capacity) demand.
+         */
+        int pending();
     }
 
     /**
@@ -101,7 +108,6 @@ public interface CapacityLimiter {
          * Representation of the state of the {@link CapacityLimiter} when this {@link Ticket} was issued.
          * @return the {@link LimiterState state} of the limiter at the time this {@link Ticket} was issued.
          */
-        @Nullable
         LimiterState state();
 
         /**

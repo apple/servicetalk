@@ -59,8 +59,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * <p>
  * The algorithm is heavily influenced by the following prior-art
  * <ul>
- *     <li><a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters
- *     /adaptive_concurrency_filter">Envoy Adaptive Concurrency</a></li>
+ *     <li><a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">Envoy Adaptive Concurrency</a></li>
  *     <li><a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a></li>
  * </ul>
  */
@@ -133,7 +132,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
             newLimit = (int) limit;
             if (pending < limit) {
                 newPending = ++pending;
-                ticket = new DefaultTicket(this, newLimit - newPending);
+                ticket = new DefaultTicket(this, newLimit - newPending, newPending);
             }
         }
 
@@ -241,11 +240,13 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         private final long startTime;
         private final GradientCapacityLimiter provider;
         private final int remaining;
+        private final int pending;
 
-        DefaultTicket(final GradientCapacityLimiter provider, final int remaining) {
+        DefaultTicket(final GradientCapacityLimiter provider, final int remaining, final int pending) {
             this.provider = provider;
             this.startTime = provider.timeSource.getAsLong();
             this.remaining = remaining;
+            this.pending = pending;
         }
 
         @Override
@@ -256,6 +257,11 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         @Override
         public int remaining() {
             return remaining;
+        }
+
+        @Override
+        public int pending() {
+            return pending;
         }
 
         @Override

@@ -22,8 +22,6 @@ import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
-import javax.annotation.Nullable;
-
 /**
  * A {@link TrafficResilienceHttpServiceFilter} or {@link TrafficResilienceHttpClientFilter} observer.
  * Tracks interactions with {@link CapacityLimiter}s and/or {@link CircuitBreaker}s, and exposes a transactional
@@ -94,5 +92,5 @@ public interface TrafficResiliencyObserver {
      * @param state the {@link LimiterState} that correlates to this accepted request.
      * @return A {@link TicketObserver} to track the state of the allowed request.
      */
-    TicketObserver onAllowedThrough(StreamingHttpRequest request, @Nullable LimiterState state);
+    TicketObserver onAllowedThrough(StreamingHttpRequest request, LimiterState state);
 }

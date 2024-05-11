@@ -18,6 +18,7 @@ package io.servicetalk.capacity.limiter.api;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -31,6 +32,10 @@ public final class FixedCapacityLimiterBuilder {
     private String name;
     @Nullable
     private StateObserver observer;
+
+    FixedCapacityLimiterBuilder(final int capacity) {
+        this.capacity = ensureNonNegative(capacity, "capacity");
+    }
 
     /**
      * Defines a name for this {@link CapacityLimiter}.
@@ -51,7 +56,7 @@ public final class FixedCapacityLimiterBuilder {
      * @return {@code this}.
      */
     public FixedCapacityLimiterBuilder capacity(final int capacity) {
-        this.capacity = capacity;
+        this.capacity = ensureNonNegative(capacity, "capacity");
         return this;
     }
 
