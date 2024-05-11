@@ -40,21 +40,6 @@ public final class NumberUtils {
     }
 
     /**
-     * Ensures the float is positive, excluding zero.
-     *
-     * @param value the float value to validate
-     * @param name name of the variable
-     * @return the passed value if all checks pass
-     * @throws IllegalArgumentException if the passed float is not greater than zero
-     */
-    public static float ensurePositive(final float value, final String name) {
-        if (value <= 0.0) {
-            throw new IllegalArgumentException(name + ": " + value + " (expected > 0.0)");
-        }
-        return value;
-    }
-
-    /**
      * Ensures the long is positive, excluding zero.
      *
      * @param value the long value to validate

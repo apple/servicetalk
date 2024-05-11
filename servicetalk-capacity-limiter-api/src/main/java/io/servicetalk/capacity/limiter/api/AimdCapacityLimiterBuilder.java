@@ -21,9 +21,9 @@ import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.capacity.limiter.api.Preconditions.ensureBetweenZeroAndOneExclusive;
+import static io.servicetalk.capacity.limiter.api.Preconditions.ensurePositive;
 import static io.servicetalk.capacity.limiter.api.Preconditions.ensureRange;
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
