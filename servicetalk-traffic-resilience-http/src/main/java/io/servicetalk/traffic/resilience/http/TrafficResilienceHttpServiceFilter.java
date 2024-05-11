@@ -76,7 +76,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  *
  */
-public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficManagementHttpFilter
+public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficResilienceHttpFilter
         implements StreamingHttpServiceFilterFactory {
 
     private final ServiceRejectionPolicy serviceRejectionPolicy;

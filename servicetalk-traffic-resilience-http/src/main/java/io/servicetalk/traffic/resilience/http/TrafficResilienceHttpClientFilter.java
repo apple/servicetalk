@@ -101,7 +101,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  *
  */
-public final class TrafficResilienceHttpClientFilter extends AbstractTrafficManagementHttpFilter
+public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResilienceHttpFilter
         implements StreamingHttpClientFilterFactory {
 
     private static final RequestDroppedException LOCAL_REJECTION_RETRYABLE_EXCEPTION = unknownStackTrace(

@@ -54,13 +54,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrategyInfluencer {
+abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrategyInfluencer {
     private static final RequestDroppedException CAPACITY_REJECTION = unknownStackTrace(
             new RequestDroppedException("Service under heavy load", null, false, true),
-            AbstractTrafficManagementHttpFilter.class, "remoteRejection");
+            AbstractTrafficResilienceHttpFilter.class, "remoteRejection");
     private static final RequestDroppedException BREAKER_REJECTION = unknownStackTrace(
             new RequestDroppedException("Service Unavailable", null, false, true),
-            AbstractTrafficManagementHttpFilter.class, "breakerRejection");
+            AbstractTrafficResilienceHttpFilter.class, "breakerRejection");
 
     protected static final Single<StreamingHttpResponse> DEFAULT_CAPACITY_REJECTION =
             Single.failed(CAPACITY_REJECTION);
@@ -88,7 +88,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
 
     private final TrafficResiliencyObserver observer;
 
-    AbstractTrafficManagementHttpFilter(
+    AbstractTrafficResilienceHttpFilter(
             final Supplier<Function<HttpRequestMetaData, CapacityLimiter>> capacityPartitionsSupplier,
             final boolean rejectWhenNotMatchedCapacityPartition,
             final Function<HttpRequestMetaData, Classification> classifier,
@@ -146,11 +146,9 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                                 .shareContextOnSubscribe();
             }
 
-            final CircuitBreaker breaker = circuitBreakerPartitions.apply(request);
             final ContextMap meta = request.context();
             final Classification classification = classifier.apply(request);
             Ticket ticket = partition.tryAcquire(classification, meta);
-
             if (ticket != null) {
                 ticket = new TrackingDelegatingTicket(ticket, request.hashCode());
             }
@@ -159,7 +157,9 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
                 observer.onRejectedLimit(request, partition.name(), meta, classification);
                 return handleLocalCapacityRejection(serverListenContext, request, responseFactory)
                         .shareContextOnSubscribe();
-            } else if (breaker != null && !breaker.tryAcquirePermit()) {
+            }
+            final CircuitBreaker breaker = circuitBreakerPartitions.apply(request);
+            if (breaker != null && !breaker.tryAcquirePermit()) {
                 observer.onRejectedOpenCircuit(request, breaker.name(), meta, classification);
                 // Ignore the acquired ticket if breaker was open.
                 ticket.ignored();
@@ -250,7 +250,7 @@ abstract class AbstractTrafficManagementHttpFilter implements HttpExecutionStrat
 
                     @Override
                     public void onError(final Throwable throwable) {
-                        AbstractTrafficManagementHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
+                        AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
                         ticketObserver.onError(throwable);
                     }
 

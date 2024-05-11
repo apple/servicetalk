@@ -41,7 +41,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * A filter that tracks number of pending requests.
  * We would like to check the hypothesis if we somehow loose the {@link Ticket} inside
- * {@link AbstractTrafficManagementHttpFilter} or if the counter is misaligned for a different reason, like incorrect
+ * {@link AbstractTrafficResilienceHttpFilter} or if the counter is misaligned for a different reason, like incorrect
  * handling of terminal events by {@link BeforeFinallyHttpOperator}.
  */
 final class TrackPendingRequestsHttpFilter implements StreamingHttpClientFilterFactory,
