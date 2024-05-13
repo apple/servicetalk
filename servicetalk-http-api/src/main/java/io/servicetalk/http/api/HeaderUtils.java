@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.serialization.api.SerializationException;
@@ -52,6 +53,7 @@ import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.Integer.toHexString;
 import static java.lang.Math.min;
 import static java.lang.System.getProperty;
 import static java.lang.System.lineSeparator;
@@ -238,9 +240,10 @@ public final class HeaderUtils {
      * <a href="https://tools.ietf.org/html/rfc7231#section-4">request method</a>.
      *
      * @param token the token to validate.
+     * @param what name of the field that is validated.
      */
-    static void validateToken(final CharSequence token) {
-        forEachByte(token, HeaderUtils::validateTokenChar);
+    static void validateToken(final CharSequence token, final String what) {
+        forEachByte(token, new TokenValidatingProcessor(token, what));
     }
 
     static void validateHeaderValue(final CharSequence value) {
@@ -796,44 +799,14 @@ public final class HeaderUtils {
     }
 
     /**
-     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
+     * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">tchar</a>.
+     * <p>
+     * tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+     *       / DIGIT / ALPHA
+     *       ; any VCHAR, except delimiters
      *
      * @param value the character to validate.
      */
-    private static boolean validateTokenChar(final byte value) {
-        // HEADER
-        // header-field   = field-name ":" OWS field-value OWS
-        //
-        // field-name     = token
-        // token          = 1*tchar
-        //
-        // tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
-        //                    / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-        //                    / DIGIT / ALPHA
-        //                    ; any VCHAR, except delimiters
-        //  Delimiters are chosen
-        //   from the set of US-ASCII visual characters not allowed in a token
-        //   (DQUOTE and "(),/:;<=>?@[\]{}")
-        //
-        // COOKIE
-        // cookie-pair       = cookie-name "=" cookie-value
-        // cookie-name       = token
-        // token          = 1*<any CHAR except CTLs or separators>
-        // CTL = <any US-ASCII control character
-        //       (octets 0 - 31) and DEL (127)>
-        // separators     = "(" | ")" | "<" | ">" | "@"
-        //                      | "," | ";" | ":" | "\" | <">
-        //                      | "/" | "[" | "]" | "?" | "="
-        //                      | "{" | "}" | SP | HT
-        //
-        // field-name's token is equivalent to cookie-name's token, we can reuse the tchar mask for both:
-        if (!isTchar(value)) {
-            throw new IllegalCharacterException(value,
-                    "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
-        }
-        return true;
-    }
-
     // visible for testing
     static boolean isTchar(final byte value) {
         return isBitSet(value, TCHAR_LMASK, TCHAR_HMASK);
@@ -863,5 +836,83 @@ public final class HeaderUtils {
                     "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
         }
         return true;
+    }
+
+    private static final class TokenValidatingProcessor implements ByteProcessor {
+
+        private static final String EXPECTED =
+                "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA";
+
+        private final CharSequence token;
+        private final String what;
+        private int idx;
+
+        TokenValidatingProcessor(final CharSequence token, final String what) {
+            this.token = token;
+            this.what = what;
+        }
+
+        @Override
+        public boolean process(final byte value) {
+            // HEADER
+            // header-field   = field-name ":" OWS field-value OWS
+            // field-name     = token
+            // token          = 1*tchar
+            //
+            //  Delimiters are chosen
+            //   from the set of US-ASCII visual characters not allowed in a token
+            //   (DQUOTE and "(),/:;<=>?@[\]{}")
+            //
+            // COOKIE
+            // cookie-pair       = cookie-name "=" cookie-value
+            // cookie-name       = token
+            // token          = 1*<any CHAR except CTLs or separators>
+            // CTL = <any US-ASCII control character
+            //       (octets 0 - 31) and DEL (127)>
+            // separators     = "(" | ")" | "<" | ">" | "@"
+            //                      | "," | ";" | ":" | "\" | <">
+            //                      | "/" | "[" | "]" | "?" | "="
+            //                      | "{" | "}" | SP | HT
+            //
+            // field-name's token is equivalent to cookie-name's token, we can reuse the tchar mask for both:
+            if (!isTchar(value)) {
+                throw new IllegalCharacterException(message(value));
+            }
+            ++idx;
+            return true;
+        }
+
+        private String message(final byte value) {
+            final int codePoint = value & 0xff;
+            final int idx = this.idx;
+            final StringBuilder sb = new StringBuilder(40 + stringSize(idx) + what.length() + token.length() +
+                    EXPECTED.length())
+                    .append('\'')   // 1
+                    .append((char) codePoint)   // 1
+                    .append("' (0x")    // 5
+                    .append(toHexString(0x100 | codePoint), 1, 3)   // 2 digit hex number
+                    .append(") at index=")  // 11
+                    .append(idx)
+                    .append(" in ") // 4
+                    .append(what)
+                    .append(' ')    // 1
+                    .append('\'')   // 1
+                    .append(token)
+                    .append("', expected [")    // 13
+                    .append(EXPECTED)
+                    .append(']');   // 1
+            return sb.toString();
+        }
+
+        private static int stringSize(final int value) {
+            assert value >= 0;
+            int size = 0;
+            int tmp = 1;
+            while (tmp <= value && tmp <= 1_000_000_000) {
+                ++size;
+                tmp = (tmp << 3) + (tmp << 1);
+            }
+            return size;
+        }
     }
 }
