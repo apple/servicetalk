@@ -238,9 +238,16 @@ public final class HeaderUtils {
      * <a href="https://tools.ietf.org/html/rfc7231#section-4">request method</a>.
      *
      * @param token the token to validate.
+     * @param what name of the field that is validated.
      */
-    static void validateToken(final CharSequence token) {
-        forEachByte(token, HeaderUtils::validateTokenChar);
+    static void validateToken(final CharSequence token, final String what) {
+        try {
+            forEachByte(token, HeaderUtils::validateTokenChar);
+        } catch (IllegalCharacterException e) {
+            // We try-catch here instead of capturing a state in a ByteProcessor
+            // to minimize memory allocations on the happy path.
+            throw new StacklessIllegalArgumentException("Invalid " + what + ": " + token, e);
+        }
     }
 
     static void validateHeaderValue(final CharSequence value) {
@@ -863,5 +870,18 @@ public final class HeaderUtils {
                     "(VCHAR / obs-text) [ 1*(SP / HTAB) (VCHAR / obs-text) ]");
         }
         return true;
+    }
+
+    private static final class StacklessIllegalArgumentException extends IllegalArgumentException {
+        private static final long serialVersionUID = 3376287996563752807L;
+
+        StacklessIllegalArgumentException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            return this;
+        }
     }
 }
