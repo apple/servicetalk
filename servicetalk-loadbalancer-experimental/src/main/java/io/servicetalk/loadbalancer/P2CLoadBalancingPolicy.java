@@ -99,9 +99,13 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         }
 
         /**
-         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * Set whether the selector should fail-open in the event no healthy hosts are found.
+         * When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
+         * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
+         * session.
          * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
-         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @param failOpen if true, will attempt  to select or establish a connection from an arbitrary host even if it
+         *                 is unlikely to return a healthy  session.
          * @return {@code this}
          */
         public Builder failOpen(final boolean failOpen) {

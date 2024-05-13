@@ -123,10 +123,11 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
                     .serviceDiscoveryResubscribeInterval(healthCheckResubscribeInterval, healthCheckResubscribeJitter)
                     .build();
 
-            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = new RoundRobinLoadBalancingPolicy.Builder()
-                    .failOpen(false)
-                    .ignoreWeights(true)
-                    .build();
+            LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy =
+                    LoadBalancerPolicies.roundRobin()
+                        .failOpen(false)
+                        .ignoreWeights(true)
+                        .build();
 
             LoadBalancerBuilder<ResolvedAddress, C> builder = LoadBalancers.builder(id);
             if (backgroundExecutor != null) {
