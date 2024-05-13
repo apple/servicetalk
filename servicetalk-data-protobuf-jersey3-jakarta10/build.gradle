@@ -23,6 +23,26 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
+// Required version for module
+def javaLanguageVersion = JavaVersion.VERSION_11
+
+if (!JavaVersion.current().isCompatibleWith(javaLanguageVersion)) {
+  project.tasks.all { task -> task.enabled = false }
+}
+
+java {
+  sourceCompatibility = javaLanguageVersion
+  targetCompatibility = javaLanguageVersion
+}
+
+compileJava {
+  options.release = Integer.parseInt(javaLanguageVersion.getMajorVersion())
+}
+
+compileTestJava {
+  options.release = compileJava.options.release
+}
+
 checkstyleMain {
   enabled false
 }
