@@ -31,7 +31,8 @@ public final class HelloWorldJaxRsApplication extends Application {
     public Set<Class<?>> getClasses() {
         return new HashSet<>(asList(
                 MultiPartFeature.class,
-                HelloWorldJaxRsResource.class
+                HelloWorldJaxRsResource.class,
+                HelloWorldExceptionMapper.class
             )
         );
     }

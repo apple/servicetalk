@@ -35,6 +35,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -78,8 +80,9 @@ class AlpnClientAndServerTest {
     private BlockingQueue<HttpProtocolVersion> requestVersion;
     private void setUp(List<String> serverSideProtocols,
                        List<String> clientSideProtocols,
-                       @Nullable HttpProtocolVersion expectedProtocol) throws Exception {
-        serverContext = startServer(serverSideProtocols);
+                       @Nullable HttpProtocolVersion expectedProtocol,
+                       boolean acceptInsecureConnections) throws Exception {
+        serverContext = startServer(serverSideProtocols, acceptInsecureConnections);
         client = startClient(serverContext, clientSideProtocols);
         this.expectedProtocol = expectedProtocol;
     }
@@ -91,50 +94,56 @@ class AlpnClientAndServerTest {
     }
 
     @SuppressWarnings("unused")
-    private static Stream<Arguments> clientExecutors() {
-        return Stream.of(
-                Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
+    private static Stream<Arguments> arguments() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean acceptInsecureConnections : asList(true, false)) {
+            arguments.addAll(Arrays.asList(
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
 
-                Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
 
-                Arguments.of(singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(singletonList(HTTP_2), singletonList(HTTP_2),
-                        HttpProtocolVersion.HTTP_2_0, null, null),
-                Arguments.of(singletonList(HTTP_2), singletonList(HTTP_1_1),
-                        null, ClosedChannelException.class, null),
+                    Arguments.of(singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_2), singletonList(HTTP_2),
+                            HttpProtocolVersion.HTTP_2_0, null, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_2), singletonList(HTTP_1_1),
+                            null, ClosedChannelException.class, null, acceptInsecureConnections),
 
-                Arguments.of(singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
-                Arguments.of(singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2),
-                        HttpProtocolVersion.HTTP_1_1, null, null),
-                Arguments.of(singletonList(HTTP_1_1), singletonList(HTTP_2),
-                        null, ClosedChannelException.class, null),
-                Arguments.of(singletonList(HTTP_1_1), singletonList(HTTP_1_1),
-                        HttpProtocolVersion.HTTP_1_1, null, null));
+                    Arguments.of(singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_1_1), singletonList(HTTP_2),
+                            null, ClosedChannelException.class, null, acceptInsecureConnections),
+                    Arguments.of(singletonList(HTTP_1_1), singletonList(HTTP_1_1),
+                            HttpProtocolVersion.HTTP_1_1, null, null, acceptInsecureConnections)
+            ));
+        }
+        return arguments.stream();
     }
 
-    private ServerContext startServer(List<String> supportedProtocols) throws Exception {
+    private ServerContext startServer(List<String> supportedProtocols, boolean acceptInsecureConnections)
+            throws Exception {
         return newServerBuilder(SERVER_CTX)
                 .protocols(toProtocolConfigs(supportedProtocols))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                        DefaultTestCerts::loadServerKey).provider(OPENSSL).build())
+                        DefaultTestCerts::loadServerKey).provider(OPENSSL).build(), acceptInsecureConnections)
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
                     requestVersion.put(request.version());
@@ -174,15 +183,17 @@ class AlpnClientAndServerTest {
         }
     }
 
-    @ParameterizedTest(name = "serverAlpnProtocols={0}, clientAlpnProtocols={1}," +
-            " expectedProtocol={2}, expectedExceptionType={3}")
-    @MethodSource("clientExecutors")
+    @ParameterizedTest(name = "serverSideProtocols={0}, clientSideProtocols={1}," +
+            " expectedProtocol={2}, expectedExceptionType={3}, optionalExceptionWrapperType={4}" +
+            " acceptInsecureConnections={5}")
+    @MethodSource("arguments")
     void testAlpnConnection(List<String> serverSideProtocols,
                             List<String> clientSideProtocols,
                             @Nullable HttpProtocolVersion expectedProtocol,
                             @Nullable Class<? extends Throwable> expectedExceptionType,
-                            @Nullable Class<? extends Throwable> optionalExceptionWrapperType) throws Exception {
-        setUp(serverSideProtocols, clientSideProtocols, expectedProtocol);
+                            @Nullable Class<? extends Throwable> optionalExceptionWrapperType,
+                            boolean acceptInsecureConnections) throws Exception {
+        setUp(serverSideProtocols, clientSideProtocols, expectedProtocol, acceptInsecureConnections);
         if (expectedExceptionType != null) {
             assertThrows(expectedExceptionType, optionalExceptionWrapperType, () -> client.request(client.get("/")));
             return;
@@ -201,15 +212,17 @@ class AlpnClientAndServerTest {
         }
     }
 
-    @ParameterizedTest(name = "serverAlpnProtocols={0}, clientAlpnProtocols={1}," +
-            " expectedProtocol={2}, expectedExceptionType={3}")
-    @MethodSource("clientExecutors")
+    @ParameterizedTest(name = "serverSideProtocols={0}, clientSideProtocols={1}," +
+            " expectedProtocol={2}, expectedExceptionType={3}, optionalExceptionWrapperType={4}," +
+            " acceptInsecureConnections={5}")
+    @MethodSource("arguments")
     void testAlpnClient(List<String> serverSideProtocols,
                         List<String> clientSideProtocols,
                         @Nullable HttpProtocolVersion expectedProtocol,
                         @Nullable Class<? extends Throwable> expectedExceptionType,
-                        @Nullable Class<? extends Throwable> optionalExceptionWrapperType) throws Exception {
-        setUp(serverSideProtocols, clientSideProtocols, expectedProtocol);
+                        @Nullable Class<? extends Throwable> optionalExceptionWrapperType,
+                        boolean acceptInsecureConnections) throws Exception {
+        setUp(serverSideProtocols, clientSideProtocols, expectedProtocol, acceptInsecureConnections);
         if (expectedExceptionType != null) {
             assertThrows(expectedExceptionType, optionalExceptionWrapperType, () -> client.request(client.get("/")));
         } else {

@@ -35,6 +35,7 @@ import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.Resolutio
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.utils.internal.RandomUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoop;
@@ -74,12 +75,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
+import static io.netty.handler.codec.dns.DnsResponseCode.NXDOMAIN;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -99,6 +100,7 @@ import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.preferredAddressType;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.toRecordTypeNames;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -112,6 +114,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
@@ -128,14 +131,15 @@ final class DefaultDnsClient implements DnsClient {
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
     private final long ttlJitterNanos;
+    private final long resolutionTimeoutMillis;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
     private final ServiceDiscovererEvent.Status missingRecordStatus;
+    private final boolean nxInvalidation;
     private final IntFunction<? extends Completable> srvHostNameRepeater;
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
-    private final boolean inactiveEventsOnError;
     private final DnsResolverAddressTypes addressTypes;
     private final String id;
     private boolean closed;
@@ -143,19 +147,20 @@ final class DefaultDnsClient implements DnsClient {
     DefaultDnsClient(final String id, final IoExecutor ioExecutor, final int consolidateCacheSize,
                      final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
                      final int negativeTTLCacheSeconds, final long ttlJitterNanos,
-                     final int srvConcurrency, final boolean inactiveEventsOnError,
+                     final int srvConcurrency,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
+                     @Nullable Duration resolutionTimeout,
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final SocketAddress localAddress,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     final ServiceDiscovererEvent.Status missingRecordStatus) {
+                     final ServiceDiscovererEvent.Status missingRecordStatus,
+                     final boolean nxInvalidation) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
-        this.inactiveEventsOnError = inactiveEventsOnError;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         // We must use nettyIoExecutor for the repeater for thread safety!
@@ -170,6 +175,7 @@ final class DefaultDnsClient implements DnsClient {
         this.addressTypes = dnsResolverAddressTypes;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
+        this.nxInvalidation = nxInvalidation;
         this.id = id + '@' + toHexString(identityHashCode(this));
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
@@ -220,6 +226,10 @@ final class DefaultDnsClient implements DnsClient {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
         resolver = builder.build();
+        this.resolutionTimeoutMillis = resolutionTimeout != null ? resolutionTimeout.toMillis() :
+                // Default value is chosen based on a combination of default "timeout" and "attempts" options of
+                // /etc/resolv.conf: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
+                resolver.queryTimeoutMillis() * 2;
     }
 
     @Override
@@ -252,9 +262,8 @@ final class DefaultDnsClient implements DnsClient {
         return defer(() -> {
             final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
             ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
-            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events = inactiveEventsOnError ?
-                    recoverWithInactiveEvents(pub, false) :
-                    pub;
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events =
+                    recoverWithInactiveEvents(pub, false, nxInvalidation);
             return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
                     @Override
                     public void onComplete() {
@@ -298,7 +307,7 @@ final class DefaultDnsClient implements DnsClient {
         // any pending scheduled tasks. SrvInactiveCombinerOperator is used to filter the aggregated collection of
         // inactive events if necessary.
         Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> events =
-                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
+                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true, nxInvalidation)
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
@@ -312,8 +321,10 @@ final class DefaultDnsClient implements DnsClient {
                             return newDuplicateSrv(serviceName, srvEvent.address().hostName());
                         }
 
+                        // NXDOMAIN = invalidation for A queries part of SRV lookups for backwards compatibility.
+                        // This is a behavior difference between plain A lookups and SRV rooted A lookups.
                         Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
-                                recoverWithInactiveEvents(aPublisher, false);
+                                recoverWithInactiveEvents(aPublisher, false, true);
                         return srvFilterDuplicateEvents ?
                                 srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
                                 returnPub.map(ev -> mapEventList(ev, inetAddress ->
@@ -338,7 +349,7 @@ final class DefaultDnsClient implements DnsClient {
                     return empty();
                 }
             }, srvConcurrency)
-            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
+            .liftSync(SrvInactiveCombinerOperator.EMIT);
 
             return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
                 @Override
@@ -421,9 +432,21 @@ final class DefaultDnsClient implements DnsClient {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
-                    Promise<DnsAnswer<HostAndPort>> promise = nettyIoExecutor.eventLoopGroup().next().newPromise();
-                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
-                            .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
+                    final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
+                    final Promise<DnsAnswer<HostAndPort>> promise = eventLoop.newPromise();
+                    final Future<List<DnsRecord>> resolveFuture =
+                            resolver.resolveAll(new DefaultDnsQuestion(name, SRV));
+                    final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
+                        if (!promise.isDone() && promise.tryFailure(DnsNameResolverTimeoutException.newInstance(
+                                name, resolutionTimeoutMillis, SRV.toString(),
+                                SrvRecordPublisher.class, "doDnsQuery"))) {
+                            resolveFuture.cancel(true);
+                        }
+                    }, resolutionTimeoutMillis, MILLISECONDS);
+                    resolveFuture.addListener((Future<? super List<DnsRecord>> completedFuture) -> {
+                                if (timeoutFuture != null) {
+                                    timeoutFuture.cancel(true);
+                                }
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
                                     promise.tryFailure(cause);
@@ -498,9 +521,21 @@ final class DefaultDnsClient implements DnsClient {
                     if (scheduledQuery) {
                         ttlCache.prepareForResolution(name);
                     }
-                    Promise<DnsAnswer<InetAddress>> dnsAnswerPromise =
-                            nettyIoExecutor.eventLoopGroup().next().newPromise();
-                    resolver.resolveAll(name).addListener(completedFuture -> {
+                    final EventLoop eventLoop = nettyIoExecutor.eventLoopGroup().next();
+                    final Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = eventLoop.newPromise();
+                    final Future<List<InetAddress>> resolveFuture = resolver.resolveAll(name);
+                    final Future<?> timeoutFuture = resolutionTimeoutMillis == 0L ? null : eventLoop.schedule(() -> {
+                        if (!dnsAnswerPromise.isDone() && dnsAnswerPromise.tryFailure(
+                                DnsNameResolverTimeoutException.newInstance(name, resolutionTimeoutMillis,
+                                        toRecordTypeNames(addressTypes), ARecordPublisher.class, "doDnsQuery"))) {
+                            resolveFuture.cancel(true);
+                        }
+                    }, resolutionTimeoutMillis, MILLISECONDS);
+
+                    resolveFuture.addListener(completedFuture -> {
+                        if (timeoutFuture != null) {
+                            timeoutFuture.cancel(true);
+                        }
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
                             dnsAnswerPromise.tryFailure(cause);
@@ -796,8 +831,8 @@ final class DefaultDnsClient implements DnsClient {
             private void scheduleQuery0(final long remainingTtlNanos, final long originalTtlNanos) {
                 assertInEventloop();
 
-                final long delay = ThreadLocalRandom.current()
-                        .nextLong(remainingTtlNanos, addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
+                final long delay = RandomUtils.nextLongInclusive(remainingTtlNanos,
+                                addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
                 LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));
@@ -952,10 +987,10 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private static <T, A> Publisher<? extends Collection<ServiceDiscovererEvent<T>>> recoverWithInactiveEvents(
-            AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
+            AbstractDnsPublisher<T> pub, boolean generateAggregateEvent, boolean nxInvalidation) {
         return pub.onErrorResume(cause -> {
             AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
-            if (subscription != null) {
+            if (subscription != null && shouldRevokeState(cause, nxInvalidation)) {
                 List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
                 if (!events.isEmpty()) {
                     return (generateAggregateEvent ? Publisher.<List<ServiceDiscovererEvent<T>>>from(
@@ -966,6 +1001,16 @@ final class DefaultDnsClient implements DnsClient {
             }
             return failed(cause);
         });
+    }
+
+    private static boolean shouldRevokeState(final Throwable t, final boolean nxInvalidation) {
+        // ISE => Subscriber exceptions (downstream of retry)
+        return t instanceof SrvAddressRemovedException || t instanceof IllegalStateException ||
+                t instanceof ClosedDnsServiceDiscovererException || (nxInvalidation &&
+                // string matching is done on purpose to avoid the hard Netty dependency
+                (t.getCause() != null && t.getCause().getClass().getName()
+                        .equals("io.netty.resolver.dns.DnsErrorCauseException")) &&
+                NXDOMAIN.equals(((io.netty.resolver.dns.DnsErrorCauseException) t.getCause()).getCode()));
     }
 
     private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
@@ -982,7 +1027,6 @@ final class DefaultDnsClient implements DnsClient {
                             PublisherOperator<Collection<ServiceDiscovererEvent<InetSocketAddress>>,
                                               Collection<ServiceDiscovererEvent<InetSocketAddress>>> {
         static final SrvInactiveCombinerOperator EMIT = new SrvInactiveCombinerOperator(true);
-        static final SrvInactiveCombinerOperator NO_EMIT = new SrvInactiveCombinerOperator(false);
         private final boolean emitAggregatedEvents;
 
         private SrvInactiveCombinerOperator(boolean emitAggregatedEvents) {

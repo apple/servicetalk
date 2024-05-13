@@ -17,9 +17,24 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
-// TODO: this has to be public for the service loading to work. At that point we'll also likely want
-//  to provide a DelegatingLoadBalancerBuilder.
-interface LoadBalancerBuilderProvider {
+/**
+ * Provider for {@link LoadBalancerBuilder}.
+ */
+public interface LoadBalancerBuilderProvider {
+
+    /**
+     * Returns a {@link LoadBalancerBuilder} based on the pre-initialized {@link LoadBalancerBuilder}.
+     * <p>
+     * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
+     * returning it, or wrap it ({@link DelegatingLoadBalancerBuilder} may be helpful).
+     *
+     * @param id a (unique) identifier used to identify the underlying {@link io.servicetalk.client.api.LoadBalancer}.
+     * @param builder pre-initialized {@link LoadBalancerBuilder}.
+     * @return a {@link LoadBalancerBuilder} based on the pre-initialized
+     * {@link LoadBalancerBuilder}.
+     * @param <ResolvedAddress> The resolved address type.
+     * @param <C> The type of connection.
+     */
     <ResolvedAddress, C extends LoadBalancedConnection> LoadBalancerBuilder<ResolvedAddress, C>
     newBuilder(String id, LoadBalancerBuilder<ResolvedAddress, C> builder);
 }

@@ -15,14 +15,15 @@
  */
 package io.servicetalk.loadbalancer;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.function.LongUnaryOperator;
 
-import static java.lang.System.nanoTime;
+import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_CANCEL_PENALTY;
+import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_ERROR_PENALTY;
 import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,28 +35,61 @@ class DefaultRequestTrackerTest {
         final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
         final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
-        Assertions.assertEquals(0, requestTracker.score());
+        assertEquals(0, requestTracker.score());
 
         // upon success score
         requestTracker.onRequestSuccess(requestTracker.beforeRequestStart());
-        Assertions.assertEquals(-500, requestTracker.score());
+        assertEquals(-500, requestTracker.score());
 
         // error penalty
         requestTracker.onRequestError(requestTracker.beforeRequestStart(), ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
-        Assertions.assertEquals(-5000, requestTracker.score());
+        assertEquals(-5_000, requestTracker.score());
 
         // cancellation penalty
         requestTracker.onRequestError(requestTracker.beforeRequestStart(), ErrorClass.CANCELLED);
-        Assertions.assertEquals(-12_500, requestTracker.score());
+        assertEquals(-25_000, requestTracker.score());
 
         // decay
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(20).toNanos());
-        Assertions.assertEquals(-1, requestTracker.score());
+        assertEquals(-1, requestTracker.score());
+    }
+
+    @Test
+    void zeroDataScoreWithPendingRequestIsIntMinValue() {
+        final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(0).toNanos());
+        final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
+        assertEquals(0, requestTracker.score());
+
+        // upon success score
+        requestTracker.beforeRequestStart();
+        assertEquals(Integer.MIN_VALUE, requestTracker.score());
+    }
+
+    @Test
+    void outstandingLatencyIsTracked() {
+        final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
+
+        final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(1), nextValueProvider);
+        assertEquals(0, requestTracker.score());
+
+        // upon success score
+        requestTracker.onRequestSuccess(requestTracker.beforeRequestStart());
+        // super quick, so our score is the max it can be which is 0.
+        assertEquals(-500, requestTracker.score());
+
+        // start a request. Should be 5 calls to the time provider.
+        assertEquals(5_000_000_000L, requestTracker.beforeRequestStart());
+        // start to advance time
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
+        // this is 4 because we are calling the time twice...
+        assertEquals(-2_000, requestTracker.score());
     }
 
     static final class TestRequestTracker extends DefaultRequestTracker {
         private final LongUnaryOperator nextValueProvider;
-        private long lastValue = nanoTime();
+        private long lastValue;
 
         TestRequestTracker(Duration measurementHalfLife, final LongUnaryOperator nextValueProvider) {
             super(measurementHalfLife.toNanos(), DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY);

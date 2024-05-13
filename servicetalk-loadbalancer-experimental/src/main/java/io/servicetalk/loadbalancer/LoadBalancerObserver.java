@@ -22,16 +22,16 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 /**
- * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}
- * @param <ResolvedAddress> the type of the resolved address.
+ * An observer that provides visibility into a {@link io.servicetalk.client.api.LoadBalancer}.
  */
-interface LoadBalancerObserver<ResolvedAddress> {
+public interface LoadBalancerObserver {
 
     /**
      * Get a {@link HostObserver}.
+     * @param resolvedAddress the resolved address of the host.
      * @return a {@link HostObserver}.
      */
-    HostObserver<ResolvedAddress> hostObserver();
+    HostObserver hostObserver(Object resolvedAddress);
 
     /**
      * Callback for when connection selection fails due to no hosts being available.
@@ -40,66 +40,58 @@ interface LoadBalancerObserver<ResolvedAddress> {
 
     /**
      * Callback for monitoring the changes due to a service discovery update.
+     * @param events the collection of {@link ServiceDiscovererEvent}s received by the load balancer.
+     * @param oldHostSetSize the size of the previous host set.
+     * @param newHostSetSize the new size of  the host set.
      */
-    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                  int oldHostSetSize, int newHostSetSize);
 
     /**
      * Callback for when connection selection fails due to all hosts being inactive.
+     * @param hostSetSize the size of the current host set.
+     * @param exception an exception with more details about the failure.
      */
-    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exn);
+    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
 
     /**
      * An observer for {@link Host} events.
-     * @param <ResolvedAddress> the type of the resolved address.
      */
-    interface HostObserver<ResolvedAddress> {
+    interface HostObserver {
 
         /**
          * Callback for when an active host is marked expired.
-         * @param address the resolved address.
          * @param connectionCount the number of active connections for the host.
          */
-        void onHostMarkedExpired(ResolvedAddress address, int connectionCount);
+        void onHostMarkedExpired(int connectionCount);
 
         /**
          * Callback for when a host is removed by service discovery.
-         * @param address the resolved address.
          * @param connectionCount the number of open connections when the host was removed.
          */
-        void onActiveHostRemoved(ResolvedAddress address, int connectionCount);
+        void onActiveHostRemoved(int connectionCount);
 
         /**
          * Callback for when an expired host is returned to an active state.
-         * @param address the resolved address.
          * @param connectionCount the number of active connections when the host was revived.
          */
-        void onExpiredHostRevived(ResolvedAddress address, int connectionCount);
+        void onExpiredHostRevived(int connectionCount);
 
         /**
          * Callback for when an expired host is removed.
-         * @param address the resolved address.
          * @param connectionCount the number of open connections when the host was removed.
          */
-        void onExpiredHostRemoved(ResolvedAddress address, int connectionCount);
-
-        /**
-         * Callback for when a host is created.
-         * @param address the resolved address.
-         */
-        void onHostCreated(ResolvedAddress address);
+        void onExpiredHostRemoved(int connectionCount);
 
         /**
          * Callback for when a {@link Host} transitions from healthy to unhealthy.
-         * @param address the resolved address.
          * @param cause the most recent cause of the transition.
          */
-        void onHostMarkedUnhealthy(ResolvedAddress address, @Nullable Throwable cause);
+        void onHostMarkedUnhealthy(@Nullable Throwable cause);
 
         /**
          * Callback for when a {@link Host} transitions from unhealthy to healthy.
-         * @param address the resolved address.
          */
-        void onHostRevived(ResolvedAddress address);
+        void onHostRevived();
     }
 }

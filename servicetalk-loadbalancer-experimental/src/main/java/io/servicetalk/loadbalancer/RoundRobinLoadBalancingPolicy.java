@@ -25,20 +25,27 @@ import java.util.List;
  * This load balancing algorithm is the well known policy of selecting hosts sequentially
  * from an ordered set. If a host is considered unhealthy it is skipped the next host
  * is selected until a healthy host is found or the entire host set has been exhausted.
+ *
+ * Note: this algorithm doesn't currently support weighted hosts and all weight information will be ignored.
+ *
+ * @param <ResolvedAddress> the type of the resolved address
+ * @param <C> the type of the load balanced connection
  */
-final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements LoadBalancingPolicy<ResolvedAddress, C> {
+public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
+    private final boolean ignoreWeights;
 
-    private RoundRobinLoadBalancingPolicy(final boolean failOpen) {
+    private RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
         this.failOpen = failOpen;
+        this.ignoreWeights = ignoreWeights;
     }
 
     @Override
-    public <T extends C> HostSelector<ResolvedAddress, T>
-    buildSelector(final List<Host<ResolvedAddress, T>> hosts, final String targetResource) {
-        return new RoundRobinSelector<>(hosts, targetResource, failOpen);
+    HostSelector<ResolvedAddress, C>
+    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
+        return new RoundRobinSelector<>(hosts, targetResource, failOpen, ignoreWeights);
     }
 
     @Override
@@ -46,32 +53,55 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         return "RoundRobin";
     }
 
+    @Override
+    public String toString() {
+        return name() + "(failOpen=" + failOpen + ")";
+    }
+
     /**
      * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
      */
     public static final class Builder {
 
-        private boolean failOpen;
+        private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
+
+        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
+        private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
 
         /**
          * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
          * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
          * @return this {@link P2CLoadBalancingPolicy.Builder}.
          */
-        public RoundRobinLoadBalancingPolicy.Builder failOpen(final boolean failOpen) {
+        public Builder failOpen(final boolean failOpen) {
             this.failOpen = failOpen;
+            return this;
+        }
+
+        /**
+         * Set whether the host selector should ignore {@link Host}s weight.
+         * Host weight influences the probability it will be selected to serve a request. The host weight can come
+         * from many sources including known host capacity, priority groups, and others, so ignoring weight
+         * information can lead to other features not working properly and should be used with care.
+         * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
+         *
+         * @param ignoreWeights whether the host selector should ignore host weight information.
+         * @return {@code this}
+         */
+        public Builder ignoreWeights(final boolean ignoreWeights) {
+            this.ignoreWeights = ignoreWeights;
             return this;
         }
 
         /**
          * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@LoadBalancedConnection}.
+         * @param <C> the refined type of the {@link LoadBalancedConnection}.
          * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
         build() {
-            return new RoundRobinLoadBalancingPolicy<>(failOpen);
+            return new RoundRobinLoadBalancingPolicy<>(failOpen, ignoreWeights);
         }
     }
 }

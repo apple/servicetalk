@@ -32,10 +32,8 @@ import static java.util.Collections.unmodifiableMap;
 
 /**
  * Read only view of {@link AbstractTcpConfig}.
- *
- * @param <SecurityConfig> type of security configuration
  */
-abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
+abstract class AbstractReadOnlyTcpConfig {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
     private final long idleTimeoutMs;
@@ -43,14 +41,14 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
 
-    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig> from) {
+    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig from) {
         options = nonNullOptions(from.options());
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
     }
 
-    AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig<SecurityConfig> from) {
+    AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig from) {
         options = from.options();
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
@@ -114,5 +112,5 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig extends SslConfig> {
      * @return the {@link SslConfig}, or {@code null} if SSL/TLS is not configured.
      */
     @Nullable
-    public abstract SecurityConfig sslConfig();
+    public abstract SslConfig sslConfig();
 }

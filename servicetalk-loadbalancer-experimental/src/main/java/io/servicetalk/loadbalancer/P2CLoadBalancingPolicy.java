@@ -29,32 +29,37 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * <p>
  * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
  * Choices in Randomized Load Balancing.
- *  @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
- *  Choices in Randomized Load Balancing</a>
  * <p>
  * This load balancing policy is characterized by the algorithm:
  * - select two hosts randomly: hosta, and hostb.
  * - if neither host is healthy, repeat selection process until max-effort.
  * - pick the 'best' host of the two options.
+ * @param <ResolvedAddress> the type of the resolved address.
+ * @param <C> the type of the load balanced connection.
+ * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
+ *  *  Choices in Randomized Load Balancing</a>
  */
-final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        implements LoadBalancingPolicy<ResolvedAddress, C> {
+public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+        extends LoadBalancingPolicy<ResolvedAddress, C> {
 
+    private final boolean ignoreWeights;
     private final int maxEffort;
     private final boolean failOpen;
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final int maxEffort, final boolean failOpen, @Nullable final Random random) {
+    private P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
+                                   final boolean failOpen, @Nullable final Random random) {
+        this.ignoreWeights = ignoreWeights;
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
         this.random = random;
     }
 
     @Override
-    public <T extends C> HostSelector<ResolvedAddress, T> buildSelector(
-            List<Host<ResolvedAddress, T>> hosts, String targetResource) {
-        return new P2CSelector<>(hosts, targetResource, maxEffort, failOpen, random);
+    HostSelector<ResolvedAddress, C> buildSelector(
+            List<Host<ResolvedAddress, C>> hosts, String targetResource) {
+        return new P2CSelector<>(hosts, targetResource, ignoreWeights, maxEffort, failOpen, random);
     }
 
     @Override
@@ -64,7 +69,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
 
     @Override
     public String toString() {
-        return name() + "(maxEffort=" + maxEffort + ')';
+        return name() + "(failOpen=" + failOpen + ", maxEffort=" + maxEffort + ')';
     }
 
     /**
@@ -72,18 +77,21 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
      */
     public static final class Builder {
 
+        private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
         private static final int DEFAULT_MAX_EFFORT = 5;
 
+        private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
         private int maxEffort = DEFAULT_MAX_EFFORT;
-        private boolean failOpen;
+        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
         @Nullable
         private Random random;
 
         /**
          * Set the maximum number of attempts that P2C will attempt to select a pair with at least one
          * healthy host.
+         * Defaults to {@value DEFAULT_MAX_EFFORT}.
          * @param maxEffort the maximum number of attempts.
-         * @return this {@link Builder}.
+         * @return {@code this}
          */
         public Builder maxEffort(final int maxEffort) {
             this.maxEffort = ensurePositive(maxEffort, "maxEffort");
@@ -92,11 +100,27 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
 
         /**
          * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
          * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @return this {@link Builder}.
+         * @return {@code this}
          */
         public Builder failOpen(final boolean failOpen) {
             this.failOpen = failOpen;
+            return this;
+        }
+
+        /**
+         * Set whether the host selector should ignore {@link Host}s weight.
+         * Host weight influences the probability it will be selected to serve a request. The host weight can come
+         * from many sources including known host capacity, priority groups, and others, so ignoring weight
+         * information can lead to other features not working properly and should be used with care.
+         * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
+         *
+         * @param ignoreWeights whether the host selector should ignore host weight information.
+         * @return {@code this}
+         */
+        public Builder ignoreWeights(final boolean ignoreWeights) {
+            this.ignoreWeights = ignoreWeights;
             return this;
         }
 
@@ -109,11 +133,11 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
         /**
          * Construct an immutable {@link P2CLoadBalancingPolicy}.
          * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@LoadBalancedConnection}.
+         * @param <C> the refined type of the {@link LoadBalancedConnection}.
          * @return the concrete {@link P2CLoadBalancingPolicy}.
          */
         public <ResolvedAddress, C extends LoadBalancedConnection> P2CLoadBalancingPolicy<ResolvedAddress, C> build() {
-            return new P2CLoadBalancingPolicy<>(maxEffort, failOpen, random);
+            return new P2CLoadBalancingPolicy<>(ignoreWeights, maxEffort, failOpen, random);
         }
     }
 }

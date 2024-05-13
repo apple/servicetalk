@@ -38,13 +38,13 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link ConnectionFactoryFilter} that will resolve the passed unresolved {@link InetSocketAddress} on each attempt
- * to create a {@link ConnectionFactory#newConnection(Object, ContextMap, TransportObserver) new connection} using
- * {@link GlobalDnsServiceDiscoverer#globalDnsServiceDiscoverer()}.
+ * A {@link ConnectionFactoryFilter} that will resolve the passed {@link U unresolved address} on each attempt
+ * to create a {@link ConnectionFactory#newConnection(Object, ContextMap, TransportObserver) new connection} using the
+ * passed {@link ServiceDiscoverer}.
  *
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
@@ -123,14 +123,14 @@ final class ResolvingConnectionFactoryFilter<U, R>
                 '}';
     }
 
-    static ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> withGlobalDnsServiceDiscoverer() {
+    static ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> withGlobalARecordsDnsServiceDiscoverer() {
         return DefaultResolvingConnectionFactoryFilterInitializer.INSTANCE;
     }
 
     private static final class DefaultResolvingConnectionFactoryFilterInitializer {
 
         static final ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> INSTANCE =
-                new ResolvingConnectionFactoryFilter<>(HostAndPort::of, globalDnsServiceDiscoverer());
+                new ResolvingConnectionFactoryFilter<>(HostAndPort::of, globalARecordsDnsServiceDiscoverer());
 
         private DefaultResolvingConnectionFactoryFilterInitializer() {
             // Singleton

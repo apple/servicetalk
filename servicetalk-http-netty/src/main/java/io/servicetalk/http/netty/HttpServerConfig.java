@@ -49,6 +49,12 @@ final class HttpServerConfig {
         });
     }
 
+    HttpServerConfig(final HttpServerConfig from) {
+        tcpConfig = new TcpServerConfig(from.tcpConfig);
+        httpConfig = new HttpConfig(from.httpConfig);
+        lifecycleObserver = from.lifecycleObserver;
+    }
+
     TcpServerConfig tcpConfig() {
         return tcpConfig;
     }
@@ -83,7 +89,7 @@ final class HttpServerConfig {
                     httpAlpnProtocols(sslConfig.alpnProtocols(), httpConfig.supportedAlpnProtocols()));
             Map<String, ServerSslConfig> sniMap = tcpConfig.sniConfig();
             if (sniMap == null) {
-                tcpConfig.sslConfig(sslConfig);
+                tcpConfig.sslConfig(sslConfig, tcpConfig.acceptInsecureConnections());
             } else {
                 // Make a copy in case the original map is unmodifiable. Use LinkedHashMap to preserve iteration order
                 // in case there is order precedence in the matching algorithm.
@@ -93,7 +99,8 @@ final class HttpServerConfig {
                     sniMapOverrides.put(sniConfigEntry.getKey(), new DelegatingHttpServerSslConfig(sniConfig,
                                     httpAlpnProtocols(sniConfig.alpnProtocols(), httpConfig.supportedAlpnProtocols())));
                 }
-                tcpConfig.sslConfig(sslConfig, sniMapOverrides);
+                tcpConfig.sslConfig(sslConfig, sniMapOverrides, tcpConfig.sniMaxClientHelloLength(),
+                        tcpConfig.sniClientHelloTimeout(), tcpConfig.acceptInsecureConnections());
             }
         }
     }

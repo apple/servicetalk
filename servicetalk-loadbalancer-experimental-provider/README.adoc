@@ -1,0 +1,31 @@
+= DefaultLoadBalancer Providers
+
+This package provides providers for enabling the DefaultLoadBalancer via system properties to allow for easy
+experimentation that doesn't require a recompilation of the application.
+
+> WARNING: this package is only for experimentation and will be removed in the future.
+
+=== Targeting Clients for Which to Enable DefaultLoadBalancer
+
+The `DefaultHttpLoadBalancerProvider` supports enabling the load balancer either for all clients or only a set of
+specific clients. Enabling the load balancer for all clients can be done by setting the following system property:
+
+```
+io.servicetalk.loadbalancer.experimental.clientsEnabledFor=all
+```
+
+The experimental load balancer can also be enabled for only a subset of clients. This can be done via setting the
+system property to a comma separated list:
+
+```
+io.servicetalk.loadbalancer.experimental.clientsEnabledFor=service1,service2
+```
+
+The specific names will depend on how the client is built. If the client is built using a `HostAndPort`, the names are
+only the host component. If the client is built using some other unresolved address form then the string representation
+of that is used.
+
+=== All Supported Properties
+
+All system properties contain the prefix "io.servicetalk.loadbalancer.experimental.". A comprehensive list of the
+supported properties can be found in the `DefaultLoadBalancerProviderConfig` class for reference.

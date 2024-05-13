@@ -20,17 +20,17 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
 
-final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObserver<ResolvedAddress> {
+final class NoopLoadBalancerObserver implements LoadBalancerObserver {
 
-    private static final LoadBalancerObserver<Object> INSTANCE = new NoopLoadBalancerObserver<>();
+    private static final LoadBalancerObserver INSTANCE = new NoopLoadBalancerObserver();
 
     private NoopLoadBalancerObserver() {
         // only private instance
     }
 
     @Override
-    public HostObserver<ResolvedAddress> hostObserver() {
-        return (HostObserver<ResolvedAddress>) NoopHostObserver.INSTANCE;
+    public HostObserver hostObserver(Object resolvedAddress) {
+        return NoopHostObserver.INSTANCE;
     }
 
     @Override
@@ -44,56 +44,50 @@ final class NoopLoadBalancerObserver<ResolvedAddress> implements LoadBalancerObs
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events,
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                         int oldHostSetSize, int newHostSetSize) {
         // noop
     }
 
-    private static final class NoopHostObserver<ResolvedAddress> implements
-            LoadBalancerObserver.HostObserver<ResolvedAddress> {
+    private static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
 
-        private static final HostObserver<Object> INSTANCE = new NoopHostObserver<>();
+        private static final HostObserver INSTANCE = new NoopHostObserver();
 
         private NoopHostObserver() {
         }
 
         @Override
-        public void onHostMarkedExpired(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onHostMarkedExpired(int connectionCount) {
             // noop
         }
 
         @Override
-        public void onExpiredHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onExpiredHostRemoved(int connectionCount) {
             // noop
         }
 
         @Override
-        public void onExpiredHostRevived(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onExpiredHostRevived(int connectionCount) {
             // noop
         }
 
         @Override
-        public void onActiveHostRemoved(ResolvedAddress resolvedAddress, int connectionCount) {
+        public void onActiveHostRemoved(int connectionCount) {
             // noop
         }
 
         @Override
-        public void onHostCreated(ResolvedAddress resolvedAddress) {
+        public void onHostMarkedUnhealthy(Throwable cause) {
             // noop
         }
 
         @Override
-        public void onHostMarkedUnhealthy(ResolvedAddress address, Throwable cause) {
-            // noop
-        }
-
-        @Override
-        public void onHostRevived(ResolvedAddress address) {
+        public void onHostRevived() {
             // noop
         }
     }
 
-    public static <T> LoadBalancerObserver<T> instance() {
-        return (LoadBalancerObserver<T>) INSTANCE;
+    public static LoadBalancerObserver instance() {
+        return INSTANCE;
     }
 }

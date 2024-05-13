@@ -73,6 +73,8 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -155,7 +157,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.defaultHttpsPort = defaultHttpsPort;
         }
 
-        public UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
+        UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String host = metaData.host();
             if (host == null) {
                 throw new MalformedURLException(
@@ -172,7 +174,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
-
+            setHostHeader(metaData);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
             final String key = scheme + ':' + host + ':' + port;
@@ -487,5 +489,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
         }
         return port;
+    }
+
+    private static void setHostHeader(HttpRequestMetaData metaData) {
+        if (!HTTP_1_0.equals(metaData.version()) && !metaData.headers().contains(HOST)) {
+            CharSequence authority = metaData.host();
+            if (metaData.port() >= 0) {
+                authority = authority + ":" + metaData.port();
+            }
+            metaData.headers().add(HOST, authority);
+        }
     }
 }

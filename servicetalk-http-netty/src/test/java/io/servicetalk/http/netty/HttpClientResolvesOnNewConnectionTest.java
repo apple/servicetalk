@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
+import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
@@ -40,6 +41,7 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
@@ -47,8 +49,8 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABL
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -62,6 +64,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -80,6 +83,31 @@ class HttpClientResolvesOnNewConnectionTest {
             HttpResponse response = client.request(
                     client.get("http://localhost:" + serverHostAndPort(serverContext).port() + '/'));
             assertThat(response.status(), is(OK));
+        }
+    }
+
+    @Test
+    void forMultiAddressUrlWithCustomServiceDiscoverer() throws Exception {
+        AtomicInteger discoverCounter = new AtomicInteger();
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+             // Use "localhost" to demonstrate that the address will be resolved.
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName(),
+                     // Wrap to pretend this is a custom SD:
+                     new DelegatingServiceDiscoverer<HostAndPort, InetSocketAddress,
+                             ServiceDiscovererEvent<InetSocketAddress>>(globalARecordsDnsServiceDiscoverer()) {
+                         @Override
+                         public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                                 HostAndPort hostAndPort) {
+                             discoverCounter.incrementAndGet();
+                             return delegate().discover(hostAndPort);
+                         }
+                     },
+                     ON_NEW_CONNECTION).buildBlocking()) {
+            HttpResponse response = client.request(
+                    client.get("http://localhost:" + serverHostAndPort(serverContext).port() + '/'));
+            assertThat(response.status(), is(OK));
+            assertThat(discoverCounter.get(), is(greaterThan(0)));
         }
     }
 
@@ -146,7 +174,7 @@ class HttpClientResolvesOnNewConnectionTest {
     @Test
     void attemptToOverrideServiceDiscovererThrows() {
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> otherSd =
-                globalDnsServiceDiscoverer();
+                globalARecordsDnsServiceDiscoverer();
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> HttpClients.forSingleAddress("servicetalk.io", 80, ON_NEW_CONNECTION).serviceDiscoverer(otherSd));
         assertThat(e.getMessage(), allOf(containsString(ON_NEW_CONNECTION.name()), containsString(otherSd.toString())));

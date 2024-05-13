@@ -24,7 +24,8 @@ import javax.net.ssl.SSLSession;
  * An observer interface that provides visibility into events associated with a network connection.
  * <p>
  * Either {@link #connectionClosed()} or {@link #connectionClosed(Throwable)} will be invoked to signal when connection
- * is closed.
+ * is closed. The "closed" event is considered terminal and other callbacks after that can be safely discarded because
+ * nothing happens on the network interface after closure.
  */
 public interface ConnectionObserver {
 

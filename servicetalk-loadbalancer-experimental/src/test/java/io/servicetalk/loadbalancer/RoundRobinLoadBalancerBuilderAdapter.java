@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
-import java.time.Duration;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,14 +38,14 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
-            LoadBalancerObserver<String> loadBalancerObserver) {
+            @Nullable LoadBalancerObserver loadBalancerObserver) {
         throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckerFactory(
-            HealthCheckerFactory<String> healthCheckerFactory) {
-        throw new IllegalStateException("Cannot set a load balancer health checker for old round robin");
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolConfig(
+            ConnectionPoolConfig connectionPoolConfig) {
+        throw new IllegalStateException("Cannot set a connection pool strategy for old round robin");
     }
 
     @Override
@@ -55,29 +55,13 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> linearSearchSpace(int linearSearchSpace) {
-        underlying = underlying.linearSearchSpace(linearSearchSpace);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckInterval(
-            Duration interval, Duration jitter) {
-        underlying = underlying.healthCheckInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckResubscribeInterval(
-            Duration interval, Duration jitter) {
-        underlying = underlying.healthCheckResubscribeInterval(interval, jitter);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> healthCheckFailedConnectionsThreshold(
-            int threshold) {
-        underlying = underlying.healthCheckFailedConnectionsThreshold(threshold);
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> outlierDetectorConfig(
+            OutlierDetectorConfig config) {
+        underlying = underlying
+                .healthCheckInterval(config.failureDetectorInterval(), config.failureDetectorIntervalJitter())
+                .healthCheckFailedConnectionsThreshold(config.failedConnectionsThreshold())
+                .healthCheckResubscribeInterval(
+                        config.serviceDiscoveryResubscribeInterval(), config.serviceDiscoveryResubscribeJitter());
         return this;
     }
 

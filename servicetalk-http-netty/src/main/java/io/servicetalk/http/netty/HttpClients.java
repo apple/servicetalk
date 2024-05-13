@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -57,10 +58,10 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalARecordsDnsServiceDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers.globalSrvRecordsDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.mappingServiceDiscoverer;
+import static io.servicetalk.http.netty.InternalServiceDiscoverers.resolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
@@ -174,6 +175,35 @@ public final class HttpClients {
     /**
      * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
      * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+     * with default {@link LoadBalancer}, using the specified {@link ServiceDiscoverer} and {@link DiscoveryStrategy}.
+     * <p>
+     * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * order to infer the remote address.
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
+     *
+     * @param id a (unique) ID to identify the created {@link MultiAddressHttpClientBuilder}, like a name or a purpose
+     * of the future client that will be built. This helps  {@link MultiAddressHttpClientBuilderProvider} to distinguish
+     * this builder from others.
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use.
+     * @return new builder with default configuration.
+     * @see MultiAddressHttpClientBuilderProvider
+     */
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
+            final String id,
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+                    serviceDiscoverer,
+            final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(id, new DefaultMultiAddressUrlHttpClientBuilder(
+                hostAndPort -> forSingleAddress(serviceDiscoverer, hostAndPort, discoveryStrategy)));
+    }
+
+    /**
+     * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
+     * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
      * with default {@link LoadBalancer} and user provided {@link ServiceDiscoverer}.
      * <p>
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
@@ -272,9 +302,9 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
-        return forSingleAddress(globalDnsServiceDiscoverer(), address, discoveryStrategy,
-                GlobalDnsServiceDiscoverer::unresolvedServiceDiscoverer,
-                ResolvingConnectionFactoryFilter::withGlobalDnsServiceDiscoverer);
+        return forSingleAddress(globalARecordsDnsServiceDiscoverer(), address, discoveryStrategy,
+                InternalServiceDiscoverers::unresolvedServiceDiscoverer,
+                ResolvingConnectionFactoryFilter::withGlobalARecordsDnsServiceDiscoverer);
     }
 
     /**
@@ -292,7 +322,7 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
         final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-                globalSrvDnsServiceDiscoverer();
+                globalSrvRecordsDnsServiceDiscoverer();
         return applyProviders(serviceName,
                 new DefaultSingleAddressHttpClientBuilder<>(serviceName, sd))
                 // We need to pass SD into constructor to align types, but providers won't see that.
@@ -454,14 +484,13 @@ public final class HttpClients {
                         .serviceDiscoverer(usd)
                         .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
                         // Disable health-checking:
-                        .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder.from(
+                        .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
                                 RoundRobinLoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>builder(
                                         // Use a different ID to let providers distinguish this LB from the default one
                                         DefaultHttpLoadBalancerFactory.class.getSimpleName() + '-' +
                                                 DiscoveryStrategy.ON_NEW_CONNECTION.name())
                                         .healthCheckFailedConnectionsThreshold(-1)
-                                        .build())
-                                .build())
+                                        .build()))
                         .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
             default:
                 throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);

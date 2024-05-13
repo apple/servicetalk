@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -29,6 +30,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -51,6 +53,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -103,8 +106,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
 
-    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(8);
-    static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(256);
+    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(2);
+    static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(128);
 
     @Nullable
     private final U address;
@@ -139,7 +142,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
+        this.loadBalancerFactory = defaultLoadBalancer();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
 
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
@@ -250,6 +253,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 assert !proxy.requiredOffloads().hasOffloads();
                 connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
+
+            // Add HTTP request tracking. Extracting the RequestTracker from the context is done on the return
+            // path once we have a connection so that we want the HttpRequestTracker filter to prepended so that it is
+            // _last_ to see the newly created connection and try and extract the RequestTracker from the context.
+            connectionFactoryFilter = appendConnectionFilter(HttpRequestTracker.filter(), connectionFactoryFilter);
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
@@ -764,44 +772,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    private abstract static class DelegatingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
-            implements ServiceDiscoverer<U, R, E> {
-        private final ServiceDiscoverer<U, R, E> delegate;
-
-        DelegatingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate) {
-            this.delegate = requireNonNull(delegate);
-        }
-
-        final ServiceDiscoverer<U, R, E> delegate() {
-            return delegate;
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return delegate.onClosing();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public String toString() {
-            return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
-        }
-    }
-
     private static final class AlpnReqRespFactoryFunc implements
                                                   Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> {
         private final BufferAllocator allocator;
@@ -866,5 +836,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         default StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
             return create(client, null, null);
         }
+    }
+
+    private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer() {
+        return new DefaultHttpLoadBalancerFactory<>(
+                RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
+                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
     }
 }

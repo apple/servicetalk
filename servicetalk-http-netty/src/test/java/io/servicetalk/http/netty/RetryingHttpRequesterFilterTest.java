@@ -32,6 +32,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -118,12 +119,10 @@ class RetryingHttpRequesterFilterTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                         .addHeader(RETRYABLE_HEADER, "yes"));
         failingConnClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
-                        .from(new InspectingLoadBalancerFactory<>()).build())
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()))
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
         normalClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
-                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
-                        .from(new InspectingLoadBalancerFactory<>()).build());
+                .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()));
         lbSelectInvoked = new AtomicInteger();
     }
 

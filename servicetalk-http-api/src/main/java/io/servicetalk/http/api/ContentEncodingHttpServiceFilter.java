@@ -123,7 +123,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
 
                         addContentEncoding(response.headers(), encoder.encodingName());
                         // After we encode the content length is unlikely to still be correct, remove it!
-                        request.headers().remove(CONTENT_LENGTH);
+                        response.headers().remove(CONTENT_LENGTH);
                         return response.transformPayloadBody(bufPub ->
                                 encoder.streamingEncoder().serialize(bufPub, ctx.executionContext().bufferAllocator()));
                     }).shareContextOnSubscribe();

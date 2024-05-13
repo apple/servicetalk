@@ -29,9 +29,9 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
-import static io.servicetalk.loadbalancer.SelectorTestHelpers.connections;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -50,12 +50,12 @@ class RoundRobinSelectorTest {
     }
 
     void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
-        selector = new RoundRobinSelector<>(hosts, "testResource", failOpen);
+        selector = new RoundRobinSelector<>(hosts, "testResource", failOpen, false);
     }
 
     @Test
     void roundRobining() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -67,8 +67,85 @@ class RoundRobinSelectorTest {
     }
 
     @Test
+    void roundRobiningWithUnequalWeights() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(
+                "addr-1", "addr-2", "addr-3");
+        when(hosts.get(0).weight()).thenReturn(1.0);
+        when(hosts.get(1).weight()).thenReturn(2.0);
+        when(hosts.get(2).weight()).thenReturn(3.0);
+        init(hosts);
+        List<String> addresses = new ArrayList<>();
+        for (int i = 0; i < 18; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            addresses.add(connection.address());
+        }
+
+        assertThat(addresses.stream().filter("addr-1"::equals).count(), equalTo(3L));
+        assertThat(addresses.stream().filter("addr-2"::equals).count(), equalTo(6L));
+        assertThat(addresses.stream().filter("addr-3"::equals).count(), equalTo(9L));
+
+        // The stream of selections should be should be
+        // addr-1, addr-2, addr-3
+        // F       T       T
+        // F       F       T
+        // T       T       T
+        // F       T       T <- starting repetition
+        // ...
+        assertThat(addresses, contains(
+                "addr-2", "addr-3", "addr-3",
+                "addr-1", "addr-2", "addr-3",
+                "addr-2", "addr-3", "addr-3",
+                "addr-1", "addr-2", "addr-3",
+                "addr-2", "addr-3", "addr-3",
+                "addr-1", "addr-2", "addr-3"));
+    }
+
+    @Test
+    void unequalWeightsWithATrueZeroWeight() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
+        when(hosts.get(0).weight()).thenReturn(0.0);
+        when(hosts.get(1).weight()).thenReturn(1.0);
+        init(hosts);
+        int[] counts = new int[2];
+        for (int i = 0; i < 0xffff + 1; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            if ("addr-1".equals(connection.address())) {
+                counts[0]++;
+            } else {
+                counts[1]++;
+            }
+        }
+
+        assertThat(counts[0], equalTo(0));
+        assertThat(counts[1], equalTo(0xffff + 1));
+    }
+
+    @Test
+    void unequalWeightsWithNearWeight() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
+        when(hosts.get(0).weight()).thenReturn(1d / (0xffff * 7));
+        when(hosts.get(1).weight()).thenReturn(1.0);
+        init(hosts);
+        int[] counts = new int[2];
+        for (int i = 0; i < 0xffff + 1; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            if ("addr-1".equals(connection.address())) {
+                counts[0]++;
+            } else {
+                counts[1]++;
+            }
+        }
+
+        assertThat(counts[0], equalTo(1));
+        assertThat(counts[1], equalTo(0xffff));
+    }
+
+    @Test
     void skipUnhealthyHosts() throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1", "addr-2");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         init(hosts);
         List<String> addresses = new ArrayList<>();
@@ -83,7 +160,7 @@ class RoundRobinSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: failOpen={0}")
     @ValueSource(booleans = {false, true})
     void noHealthyHosts(boolean failOpen) throws Exception {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         this.failOpen = failOpen;
         init(hosts);
@@ -105,7 +182,7 @@ class RoundRobinSelectorTest {
     @ParameterizedTest(name = "{displayName} [{index}]: unhealthy={0} failOpen={1}")
     @CsvSource({"true,true", "true,false", "false,true", "false,false"})
     void singleInactiveHostWithoutConnections(boolean unhealthy, boolean failOpen) {
-        List<Host<String, TestLoadBalancedConnection>> hosts = connections("addr-1");
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1");
         when(hosts.get(0).canMakeNewConnections()).thenReturn(false);
         when(hosts.get(0).pickConnection(PREDICATE, null)).thenReturn(null);
         this.failOpen = failOpen;
