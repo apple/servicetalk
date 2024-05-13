@@ -176,32 +176,34 @@ class DefaultDnsClientTest {
     @Test
     void hedging() throws Exception {
         // should be bound now.
-        DatagramSocket datagramSocket = new DatagramSocket(new InetSocketAddress("127.0.0.1", 5657));
-        Thread t = new Thread(() -> {
-            while (true) {
-                byte[] buf = new byte[2048];
-                DatagramPacket packet = new DatagramPacket(buf, buf.length);
-                try {
-                    datagramSocket.receive(packet);
-                } catch (IOException ex) {
-                    System.out.println("Exception: " + ex);
-                    return;
-                }
-                String packetStr = new String(buf, 0, packet.getLength());
-                System.out.println("" + System.currentTimeMillis() + ": Received packet- " + packetStr);
-                packet.getLength();
-            }
-        });
-        t.start();
+//        DatagramSocket datagramSocket = new DatagramSocket(new InetSocketAddress("127.0.0.1", 5657));
+//        Thread t = new Thread(() -> {
+//            while (true) {
+//                byte[] buf = new byte[2048];
+//                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+//                try {
+//                    datagramSocket.receive(packet);
+//                } catch (IOException ex) {
+//                    System.out.println("Exception: " + ex);
+//                    return;
+//                }
+//                String packetStr = new String(buf, 0, packet.getLength());
+//                System.out.println("" + System.currentTimeMillis() + ": Received packet- " + packetStr);
+//                packet.getLength();
+//            }
+//        });
+//        t.start();
 
-        setup(builder -> builder.dnsServerAddressStreamProvider(
-                new SingletonDnsServerAddressStreamProvider((InetSocketAddress) datagramSocket.getLocalSocketAddress())));
-//        recordStore.addStall("unknown.com", latch);
+//        setup(builder -> builder.dnsServerAddressStreamProvider(
+//                new SequentialDnsServerAddressStreamProvider((InetSocketAddress) datagramSocket.getLocalSocketAddress(), dnsServer.localAddress())));
+        setup();
 
         final String targetDomain1 = "sd.domain.com";
         final String ip1 = nextIp();
 
         recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+        CountDownLatch latch = new CountDownLatch(1);
+        recordStore.addStall(targetDomain1, latch);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(targetDomain1);
         Subscription subscription = subscriber.awaitSubscription();
@@ -212,9 +214,6 @@ class DefaultDnsClientTest {
 
         List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(1);
         assertHasEvent(signals, ip1, AVAILABLE);
-
-
-        t.interrupt();
     }
 
 
