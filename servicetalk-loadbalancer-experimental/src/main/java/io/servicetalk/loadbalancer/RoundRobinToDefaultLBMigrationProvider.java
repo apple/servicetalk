@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Properties;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
@@ -36,37 +35,24 @@ import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinLoadBalancerBuilderProvider {
 
     static final String PROPERTY_NAME = "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
-    private static final boolean DEFAULT_PROPERTY_VALUE = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinToDefaultLBMigrationProvider.class);
-
-    private final Properties properties;
-
-    public RoundRobinToDefaultLBMigrationProvider() {
-        this(System.getProperties());
-    }
-
-    // Exposed for testing.
-    RoundRobinToDefaultLBMigrationProvider(final Properties properties) {
-        this.properties = properties;
-    }
 
     @Override
     public <ResolvedAddress, C extends LoadBalancedConnection>
     RoundRobinLoadBalancerBuilder<ResolvedAddress, C> newBuilder(
             String id, RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
         if (isEnabled()) {
-            LOGGER.info("Enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer for client {}", id);
+            LOGGER.info("Enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer");
             return new DefaultLoadBalancerRoundRobinBuilder<>(id);
         } else {
-            LOGGER.debug("Not enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer for client {}", id);
+            LOGGER.debug("Not enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer");
             return builder;
         }
     }
 
-    private boolean isEnabled() {
-        String propertyValue = properties.getProperty(PROPERTY_NAME, Boolean.toString(DEFAULT_PROPERTY_VALUE));
-        return Boolean.TRUE.toString().equalsIgnoreCase(propertyValue);
+    private static boolean isEnabled() {
+        return Boolean.getBoolean(PROPERTY_NAME);
     }
 
     private static final class DefaultLoadBalancerRoundRobinBuilder<ResolvedAddress, C extends LoadBalancedConnection>

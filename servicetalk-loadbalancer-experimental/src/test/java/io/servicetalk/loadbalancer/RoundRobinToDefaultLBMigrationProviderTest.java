@@ -15,24 +15,29 @@
  */
 package io.servicetalk.loadbalancer;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Properties;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static io.servicetalk.loadbalancer.RoundRobinToDefaultLBMigrationProvider.PROPERTY_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
 
+@Execution(ExecutionMode.SAME_THREAD)
 final class RoundRobinToDefaultLBMigrationProviderTest {
 
-    private final Properties properties = new Properties();
-    private final RoundRobinToDefaultLBMigrationProvider provider =
-            new RoundRobinToDefaultLBMigrationProvider(properties);
+    private final RoundRobinToDefaultLBMigrationProvider provider = new RoundRobinToDefaultLBMigrationProvider();
+
+    @AfterEach
+    void cleanup() {
+        System.clearProperty(PROPERTY_NAME);
+    }
 
     @Test
     void enabled() {
-        properties.setProperty(PROPERTY_NAME, "true");
+        System.setProperty(PROPERTY_NAME, "true");
         RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> builder =
                 new RoundRobinLoadBalancerFactory.Builder<>();
         RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> result = provider.newBuilder(
@@ -42,7 +47,7 @@ final class RoundRobinToDefaultLBMigrationProviderTest {
 
     @Test
     void disabled() {
-        properties.setProperty(PROPERTY_NAME, "false");
+        System.setProperty(PROPERTY_NAME, "false");
         RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> builder =
                 new RoundRobinLoadBalancerFactory.Builder<>();
         RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> result = provider.newBuilder(
