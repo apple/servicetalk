@@ -18,7 +18,9 @@ package io.servicetalk.capacity.limiter.api;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter.Ticket;
 
 import java.util.List;
-import java.util.function.Consumer;
+
+import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.latencyDefaults;
+import static io.servicetalk.capacity.limiter.api.GradientCapacityLimiterProfiles.throughputDefaults;
 
 /**
  * A static factory for creating instances of {@link CapacityLimiter}s.
@@ -113,13 +115,51 @@ public final class CapacityLimiters {
      * change between the two. That gradient value can in-turn be used to signify load; i.e. a positive gradient can
      * mean that the RTTs are decreasing, whereas a negative value means that RTTs are increasing.
      * This figure can be used to deduce a new limit (lower or higher accordingly) to follow the observed load pattern.
-     * @param profile The behaviour profile to apply to the builder instead of using the normal defaults.
+     * <p>
+     * The default settings applied on this version, demonstrate aggressive behaviour of the {@link CapacityLimiter},
+     * that tries to push the limit higher until a significant gradient change is noticed. It will allow limit increases
+     * while latency is changing, favouring throughput overall, so latency sensitive application may not want to use
+     * this profile.
+     * <p>
+     * The algorithm is heavily influenced by the following prior-art
      * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
+     * @see
+     * <a
+     * href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">
+     * Envoy Adaptive Concurrency</a>
+     * @see <a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a>
      */
-    public static GradientCapacityLimiterBuilder dynamicGradient(
-            final Consumer<GradientCapacityLimiterBuilder> profile) {
+    public static GradientCapacityLimiterBuilder dynamicGradientOptimizeForThroughput() {
         final GradientCapacityLimiterBuilder builder = new GradientCapacityLimiterBuilder();
-        profile.accept(builder);
+        throughputDefaults().accept(builder);
+        return builder;
+    }
+
+    /**
+     * Gradient is a dynamic concurrency limit algorithm used for clients.
+     * <p>
+     * Gradient's basic concept is that it tracks two Round Trip Time (RTT) figures, one of long period and another one
+     * of a shorter period. These two figures are then compared, and a gradient value is produced, representing the
+     * change between the two. That gradient value can in-turn be used to signify load; i.e. a positive gradient can
+     * mean that the RTTs are decreasing, whereas a negative value means that RTTs are increasing.
+     * This figure can be used to deduce a new limit (lower or higher accordingly) to follow the observed load pattern.
+     * <p>
+     * The default settings applied from this version, demonstrate cautious behaviour of the {@link CapacityLimiter},
+     * that tries to keep the limit lower to avoid increasing the latency of requests.
+     * This is a suggested setting for latency sensitive applications, but be aware that it may start throttling much
+     * earlier when even small gradients are noticed in the response times.
+     * <p>
+     * The algorithm is heavily influenced by the following prior-art
+     * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
+     * @see
+     * <a
+     * href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">
+     * Envoy Adaptive Concurrency</a>
+     * @see <a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a>
+     */
+    public static GradientCapacityLimiterBuilder dynamicGradientOptimizeForLatency() {
+        final GradientCapacityLimiterBuilder builder = new GradientCapacityLimiterBuilder();
+        latencyDefaults().accept(builder);
         return builder;
     }
 

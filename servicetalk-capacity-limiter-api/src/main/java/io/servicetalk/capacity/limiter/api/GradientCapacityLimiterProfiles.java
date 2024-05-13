@@ -31,7 +31,7 @@ import static java.time.Duration.ofSeconds;
 /**
  * Default supported gradient profiles.
  */
-public final class GradientCapacityLimiterProfiles {
+final class GradientCapacityLimiterProfiles {
 
     static final int DEFAULT_INITIAL_LIMIT = 100;
     static final int DEFAULT_MIN_LIMIT = 1;
@@ -72,7 +72,7 @@ public final class GradientCapacityLimiterProfiles {
      * earlier when even small gradients are noticed in the response times.
      * @return Settings for the {@link GradientCapacityLimiterBuilder} for a cautious Gradient {@link CapacityLimiter}.
      */
-    public static Consumer<GradientCapacityLimiterBuilder> preferLatency() {
+    static Consumer<GradientCapacityLimiterBuilder> latencyDefaults() {
         return builder ->
                 builder.minGradient(DEFAULT_MIN_GRADIENT)
                         .maxGradient(DEFAULT_MAX_GRADIENT)
@@ -89,7 +89,7 @@ public final class GradientCapacityLimiterProfiles {
      * @return Settings for the {@link GradientCapacityLimiterBuilder} for an aggressive Gradient
      * {@link CapacityLimiter}.
      */
-    public static Consumer<GradientCapacityLimiterBuilder> preferThroughput() {
+    static Consumer<GradientCapacityLimiterBuilder> throughputDefaults() {
         return builder ->
                 builder.minGradient(GREEDY_MIN_GRADIENT)
                         .maxGradient(GREEDY_MAX_GRADIENT)
