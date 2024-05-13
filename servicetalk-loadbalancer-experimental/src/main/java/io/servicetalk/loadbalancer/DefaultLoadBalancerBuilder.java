@@ -113,7 +113,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 loadBalancerObserver, outlierDetectorFactory, connectionPoolStrategyFactory);
     }
 
-    private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
+    static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
             implements LoadBalancerFactory<ResolvedAddress, C> {
 
         private final String id;
@@ -126,7 +126,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   final HealthCheckConfig healthCheckConfig,
+                                   @Nullable final HealthCheckConfig healthCheckConfig,
                                    final LoadBalancerObserver loadBalancerObserver,
                                    final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory,
                                    final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
