@@ -679,7 +679,7 @@ public final class RetryingHttpRequesterFilter
     public interface RetryCallbacks {
 
         /**
-         * Called before a retry is performed.
+         * Called after a retry decision has been made, but before the retry is performed.
          *
          * @param retryCount a current retry counter value for this attempt
          * @param requestMetaData {@link HttpRequestMetaData} that is being retried
@@ -891,7 +891,8 @@ public final class RetryingHttpRequesterFilter
          * Callback invoked on every {@link StreamingHttpClient#request(StreamingHttpRequest) request} retry attempt.
          * <p>
          * This can be used to track when {@link BackOffPolicy} actually decides to retry a request, to update
-         * {@link HttpRequestMetaData request meta-data} before a retry, or implement logging/metrics.
+         * {@link HttpRequestMetaData request meta-data} before a retry, or implement logging/metrics. However, it
+         * can not be used to influence the retry decision, use other "retry*" functions for that purpose.
          *
          * @param onRequestRetry {@link RetryCallbacks} to get notified on every
          * {@link StreamingHttpClient#request(StreamingHttpRequest) request} retry attempt
