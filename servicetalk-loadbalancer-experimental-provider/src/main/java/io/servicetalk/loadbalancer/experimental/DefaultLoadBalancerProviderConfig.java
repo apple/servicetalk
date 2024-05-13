@@ -26,13 +26,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerProviderConfig {
 
@@ -69,8 +67,6 @@ final class DefaultLoadBalancerProviderConfig {
 
     static final DefaultLoadBalancerProviderConfig INSTANCE = new DefaultLoadBalancerProviderConfig();
 
-    private final Properties properties;
-
     private final String rawClientsEnabledFor;
     private final Set<String> clientsEnabledFor;
     private final int failedConnectionsThreshold;
@@ -93,11 +89,6 @@ final class DefaultLoadBalancerProviderConfig {
     private final Duration ejectionTimeJitter;
 
     private DefaultLoadBalancerProviderConfig() {
-        this(System.getProperties());
-    }
-
-    private DefaultLoadBalancerProviderConfig(Properties properties) {
-        this.properties = requireNonNull(properties, "properties");
         rawClientsEnabledFor = getString(PROP_CLIENTS_ENABLED_FOR, "").trim();
         clientsEnabledFor = getClientsEnabledFor(rawClientsEnabledFor);
         failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, 5 /*ST default*/);
@@ -191,12 +182,12 @@ final class DefaultLoadBalancerProviderConfig {
                 '}';
     }
 
-    private String getString(String name, String defaultValue) {
-        return properties.getProperty(PROPERTY_PREFIX + name, defaultValue);
+    private static String getString(String name, String defaultValue) {
+        return System.getProperty(PROPERTY_PREFIX + name, defaultValue);
     }
 
-    private long getLong(String name, long defaultValue) {
-        String propertyValue = properties.getProperty(PROPERTY_PREFIX + name);
+    private static long getLong(String name, long defaultValue) {
+        String propertyValue = System.getProperty(PROPERTY_PREFIX + name);
         if (propertyValue == null) {
             return defaultValue;
         }
@@ -209,7 +200,7 @@ final class DefaultLoadBalancerProviderConfig {
         }
     }
 
-    private int getInt(String name, int defaultValue) {
+    private static int getInt(String name, int defaultValue) {
         long value = getLong(name, defaultValue);
         if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Integer overflow for value " + name + ": " + value);
