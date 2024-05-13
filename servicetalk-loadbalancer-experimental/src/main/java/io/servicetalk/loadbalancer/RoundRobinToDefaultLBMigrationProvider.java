@@ -43,10 +43,11 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
     RoundRobinLoadBalancerBuilder<ResolvedAddress, C> newBuilder(
             String id, RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
         if (isEnabled()) {
-            LOGGER.info("Enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer");
+            LOGGER.info("Enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer for load balancer id {}", id);
             return new DefaultLoadBalancerRoundRobinBuilder<>(id);
         } else {
-            LOGGER.debug("Not enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer");
+            LOGGER.debug(
+                    "Not enabling DefaultLoadBalancer in place of RoundRobinLoadBalancer for load balancer id {}", id);
             return builder;
         }
     }
