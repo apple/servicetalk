@@ -63,4 +63,11 @@ final class RoundRobinToDefaultLBMigrationProviderTest {
                 "builder", builder);
         assertThat(result, sameInstance(builder));
     }
+
+    @Test
+    void isCorrectlyServiceLoaded() {
+        System.setProperty(PROPERTY_NAME, "true");
+        assertThat(RoundRobinLoadBalancers.builder("builder").build(),
+                instanceOf(DefaultLoadBalancerBuilder.DefaultLoadBalancerFactory.class));
+    }
 }

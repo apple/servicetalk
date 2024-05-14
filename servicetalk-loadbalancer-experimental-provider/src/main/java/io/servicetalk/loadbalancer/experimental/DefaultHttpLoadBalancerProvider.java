@@ -28,8 +28,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A client builder provider that supports enabling the new `DefaultLoadBalancer` in applications via property flags.
  * See the packages README.md for more details.
@@ -38,25 +36,20 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpLoadBalancerProvider.class);
 
-    private final DefaultLoadBalancerProviderConfig config;
-
     public DefaultHttpLoadBalancerProvider() {
-        this(DefaultLoadBalancerProviderConfig.INSTANCE);
-    }
-
-    // exposed for testing
-    DefaultHttpLoadBalancerProvider(final DefaultLoadBalancerProviderConfig config) {
-        this.config = requireNonNull(config, "config");
     }
 
     @Override
     public final <U, R> SingleAddressHttpClientBuilder<U, R> newBuilder(U address,
                                                                   SingleAddressHttpClientBuilder<U, R> builder) {
         final String serviceName = clientNameFromAddress(address);
+        final DefaultLoadBalancerProviderConfig config = DefaultLoadBalancerProviderConfig.instance();
+        LOGGER.debug(
+                "Property based config for client to service name {} at address {}: {}", serviceName, address, config);
         if (config.enabledForServiceName(serviceName)) {
             try {
                 HttpLoadBalancerFactory<R> loadBalancerFactory = new DefaultHttpLoadBalancerFactory<>(
-                        defaultLoadBalancer(serviceName));
+                        defaultLoadBalancer(serviceName, config));
                 builder = builder.loadBalancerFactory(loadBalancerFactory);
                 builder = new LoadBalancerIgnoringBuilder<>(builder, serviceName);
                 LOGGER.info("Enabled DefaultLoadBalancer for service with name {}", serviceName);
@@ -68,7 +61,7 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
     }
 
     private <R> LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> defaultLoadBalancer(
-            String serviceName) {
+            String serviceName, DefaultLoadBalancerProviderConfig config) {
         return LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>
                         builder("experimental-load-balancer")
                 .loadBalancerObserver(new DefaultLoadBalancerObserver(serviceName))
@@ -99,7 +92,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
         return serviceName;
     }
 
-    private static final class LoadBalancerIgnoringBuilder<U, R>
+    // Exposed for testing
+    static final class LoadBalancerIgnoringBuilder<U, R>
             extends DelegatingSingleAddressHttpClientBuilder<U, R> {
 
         private final String serviceName;

@@ -65,8 +65,6 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_MAX_EJECTION_TIME_MS = "maxEjectionTimeMs";
     private static final String PROP_EJECTION_TIME_JITTER_MS = "ejectionTimeJitterMs";
 
-    static final DefaultLoadBalancerProviderConfig INSTANCE = new DefaultLoadBalancerProviderConfig();
-
     private final String rawClientsEnabledFor;
     private final Set<String> clientsEnabledFor;
     private final int failedConnectionsThreshold;
@@ -180,6 +178,10 @@ final class DefaultLoadBalancerProviderConfig {
                 ", failurePercentageRequestVolume=" + failurePercentageRequestVolume +
                 ", maxEjectionTime=" + maxEjectionTime +
                 '}';
+    }
+
+    static DefaultLoadBalancerProviderConfig instance() {
+        return new DefaultLoadBalancerProviderConfig();
     }
 
     private static String getString(String name, String defaultValue) {
