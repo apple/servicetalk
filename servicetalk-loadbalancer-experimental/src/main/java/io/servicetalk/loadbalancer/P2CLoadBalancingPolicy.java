@@ -76,6 +76,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     /**
      * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
      */
+    @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {
 
         private static final boolean DEFAULT_IGNORE_WEIGHTS = false;

@@ -60,6 +60,7 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
     /**
      * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
      */
+    @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {
 
         private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
