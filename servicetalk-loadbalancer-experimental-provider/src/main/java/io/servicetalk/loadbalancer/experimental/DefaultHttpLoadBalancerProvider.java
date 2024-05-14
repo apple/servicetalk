@@ -44,6 +44,8 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
                                                                   SingleAddressHttpClientBuilder<U, R> builder) {
         final String serviceName = clientNameFromAddress(address);
         final DefaultLoadBalancerProviderConfig config = DefaultLoadBalancerProviderConfig.instance();
+        LOGGER.debug(
+                "Property based config for client to service name {} at address {}: {}", serviceName, address, config);
         if (config.enabledForServiceName(serviceName)) {
             try {
                 HttpLoadBalancerFactory<R> loadBalancerFactory = new DefaultHttpLoadBalancerFactory<>(
