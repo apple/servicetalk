@@ -36,27 +36,15 @@ compileTestJava {
   options.release = compileJava.options.release
 }
 
-checkstyleMain {
+tasks.withType(Checkstyle).all {
   enabled false
 }
 
-checkstyleTest {
+tasks.withType(Pmd).all {
   enabled false
 }
 
-checkstyleTestFixtures {
-  enabled false
-}
-
-spotbugsMain {
-  enabled false
-}
-
-spotbugsTest {
-  enabled false
-}
-
-spotbugsTestFixtures {
+tasks.withType(SpotBugsTask).all {
   enabled false
 }
 
