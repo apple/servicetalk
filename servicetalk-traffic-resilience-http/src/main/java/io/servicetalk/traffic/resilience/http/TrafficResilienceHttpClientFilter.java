@@ -33,7 +33,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.PassthroughRequestDroppedException;
 import io.servicetalk.transport.api.ServerListenContext;
@@ -70,15 +69,14 @@ import static java.util.Objects.requireNonNull;
  *     <li>The traffic control filter should not be offloaded <u>if possible</u> to avoid situations where
  *     continuous traffic overflows the offloading subsystem.</li>
  *     <li>The traffic control filter should be ordered after a
- *     {@link RetryingHttpRequesterFilter retry-filter} if one is used, to avail the
+ *     {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter} if one is used, to avail the
  *     benefit of retrying requests that failed due to (local or remote) capacity issues.
  *     {@link RetryableRequestDroppedException} are safely retry-able errors, since they occur on the outgoing
  *     side before they even touch the network. {@link DelayedRetryRequestDroppedException} errors on the other
  *     side, are remote rejections, and its up to the application logic to opt-in for them to be retryable, by
- *     configuring the relevant predicate of the {@link RetryingHttpRequesterFilter retry
- *     -filter}</li>
+ *     configuring the relevant predicate of the {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}</li>
  *     <li>The traffic control filter should be ordered after a
- *     {@link RetryingHttpRequesterFilter retry-filter} to allow an already acquired
+ *     {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter} to allow an already acquired
  *     {@link Ticket permit} to be released in case
  *     of other errors/timeouts of the operation, before retrying to re-acquire a
  *     {@link Ticket permit}. Otherwise, a

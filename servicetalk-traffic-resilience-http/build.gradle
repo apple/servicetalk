@@ -22,7 +22,6 @@ dependencies {
   api project(":servicetalk-circuit-breaker-api")
   api project(":servicetalk-http-api")
   api project(":servicetalk-http-utils")
-  api project(":servicetalk-http-netty")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")

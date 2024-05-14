@@ -16,8 +16,8 @@
 package io.servicetalk.traffic.resilience.http;
 
 import io.servicetalk.capacity.limiter.api.RequestDroppedException;
+import io.servicetalk.client.api.DelayedRetry;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 
 import java.time.Duration;
 import javax.annotation.Nullable;
@@ -25,13 +25,14 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link RuntimeException} to indicate that a request was rejected by a server due to capacity constraints.
+ * A {@link RequestDroppedException} to indicate that a request was dropped by a server due to capacity constraints and
+ * requires a client to delay its retry.
+ * <p>
  * This error reflects the client side application logic and its interpretation of a service response; meaning that
  * its up to the application to declare whether a {@link HttpResponseStatus#TOO_MANY_REQUESTS} is a safe-to-retry
  * response, and if so after how much {@link #delay()}.
  */
-public final class DelayedRetryRequestDroppedException extends RequestDroppedException
-        implements RetryingHttpRequesterFilter.DelayedRetry {
+public final class DelayedRetryRequestDroppedException extends RequestDroppedException implements DelayedRetry {
 
     private static final long serialVersionUID = -7933994513110803151L;
     private final Duration delay;
@@ -99,5 +100,10 @@ public final class DelayedRetryRequestDroppedException extends RequestDroppedExc
     @Override
     public Duration delay() {
         return delay;
+    }
+
+    @Override
+    public Throwable throwable() {
+        return this;
     }
 }

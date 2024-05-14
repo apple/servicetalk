@@ -21,7 +21,9 @@ import io.servicetalk.transport.api.RetryableException;
 import javax.annotation.Nullable;
 
 /**
- * A {@link RetryableException} to indicate that a request was rejected by a client/server due to capacity constraints.
+ * A {@link RetryableException retryable} {@link RequestDroppedException} to indicate that a request was dropped by a
+ * client/server due to capacity constraints.
+ * <p>
  * Instances of this exception are expected to be thrown when a client side capacity is reached, thus the exception did
  * not touch the "wire" (network) yet, meaning that its safe to be retried. Retries are useful in the context of
  * capacity, to maximize chances for a request to succeed.
