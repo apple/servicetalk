@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.DelayedRetryException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -197,8 +198,8 @@ public final class RetryingHttpRequesterFilter
                 if (backOffPolicy != NO_RETRIES) {
                     final int offsetCount = count - lbNotReadyCount;
                     Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
-                    if (t instanceof DelayedRetry) {
-                        final Duration constant = ((DelayedRetry) t).delay();
+                    if (t instanceof DelayedRetryException) {
+                        final Duration constant = ((DelayedRetryException) t).delay();
                         retryWhen = retryWhen.concat(executor.timer(constant));
                     }
 
@@ -658,18 +659,33 @@ public final class RetryingHttpRequesterFilter
      * <p>
      * Constant delay returned from {@link #delay()} will be additive to the backoff policy defined for a certain
      * retry-able failure.
+     *
+     * @deprecated Use {@link DelayedRetryException} instead.
      */
-    public interface DelayedRetry {
+    @Deprecated // FIXME: 0.43 - remove deprecated interface
+    @FunctionalInterface
+    public interface DelayedRetry extends DelayedRetryException {
 
         /**
-         * A constant delay to apply in milliseconds.
+         * A constant delay to apply.
+         * <p>
          * The total delay for the retry logic will be the sum of this value and the result of the
          * {@link BackOffPolicy back-off policy} in-use. Consider using 'full-jitter'
          * flavours from the {@link BackOffPolicy} to avoid having another constant delay applied per-retry.
          *
          * @return The {@link Duration} to apply as constant delay when retrying.
          */
+        @Override
         Duration delay();
+
+        @Override
+        @SuppressWarnings("InstanceofIncompatibleInterface")
+        default Throwable throwable() {
+            if (this instanceof Throwable) {
+                return (Throwable) this;
+            }
+            throw new UnsupportedOperationException("DelayedRetry#throwable() is not supported by " + getClass());
+        }
     }
 
     /**
@@ -717,6 +733,10 @@ public final class RetryingHttpRequesterFilter
         private BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> retryDelayedRetries;
 
         @Nullable
+        private BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy>
+                retryDelayedRetryExceptions;
+
+        @Nullable
         private BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> retryResponses;
 
         @Nullable
@@ -756,7 +776,7 @@ public final class RetryingHttpRequesterFilter
          * functions (see. {@link #retryDelayedRetries(BiFunction)}, {@link #retryIdempotentRequests(BiFunction)},
          * {@link #retryRetryableExceptions(BiFunction)}, {@link #retryResponses(BiFunction)},
          * {@link #retryOther(BiFunction)}).
-         *
+         * <p>
          * Maximum total retries guards the LB/SD readiness flow, making sure LB connection issues will also be
          * retried with a limit.
          *
@@ -787,7 +807,9 @@ public final class RetryingHttpRequesterFilter
 
         /**
          * The retrying-filter will evaluate for {@link RetryableException}s in the request flow.
-         * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
+         * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
+         * <p>
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
@@ -808,7 +830,9 @@ public final class RetryingHttpRequesterFilter
          * <a href="https://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes
          * to the payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or
          * which are created from in-memory data are typically replayable.
-         * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
+         * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
+         * <p>
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
@@ -836,19 +860,48 @@ public final class RetryingHttpRequesterFilter
         }
 
         /**
+         * The retrying-filter will evaluate the {@link Throwable} marked with
+         * {@link DelayedRetryException} interface and use the provided
+         * {@link DelayedRetryException#delay() delay} as a constant delay on-top of the
+         * retry period already defined.
+         * <p>
+         * In case a max-delay was set in this builder, the
+         * {@link DelayedRetryException#delay() constant-delay} overrides it and takes precedence.
+         * <p>
+         * To disable retries and proceed evaluating other retry functions you can return,
+         * {@link BackOffPolicy#ofNoRetries()} from the passed {@code mapper}.
+         * <p>
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
+         * {@link DelayedRetryException delayed-exception} to a {@link BackOffPolicy}.
+         * @return {@code this}.
+         */
+        public Builder retryDelayedRetryExceptions(
+                final BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy> mapper) {
+            this.retryDelayedRetryExceptions = requireNonNull(mapper);
+            return this;
+        }
+
+        /**
          * The retrying-filter will evaluate the {@link DelayedRetry} marker interface
          * of an exception and use the provided {@link DelayedRetry#delay() delay} as a constant delay on-top of the
          * retry period already defined.
+         * <p>
          * In case a max-delay was set in this builder, the {@link DelayedRetry#delay() constant-delay} overrides
          * it and takes precedence.
+         * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
          * @return {@code this}.
+         * @deprecated Use {@link #retryDelayedRetryExceptions(BiFunction)} instead.
          */
-        public Builder retryDelayedRetries(
+        @Deprecated
+        public Builder retryDelayedRetries(// FIXME: 0.43 - remove deprecated method
                 final BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> mapper) {
             this.retryDelayedRetries = requireNonNull(mapper);
             return this;
@@ -858,7 +911,9 @@ public final class RetryingHttpRequesterFilter
          * The retrying-filter will evaluate {@link HttpResponseException} that resulted from the
          * {@link #responseMapper(Function)}, and support different retry behaviour according to the
          * {@link HttpRequestMetaData request} and the {@link HttpResponseMetaData response}.
+         * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
@@ -874,8 +929,11 @@ public final class RetryingHttpRequesterFilter
         /**
          * Support additional criteria for determining which requests or errors should be
          * retried.
+         * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
          * @param mapper {@link BiFunction} that checks whether a given combination of
          * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried, producing a
          * {@link BackOffPolicy} in such cases.
@@ -925,14 +983,19 @@ public final class RetryingHttpRequesterFilter
                     this.retryRetryableExceptions;
             final BiFunction<HttpRequestMetaData, IOException, BackOffPolicy> retryIdempotentRequests =
                     this.retryIdempotentRequests;
+            final BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy>
+                    retryDelayedRetryExceptions = this.retryDelayedRetryExceptions;
             final BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> retryDelayedRetries =
                     this.retryDelayedRetries;
             final BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> retryResponses =
                     this.retryResponses;
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryOther = this.retryOther;
             // This assumes RetryableExceptions are never written/consumed.
-            final boolean mayReplayRequestPayload = retryIdempotentRequests != null || retryDelayedRetries != null ||
-                    retryResponses != null || retryOther != null;
+            final boolean mayReplayRequestPayload = retryIdempotentRequests != null ||
+                    retryDelayedRetryExceptions != null ||
+                    retryDelayedRetries != null ||
+                    retryResponses != null ||
+                    retryOther != null;
 
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> allPredicate =
                     (requestMetaData, throwable) -> {
@@ -954,6 +1017,15 @@ public final class RetryingHttpRequesterFilter
                                 && requestMetaData.method().properties().isIdempotent()) {
                             final BackOffPolicy backOffPolicy =
                                     retryIdempotentRequests.apply(requestMetaData, (IOException) throwable);
+                            if (backOffPolicy != NO_RETRIES) {
+                                return backOffPolicy;
+                            }
+                        }
+
+                        if (retryDelayedRetryExceptions != null &&
+                                throwable instanceof DelayedRetryException) {
+                            final BackOffPolicy backOffPolicy = retryDelayedRetryExceptions.apply(requestMetaData,
+                                    (DelayedRetryException) throwable);
                             if (backOffPolicy != NO_RETRIES) {
                                 return backOffPolicy;
                             }
