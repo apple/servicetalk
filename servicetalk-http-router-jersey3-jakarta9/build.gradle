@@ -52,6 +52,14 @@ spotbugsMain {
   enabled false
 }
 
+spotbugsTest {
+  enabled false
+}
+
+spotbugsTestFixtures {
+  enabled false
+}
+
 task cleanSources(type: Delete) {
   // Don't delete src/testFixtures/java/.gitkeep
   // gitkeep used to ensure that a src/textFixtures/java exists or Gradle processing will fail

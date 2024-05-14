@@ -55,6 +55,10 @@ spotbugsMain {
   enabled false
 }
 
+spotbugsTest {
+  enabled false
+}
+
 task cleanSources(type: Delete) {
   delete 'src'
 }
