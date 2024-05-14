@@ -26,18 +26,18 @@ import java.util.List;
  * from an ordered set. If a host is considered unhealthy it is skipped the next host
  * is selected until a healthy host is found or the entire host set has been exhausted.
  *
- * Note: this algorithm doesn't currently support weighted hosts and all weight information will be ignored.
- *
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
+ * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
  */
+@Deprecated // FIXME: 0.42.45 - make package private
 public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
     private final boolean ignoreWeights;
 
-    private RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
+    RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
         this.failOpen = failOpen;
         this.ignoreWeights = ignoreWeights;
     }
@@ -60,7 +60,9 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
 
     /**
      * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
+     * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
      */
+    @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {
 
         private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
@@ -69,9 +71,14 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
         private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
 
         /**
-         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
-         * @return this {@link P2CLoadBalancingPolicy.Builder}.
+         * Set whether the selector should fail-open in the event no healthy hosts are found.
+         * When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
+         * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
+         * session.
+         * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
+         * @param failOpen if true, will attempt  to select or establish a connection from an arbitrary host even if it
+         *                 is unlikely to return a healthy  session.
+         * @return {@code this}
          */
         public Builder failOpen(final boolean failOpen) {
             this.failOpen = failOpen;

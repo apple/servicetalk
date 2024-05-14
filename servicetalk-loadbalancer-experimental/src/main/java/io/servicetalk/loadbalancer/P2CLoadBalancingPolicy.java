@@ -37,8 +37,10 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * @param <ResolvedAddress> the type of the resolved address.
  * @param <C> the type of the load balanced connection.
  * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
- *  *  Choices in Randomized Load Balancing</a>
+ *    Choices in Randomized Load Balancing</a>
+ *  @deprecated Use {@link P2CLoadBalancingPolicyBuilder}.
  */
+@Deprecated // FIXME: 0.42.45 - make package private
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
@@ -48,7 +50,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
+    P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
                                    final boolean failOpen, @Nullable final Random random) {
         this.ignoreWeights = ignoreWeights;
         this.maxEffort = maxEffort;
@@ -74,7 +76,9 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     /**
      * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
+     * @deprecated Use {@link P2CLoadBalancingPolicyBuilder}.
      */
+    @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {
 
         private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
@@ -99,9 +103,13 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
         }
 
         /**
-         * Set whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * Set whether the selector should fail-open in the event no healthy hosts are found.
+         * When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
+         * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
+         * session.
          * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
-         * @param failOpen whether the host selector should attempt to use an unhealthy {@link Host} as a last resort.
+         * @param failOpen if true, will attempt  to select or establish a connection from an arbitrary host even if it
+         *                 is unlikely to return a healthy  session.
          * @return {@code this}
          */
         public Builder failOpen(final boolean failOpen) {
