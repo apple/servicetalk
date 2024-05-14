@@ -96,7 +96,7 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
@@ -112,10 +112,13 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a new <a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty"><code>DefaultHttpLoadBalancerFactory.Builder</code></a> using the passed <a href="../../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ResolvedAddress&gt;<br><a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;ResolvedAddress&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromDefaults()" class="member-name-link">fromDefaults</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a new <a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty"><code>DefaultHttpLoadBalancerFactory.Builder</code></a> instance using the default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> implementation.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;ResolvedAddress&gt;<br><a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;ResolvedAddress&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#fromDefaults()" class="member-name-link">fromDefaults</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="../api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpLoadBalancerFactory</code></a> and wrap the raw load balancer
+             factory you're interested in using.</div>
+</div>
 </div>
 </div>
 </div>
@@ -148,8 +151,13 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="fromDefaults()">
 <h3>fromDefaults</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ResolvedAddress&gt;</span>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ResolvedAddress&gt;</span>
 <span class="return-type"><a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;ResolvedAddress&gt;</span>&nbsp;<span class="element-name">fromDefaults</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="../api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpLoadBalancerFactory</code></a> and wrap the raw load balancer
+             factory you're interested in using.</div>
+</div>
 <div class="block">Creates a new <a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty"><code>DefaultHttpLoadBalancerFactory.Builder</code></a> instance using the default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> implementation.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>

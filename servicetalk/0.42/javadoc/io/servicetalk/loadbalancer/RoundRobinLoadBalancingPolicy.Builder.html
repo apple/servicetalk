@@ -80,8 +80,12 @@ loadScripts(document, 'script');</script>
 <dd><a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy</a>&lt;<a href="RoundRobinLoadBalancingPolicy.html" title="type parameter in RoundRobinLoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancingPolicy.html" title="type parameter in RoundRobinLoadBalancingPolicy">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public static final class </span><span class="element-name type-name-label">RoundRobinLoadBalancingPolicy.Builder</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static final class </span><span class="element-name type-name-label">RoundRobinLoadBalancingPolicy.Builder</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancingPolicyBuilder</code></a>.</div>
+</div>
 <div class="block">A builder for immutable <a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancingPolicy</code></a> instances.</div>
 </section>
 <section class="summary">
@@ -95,7 +99,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">Builder</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</div>
 </div>
 </section>
 </li>
@@ -104,22 +110,30 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ResolvedAddress,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>&lt;ResolvedAddress,<wbr>
 C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;<br><a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Construct the immutable <a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancingPolicy</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failOpen(boolean)" class="member-name-link">failOpen</a><wbr>(boolean&nbsp;failOpen)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set whether the host selector should attempt to use an unhealthy <code>Host</code> as a last resort.</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#failOpen(boolean)" class="member-name-link">failOpen</a><wbr>(boolean&nbsp;failOpen)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set whether the selector should fail-open in the event no healthy hosts are found.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ignoreWeights(boolean)" class="member-name-link">ignoreWeights</a><wbr>(boolean&nbsp;ignoreWeights)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set whether the host selector should ignore <code>Host</code>s weight.</div>
 </div>
 </div>
 </div>
@@ -142,6 +156,7 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <section class="detail" id="&lt;init&gt;()">
 <h3>Builder</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 </section>
 </li>
 </ul>
@@ -156,12 +171,36 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <section class="detail" id="failOpen(boolean)">
 <h3>failOpen</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></span>&nbsp;<span class="element-name">failOpen</span><wbr><span class="parameters">(boolean&nbsp;failOpen)</span></div>
-<div class="block">Set whether the host selector should attempt to use an unhealthy <code>Host</code> as a last resort.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set whether the selector should fail-open in the event no healthy hosts are found.
+ When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
+ to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
+ session.
+ Defaults to false.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>failOpen</code> - whether the host selector should attempt to use an unhealthy <code>Host</code> as a last resort.</dd>
+<dd><code>failOpen</code> - if true, will attempt  to select or establish a connection from an arbitrary host even if it
+                 is unlikely to return a healthy  session.</dd>
 <dt>Returns:</dt>
-<dd>this <a href="P2CLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer"><code>P2CLoadBalancingPolicy.Builder</code></a>.</dd>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ignoreWeights(boolean)">
+<h3>ignoreWeights</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancingPolicy.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy.Builder</a></span>&nbsp;<span class="element-name">ignoreWeights</span><wbr><span class="parameters">(boolean&nbsp;ignoreWeights)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Set whether the host selector should ignore <code>Host</code>s weight.
+ Host weight influences the probability it will be selected to serve a request. The host weight can come
+ from many sources including known host capacity, priority groups, and others, so ignoring weight
+ information can lead to other features not working properly and should be used with care.
+ Defaults to false.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ignoreWeights</code> - whether the host selector should ignore host weight information.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>
@@ -171,6 +210,7 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters-long">&lt;ResolvedAddress,<wbr>
 C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
 <span class="return-type"><a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</span>&nbsp;<span class="element-name">build</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Construct the immutable <a href="RoundRobinLoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancingPolicy</code></a>.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>

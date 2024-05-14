@@ -78,8 +78,8 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a>&lt;ResolvedAddress&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Default implementation of <a href="../api/HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api"><code>HttpLoadBalancerFactory</code></a>.</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">Deprecated.
+<div class="deprecation-comment">use <a href="../api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpLoadBalancerFactory</code></a> instead.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;ResolvedAddress&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
@@ -171,14 +171,17 @@ loadScripts(document, 'script');</script>
 <div class="block">A builder for <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a>, which puts an upper bound on retry attempts.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">An interface that enhances any <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link"><code>Exception</code></a> to provide a constant <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>delay</code></a> to be applied when
- retrying through a <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>retrying-filter</code></a>.</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">Use <a href="../../client/api/DelayedRetryException.html" title="interface in io.servicetalk.client.api"><code>DelayedRetryException</code></a> instead.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab5"><a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">This exception indicates response that matched the retrying rules of the <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a>
  and will-be/was retried.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RetryingHttpRequesterFilter.RetryCallbacks.html" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.RetryCallbacks</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">Callbacks invoked on a retry attempt.</div>
 </div>
 </div>
 </div>

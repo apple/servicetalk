@@ -82,11 +82,38 @@ loadScripts(document, 'script');</script>
 </dl>
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="DefaultServiceDiscovererEvent.html" title="class in io.servicetalk.client.api">DefaultServiceDiscovererEvent</a></code></dd>
+<dd><code><a href="DefaultServiceDiscovererEvent.html" title="class in io.servicetalk.client.api">DefaultServiceDiscovererEvent</a></code>, <code><a href="../../loadbalancer/RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a></code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">ServiceDiscovererEvent&lt;ResolvedAddress&gt;</span></div>
-<div class="block">Notification from the Service Discovery system that availability for an address has changed.</div>
+<div class="block">Notification from the Service Discovery system that availability for an address has changed.
+ <p>
+ Interpreting Events
+ <ul>
+     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial collection of
+         events is considered to be the current state of the world.</li>
+     <li>Each event represents the current state of the <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> overriding any previously known
+         <a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> and any associated meta-data.</li>
+ </ul>
+ <p>
+ Example
+ <p>
+ We can represent a <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> as map entries of the form
+ (<a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>, (<a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a>, meta-data)) where the <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> is the map key.
+ <pre>
+ Starting with the initial state of {addr1, (AVAILABLE, meta-1)}. Upon subscribing to the event stream the initial
+ state is populated via the event (addr1, (AVAILABLE, meta-1)).
+
+ Say the meta-data for address changes resulting in a system state {addr1, (AVAILABLE, meta-2)}. The state change is
+ be represented by the event (addr1, (AVAILABLE, meta-2)).
+
+ Next the address is removed from the system resulting in an empty state {}. It is up to the
+ <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> whether this will be represented by the <a href="ServiceDiscovererEvent.Status.html#UNAVAILABLE"><code>ServiceDiscovererEvent.Status.UNAVAILABLE</code></a> or
+ <a href="ServiceDiscovererEvent.Status.html#EXPIRED"><code>ServiceDiscovererEvent.Status.EXPIRED</code></a> but both are logically equivalent to removal, only with different meanings for how
+ resources already acquired to the address should be used. Picking UNAVAILABLE, the transition back to the empty state
+ would be represented by the event (addr1, (UNAVAILABLE, meta-2)).
+ </pre>
+ See <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> for the interface that defines the source of event streams.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -148,10 +175,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="address()">
 <h3>address</h3>
 <div class="member-signature"><span class="return-type"><a href="ServiceDiscovererEvent.html" title="type parameter in ServiceDiscovererEvent">ResolvedAddress</a></span>&nbsp;<span class="element-name">address</span>()</div>
-<div class="block">Get the resolved address which is the subject of this event.
- <p>
- Note: all subsequent events for the same address override its <a href="#status()"><code>status()</code></a> or any additional meta-data
- associated with the address.</div>
+<div class="block">Get the resolved address which is the subject of this event.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>a resolved address that can be used for connecting.</dd>

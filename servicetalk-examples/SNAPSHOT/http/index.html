@@ -1318,6 +1318,25 @@ All serializers and deserializers defined in
 This example demonstrates how to use these APIs, and how different API variations (e.g. asynchronous/blocking and
 aggregated/streaming) are exposed.</p>
 </div>
+<div class="paragraph">
+<p>To use ServiceTalk with Jersey 3.X, replace the following dependencies in the sample:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>servicetalk-data-jackson-jersey</code> &#8594; <code>servicetalk-data-jackson-jersey3-jakarta9</code> (3.0.X) or <code>servicetalk-data-jackson-jersey3-jakarta10</code> (3.1.X)</p>
+</li>
+<li>
+<p><code>servicetalk-data-protobuf-jersey</code> &#8594; <code>servicetalk-data-protobuf-jersey3-jakarta9</code> (3.0.X) or <code>servicetalk-data-protobuf-jersey3-jakarta10</code> (3.1.X)</p>
+</li>
+<li>
+<p><code>servicetalk-http-router-jersey</code> &#8594; <code>servicetalk-http-router-jersey3-jakarta9</code> (3.0.X) or <code>servicetalk-http-router-jersey3-jakarta10</code> (3.1.X)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>and change <code>jerseyVersion</code> to <code>jersey3VersionEE9</code> (3.0.X) or <code>jersey3VersionEE10</code> (3.1.X)</p>
+</div>
 <div class="sect2">
 <h3 id="hello-world"><a class="anchor" href="#hello-world"></a><a class="link" href="#hello-world">Hello world</a></h3>
 <div class="paragraph">

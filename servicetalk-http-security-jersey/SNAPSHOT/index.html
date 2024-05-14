@@ -1076,6 +1076,11 @@
 <p>This module provides JAX-RS filters that set <code>javax.ws.rs.core.SecurityContext</code> for requests authenticated with
 various authentication schemes.</p>
 </div>
+<div class="paragraph">
+<p><strong>Note:</strong> If using Jersey 3.X, replace all imports containing <code>javax.ws</code> with <code>jakarta.ws</code>, and replace the dependency with:
+* <code>servicetalk-http-security-jersey3-jakarta9</code> for Jersey 3.0.X
+* <code>servicetalk-http-security-jersey3-jakarta10</code> for Jersey 3.1.X</p>
+</div>
 </div>
 </div>
 <div class="sect1">

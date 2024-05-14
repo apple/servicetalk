@@ -1,6 +1,9 @@
 io.servicetalk.annotations
 io.servicetalk.buffer.api
 io.servicetalk.buffer.netty
+io.servicetalk.capacity.limiter.api
+io.servicetalk.circuit.breaker.api
+io.servicetalk.circuit.breaker.resilience4j
 io.servicetalk.client.api
 io.servicetalk.client.api.internal
 io.servicetalk.client.api.internal.partition
@@ -44,6 +47,7 @@ io.servicetalk.http.security.auth.basic.jersey
 io.servicetalk.http.utils
 io.servicetalk.http.utils.auth
 io.servicetalk.loadbalancer
+io.servicetalk.loadbalancer.experimental
 io.servicetalk.log4j2.mdc
 io.servicetalk.log4j2.mdc.utils
 io.servicetalk.logging.api
@@ -67,6 +71,7 @@ io.servicetalk.serializer.api
 io.servicetalk.serializer.utils
 io.servicetalk.tcp.netty.internal
 io.servicetalk.test.resources
+io.servicetalk.traffic.resilience.http
 io.servicetalk.transport.api
 io.servicetalk.transport.netty
 io.servicetalk.transport.netty.internal

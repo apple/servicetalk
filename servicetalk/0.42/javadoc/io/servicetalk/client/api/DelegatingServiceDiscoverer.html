@@ -210,9 +210,8 @@ implements <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.c
  <code>address</code>.
  <p>
  In general a call to this method will continue to discover changes related to <code>address</code> until the
- <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>
- corresponding to the return value is cancelled via <a href="../../concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> or there are no more changes to
- publish.</div>
+ <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> corresponding to the return value is cancelled via <a href="../../concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> or there
+ are no more changes to be published.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="ServiceDiscoverer.html#discover(UnresolvedAddress)">discover</a></code>&nbsp;in interface&nbsp;<code><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">UnresolvedAddress</a>,<wbr><a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">ResolvedAddress</a>,<wbr><a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">E</a> extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">ResolvedAddress</a>&gt;&gt;</code></dd>

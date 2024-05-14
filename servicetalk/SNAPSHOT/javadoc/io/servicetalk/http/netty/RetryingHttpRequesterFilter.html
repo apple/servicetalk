@@ -126,14 +126,20 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="RetryingHttpRequesterFilter.DelayedRetry.html" class="type-name-link" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">An interface that enhances any <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link"><code>Exception</code></a> to provide a constant <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>delay</code></a> to be applied when
- retrying through a <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>retrying-filter</code></a>.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="../../client/api/DelayedRetryException.html" title="interface in io.servicetalk.client.api"><code>DelayedRetryException</code></a> instead.</div>
+</div>
 </div>
 <div class="col-first odd-row-color"><code>static class&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="RetryingHttpRequesterFilter.HttpResponseException.html" class="type-name-link" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></code></div>
 <div class="col-last odd-row-color">
 <div class="block">This exception indicates response that matched the retrying rules of the <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a>
  and will-be/was retried.</div>
+</div>
+<div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="RetryingHttpRequesterFilter.RetryCallbacks.html" class="type-name-link" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.RetryCallbacks</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Callbacks invoked on a retry attempt.</div>
 </div>
 </div>
 </section>

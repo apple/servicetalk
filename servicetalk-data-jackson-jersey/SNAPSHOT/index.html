@@ -1078,6 +1078,11 @@ It is a replacement for <code>jersey-media-json-jackson</code> and allows avoidi
 with out-of-the-box body readers and also allows accepting/returning <code>Single&lt;Pojo&gt;</code> and <code>Publisher&lt;Pojo&gt;</code>
 from resource methods.</p>
 </div>
+<div class="paragraph">
+<p><strong>Note:</strong> If using Jersey 3.X, replace all imports containing <code>javax.ws</code> with <code>jakarta.ws</code>, and replace the dependency with:
+* <code>servicetalk-data-jackson-jersey3-jakarta9</code> for Jersey 3.0.X
+* <code>servicetalk-data-jackson-jersey3-jakarta10</code> for Jersey 3.1.X</p>
+</div>
 <div class="admonitionblock caution">
 <table>
 <tr>

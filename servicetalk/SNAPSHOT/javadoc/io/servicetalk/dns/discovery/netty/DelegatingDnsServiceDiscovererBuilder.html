@@ -186,34 +186,39 @@ implements <a href="DnsServiceDiscovererBuilder.html" title="interface in io.ser
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#queryTimeout(java.time.Duration)" class="member-name-link">queryTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Sets the timeout of each DNS query performed by this service discoverer.</div>
+<div class="block">Sets the timeout of each DNS query performed by this service discoverer as part of a resolution request.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
- int&nbsp;maxSeconds)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#resolutionTimeout(java.time.Duration)" class="member-name-link">resolutionTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;resolutionTimeout)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Controls min/max TTL values that will influence polling intervals.</div>
+<div class="block">Sets the total timeout of each DNS resolution performed by this service discoverer.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int,int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
+ int&nbsp;maxSeconds)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Controls min/max TTL values that will influence polling intervals.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int,int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
  int&nbsp;maxSeconds,
  int&nbsp;minCacheSeconds,
  int&nbsp;maxCacheSeconds)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Controls min/max TTL values that will affect polling intervals and local caching.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int,int,int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttl(int,int,int,int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
  int&nbsp;maxSeconds,
  int&nbsp;minCacheSeconds,
  int&nbsp;maxCacheSeconds,
  int&nbsp;negativeCacheSeconds)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Controls min/max TTL values that will affect polling intervals, local caching, and caching negative results.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttlJitter(java.time.Duration)" class="member-name-link">ttlJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ttlJitter)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttlJitter(java.time.Duration)" class="member-name-link">ttlJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ttlJitter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The jitter to apply for scheduling the next query after TTL to help spread out subsequent DNS queries.</div>
 </div>
 </div>
@@ -504,7 +509,9 @@ implements <a href="DnsServiceDiscovererBuilder.html" title="interface in io.ser
 <h3>ndots</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ndots</span><wbr><span class="parameters">(int&nbsp;ndots)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ndots(int)">DnsServiceDiscovererBuilder</a></code></span></div>
-<div class="block">Set the number of dots which must appear in a name before an initial absolute query is made.</div>
+<div class="block">Set the number of dots which must appear in a name before an initial absolute query is made.
+ <p>
+ If not set, the default value is read from <code>ndots</code> option of <code>/etc/resolv.conf</code>).</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="DnsServiceDiscovererBuilder.html#ndots(int)">ndots</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
@@ -518,16 +525,58 @@ implements <a href="DnsServiceDiscovererBuilder.html" title="interface in io.ser
 <li>
 <section class="detail" id="queryTimeout(java.time.Duration)">
 <h3>queryTimeout</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">queryTimeout</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">queryTimeout</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)">DnsServiceDiscovererBuilder</a></code></span></div>
-<div class="block">Sets the timeout of each DNS query performed by this service discoverer.</div>
+<div class="block">Sets the timeout of each DNS query performed by this service discoverer as part of a resolution request.
+ <p>
+ Zero (<code>0</code>) disables the timeout. If not set, the default value is read from <code>timeout</code> option of
+ <code>/etc/resolv.conf</code>). Similar to linux systems, this value may be silently capped.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)">queryTimeout</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>queryTimeout</code> - the query timeout value</dd>
 <dt>Returns:</dt>
-<dd><code>this</code>.</dd>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="DnsServiceDiscovererBuilder.html#resolutionTimeout(java.time.Duration)"><code>DnsServiceDiscovererBuilder.resolutionTimeout(Duration)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="resolutionTimeout(java.time.Duration)">
+<h3>resolutionTimeout</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">resolutionTimeout</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;resolutionTimeout)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#resolutionTimeout(java.time.Duration)">DnsServiceDiscovererBuilder</a></code></span></div>
+<div class="block">Sets the total timeout of each DNS resolution performed by this service discoverer.
+ <p>
+ Each resolution may execute one or more DNS queries, like following multiple CNAME(s) or trying different search
+ domains. This is the total timeout for all intermediate queries involved in a single resolution request. Note,
+ that <a href="https://tools.ietf.org/html/rfc2782">SRV</a> resolutions may generate independent resolutions for
+ <code>A/AAAA</code> records. In this case, this timeout will be applied to an <code>SRV</code> resolution and each
+ <code>A/AAAA</code> resolution independently.
+ <p>
+ Zero (<code>0</code>) disables the timeout. If not set, it defaults to <a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)"><code>query timeout</code></a>
+ value multiplied by <code>2</code>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#resolutionTimeout(java.time.Duration)">resolutionTimeout</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>resolutionTimeout</code> - the query timeout value</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)"><code>DnsServiceDiscovererBuilder.queryTimeout(Duration)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
