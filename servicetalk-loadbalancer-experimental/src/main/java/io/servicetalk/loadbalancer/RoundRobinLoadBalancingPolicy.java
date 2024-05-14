@@ -28,6 +28,7 @@ import java.util.List;
  *
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
+ * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
  */
 @Deprecated // FIXME: 0.42.45 - make package private
 public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
@@ -59,6 +60,7 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
 
     /**
      * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
+     * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
      */
     @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {

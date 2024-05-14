@@ -37,7 +37,8 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * @param <ResolvedAddress> the type of the resolved address.
  * @param <C> the type of the load balanced connection.
  * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
- *  *  Choices in Randomized Load Balancing</a>
+ *    Choices in Randomized Load Balancing</a>
+ *  @deprecated Use {@link P2CLoadBalancingPolicyBuilder}.
  */
 @Deprecated // FIXME: 0.42.45 - make package private
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
@@ -75,6 +76,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     /**
      * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
+     * @deprecated Use {@link P2CLoadBalancingPolicyBuilder}.
      */
     @Deprecated // FIXME: 0.42.45 - remove builder.
     public static final class Builder {
