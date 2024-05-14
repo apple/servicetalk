@@ -896,7 +896,7 @@ public final class RetryingHttpRequesterFilter
          * @deprecated Use {@link #retryDelayedRetryExceptions(BiFunction)} instead.
          */
         @Deprecated
-        public Builder retryDelayedRetries( // FIXME: 0.43 - remove deprecated method
+        public Builder retryDelayedRetries(// FIXME: 0.43 - remove deprecated method
                 final BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> mapper) {
             this.retryDelayedRetries = requireNonNull(mapper);
             return this;
