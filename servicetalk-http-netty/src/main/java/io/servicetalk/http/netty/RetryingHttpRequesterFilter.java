@@ -679,7 +679,11 @@ public final class RetryingHttpRequesterFilter
         Duration delay();
 
         @Override
+        @SuppressWarnings("InstanceofIncompatibleInterface")
         default Throwable throwable() {
+            if (this instanceof Throwable) {
+                return (Throwable) this;
+            }
             throw new UnsupportedOperationException("DelayedRetry#throwable() is not supported by " + getClass());
         }
     }
