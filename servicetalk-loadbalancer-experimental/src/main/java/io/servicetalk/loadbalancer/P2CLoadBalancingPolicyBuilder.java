@@ -24,6 +24,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
  * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
+ * @see LoadBalancerPolicies#p2c()
  */
 public final class P2CLoadBalancingPolicyBuilder {
 
@@ -36,6 +37,10 @@ public final class P2CLoadBalancingPolicyBuilder {
     private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
     @Nullable
     private Random random;
+
+    P2CLoadBalancingPolicyBuilder() {
+    // package private
+    }
 
     /**
      * Set the maximum number of attempts that P2C will attempt to select a pair with at least one

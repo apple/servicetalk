@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
  * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
+ * @see LoadBalancerPolicies#roundRobin()
  */
 public final class RoundRobinLoadBalancingPolicyBuilder {
 
@@ -27,6 +28,10 @@ public final class RoundRobinLoadBalancingPolicyBuilder {
 
     private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
     private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
+
+    RoundRobinLoadBalancingPolicyBuilder() {
+        // package private constructor
+    }
 
     /**
      * Set whether the selector should fail-open in the event no healthy hosts are found.
