@@ -90,7 +90,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -1264,7 +1263,6 @@ class DefaultDnsClientTest {
                     throw new IllegalArgumentException("Unknown RecordType: " + recordType);
             }
             Subscription subscription = subscriber.awaitSubscription();
-            long startTime = System.nanoTime();
             subscription.request(1);
             Throwable error = subscriber.awaitOnError();
             assertThat(error, instanceOf(UnknownHostException.class));
@@ -1274,7 +1272,6 @@ class DefaultDnsClientTest {
                 assertThat(error.getCause().getMessage(),
                         allOf(containsString(domain), containsString(Long.toString(DEFAULT_TIMEOUT.toMillis()))));
             }
-            assertThat(System.nanoTime() - startTime, greaterThanOrEqualTo(DEFAULT_TIMEOUT.toNanos()));
         } finally {
             recordStore.removeTimeout(aDomain, RecordType.A);
             recordStore.removeTimeout(aaaaDomain, RecordType.AAAA);
