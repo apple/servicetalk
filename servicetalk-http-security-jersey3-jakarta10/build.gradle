@@ -44,7 +44,7 @@ tasks.withType(Pmd).all {
   enabled false
 }
 
-tasks.withType(SpotBugsTask).all {
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).all {
   enabled false
 }
 
