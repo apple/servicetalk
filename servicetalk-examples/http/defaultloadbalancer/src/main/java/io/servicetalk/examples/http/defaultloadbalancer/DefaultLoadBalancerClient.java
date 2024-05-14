@@ -24,7 +24,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.loadbalancer.LoadBalancers;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
-import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
+import io.servicetalk.loadbalancer.P2CLoadBalancingPolicyBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
@@ -60,7 +60,7 @@ public final class DefaultLoadBalancerClient {
                         // request count to score hosts. The net result is typically a traffic distribution that will
                         // show a preference toward faster hosts while also rapidly adjust to changes in backend
                         // performance.
-                        new P2CLoadBalancingPolicy.Builder()
+                        new P2CLoadBalancingPolicyBuilder()
                                 // Set the max effort (default: 5). This is the number of times P2C will pick a random
                                 // pair of hosts in search of a healthy host before giving up. When it gives up it will
                                 // either attempt to use one of the hosts regardless of status if `failOpen == true` or

@@ -29,13 +29,14 @@ import java.util.List;
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
  */
+@Deprecated // FIXME: 0.42.45 - make package private
 public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
     private final boolean ignoreWeights;
 
-    private RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
+    RoundRobinLoadBalancingPolicy(final boolean failOpen, final boolean ignoreWeights) {
         this.failOpen = failOpen;
         this.ignoreWeights = ignoreWeights;
     }

@@ -39,6 +39,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
  * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
  *  *  Choices in Randomized Load Balancing</a>
  */
+@Deprecated // FIXME: 0.42.45 - make package private
 public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
@@ -48,7 +49,7 @@ public final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     @Nullable
     private final Random random;
 
-    private P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
+    P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
                                    final boolean failOpen, @Nullable final Random random) {
         this.ignoreWeights = ignoreWeights;
         this.maxEffort = maxEffort;

@@ -31,8 +31,8 @@ public final class LoadBalancerPolicies {
      * healthy/unhealthy status of a host.
      * @return a builder for the round-robin {@link LoadBalancingPolicy}.
      */
-    public static RoundRobinLoadBalancingPolicy.Builder roundRobin() {
-        return new RoundRobinLoadBalancingPolicy.Builder();
+    public static RoundRobinLoadBalancingPolicyBuilder roundRobin() {
+        return new RoundRobinLoadBalancingPolicyBuilder();
     }
 
     /**
@@ -42,7 +42,7 @@ public final class LoadBalancerPolicies {
      * {@link P2CLoadBalancingPolicy} for more details.
      * @return a builder for the power of two choices (P2C) {@link LoadBalancingPolicy}.
      */
-    public static P2CLoadBalancingPolicy.Builder p2c() {
-        return new P2CLoadBalancingPolicy.Builder();
+    public static P2CLoadBalancingPolicyBuilder p2c() {
+        return new P2CLoadBalancingPolicyBuilder();
     }
 }
