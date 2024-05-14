@@ -11,6 +11,10 @@ endif::[]
 This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
 various authentication schemes.
 
+**Note:** If using Jersey 3.X, replace all imports containing `javax.ws` with `jakarta.ws`, and replace the dependency with:
+* `servicetalk-http-security-jersey3-jakarta9` for Jersey 3.0.X
+* `servicetalk-http-security-jersey3-jakarta10` for Jersey 3.1.X
+
 [#auth-basic]
 == Basic Authentication
 

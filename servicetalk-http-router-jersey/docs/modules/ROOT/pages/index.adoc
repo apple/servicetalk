@@ -13,6 +13,10 @@ This module gives access to all JAX-RS features as well as
 ServiceTalk specific extensions. This document details these features
 and also delves deeper into the implementation.
 
+**Note:** If using Jersey 3.X, replace all imports containing `javax.ws` with `jakarta.ws`, and replace the dependency with:
+* `servicetalk-http-router-jersey3-jakarta9` for Jersey 3.0.X
+* `servicetalk-http-router-jersey3-jakarta10` for Jersey 3.1.X
+
 == Features
 
 In its simplest form, starting a ServiceTalk server with the Jersey
