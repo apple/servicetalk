@@ -27,11 +27,13 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_nettyVersion: 4.1+
         run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 -PnettyVersion=4.1+ | grep "io.netty:netty-codec-http2"
+      - name: Clean Gradle project
+        run: ./gradlew --parallel clean
       - name: Build and Test
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
           ORG_GRADLE_PROJECT_nettyVersion: 4.1.+
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
       - name: Publish Test Results
         if: always()
         uses: actions/upload-artifact@v4

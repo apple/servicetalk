@@ -26,6 +26,8 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: Clean Gradle project
+        run: ./gradlew --parallel clean
       - name: Build with Gradle
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
@@ -35,7 +37,7 @@ jobs:
         run: |
           # Build arguments to feed to the single gradlew publish command
           if [ "${{ matrix.java }}" = "8" ]; then
-            FIRST_GRADLE_TARGETS=" clean check"
+            FIRST_GRADLE_TARGETS=" check"
             SECOND_GRADLE_TARGETS=" --no-parallel publish"
           else
             FIRST_GRADLE_TARGETS=""
@@ -49,14 +51,14 @@ jobs:
               if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
               then
                 currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
-                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:clean :$currDir:check"
+                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:check"
                 SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
               fi
             done < <(./gradlew printJavaTargetCompatibility)
           fi
 
           # Execute the gradlew command to publish the build
-          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
+          sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon --no-parallel -PreleaseBuild=true$SECOND_GRADLE_TARGETS"
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@a2911bd1a4412ec18dde2d93b1758b3e56d2a880
