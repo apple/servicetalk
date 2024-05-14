@@ -38,6 +38,7 @@ import io.servicetalk.transport.api.ServerListenContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -78,7 +79,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
     private final boolean rejectWhenNotMatchedCapacityPartition;
 
-    private final Function<HttpRequestMetaData, Classification> classifier;
+    private final Supplier<Function<HttpRequestMetaData, Classification>> classifier;
 
     private final Predicate<HttpResponseMetaData> capacityRejectionPredicate;
 
@@ -91,7 +92,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     AbstractTrafficResilienceHttpFilter(
             final Supplier<Function<HttpRequestMetaData, CapacityLimiter>> capacityPartitionsSupplier,
             final boolean rejectWhenNotMatchedCapacityPartition,
-            final Function<HttpRequestMetaData, Classification> classifier,
+            final Supplier<Function<HttpRequestMetaData, Classification>> classifier,
             final Predicate<HttpResponseMetaData> capacityRejectionPredicate,
             final Predicate<HttpResponseMetaData> breakerRejectionPredicate,
             final Consumer<Ticket> onSuccessTicketTerminal,
@@ -127,9 +128,19 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         return circuitBreakerPartitionsSupplier.get();
     }
 
+    final Function<HttpRequestMetaData, Classification> newClassifier() {
+        return classifier.get();
+    }
+
+    Function<HttpResponseMetaData, Duration> newDelayProvider() {
+        return __ -> Duration.ZERO;
+    }
+
     Single<StreamingHttpResponse> applyCapacityControl(
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions,
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions,
+            final Function<HttpRequestMetaData, Classification> classifier,
+            final Function<HttpResponseMetaData, Duration> delayProvider,
             @Nullable final ServerListenContext serverListenContext,
             final StreamingHttpRequest request,
             @Nullable final StreamingHttpResponseFactory responseFactory,
@@ -170,8 +181,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             // reactive flow isn't followed) we still complete ticket lifetime.
             try {
                 final TicketObserver ticketObserver = observer.onAllowedThrough(request, ticket.state());
-                return handleAllow(delegate, request, wrapTicket(serverListenContext, ticket), ticketObserver,
-                        breaker, startTime).shareContextOnSubscribe();
+                return handleAllow(delegate, delayProvider, request, wrapTicket(serverListenContext, ticket),
+                        ticketObserver, breaker, startTime).shareContextOnSubscribe();
             } catch (Throwable cause) {
                 onError(cause, breaker, startTime, ticket);
                 throw cause;
@@ -197,7 +208,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         return CAPACITY_REJECTION;
     }
 
-    RuntimeException peerBreakerRejection(final HttpResponseMetaData resp, final CircuitBreaker breaker) {
+    RuntimeException peerBreakerRejection(final HttpResponseMetaData resp, final CircuitBreaker breaker,
+                                          final Function<HttpResponseMetaData, Duration> delayProvider) {
         return BREAKER_REJECTION;
     }
 
@@ -209,6 +221,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
     private Single<StreamingHttpResponse> handleAllow(
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            final Function<HttpResponseMetaData, Duration> delayProvider,
             final StreamingHttpRequest request, final Ticket ticket, final TicketObserver ticketObserver,
             @Nullable final CircuitBreaker breaker, final long startTimeNs) {
         return delegate.apply(request)
@@ -218,11 +231,12 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                 // see the exception, preventing callbacks to release permits; which results in the limiter eventually
                 // throttling ALL future requests.
                 // Before returning an error, we have to drain the response payload body to properly release resources
-                // and avoid leaking a connection, except for the PassthroughRequestRejectedException case.
+                // and avoid leaking a connection, except for the PassthroughRequestDroppedException case.
                 .flatMap(resp -> {
                     if (breaker != null && breakerRejectionPredicate.test(resp)) {
                         return resp.payloadBody().ignoreElements()
-                                .concat(Single.<StreamingHttpResponse>failed(peerBreakerRejection(resp, breaker)))
+                                .concat(Single.<StreamingHttpResponse>failed(
+                                        peerBreakerRejection(resp, breaker, delayProvider)))
                                 .shareContextOnSubscribe();
                     } else if (capacityRejectionPredicate.test(resp)) {
                         final RuntimeException rejection = peerRejection(resp);

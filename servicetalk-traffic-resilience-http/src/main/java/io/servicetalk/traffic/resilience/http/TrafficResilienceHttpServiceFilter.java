@@ -22,6 +22,7 @@ import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -33,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.transport.api.ServerListenContext;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -84,7 +86,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
     private TrafficResilienceHttpServiceFilter(final Supplier<Function<HttpRequestMetaData, CapacityLimiter>>
                                                        capacityPartitionsSupplier,
                                                final boolean rejectNotMatched,
-                                               final Function<HttpRequestMetaData, Classification> classifier,
+                                               final Supplier<Function<HttpRequestMetaData, Classification>> classifier,
                                                final Consumer<Ticket> onCompletion,
                                                final Consumer<Ticket> onCancellation,
                                                final BiConsumer<Ticket, Throwable> onError,
@@ -105,6 +107,8 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions = newCapacityPartitions();
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions =
                     newCircuitBreakerPartitions();
+            final Function<HttpRequestMetaData, Classification> clacifier = newClassifier();
+            final Function<HttpResponseMetaData, Duration> delayProvider = newDelayProvider();
 
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -113,8 +117,9 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
                 final ServerListenContext actualContext = ctx.parent() instanceof ServerListenContext ?
                         (ServerListenContext) ctx.parent() :
                         ctx;
-                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions, actualContext, request,
-                        responseFactory, request1 -> delegate().handle(ctx, request1, responseFactory));
+                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions, clacifier, delayProvider,
+                        actualContext, request, responseFactory,
+                        request1 -> delegate().handle(ctx, request1, responseFactory));
             }
         });
     }
@@ -172,7 +177,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
     public static final class Builder {
         private boolean rejectNotMatched;
         private Supplier<Function<HttpRequestMetaData, CapacityLimiter>> capacityPartitionsSupplier;
-        private Function<HttpRequestMetaData, Classification> classifier = __ -> () -> MAX_VALUE;
+        private Supplier<Function<HttpRequestMetaData, Classification>> classifier = () -> __ -> () -> MAX_VALUE;
         private Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier =
                 () -> __ -> null;
         private ServiceRejectionPolicy onServiceRejectionPolicy = DEFAULT_REJECTION_POLICY;
@@ -284,11 +289,11 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
          * <p>
          * Classification work within the context of a single {@link #Builder(Supplier, boolean)}  partition}
          * and not universally in the filter.
-         * @param classifier A {@link Function} that maps an incoming {@link HttpRequestMetaData} to a
-         * {@link Classification}.
+         * @param classifier A {@link Supplier} of a {@link Function} that maps an incoming {@link HttpRequestMetaData}
+         * to a {@link Classification}.
          * @return {@code this}.
          */
-        public Builder classifier(final Function<HttpRequestMetaData, Classification> classifier) {
+        public Builder classifier(final Supplier<Function<HttpRequestMetaData, Classification>> classifier) {
             this.classifier = requireNonNull(classifier, "classifier");
             return this;
         }

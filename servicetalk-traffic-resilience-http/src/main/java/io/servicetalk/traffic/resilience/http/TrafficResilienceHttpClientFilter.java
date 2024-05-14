@@ -113,7 +113,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
 
     /**
      * Default rejection observer for dropped requests from an external sourced due to service unavailability.
-     * see. {@link Builder#peerBreakerRejection(HttpResponseMetaData, CircuitBreaker)}}.
+     * see. {@link Builder#peerBreakerRejection(HttpResponseMetaData, CircuitBreaker, Function)}.
      * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>
@@ -126,7 +126,8 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
     private final ClientPeerRejectionPolicy clientPeerRejectionPolicy;
     private final boolean forceOpenCircuitOnPeerCircuitRejections;
     @Nullable
-    private final Function<HttpResponseMetaData, Duration> focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
+    private final Supplier<Function<HttpResponseMetaData, Duration>>
+            focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
     @Nullable
     private final Executor circuitBreakerResetExecutor;
 
@@ -135,14 +136,14 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
                                               final boolean rejectWhenNotMatchedCapacityPartition,
                                               final Supplier<Function<HttpRequestMetaData, CircuitBreaker>>
                                                       circuitBreakerPartitionsSupplier,
-                                              final Function<HttpRequestMetaData, Classification> classifier,
+                                              final Supplier<Function<HttpRequestMetaData, Classification>> classifier,
                                               final ClientPeerRejectionPolicy clientPeerRejectionPolicy,
                                               final Predicate<HttpResponseMetaData> breakerRejectionPredicate,
                                               final Consumer<Ticket> onCompletion,
                                               final Consumer<Ticket> onCancellation,
                                               final BiConsumer<Ticket, Throwable> onError,
                                               final boolean forceOpenCircuitOnPeerCircuitRejections,
-                                              @Nullable final Function<HttpResponseMetaData, Duration>
+                                              @Nullable final Supplier<Function<HttpResponseMetaData, Duration>>
                                                       focreOpenCircuitOnPeerCircuitRejectionsDelayProvider,
                                               @Nullable final Executor circuitBreakerResetExecutor,
                                               final TrafficResiliencyObserver observer) {
@@ -164,11 +165,13 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions = newCapacityPartitions();
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions =
                     newCircuitBreakerPartitions();
+            final Function<HttpRequestMetaData, Classification> classifier = newClassifier();
+            final Function<HttpResponseMetaData, Duration> delayProvider = newDelayProvider();
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions,
+                return applyCapacityControl(capacityPartitions, circuitBreakerPartitions, classifier, delayProvider,
                         null, request, null, delegate::request)
                         .onErrorResume(PassthroughRequestDroppedException.class, t -> Single.succeeded(t.response()));
             }
@@ -205,18 +208,28 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
     }
 
     @Override
-    RuntimeException peerBreakerRejection(final HttpResponseMetaData resp, final CircuitBreaker breaker) {
+    RuntimeException peerBreakerRejection(
+            final HttpResponseMetaData resp, final CircuitBreaker breaker,
+            final Function<HttpResponseMetaData, Duration> delayProvider) {
         if (forceOpenCircuitOnPeerCircuitRejections) {
-            assert focreOpenCircuitOnPeerCircuitRejectionsDelayProvider != null;
             assert circuitBreakerResetExecutor != null;
-            final Duration delay = focreOpenCircuitOnPeerCircuitRejectionsDelayProvider.apply(resp);
+            final Duration delay = delayProvider.apply(resp);
             if (isPositive(delay)) {
                 breaker.forceOpenState();
                 circuitBreakerResetExecutor.schedule(breaker::reset, delay);
             }
         }
 
-        return super.peerBreakerRejection(resp, breaker);
+        return super.peerBreakerRejection(resp, breaker, delayProvider);
+    }
+
+    @Override
+    Function<HttpResponseMetaData, Duration> newDelayProvider() {
+        if (focreOpenCircuitOnPeerCircuitRejectionsDelayProvider == null) {
+            return __ -> Duration.ZERO;
+        }
+
+        return focreOpenCircuitOnPeerCircuitRejectionsDelayProvider.get();
     }
 
     /**
@@ -227,7 +240,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
         private boolean rejectWhenNotMatchedCapacityPartition;
         private Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier =
                 () -> __ -> null;
-        private Function<HttpRequestMetaData, Classification> classifier = __ -> () -> MAX_VALUE;
+        private Supplier<Function<HttpRequestMetaData, Classification>> classifier = () -> __ -> () -> MAX_VALUE;
         private ClientPeerRejectionPolicy clientPeerRejectionPolicy = DEFAULT_PEER_REJECTION_POLICY;
         private Predicate<HttpResponseMetaData> peerUnavailableRejectionPredicate = DEFAULT_BREAKER_REJECTION_PREDICATE;
         private final Consumer<Ticket> onCompletionTicketTerminal = Ticket::completed;
@@ -241,7 +254,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
         };
         private boolean forceOpenCircuitOnPeerCircuitRejections;
         @Nullable
-        private Function<HttpResponseMetaData, Duration> focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
+        private Supplier<Function<HttpResponseMetaData, Duration>> focreOpenCircuitOnPeerCircuitRejectionsDelayProvider;
         @Nullable
         private Executor circuitBreakerResetExecutor;
         private TrafficResiliencyObserver observer = NoOpTrafficResiliencyObserver.INSTANCE;
@@ -346,11 +359,11 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * <p>
          * It's worth noting that classification is strictly a hint and could be ignored by the
          * {@link CapacityLimiter}.
-         * @param classifier A {@link Function} that maps an incoming {@link HttpRequestMetaData} to a
-         * {@link Classification}.
+         * @param classifier A {@link Supplier} of a {@link Function} that maps an incoming {@link HttpRequestMetaData}
+         * to a {@link Classification}.
          * @return {@code this}.
          */
-        public Builder classifier(final Function<HttpRequestMetaData, Classification> classifier) {
+        public Builder classifier(final Supplier<Function<HttpRequestMetaData, Classification>> classifier) {
             this.classifier = requireNonNull(classifier);
             return this;
         }
@@ -365,7 +378,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * The matching {@link CircuitBreaker} for a {@link HttpRequestMetaData request} can be forced opened due to
          * a remote open circuit-breaker (i.e., {@link HttpResponseStatus#SERVICE_UNAVAILABLE})
          * dissallowing further outgoing requests for a fixed periods;
-         * {@link #forceOpenCircuitOnPeerCircuitRejections(Function, Executor)}.
+         * {@link #forceOpenCircuitOnPeerCircuitRejections(Supplier, Executor)}.
          *
          * @param circuitBreakerPartitionsSupplier A {@link Supplier} to create a new {@link Function} for each new
          * filter created by this {@link StreamingHttpClientFilterFactory factory}.
@@ -450,7 +463,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * @return {@code this}.
          */
         public Builder forceOpenCircuitOnPeerCircuitRejections(
-                final Function<HttpResponseMetaData, Duration> delayProvider,
+                final Supplier<Function<HttpResponseMetaData, Duration>> delayProvider,
                 final Executor executor) {
             this.forceOpenCircuitOnPeerCircuitRejections = true;
             this.focreOpenCircuitOnPeerCircuitRejectionsDelayProvider = requireNonNull(delayProvider);
@@ -463,7 +476,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * {@link #peerUnavailableRejectionPredicate(Predicate)}), ignore feedback and leave local matching
          * {@link CircuitBreaker circuit-breake partition} closed.
          * <p>
-         * To opt-in for this behaviour see {@link #forceOpenCircuitOnPeerCircuitRejections(Function, Executor)}.
+         * To opt-in for this behaviour see {@link #forceOpenCircuitOnPeerCircuitRejections(Supplier, Executor)}.
          * @return {@code this}.
          */
         public Builder dontForceOpenCircuitOnPeerCircuitRejections() {
