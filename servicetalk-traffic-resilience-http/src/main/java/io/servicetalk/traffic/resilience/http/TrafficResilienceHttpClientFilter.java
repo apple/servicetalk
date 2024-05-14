@@ -359,8 +359,8 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * <p>
          * It's worth noting that classification is strictly a hint and could be ignored by the
          * {@link CapacityLimiter}.
-         * @param classifier A {@link Function} that maps an incoming {@link HttpRequestMetaData} to a
-         * {@link Classification}.
+         * @param classifier A {@link Supplier} of a {@link Function} that maps an incoming {@link HttpRequestMetaData}
+         * to a {@link Classification}.
          * @return {@code this}.
          */
         public Builder classifier(final Supplier<Function<HttpRequestMetaData, Classification>> classifier) {

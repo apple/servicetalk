@@ -31,7 +31,21 @@ public final class CapacityLimiters {
     }
 
     /**
+     * Returns a NO-OP {@link CapacityLimiter} that has no logic around acquiring or releasing a permit for a request;
+     * thus it allows everything to go through, similarly to a non-existing {@link CapacityLimiter}.
+     * <p>
+     * This {@link CapacityLimiter} allows for situations where partitioned configurations are in use through
+     * a resilience filter, and you want to limit one partition but not necessary the other.
+     *
+     * @return A NO-OP {@link CapacityLimiter capacity limiter}.
+     */
+    public static CapacityLimiter allowAll() {
+        return AllowAllCapacityLimiter.INSTANCE;
+    }
+
+    /**
      * A composite {@link CapacityLimiter} that is composed of multiple {@link CapacityLimiter}s.
+     * <p>
      * All capacity limiters need to grant a {@link Ticket} for the request to be allowed.
      *
      * @param providers The individual {@link CapacityLimiter} that form the composite result.
@@ -43,8 +57,9 @@ public final class CapacityLimiters {
     }
 
     /**
-     * Returns a {@link CapacityLimiter} that will reject all requests till the current pending request count is equal
-     * or less to the passed {@code capacity}.
+     * A {@link CapacityLimiter} that will reject all requests till the current pending request count is equal or less
+     * to the passed {@code capacity}.
+     * <p>
      * This {@link CapacityLimiter} takes into consideration the {@link Classification} of a given request and will
      * variate the effective {@code capacity} according to the {@link Classification#priority() priority} before
      * attempting to grant access to the request. The effective {@code capacity} will never be more than the given
@@ -54,13 +69,13 @@ public final class CapacityLimiters {
      * the full capacity (100%), while requests with {@link Classification#priority() priority} less than {@code 100}
      * will be mapped to a percentage point of the given {@code capacity} and be granted access only if the {@code
      * consumed capacity} is less than that percentage.
-     * <br>
+     * <p>
      * Example: With a {@code capacity} = 10, and incoming {@link Classification#priority()} = 70, then the effective
      * target limit for this request will be 70% of the 10 = 7. If current consumption is less than 7, the request
      * will be permitted.
      *
      * @param capacity The fixed capacity value for this limiter.
-     * @return A {@link CapacityLimiter} builder to configure the available parameters.
+     * @return A {@link FixedCapacityLimiterBuilder} to configure the available parameters.
      */
     public static FixedCapacityLimiterBuilder fixedCapacity(final int capacity) {
         return new FixedCapacityLimiterBuilder(capacity);
@@ -70,6 +85,7 @@ public final class CapacityLimiters {
      * AIMD is a request drop based dynamic {@link CapacityLimiter} for clients,
      * that adapts its limit based on a configurable range of concurrency and re-evaluates this limit upon
      * a {@link Ticket#dropped() request-drop event (eg. timeout or rejection due to capacity)}.
+     * <p>
      * It's not ideal for server-side solutions, due to the slow recover mechanism it offers, which can lead in
      * significant traffic loss during the recovery window.
      * <p>
@@ -78,16 +94,16 @@ public final class CapacityLimiters {
      * equal to the exit rate of the queue.
      * <p>
      * The solution is based on the <a href="https://en.wikipedia.org/wiki/Additive_increase/multiplicative_decrease">
-     * AIMD feedback control algorithm</a>
+     * AIMD feedback control algorithm</a>.
      *
-     * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
+     * @return An {@link AimdCapacityLimiterBuilder} to configure the available parameters.
      */
     public static AimdCapacityLimiterBuilder dynamicAIMD() {
         return new AimdCapacityLimiterBuilder();
     }
 
     /**
-     * Gradient is a dynamic concurrency limit algorithm used for clients.
+     * Gradient is a dynamic concurrency limit algorithm used for clients or servers.
      * <p>
      * Gradient's basic concept is that it tracks two Round Trip Time (RTT) figures, one of long period and another one
      * of a shorter period. These two figures are then compared, and a gradient value is produced, representing the
@@ -95,20 +111,24 @@ public final class CapacityLimiters {
      * mean that the RTTs are decreasing, whereas a negative value means that RTTs are increasing.
      * This figure can be used to deduce a new limit (lower or higher accordingly) to follow the observed load pattern.
      * <p>
-     * The algorithm is heavily influenced by the following prior-art
-     * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
-     * @see
-     * <a
+     * The algorithm is heavily influenced by the following prior-art:
+     * <ol>
+     * <li><a
      * href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">
-     * Envoy Adaptive Concurrency</a>
-     * @see <a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a>
+     * Envoy Adaptive Concurrency</a></li>
+     * <li><a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a></li>
+     * </ol>
+     *
+     * @return A {@link GradientCapacityLimiterBuilder} to configure the available parameters.
+     * @see #dynamicGradientOptimizeForLatency()
+     * @see #dynamicGradientOptimizeForThroughput()
      */
     public static GradientCapacityLimiterBuilder dynamicGradient() {
         return new GradientCapacityLimiterBuilder();
     }
 
     /**
-     * Gradient is a dynamic concurrency limit algorithm used for clients.
+     * Gradient is a dynamic concurrency limit algorithm used for clients or servers.
      * <p>
      * Gradient's basic concept is that it tracks two Round Trip Time (RTT) figures, one of long period and another one
      * of a shorter period. These two figures are then compared, and a gradient value is produced, representing the
@@ -121,13 +141,17 @@ public final class CapacityLimiters {
      * while latency is changing, favouring throughput overall, so latency sensitive application may not want to use
      * this profile.
      * <p>
-     * The algorithm is heavily influenced by the following prior-art
-     * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
-     * @see
-     * <a
+     * The algorithm is heavily influenced by the following prior-art:
+     * <ol>
+     * <li><a
      * href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">
-     * Envoy Adaptive Concurrency</a>
-     * @see <a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a>
+     * Envoy Adaptive Concurrency</a></li>
+     * <li><a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a></li>
+     * </ol>
+     *
+     * @return A {@link GradientCapacityLimiterBuilder} to configure the available parameters.
+     * @see #dynamicGradient()
+     * @see #dynamicGradientOptimizeForLatency()
      */
     public static GradientCapacityLimiterBuilder dynamicGradientOptimizeForThroughput() {
         final GradientCapacityLimiterBuilder builder = new GradientCapacityLimiterBuilder();
@@ -136,7 +160,7 @@ public final class CapacityLimiters {
     }
 
     /**
-     * Gradient is a dynamic concurrency limit algorithm used for clients.
+     * Gradient is a dynamic concurrency limit algorithm used for clients or servers.
      * <p>
      * Gradient's basic concept is that it tracks two Round Trip Time (RTT) figures, one of long period and another one
      * of a shorter period. These two figures are then compared, and a gradient value is produced, representing the
@@ -149,29 +173,21 @@ public final class CapacityLimiters {
      * This is a suggested setting for latency sensitive applications, but be aware that it may start throttling much
      * earlier when even small gradients are noticed in the response times.
      * <p>
-     * The algorithm is heavily influenced by the following prior-art
-     * @return A client side dynamic {@link CapacityLimiter capacity limiter builder}.
-     * @see
-     * <a
+     * The algorithm is heavily influenced by the following prior-art:
+     * <ol>
+     * <li><a
      * href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/adaptive_concurrency_filter">
-     * Envoy Adaptive Concurrency</a>
-     * @see <a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a>
+     * Envoy Adaptive Concurrency</a></li>
+     * <li><a href="https://github.com/Netflix/concurrency-limits">Netflix Concurrency Limits</a></li>
+     * </ol>
+     *
+     * @return A {@link GradientCapacityLimiterBuilder} to configure the available parameters.
+     * @see #dynamicGradient()
+     * @see #dynamicGradientOptimizeForThroughput()
      */
     public static GradientCapacityLimiterBuilder dynamicGradientOptimizeForLatency() {
         final GradientCapacityLimiterBuilder builder = new GradientCapacityLimiterBuilder();
         latencyDefaults().accept(builder);
         return builder;
-    }
-
-    /**
-     * Returns a NO-OP {@link CapacityLimiter} that has no logic around acquiring or releasing a permit for a request;
-     * thus it allows everything to go through, similarly to a non-existing {@link CapacityLimiter}.
-     * This {@link CapacityLimiter} allows for situations where partitioned configurations are in use through
-     * a resilience filter, and you want to limit one partition but not necessary the other.
-     *
-     * @return A NO-OP {@link CapacityLimiter capacity limiter}.
-     */
-    public static CapacityLimiter allowAll() {
-        return AllowAllCapacityLimiter.INSTANCE;
     }
 }
