@@ -16,7 +16,7 @@
 package io.servicetalk.traffic.resilience.http;
 
 import io.servicetalk.capacity.limiter.api.RequestDroppedException;
-import io.servicetalk.client.api.DelayedRetry;
+import io.servicetalk.client.api.DelayedRetryException;
 import io.servicetalk.http.api.HttpResponseStatus;
 
 import java.time.Duration;
@@ -32,7 +32,8 @@ import static java.util.Objects.requireNonNull;
  * its up to the application to declare whether a {@link HttpResponseStatus#TOO_MANY_REQUESTS} is a safe-to-retry
  * response, and if so after how much {@link #delay()}.
  */
-public final class DelayedRetryRequestDroppedException extends RequestDroppedException implements DelayedRetry {
+public final class DelayedRetryRequestDroppedException extends RequestDroppedException
+        implements DelayedRetryException {
 
     private static final long serialVersionUID = -7933994513110803151L;
     private final Duration delay;

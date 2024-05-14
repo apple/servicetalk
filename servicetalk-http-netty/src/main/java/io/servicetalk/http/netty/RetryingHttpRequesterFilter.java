@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.DelayedRetryException;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -197,8 +198,8 @@ public final class RetryingHttpRequesterFilter
                 if (backOffPolicy != NO_RETRIES) {
                     final int offsetCount = count - lbNotReadyCount;
                     Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
-                    if (t instanceof io.servicetalk.client.api.DelayedRetry) {
-                        final Duration constant = ((io.servicetalk.client.api.DelayedRetry) t).delay();
+                    if (t instanceof DelayedRetryException) {
+                        final Duration constant = ((DelayedRetryException) t).delay();
                         retryWhen = retryWhen.concat(executor.timer(constant));
                     }
 
@@ -659,11 +660,11 @@ public final class RetryingHttpRequesterFilter
      * Constant delay returned from {@link #delay()} will be additive to the backoff policy defined for a certain
      * retry-able failure.
      *
-     * @deprecated Use {@link io.servicetalk.client.api.DelayedRetry} instead.
+     * @deprecated Use {@link DelayedRetryException} instead.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated interface
     @FunctionalInterface
-    public interface DelayedRetry extends io.servicetalk.client.api.DelayedRetry {
+    public interface DelayedRetry extends DelayedRetryException {
 
         /**
          * A constant delay to apply.
@@ -728,7 +729,7 @@ public final class RetryingHttpRequesterFilter
         private BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> retryDelayedRetries;
 
         @Nullable
-        private BiFunction<HttpRequestMetaData, io.servicetalk.client.api.DelayedRetry, BackOffPolicy>
+        private BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy>
                 retryDelayedRetryExceptions;
 
         @Nullable
@@ -856,12 +857,12 @@ public final class RetryingHttpRequesterFilter
 
         /**
          * The retrying-filter will evaluate the {@link Throwable} marked with
-         * {@link io.servicetalk.client.api.DelayedRetry} interface and use the provided
-         * {@link io.servicetalk.client.api.DelayedRetry#delay() delay} as a constant delay on-top of the
+         * {@link DelayedRetryException} interface and use the provided
+         * {@link DelayedRetryException#delay() delay} as a constant delay on-top of the
          * retry period already defined.
          * <p>
          * In case a max-delay was set in this builder, the
-         * {@link io.servicetalk.client.api.DelayedRetry#delay() constant-delay} overrides it and takes precedence.
+         * {@link DelayedRetryException#delay() constant-delay} overrides it and takes precedence.
          * <p>
          * To disable retries and proceed evaluating other retry functions you can return,
          * {@link BackOffPolicy#ofNoRetries()} from the passed {@code mapper}.
@@ -869,11 +870,11 @@ public final class RetryingHttpRequesterFilter
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
-         * {@link io.servicetalk.client.api.DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
+         * {@link DelayedRetryException delayed-exception} to a {@link BackOffPolicy}.
          * @return {@code this}.
          */
         public Builder retryDelayedRetryExceptions(
-                final BiFunction<HttpRequestMetaData, io.servicetalk.client.api.DelayedRetry, BackOffPolicy> mapper) {
+                final BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy> mapper) {
             this.retryDelayedRetryExceptions = requireNonNull(mapper);
             return this;
         }
@@ -978,7 +979,7 @@ public final class RetryingHttpRequesterFilter
                     this.retryRetryableExceptions;
             final BiFunction<HttpRequestMetaData, IOException, BackOffPolicy> retryIdempotentRequests =
                     this.retryIdempotentRequests;
-            final BiFunction<HttpRequestMetaData, io.servicetalk.client.api.DelayedRetry, BackOffPolicy>
+            final BiFunction<HttpRequestMetaData, DelayedRetryException, BackOffPolicy>
                     retryDelayedRetryExceptions = this.retryDelayedRetryExceptions;
             final BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> retryDelayedRetries =
                     this.retryDelayedRetries;
@@ -1018,9 +1019,9 @@ public final class RetryingHttpRequesterFilter
                         }
 
                         if (retryDelayedRetryExceptions != null &&
-                                throwable instanceof io.servicetalk.client.api.DelayedRetry) {
+                                throwable instanceof DelayedRetryException) {
                             final BackOffPolicy backOffPolicy = retryDelayedRetryExceptions.apply(requestMetaData,
-                                    (io.servicetalk.client.api.DelayedRetry) throwable);
+                                    (DelayedRetryException) throwable);
                             if (backOffPolicy != NO_RETRIES) {
                                 return backOffPolicy;
                             }

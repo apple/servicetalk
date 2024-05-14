@@ -18,10 +18,10 @@ package io.servicetalk.client.api;
 import java.time.Duration;
 
 /**
- * An interface that enhances any {@link Exception} to provide a constant {@link Duration delay} to be applied when
- * it needs to be retried.
+ * An interface that enhances any {@link Throwable exception} to provide a constant {@link Duration delay} to be applied
+ * when it needs to be retried.
  */
-public interface DelayedRetry {
+public interface DelayedRetryException {
 
     /**
      * A constant delay to apply.
@@ -31,7 +31,7 @@ public interface DelayedRetry {
     Duration delay();
 
     /**
-     * Returns original {@link Throwable} this {@link DelayedRetry} represents.
+     * Returns original {@link Throwable} this {@link DelayedRetryException} represents.
      *
      * @return the original {@link Throwable}
      */
