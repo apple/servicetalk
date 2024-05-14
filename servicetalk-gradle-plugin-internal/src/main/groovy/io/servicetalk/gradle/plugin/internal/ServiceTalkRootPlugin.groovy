@@ -51,7 +51,11 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         }
 
         gradle.projectsEvaluated {
-          subprojects.findAll {!it.name.contains("examples")}.each { prj ->
+          subprojects.findAll {
+            !it.name.contains("examples")
+                // No need to generate javadoc for -jersey3 modules because they are copied from -jersey
+                && !it.name.contains("-jersey3-jakarta")
+          }.each { prj ->
             prj.tasks.withType(Javadoc).findAll {it.name.equals("javadoc")}.each { javadocTask ->
               source += javadocTask.source
               classpath += javadocTask.classpath
