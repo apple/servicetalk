@@ -28,10 +28,8 @@ import java.util.List;
  *
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
- * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
  */
-@Deprecated // FIXME: 0.42.45 - make package private
-public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
+final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
         extends LoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
@@ -56,59 +54,5 @@ public final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends Load
     @Override
     public String toString() {
         return name() + "(failOpen=" + failOpen + ")";
-    }
-
-    /**
-     * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
-     * @deprecated Use {@link RoundRobinLoadBalancingPolicyBuilder}.
-     */
-    @Deprecated // FIXME: 0.42.45 - remove builder.
-    public static final class Builder {
-
-        private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
-
-        private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
-        private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
-
-        /**
-         * Set whether the selector should fail-open in the event no healthy hosts are found.
-         * When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
-         * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
-         * session.
-         * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
-         * @param failOpen if true, will attempt  to select or establish a connection from an arbitrary host even if it
-         *                 is unlikely to return a healthy  session.
-         * @return {@code this}
-         */
-        public Builder failOpen(final boolean failOpen) {
-            this.failOpen = failOpen;
-            return this;
-        }
-
-        /**
-         * Set whether the host selector should ignore {@link Host}s weight.
-         * Host weight influences the probability it will be selected to serve a request. The host weight can come
-         * from many sources including known host capacity, priority groups, and others, so ignoring weight
-         * information can lead to other features not working properly and should be used with care.
-         * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
-         *
-         * @param ignoreWeights whether the host selector should ignore host weight information.
-         * @return {@code this}
-         */
-        public Builder ignoreWeights(final boolean ignoreWeights) {
-            this.ignoreWeights = ignoreWeights;
-            return this;
-        }
-
-        /**
-         * Construct the immutable {@link RoundRobinLoadBalancingPolicy}.
-         * @param <ResolvedAddress> the type of the resolved address.
-         * @param <C> the refined type of the {@link LoadBalancedConnection}.
-         * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
-         */
-        public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancingPolicy<ResolvedAddress, C>
-        build() {
-            return new RoundRobinLoadBalancingPolicy<>(failOpen, ignoreWeights);
-        }
     }
 }
