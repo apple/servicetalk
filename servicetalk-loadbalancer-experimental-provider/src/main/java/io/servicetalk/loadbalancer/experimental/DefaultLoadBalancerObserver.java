@@ -31,10 +31,10 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultLoadBalancerObserver.class);
 
-    private final String clientName;
+    private final String lbDescription;
 
-    DefaultLoadBalancerObserver(final String clientName) {
-        this.clientName = requireNonNull(clientName, "clientName");
+    DefaultLoadBalancerObserver(final String lbDescription) {
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
     }
 
     @Override
@@ -44,19 +44,19 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onNoHostsAvailable() {
-        LOGGER.debug("{}- onNoHostsAvailable()", clientName);
+        LOGGER.debug("{}- onNoHostsAvailable()", lbDescription);
     }
 
     @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events, int oldHostSetSize,
                                         int newHostSetSize) {
         LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, oldHostSetSize: {}, newHostSetSize: {})",
-                clientName, events, oldHostSetSize, newHostSetSize);
+                lbDescription, events, oldHostSetSize, newHostSetSize);
     }
 
     @Override
     public void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception) {
-        LOGGER.debug("{}- No active hosts available. Host set size: {}.", clientName, hostSetSize, exception);
+        LOGGER.debug("{}- No active hosts available. Host set size: {}.", lbDescription, hostSetSize, exception);
     }
 
     private final class HostObserverImpl implements HostObserver {
@@ -70,35 +70,35 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
         @Override
         public void onHostMarkedExpired(int connectionCount) {
             LOGGER.debug("{}:{}- onHostMarkedExpired(connectionCount: {})",
-                    clientName, resolvedAddress, connectionCount);
+                    lbDescription, resolvedAddress, connectionCount);
         }
 
         @Override
         public void onActiveHostRemoved(int connectionCount) {
             LOGGER.debug("{}:{}- onActiveHostRemoved(connectionCount: {})",
-                    clientName, resolvedAddress, connectionCount);
+                    lbDescription, resolvedAddress, connectionCount);
         }
 
         @Override
         public void onExpiredHostRevived(int connectionCount) {
             LOGGER.debug("{}:{}- onExpiredHostRevived(connectionCount: {})",
-                    clientName, resolvedAddress, connectionCount);
+                    lbDescription, resolvedAddress, connectionCount);
         }
 
         @Override
         public void onExpiredHostRemoved(int connectionCount) {
             LOGGER.debug("{}:{}- onExpiredHostRemoved(connectionCount: {})",
-                    clientName, resolvedAddress, connectionCount);
+                    lbDescription, resolvedAddress, connectionCount);
         }
 
         @Override
         public void onHostMarkedUnhealthy(@Nullable Throwable cause) {
-            LOGGER.debug("{}:{}- onHostMarkedUnhealthy(ex)", clientName, resolvedAddress, cause);
+            LOGGER.debug("{}:{}- onHostMarkedUnhealthy(ex)", lbDescription, resolvedAddress, cause);
         }
 
         @Override
         public void onHostRevived() {
-            LOGGER.debug("{}:{}- onHostRevived()", clientName, resolvedAddress);
+            LOGGER.debug("{}:{}- onHostRevived()", lbDescription, resolvedAddress);
         }
     }
 }

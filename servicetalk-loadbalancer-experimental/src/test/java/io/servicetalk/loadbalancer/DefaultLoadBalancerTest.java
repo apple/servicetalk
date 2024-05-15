@@ -190,7 +190,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
                         .buildStrategy("test-service"),
                 connectionFactory,
-                NoopLoadBalancerObserver.instance(),
+                lbDescription -> NoopLoadBalancerObserver.instance(),
                 null,
                 factory);
     }
