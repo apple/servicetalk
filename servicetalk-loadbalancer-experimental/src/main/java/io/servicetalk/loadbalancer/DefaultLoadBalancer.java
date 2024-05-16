@@ -132,7 +132,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionPoolStrategy<C> connectionPoolStrategy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-            final LoadBalancerObserver loadBalancerObserver,
+            final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.targetResource = requireNonNull(targetResourceName);
@@ -144,7 +144,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
-        this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
+        this.loadBalancerObserver = requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
+                .newObserver(lbDescription);
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
                 LOGGER.error("{}: Uncaught exception in {}", this, this.getClass().getSimpleName(), uncaughtException));

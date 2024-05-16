@@ -49,7 +49,7 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
         if (config.enabledForServiceName(serviceName)) {
             try {
                 HttpLoadBalancerFactory<R> loadBalancerFactory = new DefaultHttpLoadBalancerFactory<>(
-                        defaultLoadBalancer(serviceName, config));
+                        defaultLoadBalancer(config));
                 builder = builder.loadBalancerFactory(loadBalancerFactory);
                 builder = new LoadBalancerIgnoringBuilder<>(builder, serviceName);
                 LOGGER.info("Enabled DefaultLoadBalancer for service with name {}", serviceName);
@@ -61,10 +61,10 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
     }
 
     private <R> LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> defaultLoadBalancer(
-            String serviceName, DefaultLoadBalancerProviderConfig config) {
+            DefaultLoadBalancerProviderConfig config) {
         return LoadBalancers.<R, FilterableStreamingHttpLoadBalancedConnection>
                         builder("experimental-load-balancer")
-                .loadBalancerObserver(new DefaultLoadBalancerObserver(serviceName))
+                .loadBalancerObserver(DefaultLoadBalancerObserver::new)
                 // set up the new features.
                 .outlierDetectorConfig(config.outlierDetectorConfig())
                 .loadBalancingPolicy(config.getLoadBalancingPolicy())

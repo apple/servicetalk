@@ -67,6 +67,13 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
+            @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
+        delegate = delegate.loadBalancerObserver(loadBalancerObserverFactory);
+        return this;
+    }
+
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig) {
         delegate = delegate.outlierDetectorConfig(outlierDetectorConfig);
         return this;
