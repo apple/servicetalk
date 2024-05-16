@@ -18,9 +18,9 @@ package io.servicetalk.loadbalancer;
 /**
  * A collections of factories for constructing a {@link LoadBalancingPolicy}.
  */
-public final class LoadBalancerPolicies {
+public final class LoadBalancingPolicies {
 
-    private LoadBalancerPolicies() {
+    private LoadBalancingPolicies() {
         // no instances.
     }
 

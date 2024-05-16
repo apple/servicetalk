@@ -24,7 +24,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
  * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
- * @see LoadBalancerPolicies#p2c()
+ * @see LoadBalancingPolicies#p2c()
  */
 public final class P2CLoadBalancingPolicyBuilder {
 

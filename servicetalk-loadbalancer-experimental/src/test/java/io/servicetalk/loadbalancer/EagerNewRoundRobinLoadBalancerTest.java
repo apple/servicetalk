@@ -25,6 +25,6 @@ class EagerNewRoundRobinLoadBalancerTest extends EagerLoadBalancerTest {
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(LoadBalancerPolicies.roundRobin().build());
+                .loadBalancingPolicy(LoadBalancingPolicies.roundRobin().build());
     }
 }

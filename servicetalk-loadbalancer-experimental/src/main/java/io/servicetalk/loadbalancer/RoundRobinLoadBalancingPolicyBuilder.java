@@ -19,7 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
  * A builder for immutable {@link RoundRobinLoadBalancingPolicy} instances.
- * @see LoadBalancerPolicies#roundRobin()
+ * @see LoadBalancingPolicies#roundRobin()
  */
 public final class RoundRobinLoadBalancingPolicyBuilder {
 

@@ -198,7 +198,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
-        return LoadBalancerPolicies.roundRobin().build();
+        return LoadBalancingPolicies.roundRobin().build();
     }
 
     private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C>
