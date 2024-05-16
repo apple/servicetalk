@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 /**
  * Factory of {@link LoadBalancerObserver} instances.
  */
+@FunctionalInterface
 public interface LoadBalancerObserverFactory {
 
     /**
