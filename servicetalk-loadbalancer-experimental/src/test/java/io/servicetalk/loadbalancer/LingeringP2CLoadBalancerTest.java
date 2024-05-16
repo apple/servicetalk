@@ -25,6 +25,6 @@ public class LingeringP2CLoadBalancerTest extends LingeringLoadBalancerTest {
     @Override
     protected LoadBalancerBuilder<String, TestLoadBalancedConnection> baseLoadBalancerBuilder() {
         return LoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
-                .loadBalancingPolicy(LoadBalancerPolicies.p2c().build());
+                .loadBalancingPolicy(LoadBalancingPolicies.p2c().build());
     }
 }

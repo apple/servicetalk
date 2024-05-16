@@ -17,12 +17,10 @@ package io.servicetalk.loadbalancer;
 
 /**
  * A collections of factories for constructing a {@link LoadBalancingPolicy}.
- * @deprecated use {@link LoadBalancingPolicies}.
  */
-@Deprecated // TODO: remove after 0.42.45 release.
-public final class LoadBalancerPolicies {
+public final class LoadBalancingPolicies {
 
-    private LoadBalancerPolicies() {
+    private LoadBalancingPolicies() {
         // no instances.
     }
 

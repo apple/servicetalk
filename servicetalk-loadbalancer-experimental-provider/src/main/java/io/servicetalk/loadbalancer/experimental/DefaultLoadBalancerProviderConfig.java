@@ -16,7 +16,7 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.loadbalancer.LoadBalancerPolicies;
+import io.servicetalk.loadbalancer.LoadBalancingPolicies;
 import io.servicetalk.loadbalancer.LoadBalancingPolicy;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
 
@@ -122,7 +122,7 @@ final class DefaultLoadBalancerProviderConfig {
 
     <U, C extends LoadBalancedConnection> LoadBalancingPolicy<U, C> getLoadBalancingPolicy() {
         return lbPolicy == LBPolicy.P2C ?
-                LoadBalancerPolicies.p2c().build() : LoadBalancerPolicies.roundRobin().build();
+                LoadBalancingPolicies.p2c().build() : LoadBalancingPolicies.roundRobin().build();
     }
 
     boolean enabledForServiceName(String serviceName) {

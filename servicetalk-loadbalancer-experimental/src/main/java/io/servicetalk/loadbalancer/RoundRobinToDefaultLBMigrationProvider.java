@@ -124,7 +124,7 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
                     .build();
 
             LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy =
-                    LoadBalancerPolicies.roundRobin()
+                    LoadBalancingPolicies.roundRobin()
                         .failOpen(false)
                         .ignoreWeights(true)
                         .build();
