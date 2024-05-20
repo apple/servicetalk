@@ -885,8 +885,8 @@ public final class HeaderUtils {
         private String message(final byte value) {
             final int codePoint = value & 0xff;
             final int idx = this.idx;
-            final StringBuilder sb = new StringBuilder(40 + stringSize(idx) + what.length() + token.length() +
-                    EXPECTED.length())
+            final StringBuilder sb = new StringBuilder(40 + intToStringLength(idx) + what.length() +
+                    token.length() + EXPECTED.length())
                     .append('\'')   // 1
                     .append((char) codePoint)   // 1
                     .append("' (0x")    // 5
@@ -904,15 +904,18 @@ public final class HeaderUtils {
             return sb.toString();
         }
 
-        private static int stringSize(final int value) {
+        /**
+         * Calculates the length of {@link Integer#toString(int)} for the specified value.
+         */
+        private static int intToStringLength(final int value) {
             assert value >= 0;
-            int size = 0;
-            int tmp = 1;
-            while (tmp <= value && tmp <= 1_000_000_000) {
-                ++size;
-                tmp = (tmp << 3) + (tmp << 1);
+            int length = 1;
+            int test = 10;
+            while (test <= value && test <= 1_000_000_000) {
+                ++length;
+                test = (test << 3) + (test << 1);   // equivalent of "test *= 10;"
             }
-            return size;
+            return length;
         }
     }
 }
