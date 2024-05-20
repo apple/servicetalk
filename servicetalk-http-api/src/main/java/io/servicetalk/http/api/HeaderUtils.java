@@ -913,7 +913,7 @@ public final class HeaderUtils {
             int test = 10;
             while (test <= value && test <= 1_000_000_000) {
                 ++length;
-                test = (test << 3) + (test << 1);   // equivalent of "test *= 10;"
+                test *= 10;
             }
             return length;
         }
