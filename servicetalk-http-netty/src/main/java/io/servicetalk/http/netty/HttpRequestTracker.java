@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -35,26 +34,19 @@ import io.servicetalk.transport.api.TransportObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
-import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_CONNECT_FAILED;
-import static io.servicetalk.loadbalancer.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
+import static io.servicetalk.loadbalancer.RequestTracker.ErrorClass.EXT_ORIGIN_TIMEOUT;
+import static io.servicetalk.loadbalancer.RequestTracker.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 
 final class HttpRequestTracker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestTracker.class);
-
-    private static final Function<Throwable, ErrorClass> ERROR_CLASSIFIER = t -> t instanceof ConnectException ?
-            LOCAL_ORIGIN_CONNECT_FAILED : LOCAL_ORIGIN_REQUEST_FAILED;
-    private static final Function<HttpResponseMetaData, ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = resp ->
-            (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
-                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
 
     private HttpRequestTracker() {
         // no instances
@@ -161,7 +153,7 @@ final class HttpRequestTracker {
 
             @Override
             public HttpLifecycleObserver.HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
-                ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(responseMetaData);
+                RequestTracker.ErrorClass error = classifyResponse(responseMetaData);
                 if (error != null) {
                     final long startTime = finish();
                     if (checkOnce(startTime)) {
@@ -182,7 +174,7 @@ final class HttpRequestTracker {
             public void onResponseError(Throwable cause) {
                 final long startTime = finish();
                 if (checkOnce(startTime)) {
-                    tracker.onRequestError(startTime, ERROR_CLASSIFIER.apply(cause));
+                    tracker.onRequestError(startTime, classifyThrowable(cause));
                 }
             }
 
@@ -190,7 +182,7 @@ final class HttpRequestTracker {
             public void onResponseCancel() {
                 final long startTime = finish();
                 if (checkOnce(startTime)) {
-                    tracker.onRequestError(startTime, ErrorClass.CANCELLED);
+                    tracker.onRequestError(startTime, RequestTracker.ErrorClass.CANCELLED);
                 }
             }
 
@@ -222,5 +214,14 @@ final class HttpRequestTracker {
                 return startTime != Long.MAX_VALUE && startTime != Long.MIN_VALUE;
             }
         }
+    }
+
+    private static RequestTracker.ErrorClass classifyResponse(HttpResponseMetaData resp) {
+        return (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
+                        RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
+    }
+
+    private static RequestTracker.ErrorClass classifyThrowable(Throwable error) {
+        return error instanceof TimeoutException ? EXT_ORIGIN_TIMEOUT : LOCAL_ORIGIN_REQUEST_FAILED;
     }
 }

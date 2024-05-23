@@ -232,7 +232,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onConnectError(long beforeConnectStart) {
+        public void onConnectError(long beforeConnectStart, ConnectTracker.ErrorClass errorClass) {
         }
 
         @Override
@@ -252,7 +252,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onRequestError(long beforeStartTime, ErrorClass errorClass) {
+        public void onRequestError(long beforeStartTime, RequestTracker.ErrorClass errorClass) {
         }
     }
 

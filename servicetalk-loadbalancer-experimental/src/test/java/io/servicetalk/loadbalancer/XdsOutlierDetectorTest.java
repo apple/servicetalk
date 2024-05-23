@@ -89,10 +89,10 @@ class XdsOutlierDetectorTest {
         assertThat(indicator1.isHealthy(), equalTo(true));
 
         // eject indicator2 and then indicator1. They should only require one bad request to eject again.
-        indicator2.onRequestError(indicator2.beforeConnectStart(), ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+        indicator2.onRequestError(indicator2.beforeConnectStart(), RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         assertThat(indicator2.isHealthy(), equalTo(false));
         // should be allowed to be ejected
-        indicator1.onRequestError(indicator1.beforeConnectStart(), ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+        indicator1.onRequestError(indicator1.beforeConnectStart(), RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         assertThat(indicator1.isHealthy(), equalTo(true));
     }
 
@@ -109,7 +109,8 @@ class XdsOutlierDetectorTest {
 
     private void eject(HealthIndicator<String, TestLoadBalancedConnection> indicator) {
         for (int i = 0; i < config.consecutive5xx(); i++) {
-            indicator.onRequestError(indicator.beforeConnectStart(), ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+            indicator.onRequestError(indicator.beforeConnectStart(),
+                    RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
     }
 }
