@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.loadbalancer.experimental;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.loadbalancer.experimental.DefaultHttpLoadBalancerProvider;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.AfterEach;
@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class DefaultHttpLoadBalancerProviderTest {
@@ -41,30 +40,30 @@ class DefaultHttpLoadBalancerProviderTest {
     }
 
     @Test
-    void defaultsToNoHost() throws Exception {
+    void defaultsToNoHost() {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("testhost", 80);
-        assertThat(builder, not(instanceOf(DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.class)));
+        assertThat(builder, instanceOf(DefaultSingleAddressHttpClientBuilder.class));
     }
 
     @Test
-    void isNotUsedForUnmatchedHost() throws Exception {
+    void isNotUsedForUnmatchedHost() {
         System.setProperty(PROPERTY_NAME, "notthisone");
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("testhost", 80);
-        assertThat(builder, not(instanceOf(DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.class)));
+        assertThat(builder, instanceOf(DefaultSingleAddressHttpClientBuilder.class));
     }
 
     @Test
-    void isNotUsedForUnmatchedHostInList() throws Exception {
+    void isNotUsedForUnmatchedHostInList() {
         System.setProperty(PROPERTY_NAME, "notthisone,foo");
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("testhost", 80);
-        assertThat(builder, not(instanceOf(DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.class)));
+        assertThat(builder, instanceOf(DefaultSingleAddressHttpClientBuilder.class));
     }
 
     @Test
-    void isUsedForMatchedHost() throws Exception {
+    void isUsedForMatchedHost() {
         System.setProperty(PROPERTY_NAME, "testhost");
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("testhost", 80);
@@ -72,7 +71,7 @@ class DefaultHttpLoadBalancerProviderTest {
     }
 
     @Test
-    void isUsedForMatchedHostInList() throws Exception {
+    void isUsedForMatchedHostInList() {
         System.setProperty(PROPERTY_NAME, "testhost,foo");
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("testhost", 80);
@@ -80,7 +79,7 @@ class DefaultHttpLoadBalancerProviderTest {
     }
 
     @Test
-    void isUsedForAnyHost() throws Exception {
+    void isUsedForAnyHost() {
         System.setProperty(PROPERTY_NAME, "*");
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("anyhostname", 80);
