@@ -95,7 +95,7 @@ public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
             throw new IllegalArgumentException("Invalid HTTP request method name: cannot be empty");
         }
         try {
-            validateToken(name);
+            validateToken(name, "request method");
             return name;
         } catch (IllegalCharacterException e) {
             throw new IllegalArgumentException("Invalid HTTP request method name: " + name, e);

@@ -153,7 +153,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         }
                         name = setCookieString.subSequence(begin, i);
                         if (validateContent) {
-                            validateToken(name);
+                            validateToken(name, "set-cookie name");
                         }
                         parseState = ParseState.ParsingValue;
                     } else if (parseState == ParseState.Unknown) {
