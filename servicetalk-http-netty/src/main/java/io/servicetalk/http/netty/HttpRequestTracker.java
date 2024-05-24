@@ -216,6 +216,7 @@ final class HttpRequestTracker {
         }
     }
 
+    @Nullable
     private static RequestTracker.ErrorClass classifyResponse(HttpResponseMetaData resp) {
         return (resp.status().statusClass() == SERVER_ERROR_5XX || TOO_MANY_REQUESTS.equals(resp.status())) ?
                         RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED : null;
