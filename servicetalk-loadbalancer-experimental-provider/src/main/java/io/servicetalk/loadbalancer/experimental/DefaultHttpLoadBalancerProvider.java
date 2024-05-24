@@ -93,12 +93,13 @@ public class DefaultHttpLoadBalancerProvider implements HttpProviders.SingleAddr
     }
 
     // Exposed for testing
-    static final class LoadBalancerIgnoringBuilder<U, R>
+    public static final class LoadBalancerIgnoringBuilder<U, R>
             extends DelegatingSingleAddressHttpClientBuilder<U, R> {
 
         private final String serviceName;
 
-        LoadBalancerIgnoringBuilder(final SingleAddressHttpClientBuilder<U, R> delegate, final String serviceName) {
+        private LoadBalancerIgnoringBuilder(
+                final SingleAddressHttpClientBuilder<U, R> delegate, final String serviceName) {
             super(delegate);
             this.serviceName = serviceName;
         }
