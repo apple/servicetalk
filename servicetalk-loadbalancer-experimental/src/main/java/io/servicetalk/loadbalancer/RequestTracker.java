@@ -56,4 +56,38 @@ public interface RequestTracker {
      * @param errorClass the class of error that triggered this method.
      */
     void onRequestError(long beforeStartTimeNs, ErrorClass errorClass);
+
+    /**
+     * Enumeration of the main failure classes.
+     */
+    enum ErrorClass {
+        /**
+         * Failures caused locally, these would be things that failed due to an exception locally.
+         */
+        LOCAL_ORIGIN_REQUEST_FAILED(true),
+
+        /**
+         * Failures related to locally enforced timeouts waiting for responses from the peer.
+         */
+        EXT_ORIGIN_TIMEOUT(false),
+
+        /**
+         * Failures returned from the remote peer. This will be things like 5xx responses.
+         */
+        EXT_ORIGIN_REQUEST_FAILED(false),
+
+        /**
+         * Failure due to cancellation.
+         */
+        CANCELLED(true);
+
+        private final boolean isLocal;
+        ErrorClass(boolean isLocal) {
+            this.isLocal = isLocal;
+        }
+
+        public boolean isLocal() {
+            return isLocal;
+        }
+    }
 }

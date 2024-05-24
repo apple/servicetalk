@@ -143,10 +143,10 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     }
 
     @Override
-    public final void onRequestError(final long beforeStartTimeNs, ErrorClass errorClass) {
+    public final void onRequestError(final long beforeStartTimeNs, RequestTracker.ErrorClass errorClass) {
         super.onRequestError(beforeStartTimeNs, errorClass);
         // For now, don't consider cancellation to be an error or a success.
-        if (errorClass != ErrorClass.CANCELLED) {
+        if (errorClass != RequestTracker.ErrorClass.CANCELLED) {
             doOnError();
         }
     }
@@ -157,11 +157,15 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     }
 
     @Override
-    public void onConnectError(long beforeConnectStart) {
+    public void onConnectError(long beforeConnectStart, ConnectTracker.ErrorClass errorClass) {
         // This assumes that the connect request was intended to be used for a request dispatch which
         // will have now failed. This is not strictly true: a connection can be acquired and simply not
         // used, but in practice it's a very good assumption.
-        doOnError();
+
+        // For now, don't consider cancellation to be an error or a success.
+        if (errorClass != ConnectTracker.ErrorClass.CANCELLED) {
+            doOnError();
+        }
     }
 
     @Override

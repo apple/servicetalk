@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.ConnectTimeoutException;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
@@ -48,6 +49,9 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CANCELLED;
+import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_ERROR;
+import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_TIMEOUT;
 import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -626,13 +630,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             return Single.defer(() -> {
                 final long connectStartTime = connectTracker.beforeConnectStart();
                 return delegate().newConnection(addr, context, observer)
-                        .beforeFinally(new ConnectSignalConsumer<>(connectStartTime, connectTracker))
+                        .beforeFinally(new ConnectSignalConsumer(connectStartTime, connectTracker))
                         .shareContextOnSubscribe();
             });
         }
     }
 
-    private static class ConnectSignalConsumer<C extends LoadBalancedConnection> implements TerminalSignalConsumer {
+    private static class ConnectSignalConsumer implements TerminalSignalConsumer {
 
         private final ConnectTracker connectTracker;
         private final long connectStartTime;
@@ -650,16 +654,16 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         @Override
         public void cancel() {
             // We assume cancellation is the result of some sort of timeout.
-            doOnError();
+            doOnError(CANCELLED);
         }
 
         @Override
         public void onError(Throwable t) {
-            doOnError();
+            doOnError(t instanceof ConnectTimeoutException ? CONNECT_TIMEOUT : CONNECT_ERROR);
         }
 
-        private void doOnError() {
-            connectTracker.onConnectError(connectStartTime);
+        private void doOnError(ConnectTracker.ErrorClass errorClass) {
+            connectTracker.onConnectError(connectStartTime, errorClass);
         }
     }
 }

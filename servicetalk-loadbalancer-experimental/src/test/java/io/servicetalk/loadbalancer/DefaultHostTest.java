@@ -232,6 +232,6 @@ class DefaultHostTest {
                 host.newConnection(cxn -> true, false, null).toFuture().get()).getCause();
         assertEquals(DELIBERATE_EXCEPTION, underlying);
         verify(healthIndicator, times(1)).beforeConnectStart();
-        verify(healthIndicator, times(1)).onConnectError(0L);
+        verify(healthIndicator, times(1)).onConnectError(0L, ConnectTracker.ErrorClass.CONNECT_ERROR);
     }
 }
