@@ -2,6 +2,7 @@ name: Test with the latest Netty 4.1.X-SNAPSHOT
 on:
   schedule:
     - cron: '0 15 * * 1-5'
+  workflow_dispatch:
 jobs:
   build:
     name: Netty snapshot on JDK ${{ matrix.java }} ${{ matrix.os }}
