@@ -27,7 +27,7 @@ jobs:
       - name: Print Netty Version
         env:
           ORG_GRADLE_PROJECT_nettyVersion: 4.1+
-        run: ORG_GRADLE_PROJECT_nettyVersion=4.1+ ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 -PnettyVersion=4.1+ | head -n 40"
+        run: ORG_GRADLE_PROJECT_nettyVersion=4.1+ ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 -PnettyVersion=4.1+ | head -n 40
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build and Test
