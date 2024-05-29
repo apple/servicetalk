@@ -28,7 +28,7 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Print Netty Version
-        run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | head -n 40
+        run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | head -n 50
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build and Test
