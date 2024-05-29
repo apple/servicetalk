@@ -23,9 +23,6 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
-// To debug ci-netty-snapshot.yml
-println("nettyVersion for io.netty:netty-bom:$nettyVersion")
-
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
