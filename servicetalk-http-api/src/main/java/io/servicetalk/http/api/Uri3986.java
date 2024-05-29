@@ -173,7 +173,7 @@ final class Uri3986 implements Uri {
                 if (i == 0) {
                     throw new IllegalArgumentException("Invalid URI format: no scheme before colon (':')");
                 }
-                parsedScheme = getLowercaseScheme(uri.substring(0, i));
+                parsedScheme = getLowerCaseScheme(uri.substring(0, i));
                 begin = ++i;
                 // We don't enforce the following, browsers still generate these types of requests.
                 // https://tools.ietf.org/html/rfc3986#section-3.3
@@ -200,7 +200,7 @@ final class Uri3986 implements Uri {
         this.uri = uri;
     }
 
-    private static String getLowercaseScheme(String scheme) {
+    private static String getLowerCaseScheme(String scheme) {
         if (regionMatches(scheme, true, 0, HTTP_SCHEME, 0, HTTP_SCHEME.length())) {
             if (scheme.length() == 4) {
                 return HTTP_SCHEME;
