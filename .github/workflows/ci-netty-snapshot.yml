@@ -3,6 +3,9 @@ on:
   schedule:
     - cron: '0 15 * * 1-5'
   workflow_dispatch:
+env:
+  ORG_GRADLE_PROJECT_nettyVersion: 4.1+
+  JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
 jobs:
   build:
     name: Netty snapshot on JDK ${{ matrix.java }} ${{ matrix.os }}
@@ -25,15 +28,10 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Print Netty Version
-        env:
-          ORG_GRADLE_PROJECT_nettyVersion: 4.1+
-        run: ORG_GRADLE_PROJECT_nettyVersion=4.1+ ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 -PnettyVersion=4.1+ | head -n 40
+        run: ./gradlew :servicetalk-grpc-netty:dependencyInsight --configuration testRuntimeClasspath --dependency io.netty:netty-codec-http2 | head -n 40
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build and Test
-        env:
-          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-          ORG_GRADLE_PROJECT_nettyVersion: 4.1.+
         run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
       - name: Publish Test Results
         if: always()
