@@ -31,7 +31,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.compile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -162,8 +166,24 @@ class Uri3986Test {
     }
 
     @Test
-    void schemeParsedCaseSensative() {
-        verifyUri3986("HTTP://test.com", "HTTP", null, "test.com", -1, "", "", null, null, null);
+    void schemeParsedCaseInsensitive() {
+        verifyUri3986("HTTP://test.com", "http", null, "test.com", -1, "", "", null, null, null);
+        verifyUri3986("HTTPS://test.com", "https", null, "test.com", -1, "", "", null, null, null);
+        verifyUri3986("ANY://test.com", "any", null, "test.com", -1, "", "", null, null, null);
+    }
+
+    @Test
+    void reuseWellKnownScheme() {
+        String http1 = new Uri3986("http://test.com").scheme();
+        String http2 = new Uri3986("HTTP://test.com").scheme();
+        assertThat("different http", http1, sameInstance(http2));
+
+        String https1 = new Uri3986("https://test.com").scheme();
+        String https2 = new Uri3986("HTTPS://test.com").scheme();
+        assertThat("different https", https1, sameInstance(https2));
+
+        String httpss = new Uri3986("HTTPSS://test.com").scheme();
+        assertThat("same https and httpss", https1, not(sameInstance(httpss)));
     }
 
     @Test
@@ -637,7 +657,9 @@ class Uri3986Test {
         // Validate against the RFC's regex
         Matcher matcher = VALID_PATTERN.matcher(expectedUri);
         assertThat(true, is(matcher.matches()));
-        assertThat("invalid scheme()", uri.scheme(), is(matcher.group(2)));
+        String matcherScheme = matcher.group(2);
+        assertThat("invalid scheme()", uri.scheme(),
+                matcherScheme == null ? is(nullValue()) : equalToIgnoringCase(matcherScheme));
         assertThat("invalid authority()", uri.authority(), is(matcher.group(4)));
         assertThat("invalid path()", uri.path(), is(matcher.group(5)));
         assertThat("invalid query()", uri.query(), is(matcher.group(7)));
