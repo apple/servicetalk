@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -219,6 +220,28 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
             assertThat(response.status(), is(OK));
             // Check internal client
             assertExecutionContext(internalCtx, actualInternalCtx.get());
+        }
+    }
+
+    @Test
+    void internalClientSchemeShouldBeCaseInsensitive() throws Exception {
+        AtomicInteger counter = new AtomicInteger();
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
+             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .initializer((scheme, address, builder) -> counter.incrementAndGet())
+                     .buildBlocking()) {
+
+            HttpResponse response = blockingHttpClient.request(
+                    blockingHttpClient.get("http://" + serverHostAndPort(serverContext)));
+            assertThat(response.status(), is(OK));
+
+            response = blockingHttpClient.request(
+                    blockingHttpClient.get("HTTP://" + serverHostAndPort(serverContext)));
+            assertThat(response.status(), is(OK));
+
+            assertThat(counter.get(), is(1));
         }
     }
 

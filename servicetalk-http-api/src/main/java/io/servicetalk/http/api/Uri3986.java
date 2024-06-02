@@ -17,6 +17,7 @@
 package io.servicetalk.http.api;
 
 import java.nio.charset.Charset;
+import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -38,6 +39,8 @@ import static io.servicetalk.http.api.UriUtils.parsePort;
 final class Uri3986 implements Uri {
     @SuppressWarnings({"StringOperationCanBeSimplified", "PMD.StringInstantiation"})
     private static final String NULL_COMPONENT = new String(""); // instance equality required!
+    private static final String HTTP_SCHEME = "http";
+    private static final String HTTPS_SCHEME = "https";
     private final String uri;
     @Nullable
     private final String scheme;
@@ -169,7 +172,7 @@ final class Uri3986 implements Uri {
                 if (i == 0) {
                     throw new IllegalArgumentException("Invalid URI format: no scheme before colon (':')");
                 }
-                parsedScheme = uri.substring(0, i);
+                parsedScheme = getLowerCaseScheme(uri, i);
                 begin = ++i;
                 // We don't enforce the following, browsers still generate these types of requests.
                 // https://tools.ietf.org/html/rfc3986#section-3.3
@@ -194,6 +197,15 @@ final class Uri3986 implements Uri {
         port = parsedPort;
         path = parsedPath;
         this.uri = uri;
+    }
+
+    private static String getLowerCaseScheme(final String uri, final int endIndex) {
+        if (endIndex == 4 && uri.regionMatches(true, 0, HTTP_SCHEME, 0, 4)) {
+            return HTTP_SCHEME;
+        } else if (endIndex == 5 && uri.regionMatches(true, 0, HTTPS_SCHEME, 0, 5)) {
+            return HTTPS_SCHEME;
+        }
+        return uri.substring(0, endIndex).toLowerCase(Locale.ENGLISH);
     }
 
     @Override
