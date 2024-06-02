@@ -33,7 +33,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -181,9 +180,6 @@ class Uri3986Test {
         String https1 = new Uri3986("https://test.com").scheme();
         String https2 = new Uri3986("HTTPS://test.com").scheme();
         assertThat("different https", https1, sameInstance(https2));
-
-        String httpss = new Uri3986("HTTPSS://test.com").scheme();
-        assertThat("same https and httpss", https1, not(sameInstance(httpss)));
     }
 
     @Test

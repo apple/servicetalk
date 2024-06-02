@@ -21,7 +21,6 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.UriComponentType.FRAGMENT;
 import static io.servicetalk.http.api.UriComponentType.HOST_NON_IP;
 import static io.servicetalk.http.api.UriComponentType.PATH;
@@ -173,7 +172,7 @@ final class Uri3986 implements Uri {
                 if (i == 0) {
                     throw new IllegalArgumentException("Invalid URI format: no scheme before colon (':')");
                 }
-                parsedScheme = getLowerCaseScheme(uri.substring(0, i));
+                parsedScheme = getLowerCaseScheme(uri, i);
                 begin = ++i;
                 // We don't enforce the following, browsers still generate these types of requests.
                 // https://tools.ietf.org/html/rfc3986#section-3.3
@@ -200,16 +199,13 @@ final class Uri3986 implements Uri {
         this.uri = uri;
     }
 
-    private static String getLowerCaseScheme(String scheme) {
-        if (regionMatches(scheme, true, 0, HTTP_SCHEME, 0, HTTP_SCHEME.length())) {
-            if (scheme.length() == 4) {
-                return HTTP_SCHEME;
-            }
-            if (scheme.length() == 5 && (scheme.charAt(4) == 's' || scheme.charAt(4) == 'S')) {
-                return HTTPS_SCHEME;
-            }
+    private static String getLowerCaseScheme(final String uri, final int endIndex) {
+        if (endIndex == 4 && uri.regionMatches(true, 0, HTTP_SCHEME, 0, 4)) {
+            return HTTP_SCHEME;
+        } else if (endIndex == 5 && uri.regionMatches(true, 0, HTTPS_SCHEME, 0, 5)) {
+            return HTTPS_SCHEME;
         }
-        return scheme.toLowerCase(Locale.ENGLISH);
+        return uri.substring(0, endIndex).toLowerCase(Locale.ENGLISH);
     }
 
     @Override
