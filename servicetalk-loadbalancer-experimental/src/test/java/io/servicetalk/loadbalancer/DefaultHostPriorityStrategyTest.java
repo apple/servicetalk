@@ -95,6 +95,43 @@ class DefaultHostPriorityStrategyTest {
     }
 
     @Test
+    void twoPrioritiesWithWeightsButSkipNumbers() {
+        List<TestPrioritizedHost> hosts = makeHosts(6);
+        for (int i = 0; i < hosts.size(); i++) {
+            hosts.get(i).loadBalancingWeight(i + 1d);
+            if (i >= 3) {
+                hosts.get(i).priority(2);
+            }
+        }
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
+        assertThat(result.size(), equalTo(3));
+
+        // We should only have the first three hosts because they were all healthy, so they are the only group.
+        for (int i = 0; i < 3; i++) {
+            assertThat(result.get(i).address(), equalTo(hosts.get(i).address()));
+            // It doesn't matter what they are exactly so long as all weights are equal.
+            assertThat(result.get(i).loadBalancedWeight(), approxEqual(result.get(0).loadBalancedWeight() * (i + 1)));
+        }
+    }
+
+    @Test
+    void noHealthyNodesDoesntFilterOutElements() {
+        List<TestPrioritizedHost> hosts = makeHosts(6);
+        for (int i = 0; i < hosts.size(); i++) {
+            hosts.get(i).loadBalancingWeight(i + 1d);
+            hosts.get(i).isHealthy = false;
+            if (i >= 3) {
+                hosts.get(i).priority(1);
+            }
+        }
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
+        assertThat(result.size(), equalTo(6));
+        for (int i = 0; i < hosts.size(); i++) {
+            assertThat(hosts.get(i).loadBalancedWeight, equalTo(i + 1d));
+        }
+    }
+
+    @Test
     void priorityGroupsWithoutUnhealthyNodes() {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 3; i < hosts.size(); i++) {

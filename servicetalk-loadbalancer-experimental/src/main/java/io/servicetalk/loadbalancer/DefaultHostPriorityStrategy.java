@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
@@ -57,14 +58,15 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         //      #zone-aware-load-balancing
         //  The behavior could be structured more as a tree, but it's not obvious how to feed such a tree into the load
         //  balancer.
-        List<Group> groups = new ArrayList<>();
-        // First consolidate our hosts into their respective priority groups.
+        // Consolidate our hosts into their respective priority groups. Since we're going to use a map we must use
+        // and ordered map (in this case a TreeMap) so that we can iterate in order of group priority.
+        TreeMap<Integer, Group> groups = new TreeMap<>();
         for (T host : hosts) {
             if (host.priority() < 0) {
                 LOGGER.warn("Found illegal priority: {}. Dropping priority grouping data.", host.priority());
                 return hosts;
             }
-            Group group = getGroup(groups, host.priority());
+            Group group = groups.computeIfAbsent(host.priority(), i -> new Group());
             if (host.isHealthy()) {
                 group.healthyCount++;
             }
@@ -78,7 +80,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
         // Compute the health percentage for each group.
         int totalHealthPercentage = 0;
-        for (Group group : groups) {
+        for (Group group : groups.values()) {
             group.healthPercentage = Math.min(100, overProvisionPercentage * group.healthyCount / group.hosts.size());
             totalHealthPercentage = Math.min(100, totalHealthPercentage + group.healthPercentage);
         }
@@ -87,41 +89,26 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
             return hosts;
         }
 
-        // We require that we have a continuous priority set. We could relax this if we wanted by using a tree map to
-        // traverse in order. However, I think it's also a requirement of other xDS compatible implementations.
         List<T> weightedResults = new ArrayList<>();
         int remainingProbability = 100;
-        for (int i = 0; i < groups.size() && remainingProbability > 0; i++) {
-            Group group = groups.get(i);
-            if (group.hosts.isEmpty()) {
-                // we don't have a continuous priority group. Warn and rebuild without priorities.
-                LOGGER.warn("Non-continuous priority groups: {} total groups but missing group {}. " +
-                        "Dropping priority grouping data.", groups.size(), i);
-                return hosts;
-            }
-
-            // We need to compute the weight for the group.
+        for (Group group : groups.values()) {
+            assert !group.hosts.isEmpty();
             final int groupProbability = Math.min(remainingProbability,
                     group.healthPercentage * 100 / totalHealthPercentage);
-            if (groupProbability == 0) {
-                // TODO: this means all hosts for this group are unhealthy. This may be worth some logging.
-            } else {
+            if (groupProbability > 0) {
                 remainingProbability -= groupProbability;
                 group.addToResults(groupProbability, weightedResults);
             }
+            if (remainingProbability == 0) {
+                break;
+            }
         }
-        // What to do if we don't have any healthy nodes at all?
-        if (remainingProbability > 0) {
-            // TODO: this is an awkward situation. Should we panic and just discard priority information?
+        if (weightedResults.isEmpty()) {
+            // This is awkward situation can happen if we don't have any healthy nodes.
+            // In that case let's panic and return an un-prioritized set of hosts.
+            return hosts;
         }
         return weightedResults;
-    }
-
-    private Group getGroup(List<Group> groups, int priority) {
-        while (groups.size() < priority + 1) {
-            groups.add(new Group());
-        }
-        return groups.get(priority);
     }
 
     private static class Group<H extends PrioritizedHost> {
