@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2023-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -200,7 +202,7 @@ class FromInputStreamPublisherTest {
     void streamClosedAndErrorOnDeliveryError() throws Exception {
         initChunkedStream(smallBuff, of(10), of(10));
 
-        Subscriber sub = mock(Subscriber.class);
+        Subscriber<byte[]> sub = mock(Subscriber.class);
 
         doAnswer(inv -> {
             Subscription s = inv.getArgument(0);
@@ -221,7 +223,7 @@ class FromInputStreamPublisherTest {
     void streamClosedAndErrorOnDeliveryErrorOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
-        Subscriber sub = mock(Subscriber.class);
+        Subscriber<byte[]> sub = mock(Subscriber.class);
 
         AtomicReference<Subscription> subRef = new AtomicReference<>();
         doAnswer(inv -> {
@@ -246,7 +248,7 @@ class FromInputStreamPublisherTest {
     void streamCanceledShouldCloseOnce() throws Exception {
         initChunkedStream(smallBuff, ofAll(10), ofAll(10));
 
-        Subscriber sub = mock(Subscriber.class);
+        Subscriber<byte[]> sub = mock(Subscriber.class);
 
         doAnswer(inv -> {
             Subscription s = inv.getArgument(0);
@@ -351,21 +353,70 @@ class FromInputStreamPublisherTest {
     }
 
     @Test
-    void dontFailOnInputStreamWithBrokenAvailableCall() throws Throwable {
-        initChunkedStream(bigBuff, of(5, 0, 0, 10, 5, 5, 5, 5, 0),
-                                   of(5, 1, 1, 10, 5, 5, 5, 5, 0));
+    void readsAllBytesWhenAvailableNotImplemented() throws Throwable {
+        // constrain publisher to 10 byte chunks with no data availability to enforce inner loops until buffer drained
+        initChunkedStream(bigBuff, ofAll(0), ofAll(10));
 
-        byte[][] items = {
-                new byte[]{0, 1, 2, 3, 4},
-                new byte[]{5}, // avail == 0 -> override to 1
-                new byte[]{6}, // avail == 0 -> override to 1
-                new byte[]{7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-                new byte[]{17, 18, 19, 20, 21},
-                new byte[]{22, 23, 24, 25, 26},
-                new byte[]{27, 28, 29, 30, 31},
-                new byte[]{32, 33, 34, 35, 36},
-        };
+        // expect single emitted item
+        // [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+        //  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        //  20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+        //  30, 31, 32, 33, 34, 35, 36]
 
+        byte[][] items = chunked(bigBuff.length, bigBuff.length);
+        verifySuccess(items);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] readChunkSize={0}")
+    @ValueSource(ints = {7, 1024})
+    void doNotFailOnInputStreamWithBrokenAvailableCall(int readChunkSize) throws Throwable {
+        initChunkedStream(bigBuff, of(5, 0, 0, 10, 5, 5, 1, 0),
+                                   of(5, 7, 7, 10, 5, 5, 1, 0));
+        pub = new FromInputStreamPublisher(inputStream, readChunkSize);
+
+        if (readChunkSize > bigBuff.length) {
+            byte[][] items = {
+                    new byte[]{0, 1, 2, 3, 4},
+                    // avail == 0 -> override to readChunkSize
+                    new byte[]{5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+                            28, 29, 30, 31, 32, 33, 34, 35, 36},
+            };
+            verifySuccess(items);
+        } else {
+            byte[][] items = {
+                    new byte[]{0, 1, 2, 3, 4},
+                    // avail == 0 -> override to readChunkSize
+                    new byte[]{5, 6, 7, 8, 9, 10, 11},
+                    // avail == 0 -> override to readChunkSize
+                    new byte[]{12, 13, 14, 15, 16, 17, 18},
+                    // readChunkSize < available
+                    new byte[]{19, 20, 21, 22, 23, 24, 25},
+                    new byte[]{26, 27, 28, 29, 30},
+                    new byte[]{31, 32, 33, 34, 35},
+                    new byte[]{36},
+            };
+            verifySuccess(items);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0}")
+    @ValueSource(ints = {3, 5, 7})
+    void readChunkSizeRespectedWhenAvailableNotImplemented(int chunkSize) throws Throwable {
+        initChunkedStream(bigBuff, ofAll(0), ofAll(chunkSize));
+        int readChunkSize = 5;
+        pub = new FromInputStreamPublisher(inputStream, readChunkSize);
+
+        // expect 8 emitted items
+        // [ 0,  1,  2,  3,  4]
+        // [ 5,  6,  7,  8,  9]
+        // [10, 11, 12, 13, 14]
+        // [15, 16, 17, 18, 19]
+        // [20, 21, 22, 23, 24]
+        // [25, 26, 27, 28, 29]
+        // [30, 31, 32, 33, 34]
+        // [35, 36]
+
+        byte[][] items = chunked(bigBuff.length, readChunkSize);
         verifySuccess(items);
     }
 
@@ -400,11 +451,12 @@ class FromInputStreamPublisherTest {
         verifySuccess(items);
     }
 
-    @Test
-    void repeatedReadingWhenAvailabilityRunsOut() throws Throwable {
-        // constrain publisher to 10 byte chunks with only 5 byte availability per chunk to enforce multiple outer loops
-        // simulating multiple calls to IS.available()
-        initChunkedStream(bigBuff, ofAll(5), ofAll(5)); // 5 byte chunks per available() call
+    @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0}")
+    @ValueSource(ints = {3, 5, 7})
+    void repeatedReadingWhenAvailabilityRunsOut(int chunkSize) throws Throwable {
+        // constrain publisher to chunkSize byte chunks with only 5 byte availability per chunk to enforce multiple
+        // outer loops simulating multiple calls to IS.available()
+        initChunkedStream(bigBuff, ofAll(5), ofAll(chunkSize)); // chunkSize byte chunks per available() call
 
         // expect 8 emitted items
         // [ 0,  1,  2,  3,  4]
