@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,30 +20,38 @@ import io.servicetalk.buffer.api.BufferAllocator;
 
 import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class BufferAllocatorsTest {
 
     private static final String TEST_NAME_FORMAT = "{index}: allocator = {0}";
 
     @SuppressWarnings("unused")
-    private static Collection<BufferAllocator> allocators() {
-        return asList(DEFAULT_ALLOCATOR, PREFER_DIRECT_ALLOCATOR, PREFER_HEAP_ALLOCATOR);
+    private static List<Arguments> allocators() {
+        return asList(arguments(named("DEFAULT_ALLOCATOR", DEFAULT_ALLOCATOR)),
+                arguments(named("PREFER_DIRECT_ALLOCATOR", PREFER_DIRECT_ALLOCATOR)),
+                arguments(named("PREFER_HEAP_ALLOCATOR", PREFER_HEAP_ALLOCATOR)));
     }
 
     @ParameterizedTest(name = TEST_NAME_FORMAT)
@@ -74,6 +82,42 @@ class BufferAllocatorsTest {
     @MethodSource("allocators")
     void testReadOnlyDirectBuffer(BufferAllocator allocator) {
         assertBuffer(allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer()), true);
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testWrapByteArray(BufferAllocator allocator) {
+        byte[] array = new byte[16];
+        ThreadLocalRandom.current().nextBytes(array);
+        Buffer wrapped = allocator.wrap(array);
+        assertBuffer(wrapped, false);
+        assertThat(wrapped.isReadOnly(), is(false));
+        assertThat(wrapped.readableBytes(), is(equalTo(array.length)));
+        byte[] dst = new byte[array.length];
+        wrapped.readBytes(dst);
+        assertThat(wrapped.readableBytes(), is(0));
+        assertThat(dst, is(equalTo(array)));
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testWrapPartialByteArray(BufferAllocator allocator) {
+        byte[] array = new byte[16];
+        ThreadLocalRandom.current().nextBytes(array);
+        int newLength = array.length - 4;
+        Buffer wrapped = allocator.wrap(array, 2, newLength);
+        assertBuffer(wrapped, false);
+        assertThat(wrapped.isReadOnly(), is(false));
+        assertThat(wrapped.readableBytes(), is(equalTo(newLength)));
+        byte[] dst = new byte[array.length];
+        wrapped.readBytes(dst, 0, newLength);
+        assertThat(wrapped.readableBytes(), is(0));
+        for (int i = 0, j = 2; i < newLength; i++, j++) {
+            assertThat("Mismatch at index: " + i, dst[i], is(equalTo(array[j])));
+        }
+        for (int i = newLength; i < array.length; i++) {
+            assertThat("Mismatch at index: " + i, dst[i], is((byte) 0));
+        }
     }
 
     @ParameterizedTest(name = TEST_NAME_FORMAT)

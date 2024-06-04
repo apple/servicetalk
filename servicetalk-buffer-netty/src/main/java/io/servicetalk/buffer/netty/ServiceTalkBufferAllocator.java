@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,6 +157,17 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     public Buffer wrap(byte[] bytes) {
         return bytes.length == 0 ? EMPTY_BUFFER : new NettyBuffer<>(new UnreleasableHeapByteBuf(this, bytes,
                 bytes.length));
+    }
+
+    @Override
+    public Buffer wrap(final byte[] bytes, final int offset, final int len) {
+        if (len == 0) {
+            return EMPTY_BUFFER;
+        }
+        final Buffer b = wrap(bytes);
+        b.readerIndex(offset);
+        b.writerIndex(offset + len);
+        return b;
     }
 
     @Override
