@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021, 2023-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                     int available = stream.available();
                     if (available == 0) {
                         // Work around InputStreams that don't strictly honor the 0 == EOF contract.
-                        available = buffer != null ? buffer.length : 1;
+                        available = buffer != null ? buffer.length : readChunkSize;
                     }
                     available = fillBufferAvoidingBlocking(available);
                     emitSingleBuffer(subscriber);
@@ -212,6 +212,8 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                 b = buffer;
                 buffer = null;
             } else {
+                // this extra copy is necessary when we read the last chunk and total number of bytes read before EOF
+                // is less than guesstimated buffer size
                 b = new byte[writeIdx];
                 arraycopy(buffer, 0, b, 0, writeIdx);
             }
