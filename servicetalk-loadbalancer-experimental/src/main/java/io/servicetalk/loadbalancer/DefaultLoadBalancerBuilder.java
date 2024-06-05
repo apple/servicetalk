@@ -167,6 +167,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                    DefaultHostPriorityStrategy.INSTANCE,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
                     connectionPoolStrategyFactory.buildStrategy(targetResource), connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
