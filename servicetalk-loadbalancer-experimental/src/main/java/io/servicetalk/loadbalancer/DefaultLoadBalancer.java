@@ -119,16 +119,23 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
+     * @param priorityStrategy the {@link HostPriorityStrategy} to use with the load balancer.
+     * @param hostSelector initial host selector to use with this load balancer.
+     * @param connectionPoolStrategy the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
+     * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
+     *                                    load balancer.
      * @param healthCheckConfig configuration for the health checking mechanism, which monitors hosts that
      * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
      * continues being eligible for connecting on the request path).
+     * @param outlierDetectorFactory outlier detector factory.
      * @see RoundRobinLoadBalancerFactory
      */
     DefaultLoadBalancer(
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final HostPriorityStrategy priorityStrategy,
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionPoolStrategy<C> connectionPoolStrategy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
@@ -138,7 +145,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
-        this.priorityStrategy = DefaultHostPriorityStrategy.INSTANCE; // TODO: how to configure this?
+        this.priorityStrategy = requireNonNull(priorityStrategy, "priorityStrategy");
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
@@ -315,8 +322,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 int oldPriority = host.priority();
                 host.serviceDiscoveryWeight(eventWeight(event));
                 host.priority(eventPriority(event));
-                hostSetChanged = hostSetChanged
-                        || oldPriority != host.priority() || oldSDWeight != host.serviceDiscoveryWeight();
+                hostSetChanged |= oldPriority != host.priority() || oldSDWeight != host.serviceDiscoveryWeight();
 
                 if (AVAILABLE.equals(event.status())) {
                     // We only send the ready event if the previous host list was empty.
@@ -490,6 +496,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // must be called from within the SequentialExecutor
     private void sequentialUpdateUsedHosts(List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts) {
         this.usedHosts = nextHosts;
+        // We need to reset the load balancing weights before we run the host set through the rest
+        // of the operations that will transform and consume the load balancing weight.
+        for (PrioritizedHostImpl<?, ?> host : nextHosts) {
+            host.loadBalancingWeight(host.serviceDiscoveryWeight());
+        }
         this.hostSelector = hostSelector.rebuildWithHosts(priorityStrategy.prioritize(usedHosts));
     }
 
@@ -625,6 +636,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
     }
 
+    // Exposed for testing
+    List<PrioritizedHostImpl<ResolvedAddress, C>> hosts() {
+        return new ArrayList<>(usedHosts);
+    }
+
     static final class PrioritizedHostImpl<ResolvedAddress, C extends LoadBalancedConnection>
             implements Host<ResolvedAddress, C>, PrioritizedHost {
         private final Host<ResolvedAddress, C> delegate;
@@ -657,7 +673,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // When this is set it also overwrites the load balancing weight which must then be recalculated.
         void serviceDiscoveryWeight(final double weight) {
             this.serviceDiscoveryWeight = weight;
-            this.loadBalancingWeight = weight;
         }
 
         double serviceDiscoveryWeight() {
