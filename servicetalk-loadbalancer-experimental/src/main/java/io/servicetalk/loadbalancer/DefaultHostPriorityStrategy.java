@@ -56,8 +56,6 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         //  remote zones intentionally even if all hosts are well.
         //  https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_runtime
         //      #zone-aware-load-balancing
-        //  The behavior could be structured more as a tree, but it's not obvious how to feed such a tree into the load
-        //  balancer.
         // Consolidate our hosts into their respective priority groups. Since we're going to use a map we must use
         // and ordered map (in this case a TreeMap) so that we can iterate in order of group priority.
         TreeMap<Integer, Group> groups = new TreeMap<>();
