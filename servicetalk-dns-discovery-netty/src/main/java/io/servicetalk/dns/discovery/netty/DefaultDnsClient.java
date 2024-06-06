@@ -230,7 +230,7 @@ final class DefaultDnsClient implements DnsClient {
 //                    new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor);
                     // TODO: this is just for hacking together tests.
                     new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build()), nettyIoExecutor,
-                    HedgingDnsNameResolver.constantTracker(100), HedgingDnsNameResolver.alwaysBudget());
+                    HedgingDnsNameResolver.constantTracker(100), HedgingDnsNameResolver.alwaysAllowBudget());
         } else {
             resolver = new UnderlyingDnsResolver.NettyDnsNameResolver(builder.build());
         }

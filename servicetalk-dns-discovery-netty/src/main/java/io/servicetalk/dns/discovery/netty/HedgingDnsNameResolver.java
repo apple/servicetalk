@@ -150,7 +150,28 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
         boolean withdraw();
     }
 
-    // TODO: both these implementations are un-synchronized and rely on netty using only a single event loop.
+    private static final class DefaultPercentileTracker implements PercentileTracker {
+
+        private final MovingVariance movingVariance;
+        private final double multiple;
+
+        DefaultPercentileTracker(final double multiple, final int historySize) {
+            movingVariance = new MovingVariance(historySize);
+            this.multiple = multiple;
+        }
+
+        @Override
+        public void addSample(long sample) {
+            int clipped = Math.max(0, sample > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) sample);
+            movingVariance.addSample(clipped);
+        }
+
+        @Override
+        public long getValue() {
+            return Math.round(movingVariance.mean() + movingVariance.stdev() * multiple);
+        }
+    }
+
     private static final class DefaultBudgetImpl implements Budget {
 
         private final int depositAmount;
@@ -185,78 +206,8 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
         }
     }
 
-    // TODO: we shouldn't need to worry about concurrency if this is all happening in the same netty channel.
-    private static final class DefaultPercentileTracker implements PercentileTracker {
-
-        // TODO: we need to make the buckets grow exponentially to save space.
-        private final int[] buckets;
-        private final double percentile;
-        private final int sampleThreshold;
-        private long lastValue;
-        private int sampleCount;
-
-        DefaultPercentileTracker(int buckets, double percentile, int sampleThreshold) {
-            if (percentile < 0 || percentile > 1) {
-                throw new IllegalArgumentException("Unexpected percentile value: " + percentile);
-            }
-            this.buckets = new int[ensurePositive(buckets, "buckets")];
-            this.percentile = percentile;
-            this.sampleThreshold = ensurePositive(sampleThreshold, "sampleThreshold");
-            lastValue = Long.MAX_VALUE;
-        }
-
-        @Override
-        public void addSample(long value) {
-            maybeSwap();
-            int bucket = valueToBucket(value);
-            buckets[bucket]++;
-            sampleCount++;
-        }
-
-        @Override
-        public long getValue() {
-            maybeSwap();
-            return lastValue;
-        }
-
-        private void maybeSwap() {
-            if (shouldSwap()) {
-                lastValue = compute();
-            }
-        }
-
-        private boolean shouldSwap() {
-            return sampleCount >= sampleThreshold;
-        }
-
-        private long compute() {
-            long targetCount = (long) (sampleCount * percentile);
-            sampleCount = 0;
-            long result = -1;
-            for (int i = 0; i < buckets.length; i++) {
-                if (result != -1) {
-                    targetCount -= buckets[i];
-                    if (targetCount <= 0) {
-                        result = bucketToValue(i);
-                    }
-                }
-                buckets[i] = 0;
-            }
-            assert result != -1; // we should have found a bucket.
-            return max(1, result);
-        }
-
-        private long bucketToValue(int bucket) {
-            return bucket;
-        }
-
-        private int valueToBucket(long value) {
-            return (int) max(0, min(buckets.length, value));
-        }
-    }
-
     private static PercentileTracker defaultTracker() {
-        return new DefaultPercentileTracker(128, 0.98, 200);
+        return new DefaultPercentileTracker(3.0, 256);
     }
 
     private static Budget defaultBudget() {
@@ -278,7 +229,7 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
         };
     }
 
-    static Budget alwaysBudget() {
+    static Budget alwaysAllowBudget() {
         return new Budget() {
             @Override
             public void deposit() {
