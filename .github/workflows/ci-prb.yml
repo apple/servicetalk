@@ -23,6 +23,8 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: Clean Gradle project
+        run: ./gradlew --parallel clean
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
       - name: Configure Windows Pagefile
         if: ${{ runner.os == 'Windows' }}
@@ -35,12 +37,12 @@ jobs:
         if: runner.os == 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
       - name: Build and Test (non-Linux)
         if: runner.os != 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ./gradlew --no-daemon --parallel clean test
+        run: ./gradlew --no-daemon --parallel test
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4

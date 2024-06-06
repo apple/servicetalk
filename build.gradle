@@ -20,14 +20,26 @@ if (!repositories) {
   allprojects {
     buildscript {
       repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
+        gradlePluginPortal()
       }
     }
     repositories {
       mavenCentral()
-      maven { url "https://plugins.gradle.org/m2/" }
+      gradlePluginPortal()
+      if ("$nettyVersion".endsWith("+")) {
+        maven {
+          name "Netty Snapshots"
+          url "https://oss.sonatype.org/content/repositories/snapshots"
+          content {
+            includeGroup "io.netty"
+          }
+        }
+      }
     }
   }
+  println("This machine doesn't have any pre-configured repositories, will use: ${repositories*.name.join(", ")}")
+} else {
+  print("This machine already has some pre-configured repositories, will use: ${repositories*.name.join(", ")}")
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"

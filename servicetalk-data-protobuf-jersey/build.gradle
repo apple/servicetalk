@@ -23,6 +23,7 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
+// Dependencies must remain consistent between servicetalk-data-protobuf-jerseyX modules
 dependencies {
   api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")

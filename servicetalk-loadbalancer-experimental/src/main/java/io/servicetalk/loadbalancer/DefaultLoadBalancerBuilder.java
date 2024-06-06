@@ -41,7 +41,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private Executor backgroundExecutor;
     @Nullable
-    private LoadBalancerObserver loadBalancerObserver;
+    private LoadBalancerObserverFactory loadBalancerObserverFactory;
     private ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory = defaultConnectionPoolStrategyFactory();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
@@ -60,7 +60,13 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserver loadBalancerObserver) {
-        this.loadBalancerObserver = loadBalancerObserver;
+        return loadBalancerObserver(ignored -> loadBalancerObserver);
+    }
+
+    @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
+            @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
+        this.loadBalancerObserverFactory = loadBalancerObserverFactory;
         return this;
     }
 
@@ -100,8 +106,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
                     outlierDetectorConfig.serviceDiscoveryResubscribeJitter());
         }
-        final LoadBalancerObserver loadBalancerObserver = this.loadBalancerObserver != null ?
-                this.loadBalancerObserver : NoopLoadBalancerObserver.instance();
+        final LoadBalancerObserverFactory loadBalancerObserverFactory = this.loadBalancerObserverFactory != null ?
+                this.loadBalancerObserverFactory : ignored -> NoopLoadBalancerObserver.instance();
         final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
         if (OutlierDetectorConfig.xDSDisabled(outlierDetectorConfig)) {
             outlierDetectorFactory = (lbDescription) -> new NoopOutlierDetector<>(outlierDetectorConfig, executor);
@@ -110,15 +116,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
         }
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
-                loadBalancerObserver, outlierDetectorFactory, connectionPoolStrategyFactory);
+                loadBalancerObserverFactory, outlierDetectorFactory, connectionPoolStrategyFactory);
     }
 
-    private static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
+    static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
             implements LoadBalancerFactory<ResolvedAddress, C> {
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
-        private final LoadBalancerObserver loadBalancerObserver;
+        private final LoadBalancerObserverFactory loadBalancerObserverFactory;
         @Nullable
         private final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
         @Nullable
@@ -126,13 +132,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   final HealthCheckConfig healthCheckConfig,
-                                   final LoadBalancerObserver loadBalancerObserver,
+                                   @Nullable final HealthCheckConfig healthCheckConfig,
+                                   final LoadBalancerObserverFactory loadBalancerObserverFactory,
                                    final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory,
                                    final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
-            this.loadBalancerObserver = requireNonNull(loadBalancerObserver, "loadBalancerObserver");
+            this.loadBalancerObserverFactory = requireNonNull(loadBalancerObserverFactory,
+                    "loadBalancerObserverFactory");
             this.connectionPoolStrategyFactory = requireNonNull(
                     connectionPoolStrategyFactory, "connectionPoolStrategyFactory");
             this.healthCheckConfig = healthCheckConfig;
@@ -160,9 +167,10 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
+                    DefaultHostPriorityStrategy.INSTANCE,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
                     connectionPoolStrategyFactory.buildStrategy(targetResource), connectionFactory,
-                    loadBalancerObserver, healthCheckConfig, outlierDetectorFactory);
+                    loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
 
         @Override
@@ -198,7 +206,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
-        return new RoundRobinLoadBalancingPolicy.Builder().build();
+        return LoadBalancingPolicies.roundRobin().build();
     }
 
     private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C>

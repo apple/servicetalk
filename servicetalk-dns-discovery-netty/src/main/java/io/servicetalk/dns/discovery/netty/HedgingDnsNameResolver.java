@@ -59,6 +59,11 @@ final class HedgingDnsNameResolver implements UnderlyingDnsResolver {
     }
 
     @Override
+    public long queryTimeoutMillis() {
+        return delegate.queryTimeoutMillis();
+    }
+
+    @Override
     public Future<List<DnsRecord>> resolveAllQuestion(DnsQuestion t) {
         return setupHedge(delegate::resolveAllQuestion, t);
     }

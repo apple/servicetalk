@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;

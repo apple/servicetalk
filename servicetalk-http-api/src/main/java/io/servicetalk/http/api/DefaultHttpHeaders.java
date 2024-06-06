@@ -588,7 +588,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      * @param name The filed-name to validate.
      */
     private static void validateHeaderName(final CharSequence name) {
-        validateToken(name);
+        validateToken(name, "header name");
     }
 
     /**

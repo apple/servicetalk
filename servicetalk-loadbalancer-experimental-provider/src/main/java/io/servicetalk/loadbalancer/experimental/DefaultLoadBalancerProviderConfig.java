@@ -16,23 +16,20 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.loadbalancer.LoadBalancingPolicies;
 import io.servicetalk.loadbalancer.LoadBalancingPolicy;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
-import io.servicetalk.loadbalancer.P2CLoadBalancingPolicy;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancingPolicy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 
 final class DefaultLoadBalancerProviderConfig {
 
@@ -67,10 +64,6 @@ final class DefaultLoadBalancerProviderConfig {
     private static final String PROP_MAX_EJECTION_TIME_MS = "maxEjectionTimeMs";
     private static final String PROP_EJECTION_TIME_JITTER_MS = "ejectionTimeJitterMs";
 
-    static final DefaultLoadBalancerProviderConfig INSTANCE = new DefaultLoadBalancerProviderConfig();
-
-    private final Properties properties;
-
     private final String rawClientsEnabledFor;
     private final Set<String> clientsEnabledFor;
     private final int failedConnectionsThreshold;
@@ -93,11 +86,6 @@ final class DefaultLoadBalancerProviderConfig {
     private final Duration ejectionTimeJitter;
 
     private DefaultLoadBalancerProviderConfig() {
-        this(System.getProperties());
-    }
-
-    private DefaultLoadBalancerProviderConfig(Properties properties) {
-        this.properties = requireNonNull(properties, "properties");
         rawClientsEnabledFor = getString(PROP_CLIENTS_ENABLED_FOR, "").trim();
         clientsEnabledFor = getClientsEnabledFor(rawClientsEnabledFor);
         failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, 5 /*ST default*/);
@@ -133,11 +121,8 @@ final class DefaultLoadBalancerProviderConfig {
     }
 
     <U, C extends LoadBalancedConnection> LoadBalancingPolicy<U, C> getLoadBalancingPolicy() {
-        if (lbPolicy == LBPolicy.P2C) {
-            return new P2CLoadBalancingPolicy.Builder().build();
-        } else {
-            return new RoundRobinLoadBalancingPolicy.Builder().build();
-        }
+        return lbPolicy == LBPolicy.P2C ?
+                LoadBalancingPolicies.p2c().build() : LoadBalancingPolicies.roundRobin().build();
     }
 
     boolean enabledForServiceName(String serviceName) {
@@ -191,12 +176,16 @@ final class DefaultLoadBalancerProviderConfig {
                 '}';
     }
 
-    private String getString(String name, String defaultValue) {
-        return properties.getProperty(PROPERTY_PREFIX + name, defaultValue);
+    static DefaultLoadBalancerProviderConfig instance() {
+        return new DefaultLoadBalancerProviderConfig();
     }
 
-    private long getLong(String name, long defaultValue) {
-        String propertyValue = properties.getProperty(PROPERTY_PREFIX + name);
+    private static String getString(String name, String defaultValue) {
+        return System.getProperty(PROPERTY_PREFIX + name, defaultValue);
+    }
+
+    private static long getLong(String name, long defaultValue) {
+        String propertyValue = System.getProperty(PROPERTY_PREFIX + name);
         if (propertyValue == null) {
             return defaultValue;
         }
@@ -209,7 +198,7 @@ final class DefaultLoadBalancerProviderConfig {
         }
     }
 
-    private int getInt(String name, int defaultValue) {
+    private static int getInt(String name, int defaultValue) {
         long value = getLong(name, defaultValue);
         if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Integer overflow for value " + name + ": " + value);

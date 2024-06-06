@@ -35,5 +35,12 @@ interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> ext
      */
     HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver);
 
+    /**
+     * Stream of events that signal that the health status has changed for one or more of the hosts observed by the
+     * {@link OutlierDetector}. The events signal scenarios where hosts have transitioned from healthy to unhealthy and
+     * vise versa. The {@link OutlierDetector} may choose to send these events at regular intervals or immediately when
+     * a host has been detected unhealthy.
+     * @return a {@link Publisher} that represents the stream of health status changes.
+     */
     Publisher<Void> healthStatusChanged();
 }

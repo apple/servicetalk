@@ -25,7 +25,6 @@ import io.servicetalk.grpc.api.GrpcStatus;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;

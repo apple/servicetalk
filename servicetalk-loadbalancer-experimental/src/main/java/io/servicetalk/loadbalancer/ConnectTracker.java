@@ -40,5 +40,25 @@ interface ConnectTracker {
      * Callback to notify the parent {@link OutlierDetector} that an attempt to connect to this host has failed.
      * @param beforeConnectStart the time that the connection attempt was initiated.
      */
-    void onConnectError(long beforeConnectStart);
+    void onConnectError(long beforeConnectStart, ErrorClass errorClass);
+
+    /**
+     * Classes of errors that resulted in connect failure.
+     */
+    enum ErrorClass {
+        /**
+         * Failure due to cancellation.
+         */
+        CANCELLED,
+
+        /**
+         * Failures related to locally enforced timeouts waiting to establish a usable session with the peer.
+         */
+        CONNECT_TIMEOUT,
+
+        /**
+         * Failures for reasons other than cancellation and timeout.
+         */
+        CONNECT_ERROR
+    }
 }

@@ -153,7 +153,7 @@ class XdsOutlierDetectorAlgorithmTest {
                 break;
             }
             long startTime = indicator.beforeRequestStart();
-            indicator.onRequestError(startTime + 1, ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+            indicator.onRequestError(startTime + 1, RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
     }
 }

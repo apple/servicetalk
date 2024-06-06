@@ -18,12 +18,14 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+
   api project(":servicetalk-http-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-loadbalancer")
   implementation project(":servicetalk-loadbalancer-experimental")
-  implementation project(":servicetalk-http-api")
+
   implementation "com.google.code.findbugs:jsr305"
   implementation "org.slf4j:slf4j-api"
 }

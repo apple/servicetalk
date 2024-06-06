@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediateBounded;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.DEFAULT_MAX_TOTAL_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -96,6 +97,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -194,14 +196,23 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(lessThanOrEqualTo(2)));
     }
 
-    @Test
-    void maxTotalRetries() {
+    @ParameterizedTest(name = "{displayName} [{index}] maxTotalRetries={0}")
+    @ValueSource(ints = {1, 2, 3})
+    void maxTotalRetriesCapsDefaultOfImmediateBoundedBackoffPolicy(int maxTotalRetries) {
+        assertThat("maxTotalRetries higher than default bounds",
+                maxTotalRetries, is(lessThan(DEFAULT_MAX_TOTAL_RETRIES)));
+        AtomicInteger onRequestRetryCounter = new AtomicInteger();
         failingClient = failingConnClientBuilder
-                .appendClientFilter(new Builder().maxTotalRetries(1).build())
+                .appendClientFilter(new Builder()
+                        .maxTotalRetries(maxTotalRetries)
+                        .onRequestRetry((count, req, t) ->
+                                assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
+                        .build())
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
         assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(2));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(maxTotalRetries + 1));
+        assertThat("Unexpected calls to onRequestRetry.", onRequestRetryCounter.get(), is(maxTotalRetries));
     }
 
     @Test
@@ -244,6 +255,7 @@ class RetryingHttpRequesterFilterTest {
     void testResponseMapper() {
         AtomicInteger newConnectionCreated = new AtomicInteger();
         AtomicInteger responseDrained = new AtomicInteger();
+        AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final int maxTotalRetries = 4;
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
@@ -254,6 +266,8 @@ class RetryingHttpRequesterFilterTest {
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1))
+                        .onRequestRetry((count, req, t) ->
+                                assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
                 .appendConnectionFilter(c -> {
                     newConnectionCreated.incrementAndGet();
@@ -274,6 +288,8 @@ class RetryingHttpRequesterFilterTest {
         // against actual requests being issued.
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), allOf(greaterThanOrEqualTo(maxTotalRetries),
                 lessThanOrEqualTo(maxTotalRetries + 1)));
+        assertThat("Unexpected calls to onRequestRetry.", onRequestRetryCounter.get(),
+                allOf(greaterThanOrEqualTo(maxTotalRetries - 1), lessThanOrEqualTo(maxTotalRetries)));
         assertThat("Response payload body was not drained on every mapping", responseDrained.get(),
                 is(maxTotalRetries));
         assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));

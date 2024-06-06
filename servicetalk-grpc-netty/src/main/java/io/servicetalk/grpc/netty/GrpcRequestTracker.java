@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
-import io.servicetalk.loadbalancer.ErrorClass;
 import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -49,21 +48,21 @@ final class GrpcRequestTracker {
     private static final GrpcLifecycleObserver.GrpcRequestObserver NOOP_REQUEST_OBSERVER =
             new NoopGrpcRequestObserver();
 
-    private static final Function<GrpcStatus, ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = (status) -> {
+    private static final Function<GrpcStatus, RequestTracker.ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = (status) -> {
         // TODO: this needs to be gone over with more detail.
         switch (status.code()) {
             case OK:
                 return null;
             case CANCELLED:
-                return ErrorClass.CANCELLED;
+                return RequestTracker.ErrorClass.CANCELLED;
             default:
-                return ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
+                return RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
         }
     };
 
     // TODO: this needs to be gone over with more detail.
-    private static final Function<Throwable, ErrorClass> ERROR_CLASS_FUNCTION = (exn) ->
-            ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
+    private static final Function<Throwable, RequestTracker.ErrorClass> ERROR_CLASS_FUNCTION = (exn) ->
+            RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED;
 
     private GrpcRequestTracker() {
         // no instances
@@ -183,7 +182,7 @@ final class GrpcRequestTracker {
             public void onResponseCancel() {
                 final long startTime = finish();
                 if (checkOnce(startTime)) {
-                    tracker.onRequestError(startTime, ErrorClass.CANCELLED);
+                    tracker.onRequestError(startTime, RequestTracker.ErrorClass.CANCELLED);
                 }
             }
 
@@ -194,7 +193,7 @@ final class GrpcRequestTracker {
 
             @Override
             public void onGrpcStatus(GrpcStatus status) {
-                ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(status);
+                RequestTracker.ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(status);
                 if (error != null) {
                     final long startTime = finish();
                     if (checkOnce(startTime)) {

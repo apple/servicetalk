@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 
 import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -101,13 +102,16 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void disableRetryAllRetryableExWithRetryable(boolean offloading) {
-        final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder()
-                        .retryRetryableExceptions((__, ___) -> ofNoRetries()), offloading);
+        AtomicInteger onRequestRetryCounter = new AtomicInteger();
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
+                .retryRetryableExceptions((__, ___) -> ofNoRetries())
+                .onRequestRetry((count, req, t) -> assertThat(onRequestRetryCounter.incrementAndGet(), is(count))),
+                offloading);
 
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
+        assertThat("Unexpected calls to onRequestRetry.", onRequestRetryCounter.get(), is(0));
     }
 
     @ParameterizedTest
@@ -170,13 +174,16 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void defaultForNoAvailableHost(boolean offloading) {
-        final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
+        AtomicInteger onRequestRetryCounter = new AtomicInteger();
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
+                .onRequestRetry((count, req, t) -> assertThat(onRequestRetryCounter.incrementAndGet(), is(count))),
+                offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
+        assertThat("Unexpected calls to onRequestRetry.", onRequestRetryCounter.get(), is(1));
     }
 
     @ParameterizedTest
@@ -255,7 +262,7 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
                 .maxTotalRetries(Integer.MAX_VALUE), offloading);
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT); // LB is ready before subscribing to the response
         BiIntFunction<Throwable, Completable> retryStrategy =
-                filter.retryStrategy(REQUEST_META_DATA, filter.executionContext());
+                filter.retryStrategy(REQUEST_META_DATA, filter.executionContext(), true);
         for (int i = 1; i <= DEFAULT_MAX_TOTAL_RETRIES * 2; i++) {
             Completable retry = retryStrategy.apply(i, NO_ACTIVE_HOST);
             TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
@@ -316,6 +323,6 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @Nonnull
     private Completable applyRetry(final ContextAwareRetryingHttpClientFilter filter,
                                    final int count, final Throwable t) {
-        return filter.retryStrategy(REQUEST_META_DATA, filter.executionContext()).apply(count, t);
+        return filter.retryStrategy(REQUEST_META_DATA, filter.executionContext(), true).apply(count, t);
     }
 }

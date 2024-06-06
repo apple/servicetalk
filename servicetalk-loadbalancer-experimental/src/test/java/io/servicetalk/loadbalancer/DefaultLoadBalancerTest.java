@@ -48,7 +48,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
-            new P2CLoadBalancingPolicy.Builder().build();
+            LoadBalancingPolicies.p2c().build();
+
+    private HostPriorityStrategy hostPriorityStrategy = DefaultHostPriorityStrategy.INSTANCE;
+
     @Nullable
     private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
 
@@ -166,6 +169,51 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     }
 
     @Test
+    void changesToPriorityOrWeightTriggerRebuilds() throws Exception {
+        final AtomicReference<Double> value = new AtomicReference<>();
+        serviceDiscoveryPublisher.onComplete();
+        hostPriorityStrategy = new HostPriorityStrategy() {
+            @Override
+            public <T extends PrioritizedHost> List<T> prioritize(List<T> hosts) {
+                assert hosts.size() == 1;
+                T host = hosts.get(0);
+                value.set(host.loadBalancingWeight());
+                // We want to adjust the weight here so that if the `loadBalancingWeight()` fails to be
+                // reset then the test will fail.
+                host.loadBalancingWeight(0.5 * host.loadBalancingWeight());
+                return hosts;
+            }
+        };
+        lb = newTestLoadBalancer();
+        DefaultLoadBalancer<String, TestLoadBalancedConnection> refinedLb =
+                (DefaultLoadBalancer<String, TestLoadBalancedConnection>) lb;
+
+        // use a simple address. Should have a weight of 1.0;
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        List<? extends DefaultLoadBalancer.PrioritizedHostImpl<?, ?>> curentHosts = refinedLb.hosts();
+        assertThat(curentHosts, hasSize(1));
+        assertThat(curentHosts.get(0).priority(), equalTo(0));
+        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(0.5));
+        assertThat(value.getAndSet(null), equalTo(1.0));
+
+        // send a new event with a different priority group. This should trigger another build.
+        sendServiceDiscoveryEvents(richEvent(upEvent("address-1"), 1.0, 1));
+        curentHosts = refinedLb.hosts();
+        assertThat(curentHosts, hasSize(1));
+        assertThat(curentHosts.get(0).priority(), equalTo(1));
+        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(0.5));
+        assertThat(value.getAndSet(null), equalTo(1.0));
+
+        // send a new event with a different weight. This should trigger yet another build.
+        sendServiceDiscoveryEvents(richEvent(upEvent("address-1"), 2.0, 1));
+        curentHosts = refinedLb.hosts();
+        assertThat(curentHosts, hasSize(1));
+        assertThat(curentHosts.get(0).priority(), equalTo(1));
+        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(1.0));
+        assertThat(value.getAndSet(null), equalTo(2.0));
+    }
+
+    @Test
     void outlierDetectorIsClosedOnShutdown() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
@@ -186,13 +234,19 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 getClass().getSimpleName(),
                 "test-service",
                 serviceDiscoveryPublisher,
+                hostPriorityStrategy,
                 loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
                 LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
                         .buildStrategy("test-service"),
                 connectionFactory,
-                NoopLoadBalancerObserver.instance(),
+                lbDescription -> NoopLoadBalancerObserver.instance(),
                 null,
                 factory);
+    }
+
+    private RichServiceDiscovererEvent<String> richEvent(
+            ServiceDiscovererEvent<String> parent, double weight, int priority) {
+        return new RichServiceDiscovererEvent<>(parent.address(), parent.status(), weight, priority);
     }
 
     private static class TestHealthIndicator implements HealthIndicator<String, TestLoadBalancedConnection> {
@@ -232,7 +286,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onConnectError(long beforeConnectStart) {
+        public void onConnectError(long beforeConnectStart, ConnectTracker.ErrorClass errorClass) {
         }
 
         @Override
@@ -252,7 +306,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
 
         @Override
-        public void onRequestError(long beforeStartTime, ErrorClass errorClass) {
+        public void onRequestError(long beforeStartTime, RequestTracker.ErrorClass errorClass) {
         }
     }
 

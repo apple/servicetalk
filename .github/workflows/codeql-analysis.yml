@@ -31,7 +31,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - name: Execute gradle build
-        run: ./gradlew --parallel clean assemble
+      - name: Clean Gradle project
+        run: ./gradlew --parallel clean
+      - name: Assemble Gradle project
+        run: ./gradlew --parallel assemble
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

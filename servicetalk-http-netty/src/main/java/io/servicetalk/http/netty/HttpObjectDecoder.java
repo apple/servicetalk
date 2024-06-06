@@ -698,7 +698,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static DecoderException invalidHeaderName(final CharSequence name, final int parsingLine,
                                                       final IllegalCharacterException cause) {
-        throw new StacklessDecoderException("Invalid header name in line " + (parsingLine - 1) + ": " + name, cause);
+        final String msg = cause.getMessage();
+        throw new StacklessDecoderException(
+                "Invalid header name in line " + (parsingLine - 1) + ": " + (msg != null ? msg : name), cause);
     }
 
     private static DecoderException invalidHeaderValue(final CharSequence name, final int parsingLine,

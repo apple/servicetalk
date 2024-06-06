@@ -17,7 +17,6 @@ package io.servicetalk.utils.internal;
 
 import javax.annotation.Nullable;
 
-import static java.lang.Character.toChars;
 import static java.lang.Integer.toHexString;
 
 /**
@@ -25,6 +24,15 @@ import static java.lang.Integer.toHexString;
  */
 public final class IllegalCharacterException extends IllegalArgumentException {
     private static final long serialVersionUID = 5109746801766842145L;
+
+    /**
+     * Creates a new instance.
+     *
+     * @param message description message.
+     */
+    public IllegalCharacterException(final String message) {
+        super(message);
+    }
 
     /**
      * Creates a new instance.
@@ -50,7 +58,7 @@ public final class IllegalCharacterException extends IllegalArgumentException {
         final int codePoint = value & 0xff;
         final StringBuilder sb = new StringBuilder(expected == null ? 10 : 23 + expected.length())
                 .append('\'')
-                .append(toChars(codePoint))
+                .append((char) codePoint)
                 .append("' (0x")
                 .append(toHexString(0x100 | codePoint), 1, 3);  // to 2 digit hex number
         return (expected == null ? sb.append(')') : sb.append("), expected [").append(expected).append(']')).toString();

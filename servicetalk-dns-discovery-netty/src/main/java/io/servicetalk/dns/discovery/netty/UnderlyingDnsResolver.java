@@ -15,6 +15,8 @@ interface UnderlyingDnsResolver extends Closeable {
 
     Future<List<InetAddress>> resolveAll(String t);
 
+    long queryTimeoutMillis();
+
     @Override
     void close();
 
@@ -33,6 +35,11 @@ interface UnderlyingDnsResolver extends Closeable {
         @Override
         public Future<List<InetAddress>> resolveAll(String t) {
             return resolver.resolveAll(t);
+        }
+
+        @Override
+        public long queryTimeoutMillis() {
+            return resolver.queryTimeoutMillis();
         }
 
         @Override

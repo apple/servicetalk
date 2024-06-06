@@ -76,7 +76,7 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public void onConnectError(long beforeConnectStart) {
+        public void onConnectError(long beforeConnectStart, ConnectTracker.ErrorClass errorClass) {
             // noop
         }
 

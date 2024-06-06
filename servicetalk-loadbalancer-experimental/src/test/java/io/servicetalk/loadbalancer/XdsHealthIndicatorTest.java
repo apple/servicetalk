@@ -66,7 +66,7 @@ class XdsHealthIndicatorTest {
     void consecutive5xx() {
         for (int i = 0; i < config.consecutive5xx(); i++) {
             healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+                    RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
     }
@@ -76,7 +76,7 @@ class XdsHealthIndicatorTest {
         for (int i = 0; i < config.consecutive5xx() * 10; i++) {
             if ((i % 2) == 0) {
                 healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                        ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+                        RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
             } else {
                 healthIndicator.onRequestSuccess(healthIndicator.beforeRequestStart() + 1);
             }
@@ -186,7 +186,7 @@ class XdsHealthIndicatorTest {
     void cancellationWillConsiderAHostRevived() {
         for (int i = 0; i < config.consecutive5xx(); i++) {
             healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                    ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
+                    RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
         healthIndicator.cancel();
@@ -198,7 +198,7 @@ class XdsHealthIndicatorTest {
     void errorClassCancelledIsNotSuccessOrError() {
         // Note that this is a specific interpretation that we can change: we just need to change the test.
         healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                ErrorClass.CANCELLED);
+                RequestTracker.ErrorClass.CANCELLED);
         assertEquals(0L, healthIndicator.getSuccesses());
         assertEquals(0L, healthIndicator.getFailures());
     }

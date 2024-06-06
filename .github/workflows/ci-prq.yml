@@ -24,8 +24,10 @@ jobs:
         run: chmod +x gradlew
       - name: Documentation Linter
         run: bash scripts/check-source-root.sh
+      - name: Clean Gradle project
+        run: ./gradlew --parallel clean
       - name: Build with Gradle
-        run: ./gradlew --parallel clean quality
+        run: ./gradlew --parallel quality
       - name: Upload CheckStyle Results
         if: always()
         uses: actions/upload-artifact@v4
