@@ -85,6 +85,7 @@ class XdsHealthIndicatorTest {
                     RequestTracker.ErrorClass.CANCELLED);
         }
         assertThat(healthIndicator.isHealthy(), equalTo(!cancellationIsError));
+        assertEquals(cancellationIsError ? config.consecutive5xx() : 0L, healthIndicator.getFailures());
     }
 
     @Test
@@ -208,15 +209,6 @@ class XdsHealthIndicatorTest {
         healthIndicator.cancel();
         assertEquals(1, healthIndicator.revivalCount);
         assertTrue(healthIndicator.cancelled);
-    }
-
-    @Test
-    void errorClassCancelledIsNotSuccessOrError() {
-        // Note that this is a specific interpretation that we can change: we just need to change the test.
-        healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                RequestTracker.ErrorClass.CANCELLED);
-        assertEquals(0L, healthIndicator.getSuccesses());
-        assertEquals(0L, healthIndicator.getFailures());
     }
 
     private void ejectIndicator(boolean isOutlier) {

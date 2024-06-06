@@ -327,7 +327,7 @@ public final class OutlierDetectorConfig {
         static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
         static final long DEFAULT_CANCEL_PENALTY = 5L;
         static final long DEFAULT_ERROR_PENALTY = 10L;
-        private boolean cancellationIsError;
+        private boolean cancellationIsError = true;
 
         // Default xDS outlier detector settings.
         private static final int DEFAULT_CONSECUTIVE_5XX = 5;

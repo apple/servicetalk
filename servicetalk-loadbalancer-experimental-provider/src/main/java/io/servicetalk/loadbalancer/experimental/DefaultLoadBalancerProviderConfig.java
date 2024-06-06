@@ -99,7 +99,7 @@ final class DefaultLoadBalancerProviderConfig {
         ewmaHalfLife = ofMillis(getLong(PROP_EWMA_HALF_LIFE_MS, ofSeconds(10).toMillis()));
         ewmaErrorPenalty = getInt(PROP_EWMA_ERROR_PENALTY, 10);
         ewmaCancellationPenalty = getInt(PROP_EWMA_CANCELLATION_PENALTY, 5);
-        cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, false);
+        cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, true);
         consecutive5xx = getInt(PROP_CONSECUTIVE_5XX, 5);
         interval = ofMillis(getLong(PROP_INTERVAL_MS, ofSeconds(10).toMillis()));
         baseEjectionTime = ofMillis(getLong(PROP_BASE_EJECTION_TIME_MS, ofSeconds(30).toMillis()));
