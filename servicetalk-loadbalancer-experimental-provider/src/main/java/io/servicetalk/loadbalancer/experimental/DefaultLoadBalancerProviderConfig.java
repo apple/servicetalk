@@ -45,6 +45,9 @@ final class DefaultLoadBalancerProviderConfig {
 
     private static final String PROP_CLIENTS_ENABLED_FOR = "clientsEnabledFor";
 
+    private static final String PROP_EWMA_ERROR_PENALTY = "ewmaErrorPenalty";
+    private static final String PROP_EWMA_CANCELLATION_PENALTY = "ewmaCancellationPenalty";
+    private static final String PROP_CANCELLATION_IS_ERROR = "cancellationIsError";
     private static final String PROP_FAILED_CONNECTIONS_THRESHOLD = "healthCheckFailedConnectionsThreshold";
     private static final String PROP_LOAD_BALANCING_POLICY = "policy";
     private static final String PROP_EWMA_HALF_LIFE_MS = "ewmaHalfLifeMs";
@@ -69,6 +72,9 @@ final class DefaultLoadBalancerProviderConfig {
     private final int failedConnectionsThreshold;
     private final LBPolicy lbPolicy;
     private final Duration ewmaHalfLife;
+    private final int ewmaErrorPenalty;
+    private final int ewmaCancellationPenalty;
+    private final boolean cancellationIsError;
     private final int consecutive5xx;
     private final Duration interval;
     private final Duration baseEjectionTime;
@@ -91,6 +97,9 @@ final class DefaultLoadBalancerProviderConfig {
         failedConnectionsThreshold = getInt(PROP_FAILED_CONNECTIONS_THRESHOLD, 5 /*ST default*/);
         lbPolicy = getLBPolicy();
         ewmaHalfLife = ofMillis(getLong(PROP_EWMA_HALF_LIFE_MS, ofSeconds(10).toMillis()));
+        ewmaErrorPenalty = getInt(PROP_EWMA_ERROR_PENALTY, 10);
+        ewmaCancellationPenalty = getInt(PROP_EWMA_CANCELLATION_PENALTY, 5);
+        cancellationIsError = getBool(PROP_CANCELLATION_IS_ERROR, false);
         consecutive5xx = getInt(PROP_CONSECUTIVE_5XX, 5);
         interval = ofMillis(getLong(PROP_INTERVAL_MS, ofSeconds(10).toMillis()));
         baseEjectionTime = ofMillis(getLong(PROP_BASE_EJECTION_TIME_MS, ofSeconds(30).toMillis()));
@@ -133,6 +142,9 @@ final class DefaultLoadBalancerProviderConfig {
         return new OutlierDetectorConfig.Builder()
                 .failedConnectionsThreshold(failedConnectionsThreshold)
                 .ewmaHalfLife(ewmaHalfLife)
+                .ewmaErrorPenalty(ewmaErrorPenalty)
+                .ewmaCancellationPenalty(ewmaCancellationPenalty)
+                .cancellationIsError(cancellationIsError)
                 .consecutive5xx(consecutive5xx)
                 .failureDetectorInterval(interval)
                 .baseEjectionTime(baseEjectionTime)
@@ -158,6 +170,9 @@ final class DefaultLoadBalancerProviderConfig {
                 ", failedConnectionsThreshold=" + failedConnectionsThreshold +
                 ", lbPolicy=" + lbPolicy +
                 ", ewmaHalfLife=" + ewmaHalfLife +
+                ", ewmaErrorPenalty=" + ewmaErrorPenalty +
+                ", ewmaCancellationPenalty=" + ewmaCancellationPenalty +
+                ", cancellationIsError=" + cancellationIsError +
                 ", consecutive5xx=" + consecutive5xx +
                 ", interval=" + interval +
                 ", baseEjectionTime=" + baseEjectionTime +
@@ -196,6 +211,11 @@ final class DefaultLoadBalancerProviderConfig {
                     name, propertyValue, defaultValue, ex);
             return defaultValue;
         }
+    }
+
+    private static boolean getBool(String name, boolean defaultValue) {
+        String stringValue = System.getProperty(PROPERTY_PREFIX + name);
+        return stringValue == null ? defaultValue : Boolean.parseBoolean(stringValue);
     }
 
     private static int getInt(String name, int defaultValue) {

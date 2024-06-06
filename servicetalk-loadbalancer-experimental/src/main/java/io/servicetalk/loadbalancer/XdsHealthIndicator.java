@@ -45,6 +45,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
     private final HostObserver hostObserver;
+    private final boolean cancellationIsError;
     private final ResolvedAddress address;
     private final String lbDescription;
     private final AtomicInteger consecutive5xx = new AtomicInteger();
@@ -65,11 +66,12 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
                        final Duration ewmaHalfLife, final long cancellationPenalty, final long errorPenalty,
-                       final ResolvedAddress address, String lbDescription,
+                       final boolean cancellationIsError, final ResolvedAddress address, String lbDescription,
                        final HostObserver hostObserver) {
         super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos(),
                 ensureNonNegative(cancellationPenalty, "cancellationPenalty"),
                 ensureNonNegative(errorPenalty, "errorPenalty"));
+        this.cancellationIsError = cancellationIsError;
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");
         assert executor instanceof NormalizedTimeSourceExecutor;
@@ -145,10 +147,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     @Override
     public final void onRequestError(final long beforeStartTimeNs, RequestTracker.ErrorClass errorClass) {
         super.onRequestError(beforeStartTimeNs, errorClass);
-        // For now, don't consider cancellation to be an error or a success.
-        if (errorClass != RequestTracker.ErrorClass.CANCELLED) {
-            doOnError();
-        }
+        doOnError(errorClass == RequestTracker.ErrorClass.CANCELLED);
     }
 
     @Override
@@ -161,11 +160,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         // This assumes that the connect request was intended to be used for a request dispatch which
         // will have now failed. This is not strictly true: a connection can be acquired and simply not
         // used, but in practice it's a very good assumption.
-
-        // For now, don't consider cancellation to be an error or a success.
-        if (errorClass != ConnectTracker.ErrorClass.CANCELLED) {
-            doOnError();
-        }
+        doOnError(errorClass == ConnectTracker.ErrorClass.CANCELLED);
     }
 
     @Override
@@ -173,7 +168,11 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         // noop: the request path will now determine if the request was a success or failure.
     }
 
-    private void doOnError() {
+    private void doOnError(boolean isCancellation) {
+        if (!cancellationIsError && isCancellation) {
+            // short circuit: it's a cancellation, and we don't consider them to be errors.
+            return;
+        }
         failures.incrementAndGet();
         final int consecutiveFailures = consecutive5xx.incrementAndGet();
         final OutlierDetectorConfig localConfig = currentConfig();
