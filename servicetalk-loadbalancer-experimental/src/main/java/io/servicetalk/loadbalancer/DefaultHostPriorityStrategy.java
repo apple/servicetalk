@@ -75,7 +75,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
         // If there is only a single group we don't need to adjust weights.
         if (groups.size() == 1) {
-            LOGGER.debug("{}: Single priority group found.");
+            LOGGER.debug("{}: Single priority group found.", lbDescription);
             return hosts;
         }
 

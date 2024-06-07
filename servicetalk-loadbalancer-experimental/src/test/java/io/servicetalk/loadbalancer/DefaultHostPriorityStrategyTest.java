@@ -253,7 +253,7 @@ class DefaultHostPriorityStrategyTest {
         // 0 we consider them all equal among that group.
         assertThat(result.size(), equalTo(3));
         for (TestPrioritizedHost host : result) {
-            assertThat(host.loadBalancedWeight(), equalTo(100.0/3));
+            assertThat(host.loadBalancedWeight(), equalTo(100.0 / 3));
         }
     }
 
