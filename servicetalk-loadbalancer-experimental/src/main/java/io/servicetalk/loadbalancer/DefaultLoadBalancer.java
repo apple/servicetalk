@@ -135,7 +135,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final String id,
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            final HostPriorityStrategy priorityStrategy,
+            final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final HostSelector<ResolvedAddress, C> hostSelector,
             final ConnectionPoolStrategy<C> connectionPoolStrategy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
@@ -145,7 +145,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.targetResource = requireNonNull(targetResourceName);
         this.lbDescription = makeDescription(id, targetResource);
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
-        this.priorityStrategy = requireNonNull(priorityStrategy, "priorityStrategy");
+        this.priorityStrategy = requireNonNull(
+                priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)

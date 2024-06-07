@@ -23,23 +23,24 @@ import java.util.List;
 import java.util.TreeMap;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
-
-    static final HostPriorityStrategy INSTANCE = new DefaultHostPriorityStrategy();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHostPriorityStrategy.class);
     private static final int DEFAULT_OVER_PROVISION_FACTOR = 140;
 
 
+    private final String lbDescription;
     private final int overProvisionPercentage;
 
-    DefaultHostPriorityStrategy() {
-        this(DEFAULT_OVER_PROVISION_FACTOR);
+    DefaultHostPriorityStrategy(final String lbDescription) {
+        this(lbDescription, DEFAULT_OVER_PROVISION_FACTOR);
     }
 
     // exposed for testing
-    DefaultHostPriorityStrategy(final int overProvisionPercentage) {
+    DefaultHostPriorityStrategy(final String lbDescription, final int overProvisionPercentage) {
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.overProvisionPercentage = ensurePositive(overProvisionPercentage, "overProvisionPercentage");
     }
 
@@ -61,7 +62,8 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         TreeMap<Integer, Group> groups = new TreeMap<>();
         for (T host : hosts) {
             if (host.priority() < 0) {
-                LOGGER.warn("Found illegal priority: {}. Dropping priority grouping data.", host.priority());
+                LOGGER.warn("{}: Illegal priority: {} (expected priority >=0). Ignoring priority data.",
+                        lbDescription, host.priority());
                 return hosts;
             }
             Group group = groups.computeIfAbsent(host.priority(), i -> new Group());
@@ -73,6 +75,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
         // If there is only a single group we don't need to adjust weights.
         if (groups.size() == 1) {
+            LOGGER.debug("{}: Single priority group found.", lbDescription);
             return hosts;
         }
 
@@ -84,16 +87,20 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         }
         if (totalHealthPercentage == 0) {
             // nothing is considered healthy so everything is considered healthy.
+            LOGGER.warn("{}: No healthy priority groups found out of {} groups composed of {} hosts. " +
+                    "Returning the un-prioritized set.", lbDescription, groups.size(), hosts.size());
             return hosts;
         }
 
         List<T> weightedResults = new ArrayList<>();
+        int activeGroups = 0;
         int remainingProbability = 100;
         for (Group group : groups.values()) {
             assert !group.hosts.isEmpty();
             final int groupProbability = Math.min(remainingProbability,
                     group.healthPercentage * 100 / totalHealthPercentage);
             if (groupProbability > 0) {
+                activeGroups++;
                 remainingProbability -= groupProbability;
                 group.addToResults(groupProbability, weightedResults);
             }
@@ -101,12 +108,13 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
                 break;
             }
         }
-        if (weightedResults.isEmpty()) {
-            // This is awkward situation can happen if we don't have any healthy groups.
-            // In that case let's panic and return an un-prioritized set of hosts.
-            LOGGER.warn("No healthy priority groups found. Returning the un-prioritized set.");
-            return hosts;
-        }
+        // We should have at least one host now: if all the hosts were unhealthy the `totalHealthyPercentage` would be
+        // zero and we would have bailed before re-weighting. If the weights of a group were all zero we should have
+        // re-weighted them all equally and added them.
+        assert !weightedResults.isEmpty();
+
+        LOGGER.debug("{}: Host prioritization resulted in {} active groups with a total of {} active hosts.",
+                lbDescription, activeGroups, weightedResults.size());
         return weightedResults;
     }
 
@@ -120,6 +128,9 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
             // to normalize against their group probability.
             double groupTotalWeight = totalWeight(hosts);
             if (groupTotalWeight == 0) {
+                // What to do in this case is debatable: it could be reasonable to consider they weight to still be
+                // zero and skip them. However, we currently yield to the side of availability and interpret them
+                // instead to all receive an equal portion of the groups weight.
                 double weight = ((double) groupProbability) / hosts.size();
                 for (H host : hosts) {
                     host.loadBalancingWeight(weight);

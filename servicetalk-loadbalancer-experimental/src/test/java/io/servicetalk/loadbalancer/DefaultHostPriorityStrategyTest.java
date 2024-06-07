@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 class DefaultHostPriorityStrategyTest {
 
-    private final HostPriorityStrategy hostPriorityStrategy = new DefaultHostPriorityStrategy(100);
+    private final HostPriorityStrategy hostPriorityStrategy = new DefaultHostPriorityStrategy("", 100);
 
     @Test
     void noPriorities() {
@@ -232,6 +232,28 @@ class DefaultHostPriorityStrategyTest {
         for (int i = 0; i < 3; i++) {
             assertThat(result.get(i).loadBalancedWeight(),
                     approxEqual(result.get(i + 3).loadBalancedWeight() * 66 / 34));
+        }
+    }
+
+    @Test
+    void onlyHealthyNodesAreZeroWeight() {
+        List<TestPrioritizedHost> hosts = makeHosts(6);
+        for (int i = 0; i < hosts.size(); i++) {
+            if (i >= 3) {
+                hosts.get(i).loadBalancingWeight(0);
+                hosts.get(i).priority(1);
+            } else {
+                hosts.get(i).loadBalancingWeight(1);
+                hosts.get(i).isHealthy = false;
+            }
+        }
+
+        List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
+        // We consider weight per-group. Since we only found one healthy group and all the weights were
+        // 0 we consider them all equal among that group.
+        assertThat(result.size(), equalTo(3));
+        for (TestPrioritizedHost host : result) {
+            assertThat(host.loadBalancedWeight(), equalTo(100.0 / 3));
         }
     }
 
