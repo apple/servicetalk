@@ -21,11 +21,15 @@ import io.servicetalk.concurrent.api.TestExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,6 +73,19 @@ class XdsHealthIndicatorTest {
                     RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);
         }
         assertFalse(healthIndicator.isHealthy());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void cancellationStatus(boolean cancellationIsError) {
+        config = baseBuilder().cancellationIsError(cancellationIsError).build();
+        initIndicator();
+        for (int i = 0; i < config.consecutive5xx(); i++) {
+            healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
+                    RequestTracker.ErrorClass.CANCELLED);
+        }
+        assertThat(healthIndicator.isHealthy(), equalTo(!cancellationIsError));
+        assertEquals(cancellationIsError ? config.consecutive5xx() : 0L, healthIndicator.getFailures());
     }
 
     @Test
@@ -194,15 +211,6 @@ class XdsHealthIndicatorTest {
         assertTrue(healthIndicator.cancelled);
     }
 
-    @Test
-    void errorClassCancelledIsNotSuccessOrError() {
-        // Note that this is a specific interpretation that we can change: we just need to change the test.
-        healthIndicator.onRequestError(healthIndicator.beforeRequestStart() + 1,
-                RequestTracker.ErrorClass.CANCELLED);
-        assertEquals(0L, healthIndicator.getSuccesses());
-        assertEquals(0L, healthIndicator.getFailures());
-    }
-
     private void ejectIndicator(boolean isOutlier) {
         sequentialExecutor.execute(() -> healthIndicator.updateOutlierStatus(config, isOutlier));
     }
@@ -216,7 +224,8 @@ class XdsHealthIndicatorTest {
         boolean mayEjectHost = true;
 
         TestIndicator(final OutlierDetectorConfig config) {
-            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), ofSeconds(10), 5, 10,
+            super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), ofSeconds(10),
+                    config.ewmaCancellationPenalty(), config.ewmaErrorPenalty(), config.cancellationIsError(),
                     "address", "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }

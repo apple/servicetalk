@@ -45,9 +45,9 @@ public final class OutlierDetectorConfig {
     private final Duration ewmaHalfLife;
     private final long ewmaCancellationPenalty;
     private final long ewmaErrorPenalty;
+    private final boolean cancellationIsError;
     private final int failedConnectionsThreshold;
     private final Duration failureDetectorIntervalJitter;
-
     private final Duration serviceDiscoveryResubscribeInterval;
     private final Duration serviceDiscoveryResubscribeJitter;
 
@@ -69,7 +69,8 @@ public final class OutlierDetectorConfig {
     private final Duration maxEjectionTime;
 
     OutlierDetectorConfig(final Duration ewmaHalfLife, final long ewmaCancellationPenalty, final long ewmaErrorPenalty,
-                          int failedConnectionsThreshold, final Duration failureDetectorIntervalJitter,
+                          final boolean cancellationIsError, int failedConnectionsThreshold,
+                          final Duration failureDetectorIntervalJitter,
                           final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
                           final int consecutive5xx, final Duration failureDetectorInterval, final Duration baseEjectionTime,
@@ -82,6 +83,7 @@ public final class OutlierDetectorConfig {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
+        this.cancellationIsError = cancellationIsError;
         this.failedConnectionsThreshold = failedConnectionsThreshold;
         this.failureDetectorIntervalJitter = requireNonNull(
                 failureDetectorIntervalJitter, "failureDetectorIntervalJitter");
@@ -124,6 +126,14 @@ public final class OutlierDetectorConfig {
      */
     public long ewmaCancellationPenalty() {
         return ewmaCancellationPenalty;
+    }
+
+    /**
+     * Determines whether a cancellation is considered to be an error.
+     * @return whether a cancellation is considered to be an error.
+     */
+    public boolean cancellationIsError() {
+        return cancellationIsError;
     }
 
     /**
@@ -317,6 +327,7 @@ public final class OutlierDetectorConfig {
         static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
         static final long DEFAULT_CANCEL_PENALTY = 5L;
         static final long DEFAULT_ERROR_PENALTY = 10L;
+        private boolean cancellationIsError = true;
 
         // Default xDS outlier detector settings.
         private static final int DEFAULT_CONSECUTIVE_5XX = 5;
@@ -408,7 +419,8 @@ public final class OutlierDetectorConfig {
          */
         public OutlierDetectorConfig build() {
             return new OutlierDetectorConfig(ewmaHalfLife, ewmaCancellationPenalty, ewmaErrorPenalty,
-                    failedConnectionsThreshold, intervalJitter, serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
+                    cancellationIsError, failedConnectionsThreshold, intervalJitter,
+                    serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
                     // xDS settings
                     consecutive5xx, failureDetectorInterval, baseEjectionTime,
                     maxEjectionPercentage, enforcingConsecutive5xx,
@@ -458,6 +470,16 @@ public final class OutlierDetectorConfig {
          */
         public Builder ewmaErrorPenalty(final long ewmaErrorPenalty) {
             this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
+            return this;
+        }
+
+        /**
+         * Set whether a cancellation is considered to be an error by the outlier detector.
+         * @param cancellationIsError whether a cancellation is considered to be an error by the outlier detector.
+         * @return {@code this}
+         */
+        public Builder cancellationIsError(final boolean cancellationIsError) {
+            this.cancellationIsError = cancellationIsError;
             return this;
         }
 
