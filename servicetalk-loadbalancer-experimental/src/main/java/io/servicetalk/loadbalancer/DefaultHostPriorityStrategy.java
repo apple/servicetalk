@@ -62,7 +62,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         TreeMap<Integer, Group> groups = new TreeMap<>();
         for (T host : hosts) {
             if (host.priority() < 0) {
-                LOGGER.warn("{}: Found illegal priority: {}. Dropping priority grouping data.",
+                LOGGER.warn("{}: Illegal priority: {} (expected priority >=0). Ignoring priority data.",
                         lbDescription, host.priority());
                 return hosts;
             }
