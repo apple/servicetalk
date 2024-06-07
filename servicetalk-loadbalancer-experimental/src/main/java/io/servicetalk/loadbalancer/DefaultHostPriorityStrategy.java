@@ -102,8 +102,9 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
             }
         }
         if (weightedResults.isEmpty()) {
-            // This is awkward situation can happen if we don't have any healthy nodes.
+            // This is awkward situation can happen if we don't have any healthy groups.
             // In that case let's panic and return an un-prioritized set of hosts.
+            LOGGER.warn("No healthy priority groups found. Returning the un-prioritized set.");
             return hosts;
         }
         return weightedResults;
