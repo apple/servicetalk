@@ -50,7 +50,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             LoadBalancingPolicies.p2c().build();
 
-    private HostPriorityStrategy hostPriorityStrategy = DefaultHostPriorityStrategy.INSTANCE;
+    private Function<String, HostPriorityStrategy> hostPriorityStrategyFactory = DefaultHostPriorityStrategy::new;
 
     @Nullable
     private Supplier<OutlierDetector<String, TestLoadBalancedConnection>> outlierDetectorFactory;
@@ -172,7 +172,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     void changesToPriorityOrWeightTriggerRebuilds() throws Exception {
         final AtomicReference<Double> value = new AtomicReference<>();
         serviceDiscoveryPublisher.onComplete();
-        hostPriorityStrategy = new HostPriorityStrategy() {
+        hostPriorityStrategyFactory = (ignored) -> new HostPriorityStrategy() {
             @Override
             public <T extends PrioritizedHost> List<T> prioritize(List<T> hosts) {
                 assert hosts.size() == 1;
@@ -234,7 +234,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 getClass().getSimpleName(),
                 "test-service",
                 serviceDiscoveryPublisher,
-                hostPriorityStrategy,
+                hostPriorityStrategyFactory,
                 loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
                 LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
                         .buildStrategy("test-service"),
