@@ -45,7 +45,16 @@ import static java.util.Objects.requireNonNull;
  */
 final class FromInputStreamPublisher extends Publisher<byte[]> implements PublisherSource<byte[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
-    private static final int DEFAULT_READ_CHUNK_SIZE = 65_536;
+    // While sun.nio.ch.FileChannelImpl and java.io.InputStream.transferTo(...) use 8Kb chunks,
+    // we use 16Kb-32B because 16Kb is:
+    //  - the max data size of a TLS record;
+    //  - the initial value of max HTTP/2 DATA frame size (SETTINGS_MAX_FRAME_SIZE);
+    //  - default allocation quantum to use for the HTTP/2 remote flow controller (see H2ProtocolConfigBuilder);
+    // and adjust by 32B to let either HTTP/1.1 chunked encoding or HTTP/2 DATA frame encoding to wrap data before the
+    // write hits SslHandler. This helps utilize the full potential of the transport without fragmentation at TLS/HTTP/2
+    // layers or introducing too many flushes (they are expensive!) for large payloads. Benchmarks confirmed that
+    // subtraction of 32B significantly improves throughput and latency for TLS and has no effect on plaintext traffic.
+    private static final int DEFAULT_READ_CHUNK_SIZE = 16 * 1024 - 32;
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
 
