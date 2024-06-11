@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
-
 import io.servicetalk.logging.api.LogLevel;
+
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,6 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.logging.api.LogLevel.INFO;
-import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;

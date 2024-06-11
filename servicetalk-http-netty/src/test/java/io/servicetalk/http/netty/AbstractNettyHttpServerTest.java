@@ -78,7 +78,6 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.logging.api.LogLevel.INFO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -109,14 +108,6 @@ abstract class AbstractNettyHttpServerTest {
         ExecutorSupplier(final Supplier<Executor> executorSupplier) {
             this.executorSupplier = executorSupplier;
         }
-    }
-
-    protected LogLevel logLevel() {
-        return TRACE;
-    }
-
-    protected String loggerName() {
-        return "servicetalk-tests-wire-logger";
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
@@ -365,6 +356,14 @@ abstract class AbstractNettyHttpServerTest {
             return sb;
         }).toFuture().get().toString();
         assertThat(actualPayload, is(expectedPayload));
+    }
+
+    protected LogLevel logLevel() {
+        return TRACE;
+    }
+
+    protected String loggerName() {
+        return "servicetalk-tests-wire-logger";
     }
 
     static Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
