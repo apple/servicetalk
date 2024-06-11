@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -81,7 +83,33 @@ class BufferAllocatorsTest {
     @ParameterizedTest(name = TEST_NAME_FORMAT)
     @MethodSource("allocators")
     void testReadOnlyDirectBuffer(BufferAllocator allocator) {
-        assertBuffer(allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer()), true);
+        Buffer wrapped = allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer());
+        assertBuffer(wrapped, true);
+        assertThat(wrapped.isReadOnly(), is(true));
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testWrapDirectByteBufferThenMakeItReadOnly(BufferAllocator allocator) {
+        Buffer wrapped = allocator.wrap(ByteBuffer.allocateDirect(16)).asReadOnly();
+        assertBuffer(wrapped, true);
+        assertThat(wrapped.isReadOnly(), is(true));
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testReadOnlyHeapBuffer(BufferAllocator allocator) {
+        Buffer wrapped = allocator.wrap(ByteBuffer.allocate(16).asReadOnlyBuffer());
+        assertBuffer(wrapped, false);
+        assertThat(wrapped.isReadOnly(), is(true));
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testWrapHeapByteBufferThenMakeItReadOnly(BufferAllocator allocator) {
+        Buffer wrapped = allocator.wrap(ByteBuffer.allocate(16)).asReadOnly();
+        assertBuffer(wrapped, false);
+        assertThat(wrapped.isReadOnly(), is(true));
     }
 
     @ParameterizedTest(name = TEST_NAME_FORMAT)
@@ -109,6 +137,8 @@ class BufferAllocatorsTest {
         assertBuffer(wrapped, false);
         assertThat(wrapped.isReadOnly(), is(false));
         assertThat(wrapped.readableBytes(), is(equalTo(newLength)));
+        assertThat(wrapped.readerIndex(), is(0));
+        assertThat(wrapped.writerIndex(), is(equalTo(newLength)));
         byte[] dst = new byte[array.length];
         wrapped.readBytes(dst, 0, newLength);
         assertThat(wrapped.readableBytes(), is(0));
@@ -118,6 +148,16 @@ class BufferAllocatorsTest {
         for (int i = newLength; i < array.length; i++) {
             assertThat("Mismatch at index: " + i, dst[i], is((byte) 0));
         }
+    }
+
+    @ParameterizedTest(name = TEST_NAME_FORMAT)
+    @MethodSource("allocators")
+    void testWrapPartialByteArrayWithIllegalArguments(BufferAllocator allocator) {
+        byte[] array = new byte[16];
+        assertThrows(IndexOutOfBoundsException.class, () -> allocator.wrap(array, -1, array.length));
+        assertThrows(IndexOutOfBoundsException.class, () -> allocator.wrap(array, array.length + 1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> allocator.wrap(array, 2, array.length + 1));
+        assertThrows(IllegalArgumentException.class, () -> allocator.wrap(array, 2, -1));
     }
 
     @ParameterizedTest(name = TEST_NAME_FORMAT)
@@ -205,9 +245,9 @@ class BufferAllocatorsTest {
     }
 
     private static void assertBuffer(Buffer buffer, boolean direct) {
-        if (direct) {
+        if (direct || buffer.isReadOnly()) {
             assertFalse(buffer.hasArray());
-            assertTrue(buffer.isDirect());
+            assertThat(buffer.isDirect(), is(direct));
         } else {
             assertTrue(buffer.hasArray());
             assertFalse(buffer.isDirect());

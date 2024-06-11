@@ -160,17 +160,6 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     }
 
     @Override
-    public Buffer wrap(final byte[] bytes, final int offset, final int len) {
-        if (len == 0) {
-            return EMPTY_BUFFER;
-        }
-        final Buffer b = wrap(bytes);
-        b.readerIndex(offset);
-        b.writerIndex(offset + len);
-        return b;
-    }
-
-    @Override
     public Buffer wrap(ByteBuffer buffer) {
         final Buffer buf;
         if (buffer.hasArray()) {
