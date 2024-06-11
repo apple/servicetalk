@@ -161,8 +161,10 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer wrap(final byte[] bytes, final int offset, final int len) {
-        return bytes.length == 0 ? EMPTY_BUFFER :
-                new NettyBuffer<>(new UnreleasableHeapByteBuf(this, bytes, bytes.length).slice(offset, len));
+        if (offset == 0 && len == bytes.length) {
+            return wrap(bytes);
+        }
+        return new NettyBuffer<>(new UnreleasableHeapByteBuf(this, bytes, bytes.length).slice(offset, len));
     }
 
     @Override
