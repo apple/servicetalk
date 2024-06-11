@@ -19,6 +19,8 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
 
+import io.servicetalk.logging.api.LogLevel;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
@@ -36,6 +38,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
+import static io.servicetalk.logging.api.LogLevel.INFO;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -43,12 +47,23 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+// TODO: Both tests are known to be flaky.
 class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
 
     private static final int CHUNK_SIZE = 1024;
     private static final int SIZE = 2 * CHUNK_SIZE;
 
-    @Test
+    @Override
+    protected LogLevel logLevel() {
+        return INFO;
+    }
+
+    @Override
+    protected String loggerName() {
+        return "servicetalk-FullDuplexAndSequentialModeTest-wire-logger";
+    }
+
+    @RepeatedTest(1000)
     void defaultFullDuplex() throws Exception {
         setUp(CACHED, CACHED_SERVER);
 
@@ -62,7 +77,8 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         }
         continueRequest.countDown();
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture().get());
+        ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture()
+                .get()); // TODO: This is the call that is resulting in a timeout. how could that be?
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("Stream closed"));
     }

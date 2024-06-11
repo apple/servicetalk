@@ -91,7 +91,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     public final T get() throws InterruptedException, ExecutionException {
         final Object value = this.value;
         if (value == null) {
-            latch.await();
+            latch.await(); // this is the latch that we get trapped on.
             return reportGet(this.value);
         } else {
             return reportGet(value);

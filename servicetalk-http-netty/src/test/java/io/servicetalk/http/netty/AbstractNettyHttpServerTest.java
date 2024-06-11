@@ -40,6 +40,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -77,6 +78,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.logging.api.LogLevel.INFO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -107,6 +109,14 @@ abstract class AbstractNettyHttpServerTest {
         ExecutorSupplier(final Supplier<Executor> executorSupplier) {
             this.executorSupplier = executorSupplier;
         }
+    }
+
+    protected LogLevel logLevel() {
+        return TRACE;
+    }
+
+    protected String loggerName() {
+        return "servicetalk-tests-wire-logger";
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
@@ -173,7 +183,7 @@ abstract class AbstractNettyHttpServerTest {
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
+                .enableWireLogging(loggerName(), logLevel(), Boolean.TRUE::booleanValue);
         configureServerBuilder(serverBuilder);
         if (sslEnabled) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
@@ -218,7 +228,7 @@ abstract class AbstractNettyHttpServerTest {
                 .executor(clientExecutor)
                 .executionStrategy(defaultStrategy())
                 .protocols(protocol)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                .enableWireLogging(loggerName(), logLevel(), Boolean.TRUE::booleanValue)
                 .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
