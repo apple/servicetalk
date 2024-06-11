@@ -21,7 +21,6 @@ import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -82,7 +81,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause().getMessage(), containsString("Stream closed"));
     }
 
-    @Test
+    @RepeatedTest(1000)
     void deferResponseUntilAfterRequestSent() throws Exception {
         clientFilterFactory(EnforceSequentialModeRequesterFilter.INSTANCE);
         setUp(CACHED, CACHED_SERVER);
