@@ -146,7 +146,6 @@ public interface BufferAllocator {
     /**
      * Create a new {@link Buffer} that wraps the given byte array.
      *
-     *
      * @param bytes the byte array.
      * @param offset the offset index of the array.
      * @param len the numbers of bytes.
