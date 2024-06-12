@@ -1,15 +1,16 @@
-name: Test with the latest Netty 4.1.X-SNAPSHOT
+name: Test with the latest Netty Snapshots
 on:
   schedule:
     - cron: '0 15 * * 1-5'
   workflow_dispatch:
 env:
-  ORG_GRADLE_PROJECT_nettyVersion: ${{ matrix.netty }}
   JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
 jobs:
   build:
     name: Netty ${{ matrix.netty }} Snapshot on JDK ${{ matrix.java }} ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      ORG_GRADLE_PROJECT_nettyVersion: ${{ matrix.netty }}
     strategy:
       matrix:
         java: [ 8 ]
