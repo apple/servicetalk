@@ -368,32 +368,42 @@ class FromInputStreamPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] readChunkSize={0}")
-    @ValueSource(ints = {7, 1024})
+    @ValueSource(ints = {4, 1024})
     void doNotFailOnInputStreamWithBrokenAvailableCall(int readChunkSize) throws Throwable {
-        initChunkedStream(bigBuff, of(5, 0, 0, 10, 5, 5, 1, 0),
-                                   of(5, 7, 7, 10, 5, 5, 1, 0));
+        initChunkedStream(bigBuff, of(3, 0, 4, 0, 5, 0,    2, 0,       0,          4, 0),
+                                   of(3, 7, 4, 4, 5, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 4, 0));
         pub = new FromInputStreamPublisher(inputStream, readChunkSize);
 
         if (readChunkSize > bigBuff.length) {
             byte[][] items = {
-                    new byte[]{0, 1, 2, 3, 4},
+                    new byte[]{0, 1, 2},
                     // avail == 0 -> override to readChunkSize
-                    new byte[]{5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-                            28, 29, 30, 31, 32, 33, 34, 35, 36},
+                    new byte[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+                            27, 28, 29, 30, 31, 32, 33, 34, 35, 36},
             };
             verifySuccess(items);
         } else {
             byte[][] items = {
-                    new byte[]{0, 1, 2, 3, 4},
-                    // avail == 0 -> override to readChunkSize
-                    new byte[]{5, 6, 7, 8, 9, 10, 11},
-                    // avail == 0 -> override to readChunkSize
-                    new byte[]{12, 13, 14, 15, 16, 17, 18},
-                    // readChunkSize < available
-                    new byte[]{19, 20, 21, 22, 23, 24, 25},
-                    new byte[]{26, 27, 28, 29, 30},
-                    new byte[]{31, 32, 33, 34, 35},
-                    new byte[]{36},
+                    // available < readChunkSize
+                    new byte[]{0, 1, 2},
+                    // available == 0 -> override to readChunkSize, actual chunk > readChunkSize
+                    new byte[]{3, 4, 5, 6},
+                    // available == readChunkSize
+                    new byte[]{7, 8, 9, 10},
+                    // available == 0 -> override to readChunkSize, actual chunk == readChunkSize
+                    new byte[]{11, 12, 13, 14},
+                    // available > readChunkSize -> limit by readChunkSize
+                    new byte[]{15, 16, 17, 18},
+                    // available == 0 -> override to readChunkSize, actual chunk < readChunkSize -> read twice
+                    new byte[]{19, 20, 21, 22},
+                    // available < readChunkSize
+                    new byte[]{23, 24},
+                    // available == 0 -> override to readChunkSize, actual chunk < readChunkSize -> read 3 times
+                    new byte[]{25, 26, 27, 28},
+                    // available == 0 -> override to readChunkSize, actual chunk < readChunkSize -> read 4 times
+                    new byte[]{29, 30, 31, 32},
+                    // available == readChunkSize
+                    new byte[]{33, 34, 35, 36},
             };
             verifySuccess(items);
         }
