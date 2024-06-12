@@ -61,7 +61,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         return "servicetalk-FullDuplexAndSequentialModeTest-wire-logger";
     }
 
-    @RepeatedTest(50)
+    @RepeatedTest(100)
     void defaultFullDuplex() throws Exception {
         setUp(CACHED, CACHED_SERVER);
 
@@ -81,7 +81,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause().getMessage(), containsString("Stream closed"));
     }
 
-    @RepeatedTest(50)
+    @RepeatedTest(100)
     void deferResponseUntilAfterRequestSent() throws Exception {
         clientFilterFactory(EnforceSequentialModeRequesterFilter.INSTANCE);
         setUp(CACHED, CACHED_SERVER);
