@@ -39,5 +39,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-${{ matrix.java }}
+          name: test-results-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.netty }}
           path: '**/build/test-results/test/TEST-*.xml'
