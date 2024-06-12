@@ -370,8 +370,10 @@ class FromInputStreamPublisherTest {
     @ParameterizedTest(name = "{displayName} [{index}] readChunkSize={0}")
     @ValueSource(ints = {4, 1024})
     void doNotFailOnInputStreamWithBrokenAvailableCall(int readChunkSize) throws Throwable {
-        initChunkedStream(bigBuff, of(3, 0, 4, 0, 5, 0,    2, 0,       0,          4, 0),
-                                   of(3, 7, 4, 4, 5, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 4, 0));
+        // We use double "0, 0" because FromInputStreamPublisher does two calls to available() now. For this test, both
+        // calls to "broken" available() should consistently return `0`.
+        initChunkedStream(bigBuff, of(3, 0, 0, 4, 0, 0, 5, 0, 0, 2, 0, 0,    0, 0,       4, 0),
+                                   of(3, 7,    4, 4,    5, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 4, 0));
         pub = new FromInputStreamPublisher(inputStream, readChunkSize);
 
         if (readChunkSize > bigBuff.length) {
@@ -407,6 +409,34 @@ class FromInputStreamPublisherTest {
             };
             verifySuccess(items);
         }
+    }
+
+    @Test
+    void singleReadTriggersMoreAvailability() throws Throwable {
+        // We simulate a case when a single stream.read() triggers a read of a larger chunk and then the next call to
+        // available() returns "chunk - 1". To accommodate mock behavior, if the 3rd in a row call to available()
+        // returns a non zero value, we should return a chunk value of "chunks[idx - 1] - number of read bytes".
+        initChunkedStream(bigBuff, of(0, 1, 0, 7, 0, 8, 1,  0, 17, 10, 2, 0),
+                                   of(2,    8,    9,    1, 18,     10, 2, 0));
+        pub = new FromInputStreamPublisher(inputStream, 8);
+
+        byte[][] items = {
+                // available < readChunkSize
+                new byte[]{0, 1},
+                // available == readChunkSize
+                new byte[]{2, 3, 4, 5, 6, 7, 8, 9},
+                // available > readChunkSize -> limit by readChunkSize
+                new byte[]{10, 11, 12, 13, 14, 15, 16, 17},
+                // available == 1 - unread remaining from the previous chunk of 9
+                new byte[]{18},
+                // available > 2x readChunkSize -> limit by readChunkSize
+                new byte[]{19, 20, 21, 22, 23, 24, 25, 26},
+                // available == 10 > readChunkSize - unread remaining from the previous chunk of 18
+                new byte[]{27, 28, 29, 30, 31, 32, 33, 34},
+                // available == 2 -> unread remaining from the previous chunk of 18
+                new byte[]{35, 36},
+        };
+        verifySuccess(items);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] chunkSize={0}")
@@ -488,6 +518,7 @@ class FromInputStreamPublisherTest {
 
     private void initEmptyStream() throws IOException {
         when(inputStream.available()).thenReturn(0);
+        when(inputStream.read()).thenReturn(-1);
         when(inputStream.read(any(), anyInt(), anyInt())).thenReturn(-1);
     }
 
@@ -501,13 +532,23 @@ class FromInputStreamPublisherTest {
         AtomicInteger readIdx = new AtomicInteger();
         OfInt availSizes = avails.iterator();
         OfInt chunkSizes = chunks.iterator();
+        AtomicBoolean readOneByte = new AtomicBoolean();
         try {
             when(inputStream.available()).then(inv -> availSizes.nextInt());
+            when(inputStream.read()).then(inv -> {
+                if (data.length == readIdx.get()) {
+                    return -1;
+                }
+                readOneByte.set(true);
+                return (int) data[readIdx.getAndIncrement()];
+            });
             when(inputStream.read(any(), anyInt(), anyInt())).then(inv -> {
                 byte[] b = inv.getArgument(0);
                 int pos = inv.getArgument(1);
                 int len = inv.getArgument(2);
-                int read = min(min(len, data.length - readIdx.get()), chunkSizes.nextInt());
+                // subtract 1 byte from the next chunk if a single byte was already read
+                final int chunkSize = chunkSizes.nextInt() - (readOneByte.getAndSet(false) ? 1 : 0);
+                int read = min(min(len, data.length - readIdx.get()), chunkSize);
                 if (read == 0) {
                     return data.length == readIdx.get() ? -1 : 0;
                 }

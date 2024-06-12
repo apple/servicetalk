@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -132,8 +131,6 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
          * Subscription} are terminated.
          */
         private long requested;
-        @Nullable
-        private byte[] buffer;
         private int writeIdx;
         private boolean ignoreRequests;
 
@@ -176,14 +173,27 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private void readAndDeliver(final Subscriber<? super byte[]> subscriber) {
             try {
                 do {
+                    int readByte = -1;
                     // Can't fully trust available(), but it's a reasonable hint to mitigate blocking on read().
                     int available = stream.available();
                     if (available == 0) {
-                        // Work around InputStreams that don't strictly honor the 0 == EOF contract.
-                        available = buffer != null ? buffer.length : readChunkSize;
+                        // This can be an indicator of EOF or a signal that no bytes are available to read without
+                        // blocking. To avoid unnecessary allocation, we first probe for EOF:
+                        readByte = stream.read();
+                        if (readByte == END_OF_FILE) {
+                            sendOnComplete(subscriber);
+                            return;
+                        }
+                        // There is a chance a single read triggered availability of more bytes, let's check:
+                        available = stream.available();
+                        if (available == 0) {
+                            // This InputStream either does not implement available() method at all, or does not honor
+                            // the 0 == EOF contract, or does not prefetch data in larger chunks.
+                            // In this case, we attempt to read based on the configured readChunkSize:
+                            available = readChunkSize;
+                        }
                     }
-                    available = fillBufferAvoidingBlocking(available);
-                    emitSingleBuffer(subscriber);
+                    available = readAvailableAndEmit(available, readByte);
                     if (available == END_OF_FILE) {
                         sendOnComplete(subscriber);
                         return;
@@ -194,11 +204,21 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             }
         }
 
-        // This method honors the estimated available bytes that can be read without blocking
-        private int fillBufferAvoidingBlocking(int available) throws IOException {
-            if (buffer == null) {
+        private int readAvailableAndEmit(final int available, final int readByte) throws IOException {
+            final byte[] buffer;
+            if (readByte >= 0) {
+                buffer = new byte[available < readChunkSize ? available + 1 : readChunkSize];
+                buffer[writeIdx++] = (byte) readByte;
+            } else {
                 buffer = new byte[min(available, readChunkSize)];
             }
+            final int remainingLength = fillBuffer(buffer, available);
+            emitSingleBuffer(subscriber, buffer, remainingLength);
+            return remainingLength;
+        }
+
+        // This method honors the estimated available bytes that can be read without blocking
+        private int fillBuffer(final byte[] buffer, int available) throws IOException {
             while (writeIdx != buffer.length && available > 0) {
                 int len = min(buffer.length - writeIdx, available);
                 int readActual = stream.read(buffer, writeIdx, len); // may block if len > available
@@ -211,15 +231,17 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             return available;
         }
 
-        private void emitSingleBuffer(final Subscriber<? super byte[]> subscriber) {
+        private void emitSingleBuffer(final Subscriber<? super byte[]> subscriber,
+                                      final byte[] buffer, final int remainingLength) {
             if (writeIdx < 1) {
+                assert remainingLength == END_OF_FILE :
+                        "unexpected writeIdx == 0 while we still have some remaining data to read";
                 return;
             }
-            assert buffer != null : "should have a buffer when writeIdx > 0";
+            assert writeIdx <= buffer.length : "writeIdx can not be grater than buffer.length";
             final byte[] b;
             if (writeIdx == buffer.length) {
                 b = buffer;
-                buffer = null;
             } else {
                 // this extra copy is necessary when we read the last chunk and total number of bytes read before EOF
                 // is less than guesstimated buffer size
@@ -242,7 +264,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             }
         }
 
-        private <T extends Throwable> void sendOnError(final Subscriber<? super byte[]> subscriber, final T t) {
+        private void sendOnError(final Subscriber<? super byte[]> subscriber, final Throwable t) {
             if (trySetTerminalSent()) {
                 try {
                     subscriber.onError(t);
