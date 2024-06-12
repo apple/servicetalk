@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -80,14 +80,31 @@ loadScripts(document, 'script');</script>
  - At initiation of an action for which a request is must call <a href="#beforeRequestStart()"><code>beforeRequestStart()</code></a> and save
    the timestamp much like would be done when using a stamped lock.
  - Once the request event is complete only one of the <a href="#onRequestSuccess(long)"><code>onRequestSuccess(long)</code></a> or
-   <a href="#onRequestError(long,io.servicetalk.loadbalancer.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a> methods must be called and called exactly once.
+   <a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a> methods must be called and called exactly once.
  In other words, every call to <a href="#beforeRequestStart()"><code>beforeRequestStart()</code></a> must be followed by exactly one call to
  either of the completion methods <a href="#onRequestSuccess(long)"><code>onRequestSuccess(long)</code></a> or
- <a href="#onRequestError(long,io.servicetalk.loadbalancer.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a>. Failure to do so can cause state corruption in the
+ <a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a>. Failure to do so can cause state corruption in the
  <a href="RequestTracker.html" title="interface in io.servicetalk.loadbalancer"><code>RequestTracker</code></a> implementations which may track not just latency but also the outstanding requests.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Interface</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static enum&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="RequestTracker.ErrorClass.html" class="type-name-link" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Enumeration of the main failure classes.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- =========== FIELD SUMMARY =========== -->
 <li>
 <section class="field-summary" id="field-summary">
@@ -120,8 +137,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Invoked before each start of the action for which latency is to be tracked.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onRequestError(long,io.servicetalk.loadbalancer.ErrorClass)" class="member-name-link">onRequestError</a><wbr>(long&nbsp;beforeStartTimeNs,
- <a href="ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">ErrorClass</a>&nbsp;errorClass)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)" class="member-name-link">onRequestError</a><wbr>(long&nbsp;beforeStartTimeNs,
+ <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a>&nbsp;errorClass)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Records a failed completion of the action for which latency is to be tracked.</div>
 </div>
@@ -181,10 +198,10 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="onRequestError(long,io.servicetalk.loadbalancer.ErrorClass)">
+<section class="detail" id="onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)">
 <h3>onRequestError</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onRequestError</span><wbr><span class="parameters">(long&nbsp;beforeStartTimeNs,
- <a href="ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">ErrorClass</a>&nbsp;errorClass)</span></div>
+ <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a>&nbsp;errorClass)</span></div>
 <div class="block">Records a failed completion of the action for which latency is to be tracked.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

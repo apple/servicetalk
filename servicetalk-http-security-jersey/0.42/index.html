@@ -1076,6 +1076,11 @@
 <p>This module provides JAX-RS filters that set <code>javax.ws.rs.core.SecurityContext</code> for requests authenticated with
 various authentication schemes.</p>
 </div>
+<div class="paragraph">
+<p><strong>Note:</strong> If using Jersey 3.X, replace all imports containing <code>javax.ws</code> with <code>jakarta.ws</code>, and replace the dependency with:
+* <code>servicetalk-http-security-jersey3-jakarta9</code> for Jersey 3.0.X
+* <code>servicetalk-http-security-jersey3-jakarta10</code> for Jersey 3.1.X</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1102,7 +1107,7 @@ This is similar to configuring security at JavaEE container level in <code>web.x
 </table>
 </div>
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.43/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java"><code>BasicAuthSecurityContextFilters</code></a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.44/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java"><code>BasicAuthSecurityContextFilters</code></a>
 provides factory methods for the two main types of JAX-RS filters:</p>
 </div>
 <div class="ulist">
@@ -1112,7 +1117,7 @@ provides factory methods for the two main types of JAX-RS filters:</p>
 </li>
 <li>
 <p>Name bound filters, which needs to be manually applied to specific resources via the provided
-<a href="https://github.com/apple/servicetalk/blob/0.42.43/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java"><code>@BasicAuthenticated</code></a> annotation.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.44/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java"><code>@BasicAuthenticated</code></a> annotation.</p>
 </li>
 </ul>
 </div>

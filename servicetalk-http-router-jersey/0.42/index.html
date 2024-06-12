@@ -1077,6 +1077,11 @@ This module gives access to all JAX-RS features as well as
 ServiceTalk specific extensions. This document details these features
 and also delves deeper into the implementation.</p>
 </div>
+<div class="paragraph">
+<p><strong>Note:</strong> If using Jersey 3.X, replace all imports containing <code>javax.ws</code> with <code>jakarta.ws</code>, and replace the dependency with:
+* <code>servicetalk-http-router-jersey3-jakarta9</code> for Jersey 3.0.X
+* <code>servicetalk-http-router-jersey3-jakarta10</code> for Jersey 3.1.X</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1743,7 +1748,7 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 It is currently not possible to disable offloading if any JAX-RS resource uses <code>@Suspended AsyncResponse</code>,
 <code>CompletionStage</code> responses or Server-Sent Events. A workaround for this consists in using the Predicate router
 to selectively offload such resources, as shown in this
-<a href="https://github.com/apple/servicetalk/blob/0.42.43/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.44/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
 </td>
 </tr>
 </table>
