@@ -40,7 +40,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -174,7 +173,7 @@ abstract class AbstractNettyHttpServerTest {
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)
-                .enableWireLogging(loggerName(), logLevel(), Boolean.TRUE::booleanValue);
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         configureServerBuilder(serverBuilder);
         if (sslEnabled) {
             serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
@@ -219,7 +218,7 @@ abstract class AbstractNettyHttpServerTest {
                 .executor(clientExecutor)
                 .executionStrategy(defaultStrategy())
                 .protocols(protocol)
-                .enableWireLogging(loggerName(), logLevel(), Boolean.TRUE::booleanValue)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
@@ -356,14 +355,6 @@ abstract class AbstractNettyHttpServerTest {
             return sb;
         }).toFuture().get().toString();
         assertThat(actualPayload, is(expectedPayload));
-    }
-
-    protected LogLevel logLevel() {
-        return TRACE;
-    }
-
-    protected String loggerName() {
-        return "servicetalk-tests-wire-logger";
     }
 
     static Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {

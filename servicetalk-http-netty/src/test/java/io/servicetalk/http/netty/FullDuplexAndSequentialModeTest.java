@@ -43,21 +43,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// TODO: Both tests are known to be flaky.
 class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
 
     private static final int CHUNK_SIZE = 1024;
     private static final int SIZE = 2 * CHUNK_SIZE;
-
-    //    @Override
-    //    protected LogLevel logLevel() {
-    //        return INFO;
-    //    }
-    //
-    //    @Override
-    //    protected String loggerName() {
-    //        return "servicetalk-FullDuplexAndSequentialModeTest-wire-logger";
-    //    }
 
     @RepeatedTest(100)
     void defaultFullDuplex() throws Exception {
@@ -73,8 +62,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         }
         continueRequest.countDown();
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture()
-                .get()); // TODO: This is the call that is resulting in a timeout. how could that be?
+        ExecutionException e = assertThrows(ExecutionException.class, () -> response.payloadBody().toFuture().get());
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("Stream closed"));
     }
