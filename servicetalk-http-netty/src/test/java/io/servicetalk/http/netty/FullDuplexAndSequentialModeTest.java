@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
-import io.servicetalk.logging.api.LogLevel;
 
 import org.junit.jupiter.api.RepeatedTest;
 
@@ -37,7 +36,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
-import static io.servicetalk.logging.api.LogLevel.INFO;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,15 +49,15 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
     private static final int CHUNK_SIZE = 1024;
     private static final int SIZE = 2 * CHUNK_SIZE;
 
-    @Override
-    protected LogLevel logLevel() {
-        return INFO;
-    }
-
-    @Override
-    protected String loggerName() {
-        return "servicetalk-FullDuplexAndSequentialModeTest-wire-logger";
-    }
+    //    @Override
+    //    protected LogLevel logLevel() {
+    //        return INFO;
+    //    }
+    //
+    //    @Override
+    //    protected String loggerName() {
+    //        return "servicetalk-FullDuplexAndSequentialModeTest-wire-logger";
+    //    }
 
     @RepeatedTest(100)
     void defaultFullDuplex() throws Exception {
