@@ -38,7 +38,7 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
-            @Nullable LoadBalancerObserver loadBalancerObserver) {
+            @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
         throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
     }
 

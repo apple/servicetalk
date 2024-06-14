@@ -61,13 +61,6 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver loadBalancerObserver) {
-        delegate = delegate.loadBalancerObserver(loadBalancerObserver);
-        return this;
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
         delegate = delegate.loadBalancerObserver(loadBalancerObserverFactory);
         return this;
