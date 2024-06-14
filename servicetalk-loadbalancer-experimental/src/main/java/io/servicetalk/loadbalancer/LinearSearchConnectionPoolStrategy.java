@@ -92,6 +92,6 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
 
     static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(final int linearSearchSpace) {
         ensureNonNegative(linearSearchSpace, "linearSearchSpace");
-        return (targetResource) -> new LinearSearchConnectionPoolStrategy<>(linearSearchSpace);
+        return (lbDescription) -> new LinearSearchConnectionPoolStrategy<>(linearSearchSpace);
     }
 }

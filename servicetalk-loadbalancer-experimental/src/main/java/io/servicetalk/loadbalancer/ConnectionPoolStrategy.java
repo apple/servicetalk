@@ -46,9 +46,9 @@ interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
 
         /**
          * Provide an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
-         * @param targetResource the resource name, used for logging purposes.
+         * @param lbDescription description of the resource, used for logging purposes.
          * @return an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
          */
-        ConnectionPoolStrategy<C> buildStrategy(String targetResource);
+        ConnectionPoolStrategy<C> buildStrategy(String lbDescription);
     }
 }

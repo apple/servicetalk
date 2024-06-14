@@ -163,7 +163,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     DefaultHostPriorityStrategy::new,
                     loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
-                    connectionPoolStrategyFactory.buildStrategy(targetResource), connectionFactory,
+                    connectionPoolStrategyFactory, connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
 
