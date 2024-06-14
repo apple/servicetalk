@@ -86,30 +86,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
-        final HealthCheckConfig healthCheckConfig;
-        final Executor executor = getExecutor();
-        if (OutlierDetectorConfig.allDisabled(outlierDetectorConfig)) {
-            healthCheckConfig = null;
-        } else {
-            healthCheckConfig = new HealthCheckConfig(
-                    executor,
-                    outlierDetectorConfig.failureDetectorInterval(),
-                    outlierDetectorConfig.failureDetectorIntervalJitter(),
-                    outlierDetectorConfig.failedConnectionsThreshold(),
-                    outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
-                    outlierDetectorConfig.serviceDiscoveryResubscribeJitter());
-        }
-        final LoadBalancerObserverFactory loadBalancerObserverFactory = this.loadBalancerObserverFactory != null ?
-                this.loadBalancerObserverFactory : ignored -> NoopLoadBalancerObserver.instance();
-        final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
-        if (OutlierDetectorConfig.xDSDisabled(outlierDetectorConfig)) {
-            outlierDetectorFactory = (lbDescription) -> new NoopOutlierDetector<>(outlierDetectorConfig, executor);
-        } else {
-            outlierDetectorFactory = (lbDescription) ->
-                new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
-        }
-        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, healthCheckConfig,
-                loadBalancerObserverFactory, outlierDetectorFactory, connectionPoolStrategyFactory);
+        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, loadBalancerObserverFactory,
+                connectionPoolStrategyFactory, outlierDetectorConfig, getExecutor());
     }
 
     static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -117,26 +95,24 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
+        @Nullable
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
-        @Nullable
-        private final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
-        @Nullable
-        private final HealthCheckConfig healthCheckConfig;
         private final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory;
+        private final OutlierDetectorConfig outlierDetectorConfig;
+        private final Executor executor;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   @Nullable final HealthCheckConfig healthCheckConfig,
-                                   final LoadBalancerObserverFactory loadBalancerObserverFactory,
-                                   final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory,
-                                   final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory) {
+                                   @Nullable final LoadBalancerObserverFactory loadBalancerObserverFactory,
+                                   final ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory,
+                                   final OutlierDetectorConfig outlierDetectorConfig,
+                                   final Executor executor) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
-            this.loadBalancerObserverFactory = requireNonNull(loadBalancerObserverFactory,
-                    "loadBalancerObserverFactory");
+            this.loadBalancerObserverFactory = loadBalancerObserverFactory;
+            this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
             this.connectionPoolStrategyFactory = requireNonNull(
                     connectionPoolStrategyFactory, "connectionPoolStrategyFactory");
-            this.healthCheckConfig = healthCheckConfig;
-            this.outlierDetectorFactory = outlierDetectorFactory;
+            this.executor = requireNonNull(executor, "executor");
         }
 
         @Override
@@ -159,6 +135,27 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         public LoadBalancer<C> newLoadBalancer(
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
+            final HealthCheckConfig healthCheckConfig;
+            if (OutlierDetectorConfig.allDisabled(outlierDetectorConfig)) {
+                healthCheckConfig = null;
+            } else {
+                healthCheckConfig = new HealthCheckConfig(
+                        executor,
+                        outlierDetectorConfig.failureDetectorInterval(),
+                        outlierDetectorConfig.failureDetectorIntervalJitter(),
+                        outlierDetectorConfig.failedConnectionsThreshold(),
+                        outlierDetectorConfig.serviceDiscoveryResubscribeInterval(),
+                        outlierDetectorConfig.serviceDiscoveryResubscribeJitter());
+            }
+            final LoadBalancerObserverFactory loadBalancerObserverFactory = this.loadBalancerObserverFactory != null ?
+                    this.loadBalancerObserverFactory : NoopLoadBalancerObserver.factory();
+            final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory;
+            if (OutlierDetectorConfig.xDSDisabled(outlierDetectorConfig)) {
+                outlierDetectorFactory = (lbDescription) -> new NoopOutlierDetector<>(outlierDetectorConfig, executor);
+            } else {
+                outlierDetectorFactory = (lbDescription) ->
+                    new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
+            }
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     DefaultHostPriorityStrategy::new, loadBalancingPolicy,
                     connectionPoolStrategyFactory, connectionFactory,
@@ -169,6 +166,18 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         public ExecutionStrategy requiredOffloads() {
             // We do not block
             return ExecutionStrategy.offloadNone();
+        }
+
+        @Override
+        public String toString() {
+            return "DefaultLoadBalancerFactory@" + System.identityHashCode(this) + "{" +
+                    "id='" + id + '\'' +
+                    ", loadBalancingPolicy=" + loadBalancingPolicy +
+                    ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +
+                    ", connectionPoolStrategyFactory=" + connectionPoolStrategyFactory +
+                    ", outlierDetectorConfig=" + outlierDetectorConfig +
+                    ", executor=" + executor +
+                    '}';
         }
     }
 

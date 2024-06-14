@@ -23,6 +23,7 @@ import java.util.Collection;
 final class NoopLoadBalancerObserver implements LoadBalancerObserver {
 
     private static final LoadBalancerObserver INSTANCE = new NoopLoadBalancerObserver();
+    private static final LoadBalancerObserverFactory FACTORY_INSTANCE = new NoopLoadBalancerObserverFactory();
 
     private NoopLoadBalancerObserver() {
         // only private instance
@@ -87,7 +88,23 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
         }
     }
 
-    public static LoadBalancerObserver instance() {
+    static LoadBalancerObserver instance() {
         return INSTANCE;
+    }
+
+    static LoadBalancerObserverFactory factory() {
+        return FACTORY_INSTANCE;
+    }
+
+    private static final class NoopLoadBalancerObserverFactory implements LoadBalancerObserverFactory {
+        @Override
+        public LoadBalancerObserver newObserver(String lbDescription) {
+            return INSTANCE;
+        }
+
+        @Override
+        public String toString() {
+            return "NoopLoadBalancerObserverFactory";
+        }
     }
 }
