@@ -45,14 +45,14 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
 
     private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolStrategy.class);
 
-    private final String targetResource;
+    private final String lbDescription;
     private final int maxEffort;
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    private P2CConnectionPoolStrategy(final String targetResource, final int maxEffort, final int corePoolSize,
+    private P2CConnectionPoolStrategy(final String lbDescription, final int maxEffort, final int corePoolSize,
                               final boolean forceCorePool) {
-        this.targetResource = requireNonNull(targetResource, "targetResource");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.maxEffort = ensureNonNegative(maxEffort, "maxEffort");
         this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;
@@ -108,7 +108,7 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
         }
         if (!singleIteration && LOGGER.isDebugEnabled()) {
             LOGGER.debug("{}: max effort ({}) exhausted while searching through {} candidates.",
-                    targetResource, maxEffort, randomSearchSpace);
+                    lbDescription, maxEffort, randomSearchSpace);
         }
         return null;
     }

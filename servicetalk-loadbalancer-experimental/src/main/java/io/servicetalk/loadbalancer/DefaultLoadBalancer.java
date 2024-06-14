@@ -121,7 +121,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param priorityStrategyFactory a build of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param hostSelector initial host selector to use with this load balancer.
-     * @param connectionPoolStrategy the connection pool strategy to use with this load balancer.
+     * @param connectionPoolStrategyFactory factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
      *                                    load balancer.
@@ -137,7 +137,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final HostSelector<ResolvedAddress, C> hostSelector,
-            final ConnectionPoolStrategy<C> connectionPoolStrategy,
+            final ConnectionPoolStrategy.ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
@@ -147,7 +147,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.hostSelector = requireNonNull(hostSelector, "hostSelector");
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
-        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
+        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategyFactory,
+                "connectionPoolStrategyFactory").buildStrategy(lbDescription);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.

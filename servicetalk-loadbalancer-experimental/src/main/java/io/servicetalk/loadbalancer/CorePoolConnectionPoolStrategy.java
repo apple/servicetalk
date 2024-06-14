@@ -86,6 +86,6 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
     static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
             int corePoolSize, boolean forceCorePool) {
         ensurePositive(corePoolSize, "corePoolSize");
-        return (targetResource) -> new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
+        return (lbDesription) -> new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
     }
 }
