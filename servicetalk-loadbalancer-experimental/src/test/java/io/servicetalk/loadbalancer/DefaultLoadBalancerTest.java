@@ -235,8 +235,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 "test-service",
                 serviceDiscoveryPublisher,
                 hostPriorityStrategyFactory,
-                loadBalancingPolicy.buildSelector(new ArrayList<>(), "test-service"),
-                LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE),
+                loadBalancingPolicy,
+                LinearSearchConnectionPoolStrategy.factory(DEFAULT_LINEAR_SEARCH_SPACE),
                 connectionFactory,
                 lbDescription -> NoopLoadBalancerObserver.instance(),
                 null,
@@ -371,7 +371,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         @Override
         HostSelector<String, TestLoadBalancedConnection> buildSelector(
-                List<Host<String, TestLoadBalancedConnection>> hosts, String targetResource) {
+                List<Host<String, TestLoadBalancedConnection>> hosts, String lbDescription) {
             return new TestSelector(hosts);
         }
 

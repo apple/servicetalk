@@ -26,7 +26,6 @@ import io.servicetalk.loadbalancer.ConnectionPoolStrategy.ConnectionPoolStrategy
 import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -161,8 +160,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 ConnectionFactory<ResolvedAddress, C> connectionFactory, String targetResource) {
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
-                    DefaultHostPriorityStrategy::new,
-                    loadBalancingPolicy.buildSelector(Collections.emptyList(), targetResource),
+                    DefaultHostPriorityStrategy::new, loadBalancingPolicy,
                     connectionPoolStrategyFactory, connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }

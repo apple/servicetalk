@@ -49,10 +49,10 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     private final int maxEffort;
     private final boolean failOpen;
 
-    P2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
+    P2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription,
                        final boolean ignoreWeights, final int maxEffort, final boolean failOpen,
                        @Nullable final Random random) {
-        super(hosts, targetResource);
+        super(hosts, lbDescription);
         this.ignoreWeights = ignoreWeights;
         this.entrySelector = ignoreWeights ? new EqualWeightEntrySelector(hosts.size()) : buildAliasTable(hosts);
         this.maxEffort = maxEffort;
@@ -62,7 +62,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(List<? extends Host<ResolvedAddress, C>> hosts) {
-        return new P2CSelector<>(hosts, getTargetResource(), ignoreWeights, maxEffort, failOpen, random);
+        return new P2CSelector<>(hosts, lbDescription(), ignoreWeights, maxEffort, failOpen, random);
     }
 
     @Override
@@ -72,8 +72,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
         switch (size) {
             case 0:
                 // We shouldn't get called if the load balancer doesn't have any hosts.
-                throw new AssertionError("Selector for " + getTargetResource() +
-                        " received an empty host set");
+                throw new AssertionError(lbDescription() + ": Selector received an empty host set");
             case 1:
                 // There is only a single host, so we don't need to do any of the looping or comparison logic.
                 Host<ResolvedAddress, C> host = hosts().get(0);
@@ -175,7 +174,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             final double pi = hosts.get(i).weight();
             if (pi < 0) {
                 LOGGER.warn("{}: host at address {} has negative weight ({}). Using unweighted selection.",
-                        getTargetResource(), hosts.get(i).address(), pi);
+                        lbDescription(), hosts.get(i).address(), pi);
                 return new EqualWeightEntrySelector(hosts.size());
             }
             probs[i] = pi;
@@ -249,7 +248,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
             } while (result == firstPick && iteration++ < maxEffort);
             if (firstPick == result) {
                 LOGGER.debug("{}: failed to pick two unique indices after {} selection attempts",
-                        getTargetResource(), maxEffort);
+                        lbDescription(), maxEffort);
             }
             return 0;
         }

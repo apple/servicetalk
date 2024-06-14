@@ -47,9 +47,10 @@ public abstract class LoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     /**
      * Construct a {@link HostSelector}.
      * @param hosts          the set of {@link Host}s to select from.
-     * @param targetResource the name of the target resource, useful for debugging purposes.
+     * @param lbDescription a description of the associated {@link io.servicetalk.client.api.LoadBalancer},
+     *                      useful for debugging purposes.
      * @return a {@link HostSelector}
      */
     abstract HostSelector<ResolvedAddress, C> buildSelector(
-            List<Host<ResolvedAddress, C>> hosts, String targetResource);
+            List<Host<ResolvedAddress, C>> hosts, String lbDescription);
 }

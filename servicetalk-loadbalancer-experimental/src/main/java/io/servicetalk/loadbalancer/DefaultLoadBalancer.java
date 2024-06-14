@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +97,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // reads and writes are protected by `sequentialExecutor`.
     private boolean isClosed;
 
-    private final String targetResource;
     private final SequentialExecutor sequentialExecutor;
     private final String lbDescription;
     private final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher;
@@ -116,11 +116,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * Creates a new instance.
      *
      * @param id a (unique) ID to identify the created {@link DefaultLoadBalancer}.
-     * @param targetResourceName {@link String} representation of the target resource for which this instance
+     * @param targetResource {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param priorityStrategyFactory a build of the {@link HostPriorityStrategy} to use with the load balancer.
-     * @param hostSelector initial host selector to use with this load balancer.
+     * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
      * @param connectionPoolStrategyFactory factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
@@ -133,18 +133,19 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      */
     DefaultLoadBalancer(
             final String id,
-            final String targetResourceName,
+            final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
-            final HostSelector<ResolvedAddress, C> hostSelector,
+            final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
             final ConnectionPoolStrategy.ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
-        this.targetResource = requireNonNull(targetResourceName);
-        this.lbDescription = makeDescription(id, targetResource);
-        this.hostSelector = requireNonNull(hostSelector, "hostSelector");
+        this.lbDescription = makeDescription(
+                requireNonNull(id, "id"), requireNonNull(targetResource, "targetResource"));
+        this.hostSelector = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy")
+                .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
         this.connectionPoolStrategy = requireNonNull(connectionPoolStrategyFactory,
@@ -603,7 +604,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
                                           boolean forceNewConnectionAndReserve) {
-            return failed(new IllegalStateException("LoadBalancer for " + targetResource + " has closed"));
+            return failed(new IllegalStateException(lbDescription + ": LoadBalancer has closed"));
         }
 
         @Override
