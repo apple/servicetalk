@@ -59,12 +59,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserver loadBalancerObserver) {
-        return loadBalancerObserver(ignored -> loadBalancerObserver);
-    }
-
-    @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
         this.loadBalancerObserverFactory = loadBalancerObserverFactory;
         return this;
