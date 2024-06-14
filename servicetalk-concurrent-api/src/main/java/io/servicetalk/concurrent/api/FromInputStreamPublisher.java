@@ -173,7 +173,9 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private void readAndDeliver(final Subscriber<? super byte[]> subscriber) {
             try {
                 do {
-                    int readByte = -1;
+                    // Initialize readByte with a negative value different from END_OF_FILE as an indicator that it was
+                    // not initialized.
+                    int readByte = Integer.MIN_VALUE;
                     // Can't fully trust available(), but it's a reasonable hint to mitigate blocking on read().
                     int available = stream.available();
                     if (available == 0) {
