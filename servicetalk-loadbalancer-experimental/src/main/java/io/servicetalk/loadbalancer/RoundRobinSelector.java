@@ -55,9 +55,9 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     private final boolean failOpen;
     private final boolean ignoreWeights;
 
-    RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource,
+    RoundRobinSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription,
                        final boolean failOpen, final boolean ignoreWeights) {
-        this(new AtomicInteger(), hosts, targetResource, failOpen, ignoreWeights);
+        this(new AtomicInteger(), hosts, lbDescription, failOpen, ignoreWeights);
     }
 
     private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
@@ -104,7 +104,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
     @Override
     public HostSelector<ResolvedAddress, C> rebuildWithHosts(@Nonnull List<? extends Host<ResolvedAddress, C>> hosts) {
-        return new RoundRobinSelector<>(index, hosts, getTargetResource(), failOpen, ignoreWeights);
+        return new RoundRobinSelector<>(index, hosts, lbDescription(), failOpen, ignoreWeights);
     }
 
     private static Scheduler buildScheduler(AtomicInteger index, List<? extends Host<?, ?>> hosts) {

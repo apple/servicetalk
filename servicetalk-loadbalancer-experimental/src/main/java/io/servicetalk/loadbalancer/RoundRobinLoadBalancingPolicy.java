@@ -42,8 +42,8 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     @Override
     HostSelector<ResolvedAddress, C>
-    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String targetResource) {
-        return new RoundRobinSelector<>(hosts, targetResource, failOpen, ignoreWeights);
+    buildSelector(final List<Host<ResolvedAddress, C>> hosts, final String lbDescription) {
+        return new RoundRobinSelector<>(hosts, lbDescription, failOpen, ignoreWeights);
     }
 
     @Override

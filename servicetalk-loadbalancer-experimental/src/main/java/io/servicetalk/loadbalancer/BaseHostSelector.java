@@ -32,11 +32,11 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
 
     private static final double ACCEPTABLE_PERCENT_ERROR = 0.01;
 
-    private final String targetResource;
+    private final String lbDescription;
     private final List<? extends Host<ResolvedAddress, C>> hosts;
-    BaseHostSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String targetResource) {
+    BaseHostSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription) {
         this.hosts = hosts;
-        this.targetResource = requireNonNull(targetResource, "targetResource");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
     }
 
     protected abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
@@ -64,14 +64,14 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return hosts;
     }
 
-    protected final String getTargetResource() {
-        return targetResource;
+    protected final String lbDescription() {
+        return lbDescription;
     }
 
     protected final Single<C> noActiveHostsFailure(List<? extends Host<ResolvedAddress, C>> usedHosts) {
-        return failed(Exceptions.StacklessNoActiveHostException.newInstance("Failed to pick an active host for " +
-                        getTargetResource() + ". Either all are busy, expired, or unhealthy: " + usedHosts,
-                this.getClass(), "selectConnection(...)"));
+        return failed(Exceptions.StacklessNoActiveHostException.newInstance(
+                lbDescription() + ": Failed to pick an active host. Either all are busy, expired, or unhealthy: " +
+                        usedHosts, this.getClass(), "selectConnection(...)"));
     }
 
     // This method assumes the host is considered healthy.
@@ -93,7 +93,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
 
     private Single<C> noHostsFailure() {
         return failed(Exceptions.StacklessNoAvailableHostException.newInstance(
-                "No hosts are available to connect for " + targetResource + ".",
+                lbDescription() + ": No hosts are available to connect.",
                 this.getClass(), "selectConnection(...)"));
     }
 
