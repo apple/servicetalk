@@ -81,8 +81,8 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
 
     @Override
     public BlockingStreamingHttpResponse payloadBody(final InputStream payloadBody) {
-        original.payloadBody(fromInputStream(payloadBody)
-                .map(bytes -> original.payloadHolder().allocator().wrap(bytes)));
+        original.payloadBody(fromInputStream(payloadBody,
+                (len, buf) -> original.payloadHolder().allocator().wrap(buf, 0, len)));
         return this;
     }
 

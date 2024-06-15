@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.FilterPublisher.newDistinctSupplier;
+import static io.servicetalk.concurrent.api.FromInputStreamPublisher.newFromInputStreamPublisher;
 import static io.servicetalk.concurrent.api.MulticastPublisher.DEFAULT_MULTICAST_QUEUE_LIMIT;
 import static io.servicetalk.concurrent.api.MulticastPublisher.DEFAULT_MULTICAST_TERM_RESUB;
 import static io.servicetalk.concurrent.api.MulticastPublisher.newMulticastPublisher;
@@ -4524,7 +4525,12 @@ Kotlin flatMapLatest</a>
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
     public static Publisher<byte[]> fromInputStream(InputStream stream) {
-        return new FromInputStreamPublisher(stream);
+        return newFromInputStreamPublisher(stream);
+    }
+
+    public static <R> Publisher<R> fromInputStream(InputStream stream,
+                                                   BiIntFunction<? super byte[], ? extends R> mapper) {
+        return new FromInputStreamPublisher<>(stream, mapper);
     }
 
     /**
@@ -4554,7 +4560,7 @@ Kotlin flatMapLatest</a>
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
     public static Publisher<byte[]> fromInputStream(InputStream stream, int readChunkSize) {
-        return new FromInputStreamPublisher(stream, readChunkSize);
+        return newFromInputStreamPublisher(stream, readChunkSize);
     }
 
     /**

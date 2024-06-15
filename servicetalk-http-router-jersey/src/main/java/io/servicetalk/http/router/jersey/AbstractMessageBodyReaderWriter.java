@@ -89,7 +89,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         return handleEntityStream(entityStream, allocator, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)
-                        .apply(fromInputStream(is).map(a::wrap), a));
+                        .apply(fromInputStream(is, (len, buf) -> a.wrap(buf, 0, len)), a));
     }
 
     @Override

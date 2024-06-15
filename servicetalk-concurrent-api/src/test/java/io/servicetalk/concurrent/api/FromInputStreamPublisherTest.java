@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static io.servicetalk.concurrent.api.FromInputStreamPublisher.newFromInputStreamPublisher;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Integer.MAX_VALUE;
@@ -69,7 +70,7 @@ class FromInputStreamPublisherTest {
     @BeforeEach
     void setup() {
         inputStream = mock(InputStream.class);
-        pub = new FromInputStreamPublisher(inputStream);
+        pub = newFromInputStreamPublisher(inputStream);
     }
 
     @Test
@@ -374,7 +375,7 @@ class FromInputStreamPublisherTest {
         // calls to "broken" available() should consistently return `0`.
         initChunkedStream(bigBuff, of(3, 0, 0, 4, 0, 0, 5, 0, 0, 2, 0, 0,    0, 0,       4, 0),
                                    of(3, 7,    4, 4,    5, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 4, 0));
-        pub = new FromInputStreamPublisher(inputStream, readChunkSize);
+        pub = newFromInputStreamPublisher(inputStream, readChunkSize);
 
         if (readChunkSize > bigBuff.length) {
             byte[][] items = {
@@ -418,7 +419,7 @@ class FromInputStreamPublisherTest {
         // returns a non zero value, we should return a chunk value of "chunks[idx - 1] - number of read bytes".
         initChunkedStream(bigBuff, of(0, 1, 0, 7, 0, 8, 1,  0, 17, 10, 2, 0),
                                    of(2,    8,    9,    1, 18,     10, 2, 0));
-        pub = new FromInputStreamPublisher(inputStream, 8);
+        pub = newFromInputStreamPublisher(inputStream, 8);
 
         byte[][] items = {
                 // available < readChunkSize
@@ -444,7 +445,7 @@ class FromInputStreamPublisherTest {
     void readChunkSizeRespectedWhenAvailableNotImplemented(int chunkSize) throws Throwable {
         initChunkedStream(bigBuff, ofAll(0), ofAll(chunkSize));
         int readChunkSize = 5;
-        pub = new FromInputStreamPublisher(inputStream, readChunkSize);
+        pub = newFromInputStreamPublisher(inputStream, readChunkSize);
 
         // expect 8 emitted items
         // [ 0,  1,  2,  3,  4]

@@ -231,7 +231,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
-        return fromInputStream(is).map(a::wrap);
+        return fromInputStream(is, (len, buf) -> a.wrap(buf, 0, len));
     }
 
     // FIXME: 0.43 - Remove deprecations
