@@ -232,28 +232,31 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private static final class UrlKey {
         final String scheme;
         final HostAndPort hostAndPort;
+        private final int hashCode;
 
         UrlKey(final String scheme, final HostAndPort hostAndPort) {
             this.scheme = scheme;
             this.hostAndPort = hostAndPort;
+            // hashCode is required at least one time, but may be necessary multiple times for a single selectClient run
+            this.hashCode = 31 * hostAndPort.hashCode() + scheme.hashCode();
         }
 
+        /**
+         * This class is used only within controlled scope, a non-null argument and class match are guaranteed.
+         */
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
             final UrlKey urlKey = (UrlKey) o;
             return scheme.equals(urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
         }
 
         @Override
         public int hashCode() {
-            return 31 * hostAndPort.hashCode() + scheme.hashCode();
+            return hashCode;
         }
     }
 
