@@ -19,13 +19,34 @@ import org.junit.jupiter.api.Test;
 
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 final class HostAndPortTest {
+
+    @Test
+    void equalsAndHashCode() {
+        HostAndPort hp1 = HostAndPort.of("servicetalk.io", 443);
+        HostAndPort hp2 = HostAndPort.of("ServiceTalk.io", 443);
+
+        assertThat(hp1, is(not(sameInstance(hp2))));
+        assertThat(hp1, is(equalTo(hp2)));
+        assertThat(hp1.hashCode(), is(equalTo(hp2.hashCode())));
+
+        Map<HostAndPort, Object> map = new HashMap<>();
+        Object value = new Object();
+        map.put(hp1, value);
+        assertThat(map.get(hp2), is(value));
+    }
+
     @Test
     void hostConstructorNormalizesIpv6() {
         HostAndPort hp1 = HostAndPort.of("[::1]", 9999);
