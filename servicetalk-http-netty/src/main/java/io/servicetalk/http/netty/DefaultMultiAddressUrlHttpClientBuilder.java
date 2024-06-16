@@ -76,7 +76,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -172,7 +171,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
-            setHostHeader(metaData);
+            setHostHeader(metaData, host, parsedPort);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
             final String key = scheme + ':' + host + ':' + port;
@@ -188,6 +187,18 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                         ", expected absolute-form URL (scheme://host/path)");
             }
             return value;
+        }
+
+        private static void setHostHeader(final HttpRequestMetaData metaData, final String host, final int port) {
+            if (metaData.version().compareTo(HTTP_1_1) >= 0 && !metaData.headers().contains(HOST)) {
+                // Host header must be identical to authority component of the target URI,
+                // as described in https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
+                String authority = host;
+                if (port >= 0) {
+                    authority = authority + ':' + port;
+                }
+                metaData.headers().add(HOST, authority);
+            }
         }
 
         // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
@@ -285,7 +296,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static void singleClientStrategyUpdate(ContextMap context, HttpExecutionStrategy singleStrategy) {
         HttpExecutionStrategy requestStrategy = context.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-        assert null != requestStrategy : "Request strategy unexpectedly null";
+        assert requestStrategy != null : "Request strategy unexpectedly null";
         HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
                 // For all apis except async streaming default conversion has already been done.
                 // This is the default to required strategy resolution for the async streaming client.
@@ -495,15 +506,5 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             throw new IllegalArgumentException("Provided port number is out of range (between 1 and 65535): " + port);
         }
         return port;
-    }
-
-    private static void setHostHeader(HttpRequestMetaData metaData) {
-        if (!HTTP_1_0.equals(metaData.version()) && !metaData.headers().contains(HOST)) {
-            CharSequence authority = metaData.host();
-            if (metaData.port() >= 0) {
-                authority = authority + ":" + metaData.port();
-            }
-            metaData.headers().add(HOST, authority);
-        }
     }
 }
