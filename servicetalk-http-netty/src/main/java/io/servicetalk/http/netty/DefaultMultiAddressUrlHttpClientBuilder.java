@@ -77,6 +77,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -158,29 +159,32 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
-            final String host = metaData.host();
-            if (host == null) {
-                throw new MalformedURLException(
-                        "Request-target does not contain target host address: " + metaData.requestTarget() +
-                                ", expected absolute-form URL");
-            }
-
-            final String scheme = metaData.scheme();
-            if (scheme == null) {
-                throw new MalformedURLException("Request-target does not contains scheme: " +
-                        metaData.requestTarget() + ", expected absolute-form URL");
-            }
-
+            final String requestTarget = metaData.requestTarget();
+            final String scheme = ensureUrlComponentNonNull(metaData.scheme(), "scheme", requestTarget);
+            final String host = ensureUrlComponentNonNull(metaData.host(), "host", requestTarget);
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
             setHostHeader(metaData);
-            metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
+            metaData.requestTarget(absoluteToRelativeFormRequestTarget(requestTarget, scheme, host));
 
             final String key = scheme + ':' + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
                     new UrlKey(scheme, HostAndPort.of(host, port)));
+        }
+
+        private static String ensureUrlComponentNonNull(@Nullable final String value,
+                                                        final String name,
+                                                        final String requestTarget) throws MalformedURLException {
+            if (value == null) {
+                // 8 characters should be enough to give users an idea of what's wrong with the passed URL without
+                // leaking any sensitive information, like secret query parameters or tokens in the path.
+                throw new MalformedURLException("Request-target does not contain " + name +
+                        ". Expected absolute-form URL (scheme://host/path), received URL starting with: " +
+                        requestTarget.substring(0, min(8, requestTarget.length())));
+            }
+            return value;
         }
 
         // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
