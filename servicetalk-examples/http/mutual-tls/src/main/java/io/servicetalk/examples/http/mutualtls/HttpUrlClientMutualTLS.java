@@ -34,7 +34,7 @@ public class HttpUrlClientMutualTLS {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().initializer((scheme, address, builder) -> {
             // If necessary, users can also take `address` into account for setting distinct TLS configurations for
             // various server addresses.
-            if ("https".equalsIgnoreCase(scheme)) {
+            if ("https".equals(scheme)) {
                 // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
                 // or demonstration purposes. Never use those for real use-cases.
                 builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
