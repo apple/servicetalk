@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.lang.Integer.parseInt;
@@ -150,17 +151,22 @@ final class DefaultHostAndPort implements HostAndPort {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof DefaultHostAndPort)) {
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DefaultHostAndPort rhs = (DefaultHostAndPort) o;
-        return port == rhs.port() && hostName.equalsIgnoreCase(rhs.hostName());
+
+        final DefaultHostAndPort that = (DefaultHostAndPort) o;
+        return port == that.port && hostName.equalsIgnoreCase(that.hostName);
     }
 
     @Override
     public int hashCode() {
-        return 31 * (31 + port) + hostName.hashCode();
+        // Similar to InetSocketAddressHolder
+        return caseInsensitiveHashCode(hostName) + port;
     }
 
     private static boolean isValidPort(int port) {

@@ -29,8 +29,11 @@ import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.Test;
@@ -224,24 +227,32 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     }
 
     @Test
-    void internalClientSchemeShouldBeCaseInsensitive() throws Exception {
-        AtomicInteger counter = new AtomicInteger();
-
+    void internalClientSchemeAndHostnameShouldBeCaseInsensitive() throws Exception {
+        AtomicInteger internalClientCounter = new AtomicInteger();
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .build(), true)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
-                     .initializer((scheme, address, builder) -> counter.incrementAndGet())
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                     .initializer((scheme, address, builder) -> {
+                         internalClientCounter.incrementAndGet();
+                         if ("https".equals(scheme)) {
+                             builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
+                         }
+                     })
                      .buildBlocking()) {
 
-            HttpResponse response = blockingHttpClient.request(
-                    blockingHttpClient.get("http://" + serverHostAndPort(serverContext)));
-            assertThat(response.status(), is(OK));
-
-            response = blockingHttpClient.request(
-                    blockingHttpClient.get("HTTP://" + serverHostAndPort(serverContext)));
-            assertThat(response.status(), is(OK));
-
-            assertThat(counter.get(), is(1));
+            int serverPort = serverHostAndPort(serverContext).port();
+            // plaintext
+            assertThat(client.request(client.get("http://localhost:" + serverPort + '/')).status(), is(OK));
+            assertThat(client.request(client.get("HTTP://LOCALHOST:" + serverPort + '/')).status(), is(OK));
+            assertThat(client.request(client.get("hTTp://LocalHost:" + serverPort + '/')).status(), is(OK));
+            assertThat(internalClientCounter.get(), is(1));
+            // secure
+            assertThat(client.request(client.get("https://localhost:" + serverPort + '/')).status(), is(OK));
+            assertThat(client.request(client.get("HTTPS://LOCALHOST:" + serverPort + '/')).status(), is(OK));
+            assertThat(client.request(client.get("hTTpS://LocalHost:" + serverPort + '/')).status(), is(OK));
+            assertThat(internalClientCounter.get(), is(2));
         }
     }
 
