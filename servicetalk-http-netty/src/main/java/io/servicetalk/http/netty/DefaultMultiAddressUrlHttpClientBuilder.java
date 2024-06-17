@@ -158,19 +158,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
-            final String host = metaData.host();
-            if (host == null) {
-                throw new MalformedURLException(
-                        "Request-target does not contain target host address: " + metaData.requestTarget() +
-                                ", expected absolute-form URL");
-            }
-
-            final String scheme = metaData.scheme();
-            if (scheme == null) {
-                throw new MalformedURLException("Request-target does not contains scheme: " +
-                        metaData.requestTarget() + ", expected absolute-form URL");
-            }
-
+            final String scheme = ensureUrlComponentNonNull(metaData.scheme(), "scheme");
+            final String host = ensureUrlComponentNonNull(metaData.host(), "host");
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
@@ -181,6 +170,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
                     new UrlKey(scheme, HostAndPort.of(host, port)));
+        }
+
+        private static String ensureUrlComponentNonNull(@Nullable final String value,
+                                                        final String name) throws MalformedURLException {
+            if (value == null) {
+                throw new MalformedURLException("Request-target does not contain " + name +
+                        ", expected absolute-form URL (scheme://host/path)");
+            }
+            return value;
         }
 
         // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
