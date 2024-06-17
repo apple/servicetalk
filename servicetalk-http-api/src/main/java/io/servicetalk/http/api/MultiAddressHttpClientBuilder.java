@@ -44,7 +44,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
         /**
          * Configures the passed {@link SingleAddressHttpClientBuilder} for the given {@code scheme} and
          * {@code address}.
-         * @param scheme The scheme parsed from a {@link HttpRequestMetaData#requestTarget() request URI} in lowercase.
+         * @param scheme The scheme parsed from the request URI.
          * @param address The unresolved address.
          * @param builder The builder to customize and build a {@link StreamingHttpClient}.
          */
