@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpContextKeys;
@@ -58,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -76,6 +78,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 
@@ -96,7 +100,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
 
-    private static final String HTTPS_SCHEME = HTTPS.toString();
+    // Use HttpRequestMetaData to access "https" constant used by Uri3986 class to optimize "equals" check to be a
+    // trivial reference check.
+    @SuppressWarnings("DataFlowIssue")
+    private static final String HTTPS_SCHEME = newRequestMetaData(HTTP_1_1, GET, "https://invalid./",
+            EmptyHttpHeaders.INSTANCE).scheme();
 
     private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> builderFactory;
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
@@ -159,10 +167,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String scheme = ensureUrlComponentNonNull(metaData.scheme(), "scheme");
+            assert scheme.equals(scheme.toLowerCase(Locale.ENGLISH)) : "scheme must be in lowercase";
             final String host = ensureUrlComponentNonNull(metaData.host(), "host");
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
-                    (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? defaultHttpsPort : defaultHttpPort);
+                    (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
             setHostHeader(metaData);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
@@ -260,7 +269,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     requireNonNull(builderFactory.apply(urlKey.hostAndPort));
 
             setExecutionContext(builder, executionContext);
-            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+            if (HTTPS_SCHEME.equals(urlKey.scheme)) {
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
@@ -318,7 +327,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                         final StreamingHttpRequester delegate, final StreamingHttpRequest request) {
                     return defer(() -> {
                         singleClientStrategyUpdate(request.context(), client.executionContext().executionStrategy());
-
                         return delegate.request(request);
                     });
                 }
