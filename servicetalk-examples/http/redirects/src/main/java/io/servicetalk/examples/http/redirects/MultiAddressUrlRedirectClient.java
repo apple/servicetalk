@@ -77,7 +77,7 @@ public final class MultiAddressUrlRedirectClient {
                     // The custom SSL configuration here is necessary only because this example uses self-signed
                     // certificates. For cases when it's enough to use the local trust store, MultiAddressUrl client
                     // already provides default SSL configuration and this step may be skipped.
-                    if ("https".equals(scheme)) {
+                    if ("https".equalsIgnoreCase(scheme)) {
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build());
                     }
                 })
