@@ -78,6 +78,20 @@ final class ServiceTalkHttpAttributesGetter implements
         return requestScheme + "://" + hostAndPort + '/' + request.requestTarget();
     }
 
+    @Nullable
+    @Override
+    public String getServerAddress(final HttpRequestMetaData requestMetaData) {
+        final HostAndPort hostAndPort = requestMetaData.effectiveHostAndPort();
+        return hostAndPort != null ? hostAndPort.hostName() : null;
+    }
+
+    @Nullable
+    @Override
+    public Integer getServerPort(final HttpRequestMetaData requestMetaData) {
+        final HostAndPort hostAndPort = requestMetaData.effectiveHostAndPort();
+        return hostAndPort != null ? hostAndPort.port() : null;
+    }
+
     @Override
     public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
         final String scheme = httpRequestMetaData.scheme();
@@ -110,5 +124,12 @@ final class ServiceTalkHttpAttributesGetter implements
             result.add(iterator.next().toString());
         }
         return unmodifiableList(result);
+    }
+
+    @Nullable
+    @Override
+    public String getNetworkType(final HttpRequestMetaData requestMetaData,
+                                 @Nullable final HttpResponseMetaData responseMetaData) {
+        return null;
     }
 }
