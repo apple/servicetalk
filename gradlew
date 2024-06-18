@@ -246,4 +246,5 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
-exec "$JAVACMD" "$@"
+# Re-generate locks on every task
+exec "$JAVACMD" "$@" --write-locks
