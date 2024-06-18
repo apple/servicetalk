@@ -44,7 +44,7 @@ dependencies {
 }
 
 jmh {
-  includes = [".*Benchmark"]
+  includes = [".*DefaultMultiAddressUrlHttpClientBuilderBenchmark"]
   jmhVersion = "$jmhCoreVersion"
   jvmArgsPrepend = ["-Dio.netty.maxDirectMemory=9223372036854775807 " +
                     "-Djmh.executor=CUSTOM " +
