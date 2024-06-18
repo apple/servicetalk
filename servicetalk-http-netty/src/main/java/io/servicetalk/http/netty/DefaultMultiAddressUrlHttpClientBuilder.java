@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpExecutionContext executionContext = executionContextBuilder.build();
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
-            final CachingKeyFactory keyFactory = new CachingKeyFactory(defaultHttpPort, defaultHttpsPort);
+            final UrlKeyFactory keyFactory = new UrlKeyFactory(defaultHttpPort, defaultHttpsPort);
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
@@ -143,19 +143,20 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     /**
-     * Returns a cached {@link UrlKey} or creates a new one based on {@link StreamingHttpRequest} information.
+     * Creates a {@link UrlKey} based on {@link HttpRequestMetaData} information and rewrites absolute-form URL into a
+     * relative-form URL with a "host" header.
      */
-    private static final class CachingKeyFactory {
+    private static final class UrlKeyFactory {
 
         private final int defaultHttpPort;
         private final int defaultHttpsPort;
 
-        CachingKeyFactory(final int defaultHttpPort, final int defaultHttpsPort) {
+        UrlKeyFactory(final int defaultHttpPort, final int defaultHttpsPort) {
             this.defaultHttpPort = defaultHttpPort;
             this.defaultHttpsPort = defaultHttpsPort;
         }
 
-        String get(final HttpRequestMetaData metaData) throws MalformedURLException {
+        UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String scheme = ensureUrlComponentNonNull(metaData.scheme(), "scheme");
             assert scheme.equals(scheme.toLowerCase(Locale.ENGLISH)) : "scheme must be in lowercase";
             final String host = ensureUrlComponentNonNull(metaData.host(), "host");
@@ -164,7 +165,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
             setHostHeader(metaData, host, parsedPort);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
-            return scheme + ':' + host.toLowerCase(Locale.ROOT) + ':' + port;
+            return new UrlKey(scheme, HostAndPort.of(host, port));
         }
 
         private static String ensureUrlComponentNonNull(@Nullable final String value,
@@ -210,7 +211,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         UrlKey(final String scheme, final HostAndPort hostAndPort) {
             this.scheme = scheme;
             this.hostAndPort = hostAndPort;
-            // hashCode is required at least one time, but may be necessary multiple times for a single selectClient run
+            // hashCode is required at least once, but may be necessary multiple times for a single selectClient run
             this.hashCode = 31 * hostAndPort.hashCode() + scheme.hashCode();
         }
 
@@ -233,7 +234,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    private static final class ClientFactory implements Function<String, FilterableStreamingHttpClient> {
+    private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
                 builderFactory;
@@ -251,26 +252,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public StreamingHttpClient apply(final String urlKey) {
-            final int firstColon = urlKey.indexOf(':', 1);
-            final int lastColon = urlKey.lastIndexOf(':', urlKey.length() - 2);
-            final String scheme = urlKey.substring(0, firstColon);
-            final String host = urlKey.substring(firstColon + 1, lastColon);
-            final int port = Integer.parseInt(urlKey.substring(lastColon + 1));
-            final HostAndPort hostAndPort = HostAndPort.of(host, port);
-
+        public StreamingHttpClient apply(final UrlKey urlKey) {
             final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                    requireNonNull(builderFactory.apply(hostAndPort));
+                    requireNonNull(builderFactory.apply(urlKey.hostAndPort));
 
             setExecutionContext(builder, executionContext);
-            if (HTTPS_SCHEME.equals(scheme)) {
+            if (HTTPS_SCHEME.equals(urlKey.scheme)) {
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
             builder.appendClientFilter(HttpExecutionStrategyUpdater.INSTANCE);
 
             if (singleAddressInitializer != null) {
-                singleAddressInitializer.initialize(scheme, hostAndPort, builder);
+                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
             }
 
             return builder.buildStreaming();
@@ -336,11 +330,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
         private final HttpExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final ClientGroup<String, FilterableStreamingHttpClient> group;
-        private final CachingKeyFactory keyFactory;
+        private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
+        private final UrlKeyFactory keyFactory;
 
         StreamingUrlHttpClient(final HttpExecutionContext executionContext,
-                               final CachingKeyFactory keyFactory, final ClientFactory clientFactory,
+                               final UrlKeyFactory keyFactory, final ClientFactory clientFactory,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.group = ClientGroup.from(clientFactory);
