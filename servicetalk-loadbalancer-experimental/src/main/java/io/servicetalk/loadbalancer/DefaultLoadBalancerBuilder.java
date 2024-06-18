@@ -170,7 +170,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         @Override
         public String toString() {
-            return "DefaultLoadBalancerFactory@" + System.identityHashCode(this) + "{" +
+            return "DefaultLoadBalancerFactory{" +
                     "id='" + id + '\'' +
                     ", loadBalancingPolicy=" + loadBalancingPolicy +
                     ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +

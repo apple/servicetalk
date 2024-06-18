@@ -141,9 +141,35 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
 
     static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
             final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
-        ensurePositive(maxEffort, " maxEffort");
-        ensureNonNegative(corePoolSize, "corePoolSize");
-        return (targetResource) -> new P2CConnectionPoolStrategy<>(
-                targetResource, maxEffort, corePoolSize, forceCorePool);
+        return new P2CConnectionPoolStrategyFactory<>(maxEffort, corePoolSize, forceCorePool);
+    }
+
+    private static final class P2CConnectionPoolStrategyFactory<C extends LoadBalancedConnection>
+            implements ConnectionPoolStrategyFactory<C> {
+
+        private final int maxEffort;
+        private final int corePoolSize;
+        private final boolean forceCorePool;
+
+        public P2CConnectionPoolStrategyFactory(
+                final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
+            this.maxEffort = ensurePositive(maxEffort, " maxEffort");
+            this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
+            this.forceCorePool = forceCorePool;
+        }
+
+        @Override
+        public ConnectionPoolStrategy<C> buildStrategy(String lbDescription) {
+            return new P2CConnectionPoolStrategy<>(lbDescription, maxEffort, corePoolSize, forceCorePool);
+        }
+
+        @Override
+        public String toString() {
+            return "P2CConnectionPoolStrategyFactory{" +
+                    "maxEffort=" + maxEffort +
+                    ", corePoolSize=" + corePoolSize +
+                    ", forceCorePool=" + forceCorePool +
+                    '}';
+        }
     }
 }

@@ -53,6 +53,9 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
 
     @Override
     public String toString() {
-        return name() + "(failOpen=" + failOpen + ")";
+        return "RoundRobinLoadBalancingPolicy{" +
+                "failOpen=" + failOpen +
+                ", ignoreWeights=" + ignoreWeights +
+                '}';
     }
 }

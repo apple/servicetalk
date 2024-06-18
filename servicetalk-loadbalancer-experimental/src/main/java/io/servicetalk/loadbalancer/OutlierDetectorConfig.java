@@ -319,6 +319,35 @@ public final class OutlierDetectorConfig {
         return ejectionTimeJitter;
     }
 
+    @Override
+    public String toString() {
+        return "OutlierDetectorConfig{" +
+                "ewmaHalfLife=" + ewmaHalfLife +
+                ", ewmaCancellationPenalty=" + ewmaCancellationPenalty +
+                ", ewmaErrorPenalty=" + ewmaErrorPenalty +
+                ", cancellationIsError=" + cancellationIsError +
+                ", failedConnectionsThreshold=" + failedConnectionsThreshold +
+                ", failureDetectorIntervalJitter=" + failureDetectorIntervalJitter +
+                ", serviceDiscoveryResubscribeInterval=" + serviceDiscoveryResubscribeInterval +
+                ", serviceDiscoveryResubscribeJitter=" + serviceDiscoveryResubscribeJitter +
+                ", consecutive5xx=" + consecutive5xx +
+                ", failureDetectorInterval=" + failureDetectorInterval +
+                ", baseEjectionTime=" + baseEjectionTime +
+                ", ejectionTimeJitter=" + ejectionTimeJitter +
+                ", maxEjectionPercentage=" + maxEjectionPercentage +
+                ", enforcingConsecutive5xx=" + enforcingConsecutive5xx +
+                ", enforcingSuccessRate=" + enforcingSuccessRate +
+                ", successRateMinimumHosts=" + successRateMinimumHosts +
+                ", successRateRequestVolume=" + successRateRequestVolume +
+                ", successRateStdevFactor=" + successRateStdevFactor +
+                ", failurePercentageThreshold=" + failurePercentageThreshold +
+                ", enforcingFailurePercentage=" + enforcingFailurePercentage +
+                ", failurePercentageMinimumHosts=" + failurePercentageMinimumHosts +
+                ", failurePercentageRequestVolume=" + failurePercentageRequestVolume +
+                ", maxEjectionTime=" + maxEjectionTime +
+                '}';
+    }
+
     /**
      * A builder for {@link OutlierDetectorConfig} instances.
      */
