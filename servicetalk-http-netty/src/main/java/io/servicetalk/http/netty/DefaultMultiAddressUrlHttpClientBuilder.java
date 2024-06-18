@@ -62,6 +62,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
 import static io.netty.handler.codec.http.HttpScheme.HTTPS;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
@@ -165,7 +166,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
             setHostHeader(metaData, host, parsedPort);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
-            return new UrlKey(scheme, HostAndPort.of(host, port));
+            return new UrlKey(scheme, host, port);
         }
 
         private static String ensureUrlComponentNonNull(@Nullable final String value,
@@ -205,14 +206,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final class UrlKey {
         final String scheme;
-        final HostAndPort hostAndPort;
+        final String host;
+        final int port;
         private final int hashCode;
 
-        UrlKey(final String scheme, final HostAndPort hostAndPort) {
+        UrlKey(final String scheme, final String host, final int port) {
             this.scheme = scheme;
-            this.hostAndPort = hostAndPort;
+            this.host = host;
+            this.port = port;
             // hashCode is required at least once, but may be necessary multiple times for a single selectClient run
-            this.hashCode = 31 * hostAndPort.hashCode() + scheme.hashCode();
+            this.hashCode = 31 * (caseInsensitiveHashCode(host) + port) + scheme.hashCode();
         }
 
         /**
@@ -225,7 +228,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 return true;
             }
             final UrlKey urlKey = (UrlKey) o;
-            return scheme.equals(urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
+            return port == urlKey.port && scheme.equals(urlKey.scheme) && host.equalsIgnoreCase(urlKey.host);
         }
 
         @Override
@@ -253,8 +256,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public StreamingHttpClient apply(final UrlKey urlKey) {
+            final HostAndPort hostAndPort = HostAndPort.of(urlKey.host, urlKey.port);
             final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                    requireNonNull(builderFactory.apply(urlKey.hostAndPort));
+                    requireNonNull(builderFactory.apply(hostAndPort));
 
             setExecutionContext(builder, executionContext);
             if (HTTPS_SCHEME.equals(urlKey.scheme)) {
@@ -264,7 +268,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             builder.appendClientFilter(HttpExecutionStrategyUpdater.INSTANCE);
 
             if (singleAddressInitializer != null) {
-                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
+                singleAddressInitializer.initialize(urlKey.scheme, hostAndPort, builder);
             }
 
             return builder.buildStreaming();
