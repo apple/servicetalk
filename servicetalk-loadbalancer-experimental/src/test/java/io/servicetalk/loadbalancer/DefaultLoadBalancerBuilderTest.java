@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 
-public class DefaultLoadBalancerBuilderTest {
+final class DefaultLoadBalancerBuilderTest {
 
     @Test
     void isTheResultOfLoadBalancersBuilder() {

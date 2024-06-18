@@ -23,7 +23,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 
 /**
@@ -100,7 +99,7 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
 
         private final int linearSearchSpace;
 
-        public LinearSearchConnectionPoolStrategyFactory(final int linearSearchSpace) {
+        LinearSearchConnectionPoolStrategyFactory(final int linearSearchSpace) {
             this.linearSearchSpace = ensureNonNegative(linearSearchSpace, "linearSearchSpace");
         }
 

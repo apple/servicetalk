@@ -35,6 +35,10 @@ final class HealthCheckConfig {
     final Duration healthCheckInterval;
     final Duration jitter;
     final int failedThreshold;
+    final Duration resubscribeInterval;
+    final Duration healthCheckResubscribeJitter;
+
+    // Computed from the constructor values.
     final long healthCheckResubscribeLowerBound;
     final long healthCheckResubscribeUpperBound;
 
@@ -43,8 +47,10 @@ final class HealthCheckConfig {
                       final Duration healthCheckResubscribeJitter) {
         this.executor = executor;
         this.healthCheckInterval = healthCheckInterval;
-        this.failedThreshold = failedThreshold;
         this.jitter = healthCheckJitter;
+        this.failedThreshold = failedThreshold;
+        this.resubscribeInterval = resubscribeInterval;
+        this.healthCheckResubscribeJitter = healthCheckResubscribeJitter;
 
         validateHealthCheckIntervals(resubscribeInterval, healthCheckResubscribeJitter);
         this.healthCheckResubscribeLowerBound = resubscribeInterval.minus(healthCheckResubscribeJitter).toNanos();
@@ -64,5 +70,17 @@ final class HealthCheckConfig {
             throw new IllegalArgumentException("interval (" + interval + ") plus jitter (" + jitter +
                     ") must not overflow, current=" + upperBound);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "HealthCheckConfig{" +
+                "executor=" + executor +
+                ", healthCheckInterval=" + healthCheckInterval +
+                ", jitter=" + jitter +
+                ", failedThreshold=" + failedThreshold +
+                ", resubscribeInterval=" + resubscribeInterval +
+                ", healthCheckResubscribeJitter=" + healthCheckResubscribeJitter +
+                '}';
     }
 }

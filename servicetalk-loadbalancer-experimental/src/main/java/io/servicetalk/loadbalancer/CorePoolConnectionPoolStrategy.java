@@ -94,7 +94,7 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         private final int corePoolSize;
         private final boolean forceCorePool;
 
-        public CorePoolConnectionPoolStrategyFactory(int corePoolSize, boolean forceCorePool) {
+        CorePoolConnectionPoolStrategyFactory(int corePoolSize, boolean forceCorePool) {
             this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
             this.forceCorePool = forceCorePool;
         }

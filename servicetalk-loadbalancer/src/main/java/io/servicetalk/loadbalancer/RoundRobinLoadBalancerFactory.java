@@ -95,7 +95,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     @Override
     public String toString() {
-        return "RoundRobinLoadBalancerFactory" + System.identityHashCode(this) + "{" +
+        return "RoundRobinLoadBalancerFactory{" +
                 "id='" + id + '\'' +
                 ", linearSearchSpace=" + linearSearchSpace +
                 ", healthCheckConfig=" + healthCheckConfig +

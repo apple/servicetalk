@@ -234,7 +234,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
     @Override
     public String toString() {
-        return "DefaultHttpLoadBalancerFactory" + System.identityHashCode(this) + "{" +
+        return "DefaultHttpLoadBalancerFactory{" +
                 "rawFactory=" + rawFactory +
                 ", strategy=" + strategy +
                 '}';

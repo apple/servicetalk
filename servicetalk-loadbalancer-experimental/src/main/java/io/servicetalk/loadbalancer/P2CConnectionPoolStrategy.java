@@ -151,7 +151,7 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
         private final int corePoolSize;
         private final boolean forceCorePool;
 
-        public P2CConnectionPoolStrategyFactory(
+        P2CConnectionPoolStrategyFactory(
                 final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
             this.maxEffort = ensurePositive(maxEffort, " maxEffort");
             this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
