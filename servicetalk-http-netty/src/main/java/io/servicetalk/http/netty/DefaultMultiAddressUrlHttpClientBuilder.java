@@ -17,13 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ClientGroup;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -60,17 +57,13 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.Locale;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
 import static io.netty.handler.codec.http.HttpScheme.HTTPS;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -129,8 +122,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpExecutionContext executionContext = executionContextBuilder.build();
             final ClientFactory clientFactory =
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
-            final CachingKeyFactory keyFactory = closeables.prepend(
-                    new CachingKeyFactory(defaultHttpPort, defaultHttpsPort));
+            final CachingKeyFactory keyFactory = new CachingKeyFactory(defaultHttpPort, defaultHttpsPort);
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
@@ -153,9 +145,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     /**
      * Returns a cached {@link UrlKey} or creates a new one based on {@link StreamingHttpRequest} information.
      */
-    private static final class CachingKeyFactory implements AsyncCloseable {
+    private static final class CachingKeyFactory {
 
-        private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
         private final int defaultHttpPort;
         private final int defaultHttpsPort;
 
@@ -164,7 +155,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.defaultHttpsPort = defaultHttpsPort;
         }
 
-        UrlKey get(final HttpRequestMetaData metaData) throws MalformedURLException {
+        String get(final HttpRequestMetaData metaData) throws MalformedURLException {
             final String scheme = ensureUrlComponentNonNull(metaData.scheme(), "scheme");
             assert scheme.equals(scheme.toLowerCase(Locale.ENGLISH)) : "scheme must be in lowercase";
             final String host = ensureUrlComponentNonNull(metaData.host(), "host");
@@ -173,11 +164,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
             setHostHeader(metaData, host, parsedPort);
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
-
-            final String key = scheme + ':' + host + ':' + port;
-            final UrlKey urlKey = urlKeyCache.get(key);
-            return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
-                    new UrlKey(scheme, HostAndPort.of(host, port)));
+            return scheme + ':' + host.toLowerCase(Locale.ROOT) + ':' + port;
         }
 
         private static String ensureUrlComponentNonNull(@Nullable final String value,
@@ -213,20 +200,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int questionMarkIdx = requestTarget.indexOf('?', fromIndex);
             return questionMarkIdx < 0 ? "/" : '/' + requestTarget.substring(questionMarkIdx);
         }
-
-        @Override
-        public Completable closeAsync() {
-            // Make a best effort to clear the map. Note that we don't attempt to resolve race conditions between
-            // closing the client and in flight requests adding Keys to the map. We also don't attempt to remove
-            // from the map if a request fails, or a request is made after the client is closed.
-            return new SubscribableCompletable() {
-                @Override
-                protected void handleSubscribe(final Subscriber subscriber) {
-                    urlKeyCache.clear();
-                    deliverCompleteFromSource(subscriber);
-                }
-            };
-        }
     }
 
     private static final class UrlKey {
@@ -260,7 +233,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
+    private static final class ClientFactory implements Function<String, FilterableStreamingHttpClient> {
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
                 builderFactory;
@@ -278,19 +251,26 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public StreamingHttpClient apply(final UrlKey urlKey) {
+        public StreamingHttpClient apply(final String urlKey) {
+            final int firstColon = urlKey.indexOf(':', 1);
+            final int lastColon = urlKey.lastIndexOf(':', urlKey.length() - 2);
+            final String scheme = urlKey.substring(0, firstColon);
+            final String host = urlKey.substring(firstColon + 1, lastColon);
+            final int port = Integer.parseInt(urlKey.substring(lastColon + 1));
+            final HostAndPort hostAndPort = HostAndPort.of(host, port);
+
             final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                    requireNonNull(builderFactory.apply(urlKey.hostAndPort));
+                    requireNonNull(builderFactory.apply(hostAndPort));
 
             setExecutionContext(builder, executionContext);
-            if (HTTPS_SCHEME.equals(urlKey.scheme)) {
+            if (HTTPS_SCHEME.equals(scheme)) {
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
             builder.appendClientFilter(HttpExecutionStrategyUpdater.INSTANCE);
 
             if (singleAddressInitializer != null) {
-                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
+                singleAddressInitializer.initialize(scheme, hostAndPort, builder);
             }
 
             return builder.buildStreaming();
@@ -356,9 +336,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
         private final HttpExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
+        private final ClientGroup<String, FilterableStreamingHttpClient> group;
         private final CachingKeyFactory keyFactory;
-        private final ListenableAsyncCloseable closeable;
 
         StreamingUrlHttpClient(final HttpExecutionContext executionContext,
                                final CachingKeyFactory keyFactory, final ClientFactory clientFactory,
@@ -366,10 +345,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.group = ClientGroup.from(clientFactory);
             this.keyFactory = keyFactory;
-            CompositeCloseable compositeCloseable = newCompositeCloseable();
-            compositeCloseable.append(group);
-            compositeCloseable.append(keyFactory);
-            closeable = toListenableAsyncCloseable(compositeCloseable);
             this.executionContext = requireNonNull(executionContext);
         }
 
@@ -415,22 +390,22 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public Completable onClose() {
-            return closeable.onClose();
+            return group.onClose();
         }
 
         @Override
         public Completable onClosing() {
-            return closeable.onClosing();
+            return group.onClosing();
         }
 
         @Override
         public Completable closeAsync() {
-            return closeable.closeAsync();
+            return group.closeAsync();
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            return closeable.closeAsyncGracefully();
+            return group.closeAsyncGracefully();
         }
 
         @Override
