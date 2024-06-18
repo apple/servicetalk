@@ -45,6 +45,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -117,11 +118,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public StreamingHttpClient buildStreaming() {
-        final HttpExecutionContext executionContext = executionContextBuilder.build();
-        return new FilterableClientToClient(buildStreamingUrlHttpClient(), executionContext);
-    }
-
-    StreamingUrlHttpClient buildStreamingUrlHttpClient() {
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
             final HttpExecutionContext executionContext = executionContextBuilder.build();
@@ -129,11 +125,18 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final UrlKeyFactory keyFactory = new UrlKeyFactory(defaultHttpPort, defaultHttpsPort);
             final HttpHeadersFactory headersFactory = this.headersFactory;
-            return closeables.prepend(
+            FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
                             new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
+
+            // Need to wrap the top level client (group) in order for non-relative redirects to work
+            urlClient = redirectConfig == null ? urlClient :
+                    new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
+
+            LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
+            return new FilterableClientToClient(urlClient, executionContext);
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -161,8 +164,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final int parsedPort = metaData.port();
             final int port = parsedPort >= 0 ? parsedPort :
                     (HTTPS_SCHEME.equals(scheme) ? defaultHttpsPort : defaultHttpPort);
-            // setHostHeader(metaData, host, parsedPort);
-            // metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
+            setHostHeader(metaData, host, parsedPort);
+            metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
             return new UrlKey(scheme, host, port);
         }
 
@@ -328,7 +331,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
+    private static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
         private final HttpExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
         private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
@@ -343,7 +346,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.executionContext = requireNonNull(executionContext);
         }
 
-        FilterableStreamingHttpClient selectClient(HttpRequestMetaData metaData) throws MalformedURLException {
+        private FilterableStreamingHttpClient selectClient(HttpRequestMetaData metaData) throws MalformedURLException {
             return group.get(keyFactory.get(metaData));
         }
 
