@@ -218,14 +218,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.hashCode = 31 * (caseInsensitiveHashCode(host) + port) + scheme.hashCode();
         }
 
-        /**
-         * This class is used only within controlled scope, a non-null argument and class match are guaranteed.
-         */
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
                 return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
             }
             final UrlKey urlKey = (UrlKey) o;
             return port == urlKey.port && host.equalsIgnoreCase(urlKey.host) && scheme.equals(urlKey.scheme);
