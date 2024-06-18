@@ -228,7 +228,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 return true;
             }
             final UrlKey urlKey = (UrlKey) o;
-            return port == urlKey.port && scheme.equals(urlKey.scheme) && host.equalsIgnoreCase(urlKey.host);
+            return port == urlKey.port && host.equalsIgnoreCase(urlKey.host) && scheme.equals(urlKey.scheme);
         }
 
         @Override
