@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -76,8 +76,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     private final Kernel kernel;
     private final AtomicInteger indicatorCount = new AtomicInteger();
     // Protected by `sequentialExecutor`.
-    // Note that this is a LinkedHashSet so as to preserve the iteration order.
-    private final Set<XdsHealthIndicator<ResolvedAddress, C>> indicators = new LinkedHashSet<>();
+    private final Set<XdsHealthIndicatorImpl> indicators = new HashSet<>();
     // reads and writes are protected by `sequentialExecutor`.
     private int ejectedHostCount;
 
@@ -100,7 +99,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
     @Override
     public HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver) {
-        XdsHealthIndicator<ResolvedAddress, C> result = new XdsHealthIndicatorImpl(
+        XdsHealthIndicatorImpl result = new XdsHealthIndicatorImpl(
                 address, kernel.config, hostObserver);
         sequentialExecutor.execute(() -> indicators.add(result));
         indicatorCount.incrementAndGet();
@@ -132,6 +131,9 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     }
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress, C> {
+
+        // Protected by `sequentialExecutor`.
+        private boolean lastObservedHealthy = true;
 
         XdsHealthIndicatorImpl(final ResolvedAddress address, OutlierDetectorConfig outlierDetectorConfig,
                                HostObserver hostObserver) {
@@ -201,23 +203,24 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
         private void sequentialCheckOutliers() {
             assert sequentialExecutor.isCurrentThreadDraining();
-            boolean[] beforeState = new boolean[indicators.size()];
-            int i = 0;
-            for (HealthIndicator<?, ?> indicator : indicators) {
-                beforeState[i++] = indicator.isHealthy();
-            }
+
             for (XdsOutlierDetectorAlgorithm<ResolvedAddress, C> outlierDetector : algorithms) {
                 outlierDetector.detectOutliers(config, indicators);
             }
             cancellable.nextCancellable(scheduleNextOutliersCheck(config));
 
-            // now check to see if any of our health states changed
-            i = 0;
-            for (HealthIndicator<?, ?> indicator : indicators) {
-                if (beforeState[i++] != indicator.isHealthy()) {
-                    healthStatusChangeProcessor.onNext(null);
-                    break;
+            // Check to see if any of our health states changed from the previous scan and fire an event if they did.
+            boolean emitChange = false;
+            for (XdsHealthIndicatorImpl indicator : indicators) {
+                boolean currentlyIsHealthy = indicator.isHealthy();
+                if (indicator.lastObservedHealthy != currentlyIsHealthy) {
+                    indicator.lastObservedHealthy = currentlyIsHealthy;
+                    emitChange = true;
                 }
+            }
+            if (emitChange) {
+                LOGGER.debug("Health status change observed. Emitting event.");
+                healthStatusChangeProcessor.onNext(null);
             }
         }
     }
@@ -242,7 +245,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
         @Override
         public void detectOutliers(final OutlierDetectorConfig config,
-                                   final Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+                                   final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
             int unhealthy = 0;
             for (XdsHealthIndicator indicator : indicators) {
                 // Hosts can still be marked unhealthy due to consecutive failures.

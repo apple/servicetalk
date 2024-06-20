@@ -35,7 +35,7 @@ final class FailurePercentageXdsOutlierDetectorAlgorithm<ResolvedAddress, C exte
 
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
-                               final Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+                               final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
         final long[] failurePercentages = new long[indicators.size()];
         int i = 0;
         int enoughVolumeHosts = 0;
