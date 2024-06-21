@@ -231,4 +231,12 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             return delegate.toString();
         }
     }
+
+    @Override
+    public String toString() {
+        return "DefaultHttpLoadBalancerFactory{" +
+                "rawFactory=" + rawFactory +
+                ", strategy=" + strategy +
+                '}';
+    }
 }

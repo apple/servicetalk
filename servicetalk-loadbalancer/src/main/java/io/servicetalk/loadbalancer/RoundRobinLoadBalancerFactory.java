@@ -93,6 +93,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         return ExecutionStrategy.offloadNone();
     }
 
+    @Override
+    public String toString() {
+        return "RoundRobinLoadBalancerFactory{" +
+                "id='" + id + '\'' +
+                ", linearSearchSpace=" + linearSearchSpace +
+                ", healthCheckConfig=" + healthCheckConfig +
+                '}';
+    }
+
     /**
      * Builder for {@link RoundRobinLoadBalancerFactory}.
      *

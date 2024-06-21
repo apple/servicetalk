@@ -85,7 +85,31 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
 
     static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
             int corePoolSize, boolean forceCorePool) {
-        ensurePositive(corePoolSize, "corePoolSize");
-        return (lbDesription) -> new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
+        return new CorePoolConnectionPoolStrategyFactory<>(corePoolSize, forceCorePool);
+    }
+
+    private static final class CorePoolConnectionPoolStrategyFactory<C extends LoadBalancedConnection>
+            implements ConnectionPoolStrategyFactory<C> {
+
+        private final int corePoolSize;
+        private final boolean forceCorePool;
+
+        CorePoolConnectionPoolStrategyFactory(int corePoolSize, boolean forceCorePool) {
+            this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
+            this.forceCorePool = forceCorePool;
+        }
+
+        @Override
+        public ConnectionPoolStrategy<C> buildStrategy(String lbDescription) {
+            return new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
+        }
+
+        @Override
+        public String toString() {
+            return "CorePoolConnectionPoolStrategyFactory{" +
+                    "corePoolSize=" + corePoolSize +
+                    ", forceCorePool=" + forceCorePool +
+                    '}';
+        }
     }
 }

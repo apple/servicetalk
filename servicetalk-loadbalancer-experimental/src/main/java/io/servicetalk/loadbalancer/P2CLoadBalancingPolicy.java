@@ -67,6 +67,11 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
 
     @Override
     public String toString() {
-        return name() + "(failOpen=" + failOpen + ", maxEffort=" + maxEffort + ')';
+        return "P2CLoadBalancingPolicy{" +
+                "ignoreWeights=" + ignoreWeights +
+                ", maxEffort=" + maxEffort +
+                ", failOpen=" + failOpen +
+                ", random=" + random +
+                '}';
     }
 }
