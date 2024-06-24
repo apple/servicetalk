@@ -21,17 +21,19 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-class XdsOutlierDetectorTest {
+final class XdsOutlierDetectorTest {
 
     private final TestExecutor executor = new TestExecutor();
     OutlierDetectorConfig config = new OutlierDetectorConfig.Builder()
             .failureDetectorInterval(Duration.ofSeconds(5), Duration.ZERO)
             .ejectionTimeJitter(Duration.ZERO)
+            .baseEjectionTime(Duration.ofSeconds(2))
             .build();
 
     @Nullable
@@ -59,7 +61,7 @@ class XdsOutlierDetectorTest {
         init();
         HealthIndicator<String, TestLoadBalancedConnection> healthIndicator = xdsOutlierDetector.newHealthIndicator(
                 "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
-        eject(healthIndicator);
+        consecutiveFailureEject(healthIndicator);
         assertThat(healthIndicator.isHealthy(), equalTo(false));
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
         healthIndicator.cancel();
@@ -77,10 +79,10 @@ class XdsOutlierDetectorTest {
                 "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
         HealthIndicator<String, TestLoadBalancedConnection> indicator2 = xdsOutlierDetector.newHealthIndicator(
                 "addr-2", NoopLoadBalancerObserver.instance().hostObserver("addr-2"));
-        eject(indicator1);
+        consecutiveFailureEject(indicator1);
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
         assertThat(indicator1.isHealthy(), equalTo(false));
-        eject(indicator2);
+        consecutiveFailureEject(indicator2);
         assertThat(xdsOutlierDetector.ejectedHostCount(), equalTo(1));
         assertThat(indicator2.isHealthy(), equalTo(true));
 
@@ -101,13 +103,37 @@ class XdsOutlierDetectorTest {
         init();
         HealthIndicator<String, TestLoadBalancedConnection> indicator = xdsOutlierDetector.newHealthIndicator(
                 "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
-        eject(indicator);
+        consecutiveFailureEject(indicator);
         assertThat(indicator.isHealthy(), equalTo(false));
         executor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
         assertThat(indicator.isHealthy(), equalTo(true));
     }
 
-    private void eject(HealthIndicator<String, TestLoadBalancedConnection> indicator) {
+    @Test
+    void consecutiveFailuresTriggersHealthChangeSignal() {
+        config = new OutlierDetectorConfig.Builder(config)
+                // make it longer than the failure detector interval
+                .baseEjectionTime(config.failureDetectorInterval().multipliedBy(2))
+                .build();
+        init();
+        AtomicInteger healthChanges = new AtomicInteger();
+        xdsOutlierDetector.healthStatusChanged().forEach(ignored -> healthChanges.incrementAndGet());
+        HealthIndicator<String, TestLoadBalancedConnection> indicator = xdsOutlierDetector.newHealthIndicator(
+                "addr-1", NoopLoadBalancerObserver.instance().hostObserver("addr-1"));
+        consecutiveFailureEject(indicator);
+        assertThat(healthChanges.get(), equalTo(0));
+        assertThat(indicator.isHealthy(), equalTo(false));
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+        assertThat(indicator.isHealthy(), equalTo(false));
+        assertThat(healthChanges.get(), equalTo(1));
+
+        // We should revive after another interval
+        executor.advanceTimeBy(config.failureDetectorInterval().toNanos(), TimeUnit.NANOSECONDS);
+        assertThat(indicator.isHealthy(), equalTo(true));
+        assertThat(healthChanges.get(), equalTo(2));
+    }
+
+    private void consecutiveFailureEject(HealthIndicator<String, TestLoadBalancedConnection> indicator) {
         for (int i = 0; i < config.consecutive5xx(); i++) {
             indicator.onRequestError(indicator.beforeConnectStart(),
                     RequestTracker.ErrorClass.EXT_ORIGIN_REQUEST_FAILED);

@@ -29,5 +29,6 @@ interface XdsOutlierDetectorAlgorithm<ResolvedAddress, C extends LoadBalancedCon
      * @param config the current {@link OutlierDetectorConfig} to use.
      * @param indicators an ordered list of {@link HealthIndicator} instances to collect stats from.
      */
-    void detectOutliers(OutlierDetectorConfig config, Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators);
+    void detectOutliers(OutlierDetectorConfig config,
+                        Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators);
 }

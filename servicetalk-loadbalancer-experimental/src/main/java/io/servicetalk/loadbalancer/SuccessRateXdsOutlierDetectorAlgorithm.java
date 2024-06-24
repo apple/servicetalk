@@ -45,7 +45,7 @@ final class SuccessRateXdsOutlierDetectorAlgorithm<ResolvedAddress, C extends Lo
 
     @Override
     public void detectOutliers(final OutlierDetectorConfig config,
-                               final Collection<XdsHealthIndicator<ResolvedAddress, C>> indicators) {
+                               final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
         LOGGER.debug("Started outlier detection.");
         final double[] successRates = new double[indicators.size()];
         int i = 0;
