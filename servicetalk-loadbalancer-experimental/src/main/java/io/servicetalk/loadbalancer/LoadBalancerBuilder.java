@@ -71,13 +71,26 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
             LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
 
     /**
+     * Set the {@link LoadBalancerObserver} to use with this load balancer.
+     * @param loadBalancerObserver the {@link LoadBalancerObserver} to use, or {@code null} to not use an observer.
+     * @return {code this}
+     * @deprecated use the overload that takes a {@link LoadBalancerObserverFactory}
+     */
+    @Deprecated // TODO: remove deprecated method after 0.42.46 release.
+    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(@Nullable LoadBalancerObserver loadBalancerObserver);
+
+    /**
      * Set the {@link LoadBalancerObserverFactory} to use with this load balancer.
      * @param loadBalancerObserverFactory the {@link LoadBalancerObserverFactory} to use, or {@code null} to not use an
      *                                    observer.
      * @return {code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
-            @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory);
+    // TODO: remove the default implementation after 0.42.46 release.
+    default LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
+            @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
+        return loadBalancerObserver(loadBalancerObserverFactory == null ? null
+                : loadBalancerObserverFactory.newObserver("<unknown>"));
+    }
 
     /**
      * Set the {@link OutlierDetectorConfig} to use with this load balancer.

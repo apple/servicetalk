@@ -119,7 +119,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param targetResource {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
-     * @param priorityStrategyFactory a build of the {@link HostPriorityStrategy} to use with the load balancer.
+     * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
      * @param connectionPoolStrategyFactory factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
