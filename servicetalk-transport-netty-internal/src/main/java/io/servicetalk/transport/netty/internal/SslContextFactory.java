@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -51,6 +50,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethr
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
 import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * A factory for creating {@link SslContext}s.
@@ -63,13 +63,18 @@ public final class SslContextFactory {
 
     @Nullable
     private static final MethodHandle SSL_PROVIDER_OPTION_SUPPORTED;
+    @Nullable
+    private static final MethodHandle ENDPOINT_IDENTIFICATION_ALGORITHM;
 
     static {
         MethodHandle sslProviderOptionSupported;
         try {
-            sslProviderOptionSupported = MethodHandles.publicLookup().findStatic(
-                    SslProvider.class, "isOptionSupported",
-                    MethodType.methodType(boolean.class, SslProvider.class, SslContextOption.class));
+            // Find a new method that exists only in Netty starting from 4.1.88.Final:
+            sslProviderOptionSupported = MethodHandles.publicLookup().findStatic(SslProvider.class, "isOptionSupported",
+                    methodType(boolean.class, SslProvider.class, SslContextOption.class));
+            // Verify the method is working as expected:
+            isOptionSupported(sslProviderOptionSupported,
+                    SslContext.defaultClientProvider(), OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS);
         } catch (Throwable cause) {
             LOGGER.debug("SSLProvider#isOptionSupported(SslProvider, SslContextOption) is available only " +
                     "starting from Netty 4.1.88.Final. Detected Netty version: {}",
@@ -77,10 +82,52 @@ public final class SslContextFactory {
             sslProviderOptionSupported = null;
         }
         SSL_PROVIDER_OPTION_SUPPORTED = sslProviderOptionSupported;
+
+        MethodHandle endpointIdentificationAlgorithm;
+        try {
+            // Find a new method that exists only in Netty starting from 4.2.0.Final:
+            endpointIdentificationAlgorithm = MethodHandles.publicLookup().findVirtual(SslContextBuilder.class,
+                    "endpointIdentificationAlgorithm", methodType(SslContextBuilder.class, String.class));
+            // Verify the method is working as expected:
+            setEndpointIdentificationAlgorithm(endpointIdentificationAlgorithm,
+                    SslContextBuilder.forClient(), "HTTPS");
+        } catch (Throwable cause) {
+            LOGGER.debug("SslContextBuilder#endpointIdentificationAlgorithm(String) is available only " +
+                            "starting from Netty 4.2.0.Final. Detected Netty version: {}",
+                    SslContextBuilder.class.getPackage().getImplementationVersion(), cause);
+            endpointIdentificationAlgorithm = null;
+        }
+        ENDPOINT_IDENTIFICATION_ALGORITHM = endpointIdentificationAlgorithm;
     }
 
     private SslContextFactory() {
         // No instances.
+    }
+
+    private static boolean isOptionSupported(final MethodHandle isOptionSupportedMethod,
+                                             final SslProvider sslProvider, final SslContextOption<?> option) {
+        try {
+            // invokeExact requires return type cast to match the type signature
+            return (boolean) isOptionSupportedMethod.invokeExact(sslProvider, option);
+        } catch (Throwable t) {
+            throwException(t);
+            return false;   // fool compiler
+        }
+    }
+
+    private static SslContextBuilder setEndpointIdentificationAlgorithm(@Nullable final MethodHandle methodHandle,
+                                                                        final SslContextBuilder builderInstance,
+                                                                        @Nullable final String algorithm) {
+        if (methodHandle == null) {
+            return builderInstance;
+        }
+        try {
+            // invokeExact requires return type cast to match the type signature
+            return (SslContextBuilder) methodHandle.invokeExact(builderInstance, algorithm == null ? "" : algorithm);
+        } catch (Throwable t) {
+            throwException(t);
+            return builderInstance;
+        }
     }
 
     /**
@@ -91,6 +138,8 @@ public final class SslContextFactory {
      */
     public static SslContext forClient(ClientSslConfig config) {
         final SslContextBuilder builder = SslContextBuilder.forClient();
+        setEndpointIdentificationAlgorithm(ENDPOINT_IDENTIFICATION_ALGORITHM, builder,
+                config.hostnameVerificationAlgorithm());
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
         if (keyManagerFactory != null) {
             builder.keyManager(keyManagerFactory);
@@ -200,8 +249,8 @@ public final class SslContextFactory {
             // If the newer SSL_PROVIDER_OPTION_SUPPORTED is available through the MethodHandle, use this option
             // to check since it more targeted/narrow to what we need.
             if (SSL_PROVIDER_OPTION_SUPPORTED != null) {
-                if (!((boolean) SSL_PROVIDER_OPTION_SUPPORTED.invokeExact(nettySslProvider,
-                        (SslContextOption<?>) OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS))) {
+                if (!isOptionSupported(SSL_PROVIDER_OPTION_SUPPORTED,
+                        nettySslProvider, OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS)) {
                     return;
                 }
             // Otherwise fall-back to just checking if OpenSSL is used which is good enough as a fallback.
