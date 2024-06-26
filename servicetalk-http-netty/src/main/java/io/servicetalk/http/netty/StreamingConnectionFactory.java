@@ -95,7 +95,8 @@ final class StreamingConnectionFactory {
             if (sniHostname == null) {
                 if (peerHost == null) {
                     newPeerHost = toHostAddress(inetAddress);
-                    newSniHostname = hostnameVerificationAlgorithm = null;
+                    newSniHostname = null;
+                    hostnameVerificationAlgorithm = null;
                 } else {
                     newPeerHost = peerHost + '-' + toHostAddress(inetAddress);
                     // We are overriding the peerHost to make it qualified with the resolved address. If sniHostname is
@@ -105,7 +106,8 @@ final class StreamingConnectionFactory {
                         newSniHostname = peerHost;
                         hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
                     } else {
-                        newSniHostname = hostnameVerificationAlgorithm = null;
+                        newSniHostname = null;
+                        hostnameVerificationAlgorithm = null;
                     }
                 }
             } else {
