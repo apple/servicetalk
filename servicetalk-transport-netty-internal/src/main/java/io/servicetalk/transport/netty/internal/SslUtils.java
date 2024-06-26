@@ -68,9 +68,12 @@ final class SslUtils {
         setHandshakeTimeout(handler, context);
         SSLEngine engine = handler.engine();
         try {
+            String hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
             String sniHostname = sslConfig.sniHostname();
             SSLParameters parameters = engine.getSSLParameters();
-            parameters.setEndpointIdentificationAlgorithm(sslConfig.hostnameVerificationAlgorithm());
+            if (hostnameVerificationAlgorithm != null) {
+                parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
+            }
             if (sniHostname != null) {
                 // https://tools.ietf.org/html/rfc6066#section-3
                 // Multiple names of the same name_type are therefore now prohibited.
