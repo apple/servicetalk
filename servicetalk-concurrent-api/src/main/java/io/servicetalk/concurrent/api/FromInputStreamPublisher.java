@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
@@ -37,12 +38,14 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link Publisher} created from an {@link InputStream} such that any data requested from the {@link Publisher} is
  * read from the {@link InputStream} until it terminates.
- *
+ * <p>
  * Given that {@link InputStream} is a blocking API, requesting data from the {@link Publisher} can block on {@link
  * Subscription#request(long)} until there is sufficient data available. The implementation attempts to minimize
  * blocking, however by reading data faster than the writer is sending, blocking is inevitable.
+ *
+ * @param <T> Type of items emitted to the {@link PublisherSource.Subscriber}.
  */
-final class FromInputStreamPublisher extends Publisher<byte[]> implements PublisherSource<byte[]> {
+final class FromInputStreamPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
     // While sun.nio.ch.FileChannelImpl and java.io.InputStream.transferTo(...) use 8Kb chunks,
     // we use 16Kb-32B because 16Kb is:
@@ -53,7 +56,8 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
     // write hits SslHandler. This helps utilize the full potential of the transport without fragmentation at TLS/HTTP/2
     // layers or introducing too many flushes (they are expensive!) for large payloads. Benchmarks confirmed that
     // subtraction of 32B significantly improves throughput and latency for TLS and has no effect on plaintext traffic.
-    private static final int DEFAULT_READ_CHUNK_SIZE = 16 * 1024 - 32;
+    static final int DEFAULT_MAX_BUFFER_SIZE = 16 * 1024 - 32;
+    @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
 
@@ -71,42 +75,30 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
     private volatile int subscribed;
 
     private final InputStream stream;
-    private final int readChunkSize;
+    private final ByteArrayMapper<T> mapper;
 
     /**
      * A new instance.
      *
      * @param stream the {@link InputStream} to expose as a {@link Publisher}
+     * @param mapper a mapper to transform a {@code byte[]} buffer into a desired type {@code T} that will be emitted by
+     * the {@link Publisher}
      */
-    FromInputStreamPublisher(final InputStream stream) {
-        this(stream, DEFAULT_READ_CHUNK_SIZE);
-    }
-
-    /**
-     * A new instance.
-     *
-     * @param stream the {@link InputStream} to expose as a {@link Publisher}
-     * @param readChunkSize the maximum length of {@code byte[]} chunks which will be read from the {@link InputStream}
-     * and emitted by the {@link Publisher}.
-     */
-    FromInputStreamPublisher(final InputStream stream, final int readChunkSize) {
+    FromInputStreamPublisher(final InputStream stream, final ByteArrayMapper<T> mapper) {
         this.stream = requireNonNull(stream);
-        if (readChunkSize <= 0) {
-            throw new IllegalArgumentException("readChunkSize: " + readChunkSize + " (expected: >0)");
-        }
-        this.readChunkSize = readChunkSize;
+        this.mapper = requireNonNull(mapper);
     }
 
     @Override
-    public void subscribe(final Subscriber<? super byte[]> subscriber) {
+    public void subscribe(final Subscriber<? super T> subscriber) {
         subscribeInternal(subscriber);
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super byte[]> subscriber) {
+    protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         if (subscribedUpdater.compareAndSet(this, 0, 1)) {
             try {
-                subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber, readChunkSize));
+                subscriber.onSubscribe(new InputStreamPublisherSubscription<>(stream, subscriber, mapper));
             } catch (Throwable t) {
                 handleExceptionFromOnSubscribe(subscriber, t);
             }
@@ -115,7 +107,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         }
     }
 
-    private static final class InputStreamPublisherSubscription implements Subscription {
+    private static final class InputStreamPublisherSubscription<T> implements Subscription {
 
         private static final int END_OF_FILE = -1;
         /**
@@ -124,8 +116,8 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private static final int TERMINAL_SENT = -1;
 
         private final InputStream stream;
-        private final Subscriber<? super byte[]> subscriber;
-        private final int readChunkSize;
+        private final Subscriber<? super T> subscriber;
+        private final ByteArrayMapper<T> mapper;
         /**
          * Contains the outstanding demand or {@link #TERMINAL_SENT} indicating when {@link InputStream} and {@link
          * Subscription} are terminated.
@@ -134,11 +126,11 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private int writeIdx;
         private boolean ignoreRequests;
 
-        InputStreamPublisherSubscription(final InputStream stream, final Subscriber<? super byte[]> subscriber,
-                                         final int readChunkSize) {
+        InputStreamPublisherSubscription(final InputStream stream, final Subscriber<? super T> subscriber,
+                                         final ByteArrayMapper<T> mapper) {
             this.stream = stream;
             this.subscriber = subscriber;
-            this.readChunkSize = readChunkSize;
+            this.mapper = mapper;
         }
 
         @Override
@@ -170,7 +162,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             }
         }
 
-        private void readAndDeliver(final Subscriber<? super byte[]> subscriber) {
+        private void readAndDeliver(final Subscriber<? super T> subscriber) {
             try {
                 do {
                     // Initialize readByte with a negative value different from END_OF_FILE as an indicator that it was
@@ -191,8 +183,8 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                         if (available == 0) {
                             // This InputStream either does not implement available() method at all, or does not honor
                             // the 0 == EOF contract, or does not prefetch data in larger chunks.
-                            // In this case, we attempt to read based on the configured readChunkSize:
-                            available = readChunkSize;
+                            // In this case, we attempt to read based on the configured maxBufferSize:
+                            available = mapper.maxBufferSize();
                         }
                     }
                     available = readAvailableAndEmit(available, readByte);
@@ -207,9 +199,10 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         }
 
         private int readAvailableAndEmit(final int available, final int readByte) throws IOException {
+            final int readChunkSize = mapper.maxBufferSize();
             final byte[] buffer;
             if (readByte >= 0) {
-                buffer = new byte[available < readChunkSize ? available + 1 : readChunkSize];
+                buffer = new byte[min(available + 1, readChunkSize)];
                 buffer[writeIdx++] = (byte) readByte;
             } else {
                 buffer = new byte[min(available, readChunkSize)];
@@ -233,7 +226,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             return available;
         }
 
-        private void emitSingleBuffer(final Subscriber<? super byte[]> subscriber,
+        private void emitSingleBuffer(final Subscriber<? super T> subscriber,
                                       final byte[] buffer, final int remainingLength) {
             if (writeIdx < 1) {
                 assert remainingLength == END_OF_FILE :
@@ -241,21 +234,13 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                 return;
             }
             assert writeIdx <= buffer.length : "writeIdx can not be grater than buffer.length";
-            final byte[] b;
-            if (writeIdx == buffer.length) {
-                b = buffer;
-            } else {
-                // this extra copy is necessary when we read the last chunk and total number of bytes read before EOF
-                // is less than guesstimated buffer size
-                b = new byte[writeIdx];
-                arraycopy(buffer, 0, b, 0, writeIdx);
-            }
+            final T item = mapper.map(buffer, 0, writeIdx);
             requested--;
             writeIdx = 0;
-            subscriber.onNext(b);
+            subscriber.onNext(item);
         }
 
-        private void sendOnComplete(final Subscriber<? super byte[]> subscriber) {
+        private void sendOnComplete(final Subscriber<? super T> subscriber) {
             closeStream(subscriber);
             if (trySetTerminalSent()) {
                 try {
@@ -266,7 +251,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             }
         }
 
-        private void sendOnError(final Subscriber<? super byte[]> subscriber, final Throwable t) {
+        private void sendOnError(final Subscriber<? super T> subscriber, final Throwable t) {
             if (trySetTerminalSent()) {
                 try {
                     subscriber.onError(t);
@@ -285,7 +270,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             return t;
         }
 
-        private void closeStream(final Subscriber<? super byte[]> subscriber) {
+        private void closeStream(final Subscriber<? super T> subscriber) {
             try {
                 stream.close();
             } catch (Throwable e) {
@@ -304,6 +289,34 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             }
             requested = TERMINAL_SENT;
             return true;
+        }
+    }
+
+    static final class ToByteArrayMapper implements ByteArrayMapper<byte[]> {
+
+        static final ByteArrayMapper<byte[]> DEFAULT_TO_BYTE_ARRAY_MAPPER =
+                new ToByteArrayMapper(DEFAULT_MAX_BUFFER_SIZE);
+
+        private final int maxBufferSize;
+
+        ToByteArrayMapper(final int maxBufferSize) {
+            this.maxBufferSize = ensurePositive(maxBufferSize, "maxBufferSize");
+        }
+
+        @Override
+        public byte[] map(final byte[] buffer, final int offset, final int length) {
+            if (offset == 0 && length == buffer.length) {
+                return buffer;
+            } else {
+                final byte[] partial = new byte[length];
+                arraycopy(buffer, offset, partial, 0, length);
+                return partial;
+            }
+        }
+
+        @Override
+        public int maxBufferSize() {
+            return maxBufferSize;
         }
     }
 }
