@@ -31,7 +31,7 @@ public interface ByteArrayMapper<T> {
     /**
      * Maps a specified {@code byte[]} buffer region into a {@code T}.
      * <p>
-     * The mapper can operate only with the specified region of the {@code buffer}, which can be safely used without a
+     * The mapper can operate only within the specified region of the {@code buffer}, which can be safely used without a
      * need to copy data. Access to other parts of the buffer may lead to unexpected results and due care should be
      * taken to avoid leaking that data through the returned type {@code T}.
      *
