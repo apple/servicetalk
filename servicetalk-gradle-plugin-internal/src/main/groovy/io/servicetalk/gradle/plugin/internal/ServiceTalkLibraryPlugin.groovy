@@ -229,6 +229,10 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
+
+        // Always require native libraries for running tests. This helps to make sure transport-level state machine
+        // receives all expected network events from Netty.
+        systemProperty "io.servicetalk.transport.netty.requireNativeLibs", "true"
       }
 
       dependencies {
