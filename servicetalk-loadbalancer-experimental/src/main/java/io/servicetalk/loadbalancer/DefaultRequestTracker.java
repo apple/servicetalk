@@ -47,6 +47,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private final double invTau;
     private final long cancelPenalty;
     private final long errorPenalty;
+    private final long pendingRequestPenalty;
 
     /**
      * Last inserted value to compute weight.
@@ -59,11 +60,13 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private int pendingCount;
     private long pendingStamp = Long.MIN_VALUE;
 
-    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty) {
+    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty,
+                          final long pendingRequestPenalty) {
         ensurePositive(halfLifeNanos, "halfLifeNanos");
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
         this.errorPenalty = errorPenalty;
+        this.pendingRequestPenalty = pendingRequestPenalty;
     }
 
     /**
@@ -155,7 +158,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         // Add penalty for pending requests to account for "unaccounted" load.
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
-        final int pendingPenalty = (int) min(MAX_VALUE, (long) cPending * currentEWMA);
+        final int pendingPenalty = (int) min(MAX_VALUE, (long) cPending * pendingRequestPenalty * currentEWMA);
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
         return MAX_VALUE - currentEWMA <= pendingPenalty ? MIN_VALUE : -(currentEWMA + pendingPenalty);
