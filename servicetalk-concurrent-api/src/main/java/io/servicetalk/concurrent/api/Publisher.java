@@ -4522,9 +4522,12 @@ Kotlin flatMapLatest</a>
      * InputStream#read(byte[], int, int)}.
      * @return a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * @deprecated Use {@link #fromInputStream(InputStream, ByteArrayMapper)} with
+     * {@link ByteArrayMapper#toByteArray()}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static Publisher<byte[]> fromInputStream(InputStream stream) {
-        return new FromInputStreamPublisher(stream);
+        return fromInputStream(stream, ByteArrayMapper.toByteArray());
     }
 
     /**
@@ -4552,9 +4555,45 @@ Kotlin flatMapLatest</a>
      * and emitted by the returned {@link Publisher}.
      * @return a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * @deprecated Use {@link #fromInputStream(InputStream, ByteArrayMapper)} with
+     * {@link ByteArrayMapper#toByteArray(int)}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static Publisher<byte[]> fromInputStream(InputStream stream, int readChunkSize) {
-        return new FromInputStreamPublisher(stream, readChunkSize);
+        return fromInputStream(stream, ByteArrayMapper.toByteArray(readChunkSize));
+    }
+
+    /**
+     * Create a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
+     * {@link Subscriber} as a mapped type {@code T} and then {@link Subscriber#onComplete()}.
+     * <p>
+     * The resulting publisher is not replayable and supports only a single {@link Subscriber}.
+     * <p>
+     * After a returned {@link Publisher} is subscribed, it owns the passed {@link InputStream}, meaning that the
+     * {@link InputStream} will be automatically closed when the {@link Publisher} is cancelled or terminated. Not
+     * necessary to close the {@link InputStream} after subscribe, but it should be closed when control flow never
+     * subscribes to the returned {@link Publisher}.
+     * <p>
+     * The Reactive Streams specification provides two criteria (
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
+     * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
+     * depend upon the behavior of the {@code stream} below. Make sure the {@link Executor} for this execution chain
+     * can tolerate this responsiveness and any blocking behavior.
+     * <p>
+     * Given the blocking nature of {@link InputStream}, assume {@link Subscription#request(long)} can block when the
+     * underlying {@link InputStream} blocks on {@link InputStream#read(byte[], int, int)}.
+     *
+     * @param stream provides the data in the form of {@code byte[]} buffer regions for the specified
+     * {@link ByteArrayMapper}.
+     * @param mapper a mapper to transform raw {@code byte[]} buffer regions into a desired type {@code T} to be emitted
+     * to the {@link Subscriber} by the returned {@link Publisher}.
+     * @param <T> Type of the items emitted by the returned {@link Publisher}.
+     * @return a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
+     * {@link Subscriber} as a mapped type {@code T} and then {@link Subscriber#onComplete()}.
+     */
+    public static <T> Publisher<T> fromInputStream(InputStream stream, ByteArrayMapper<T> mapper) {
+        return new FromInputStreamPublisher<>(stream, mapper);
     }
 
     /**

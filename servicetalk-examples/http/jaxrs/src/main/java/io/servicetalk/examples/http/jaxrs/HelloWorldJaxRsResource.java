@@ -219,7 +219,7 @@ public class HelloWorldJaxRsResource {
                                          @FormDataParam("file") InputStream file) {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return from(allocator.fromAscii("Hello multipart! Content: "))
-                .concat(fromInputStream(file).map(allocator::wrap))
+                .concat(fromInputStream(file, allocator::wrap))
                 .collect(allocator::newCompositeBuffer,
                         (collector, item) -> ((CompositeBuffer) collector).addBuffer(item));
     }

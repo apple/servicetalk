@@ -168,7 +168,7 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
-        return fromInputStream(is).map(a::wrap);
+        return fromInputStream(is, a::wrap);
     }
 
     private static <T> Single<T> deserialize(
