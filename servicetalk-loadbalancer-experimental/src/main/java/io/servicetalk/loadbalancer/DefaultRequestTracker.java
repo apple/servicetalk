@@ -47,6 +47,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private final double invTau;
     private final long cancelPenalty;
     private final long errorPenalty;
+    private final long concurrentRequestPenalty;
 
     /**
      * Last inserted value to compute weight.
@@ -56,14 +57,16 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
      * Current weighted average.
      */
     private int ewma;
-    private int pendingCount;
-    private long pendingStamp = Long.MIN_VALUE;
+    private int concurrentCount;
+    private long concurrentStamp = Long.MIN_VALUE;
 
-    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty) {
+    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty,
+                          final long concurrentRequestPenalty) {
         ensurePositive(halfLifeNanos, "halfLifeNanos");
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
         this.errorPenalty = errorPenalty;
+        this.concurrentRequestPenalty = concurrentRequestPenalty;
     }
 
     /**
@@ -77,10 +80,10 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         final long stamp = lock.writeLock();
         try {
             long timestamp = currentTimeNanos();
-            pendingCount++;
-            if (pendingStamp == Long.MIN_VALUE) {
-                // only update the pending timestamp if it doesn't already have a value.
-                pendingStamp = timestamp;
+            concurrentCount++;
+            if (concurrentStamp == Long.MIN_VALUE) {
+                // only update the concurrent timestamp if it doesn't already have a value.
+                concurrentStamp = timestamp;
             }
             return timestamp;
         } finally {
@@ -101,10 +104,10 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private void onComplete(final long startTimeNanos, long penalty) {
         final long stamp = lock.writeLock();
         try {
-            pendingCount--;
+            concurrentCount--;
             // Unconditionally clear the timestamp because we don't know which request set it. This is an acceptable
             // 'error' since otherwise we need to keep a collection of start timestamps.
-            pendingStamp = Long.MIN_VALUE;
+            concurrentStamp = Long.MIN_VALUE;
             updateEwma(penalty, startTimeNanos);
         } finally {
             lock.unlockWrite(stamp);
@@ -114,16 +117,16 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     @Override
     public final int score() {
         final long lastTimeNanos;
-        final int cPending;
-        final long pendingStamp;
+        final int concurrentCount;
+        final long concurrentStamp;
         int currentEWMA;
         // read all the relevant state using the read lock
         final long stamp = lock.readLock();
         try {
             currentEWMA = ewma;
             lastTimeNanos = this.lastTimeNanos;
-            cPending = pendingCount;
-            pendingStamp = this.pendingStamp;
+            concurrentCount = this.concurrentCount;
+            concurrentStamp = this.concurrentStamp;
         } finally {
             lock.unlockRead(stamp);
         }
@@ -139,26 +142,27 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         }
 
         if (currentEWMA == 0) {
-            // If EWMA has decayed to 0 (or isn't yet initialized) and there are no pending requests we return the
-            // maximum score to increase the likelihood this entity is selected. If there are pending requests we
+            // If EWMA has decayed to 0 (or isn't yet initialized) and there are no concurrent requests we return the
+            // maximum score to increase the likelihood this entity is selected. If there are concurrent requests we
             // don't yet know the latency characteristics so we return the minimum score to decrease the
             // likelihood this entity is selected.
-            return cPending == 0 ? 0 : MIN_VALUE;
+            return concurrentCount == 0 ? 0 : MIN_VALUE;
         }
 
-        if (cPending > 0 && pendingStamp != Long.MIN_VALUE) {
-            // If we have a request outstanding we should consider how long it has been outstanding so that sudden
+        if (concurrentCount > 0 && concurrentStamp != Long.MIN_VALUE) {
+            // If we have a request concurrent we should consider how long it has been concurrent so that sudden
             // interruptions don't have to wait for timeouts before our scores can be adjusted.
-            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - pendingStamp));
+            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - concurrentStamp));
         }
 
-        // Add penalty for pending requests to account for "unaccounted" load.
+        // Add penalty for concurrent requests to account for "unaccounted" load.
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
-        final int pendingPenalty = (int) min(MAX_VALUE, (long) cPending * currentEWMA);
+        final int concurrentPenalty = (int) min(MAX_VALUE,
+                (long) concurrentCount * concurrentRequestPenalty * currentEWMA);
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
-        return MAX_VALUE - currentEWMA <= pendingPenalty ? MIN_VALUE : -(currentEWMA + pendingPenalty);
+        return MAX_VALUE - currentEWMA <= concurrentPenalty ? MIN_VALUE : -(currentEWMA + concurrentPenalty);
     }
 
     private static int applyPenalty(int currentEWMA, int currentLatency, long penalty) {

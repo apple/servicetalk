@@ -66,11 +66,13 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
                        final Duration ewmaHalfLife, final long cancellationPenalty, final long errorPenalty,
+                       final long pendingRequestPenalty,
                        final boolean cancellationIsError, final ResolvedAddress address, String lbDescription,
                        final HostObserver hostObserver) {
         super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos(),
                 ensureNonNegative(cancellationPenalty, "cancellationPenalty"),
-                ensureNonNegative(errorPenalty, "errorPenalty"));
+                ensureNonNegative(errorPenalty, "errorPenalty"),
+                ensureNonNegative(pendingRequestPenalty, "pendingRequestPenalty"));
         this.cancellationIsError = cancellationIsError;
         this.sequentialExecutor = requireNonNull(sequentialExecutor, "sequentialExecutor");
         this.executor = requireNonNull(executor, "executor");

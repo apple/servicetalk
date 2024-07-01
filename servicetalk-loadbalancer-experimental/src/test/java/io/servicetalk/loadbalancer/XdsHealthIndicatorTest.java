@@ -225,7 +225,8 @@ class XdsHealthIndicatorTest {
 
         TestIndicator(final OutlierDetectorConfig config) {
             super(sequentialExecutor, new NormalizedTimeSourceExecutor(testExecutor), ofSeconds(10),
-                    config.ewmaCancellationPenalty(), config.ewmaErrorPenalty(), config.cancellationIsError(),
+                    config.ewmaCancellationPenalty(), config.ewmaErrorPenalty(), config.concurrentRequestPenalty(),
+                    config.cancellationIsError(),
                     "address", "description", NoopLoadBalancerObserver.<String>instance().hostObserver("address"));
             this.config = config;
         }
