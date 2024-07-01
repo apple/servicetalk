@@ -45,7 +45,7 @@ public final class OutlierDetectorConfig {
     private final Duration ewmaHalfLife;
     private final long ewmaCancellationPenalty;
     private final long ewmaErrorPenalty;
-    private final long pendingRequestPenalty;
+    private final long concurrentRequestPenalty;
     private final boolean cancellationIsError;
     private final int failedConnectionsThreshold;
     private final Duration failureDetectorIntervalJitter;
@@ -70,7 +70,7 @@ public final class OutlierDetectorConfig {
     private final Duration maxEjectionTime;
 
     OutlierDetectorConfig(final Duration ewmaHalfLife, final long ewmaCancellationPenalty, final long ewmaErrorPenalty,
-                          final long pendingRequestPenalty, final boolean cancellationIsError, int failedConnectionsThreshold,
+                          final long concurrentRequestPenalty, final boolean cancellationIsError, int failedConnectionsThreshold,
                           final Duration failureDetectorIntervalJitter,
                           final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
@@ -84,7 +84,7 @@ public final class OutlierDetectorConfig {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
-        this.pendingRequestPenalty = ensureNonNegative(pendingRequestPenalty, "pendingRequestPenalty");
+        this.concurrentRequestPenalty = ensureNonNegative(concurrentRequestPenalty, "concurrentRequestPenalty");
         this.cancellationIsError = cancellationIsError;
         this.failedConnectionsThreshold = failedConnectionsThreshold;
         this.failureDetectorIntervalJitter = requireNonNull(
@@ -148,13 +148,13 @@ public final class OutlierDetectorConfig {
     }
 
     /**
-     * The penalty factory to apply to outstanding requests.
-     * The EWMA penalty to apply to endpoints when there are outstanding requests. By penalizing endpoints with
-     * outstanding load the traffic distribution will be smoother for algorithms that consider load metrics.
-     * @return the penalty factory to use for outstanding load.
+     * The penalty factory to apply to concurrent requests.
+     * The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
+     * concurrent load the traffic distribution will be smoother for algorithms that consider load metrics.
+     * @return the penalty factory to use for concurrent load.
      */
-    public long pendingRequestPenalty() {
-        return pendingRequestPenalty;
+    public long concurrentRequestPenalty() {
+        return concurrentRequestPenalty;
     }
 
     /**
@@ -368,7 +368,7 @@ public final class OutlierDetectorConfig {
         static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
         static final long DEFAULT_CANCEL_PENALTY = 5L;
         static final long DEFAULT_ERROR_PENALTY = 10L;
-        static final long DEFAULT_PENDING_REQUEST_PENALTY = 1L;
+        static final long DEFAULT_CONCURRENT_REQUEST_PENALTY = 1L;
         private boolean cancellationIsError = true;
 
         // Default xDS outlier detector settings.
@@ -391,7 +391,7 @@ public final class OutlierDetectorConfig {
         private Duration ewmaHalfLife = DEFAULT_EWMA_HALF_LIFE;
         private long ewmaCancellationPenalty = DEFAULT_CANCEL_PENALTY;
         private long ewmaErrorPenalty = DEFAULT_ERROR_PENALTY;
-        private long pendingRequestPenalty = DEFAULT_PENDING_REQUEST_PENALTY;
+        private long concurrentRequestPenalty = DEFAULT_CONCURRENT_REQUEST_PENALTY;
         private int failedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
         private Duration intervalJitter = DEFAULT_HEALTH_CHECK_JITTER;
         private Duration serviceDiscoveryResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
@@ -462,7 +462,7 @@ public final class OutlierDetectorConfig {
          */
         public OutlierDetectorConfig build() {
             return new OutlierDetectorConfig(ewmaHalfLife, ewmaCancellationPenalty, ewmaErrorPenalty,
-                    pendingRequestPenalty, cancellationIsError, failedConnectionsThreshold, intervalJitter,
+                    concurrentRequestPenalty, cancellationIsError, failedConnectionsThreshold, intervalJitter,
                     serviceDiscoveryResubscribeInterval, serviceDiscoveryResubscribeJitter,
                     // xDS settings
                     consecutive5xx, failureDetectorInterval, baseEjectionTime,
@@ -527,17 +527,19 @@ public final class OutlierDetectorConfig {
         }
 
         /**
-         * Set the penalty factory to apply to outstanding requests.
-         * The EWMA penalty to apply to endpoints when there are outstanding requests. By penalizing endpoints with
-         * outstanding load the traffic distribution will be smoother for algorithms that consider load metrics.
-         * Higher penalties will favor a more even request distribution while lower penalties will bias traffic toward
-         * endpoints with better performance.
-         * Defaults to {@value DEFAULT_PENDING_REQUEST_PENALTY}.
-         * @param pendingRequestPenalty the penalty factory to apply for outstanding load.
+         * Set the penalty factory to apply to concurrent requests.
+         * The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
+         * concurrent load the traffic distribution will be more fair for algorithms that consider load metrics.
+         * Larger penalties will favor a more even request distribution while lower penalties will bias traffic toward
+         * endpoints with better performance. A value of 0 disables the penalty, 1 is an intermediate value, and larger
+         * values such as 10 or more will strongly favor fairness over performance.
+         * Defaults to {@value DEFAULT_CONCURRENT_REQUEST_PENALTY}.
+         * @param ewmaConcurrentRequestPenalty the penalty factory to apply for concurrent load.
          * @return {@code this}
          */
-        public Builder pendingRequestPenalty(final long pendingRequestPenalty) {
-            this.pendingRequestPenalty = pendingRequestPenalty;
+        public Builder ewmaConcurrentRequestPenalty(final long ewmaConcurrentRequestPenalty) {
+            this.concurrentRequestPenalty = ensureNonNegative(
+                    ewmaConcurrentRequestPenalty, "ewmaConcurrentRequestPenalty");
             return this;
         }
 

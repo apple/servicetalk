@@ -21,8 +21,8 @@ import java.time.Duration;
 import java.util.function.LongUnaryOperator;
 
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_CANCEL_PENALTY;
+import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_CONCURRENT_REQUEST_PENALTY;
 import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_ERROR_PENALTY;
-import static io.servicetalk.loadbalancer.OutlierDetectorConfig.Builder.DEFAULT_PENDING_REQUEST_PENALTY;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -95,7 +95,7 @@ class DefaultRequestTrackerTest {
 
         TestRequestTracker(Duration measurementHalfLife, final LongUnaryOperator nextValueProvider) {
             super(measurementHalfLife.toNanos(), DEFAULT_CANCEL_PENALTY, DEFAULT_ERROR_PENALTY,
-                    DEFAULT_PENDING_REQUEST_PENALTY);
+                    DEFAULT_CONCURRENT_REQUEST_PENALTY);
             this.nextValueProvider = nextValueProvider;
         }
 

@@ -139,7 +139,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
                                HostObserver hostObserver) {
             super(sequentialExecutor, executor, outlierDetectorConfig.ewmaHalfLife(),
                     outlierDetectorConfig.ewmaCancellationPenalty(), outlierDetectorConfig.ewmaErrorPenalty(),
-                    outlierDetectorConfig.pendingRequestPenalty(), outlierDetectorConfig.cancellationIsError(),
+                    outlierDetectorConfig.concurrentRequestPenalty(), outlierDetectorConfig.cancellationIsError(),
                     address, lbDescription, hostObserver);
         }
 

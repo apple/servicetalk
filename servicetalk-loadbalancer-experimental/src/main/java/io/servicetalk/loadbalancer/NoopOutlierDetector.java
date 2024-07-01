@@ -57,7 +57,7 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
 
         BasicHealthIndicator() {
             super(outlierDetectorConfig.ewmaHalfLife().toNanos(), outlierDetectorConfig.ewmaCancellationPenalty(),
-                    outlierDetectorConfig.ewmaCancellationPenalty(), outlierDetectorConfig.pendingRequestPenalty());
+                    outlierDetectorConfig.ewmaCancellationPenalty(), outlierDetectorConfig.concurrentRequestPenalty());
         }
 
         @Override
