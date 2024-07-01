@@ -145,9 +145,15 @@ class DefaultDnsClientTest {
 
     @AfterEach
     public void tearDown() throws Exception {
-        client.closeAsync().toFuture().get();
-        dnsServer.stop();
-        dnsServer2.stop();
+        if (client != null) {
+            client.closeAsync().toFuture().get();
+        }
+        if (dnsServer != null) {
+            dnsServer.stop();
+        }
+        if (dnsServer2 != null) {
+            dnsServer2.stop();
+        }
     }
 
     private static void advanceTime() throws Exception {
@@ -173,6 +179,26 @@ class DefaultDnsClientTest {
 
     static Stream<ServiceDiscovererEvent.Status> missingRecordStatus() {
         return Stream.of(ServiceDiscovererEvent.Status.EXPIRED, ServiceDiscovererEvent.Status.UNAVAILABLE);
+    }
+
+    @Test
+    void whatHappensIpv4VsIpv6() throws Exception {
+        client = (DefaultDnsClient) new DefaultDnsServiceDiscovererBuilder()
+                .localAddress(new InetSocketAddress("0:0:0:0:0:0:0:0", 0))
+                .dnsServerAddressStreamProvider(// ipv6 dns server
+                        new SingletonDnsServerAddressStreamProvider(new InetSocketAddress("2001:4860:4860::8888", 53)))
+                .dnsServerAddressStreamProvider(// ipv4 dns server
+                        new SingletonDnsServerAddressStreamProvider(new InetSocketAddress("8.8.8.8", 53)))
+                .build();
+        try {
+            client.dnsQuery("apple.com")
+                    .takeAtMost(1)
+                    .firstOrError()
+                    .toFuture()
+                    .get();
+        } catch (Exception ex) {
+            throw ex;
+        }
     }
 
     @Test
