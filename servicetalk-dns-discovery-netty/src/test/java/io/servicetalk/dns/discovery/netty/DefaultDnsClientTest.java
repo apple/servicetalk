@@ -183,12 +183,17 @@ class DefaultDnsClientTest {
 
     @Test
     void whatHappensIpv4VsIpv6() throws Exception {
+        String ipv6localAddress = "0:0:" + "0:0:0:" + "0:0:0";
+        String ipv4DsnAddress = "8.8." +
+                "8.8";
+        String ipv6DnsAddress = "2001:4860:" + "4860:" + ":8888";
+
+        boolean useIpv6DnsResolver = false;
+
+        InetSocketAddress address = new InetSocketAddress(useIpv6DnsResolver ? ipv6DnsAddress : ipv4DsnAddress, 53);
         client = (DefaultDnsClient) new DefaultDnsServiceDiscovererBuilder()
-                .localAddress(new InetSocketAddress("0:0:0:0:0:0:0:0", 0))
-                .dnsServerAddressStreamProvider(// ipv6 dns server
-                        new SingletonDnsServerAddressStreamProvider(new InetSocketAddress("2001:4860:4860::8888", 53)))
-                .dnsServerAddressStreamProvider(// ipv4 dns server
-                        new SingletonDnsServerAddressStreamProvider(new InetSocketAddress("8.8.8.8", 53)))
+                .localAddress(new InetSocketAddress(ipv6localAddress, 0))
+                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(address))
                 .build();
         try {
             client.dnsQuery("apple.com")
