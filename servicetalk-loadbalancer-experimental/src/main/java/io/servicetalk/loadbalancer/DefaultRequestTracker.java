@@ -22,11 +22,11 @@ import java.util.concurrent.locks.StampedLock;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
+import static java.lang.Long.max;
+import static java.lang.Long.min;
 import static java.lang.Math.ceil;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -45,9 +45,9 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
      * Mean lifetime, exponential decay. inverted tau
      */
     private final double invTau;
-    private final long cancelPenalty;
-    private final long errorPenalty;
-    private final long concurrentRequestPenalty;
+    private final int cancelPenalty;
+    private final int errorPenalty;
+    private final int concurrentRequestPenalty;
 
     /**
      * Last inserted value to compute weight.
@@ -60,8 +60,8 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private int concurrentCount;
     private long concurrentStamp = Long.MIN_VALUE;
 
-    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty,
-                          final long concurrentRequestPenalty) {
+    DefaultRequestTracker(final long halfLifeNanos, final int cancelPenalty, final int errorPenalty,
+                          final int concurrentRequestPenalty) {
         ensurePositive(halfLifeNanos, "halfLifeNanos");
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
@@ -101,7 +101,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         onComplete(startTimeNanos, errorClass == ErrorClass.CANCELLED ? cancelPenalty : errorPenalty);
     }
 
-    private void onComplete(final long startTimeNanos, long penalty) {
+    private void onComplete(final long startTimeNanos, int penalty) {
         final long stamp = lock.writeLock();
         try {
             concurrentCount--;
@@ -159,19 +159,20 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
         final int concurrentPenalty = (int) min(MAX_VALUE,
-                (long) concurrentCount * concurrentRequestPenalty * currentEWMA);
+                ((long) concurrentCount) * concurrentRequestPenalty * currentEWMA);
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
         return MAX_VALUE - currentEWMA <= concurrentPenalty ? MIN_VALUE : -(currentEWMA + concurrentPenalty);
     }
 
-    private static int applyPenalty(int currentEWMA, int currentLatency, long penalty) {
+    private static int applyPenalty(int currentEWMA, int currentLatency, int penalty) {
         // Relatively large latencies will have a bigger impact on the penalty, while smaller latencies (e.g. premature
         // cancel/error) rely on the penalty.
-        return (int) min(MAX_VALUE, max(currentEWMA, currentLatency) * penalty);
+        // We widen the multiplication to a long to avoid the possibility of int overflows.
+        return (int) min(MAX_VALUE, max(currentEWMA, currentLatency) * ((long) penalty));
     }
 
-    private void updateEwma(long penalty, long startTimeNanos) {
+    private void updateEwma(int penalty, long startTimeNanos) {
         assert lock.isWriteLocked();
         // We capture the current time while holding the lock to exploit the monotonic time source
         // properties which prevent the time duration from going negative. This will result in a latency penalty

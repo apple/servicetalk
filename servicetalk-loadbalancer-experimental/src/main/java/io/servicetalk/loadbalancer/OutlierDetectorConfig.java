@@ -43,9 +43,9 @@ public final class OutlierDetectorConfig {
 
     // ServiceTalk specific settings
     private final Duration ewmaHalfLife;
-    private final long ewmaCancellationPenalty;
-    private final long ewmaErrorPenalty;
-    private final long concurrentRequestPenalty;
+    private final int ewmaCancellationPenalty;
+    private final int ewmaErrorPenalty;
+    private final int concurrentRequestPenalty;
     private final boolean cancellationIsError;
     private final int failedConnectionsThreshold;
     private final Duration failureDetectorIntervalJitter;
@@ -69,8 +69,8 @@ public final class OutlierDetectorConfig {
     private final int failurePercentageRequestVolume;
     private final Duration maxEjectionTime;
 
-    OutlierDetectorConfig(final Duration ewmaHalfLife, final long ewmaCancellationPenalty, final long ewmaErrorPenalty,
-                          final long concurrentRequestPenalty, final boolean cancellationIsError, int failedConnectionsThreshold,
+    private OutlierDetectorConfig(final Duration ewmaHalfLife, final int ewmaCancellationPenalty, final int ewmaErrorPenalty,
+                          final int concurrentRequestPenalty, final boolean cancellationIsError, int failedConnectionsThreshold,
                           final Duration failureDetectorIntervalJitter,
                           final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
@@ -126,7 +126,7 @@ public final class OutlierDetectorConfig {
      * The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the EWMA.
      * @return the penalty factor for local cancellation of requests.
      */
-    public long ewmaCancellationPenalty() {
+    public int ewmaCancellationPenalty() {
         return ewmaCancellationPenalty;
     }
 
@@ -143,7 +143,7 @@ public final class OutlierDetectorConfig {
      * The latency of the failed request is multiplied by the provided penalty before incorporating it into the EWMA.
      * @return the penalty factor for requests that were classified as an error.
      */
-    public long ewmaErrorPenalty() {
+    public int ewmaErrorPenalty() {
         return ewmaErrorPenalty;
     }
 
@@ -153,7 +153,7 @@ public final class OutlierDetectorConfig {
      * concurrent load the traffic distribution will be smoother for algorithms that consider load metrics.
      * @return the penalty factory to use for concurrent load.
      */
-    public long concurrentRequestPenalty() {
+    public int concurrentRequestPenalty() {
         return concurrentRequestPenalty;
     }
 
@@ -366,9 +366,9 @@ public final class OutlierDetectorConfig {
     public static final class Builder {
 
         static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
-        static final long DEFAULT_CANCEL_PENALTY = 5L;
-        static final long DEFAULT_ERROR_PENALTY = 10L;
-        static final long DEFAULT_CONCURRENT_REQUEST_PENALTY = 1L;
+        static final int DEFAULT_CANCEL_PENALTY = 5;
+        static final int DEFAULT_ERROR_PENALTY = 10;
+        static final int DEFAULT_CONCURRENT_REQUEST_PENALTY = 1;
         private boolean cancellationIsError = true;
 
         // Default xDS outlier detector settings.
@@ -389,9 +389,9 @@ public final class OutlierDetectorConfig {
 
         // Non-xDS builder settings
         private Duration ewmaHalfLife = DEFAULT_EWMA_HALF_LIFE;
-        private long ewmaCancellationPenalty = DEFAULT_CANCEL_PENALTY;
-        private long ewmaErrorPenalty = DEFAULT_ERROR_PENALTY;
-        private long concurrentRequestPenalty = DEFAULT_CONCURRENT_REQUEST_PENALTY;
+        private int ewmaCancellationPenalty = DEFAULT_CANCEL_PENALTY;
+        private int ewmaErrorPenalty = DEFAULT_ERROR_PENALTY;
+        private int concurrentRequestPenalty = DEFAULT_CONCURRENT_REQUEST_PENALTY;
         private int failedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
         private Duration intervalJitter = DEFAULT_HEALTH_CHECK_JITTER;
         private Duration serviceDiscoveryResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
@@ -497,7 +497,7 @@ public final class OutlierDetectorConfig {
          * @param ewmaCancellationPenalty the penalty factor for local cancellation of requests.
          * @return {@code this}
          */
-        public Builder ewmaCancellationPenalty(final long ewmaCancellationPenalty) {
+        public Builder ewmaCancellationPenalty(final int ewmaCancellationPenalty) {
             this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
             return this;
         }
@@ -511,7 +511,7 @@ public final class OutlierDetectorConfig {
          * @param ewmaErrorPenalty the penalty factor for requests that were classified as an error.
          * @return {@code this}
          */
-        public Builder ewmaErrorPenalty(final long ewmaErrorPenalty) {
+        public Builder ewmaErrorPenalty(final int ewmaErrorPenalty) {
             this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
             return this;
         }
@@ -537,7 +537,7 @@ public final class OutlierDetectorConfig {
          * @param ewmaConcurrentRequestPenalty the penalty factory to apply for concurrent load.
          * @return {@code this}
          */
-        public Builder ewmaConcurrentRequestPenalty(final long ewmaConcurrentRequestPenalty) {
+        public Builder ewmaConcurrentRequestPenalty(final int ewmaConcurrentRequestPenalty) {
             this.concurrentRequestPenalty = ensureNonNegative(
                     ewmaConcurrentRequestPenalty, "ewmaConcurrentRequestPenalty");
             return this;
