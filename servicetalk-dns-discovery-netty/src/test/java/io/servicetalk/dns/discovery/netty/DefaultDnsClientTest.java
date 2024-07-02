@@ -183,7 +183,7 @@ class DefaultDnsClientTest {
 
     @Test
     void whatHappensIpv4VsIpv6() throws Exception {
-        String ipv6localAddress = "0:0:" + "0:0:0:" + "0:0:0";
+        String ipv6localAddress = ":" + ":1";
         String ipv4DsnAddress = "8.8." +
                 "8.8";
         String ipv6DnsAddress = "2001:4860:" + "4860:" + ":8888";
