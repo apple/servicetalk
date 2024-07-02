@@ -22,8 +22,6 @@ import java.util.concurrent.locks.StampedLock;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
-import static java.lang.Long.max;
-import static java.lang.Long.min;
 import static java.lang.Math.ceil;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
@@ -152,13 +150,13 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         if (concurrentCount > 0 && concurrentStamp != Long.MIN_VALUE) {
             // If we have a request concurrent we should consider how long it has been concurrent so that sudden
             // interruptions don't have to wait for timeouts before our scores can be adjusted.
-            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - concurrentStamp));
+            currentEWMA = Integer.max(currentEWMA, nanoToMillis(currentTimeNanos - concurrentStamp));
         }
 
         // Add penalty for concurrent requests to account for "unaccounted" load.
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
-        final int concurrentPenalty = (int) min(MAX_VALUE,
+        final int concurrentPenalty = (int) Long.min(MAX_VALUE,
                 ((long) concurrentCount) * concurrentRequestPenalty * currentEWMA);
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
@@ -168,8 +166,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private static int applyPenalty(int currentEWMA, int currentLatency, int penalty) {
         // Relatively large latencies will have a bigger impact on the penalty, while smaller latencies (e.g. premature
         // cancel/error) rely on the penalty.
-        // We widen the multiplication to a long to avoid the possibility of int overflows.
-        return (int) min(MAX_VALUE, max(currentEWMA, currentLatency) * ((long) penalty));
+        return (int) Long.min(MAX_VALUE, Long.max(currentEWMA, currentLatency) * penalty);
     }
 
     private void updateEwma(int penalty, long startTimeNanos) {
@@ -203,6 +200,6 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     }
 
     private static int nanoToMillis(long nanos) {
-        return (int) MILLISECONDS.convert(min(nanos, MAX_MS_TO_NS), NANOSECONDS);
+        return (int) Long.min(Integer.MAX_VALUE, MILLISECONDS.convert(Long.min(nanos, MAX_MS_TO_NS), NANOSECONDS));
     }
 }
