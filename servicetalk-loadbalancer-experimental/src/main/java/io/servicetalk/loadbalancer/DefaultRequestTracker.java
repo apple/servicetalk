@@ -156,7 +156,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         // Add penalty for concurrent requests to account for "unaccounted" load.
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
-        int concurrentPenalty =  safeMultiply(concurrentCount, safeMultiply(currentEWMA, concurrentRequestPenalty));
+        int concurrentPenalty = safeMultiply(concurrentCount, safeMultiply(currentEWMA, concurrentRequestPenalty));
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
         return MAX_VALUE - currentEWMA <= concurrentPenalty ? MIN_VALUE : -(currentEWMA + concurrentPenalty);
@@ -203,7 +203,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     }
 
     private static int safeMultiply(int a, int b) {
-        long  result = ((long) a) * b;
+        long result = ((long) a) * b;
         return (int) Long.min(MAX_VALUE, result);
     }
 }
