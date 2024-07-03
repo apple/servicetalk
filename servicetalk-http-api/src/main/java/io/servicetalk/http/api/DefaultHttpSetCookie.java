@@ -34,13 +34,13 @@ import static java.lang.Integer.toHexString;
  * Default implementation of {@link HttpSetCookie}.
  */
 public final class DefaultHttpSetCookie implements HttpSetCookie {
-    private static final String ENCODED_LABEL_DOMAIN = "; domain=";
-    private static final String ENCODED_LABEL_PATH = "; path=";
-    private static final String ENCODED_LABEL_EXPIRES = "; expires=";
-    private static final String ENCODED_LABEL_MAX_AGE = "; max-age=";
-    private static final String ENCODED_LABEL_HTTP_ONLY = "; httponly";
-    private static final String ENCODED_LABEL_SECURE = "; secure";
-    private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
+    private static final String ENCODED_LABEL_DOMAIN = "; Domain=";
+    private static final String ENCODED_LABEL_PATH = "; Path=";
+    private static final String ENCODED_LABEL_EXPIRES = "; Expires=";
+    private static final String ENCODED_LABEL_MAX_AGE = "; Max-Age=";
+    private static final String ENCODED_LABEL_HTTP_ONLY = "; HttpOnly";
+    private static final String ENCODED_LABEL_SECURE = "; Secure";
+    private static final String ENCODED_LABEL_SAMESITE = "; SameSite=";
 
     private final CharSequence name;
     private final CharSequence value;

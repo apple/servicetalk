@@ -21,6 +21,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
@@ -80,5 +81,18 @@ class DefaultHttpSetCookieTest {
                         null, 1L, None, true, false, true).hashCode(),
                 is(not(new DefaultHttpSetCookie("foo", "bar", "/path", "docs.servicetalk.io",
                         null, 1L, None, true, false, true).hashCode())));
+    }
+
+    @Test
+    void testUppercaseNames() {
+        String encoded = new DefaultHttpSetCookie("foo", "bar", "myPath", "myDomain", "10", 10L, Lax,
+                false, true, true).encoded().toString();
+        assertThat(encoded, containsString("Path=myPath"));
+        assertThat(encoded, containsString("Domain=myDomain"));
+        assertThat(encoded, containsString("Expires=10"));
+        assertThat(encoded, containsString("Max-Age=10"));
+        assertThat(encoded, containsString("SameSite=Lax"));
+        assertThat(encoded, containsString("HttpOnly"));
+        assertThat(encoded, containsString("Secure"));
     }
 }
