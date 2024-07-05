@@ -65,8 +65,8 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     private volatile Long evictedUntilNanos;
 
     XdsHealthIndicator(final SequentialExecutor sequentialExecutor, final Executor executor,
-                       final Duration ewmaHalfLife, final long cancellationPenalty, final long errorPenalty,
-                       final long pendingRequestPenalty,
+                       final Duration ewmaHalfLife, final int cancellationPenalty, final int errorPenalty,
+                       final int pendingRequestPenalty,
                        final boolean cancellationIsError, final ResolvedAddress address, String lbDescription,
                        final HostObserver hostObserver) {
         super(requireNonNull(ewmaHalfLife, "ewmaHalfLife").toNanos(),

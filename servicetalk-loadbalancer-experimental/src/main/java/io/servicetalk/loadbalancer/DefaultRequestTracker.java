@@ -20,13 +20,9 @@ import io.servicetalk.client.api.ScoreSupplier;
 import java.util.concurrent.locks.StampedLock;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
-import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Integer.MIN_VALUE;
 import static java.lang.Math.ceil;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -38,16 +34,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * (2019) Algorithms for Unevenly Spaced Time Series: Moving Averages and Other Rolling Operators (4.2 pp. 10)</a>
  */
 abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
-    private static final long MAX_MS_TO_NS = NANOSECONDS.convert(MAX_VALUE, MILLISECONDS);
+    private static final long MAX_MS_TO_NS = NANOSECONDS.convert(Integer.MAX_VALUE, MILLISECONDS);
 
     private final StampedLock lock = new StampedLock();
     /**
      * Mean lifetime, exponential decay. inverted tau
      */
     private final double invTau;
-    private final long cancelPenalty;
-    private final long errorPenalty;
-    private final long concurrentRequestPenalty;
+    private final int cancelPenalty;
+    private final int errorPenalty;
+    private final int concurrentRequestPenalty;
 
     /**
      * Last inserted value to compute weight.
@@ -60,8 +56,8 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
     private int concurrentCount;
     private long concurrentStamp = Long.MIN_VALUE;
 
-    DefaultRequestTracker(final long halfLifeNanos, final long cancelPenalty, final long errorPenalty,
-                          final long concurrentRequestPenalty) {
+    DefaultRequestTracker(final long halfLifeNanos, final int cancelPenalty, final int errorPenalty,
+                          final int concurrentRequestPenalty) {
         ensurePositive(halfLifeNanos, "halfLifeNanos");
         this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
@@ -101,7 +97,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
         onComplete(startTimeNanos, errorClass == ErrorClass.CANCELLED ? cancelPenalty : errorPenalty);
     }
 
-    private void onComplete(final long startTimeNanos, long penalty) {
+    private void onComplete(final long startTimeNanos, int penalty) {
         final long stamp = lock.writeLock();
         try {
             concurrentCount--;
@@ -146,32 +142,32 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
             // maximum score to increase the likelihood this entity is selected. If there are concurrent requests we
             // don't yet know the latency characteristics so we return the minimum score to decrease the
             // likelihood this entity is selected.
-            return concurrentCount == 0 ? 0 : MIN_VALUE;
+            return concurrentCount == 0 ? 0 : Integer.MIN_VALUE;
         }
 
         if (concurrentCount > 0 && concurrentStamp != Long.MIN_VALUE) {
             // If we have a request concurrent we should consider how long it has been concurrent so that sudden
             // interruptions don't have to wait for timeouts before our scores can be adjusted.
-            currentEWMA = max(currentEWMA, nanoToMillis(currentTimeNanos - concurrentStamp));
+            currentEWMA = Integer.max(currentEWMA, nanoToMillis(currentTimeNanos - concurrentStamp));
         }
 
         // Add penalty for concurrent requests to account for "unaccounted" load.
         // Penalty is the observed latency if known, else an arbitrarily high value which makes entities for which
         // no latency data has yet been received (eg: request sent but not received), un-selectable.
-        final int concurrentPenalty = (int) min(MAX_VALUE,
-                (long) concurrentCount * concurrentRequestPenalty * currentEWMA);
+        int concurrentPenalty = safeMultiply(concurrentCount, safeMultiply(currentEWMA, concurrentRequestPenalty));
         // Since we are measuring latencies and lower latencies are better, we turn the score as negative such that
         // lower the latency, higher the score.
-        return MAX_VALUE - currentEWMA <= concurrentPenalty ? MIN_VALUE : -(currentEWMA + concurrentPenalty);
+        return Integer.MAX_VALUE - currentEWMA <= concurrentPenalty ?
+                Integer.MIN_VALUE : -(currentEWMA + concurrentPenalty);
     }
 
-    private static int applyPenalty(int currentEWMA, int currentLatency, long penalty) {
+    private static int applyPenalty(int currentEWMA, int currentLatency, int penalty) {
         // Relatively large latencies will have a bigger impact on the penalty, while smaller latencies (e.g. premature
         // cancel/error) rely on the penalty.
-        return (int) min(MAX_VALUE, max(currentEWMA, currentLatency) * penalty);
+        return (int) Long.min(Integer.MAX_VALUE, Long.max(currentEWMA, currentLatency) * penalty);
     }
 
-    private void updateEwma(long penalty, long startTimeNanos) {
+    private void updateEwma(int penalty, long startTimeNanos) {
         assert lock.isWriteLocked();
         // We capture the current time while holding the lock to exploit the monotonic time source
         // properties which prevent the time duration from going negative. This will result in a latency penalty
@@ -190,18 +186,25 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
 
         // Peak EWMA from finagle for the score to be extremely sensitive to higher than normal latencies.
         final int nextEWMA;
-        if (currentLatency > currentEWMA) {
-            nextEWMA = currentLatency;
-        } else {
-            final double tmp = (currentTimeNanos - lastTimeNanos) * invTau;
-            final double w = exp(-tmp);
-            nextEWMA = (int) ceil(currentEWMA * w + currentLatency * (1d - w));
-        }
+        nextEWMA = currentLatency > currentEWMA ? currentLatency :
+                calculateDecay(currentTimeNanos, lastTimeNanos, currentEWMA, currentLatency, invTau);
         lastTimeNanos = currentTimeNanos;
         ewma = nextEWMA;
     }
 
+    private static int calculateDecay(long currentTimeNanos, long lastTimeNanos,
+                                      long currentEWMA, int currentLatency, double invTau) {
+        final double tmp = (currentTimeNanos - lastTimeNanos) * invTau;
+        final double w = exp(-tmp);
+        return (int) ceil(currentEWMA * w + currentLatency * (1d - w));
+    }
+
     private static int nanoToMillis(long nanos) {
-        return (int) MILLISECONDS.convert(min(nanos, MAX_MS_TO_NS), NANOSECONDS);
+        return (int) Long.min(Integer.MAX_VALUE, MILLISECONDS.convert(Long.min(nanos, MAX_MS_TO_NS), NANOSECONDS));
+    }
+
+    private static int safeMultiply(int a, int b) {
+        long result = ((long) a) * b;
+        return (int) Long.min(Integer.MAX_VALUE, result);
     }
 }
