@@ -109,7 +109,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(2);
     static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(128);
 
-    @Nullable
     private final U address;
     @Nullable
     private U proxyAddress;
@@ -148,9 +147,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
-    private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
+    private DefaultSingleAddressHttpClientBuilder(final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
-        this.address = address;
+        this.address = requireNonNull(address);
         proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
@@ -194,7 +193,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
 
         U address() {
-            assert builder.address != null : "Attempted to buildStreaming with an unknown address";
             return builder.proxyAddress != null ? builder.proxyAddress : builder.address;
         }
 
@@ -450,7 +448,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
-        assert address != null : "address should have been set in constructor";
         return new AbsoluteAddressHttpRequesterFilter("http", hostToCharSequenceFunction.apply(address));
     }
 
@@ -625,7 +622,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
-        assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
         setFallbackHostAndPort(config, address);
         config.tcpConfig().sslConfig(sslConfig);
