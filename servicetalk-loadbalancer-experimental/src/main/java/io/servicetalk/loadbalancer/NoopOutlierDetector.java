@@ -57,7 +57,7 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
 
         BasicHealthIndicator() {
             super(outlierDetectorConfig.ewmaHalfLife().toNanos(), outlierDetectorConfig.ewmaCancellationPenalty(),
-                    outlierDetectorConfig.ewmaCancellationPenalty(), outlierDetectorConfig.concurrentRequestPenalty());
+                    outlierDetectorConfig.ewmaErrorPenalty(), outlierDetectorConfig.concurrentRequestPenalty());
         }
 
         @Override
@@ -94,5 +94,16 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
         public void setHost(Host<ResolvedAddress, C> host) {
             // noop
         }
+    }
+
+    @Override
+    public String toString() {
+        return "NoopOutlierDetector{" +
+                "ewmaHalfLife=" + outlierDetectorConfig.ewmaHalfLife() +
+                ", ewmaCancellationPenalty=" + outlierDetectorConfig.ewmaCancellationPenalty() +
+                ", ewmaErrorPenalty=" + outlierDetectorConfig.ewmaErrorPenalty() +
+                ", concurrentRequestPenalty=" + outlierDetectorConfig.concurrentRequestPenalty() +
+                ", executor=" + executor +
+                '}';
     }
 }
