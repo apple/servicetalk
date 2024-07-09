@@ -125,7 +125,8 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         // than the eviction time technically prescribes.
         if (evictedUntilNanos <= currentTimeNanos()) {
             sequentialExecutor.execute(() -> {
-                if (!cancelled && this.evictedUntilNanos != null && this.evictedUntilNanos <= currentTimeNanos()) {
+                final Long innerEvictedUntilNanos = this.evictedUntilNanos;
+                if (!cancelled && innerEvictedUntilNanos != null && innerEvictedUntilNanos <= currentTimeNanos()) {
                     sequentialRevive();
                 }
             });

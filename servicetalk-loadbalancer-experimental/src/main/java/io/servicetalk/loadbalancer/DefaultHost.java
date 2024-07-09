@@ -85,7 +85,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final Addr address;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    @Nullable
     private final ConnectionPoolStrategy<C> connectionPoolStrategy;
     @Nullable
     private final HealthIndicator<Addr, C> healthIndicator;
@@ -97,8 +96,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     DefaultHost(final String lbDescription, final Addr address,
                 final ConnectionPoolStrategy<C> connectionPoolStrategy,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
-                final HostObserver hostObserver, final @Nullable HealthCheckConfig healthCheckConfig,
-                final @Nullable HealthIndicator healthIndicator) {
+                final HostObserver hostObserver, @Nullable final HealthCheckConfig healthCheckConfig,
+                @Nullable final HealthIndicator<Addr, C> healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.healthIndicator = healthIndicator;
@@ -179,14 +178,15 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
-    public @Nullable C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
+    @Nullable
+    public C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
         return connectionPoolStrategy.select(connections, selector);
     }
 
     @Override
     public Single<C> newConnection(
-            Predicate<C> selector, final boolean forceNewConnectionAndReserve, final @Nullable ContextMap context) {
+            Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable final ContextMap context) {
         return Single.defer(() -> {
             ContextMap actualContext = context;
             if (actualContext == null) {
@@ -274,8 +274,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         assert healthCheckConfig != null;
         for (;;) {
             ConnState previous = connStateUpdater.get(this);
-            // TODO: if we have a failure, why does it matter if the connections are there?
-            //  If we try to make a new connection (maybe the pool is small) it would likely fail.
             if (!previous.isActive() || !previous.connections.isEmpty()
                     || cause instanceof ConnectionLimitReachedException) {
                 LOGGER.debug("{}: failed to open a new connection to the host on address {}. {}.",
@@ -292,7 +290,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             lbDescription, address, nextState.failedConnections,
                             healthCheckConfig.failedThreshold, cause);
                 } else {
-                    assert nextState.state == State.UNHEALTHY;
+                    // if we're unhealthy we also have a non-null healthCheck.
+                    assert nextState.state == State.UNHEALTHY && nextState.healthCheck != null;
                     LOGGER.info("{}: failed to open a new connection to the host on address {} " +
                                     "{} time(s) in a row. Error counting threshold reached, marking this host as " +
                                     "UNHEALTHY for the selection algorithm and triggering background health-checking.",
@@ -318,7 +317,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return state != State.EXPIRED && state != State.CLOSED;
     }
 
-    private boolean addConnection(final C connection, final @Nullable HealthCheck currentHealthCheck) {
+    private boolean addConnection(final C connection, @Nullable final HealthCheck currentHealthCheck) {
         int addAttempt = 0;
         for (;;) {
             final ConnState previous = connStateUpdater.get(this);
@@ -446,6 +445,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private void cancelIfHealthCheck(ConnState connState) {
         if (connState.isUnhealthy()) {
             LOGGER.debug("{}: health check cancelled for {}.", lbDescription, this);
+            assert connState.healthCheck != null; // guaranteed by `.isUnhealthy()`
             connState.healthCheck.cancel();
         }
     }
@@ -528,7 +528,8 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         @Nullable
         HealthCheck healthCheck;
 
-        private ConnState(final List<C> connections, State state, int failedConnections, HealthCheck healthCheck) {
+        private ConnState(final List<C> connections, State state, int failedConnections,
+                          @Nullable final HealthCheck healthCheck) {
             // These asserts codify the invariants of the state.
             // if the state is unhealthy there must be a healthcheck
             assert state != State.UNHEALTHY || healthCheck != null;
@@ -543,6 +544,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
 
         ConnState toNextFailedConnection(Throwable cause) {
+            assert healthCheckConfig != null;
             final int nextFailedCount = addWithOverflowProtection(this.failedConnections, 1);
             if (state == State.ACTIVE && healthCheckConfig.failedThreshold <= nextFailedCount) {
                 return new ConnState(connections, State.UNHEALTHY, nextFailedCount, new HealthCheck(cause));

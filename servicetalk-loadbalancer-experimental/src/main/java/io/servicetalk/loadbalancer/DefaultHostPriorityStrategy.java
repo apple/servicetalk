@@ -59,14 +59,14 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         //      #zone-aware-load-balancing
         // Consolidate our hosts into their respective priority groups. Since we're going to use a map we must use
         // and ordered map (in this case a TreeMap) so that we can iterate in order of group priority.
-        TreeMap<Integer, Group> groups = new TreeMap<>();
+        TreeMap<Integer, Group<T>> groups = new TreeMap<>();
         for (T host : hosts) {
             if (host.priority() < 0) {
                 LOGGER.warn("{}: Illegal priority: {} (expected priority >=0). Ignoring priority data.",
                         lbDescription, host.priority());
                 return hosts;
             }
-            Group group = groups.computeIfAbsent(host.priority(), i -> new Group());
+            Group<T> group = groups.computeIfAbsent(host.priority(), i -> new Group<>());
             if (host.isHealthy()) {
                 group.healthyCount++;
             }
@@ -81,7 +81,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
 
         // Compute the health percentage for each group.
         int totalHealthPercentage = 0;
-        for (Group group : groups.values()) {
+        for (Group<T> group : groups.values()) {
             group.healthPercentage = Math.min(100, overProvisionPercentage * group.healthyCount / group.hosts.size());
             totalHealthPercentage = Math.min(100, totalHealthPercentage + group.healthPercentage);
         }
@@ -95,7 +95,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
         List<T> weightedResults = new ArrayList<>();
         int activeGroups = 0;
         int remainingProbability = 100;
-        for (Group group : groups.values()) {
+        for (Group<T> group : groups.values()) {
             assert !group.hosts.isEmpty();
             final int groupProbability = Math.min(remainingProbability,
                     group.healthPercentage * 100 / totalHealthPercentage);
@@ -109,7 +109,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
             }
         }
         // We should have at least one host now: if all the hosts were unhealthy the `totalHealthyPercentage` would be
-        // zero and we would have bailed before re-weighting. If the weights of a group were all zero we should have
+        // zero, and we would have bailed before re-weighting. If the weights of a group were all zero we should have
         // re-weighted them all equally and added them.
         assert !weightedResults.isEmpty();
 
