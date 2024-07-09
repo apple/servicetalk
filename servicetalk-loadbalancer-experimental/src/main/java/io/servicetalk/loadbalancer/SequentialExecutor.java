@@ -86,7 +86,6 @@ final class SequentialExecutor implements Executor {
         final Thread thisThread = Thread.currentThread();
         currentDrainingThread = thisThread;
         for (;;) {
-            assert next != null;
             try {
                 next.runnable.run();
             } catch (Throwable ex) {

@@ -111,7 +111,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         kernel.cancel();
         sequentialExecutor.execute(() -> {
             List<XdsHealthIndicator<ResolvedAddress, C>> indicatorList = new ArrayList<>(indicators);
-            for (XdsHealthIndicator indicator : indicatorList) {
+            for (XdsHealthIndicator<ResolvedAddress, C> indicator : indicatorList) {
                 indicator.sequentialCancel();
             }
             assert indicators.isEmpty();
@@ -248,7 +248,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         public void detectOutliers(final OutlierDetectorConfig config,
                                    final Collection<? extends XdsHealthIndicator<ResolvedAddress, C>> indicators) {
             int unhealthy = 0;
-            for (XdsHealthIndicator indicator : indicators) {
+            for (XdsHealthIndicator<ResolvedAddress, C> indicator : indicators) {
                 // Hosts can still be marked unhealthy due to consecutive failures.
                 final boolean isHealthy = indicator.isHealthy();
                 if (isHealthy) {

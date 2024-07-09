@@ -129,7 +129,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * are unable to have a connection established. Providing {@code null} disables this mechanism (meaning the host
      * continues being eligible for connecting on the request path).
      * @param outlierDetectorFactory outlier detector factory.
-     * @see RoundRobinLoadBalancerFactory
      */
     DefaultLoadBalancer(
             final String id,
@@ -412,7 +411,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             ResolvedAddress addr = event.address();
             final LoadBalancerObserver.HostObserver hostObserver = loadBalancerObserver.hostObserver(addr);
             // All hosts will share the health check config of the parent load balancer.
-            final HealthIndicator indicator = outlierDetector.newHealthIndicator(addr, hostObserver);
+            final HealthIndicator<ResolvedAddress, C> indicator =
+                    outlierDetector.newHealthIndicator(addr, hostObserver);
             // We don't need the host level health check if we are either not health checking at all or if the
             // failed connect threshold is negative, meaning disabled.
             final HealthCheckConfig hostHealthCheckConfig =
@@ -421,9 +421,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
                     eventWeight(event), eventPriority(event));
-            if (indicator != null) {
-                indicator.setHost(host);
-            }
+            indicator.setHost(host);
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<PrioritizedHostImpl<ResolvedAddress, C>> currentHosts = usedHosts;
@@ -523,7 +521,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
             if (exn instanceof NoActiveHostException) {
-                if (!currentHostSelector.isHealthy()) {
+                if (healthCheckConfig != null && !currentHostSelector.isHealthy()) {
                     final long currNextResubscribeTime = nextResubscribeTime;
                     if (currNextResubscribeTime >= 0 &&
                             healthCheckConfig.executor.currentTime(NANOSECONDS) >= currNextResubscribeTime &&

@@ -75,7 +75,8 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     // This method assumes the host is considered healthy.
-    protected final @Nullable Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
+    @Nullable
+    protected final Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
             boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
         if (!forceNewConnectionAndReserve) {

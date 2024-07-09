@@ -19,6 +19,7 @@ import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
+import javax.annotation.Nullable;
 
 final class NoopLoadBalancerObserver implements LoadBalancerObserver {
 
@@ -78,7 +79,7 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
         }
 
         @Override
-        public void onHostMarkedUnhealthy(Throwable cause) {
+        public void onHostMarkedUnhealthy(@Nullable Throwable cause) {
             // noop
         }
 

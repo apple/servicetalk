@@ -59,7 +59,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserver loadBalancerObserver) {
-        return loadBalancerObserver(ignored -> loadBalancerObserver);
+        return loadBalancerObserver(loadBalancerObserver == null ? null : ignored -> loadBalancerObserver);
     }
 
     @Override
@@ -71,8 +71,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig) {
-        this.outlierDetectorConfig = outlierDetectorConfig == null ?
-                OutlierDetectorConfig.DEFAULT_CONFIG : outlierDetectorConfig;
+        this.outlierDetectorConfig = outlierDetectorConfig;
         return this;
     }
 
