@@ -68,6 +68,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XdsOutlierDetector.class);
 
+    private final OutlierDetectorConfig outlierDetectorConfig;
     private final SequentialExecutor sequentialExecutor;
     private final Executor executor;
     private final String lbDescription;
@@ -80,21 +81,18 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     // reads and writes are protected by `sequentialExecutor`.
     private int ejectedHostCount;
 
-    XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig config, final String lbDescription,
-                       SequentialExecutor.ExceptionHandler exceptionHandler) {
+    XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig outlierDetectorConfig,
+                       final String lbDescription, SequentialExecutor.ExceptionHandler exceptionHandler) {
         this.sequentialExecutor = new SequentialExecutor(exceptionHandler);
+        this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
         this.executor = requireNonNull(executor, "executor");
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
-        this.kernel = new Kernel(config);
+        this.kernel = new Kernel(outlierDetectorConfig);
     }
 
     XdsOutlierDetector(final Executor executor, final OutlierDetectorConfig config, final String lbDescription) {
-        SequentialExecutor.ExceptionHandler exceptionHandler = (uncaughtException) ->
-                LOGGER.error("{}: Uncaught exception in {}", this, getClass().getSimpleName(), uncaughtException);
-        this.sequentialExecutor = new SequentialExecutor(exceptionHandler);
-        this.executor = requireNonNull(executor, "executor");
-        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
-        this.kernel = new Kernel(config);
+        this(executor, config, lbDescription, (uncaughtException) -> LOGGER.error("{}: Uncaught exception in {}",
+                lbDescription, XdsOutlierDetector.class.getSimpleName(), uncaughtException));
     }
 
     @Override
@@ -128,6 +126,15 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
     // Exposed for testing. Not thread safe.
     int ejectedHostCount() {
         return ejectedHostCount;
+    }
+
+    @Override
+    public String toString() {
+        return "XdsOutlierDetector{" +
+                "lbDescription=" + lbDescription +
+                ", outlierDetectorConfig=" + outlierDetectorConfig +
+                ", executor=" + executor +
+                '}';
     }
 
     private final class XdsHealthIndicatorImpl extends XdsHealthIndicator<ResolvedAddress, C> {

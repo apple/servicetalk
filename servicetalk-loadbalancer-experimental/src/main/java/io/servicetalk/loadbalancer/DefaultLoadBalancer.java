@@ -20,6 +20,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.NoActiveHostException;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
@@ -109,6 +110,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final HealthCheckConfig healthCheckConfig;
     private final HostPriorityStrategy priorityStrategy;
     private final OutlierDetector<ResolvedAddress, C> outlierDetector;
+    private final Cancellable outlierDetectorStatusChangeStream;
     private final LoadBalancerObserver loadBalancerObserver;
     private final ListenableAsyncCloseable asyncCloseable;
 
@@ -167,8 +169,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         subscribeToEvents(false);
 
         // When we get a health-status event we should update the host set.
-        this.outlierDetector.healthStatusChanged().forEach((ignored) ->
+        this.outlierDetectorStatusChangeStream = this.outlierDetector.healthStatusChanged().forEach((ignored) ->
             sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts)));
+
+        LOGGER.info("{}: starting load balancer. Load balancing policy: {}, outlier detection: {}", this,
+                loadBalancingPolicy, outlierDetector);
     }
 
     private void subscribeToEvents(boolean resubscribe) {
@@ -194,6 +199,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 if (!isClosed) {
                     discoveryCancellable.cancel();
                     eventStreamProcessor.onComplete();
+                    outlierDetectorStatusChangeStream.cancel();
                     outlierDetector.cancel();
                 }
                 isClosed = true;
