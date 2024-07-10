@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +28,8 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -53,11 +56,7 @@ class PublisherGroupToManyTest {
         group1Sub = new TestPublisherSubscriber<>();
         group2Sub = new TestPublisherSubscriber<>();
         group3Sub = new TestPublisherSubscriber<>();
-    }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void groupToMany(boolean onError) throws InterruptedException {
         toSource(source.groupToMany((Integer integer) -> {
             if (integer == null) {
                 return singletonList(GroupColor.RED).iterator();
@@ -66,7 +65,11 @@ class PublisherGroupToManyTest {
             }
             return asList(GroupColor.GREEN, GroupColor.BLUE).iterator();
         }, 10)).subscribe(groupSub);
+    }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: onError={0}")
+    @ValueSource(booleans = {true, false})
+    void groupToMany(boolean onError) throws InterruptedException {
         PublisherSource.Subscription groupSubscription = groupSub.awaitSubscription();
         groupSubscription.request(3);
         subscription.awaitRequestN(3);
@@ -108,5 +111,61 @@ class PublisherGroupToManyTest {
             group2Sub.awaitOnComplete();
             group3Sub.awaitOnComplete();
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: applyMulticast={0}")
+    @ValueSource(booleans = {true, false})
+    void groupedPublisherResubscribe(boolean applyMulticast) throws InterruptedException {
+        PublisherSource.Subscription groupSubscription = groupSub.awaitSubscription();
+        groupSubscription.request(Long.MAX_VALUE);
+        subscription.awaitRequestN(2);
+        source.onNext(1);
+        GroupedPublisher<GroupColor, Integer> group1 = groupSub.takeOnNext();
+        assertThat(group1, notNullValue());
+        Publisher<Integer> group1Pub = group1;
+        if (applyMulticast) {
+            group1Pub = group1Pub.multicast(1, false);
+        }
+        assertThat(group1.key(), is(GroupColor.GREEN));
+        toSource(group1Pub).subscribe(group1Sub);
+        GroupedPublisher<GroupColor, Integer> group2 = groupSub.takeOnNext();
+        assertThat(group2, notNullValue());
+        assertThat(group2.key(), is(GroupColor.BLUE));
+        toSource(group2).subscribe(group2Sub);
+
+        PublisherSource.Subscription subscription1 = group1Sub.awaitSubscription();
+        PublisherSource.Subscription subscription2 = group2Sub.awaitSubscription();
+
+        subscription1.request(1);
+        assertThat(group1Sub.takeOnNext(), is(1));
+        subscription2.request(1);
+        assertThat(group2Sub.takeOnNext(), is(1));
+
+        subscription1.cancel();
+        TestPublisherSubscriber<Integer> group1SubNew = new TestPublisherSubscriber<>();
+        toSource(group1Pub).subscribe(group1SubNew);
+
+        source.onNext(3);
+        if (applyMulticast) {
+            PublisherSource.Subscription subscription1New = group1SubNew.awaitSubscription();
+            subscription1New.request(1);
+            assertThat(group1SubNew.takeOnNext(), is(3));
+        } else {
+            assertThat(group1SubNew.awaitOnError(), is(instanceOf(DuplicateSubscribeException.class)));
+            // Instead, it will produce a new GroupedPublisher
+            group1 = groupSub.takeOnNext();
+            assertThat(group1, notNullValue());
+            assertThat(group1.key(), is(GroupColor.GREEN));
+        }
+        assertThat(groupSub.pollAllOnNext(), is(empty()));
+        subscription2.request(1);
+        assertThat(group2Sub.takeOnNext(), is(3));
+
+        source.onComplete();
+        groupSub.awaitOnComplete();
+        if (applyMulticast) {
+            group1SubNew.awaitOnComplete();
+        }
+        group2Sub.awaitOnComplete();
     }
 }

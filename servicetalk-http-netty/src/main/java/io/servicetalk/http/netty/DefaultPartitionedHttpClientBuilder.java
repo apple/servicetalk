@@ -115,6 +115,9 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
             // build new context, user may have changed anything on the builder from the filter
             final SingleAddressHttpClientBuilder<U, R> builder = requireNonNull(builderFactory.get());
             builder.serviceDiscoverer(sd);
+            // Disable retries at the single-address client level because the original stream is already retried and
+            // partitioned streams never fail.
+            builder.retryServiceDiscoveryErrors(HttpClients.NoRetriesStrategy.INSTANCE);
             setExecutionContext(builder, executionContext);
             if (clientInitializer != null) {
                 clientInitializer.initialize(pa, builder);
