@@ -164,11 +164,15 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
             PSDE extends PartitionedServiceDiscovererEvent<R>>
             implements ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> {
         private final ListenableAsyncCloseable close;
-        private final GroupedPublisher<Partition<C>, PSDE> newGroup;
+        private final Publisher<PSDE> groupEvents;
         private final Partition<C> partition;
 
         PartitionServiceDiscoverer(final GroupedPublisher<Partition<C>, PSDE> newGroup) {
-            this.newGroup = newGroup;
+            // Apply multicast with cancelUpstream=false to accommodate LoadBalancer ability to cancel and re-subscribe
+            // to the same Publisher of Events in case it turns to unhealthy state. Even thought for partitioned client
+            // re-subscribe to group events won't trigger re-discovery of upstream publisher, at least it will help to
+            // avoid DuplicateSubscribeException.
+            this.groupEvents = newGroup.multicast(1, false);
             this.partition = newGroup.key();
             close = emptyAsyncCloseable();
         }
@@ -179,7 +183,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
          */
         @Override
         public Publisher<Collection<ServiceDiscovererEvent<R>>> discover(final U ignoredAddress) {
-            return newGroup.filter(new Predicate<PSDE>() {
+            return groupEvents.filter(new Predicate<PSDE>() {
                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                 private final Map<R, MutableInt> addressCount = new HashMap<>();
 

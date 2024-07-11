@@ -589,6 +589,11 @@ public final class HttpClients {
         public Completable apply(final int i, final Throwable t) {
             return Completable.failed(t);
         }
+
+        @Override
+        public String toString() {
+            return NoRetriesStrategy.class.getSimpleName();
+        }
     }
 
     /**
