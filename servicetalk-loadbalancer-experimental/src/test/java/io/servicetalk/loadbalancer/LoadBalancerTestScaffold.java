@@ -116,26 +116,27 @@ abstract class LoadBalancerTestScaffold {
             TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
             TestConnectionFactory connectionFactory);
 
-    void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
+    @SafeVarargs
+    final void sendServiceDiscoveryEvents(final ServiceDiscovererEvent<String>... events) {
         sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
     }
 
     @SuppressWarnings("unchecked")
     private void sendServiceDiscoveryEvents(
             TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
-            final ServiceDiscovererEvent... events) {
+            final ServiceDiscovererEvent<String>... events) {
         serviceDiscoveryPublisher.onNext(Arrays.asList(events));
     }
 
-    ServiceDiscovererEvent upEvent(final String address) {
+    ServiceDiscovererEvent<String> upEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, AVAILABLE);
     }
 
-    ServiceDiscovererEvent downEvent(final String address) {
+    ServiceDiscovererEvent<String> downEvent(final String address) {
         return new DefaultServiceDiscovererEvent<>(address, eagerConnectionShutdown() ? UNAVAILABLE : EXPIRED);
     }
 
-    ServiceDiscovererEvent downEvent(final String address, ServiceDiscovererEvent.Status status) {
+    ServiceDiscovererEvent<String> downEvent(final String address, ServiceDiscovererEvent.Status status) {
         return new DefaultServiceDiscovererEvent<>(address, status);
     }
 

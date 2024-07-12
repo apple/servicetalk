@@ -90,6 +90,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private static final long RESUBSCRIBING = -1L;
 
     private volatile long nextResubscribeTime = RESUBSCRIBING;
+    @Nullable
+    private volatile EventSubscriber currentSubscriber;
 
     // writes are protected by `sequentialExecutor` but the field can be read by any thread.
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
@@ -181,10 +183,13 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // This method is invoked only when we are in RESUBSCRIBING state. Only one thread can own this state.
         assert nextResubscribeTime == RESUBSCRIBING;
         if (resubscribe) {
+            assert healthCheckConfig != null : "Resubscribe can happen only when health-checking is configured";
             LOGGER.debug("{}: resubscribing to the ServiceDiscoverer event publisher.", this);
             discoveryCancellable.cancelCurrent();
         }
-        toSource(eventPublisher).subscribe(new EventSubscriber(resubscribe));
+        final EventSubscriber eventSubscriber = new EventSubscriber(resubscribe);
+        this.currentSubscriber = eventSubscriber;
+        toSource(eventPublisher).subscribe(eventSubscriber);
         if (healthCheckConfig != null) {
             assert healthCheckConfig.executor instanceof NormalizedTimeSourceExecutor;
             nextResubscribeTime = nextResubscribeTime(healthCheckConfig, this);
@@ -274,16 +279,27 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         @Override
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
             if (events == null || events.isEmpty()) {
-                LOGGER.debug("{}: unexpectedly received null or empty list instead of events.",
-                        DefaultLoadBalancer.this);
+                LOGGER.debug("{}: unexpectedly received null or empty collection instead of events: {}",
+                        DefaultLoadBalancer.this, events);
                 return;
             }
             sequentialExecutor.execute(() -> sequentialOnNext(events));
         }
 
         private void sequentialOnNext(Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-            if (isClosed || events.isEmpty()) {
-                // nothing to do if the load balancer is closed or there are no events.
+            assert !events.isEmpty();
+            if (isClosed) {
+                // nothing to do if the load balancer is closed.
+                return;
+            }
+
+            // According to Reactive Streams Rule 1.8
+            // (https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.8) new events will
+            // stop eventually but not guaranteed to stop immediately after cancellation or could race with cancel.
+            // Therefore, we should check that this is the current Subscriber before processing new events.
+            if (healthCheckConfig != null && currentSubscriber != this) {
+                LOGGER.debug("{}: received new events after cancelling previous subscription, discarding: {}",
+                        DefaultLoadBalancer.this, events);
                 return;
             }
 

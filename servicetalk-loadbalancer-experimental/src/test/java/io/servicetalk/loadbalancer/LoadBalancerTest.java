@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -678,14 +679,27 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
             assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
-        // Assert the next select attempt after resubscribe internal triggers re-subscribe
+        // Advance time to allow re-subscribe on the next select attempt
         testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+
+        // Grab previous Subscriber to simulate more events after cancellation
+        Subscriber<? super Collection<ServiceDiscovererEvent<String>>> oldSubscriber =
+                sequentialPublisherSubscriberFunction.subscriber();
+        assertThat(oldSubscriber, is(notNullValue()));
+
+        // Assert the next select attempt triggers re-subscribe
         assertSelectThrows(instanceOf(NoActiveHostException.class));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(3));
 
         // Verify state after re-subscribe
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+
+        // Events for the oldSubscriber must be discarded
+        oldSubscriber.onNext(Arrays.asList(upEvent("address-10"), upEvent("address-11")));
+        assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+
+        // Events for the new Subscriber change the state
         sendServiceDiscoveryEvents(upEvent("address-2"), upEvent("address-3"), upEvent("address-4"));
         assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
 
