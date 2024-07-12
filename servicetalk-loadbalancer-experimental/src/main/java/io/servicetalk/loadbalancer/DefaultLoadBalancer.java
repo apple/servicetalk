@@ -510,7 +510,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
         nextHosts = priorityStrategy.prioritize(nextHosts);
         this.hostSelector = hostSelector.rebuildWithHosts(nextHosts);
-        loadBalancerObserver.onHostSetChanged(nextHosts);
+        loadBalancerObserver.onHostSetChanged(Collections.unmodifiableCollection(nextHosts));
     }
 
     @Override
