@@ -67,6 +67,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("deprecation")
 class PartitionedHttpClientTest {
     private static final PartitionAttributes.Key<String> SRV_NAME = PartitionAttributes.Key.newKey();
     private static final PartitionAttributes.Key<Boolean> SRV_LEADER = PartitionAttributes.Key.newKey();

@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -66,17 +67,17 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -86,7 +87,6 @@ import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toCon
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofMinutes;
-import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -105,9 +105,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             new RetryingHttpRequesterFilter.Builder().build();
     private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
             new IdleTimeoutConnectionFilter(ofMinutes(5));
-
-    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(2);
-    static final Duration SD_RETRY_STRATEGY_MAX_DELAY = ofSeconds(128);
+    private static final AtomicInteger CLIENT_ID = new AtomicInteger();
 
     private final U address;
     @Nullable
@@ -116,7 +114,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
-    private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
@@ -142,8 +140,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = defaultLoadBalancer();
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-
+        this.serviceDiscoverer = new CastedServiceDiscoverer<>(serviceDiscoverer);
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
@@ -176,7 +173,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
-        private final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd;
+        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
         private final SdStatusCompletable sdStatus;
 
         @Nullable
@@ -184,7 +181,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder,
-                final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
+                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd,
                 @Nullable final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy) {
             this.builder = builder;
             this.serviceDiscovererRetryStrategy = serviceDiscovererRetryStrategy;
@@ -200,17 +197,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             return builder.config;
         }
 
-        ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
-                HttpExecutionContext executionContext) {
-            BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer(
+                final String targetResource, final HttpExecutionContext executionContext) {
+            final BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
             if (sdRetryStrategy == HttpClients.NoRetriesStrategy.INSTANCE) {
                 return sd;
             }
-            if (sdRetryStrategy == null) {
-                sdRetryStrategy = retryWithExponentialBackoffFullJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
-                        SD_RETRY_STRATEGY_MAX_DELAY, executionContext.executor());
-            }
-            return new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(sd, sdStatus), sdRetryStrategy);
+            return new RetryingServiceDiscoverer<>(targetResource, new StatusAwareServiceDiscoverer<>(sd, sdStatus),
+                    sdRetryStrategy, executionContext, HttpClientBuildContext::makeUnavailable);
+        }
+
+        private static <R> ServiceDiscovererEvent<R> makeUnavailable(final ServiceDiscovererEvent<R> event) {
+            return new DefaultServiceDiscovererEvent<>(event.address(), UNAVAILABLE);
         }
     }
 
@@ -220,6 +218,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
+        final String targetResource = targetResource(ctx);
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         final HttpExecutionContext builderExecutionContext = ctx.builder.executionContextBuilder.build();
         final HttpExecutionStrategy computedStrategy =
@@ -236,7 +235,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<R>>> sdEvents =
-                    ctx.serviceDiscoverer(executionContext).discover(ctx.address());
+                    ctx.serviceDiscoverer(targetResource, executionContext).discover(ctx.address());
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
@@ -304,9 +303,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             final LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> lb =
                     closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
-                            sdEvents,
-                            connectionFactory,
-                            targetAddress(ctx)));
+                            sdEvents, connectionFactory, targetResource));
 
             ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
 
@@ -338,14 +335,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     builderStrategy.missing(computedStrategy) != offloadNone()) {
                 LOGGER.info("Client for {} created with the builder strategy {} but resulting computed strategy is " +
                                 "{}. One of the filters enforces additional offloading. To find out what filter is " +
-                                "it, enable debug level logging for {}.", targetAddress(ctx), builderStrategy,
+                                "it, enable debug level logging for {}.", targetResource, builderStrategy,
                         computedStrategy, ClientStrategyInfluencerChainBuilder.class);
             } else if (builderStrategy == computedStrategy) {
                 LOGGER.debug("Client for {} created with the execution strategy {}.",
-                        targetAddress(ctx), computedStrategy);
+                        targetResource, computedStrategy);
             } else {
                 LOGGER.debug("Client for {} created with the builder strategy {}, resulting computed strategy is {}.",
-                        targetAddress(ctx), builderStrategy, computedStrategy);
+                        targetResource, builderStrategy, computedStrategy);
             }
             return new FilterableClientToClient(wrappedClient, executionContext);
         } catch (final Throwable t) {
@@ -392,10 +389,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    private static <U, R> String targetAddress(final HttpClientBuildContext<U, R> ctx) {
-        assert ctx.builder.address != null;
-        return ctx.builder.proxyAddress == null ?
-                ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.builder.proxyAddress + ")";
+    /**
+     * This method is used to create a "targetResource" identifier that helps us to correlate internal state of the
+     * ServiceDiscoveryRetryStrategy and LoadBalancer.
+     */
+    private static <U, R> String targetResource(final HttpClientBuildContext<U, R> ctx) {
+        final String uniqueAddress = ctx.builder.address + "/" + CLIENT_ID.incrementAndGet();
+        return ctx.builder.proxyAddress == null ? uniqueAddress :
+                uniqueAddress + " (via " + ctx.builder.proxyAddress + ")";
     }
 
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
@@ -601,7 +602,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        this.serviceDiscoverer = new CastedServiceDiscoverer<>(serviceDiscoverer);
         return this;
     }
 
@@ -751,23 +752,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    static final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
-            extends DelegatingServiceDiscoverer<U, R, E> {
-        private final BiIntFunction<Throwable, ? extends Completable> retryStrategy;
-
-        RetryingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate,
-                                  final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-            super(delegate);
-            this.retryStrategy = requireNonNull(retryStrategy);
-        }
-
-        @Override
-        public Publisher<Collection<E>> discover(final U u) {
-            // terminateOnNextException false -> LB is after this operator, if LB throws do best effort retry.
-            return delegate().discover(u).retryWhen(false, retryStrategy);
-        }
-    }
-
     private static final class AlpnReqRespFactoryFunc implements
                                                   Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> {
         private final BufferAllocator allocator;
@@ -838,5 +822,48 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return new DefaultHttpLoadBalancerFactory<>(
                 RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
                                 DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
+    }
+
+    // Because of the change in https://github.com/apple/servicetalk/pull/2379, we should constrain the type back to
+    // ServiceDiscovererEvent without "? extends" to allow RetryingServiceDiscoverer to mark events as UNAVAILABLE.
+    private static final class CastedServiceDiscoverer<U, R>
+            implements ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> {
+
+        private final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> delegate;
+
+        private CastedServiceDiscoverer(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Publisher<Collection<ServiceDiscovererEvent<R>>> discover(final U address) {
+            return delegate.discover(address).map(e -> (Collection<ServiceDiscovererEvent<R>>) e);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
     }
 }
