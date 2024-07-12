@@ -164,13 +164,14 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // Maintain a Subscriber so signals are always delivered to replay and new Subscribers get the latest signal.
         eventStream.ignoreElements().subscribe();
         this.outlierDetector = requireNonNull(outlierDetectorFactory, "outlierDetectorFactory").apply(lbDescription);
-        // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
-        // we already have all the fields initialized.
-        subscribeToEvents(false);
 
         // When we get a health-status event we should update the host set.
         this.outlierDetectorStatusChangeStream = this.outlierDetector.healthStatusChanged().forEach((ignored) ->
             sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts)));
+
+        // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
+        // we already have all the fields initialized.
+        subscribeToEvents(false);
 
         LOGGER.info("{}: starting load balancer. Load balancing policy: {}, outlier detection: {}", this,
                 loadBalancingPolicy, outlierDetector);
