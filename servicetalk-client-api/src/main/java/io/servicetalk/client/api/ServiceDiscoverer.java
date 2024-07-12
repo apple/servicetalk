@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -25,6 +26,10 @@ import java.util.Collection;
  * Represents the interaction pattern with a service discovery system. It is assumed that once {@link #discover(Object)}
  * is called that the service discovery system will push data updates or implementations of this interface will poll for
  * data updates. Changes in the available addresses will be communicated via the resulting {@link Publisher}.
+ * <p>
+ * Because typically a {@link ServiceDiscoverer} implementation runs in the background and doesn't require many compute
+ * resources, it's recommended (but not required) to run it and deliver updates on a single thread either for all
+ * discoveries or at least for all {@link Subscriber Subscribers} to the same {@link Publisher}.
  * <p>
  * See {@link ServiceDiscovererEvent} for documentation regarding the interpretation of events.
  *
@@ -39,8 +44,12 @@ public interface ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      * {@code address}.
      * <p>
      * In general a call to this method will continue to discover changes related to {@code address} until the
-     * {@link Subscription} corresponding to the return value is cancelled via {@link Subscription#cancel()} or there
-     * are no more changes to be published.
+     * {@link Subscription Subscription} corresponding to the return value is {@link Subscription#cancel() cancelled} or
+     * {@link Publisher} fails with an error. The returned {@link Publisher} should never
+     * {@link Subscriber#onComplete() complete} because underlying system may run for a long period of time and updates
+     * may be required at any time in the future. The returned {@link Publisher} MUST support re-subscribes to allow
+     * underlying systems retry failures or re-subscribe after {@link Subscription#cancel() cancellation}.
+     *
      * @param address the service address to discover. Examples of what this address maybe are:
      * <ul>
      * <li>hostname/port (e.g. InetAddress)</li>
