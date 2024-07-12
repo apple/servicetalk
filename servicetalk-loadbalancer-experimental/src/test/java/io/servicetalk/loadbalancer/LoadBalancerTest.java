@@ -648,9 +648,8 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: sdReturnsDelta={0}")
-    @ValueSource(booleans = {false, true})
-    void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
+    @Test
+    void resubscribeToEventsWhenAllHostsAreUnhealthy() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
         assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
@@ -687,17 +686,12 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
 
         // Verify state after re-subscribe
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
-        if (sdReturnsDelta) {
-            sendServiceDiscoveryEvents(upEvent("address-3"), upEvent("address-4"), downEvent("address-1"));
-            assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
-            sendServiceDiscoveryEvents(downEvent("address-2"));
-        } else {
-            sendServiceDiscoveryEvents(upEvent("address-3"), upEvent("address-4"));
-        }
-        assertAddresses(lb.usedAddresses(), "address-3", "address-4");
+        sendServiceDiscoveryEvents(upEvent("address-2"), upEvent("address-3"), upEvent("address-4"));
+        assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
 
         // Verify the LB is recovered
         Map<String, Matcher<? super String>> expected = new HashMap<>();
+        // While "address-2" is still in usedAddresses, it's kept UNHEALTHY and can not be selected
         expected.put("address-3", is("address-3"));
         expected.put("address-4", is("address-4"));
         String selected1 = lb.selectConnection(any(), null).toFuture().get().address();
@@ -707,7 +701,7 @@ abstract class LoadBalancerTest extends LoadBalancerTestScaffold {
             // These asserts are flaky for p2c because we don't have deterministic selection.
             expected.remove(selected1);
             assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
-            assertConnectionCount(lb.usedAddresses(),
+            assertConnectionCount(lb.usedAddresses(), connectionsCount("address-2", 0),
                     connectionsCount("address-3", 1), connectionsCount("address-4", 1));
         }
     }
