@@ -21,7 +21,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
     RetryingServiceDiscoverer(final String targetResource,
                               final ServiceDiscoverer<U, R, E> delegate,
                               @Nullable BiIntFunction<Throwable, ? extends Completable> retryStrategy,
-                              final HttpExecutionContext executionContext,
+                              final ExecutionContext<? extends ExecutionStrategy> executionContext,
                               final UnaryOperator<E> makeUnavailable) {
         super(delegate);
         this.targetResource = targetResource;
@@ -120,7 +121,8 @@ final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
             // (https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.10), each subscribe
             // expects a different Subscriber. Therefore, discovery Publisher suppose to start from a fresh state. We
             // should populate currentState with new addresses and deactivate the ones which are not present in the new
-            // collection, but were left in retainedState.
+            // collection, but were left in retainedState. Original events are propagated as-is, even if they contain
+            // duplicate events because retry strategy should not alter the original flow from ServiceDiscoverer.
             assert currentState.isEmpty();
             final List<E> toReturn = new ArrayList<>(events.size() + retainedState.size());
             for (E event : events) {
