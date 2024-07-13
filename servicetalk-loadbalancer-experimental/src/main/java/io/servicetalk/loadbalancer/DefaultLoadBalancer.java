@@ -297,7 +297,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // (https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.8) new events will
             // stop eventually but not guaranteed to stop immediately after cancellation or could race with cancel.
             // Therefore, we should check that this is the current Subscriber before processing new events.
-            if (healthCheckConfig != null && currentSubscriber != this) {
+            if (currentSubscriber != this) {
                 LOGGER.debug("{}: received new events after cancelling previous subscription, discarding: {}",
                         DefaultLoadBalancer.this, events);
                 return;
