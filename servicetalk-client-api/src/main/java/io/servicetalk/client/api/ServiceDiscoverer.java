@@ -29,7 +29,9 @@ import java.util.Collection;
  * <p>
  * Because typically a {@link ServiceDiscoverer} implementation runs in the background and doesn't require many compute
  * resources, it's recommended (but not required) to run it and deliver updates on a single thread either for all
- * discoveries or at least for all {@link Subscriber Subscribers} to the same {@link Publisher}.
+ * discoveries or at least for all {@link Subscriber Subscribers} to the same {@link Publisher}. One possible advantage
+ * of a single-threaded model is that it will make debugging easier as discovery events and the logs they generate will
+ * be less susceptible to reordering.
  * <p>
  * See {@link ServiceDiscovererEvent} for documentation regarding the interpretation of events.
  *
