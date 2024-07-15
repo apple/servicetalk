@@ -135,6 +135,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     @SuppressWarnings("unused")
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> usedHosts = emptyList();
+    @Nullable
+    private volatile EventSubscriber currentSubscriber;
 
     private final String id;
     private final String targetResource;
@@ -207,10 +209,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         // This method is invoked only when we are in RESUBSCRIBING state. Only one thread can own this state.
         assert nextResubscribeTime == RESUBSCRIBING;
         if (resubscribe) {
+            assert healthCheckConfig != null : "Resubscribe can happen only when health-checking is configured";
             LOGGER.debug("{}: resubscribing to the ServiceDiscoverer event publisher.", this);
             discoveryCancellable.cancelCurrent();
         }
-        toSource(eventPublisher).subscribe(new EventSubscriber(resubscribe));
+        final EventSubscriber eventSubscriber = new EventSubscriber(resubscribe);
+        this.currentSubscriber = eventSubscriber;
+        toSource(eventPublisher).subscribe(eventSubscriber);
         if (healthCheckConfig != null) {
             assert healthCheckConfig.executor instanceof NormalizedTimeSourceExecutor;
             nextResubscribeTime = nextResubscribeTime(healthCheckConfig, this);
@@ -274,6 +279,15 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         public void onNext(@Nullable final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
             if (events == null) {
                 LOGGER.debug("{}: unexpectedly received null instead of events.", RoundRobinLoadBalancer.this);
+                return;
+            }
+            // According to Reactive Streams Rule 1.8
+            // (https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.8) new events will
+            // stop eventually but not guaranteed to stop immediately after cancellation or could race with cancel.
+            // Therefore, we should check that this is the current Subscriber before processing new events.
+            if (currentSubscriber != this) {
+                LOGGER.debug("{}: received new events after cancelling previous subscription, discarding: {}",
+                        RoundRobinLoadBalancer.this, events);
                 return;
             }
             for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
