@@ -55,7 +55,17 @@ public interface LoadBalancerObserver {
     void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
 
     /**
-     * An observer for {@link Host} events.
+     * Callback for when the set of hosts used by the load balancer has changed. This set may not
+     * exactly reflect the state of the service discovery system due to filtering of zero-weight
+     * hosts and forms of sub-setting and thus may only represent the hosts that the selection
+     * algorithm may use.
+     * @param newHosts the new set of hosts used by the selection algorithm.
+     */
+    default void onHostSetChanged(Collection<? extends Host> newHosts) {
+    }
+
+    /**
+     * An observer for {@link io.servicetalk.loadbalancer.Host} events.
      */
     interface HostObserver {
 
@@ -84,14 +94,38 @@ public interface LoadBalancerObserver {
         void onExpiredHostRemoved(int connectionCount);
 
         /**
-         * Callback for when a {@link Host} transitions from healthy to unhealthy.
+         * Callback for when a {@link io.servicetalk.loadbalancer.Host} transitions from healthy to unhealthy.
          * @param cause the most recent cause of the transition.
          */
         void onHostMarkedUnhealthy(@Nullable Throwable cause);
 
         /**
-         * Callback for when a {@link Host} transitions from unhealthy to healthy.
+         * Callback for when a {@link io.servicetalk.loadbalancer.Host} transitions from unhealthy to healthy.
          */
         void onHostRevived();
+    }
+
+    /**
+     * A description of a host.
+     */
+    interface Host {
+        /**
+         * The address of the host.
+         * @return the address of the host.
+         */
+        Object address();
+
+        /**
+         * Determine the health status of this host.
+         * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
+         *         guarantee that the request will succeed.
+         */
+        boolean isHealthy();
+
+        /**
+         * The weight of the host, relative to the weights of associated hosts as used for load balancing.
+         * @return the relative weight of the host.
+         */
+        double loadBalancingWeight();
     }
 }

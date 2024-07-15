@@ -504,7 +504,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         for (PrioritizedHostImpl<?, ?> host : nextHosts) {
             host.loadBalancingWeight(host.serviceDiscoveryWeight());
         }
-        this.hostSelector = hostSelector.rebuildWithHosts(priorityStrategy.prioritize(usedHosts));
+        nextHosts = priorityStrategy.prioritize(nextHosts);
+        this.hostSelector = hostSelector.rebuildWithHosts(nextHosts);
+        loadBalancerObserver.onHostSetChanged(Collections.unmodifiableList(nextHosts));
     }
 
     @Override
@@ -645,7 +647,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     static final class PrioritizedHostImpl<ResolvedAddress, C extends LoadBalancedConnection>
-            implements Host<ResolvedAddress, C>, PrioritizedHost {
+            implements Host<ResolvedAddress, C>, PrioritizedHost, LoadBalancerObserver.Host {
         private final Host<ResolvedAddress, C> delegate;
         private int priority;
         private double serviceDiscoveryWeight;

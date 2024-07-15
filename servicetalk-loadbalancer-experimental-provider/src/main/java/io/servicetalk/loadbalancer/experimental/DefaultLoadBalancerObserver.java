@@ -59,6 +59,20 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
         LOGGER.debug("{}- No active hosts available. Host set size: {}.", lbDescription, hostSetSize, exception);
     }
 
+    @Override
+    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+        if (LOGGER.isDebugEnabled()) {
+            int healthyCount = 0;
+            for (Host host : newHosts) {
+                if (host.isHealthy()) {
+                    healthyCount++;
+                }
+            }
+            LOGGER.debug("{}- onHostSetChanged(host set size: {}, healthy: {}). New hosts: {}", lbDescription,
+                    newHosts.size(), healthyCount, newHosts);
+        }
+    }
+
     private final class HostObserverImpl implements HostObserver {
 
         private final Object resolvedAddress;

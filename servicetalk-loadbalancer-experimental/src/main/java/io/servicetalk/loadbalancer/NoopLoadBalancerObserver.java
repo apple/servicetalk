@@ -51,6 +51,11 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
         // noop
     }
 
+    @Override
+    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+        // noop
+    }
+
     private static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
 
         private static final HostObserver INSTANCE = new NoopHostObserver();
