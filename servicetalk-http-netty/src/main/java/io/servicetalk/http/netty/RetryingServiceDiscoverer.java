@@ -125,13 +125,22 @@ final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
             // duplicate events because retry strategy should not alter the original flow from ServiceDiscoverer.
             assert currentState.isEmpty();
             final List<E> toReturn = new ArrayList<>(events.size() + retainedState.size());
+            int unavailableCounter = 0;
             for (E event : events) {
                 final R address = event.address();
                 toReturn.add(event);
                 retainedState.remove(address);
                 if (!UNAVAILABLE.equals(event.status())) {
                     currentState.put(address, event);
+                } else {
+                    ++unavailableCounter;
                 }
+            }
+
+            if (unavailableCounter > 0) {
+                LOGGER.warn("{} received {} UNAVAILABLE events but expected a new 'state of the world'. This is an " +
+                        "indicator of a buggy ServiceDiscoverer implementation that doesn't honor the API contract.",
+                        targetResource, unavailableCounter);
             }
 
             for (E event : retainedState.values()) {
