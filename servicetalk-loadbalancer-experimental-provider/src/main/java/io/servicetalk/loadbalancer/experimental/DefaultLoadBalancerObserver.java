@@ -68,8 +68,8 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
                     healthyCount++;
                 }
             }
-            LOGGER.debug("{}- onHostSetChanged(newHosts: {}). Size: {}, healthy: {}", lbDescription, newHosts,
-                    newHosts.size(), healthyCount);
+            LOGGER.debug("{}- onHostSetChanged(host set size: {}, healthy: {}). New hosts: {}", lbDescription,
+                    newHosts.size(), healthyCount, newHosts);
         }
     }
 
