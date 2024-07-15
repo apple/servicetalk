@@ -241,29 +241,15 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         return result;
     }
 
-    private static <ResolvedAddress> boolean onlyAvailable(
-            final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-        boolean onlyAvailable = !events.isEmpty();
-        for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
-            if (!AVAILABLE.equals(event.status())) {
-                onlyAvailable = false;
-                break;
-            }
-        }
-        return onlyAvailable;
-    }
-
-    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean notAvailable(
+    private static <ResolvedAddress, C extends LoadBalancedConnection> boolean contains(
             final Host<ResolvedAddress, C> host,
             final Collection<? extends ServiceDiscovererEvent<ResolvedAddress>> events) {
-        boolean available = false;
         for (ServiceDiscovererEvent<ResolvedAddress> event : events) {
             if (host.address().equals(event.address())) {
-                available = true;
-                break;
+                return true;
             }
         }
-        return !available;
+        return false;
     }
 
     private final class EventSubscriber
@@ -396,18 +382,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 }
                 firstEventsAfterResubscribe = false;
 
-                if (!onlyAvailable(events)) {
-                    // Looks like the current ServiceDiscoverer maintains a state between re-subscribes. It already
-                    // assigned correct states to all hosts. Even if some of them were left UNHEALTHY, we should keep
-                    // running health-checks.
-                    return;
-                }
-                // Looks like the current ServiceDiscoverer doesn't maintain a state between re-subscribes and always
-                // starts from an empty state propagating only AVAILABLE events. To be in sync with the
-                // ServiceDiscoverer we should clean up and close gracefully all hosts that are not present in the
-                // initial collection of events, regardless of their current state.
+                // New Subscription to the ServiceDiscoverer always starts from a state of the world. To be in sync with
+                // the ServiceDiscoverer state, we should clean up and close gracefully all hosts that are not present
+                // in the initial collection of events, regardless of their current state.
                 for (Host<ResolvedAddress, C> host : nextHosts) {
-                    if (notAvailable(host, events)) {
+                    if (!contains(host, events)) {
                         host.closeAsyncGracefully().subscribe();
                     }
                 }
