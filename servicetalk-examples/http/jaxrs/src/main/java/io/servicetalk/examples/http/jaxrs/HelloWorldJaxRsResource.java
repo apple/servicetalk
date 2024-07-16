@@ -244,7 +244,7 @@ public class HelloWorldJaxRsResource {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return responseStream == null ?
                 from(allocator.fromAscii("file not found")) :
-                fromInputStream(responseStream).map(allocator::wrap);
+                fromInputStream(responseStream, allocator::wrap);
     }
 
     /**
