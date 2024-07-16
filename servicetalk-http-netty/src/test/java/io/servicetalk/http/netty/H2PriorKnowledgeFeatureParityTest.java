@@ -1379,7 +1379,6 @@ class H2PriorKnowledgeFeatureParityTest {
         HttpResponse fullResponse = response.toResponse().toFuture().get();
         assertEquals(0, fullResponse.payloadBody().readableBytes());
         onServerCloseLatch.await();
-        throw new Exception("Did we even run the test?");
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
