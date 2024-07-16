@@ -30,4 +30,4 @@ jobs:
         if: runner.os == 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew :servicetalk-http-netty:test --tests io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest"
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew :servicetalk-http-netty:test"

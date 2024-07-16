@@ -255,7 +255,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     private void printit(String str) {
         if (!isClient) {
-//            LOGGER.warn(str);
+            LOGGER.warn(str);
         }
     }
 
