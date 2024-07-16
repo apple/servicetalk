@@ -1362,13 +1362,19 @@ class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.closeAsyncGracefully().subscribe();
         h1ServerContext.onClosing().toFuture().get();
 
+        System.out.println("serverGracefulClose() connectionOnClosingLatch started");
+
         connectionOnClosingLatch.await();
+        System.out.println("serverGracefulClose() connectionOnClosingLatch finished");
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
             .protocols(h2PriorKnowledge ? h2Default() : h1Default())
             .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+
+            System.out.println("client request started");
             assertThrows(IOException.class, () -> client2.request(client2.get("/")),
                          "server has initiated graceful close, subsequent connections/requests are expected to fail.");
+            System.out.println("client request finished");
         }
 
         // We expect this to timeout, because we have not completed the outstanding request.
@@ -1376,6 +1382,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
         requestBody.onComplete();
 
+        System.out.println("awaiting response");
         HttpResponse fullResponse = response.toResponse().toFuture().get();
         assertEquals(0, fullResponse.payloadBody().readableBytes());
         System.out.println("serverGracefulClose() awaiting server close latch");
