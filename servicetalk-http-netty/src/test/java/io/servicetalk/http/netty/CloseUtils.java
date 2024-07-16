@@ -24,6 +24,8 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -32,6 +34,8 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 
 final class CloseUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloseUtils.class);
 
     private CloseUtils() {
         // No instances
@@ -53,7 +57,10 @@ final class CloseUtils {
                 if (t instanceof CloseEventObservedException &&
                         ((CloseEventObservedException) t).event() == GRACEFUL_USER_CLOSING) {
                     assert nettyCtx.nettyChannel().eventLoop().inEventLoop();
+                    LOGGER.info("transportError() resulted in close");
                     closingStarted.countDown();
+                } else {
+                    LOGGER.info("transportError() didn't result in close", t);
                 }
             });
         } else if (cc.protocol() == HTTP_2_0) {

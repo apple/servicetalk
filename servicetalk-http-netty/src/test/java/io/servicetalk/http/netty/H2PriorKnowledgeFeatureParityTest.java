@@ -1364,7 +1364,7 @@ class H2PriorKnowledgeFeatureParityTest {
 
         System.out.println("serverGracefulClose() connectionOnClosingLatch started");
 
-        connectionOnClosingLatch.await();
+        connectionOnClosingLatch.await(); // This is actually what is not finishing?
         System.out.println("serverGracefulClose() connectionOnClosingLatch finished");
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
