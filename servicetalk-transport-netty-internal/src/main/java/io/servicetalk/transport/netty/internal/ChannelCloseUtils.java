@@ -54,7 +54,8 @@ public final class ChannelCloseUtils {
      */
     public static ChannelFuture close(final Channel channel, final Throwable error) {
         channel.attr(CONNECTION_ERROR).setIfAbsent(error);
-        return channel.isOpen() ? channel.close() : channel.closeFuture();
+        return channel.close();
+        // return channel.isOpen() ? channel.close() : channel.closeFuture();
     }
 
     /**
