@@ -242,6 +242,11 @@ public class HelloWorldJaxRsResource {
         final InputStream responseStream = HelloWorldJaxRsResource.class.getClassLoader()
                 .getResourceAsStream("response_payload.txt");
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        // InputStream lifetime ownership is transferred to ServiceTalk (e.g. it will call close) because
+        // we create a new InputStream per request and always pass it to ServiceTalk as the response payload
+        // body (if not null).
+        // Note that File APIs are blocking. ServiceTalk by default will call the File APIs on a non-IoExecutor thread
+        // and it isn't recommended to disable offloading for code paths that interact with blocking File APIs.
         return responseStream == null ?
                 from(allocator.fromAscii("file not found")) :
                 fromInputStream(responseStream, allocator::wrap);
