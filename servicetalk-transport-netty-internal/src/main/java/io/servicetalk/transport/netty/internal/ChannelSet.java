@@ -63,6 +63,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             LOGGER.info("Channel closed: " + future.channel());
             if (wasRemoved && state != OPEN && channelMap.isEmpty()) {
                 LOGGER.info("ChannelSet closed after final channel finished");
+                // This seems to fiture.
                 onCloseProcessor.onComplete();
             }
         }
