@@ -363,7 +363,6 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closed event rather than deferring
     private void maybeCloseChannelOnHalfClosed(final Channel channel, final CloseEvent evt) {
-        // TODO: not getting here for netty 4.2
         if (isIdle(pending, state)) {
             printit("maybeCloseChannelOnHalfClosed(channel: " + channel + ", evt: " + evt + "): isIdle");
             closeChannel(channel, evt);
@@ -418,7 +417,10 @@ final class RequestResponseCloseHandler extends CloseHandler {
         if (!isAllSet(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
             LOGGER.debug("{} Closing channel – evt: {}", channel, evt == null ? "FullCloseAfterHalfClose" : evt);
+            printit("Closing channel.");
             channel.close();
+        } else {
+            printit("Channel failed close mask");
         }
     }
 
