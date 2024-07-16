@@ -102,7 +102,7 @@ public final class NettyServerContext implements ServerContext {
             public Completable closeAsyncGracefully() {
                 return Completable.defer(() -> {
                     LOGGER.info("{}.closeAsyncGracefully() called", name);
-                    return closeable.closeAsync()
+                    return closeable.closeAsyncGracefully()
                             .whenOnComplete(() -> {
                                 LOGGER.info("{}.closeAsyncGracefully() complete", name);
                             });

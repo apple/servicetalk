@@ -60,6 +60,8 @@ final class CloseUtils {
                     LOGGER.info("transportError() resulted in close");
                     closingStarted.countDown();
                 } else {
+                    // Seeing io.servicetalk.transport.netty.internal.StacklessClosedChannelException: null
+                    //    	at io.servicetalk.transport.netty.internal.DefaultNettyConnection.channelInactive(...)(Unknown Source) ~[servicetalk-transport-netty-internal-0.42.47-SNAPSHOT.jar:0.42.47-SNAPSHOT]
                     LOGGER.info("transportError() didn't result in close", t);
                 }
             });
