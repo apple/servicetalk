@@ -30,6 +30,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,13 +52,17 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * Channels are removed from the set when they are closed.
  */
 public final class ChannelSet implements ListenableAsyncCloseable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChannelSet.class);
     private static final AtomicIntegerFieldUpdater<ChannelSet> stateUpdater = newUpdater(ChannelSet.class, "state");
 
     private final ChannelFutureListener remover = new ChannelFutureListener() {
         @Override
         public void operationComplete(final ChannelFuture future) {
             final boolean wasRemoved = channelMap.remove(future.channel().id()) != null;
+            LOGGER.info("Channel closed: " + future.channel());
             if (wasRemoved && state != OPEN && channelMap.isEmpty()) {
+                LOGGER.info("ChannelSet closed after final channel finished");
                 onCloseProcessor.onComplete();
             }
         }
