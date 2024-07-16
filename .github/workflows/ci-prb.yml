@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        java: [ 8, 11, 17, 21 ]
+        java: [ 8 ]
         os: [ ubuntu-latest ]
     steps:
       - name: Checkout Code
@@ -26,26 +26,8 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       # https://github.community/t/error-the-paging-file-is-too-small-for-this-operation-to-complete/17141
-      - name: Configure Windows Pagefile
-        if: ${{ runner.os == 'Windows' }}
-        # v1.2
-        uses: al-cheb/configure-pagefile-action@a3b6ebd6b634da88790d9c58d4b37a7f4a7b8708
-        with:
-          minimum-size: 8GB
-          maximum-size: 16GB
       - name: Build and Test (Linux)
         if: runner.os == 'Linux'
         env:
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel test"
-      - name: Build and Test (non-Linux)
-        if: runner.os != 'Linux'
-        env:
-          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ./gradlew --no-daemon --parallel test
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.os }}-${{ matrix.java }}
-          path: '**/build/test-results/test/TEST-*.xml'
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew :servicetalk-http-netty:test --tests io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.serverGracefulClose"
