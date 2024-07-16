@@ -225,6 +225,34 @@ public class HelloWorldJaxRsResource {
     }
 
     /**
+     * Resource that streams response content from a file via {@link Publisher}.
+     * <p>
+     * Test with:
+     * <pre>{@code
+     * curl -v http://localhost:8080/greetings/file-hello
+     * }</pre>
+     *
+     * @param ctx the {@link ConnectionContext}.
+     * @return greetings as a {@link Single} {@link Buffer}.
+     */
+    @GET
+    @Path("file-hello")
+    @Produces(TEXT_PLAIN)
+    public Publisher<Buffer> multipartHello(@Context final ConnectionContext ctx) {
+        final InputStream responseStream = HelloWorldJaxRsResource.class.getClassLoader()
+                .getResourceAsStream("response_payload.txt");
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        // InputStream lifetime ownership is transferred to ServiceTalk (e.g. it will call close) because
+        // we create a new InputStream per request and always pass it to ServiceTalk as the response payload
+        // body (if not null).
+        // Note that File APIs are blocking. ServiceTalk by default will call the File APIs on a non-IoExecutor thread
+        // and it isn't recommended to disable offloading for code paths that interact with blocking File APIs.
+        return responseStream == null ?
+                from(allocator.fromAscii("file not found")) :
+                fromInputStream(responseStream, allocator::wrap);
+    }
+
+    /**
      * Resource that only relies on {@link Single}/{@link Publisher} for consuming and producing data,
      * and returns a JAX-RS {@link Response} in order to set its status.
      * No OIO adaptation is involved when requests are dispatched to it,

@@ -352,3 +352,11 @@ the link:{source-root}/servicetalk-examples/http/uds[uds example code] for more 
 
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the UDS configuration API is the
 same across all the HTTP APIs.
+
+[#Files]
+== Files
+
+This example demonstrates asynchronous request processing where the response payload body is streamed from a file.
+
+* link:{source-root}/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesServer.java[FilesServer] - a server whose response body is streamed from a file.
+* link:{source-root}/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesClient.java[FilesClient] - a client that requests and prints response contents.

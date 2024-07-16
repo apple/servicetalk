@@ -1,0 +1,5 @@
+response payload from file!
+
+warning: serving arbitrary files from your server maybe a security risk. You
+should take care if user input is used to infer file paths or names and ensure
+appropriate access control and auditing is in place.

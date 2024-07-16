@@ -78,6 +78,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:debugging",
         "servicetalk-examples:http:timeout",
         "servicetalk-examples:http:defaultloadbalancer",
+        "servicetalk-examples:http:files",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
         "servicetalk-grpc-health",
@@ -160,3 +161,4 @@ project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"
 project(":servicetalk-examples:http:redirects").name = "servicetalk-examples-http-redirects"
 project(":servicetalk-examples:http:compression").name = "servicetalk-examples-http-compression"
+project(":servicetalk-examples:http:files").name = "servicetalk-examples-http-files"
