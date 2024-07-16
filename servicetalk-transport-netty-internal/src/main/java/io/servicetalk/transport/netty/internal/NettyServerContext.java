@@ -23,6 +23,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -35,6 +37,8 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
  * {@link ServerContext} implementation using a netty {@link Channel}.
  */
 public final class NettyServerContext implements ServerContext {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyServerContext.class);
 
     private final Channel listenChannel;
     private final ListenableAsyncCloseable closeable;
@@ -76,9 +80,35 @@ public final class NettyServerContext implements ServerContext {
                         executionContext.executionStrategy().isCloseOffloaded() ?
                                 executionContext.executor() : immediate());
         final CompositeCloseable closeAsync = closeBefore == null ?
-                newCompositeCloseable().appendAll(channelCloseable, channelSetCloseable) :
-                newCompositeCloseable().appendAll(closeBefore, channelCloseable, channelSetCloseable);
+                newCompositeCloseable().appendAll(wrapWithLogging(channelCloseable, "channelCloseable"), wrapWithLogging(channelSetCloseable, "channelSetCloseable")) :
+                newCompositeCloseable().appendAll(wrapWithLogging(closeBefore, "closeBefore"), wrapWithLogging(channelCloseable, "channelCloseable"), wrapWithLogging(channelSetCloseable, "channelSetCloseable"));
         return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync), executionContext);
+    }
+
+    private static AsyncCloseable wrapWithLogging(AsyncCloseable closeable, String name) {
+        return new AsyncCloseable() {
+            @Override
+            public Completable closeAsync() {
+                return Completable.defer(() -> {
+                    LOGGER.info("{}.closeAsync() called", name);
+                    return closeable.closeAsync()
+                            .whenOnComplete(() -> {
+                                LOGGER.info("{}.closeAsync() complete", name);
+                            });
+                });
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return Completable.defer(() -> {
+                    LOGGER.info("{}.closeAsyncGracefully() called", name);
+                    return closeable.closeAsync()
+                            .whenOnComplete(() -> {
+                                LOGGER.info("{}.closeAsyncGracefully() complete", name);
+                            });
+                });
+            }
+        }
     }
 
     @Override
