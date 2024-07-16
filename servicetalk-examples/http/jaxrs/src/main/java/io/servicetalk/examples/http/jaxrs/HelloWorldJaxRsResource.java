@@ -225,6 +225,29 @@ public class HelloWorldJaxRsResource {
     }
 
     /**
+     * Resource that streams response content from a file via {@link Publisher}.
+     * <p>
+     * Test with:
+     * <pre>{@code
+     * curl -v http://localhost:8080/greetings/file-hello
+     * }</pre>
+     *
+     * @param ctx the {@link ConnectionContext}.
+     * @return greetings as a {@link Single} {@link Buffer}.
+     */
+    @GET
+    @Path("file-hello")
+    @Produces(TEXT_PLAIN)
+    public Publisher<Buffer> multipartHello(@Context final ConnectionContext ctx) {
+        final InputStream responseStream = HelloWorldJaxRsResource.class.getClassLoader()
+                .getResourceAsStream("response_payload.txt");
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return responseStream == null ?
+                from(allocator.fromAscii("file not found")) :
+                fromInputStream(responseStream).map(allocator::wrap);
+    }
+
+    /**
      * Resource that only relies on {@link Single}/{@link Publisher} for consuming and producing data,
      * and returns a JAX-RS {@link Response} in order to set its status.
      * No OIO adaptation is involved when requests are dispatched to it,
