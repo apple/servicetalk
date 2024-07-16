@@ -103,9 +103,7 @@ final class NativeTransportUtils {
      * @return {@code true} if {@link IOUring} is available
      */
     static boolean isIoUringAvailable() {
-        boolean result = IS_LINUX && TRY_IO_URING.get() && IOUring.isAvailable();
-        System.out.println(NativeTransportUtils.class.getSimpleName() + ": isIoUringAvailable(): " + result);
-        return result;
+        return IS_LINUX && TRY_IO_URING.get() && IOUring.isAvailable();
     }
 
     /**
@@ -114,9 +112,7 @@ final class NativeTransportUtils {
      * @return {@code true} if {@link Epoll} is available
      */
     static boolean isEpollAvailable() {
-        boolean result = IS_LINUX && Epoll.isAvailable();
-        System.out.println(NativeTransportUtils.class.getSimpleName() + ": isEpollAvailable(): " + result);
-        return result;
+        return IS_LINUX && Epoll.isAvailable();
     }
 
     /**

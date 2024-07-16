@@ -183,7 +183,6 @@ final class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
-        new Exception("channelClosedInbound(" + ctx.channel() + ")").printStackTrace(); // not happening on 4.2
         if (!isAllSet(state, IN_CLOSED)) {
             state = set(state, IN_CLOSED);
             // Use the actual event that initiated graceful closure:
