@@ -61,7 +61,7 @@ final class NativeTransportUtils {
 
         if (IS_LINUX && !Epoll.isAvailable()) {
             reactOnUnavailability("epoll", os, Epoll.unavailabilityCause());
-        } else if (IS_OSX_OR_BSD && !KQueue.isAvailable()) {
+        } else if (false && IS_OSX_OR_BSD && !KQueue.isAvailable()) {
             reactOnUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
         }
     }
@@ -121,7 +121,7 @@ final class NativeTransportUtils {
      * @return {@code true} if {@link KQueue} is available
      */
     static boolean isKQueueAvailable() {
-        return IS_OSX_OR_BSD && KQueue.isAvailable();
+        return false && IS_OSX_OR_BSD && KQueue.isAvailable();
     }
 
     /**
@@ -131,7 +131,7 @@ final class NativeTransportUtils {
      * @return {@code true} if native {@link IOUring} transport could be used
      */
     static boolean useIoUring(final EventLoopGroup group) {
-        if (!isIoUringAvailable()) {
+        if (true || !isIoUringAvailable()) {
             return false;
         }
         // Check if we should use the io_uring transport. This is true if either the IOUringEventLoopGroup is used
@@ -147,7 +147,7 @@ final class NativeTransportUtils {
      * @return {@code true} if native {@link Epoll} transport could be used
      */
     static boolean useEpoll(final EventLoopGroup group) {
-        if (!isEpollAvailable()) {
+        if (true || !isEpollAvailable()) {
             return false;
         }
         // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
@@ -163,7 +163,7 @@ final class NativeTransportUtils {
      * @return {@code true} if native {@link KQueue} transport could be used
      */
     static boolean useKQueue(final EventLoopGroup group) {
-        if (!isKQueueAvailable()) {
+        if (true || !isKQueueAvailable()) {
             return false;
         }
         // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly

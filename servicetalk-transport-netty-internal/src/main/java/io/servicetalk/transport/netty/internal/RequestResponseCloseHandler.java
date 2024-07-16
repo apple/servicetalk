@@ -183,6 +183,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
+        new Exception("channelClosedInbound(" + ctx.channel() + ")").printStackTrace(); // not happening on 4.2
         if (!isAllSet(state, IN_CLOSED)) {
             state = set(state, IN_CLOSED);
             // Use the actual event that initiated graceful closure:
@@ -247,8 +248,15 @@ final class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void gracefulUserClosing(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
+        printit("RequestResponseCloseHandler: closing. State: " + this);
         storeCloseRequestAndEmit(GRACEFUL_USER_CLOSING);
         maybeCloseChannelHalfOrFullyOnClosing(channel, GRACEFUL_USER_CLOSING);
+    }
+
+    private void printit(String str) {
+        if (!isClient) {
+            System.out.println(str);
+        }
     }
 
     @Override
@@ -320,6 +328,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closing event rather than deferring
     private void maybeCloseChannelHalfOrFullyOnClosing(final Channel channel, final CloseEvent evt) {
+        printit("maybeCloseChannelHalfOrFullyOnClosing(channel: " + channel + ", evt:" + evt + "), this: " + this);
         if (isIdle(pending, state)) { // Only GRACEFUL_USER_CLOSING
             assert evt == GRACEFUL_USER_CLOSING;
             if (isClient) {
@@ -355,7 +364,9 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closed event rather than deferring
     private void maybeCloseChannelOnHalfClosed(final Channel channel, final CloseEvent evt) {
+        // TODO: not getting here for netty 4.2
         if (isIdle(pending, state)) {
+            printit("maybeCloseChannelOnHalfClosed(channel: " + channel + ", evt: " + evt + "): isIdle");
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == CHANNEL_CLOSED_INBOUND) {
@@ -365,6 +376,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
                     if (isAllSet(state, WRITE)) {
                         closeAndResetChannel(channel, evt);
                     } else {
+                        printit("Here 1");
                         closeChannel(channel, evt);
                     }
                 }
@@ -373,6 +385,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
                 // ensure we finish reading pending responses, abort others
                 setSocketResetOnClose(channel);
                 if (pending <= 1 && !isAllSet(state, READ)) {
+                    printit("Here 2");
                     closeChannel(channel, evt);
                 } else if (pending != 0) {
                     // discards current request, ensures an eventual "idle" state
@@ -380,11 +393,13 @@ final class RequestResponseCloseHandler extends CloseHandler {
                 }
             }
         } else if (evt == CHANNEL_CLOSED_INBOUND) { // Server
+            printit("CHANNEL_CLOSED_INBOUND");
             if (isAllSet(state, READ)) {
                 // defer close to allow server error response, but unset READ flag
                 state = unset(state, READ);
                 setSocketResetOnClose(channel);
                 if (isIdle(pending, state)) {
+                    printit("Here 3");
                     closeChannel(channel, evt);
                 }
             }
@@ -395,6 +410,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
         } else if (!isAllSet(state, READ)) { // Server && CHANNEL_CLOSED_OUTBOUND && pending == 0
             assert evt == CHANNEL_CLOSED_OUTBOUND;
             // last response, we are not reading and OUTBOUND is closed, so just close the channel.
+            printit("Here 4");
             closeChannel(channel, evt);
         }
     }

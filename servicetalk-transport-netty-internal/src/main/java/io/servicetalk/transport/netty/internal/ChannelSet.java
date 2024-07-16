@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -30,6 +32,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -148,6 +151,14 @@ public final class ChannelSet implements ListenableAsyncCloseable {
 
                 CompositeCloseable closeable = newCompositeCloseable();
                 for (final Channel channel : channelMap.values()) {
+                    System.out.println("Channel: " + channel);
+                    channel.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
+                        @Override
+                        public void operationComplete(Future<? super Void> future) throws Exception {
+                            // We never get here.
+                            System.out.println("Channel" + channel + " close finished.");
+                        }
+                    });
                     Attribute<PrivilegedListenableAsyncCloseable> closeableAttribute =
                             channel.attr(CHANNEL_CLOSEABLE_KEY);
                     PrivilegedListenableAsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
