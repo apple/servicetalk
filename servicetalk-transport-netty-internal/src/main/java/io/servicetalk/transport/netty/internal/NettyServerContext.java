@@ -108,7 +108,7 @@ public final class NettyServerContext implements ServerContext {
                             });
                 });
             }
-        }
+        };
     }
 
     @Override
