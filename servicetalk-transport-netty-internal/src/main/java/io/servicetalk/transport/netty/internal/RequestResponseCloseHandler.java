@@ -472,7 +472,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
             // also closing the connection. Therefore, we can complete graceful closure and close server's connection.
             // DuplexChannel.shutdownInput() silently discards all incoming data at OS level and does not notify netty
             // when the FIN is received.
-            LOGGER.debug("{} Discarding further INBOUND", channel);
+            LOGGER.info("{} Discarding further INBOUND", channel);
             state = set(unset(state, READ), DISCARDING_SERVER_INPUT);
             channel.pipeline().fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
         }
@@ -482,7 +482,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
         assert !isClient && isIdle(pending, state);
         if (!isAllSet(state, OUT_CLOSED)) {
             state = set(state, CLOSING_SERVER_GRACEFULLY);
-            LOGGER.debug("{} Half-Closing OUTBOUND", channel);
+            LOGGER.info("{} Half-Closing OUTBOUND", channel);
             halfCloseOutbound(channel, false);
             // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received
         }
@@ -500,6 +500,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
             });
         } else {
             final ChannelFuture cf = ((DuplexChannel) channel).shutdownOutput();
+            emit(channel, "shutdownOutput() called");
             if (registerOnHalfClosed) {
                 cf.addListener((ChannelFutureListener) this::onHalfClosed);
             }
