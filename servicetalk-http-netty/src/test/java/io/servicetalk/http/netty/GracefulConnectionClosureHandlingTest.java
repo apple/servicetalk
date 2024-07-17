@@ -49,6 +49,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
+import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -198,11 +199,13 @@ class GracefulConnectionClosureHandlingTest {
                         if (!initiateClosureFromClient) {
                             onGracefulClosureStarted(context, onClosing);
                         }
+                        NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(true);
                         context.onClose().whenFinally(() -> {
                             emit("Server connection close complete. Context: " + context);
                             serverConnectionClosed.countDown();
                         }).subscribe();
                         connectionAccepted.countDown();
+                        NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(false);
                         return completed();
                     }
                 });

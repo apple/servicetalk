@@ -86,29 +86,34 @@ public final class NettyServerContext implements ServerContext {
     }
 
     private static AsyncCloseable wrapWithLogging(AsyncCloseable closeable, String name) {
-        return new AsyncCloseable() {
-            @Override
-            public Completable closeAsync() {
-                return Completable.defer(() -> {
-                    LOGGER.info("{}.closeAsync() called", name);
-                    return closeable.closeAsync()
-                            .whenOnComplete(() -> {
-                                LOGGER.info("{}.closeAsync() complete", name);
-                            });
-                });
-            }
 
-            @Override
-            public Completable closeAsyncGracefully() {
-                return Completable.defer(() -> {
-                    LOGGER.info("{}.closeAsyncGracefully() called", name);
-                    return closeable.closeAsyncGracefully()
-                            .whenOnComplete(() -> {
-                                LOGGER.info("{}.closeAsyncGracefully() complete", name);
-                            });
-                });
-            }
-        };
+        if (false) { // disable for now: this doesn't seem to be the source of the problem.
+            return closeable;
+        } else {
+            return new AsyncCloseable() {
+                @Override
+                public Completable closeAsync() {
+                    return Completable.defer(() -> {
+                        LOGGER.info("{}.closeAsync() called", name);
+                        return closeable.closeAsync()
+                                .whenOnComplete(() -> {
+                                    LOGGER.info("{}.closeAsync() complete", name);
+                                });
+                    });
+                }
+
+                @Override
+                public Completable closeAsyncGracefully() {
+                    return Completable.defer(() -> {
+                        LOGGER.info("{}.closeAsyncGracefully() called", name);
+                        return closeable.closeAsyncGracefully()
+                                .whenOnComplete(() -> {
+                                    LOGGER.info("{}.closeAsyncGracefully() complete", name);
+                                });
+                    });
+                }
+            };
+        }
     }
 
     @Override

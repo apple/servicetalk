@@ -60,9 +60,9 @@ public final class ChannelSet implements ListenableAsyncCloseable {
         @Override
         public void operationComplete(final ChannelFuture future) {
             final boolean wasRemoved = channelMap.remove(future.channel().id()) != null;
-            LOGGER.info("Channel closed: " + future.channel());
+            emit("Channel closed: " + future.channel());
             if (wasRemoved && state != OPEN && channelMap.isEmpty()) {
-                LOGGER.info("ChannelSet closed after final channel finished");
+                emit("ChannelSet closed after final channel finished");
                 onCloseProcessor.onComplete();
             }
         }
@@ -193,5 +193,11 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     @Override
     public Completable onClosing() {
         return fromSource(onClosingProcessor);
+    }
+
+    private void emit(String message) {
+        // Disabled for now: it looks like the ChannelSet is doing the right thing. Notably it uses the Channels closeFuture() directly
+        //  which seems to emit the signals as expected.
+//        LOGGER.info(message);
     }
 }

@@ -32,7 +32,6 @@ import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -51,6 +50,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
 public class NettyChannelListenableAsyncCloseable implements PrivilegedListenableAsyncCloseable {
+
+    public static final ThreadLocal<Boolean> SHOULD_LOG = ThreadLocal.withInitial(() -> false);
     private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
             newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
 
@@ -61,6 +62,8 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     private final CompletableSource.Processor onClosing;
     private final SubscribableCompletable onCloseNoOffload;
     private final Completable onClose;
+
+    private volatile boolean shouldLog;
 
     /**
      * New instance.
@@ -74,16 +77,16 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         this.channel = requireNonNull(channel);
         onClosing = newCompletableProcessor();
 
-        LOGGER.info("Creating closable for channel {}", channel);
+        emit("Creating closable for channel {}", channel);
 
         channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
             @Override
             public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-                LOGGER.info("Channel {} closed called with promise ", channel, System.identityHashCode(promise));
+                emit("Channel {} closed called with promise ", channel, System.identityHashCode(promise));
                 promise.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        LOGGER.info("Channel {} closed future {} completed", channel, System.identityHashCode(future));
+                        emit("Channel {} closed future {} completed", channel, System.identityHashCode(future));
                     }
                 });
                 super.close(ctx, promise);
@@ -93,7 +96,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 // TODO: this happens for the server channel.
-                LOGGER.info("Channel {} closedFuture(){} finished.", channel, System.identityHashCode(future));
+                emit("Channel {} closedFuture(){} finished.", channel, System.identityHashCode(future));
             }
         });
 
@@ -107,11 +110,11 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     return;
                 }
                 ChannelFuture channelCloseFuture = channel.closeFuture();
-                LOGGER.info("Channel {} close subscribe future: {}", channel, channelCloseFuture);
+                emit("Channel {} close subscribe future: {}", channel, channelCloseFuture);
                 channelCloseFuture.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        LOGGER.info("Channel {} close subscribe future completed: {}", channel, channelCloseFuture);
+                        emit("Channel {} close subscribe future completed: {}", channel, channelCloseFuture);
                     }
                 });
                 NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
@@ -206,22 +209,25 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         return onClose.liftSync(subscriber -> new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
-                    LOGGER.info("onClose for channel {} subscribing. {}", channel, this);
+                    // This appears to be the first signal called.
+                    shouldLog = shouldLog || SHOULD_LOG.get();
+
+                    emit("onClose for channel {} subscribing. {}", channel, this);
                     subscriber.onSubscribe(() -> {
-                        LOGGER.info("onClose subscriber cancelled for channel {}. {}", channel, this);
+                        emit("onClose subscriber cancelled for channel {}. {}", channel, this);
                         cancellable.cancel();
                     });
                 }
 
                 @Override
                 public void onComplete() {
-                    LOGGER.info("onClose for channel {} onComplete. {}", channel, this);
+                    emit("onClose for channel {} onComplete. {}", channel, this);
                     subscriber.onComplete();
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    LOGGER.info("onClose for channel {} onError. {}", channel, this, t);
+                    emit("onClose for channel {} onError. {}", channel, this, t);
                     subscriber.onError(t);
                 }
             });
@@ -241,5 +247,11 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
      */
     protected void doCloseAsyncGracefully() {
         channel.close();
+    }
+
+    private void emit(String message, Object... elements) {
+        if (shouldLog) {
+            LOGGER.info(message, elements);
+        }
     }
 }
