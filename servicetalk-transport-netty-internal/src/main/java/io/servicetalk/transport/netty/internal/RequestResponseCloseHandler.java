@@ -109,7 +109,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void registerEventHandler(final Channel channel, Consumer<CloseEvent> eventHandler) {
-        emit(channel, "Registering with channel. this: " + this);
+        emit(channel, "Registering with channel.");
         assert channel.eventLoop().inEventLoop();
         assert channel instanceof DuplexChannel : "Channel does not implement DuplexChannel";
         assert TRUE.equals(channel.config().getOption(ALLOW_HALF_CLOSURE)) :
@@ -185,6 +185,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
+        emit(ctx.channel(), "channelClosedInbound()");
         if (!isAllSet(state, IN_CLOSED)) {
             state = set(state, IN_CLOSED);
             // Use the actual event that initiated graceful closure:
@@ -249,7 +250,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
     @Override
     void gracefulUserClosing(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
-        emit(channel, "RequestResponseCloseHandler: closing. State: " + this);
+        emit(channel, "RequestResponseCloseHandler: closing");
         storeCloseRequestAndEmit(GRACEFUL_USER_CLOSING);
         maybeCloseChannelHalfOrFullyOnClosing(channel, GRACEFUL_USER_CLOSING);
     }
@@ -306,6 +307,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
         if (closeEvent != null) {
             sb.append(',').append(closeEvent);
         }
+        sb.append(",0x").append(System.identityHashCode(this));
         return sb.toString();
     }
 
