@@ -122,6 +122,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
+
+    private static final ThreadLocal<Boolean> SHOULD_LOG = ThreadLocal.withInitial(() -> false);
     private static final long TIMEOUT_MILLIS = CI ? 1000 : 200;
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
@@ -428,10 +430,15 @@ class GracefulConnectionClosureHandlingTest {
 
     @Test
     void foo() throws Exception {
-        closeAfterRequestMetaDataSentResponseMetaDataReceived(
-                HttpProtocol.HTTP_1, false, false,
-                true /*worth changing?*/ , false
-        );
+        try {
+            SHOULD_LOG.set(true);
+            closeAfterRequestMetaDataSentResponseMetaDataReceived(
+                    HttpProtocol.HTTP_1, false, false,
+                    true /*worth changing?*/, false
+            );
+        } finally {
+            SHOULD_LOG.remove();
+        }
     }
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
@@ -450,19 +457,25 @@ class GracefulConnectionClosureHandlingTest {
         StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
-        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Triggering graceful closure"); // happens.
+        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Triggering graceful closure"); // happens.
         triggerGracefulClosure();
 
         clientSendRequestPayload.countDown();
         serverSendResponsePayload.countDown();
-        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertRequestPayloadBody");
+        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertRequestPayloadBody");
         assertRequestPayloadBody(request);
         assertResponsePayloadBody(response);
 
-        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
+        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
         awaitConnectionClosed(); // this seems to have stalled in at least one run: https://github.com/apple/servicetalk/actions/runs/9965944313/job/27537158260?pr=3013#step:7:2772
-        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
+        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
         assertNextRequestFails();
+    }
+
+    private void emit(String message) {
+        if (SHOULD_LOG.get()) {
+            LOGGER.info(message);
+        }
     }
 
     @ParameterizedTest(name = "{index}: protocol={0} secure={1} initiateClosureFromClient={2} useUds={3} viaProxy={4}")
@@ -727,10 +740,15 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private void awaitConnectionClosed() throws Exception {
+
         clientConnectionClosed.await();
+        emit("finished clientConnectionClosed.");
         serverConnectionClosed.await();
+        emit("finished serverConnectionClosed.");
         if (!initiateClosureFromClient) {
+            emit("awaiting serverContextClosed");
             serverContextClosed.await();
+            emit("finished serverContextClosed");
         }
     }
 
