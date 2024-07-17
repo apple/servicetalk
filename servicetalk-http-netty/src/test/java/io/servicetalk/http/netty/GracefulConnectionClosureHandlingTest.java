@@ -467,7 +467,7 @@ class GracefulConnectionClosureHandlingTest {
         assertResponsePayloadBody(response);
 
         emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
-        awaitConnectionClosed(); // TODO this seems to have stalled in at least one run: https://github.com/apple/servicetalk/actions/runs/9965944313/job/27537158260?pr=3013#step:7:2772
+        awaitConnectionClosed(); // TODO this seems to have stalled in at least one run: https://github.com/apple/servicetalk/actions/runs/9977571869/job/27572514487?pr=3013#step:7:3129
         emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
         assertNextRequestFails();
     }
