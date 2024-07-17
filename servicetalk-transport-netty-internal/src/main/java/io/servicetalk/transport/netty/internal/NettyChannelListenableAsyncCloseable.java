@@ -78,11 +78,11 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
             @Override
             public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-                LOGGER.info("Channel {} closed called", channel);
+                LOGGER.info("Channel {} closed called with promise ", channel, System.identityHashCode(promise));
                 promise.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        LOGGER.info("Channel {} closed future completed", channel);
+                        LOGGER.info("Channel {} closed future {} completed", channel, System.identityHashCode(future));
                     }
                 });
                 super.close(ctx, promise);
@@ -92,7 +92,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 // TODO: this happens for the server channel.
-                LOGGER.info("Channel {} closedFuture() finished.", channel);
+                LOGGER.info("Channel {} closedFuture(){} finished.", channel, System.identityHashCode(future));
             }
         });
 
