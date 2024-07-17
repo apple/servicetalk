@@ -193,7 +193,8 @@ class GracefulConnectionClosureHandlingTest {
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
-                        emit("Attaching to server connection Context: " + context);
+                        emit("Attaching to server connection Context(" + context.getClass().getSimpleName() + ") : " + context);
+                        // TODO: this channel does end up closed. How is it that we don't get the `onClose()` call?
                         if (!initiateClosureFromClient) {
                             onGracefulClosureStarted(context, onClosing);
                         }
