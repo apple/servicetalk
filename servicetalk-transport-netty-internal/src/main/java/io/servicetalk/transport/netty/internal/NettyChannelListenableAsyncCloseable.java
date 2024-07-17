@@ -20,6 +20,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -106,11 +107,11 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     return;
                 }
                 ChannelFuture channelCloseFuture = channel.closeFuture();
-                LOGGER.info("Channel {} close subscribe future: {}(", channel, channelCloseFuture, System.identityHashCode(channelCloseFuture));
+                LOGGER.info("Channel {} close subscribe future: {}", channel, channelCloseFuture);
                 channelCloseFuture.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        LOGGER.info("Channel {} close subscribe future completed.: {}(", channel, channelCloseFuture, System.identityHashCode(channelCloseFuture));
+                        LOGGER.info("Channel {} close subscribe future completed: {}", channel, channelCloseFuture);
                     }
                 });
                 NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
@@ -202,7 +203,28 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
 
     @Override
     public final Completable onClose() {
-        return onClose;
+        return onClose.liftSync(subscriber -> new CompletableSource.Subscriber() {
+                @Override
+                public void onSubscribe(Cancellable cancellable) {
+                    LOGGER.info("onClose for channel {} subscribing. {}", channel, this);
+                    subscriber.onSubscribe(() -> {
+                        LOGGER.info("onClose subscriber cancelled for channel {}. {}", channel, this);
+                        cancellable.cancel();
+                    });
+                }
+
+                @Override
+                public void onComplete() {
+                    LOGGER.info("onClose for channel {} onComplete. {}", channel, this);
+                    subscriber.onComplete();
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    LOGGER.info("onClose for channel {} onError. {}", channel, this, t);
+                    subscriber.onError(t);
+                }
+            });
     }
 
     /**
