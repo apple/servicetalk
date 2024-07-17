@@ -103,7 +103,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         onCloseNoOffload = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                LOGGER.info("Handling subscribe for channel {}", channel);
+//                LOGGER.info("Handling subscribe for channel {}", channel); // Seems to do what it should be doing.
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable cause) {
@@ -230,8 +230,9 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                 @Override
                 public void onComplete() {
                     emit("onClose for channel {} onComplete. {}", channel, this);
-                    // this does seem to happen... :thinkingface:
                     try {
+                        // this does seem to happen... :thinkingface:
+                        emit("Subscriber: {}", subscriber);
                         subscriber.onComplete();
                     } catch (Throwable ex) {
                         LOGGER.info("Error caught when triggering 'onComplete'");
