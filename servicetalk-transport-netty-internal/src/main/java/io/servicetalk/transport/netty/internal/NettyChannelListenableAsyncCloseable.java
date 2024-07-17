@@ -111,13 +111,20 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                 }
                 ChannelFuture channelCloseFuture = channel.closeFuture();
                 emit("Channel {} close subscribe future: {}, offloadingExecutor: {}", channel, channelCloseFuture, offloadingExecutor);
-                channelCloseFuture.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        emit("Channel {} close subscribe future completed: {}, offloadingExecutor: {}", channel, channelCloseFuture, offloadingExecutor);
+//                NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
+                channelCloseFuture.addListener(f -> {
+                    Throwable cause = f.cause();
+                    emit("Channel {} closeFuture completed with cause {}", channel, cause);
+                    if (cause == null) {
+                        try {
+                            subscriber.onComplete();
+                        } catch (Throwable ex) {
+                            LOGGER.warn("Caught exception in channel {}", channel, ex);
+                        }
+                    } else {
+                        subscriber.onError(cause);
                     }
                 });
-                NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
             }
         };
         // Since onClose termination will come from EventLoop, offload those signals to avoid blocking EventLoop
