@@ -31,6 +31,7 @@ import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -105,7 +106,13 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     return;
                 }
                 ChannelFuture channelCloseFuture = channel.closeFuture();
-                LOGGER.info("Channel {} close subscribe future: {}", channel, channelCloseFuture);
+                LOGGER.info("Channel {} close subscribe future: {}(", channel, channelCloseFuture, System.identityHashCode(channelCloseFuture));
+                channelCloseFuture.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOGGER.info("Channel {} close subscribe future completed.: {}(", channel, channelCloseFuture, System.identityHashCode(channelCloseFuture));
+                    }
+                });
                 NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
             }
         };
