@@ -109,6 +109,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void registerEventHandler(final Channel channel, Consumer<CloseEvent> eventHandler) {
+        emit(channel, "Registering with channel. this: " + this);
         assert channel.eventLoop().inEventLoop();
         assert channel instanceof DuplexChannel : "Channel does not implement DuplexChannel";
         assert TRUE.equals(channel.config().getOption(ALLOW_HALF_CLOSURE)) :
@@ -467,6 +468,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
         channel.eventLoop().schedule(() -> {
             DuplexChannel ch = (DuplexChannel) channel;
+            // this emits isInputShutdown() == false, isOutputShutdown() == true.
             emit(channel, "serverCloseGracefully(..). isInputShutdown(): " + ch.isInputShutdown() + ", isOutputShutdown(): " + ch.isOutputShutdown());
         }, 5, TimeUnit.SECONDS);
     }
