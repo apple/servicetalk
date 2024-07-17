@@ -924,7 +924,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-            LOGGER.debug("{} Received a user event: {}", ctx.channel(), evt);
+            // TODO: should we see what's happening here?
+            LOGGER.info("{} Received a user event: {}", ctx.channel(), evt);
             if (evt == CloseHandler.InboundDataEndEvent.INSTANCE) {
                 connection.nettyChannelPublisher.channelOnComplete();
             } else if (evt == CloseHandler.OutboundDataEndEvent.INSTANCE) {
