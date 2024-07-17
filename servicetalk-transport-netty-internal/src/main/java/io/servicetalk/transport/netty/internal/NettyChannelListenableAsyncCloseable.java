@@ -104,7 +104,9 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
                 }
-                NettyFutureCompletable.connectToSubscriber(subscriber, channel.closeFuture());
+                ChannelFuture channelCloseFuture = channel.closeFuture();
+                LOGGER.info("Channel {} close subscribe future: {}", channel, channelCloseFuture);
+                NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);
             }
         };
         // Since onClose termination will come from EventLoop, offload those signals to avoid blocking EventLoop
