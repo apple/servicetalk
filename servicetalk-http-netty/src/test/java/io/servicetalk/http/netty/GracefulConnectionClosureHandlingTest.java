@@ -450,6 +450,7 @@ class GracefulConnectionClosureHandlingTest {
         StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
+        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Triggering graceful closure");
         triggerGracefulClosure();
 
         clientSendRequestPayload.countDown();
@@ -457,7 +458,9 @@ class GracefulConnectionClosureHandlingTest {
         assertRequestPayloadBody(request);
         assertResponsePayloadBody(response);
 
+        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
         awaitConnectionClosed();
+        System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
         assertNextRequestFails();
     }
 
