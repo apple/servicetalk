@@ -87,7 +87,7 @@ public final class NettyServerContext implements ServerContext {
 
     private static AsyncCloseable wrapWithLogging(AsyncCloseable closeable, String name) {
 
-        if (false) { // disable for now: this doesn't seem to be the source of the problem.
+        if (true) { // disable for now: this doesn't seem to be the source of the problem.
             return closeable;
         } else {
             return new AsyncCloseable() {
