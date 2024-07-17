@@ -466,10 +466,10 @@ class GracefulConnectionClosureHandlingTest {
         assertRequestPayloadBody(request);
         assertResponsePayloadBody(response);
 
-        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
+        emit("Awaiting connection closed");
         awaitConnectionClosed(); // TODO this seems to have stalled in at least one run: https://github.com/apple/servicetalk/actions/runs/9977571869/job/27572514487?pr=3013#step:7:3129
         // TODO: when using 4.1 we get past this point. Example run: https://github.com/apple/servicetalk/actions/runs/9977821781/job/27573344396?pr=3013
-        emit("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
+        emit("Awaiting assertNextRequestFails");
         assertNextRequestFails();
     }
 
@@ -742,10 +742,10 @@ class GracefulConnectionClosureHandlingTest {
 
     private void awaitConnectionClosed() throws Exception {
         emit("awaiting serverConnectionClosed.");
-        serverConnectionClosed.await();
+        serverConnectionClosed.await(); // TODO: re-ordered this check and the server connection doesn't seem to be closing, and so we shouldn't expect the client connection to close either.
         emit("finished serverConnectionClosed.");
         emit("awaiting clientConnectionClosed.");
-        clientConnectionClosed.await(); // TODO: seems like it's this one that isn't finishing. Verified. This is the failing check.
+        clientConnectionClosed.await(); // TODO: seems like it's this one that isn't finishing. Verified. This is the failing check on main.
         emit("finished clientConnectionClosed.");
         if (!initiateClosureFromClient) {
             emit("awaiting serverContextClosed");

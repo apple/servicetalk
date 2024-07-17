@@ -15,6 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -23,6 +28,8 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -44,6 +51,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 public class NettyChannelListenableAsyncCloseable implements PrivilegedListenableAsyncCloseable {
     private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
             newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyChannelListenableAsyncCloseable.class);
     private final Channel channel;
     @SuppressWarnings("unused")
     private volatile int state;
@@ -62,6 +71,23 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     public NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
         onClosing = newCompletableProcessor();
+
+        LOGGER.info("Creating closable for channel {}", channel);
+
+        channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+                LOGGER.info("Channel {} closed called", channel);
+                super.close(ctx, promise);
+            }
+        });
+        channel.closeFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                LOGGER.info("Channel {} closed.", channel);
+            }
+        });
+
         onCloseNoOffload = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
