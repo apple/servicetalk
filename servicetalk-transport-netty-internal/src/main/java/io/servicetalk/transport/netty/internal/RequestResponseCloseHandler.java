@@ -26,6 +26,7 @@ import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -459,8 +460,15 @@ final class RequestResponseCloseHandler extends CloseHandler {
     private void serverCloseGracefully(final Channel channel) {
         // Perform half-closure as described in https://tools.ietf.org/html/rfc7230#section-6.6
         emit(channel, "serverCloseGracefully(channel)");
+
+        // What is the state of this channel in a few seconds?
         serverHalfCloseInbound(channel);
         serverHalfCloseOutbound(channel);
+
+        channel.eventLoop().schedule(() -> {
+            DuplexChannel ch = (DuplexChannel) channel;
+            emit(channel, "serverCloseGracefully(..). isInputShutdown(): " + ch.isInputShutdown() + ", isOutputShutdown(): " + ch.isOutputShutdown());
+        }, 5, TimeUnit.SECONDS);
     }
 
     private void serverHalfCloseInbound(final Channel channel) {
@@ -500,7 +508,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
             });
         } else {
             final ChannelFuture cf = ((DuplexChannel) channel).shutdownOutput();
-            emit(channel, "shutdownOutput() called");
+            emit(channel, "shutdownOutput() called. registerOnHalfClosed: " + registerOnHalfClosed); // does happen.
             if (registerOnHalfClosed) {
                 cf.addListener((ChannelFutureListener) this::onHalfClosed);
             }
