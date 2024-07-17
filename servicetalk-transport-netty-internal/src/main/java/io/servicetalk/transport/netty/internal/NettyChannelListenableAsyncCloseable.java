@@ -110,11 +110,11 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     return;
                 }
                 ChannelFuture channelCloseFuture = channel.closeFuture();
-                emit("Channel {} close subscribe future: {}", channel, channelCloseFuture);
+                emit("Channel {} close subscribe future: {}, offloadingExecutor: {}", channel, channelCloseFuture, offloadingExecutor);
                 channelCloseFuture.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        emit("Channel {} close subscribe future completed: {}", channel, channelCloseFuture);
+                        emit("Channel {} close subscribe future completed: {}, offloadingExecutor: {}", channel, channelCloseFuture, offloadingExecutor);
                     }
                 });
                 NettyFutureCompletable.connectToSubscriber(subscriber, channelCloseFuture);

@@ -199,19 +199,14 @@ class GracefulConnectionClosureHandlingTest {
                         if (!initiateClosureFromClient) {
                             onGracefulClosureStarted(context, onClosing);
                         }
-                        try {
-                            NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(true);
-                            context.onClose().whenFinally(() -> {
-                                emit("Server connection close complete. Context: " + context);
-                                serverConnectionClosed.countDown();
-                            }).subscribe();
-                            connectionAccepted.countDown();
-                            NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(false);
-                            emit("Finished decorating connection"); // ??? We don't get here?
-                        } catch (Throwable ex) {
-                            emit("Caught exception while attaching: " + ex);
-                            throw ex;
-                        }
+                        NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(true);
+                        context.onClose().whenFinally(() -> {
+                            emit("Server connection close complete. Context: " + context);
+                            serverConnectionClosed.countDown();
+                        }).subscribe();
+                        connectionAccepted.countDown();
+                        NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(false);
+                        emit("Finished decorating connection");
                         return completed();
                     }
                 });
