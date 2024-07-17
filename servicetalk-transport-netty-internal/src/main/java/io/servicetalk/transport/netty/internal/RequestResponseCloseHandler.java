@@ -257,7 +257,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
             return;
         }
         if (!isClient) {
-            LOGGER.warn("{}: {}", channel, str);
+            LOGGER.warn("{}-{}: {}", channel, this, str);
         }
     }
 
@@ -330,8 +330,8 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closing event rather than deferring
     private void maybeCloseChannelHalfOrFullyOnClosing(final Channel channel, final CloseEvent evt) {
-        emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "), this: " + this);
         if (isIdle(pending, state)) { // Only GRACEFUL_USER_CLOSING
+            emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "): isIdle()");
             assert evt == GRACEFUL_USER_CLOSING;
             if (isClient) {
                 closeChannel(channel, evt);
@@ -339,6 +339,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
                 serverCloseGracefully(channel);
             }
         } else if (isClient) {
+            emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "): isClient == true");
             if (evt == PROTOCOL_CLOSING_INBOUND && pending != 0) {
                 // Protocol inbound closing for a client is when a response is read, which decrements the pending
                 // count before reading the inbound closure signal. This means if pending > 0 there are more
@@ -351,6 +352,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
                 pending = 0;
             }
         } else if (evt == PROTOCOL_CLOSING_OUTBOUND) { // Server
+            emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "): evt == PROTOCOL_CLOSING_OUTBOUND");
             // eagerly close inbound channel on an outbound close command, unless we are still reading
             // the current request, no eager close on PROTOCOL_CLOSING_INBOUND
             if (pending != 0 || !isAllSet(state, READ)) { // Don't abort current request
@@ -359,8 +361,11 @@ final class RequestResponseCloseHandler extends CloseHandler {
             // discards extra pending requests when closing, ensures an eventual "idle" state
             pending = 0;
         } else if (!isAllSet(state, READ)) { // Server && GRACEFUL_USER_CLOSING - Don't abort any request
+            emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "): !isAllSet(state, READ)");
             assert evt == GRACEFUL_USER_CLOSING;
             serverHalfCloseInbound(channel);
+        } else {
+            emit(channel, "maybeCloseChannelHalfOrFullyOnClosing(channel: , evt:" + evt + "): else {}");
         }
     }
 
@@ -453,6 +458,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     private void serverCloseGracefully(final Channel channel) {
         // Perform half-closure as described in https://tools.ietf.org/html/rfc7230#section-6.6
+        emit(channel, "serverCloseGracefully(channel)");
         serverHalfCloseInbound(channel);
         serverHalfCloseOutbound(channel);
     }
