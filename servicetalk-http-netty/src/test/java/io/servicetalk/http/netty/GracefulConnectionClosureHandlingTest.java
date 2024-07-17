@@ -193,11 +193,12 @@ class GracefulConnectionClosureHandlingTest {
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
+                        emit("Attaching to server connection Context: " + context);
                         if (!initiateClosureFromClient) {
                             onGracefulClosureStarted(context, onClosing);
                         }
                         context.onClose().whenFinally(() -> {
-                            emit("Server connection close complete.");
+                            emit("Server connection close complete. Context: " + context);
                             serverConnectionClosed.countDown();
                         }).subscribe();
                         connectionAccepted.countDown();
