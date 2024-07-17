@@ -206,6 +206,7 @@ class GracefulConnectionClosureHandlingTest {
                         }).subscribe();
                         connectionAccepted.countDown();
                         NettyChannelListenableAsyncCloseable.SHOULD_LOG.set(false);
+                        emit("Finished decorating connection");
                         return completed();
                     }
                 });
