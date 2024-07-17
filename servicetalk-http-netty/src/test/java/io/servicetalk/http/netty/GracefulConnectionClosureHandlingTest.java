@@ -740,8 +740,8 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private void awaitConnectionClosed() throws Exception {
-
-        clientConnectionClosed.await();
+        emit("awaiting clientConnectionClosed.");
+        clientConnectionClosed.await(); // seems like it's this one that isn't finishing.
         emit("finished clientConnectionClosed.");
         serverConnectionClosed.await();
         emit("finished serverConnectionClosed.");
