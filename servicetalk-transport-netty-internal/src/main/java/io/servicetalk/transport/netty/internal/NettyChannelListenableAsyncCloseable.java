@@ -82,7 +82,8 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
             @Override
             public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-                emit("Channel {} closed called with promise {}", channel, promise);
+                // Why are we not getting here?
+                emit("Channel {} closed() called with promise {}", channel, promise);
                 promise.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
