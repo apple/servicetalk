@@ -83,7 +83,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
                     public void operationComplete(ChannelFuture future) throws Exception {
                         LOGGER.info("Channel {} closed future completed", channel);
                     }
-                })
+                });
                 super.close(ctx, promise);
             }
         });
