@@ -103,6 +103,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         onCloseNoOffload = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
+                LOGGER.info("Handling subscribe for channel {}", channel);
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable cause) {
