@@ -78,13 +78,20 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
             @Override
             public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
                 LOGGER.info("Channel {} closed called", channel);
+                promise.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOGGER.info("Channel {} closed future completed", channel);
+                    }
+                })
                 super.close(ctx, promise);
             }
         });
         channel.closeFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                LOGGER.info("Channel {} closed.", channel);
+                // TODO: this happens for the server channel.
+                LOGGER.info("Channel {} closedFuture() finished.", channel);
             }
         });
 

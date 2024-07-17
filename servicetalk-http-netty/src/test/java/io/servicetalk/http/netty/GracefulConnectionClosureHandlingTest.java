@@ -196,7 +196,10 @@ class GracefulConnectionClosureHandlingTest {
                         if (!initiateClosureFromClient) {
                             onGracefulClosureStarted(context, onClosing);
                         }
-                        context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
+                        context.onClose().whenFinally(() -> {
+                            emit("Server connection close complete.");
+                            serverConnectionClosed.countDown();
+                        }).subscribe();
                         connectionAccepted.countDown();
                         return completed();
                     }
