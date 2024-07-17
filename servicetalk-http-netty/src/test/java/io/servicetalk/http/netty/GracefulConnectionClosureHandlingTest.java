@@ -460,7 +460,7 @@ class GracefulConnectionClosureHandlingTest {
         assertResponsePayloadBody(response);
 
         System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting connection closed");
-        awaitConnectionClosed();
+        awaitConnectionClosed(); // this seems to have stalled in at least one run: https://github.com/apple/servicetalk/actions/runs/9965944313/job/27537158260?pr=3013#step:7:2772
         System.out.println("closeAfterRequestMetaDataSentResponseMetaDataReceived: Awaiting assertNextRequestFails");
         assertNextRequestFails();
     }
