@@ -258,9 +258,7 @@ final class RequestResponseCloseHandler extends CloseHandler {
         if (false) {
             return;
         }
-        if (!isClient) {
-            LOGGER.warn("{}-{}: {}", channel, this, str);
-        }
+        LOGGER.warn("{}-{}: {}", channel, this, str);
     }
 
     @Override
