@@ -15,23 +15,27 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+
 import java.util.Locale;
 
 /**
  * Notification from the Service Discovery system that availability for an address has changed.
  * <p>
  * Interpreting Events
- * <ul>
- *     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial collection of
+ * <ol>
+ *     <li>When subscribing (or re-subscribing to recover from failures) to an event stream the initial collection of
  *         events is considered to be the current state of the world.</li>
  *     <li>Each event represents the current state of the {@link ResolvedAddress} overriding any previously known
  *         {@link Status} and any associated meta-data.</li>
- * </ul>
+ * </ol>
+ * Item 1 is required to satisfy
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.10">
+ * Reactive Streams Rule 1.10</a>, which requires every subscribe to happen with a new {@link Subscriber Subscriber}.
+ * As a result, {@link Subscriber Subscriber} needs to know the initial state to start from.
  * <p>
- * Example
- * <p>
- * We can represent a {@link ServiceDiscovererEvent} as map entries of the form
- * ({@link ResolvedAddress}, ({@link Status}, meta-data)) where the {@link ResolvedAddress} is the map key.
+ * Item 2 can be clarified by the following example: we can represent a {@link ServiceDiscovererEvent} as map entries of
+ * the form ({@link ResolvedAddress}, ({@link Status}, meta-data)) where the {@link ResolvedAddress} is the map key.
  * <pre>
  * Starting with the initial state of {addr1, (AVAILABLE, meta-1)}. Upon subscribing to the event stream the initial
  * state is populated via the event (addr1, (AVAILABLE, meta-1)).
