@@ -741,11 +741,12 @@ class GracefulConnectionClosureHandlingTest {
     }
 
     private void awaitConnectionClosed() throws Exception {
+        emit("awaiting serverConnectionClosed.");
+        serverConnectionClosed.await();
+        emit("finished serverConnectionClosed.");
         emit("awaiting clientConnectionClosed.");
         clientConnectionClosed.await(); // TODO: seems like it's this one that isn't finishing. Verified. This is the failing check.
         emit("finished clientConnectionClosed.");
-        serverConnectionClosed.await();
-        emit("finished serverConnectionClosed.");
         if (!initiateClosureFromClient) {
             emit("awaiting serverContextClosed");
             serverContextClosed.await();
