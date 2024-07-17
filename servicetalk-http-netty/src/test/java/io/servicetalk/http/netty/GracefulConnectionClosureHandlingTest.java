@@ -443,7 +443,7 @@ class GracefulConnectionClosureHandlingTest {
             shouldLog = true;
             closeAfterRequestMetaDataSentResponseMetaDataReceived(
                     HttpProtocol.HTTP_1, false, false,
-                    true /*worth changing?*/, false
+                    false, false
             );
 
             throw new Exception("Test completed successfully.");

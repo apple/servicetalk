@@ -940,6 +940,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
                 connection.closeHandler.channelCloseNotify(ctx);
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                // TODO: this event isn't being fired.
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);
                 // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
