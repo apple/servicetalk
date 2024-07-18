@@ -55,17 +55,16 @@ import io.servicetalk.transport.api.IoExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_MAX_DELAY;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -73,6 +72,7 @@ import static java.util.function.Function.identity;
 @Deprecated // FIXME: 0.43 - remove deprecated class
 final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedHttpClientBuilder.class);
+    private static final AtomicInteger CLIENT_ID = new AtomicInteger();
 
     private final U address;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
@@ -101,15 +101,11 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
     @Override
     public StreamingHttpClient buildStreaming() {
+        final String targetResource = targetResource(address);
         final HttpExecutionContext executionContext = executionContextBuilder.build();
-        BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
-        if (sdRetryStrategy == null) {
-            sdRetryStrategy = retryWithExponentialBackoffFullJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
-                    SD_RETRY_STRATEGY_MAX_DELAY, executionContext.executor());
-        }
         final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
-                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
-                        sdRetryStrategy);
+                new RetryingServiceDiscoverer<>(targetResource, serviceDiscoverer, serviceDiscovererRetryStrategy,
+                        executionContext, DefaultPartitionedHttpClientBuilder::makeUnavailable);
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
@@ -137,6 +133,30 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
         LOGGER.debug("Partitioned client created with base strategy {}", executionContext.executionStrategy());
         return new FilterableClientToClient(partitionedClient, executionContext);
+    }
+
+    private static <U> String targetResource(final U address) {
+        return address + "/" + CLIENT_ID.incrementAndGet();
+    }
+
+    private static <R> PartitionedServiceDiscovererEvent<R> makeUnavailable(
+            final PartitionedServiceDiscovererEvent<R> event) {
+        return new PartitionedServiceDiscovererEvent<R>() {
+            @Override
+            public PartitionAttributes partitionAddress() {
+                return event.partitionAddress();
+            }
+
+            @Override
+            public R address() {
+                return event.address();
+            }
+
+            @Override
+            public Status status() {
+                return UNAVAILABLE;
+            }
+        };
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
