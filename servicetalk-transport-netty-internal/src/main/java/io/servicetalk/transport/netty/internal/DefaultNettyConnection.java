@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
@@ -935,12 +936,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                         DefaultNettyConnection.class, "userEventTriggered(AbortWritesEvent)"));
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 ChannelConfig config = ctx.channel().config();
-                LOGGER.info("{} Channel autoRead: {}, autoClose: {}, config: {}", ctx.channel(), config.isAutoRead(), config.isAutoClose(), config.getOptions());
+                LOGGER.info("{} Server channel autoRead: {}, autoClose: {}, config: {}", ctx.channel(), config.isAutoRead(), config.isAutoClose(), config.getOptions());
                 connection.closeHandler.channelClosedOutbound(ctx);
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
                 connection.closeHandler.channelCloseNotify(ctx);
+            } else if (evt == ChannelInputShutdownEvent.INSTANCE) {
+                ChannelConfig config = ctx.channel().config();
+                LOGGER.info("{} Client channel autoRead: {}, autoClose: {}, config: {}", ctx.channel(), config.isAutoRead(), config.isAutoClose(), config.getOptions());
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // TODO: this event isn't being fired.
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
