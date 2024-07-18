@@ -67,6 +67,7 @@ class RetryingServiceDiscovererTest {
     private final TestPublisherSubscriber<Collection<ServiceDiscovererEvent<String>>> subscriber =
             new TestPublisherSubscriber<>();
     private final ServiceDiscoverer<String, String, ServiceDiscovererEvent<String>> sd;
+    private final Publisher<Collection<ServiceDiscovererEvent<String>>> discoveryEvents;
 
     RetryingServiceDiscovererTest() {
         @SuppressWarnings("unchecked")
@@ -79,11 +80,12 @@ class RetryingServiceDiscovererTest {
         sd = new RetryingServiceDiscoverer<>(RetryingServiceDiscovererTest.class.getSimpleName(), delegate,
                 (count, t) -> Completable.completed(), GlobalExecutionContext.globalExecutionContext(),
                 e -> new DefaultServiceDiscovererEvent<>(e.address(), UNAVAILABLE));
+        discoveryEvents = sd.discover("any");
     }
 
     @BeforeEach
     void setUp() {
-        toSource(sd.discover("any")).subscribe(subscriber);
+        toSource(discoveryEvents).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
     }
 
@@ -234,7 +236,7 @@ class RetryingServiceDiscovererTest {
         subscriber.awaitSubscription().cancel();
         TestPublisherSubscriber<Collection<ServiceDiscovererEvent<String>>> newSubscriber =
                 new TestPublisherSubscriber<>();
-        toSource(sd.discover("any")).subscribe(newSubscriber);
+        toSource(discoveryEvents).subscribe(newSubscriber);
         newSubscriber.awaitSubscription().request(Long.MAX_VALUE);
         sdEvents = pubs.take();
 
