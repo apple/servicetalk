@@ -938,7 +938,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                         DefaultNettyConnection.class, "userEventTriggered(AbortWritesEvent)"));
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 ChannelConfig config = ctx.channel().config();
-                LOGGER.info("{} Server channel autoRead: {}, autoClose: {}, config: {}", ctx.channel(), config.isAutoRead(), config.isAutoClose(), config.getOptions());
+                LOGGER.info("{} Server channel config: {}", ctx.channel(), config.getOptions());
                 connection.closeHandler.channelClosedOutbound(ctx);
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
@@ -948,9 +948,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 ChannelConfig config = ctx.channel().config();
                 if (ctx.channel() instanceof DuplexChannel) {
                     DuplexChannel channel = (DuplexChannel) ctx.channel();
-                    LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
+                    LOGGER.info("{} Client channel isInputShutdown(): {} , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     channel.eventLoop().schedule(() -> {
-                        LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
+                        LOGGER.info("{} Client channel isInputShutdown(): {} , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     }, 3, TimeUnit.SECONDS);
                 }
                 LOGGER.info("{} Client channel state: {}, config: {}", ctx.channel(), config.getOptions());
