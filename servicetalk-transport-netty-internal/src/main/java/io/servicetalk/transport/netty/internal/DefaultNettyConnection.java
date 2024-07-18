@@ -948,12 +948,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 ChannelConfig config = ctx.channel().config();
                 if (ctx.channel() instanceof DuplexChannel) {
                     DuplexChannel channel = (DuplexChannel) ctx.channel();
-                    LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", String.valueOf(channel), String.valueOf(channel.isInputShutdown()), String.valueOf(channel.isOutputShutdown()));
+                    LOGGER.info("{} Client channel isInputShutdown(): , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     channel.eventLoop().schedule(() -> {
-                        LOGGER.info("{} Client channel isInputShutdown(): {} , isOutputShutdown(): {}", String.valueOf(channel), String.valueOf(channel.isInputShutdown()), String.valueOf(channel.isOutputShutdown()));
+                        LOGGER.info("{} Client channel isInputShutdown(): , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     }, 3, TimeUnit.SECONDS);
                 }
-                LOGGER.info("{} Client channel state: {}, config: {}", ctx.channel(), config.getOptions());
+                LOGGER.info("{} Client channel config: {}", ctx.channel(), config.getOptions());
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // TODO: this event isn't being fired.
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
