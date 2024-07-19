@@ -759,9 +759,8 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
             ByteBuf byteBuf = null;
             boolean close = false;
             Queue<SpliceInTask> sQueue = null;
-            boolean isReceivedRdHup = false;
             try {
-                LOGGER.info("{} Entering epollInReady()");
+                LOGGER.info("{} Entering epollInReady()", this);
                 do {
                     if (sQueue != null || (sQueue = spliceQueue) != null) {
                         SpliceInTask spliceTask = sQueue.peek();
@@ -769,7 +768,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                             boolean spliceInResult = spliceTask.spliceIn(allocHandle);
 
                             if (allocHandle.isReceivedRdHup()) {
-                                isReceivedRdHup = true;
+                                LOGGER.info("{} received rdHup. spliceInResult: {}", this, spliceInResult);
                                 shutdownInput(true);
                             }
                             if (spliceInResult) {
@@ -831,11 +830,9 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
             } catch (Throwable t) {
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
-                if (isReceivedRdHup) {
-                    LOGGER.info("{} sQueue: {}, ", this);
-                }
                 if (sQueue == null) {
-                    if (allocHandle.isReceivedRdHup() || (readPending && allocHandle.maybeMoreDataToRead())) {
+                    // TODO: adding this back fixes the event, but why?
+                    if (allocHandle.isReceivedRdHup()) {
                         if (!epollRunnableSubmitted) {
                             epollRunnableSubmitted = true;
                             LOGGER.info("{} Submitting epollInReady() to queue. isReceivedRdHup(): {}", AbstractEpollStreamChannel.this, allocHandle.isReceivedRdHup());
