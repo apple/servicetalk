@@ -760,7 +760,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
             boolean close = false;
             Queue<SpliceInTask> sQueue = null;
             try {
-                LOGGER.info("{} Entering epollInReady()", this);
+                LOGGER.info("{} Entering epollInReady()", AbstractEpollStreamChannel.this);
                 do {
                     if (sQueue != null || (sQueue = spliceQueue) != null) {
                         SpliceInTask spliceTask = sQueue.peek();
@@ -768,7 +768,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                             boolean spliceInResult = spliceTask.spliceIn(allocHandle);
 
                             if (allocHandle.isReceivedRdHup()) {
-                                LOGGER.info("{} received rdHup. spliceInResult: {}", this, spliceInResult);
+                                LOGGER.info("{} received rdHup. spliceInResult: {}", AbstractEpollStreamChannel.this, spliceInResult);
                                 shutdownInput(true);
                             }
                             if (spliceInResult) {
@@ -824,7 +824,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 pipeline.fireChannelReadComplete();
 
                 if (close) {
-                    LOGGER.info("{} closing epollInReady(). socketIsShutdown(): ", this, socket.isShutdown());
+                    LOGGER.info("{} closing epollInReady(). socketIsShutdown(): {}", AbstractEpollStreamChannel.this, socket.isShutdown());
                     shutdownInput(false);
                 }
             } catch (Throwable t) {
