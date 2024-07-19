@@ -779,6 +779,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                                 }
                                 continue;
                             } else {
+                                LOGGER.warn("{} Exited loop prematurely via spliceInResult == false", AbstractEpollStreamChannel.this);
                                 break;
                             }
                         }
@@ -797,6 +798,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                             // There is nothing left to read as we received an EOF.
                             readPending = false;
                         }
+                        LOGGER.warn("{} Exited loop prematurely via allocHandle.lastBytesRead() < 0", AbstractEpollStreamChannel.this);
                         break;
                     }
                     allocHandle.incMessagesRead(1);
@@ -816,9 +818,10 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                         //   concurrent connections and so needs a lot of filedescriptors. If not do this we risk
                         //   reading data from a filedescriptor that belongs to another socket then the socket that
                         //   was "wrapped" by this Channel implementation.
+                        LOGGER.warn("{} Exited loop prematurely via shouldBreakEpollInReady(config)", AbstractEpollStreamChannel.this);
                         break;
                     }
-                } while (allocHandle.continueReading() || allocHandle.isReceivedRdHup());
+                } while (allocHandle.continueReading());
 
                 allocHandle.readComplete();
                 pipeline.fireChannelReadComplete();
@@ -831,7 +834,20 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
                 if (sQueue == null) {
-                    if (shouldStopReading(config)) {
+                    // TODO: adding this back fixes the event, but why?
+                    if (false && allocHandle.isReceivedRdHup()) {
+                        if (!epollRunnableSubmitted) {
+                            epollRunnableSubmitted = true;
+                            LOGGER.info("{} Submitting epollInReady() to queue. isReceivedRdHup(): {}", AbstractEpollStreamChannel.this, allocHandle.isReceivedRdHup());
+                            eventLoop().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    epollRunnableSubmitted = false;
+                                    epollInReady();
+                                }
+                            });
+                        }
+                    } else if (shouldStopReading(config)) {
                         clearEpollIn();
                     }
                 } else {
