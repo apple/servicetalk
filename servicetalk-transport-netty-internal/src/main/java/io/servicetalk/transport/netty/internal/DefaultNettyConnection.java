@@ -56,6 +56,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.handler.codec.DecoderException;
@@ -938,6 +939,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
                 connection.closeHandler.channelCloseNotify(ctx);
+            } else if (evt == ChannelInputShutdownEvent.INSTANCE) {
+                // We've received a hangup but there may be more bytes buffered by the socket so let's read them into
+                // our channel buffer. We might not receive the ChannelInputShutdownReadComplete event until we try.
+                ctx.read();
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);
