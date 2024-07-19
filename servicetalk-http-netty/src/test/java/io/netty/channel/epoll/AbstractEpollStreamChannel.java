@@ -832,7 +832,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 pipeline.fireChannelReadComplete();
 
                 if (close) {
-                    LOGGER.info("{} closing epollInReady(). socketIsShutdown(): {}", AbstractEpollStreamChannel.this, socket.isShutdown());
+                    LOGGER.info("{} closing epollInReady(). socketIsShutdown(): {}", AbstractEpollStreamChannel.this, socket.isShutdown(), new Exception("stack trace"));
                     shutdownInput(false);
 
                 }
