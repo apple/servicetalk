@@ -818,7 +818,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                         //   was "wrapped" by this Channel implementation.
                         break;
                     }
-                } while (allocHandle.continueReading());
+                } while (allocHandle.continueReading() || allocHandle.isReceivedRdHup());
 
                 allocHandle.readComplete();
                 pipeline.fireChannelReadComplete();
@@ -831,20 +831,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
                 if (sQueue == null) {
-                    // TODO: adding this back fixes the event, but why?
-                    if (allocHandle.isReceivedRdHup()) {
-                        if (!epollRunnableSubmitted) {
-                            epollRunnableSubmitted = true;
-                            LOGGER.info("{} Submitting epollInReady() to queue. isReceivedRdHup(): {}", AbstractEpollStreamChannel.this, allocHandle.isReceivedRdHup());
-                            eventLoop().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    epollRunnableSubmitted = false;
-                                    epollInReady();
-                                }
-                            });
-                        }
-                    } else if (shouldStopReading(config)) {
+                    if (shouldStopReading(config)) {
                         clearEpollIn();
                     }
                 } else {
