@@ -638,6 +638,7 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
 
         protected final void clearEpollIn0() {
             assert eventLoop().inEventLoop();
+            logger.info("{} Clearing EPOLLIN", AbstractEpollChannel.this);
             try {
                 readPending = false;
                 ops = ops.without(EpollIoOps.EPOLLIN);
