@@ -536,6 +536,11 @@ abstract class AbstractEpollChannel extends AbstractChannel implements UnixChann
                 shutdownInput(true);
             }
 
+            if (!inputClosedSeenErrorOnRead) {
+                inputClosedSeenErrorOnRead = true;
+                pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
+            }
+
             // Clear the EPOLLRDHUP flag to prevent continuously getting woken up on this event.
             clearEpollRdHup();
         }
