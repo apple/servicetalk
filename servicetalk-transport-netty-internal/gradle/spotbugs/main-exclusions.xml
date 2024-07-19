@@ -111,7 +111,7 @@
   </Match>
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable"/>
-    <Method name="new"/>
+    <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 </FindBugsFilter>
