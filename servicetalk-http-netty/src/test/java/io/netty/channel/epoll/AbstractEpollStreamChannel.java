@@ -827,7 +827,19 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
                 if (sQueue == null) {
-                    if (shouldStopReading(config)) {
+                    if (allocHandle.isReceivedRdHup() || (readPending && allocHandle.maybeMoreDataToRead())) {
+                        if (!epollRunnableSubmitted) {
+                            epollRunnableSubmitted = true;
+                            LOGGER.info("{} Submitting epollInReady() to queue. isReceivedRdHup(): {}", AbstractEpollStreamChannel.this, allocHandle.isReceivedRdHup());
+                            eventLoop().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    epollRunnableSubmitted = false;
+                                    epollInReady();
+                                }
+                            });
+                        }
+                    } else if (shouldStopReading(config)) {
                         clearEpollIn();
                     }
                 } else {
@@ -838,6 +850,8 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
             }
         }
     }
+
+    private boolean epollRunnableSubmitted = false;
 
     private void addToSpliceQueue(final SpliceInTask task) {
         Queue<SpliceInTask> sQueue = spliceQueue;
