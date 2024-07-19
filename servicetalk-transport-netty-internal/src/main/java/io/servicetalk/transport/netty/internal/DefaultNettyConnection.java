@@ -948,9 +948,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 ChannelConfig config = ctx.channel().config();
                 if (ctx.channel() instanceof DuplexChannel) {
                     DuplexChannel channel = (DuplexChannel) ctx.channel();
-                    LOGGER.info("{} Client channel isInputShutdown(): , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
+                    LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     channel.eventLoop().schedule(() -> {
-                        LOGGER.info("{} Client channel isInputShutdown(): , isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
+                        LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     }, 3, TimeUnit.SECONDS);
                 }
                 LOGGER.info("{} Client channel config: {}", ctx.channel(), config.getOptions());
