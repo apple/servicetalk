@@ -821,7 +821,11 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                         LOGGER.warn("{} Exited loop prematurely via shouldBreakEpollInReady(config)", AbstractEpollStreamChannel.this);
                         break;
                     }
-                } while (allocHandle.continueReading());
+                    if (!allocHandle.continueReading()) {
+                        LOGGER.warn("{} Exited loop prematurely via allocHandle.continueReading() == false", AbstractEpollStreamChannel.this);
+                        break;
+                    }
+                } while (true);
 
                 allocHandle.readComplete();
                 pipeline.fireChannelReadComplete();
