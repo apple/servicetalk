@@ -940,9 +940,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
                 connection.closeHandler.channelCloseNotify(ctx);
             } else if (evt == ChannelInputShutdownEvent.INSTANCE) {
-                // We've received a hangup but there may be more bytes buffered in the socket so lets read them into
+                // We've received a hangup but there may be more bytes buffered by the socket so let's read them into
                 // our channel buffer. We might not receive the ChannelInputShutdownReadComplete event until we try.
-                ctx.channel().config().setAutoRead(true);
+                ctx.read();
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);
