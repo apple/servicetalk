@@ -950,6 +950,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     DuplexChannel channel = (DuplexChannel) ctx.channel();
                     LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     channel.eventLoop().schedule(() -> {
+
                         LOGGER.info("{} Client channel isInputShutdown(): {}, isOutputShutdown(): {}", channel, channel.isInputShutdown(), channel.isOutputShutdown());
                     }, 3, TimeUnit.SECONDS);
                 }

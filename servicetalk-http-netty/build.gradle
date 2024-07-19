@@ -43,6 +43,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-codec-http"
   implementation "io.netty:netty-codec-http2"
+  implementation "io.netty:netty-transport-classes-epoll"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
