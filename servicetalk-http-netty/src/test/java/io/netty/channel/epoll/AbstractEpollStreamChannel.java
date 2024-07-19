@@ -223,6 +223,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
         return promise;
     }
 
+
     private void failSpliceIfClosed(ChannelPromise promise) {
         if (!isOpen()) {
             // Seems like the Channel was closed in the meantime try to fail the promise to prevent any
@@ -758,7 +759,9 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
             ByteBuf byteBuf = null;
             boolean close = false;
             Queue<SpliceInTask> sQueue = null;
+            boolean isReceivedRdHup = false;
             try {
+                LOGGER.info("{} Entering epollInReady()");
                 do {
                     if (sQueue != null || (sQueue = spliceQueue) != null) {
                         SpliceInTask spliceTask = sQueue.peek();
@@ -766,6 +769,7 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                             boolean spliceInResult = spliceTask.spliceIn(allocHandle);
 
                             if (allocHandle.isReceivedRdHup()) {
+                                isReceivedRdHup = true;
                                 shutdownInput(true);
                             }
                             if (spliceInResult) {
@@ -821,11 +825,15 @@ public abstract class AbstractEpollStreamChannel extends AbstractEpollChannel im
                 pipeline.fireChannelReadComplete();
 
                 if (close) {
+                    LOGGER.info("{} closing epollInReady(). socketIsShutdown(): ", this, socket.isShutdown());
                     shutdownInput(false);
                 }
             } catch (Throwable t) {
                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
             } finally {
+                if (isReceivedRdHup) {
+                    LOGGER.info("{} sQueue: {}, ", this);
+                }
                 if (sQueue == null) {
                     if (allocHandle.isReceivedRdHup() || (readPending && allocHandle.maybeMoreDataToRead())) {
                         if (!epollRunnableSubmitted) {
