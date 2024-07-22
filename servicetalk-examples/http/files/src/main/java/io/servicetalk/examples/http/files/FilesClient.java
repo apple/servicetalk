@@ -24,12 +24,7 @@ import java.time.Duration;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
- * Extends the async 'Hello World!' example to demonstrate use of timeout filters and timeout operators. If a single
- * timeout can be applied to all transactions then the timeout should be applied using the
- * {@link TimeoutHttpRequesterFilter}. If only some transactions require a timeout then the timeout should be applied
- * using a {@link io.servicetalk.concurrent.api.Single#timeout(Duration)} Single.timeout()} or a
- * {@link io.servicetalk.concurrent.api.Publisher#timeoutTerminal(Duration)} (Duration)} Publisher.timeoutTerminal()}
- * operator.
+ * Extends the async 'Hello World!' example to demonstrate use of requesting from {@link FilesServer}.
  */
 public final class FilesClient {
     public static void main(String[] args) throws Exception {
