@@ -116,6 +116,9 @@
     <a class="nav-link" href="#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Files">Files</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="service-composition.html">Service Composition</a>
   </li>
 </ul>
@@ -1746,6 +1749,24 @@ same across all the HTTP APIs.
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Files"><a class="anchor" href="#Files"></a><a class="link" href="#Files">Files</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates asynchronous request processing where the response payload body is streamed from a file.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesServer.java">FilesServer</a> - a server whose response body is streamed from a file.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/files/src/main/java/io/servicetalk/examples/http/files/FilesClient.java">FilesClient</a> - a client that requests and prints response contents.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>

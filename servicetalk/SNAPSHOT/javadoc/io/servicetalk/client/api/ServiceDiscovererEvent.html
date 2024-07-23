@@ -89,17 +89,19 @@ loadScripts(document, 'script');</script>
 <div class="block">Notification from the Service Discovery system that availability for an address has changed.
  <p>
  Interpreting Events
- <ul>
-     <li>When subscribing (or re-subscribing to recovery from faults) to an event stream the initial collection of
+ <ol>
+     <li>When subscribing (or re-subscribing to recover from failures) to an event stream the initial collection of
          events is considered to be the current state of the world.</li>
      <li>Each event represents the current state of the <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> overriding any previously known
          <a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> and any associated meta-data.</li>
- </ul>
+ </ol>
+ Item 1 is required to satisfy
+ <a href="https://github.com/reactive-streams/reactive-streams-jvm?tab=readme-ov-file#1.10">
+ Reactive Streams Rule 1.10</a>, which requires every subscribe to happen with a new <a href="../../concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>Subscriber</code></a>.
+ As a result, <a href="../../concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>Subscriber</code></a> needs to know the initial state to start from.
  <p>
- Example
- <p>
- We can represent a <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> as map entries of the form
- (<a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>, (<a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a>, meta-data)) where the <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> is the map key.
+ Item 2 can be clarified by the following example: we can represent a <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> as map entries of
+ the form (<a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>, (<a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a>, meta-data)) where the <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> is the map key.
  <pre>
  Starting with the initial state of {addr1, (AVAILABLE, meta-1)}. Upon subscribing to the event stream the initial
  state is populated via the event (addr1, (AVAILABLE, meta-1)).

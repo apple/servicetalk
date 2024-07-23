@@ -93,6 +93,12 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
  is called that the service discovery system will push data updates or implementations of this interface will poll for
  data updates. Changes in the available addresses will be communicated via the resulting <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
  <p>
+ Because typically a <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> implementation runs in the background and doesn't require many compute
+ resources, it's recommended (but not required) to run it and deliver updates on a single thread either for all
+ discoveries or at least for all <a href="../../concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>Subscribers</code></a> to the same <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. One possible advantage
+ of a single-threaded model is that it will make debugging easier as discovery events and the logs they generate will
+ be less susceptible to reordering.
+ <p>
  See <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> for documentation regarding the interpretation of events.</div>
 </section>
 <section class="summary">
@@ -142,8 +148,11 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
  <code>address</code>.
  <p>
  In general a call to this method will continue to discover changes related to <code>address</code> until the
- <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> corresponding to the return value is cancelled via <a href="../../concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> or there
- are no more changes to be published.</div>
+ <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>Subscription</code></a> corresponding to the return value is <a href="../../concurrent/Cancellable.html#cancel()"><code>cancelled</code></a> or
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> fails with an error. The returned <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> should never
+ <a href="../../concurrent/PublisherSource.Subscriber.html#onComplete()"><code>complete</code></a> because underlying system may run for a long period of time and updates
+ may be required at any time in the future. The returned <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> MUST support re-subscribes to allow
+ underlying systems retry failures or re-subscribe after <a href="../../concurrent/Cancellable.html#cancel()"><code>cancellation</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>address</code> - the service address to discover. Examples of what this address maybe are:

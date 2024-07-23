@@ -210,8 +210,11 @@ implements <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.c
  <code>address</code>.
  <p>
  In general a call to this method will continue to discover changes related to <code>address</code> until the
- <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> corresponding to the return value is cancelled via <a href="../../concurrent/Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> or there
- are no more changes to be published.</div>
+ <a href="../../concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>Subscription</code></a> corresponding to the return value is <a href="../../concurrent/Cancellable.html#cancel()"><code>cancelled</code></a> or
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> fails with an error. The returned <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> should never
+ <a href="../../concurrent/PublisherSource.Subscriber.html#onComplete()"><code>complete</code></a> because underlying system may run for a long period of time and updates
+ may be required at any time in the future. The returned <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> MUST support re-subscribes to allow
+ underlying systems retry failures or re-subscribe after <a href="../../concurrent/Cancellable.html#cancel()"><code>cancellation</code></a>.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="ServiceDiscoverer.html#discover(UnresolvedAddress)">discover</a></code>&nbsp;in interface&nbsp;<code><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">UnresolvedAddress</a>,<wbr><a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">ResolvedAddress</a>,<wbr><a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">E</a> extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DelegatingServiceDiscoverer.html" title="type parameter in DelegatingServiceDiscoverer">ResolvedAddress</a>&gt;&gt;</code></dd>

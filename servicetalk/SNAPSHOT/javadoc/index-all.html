@@ -624,6 +624,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Address of the proxy.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html#address()" class="member-name-link">address()</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a></dt>
+<dd>
+<div class="block">The address of the host.</div>
+</dd>
 <dt><a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html#address()" class="member-name-link">address()</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)" class="member-name-link">addRoute(GrpcExecutionStrategy, MethodDescriptor&lt;Req, Resp&gt;, BufferDecoderGroup, List&lt;BufferEncoder&gt;, GrpcRoutes.Route&lt;Req, Resp&gt;)</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a></dt>
@@ -3014,6 +3018,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Build the <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> for the specified JAX-RS <code>Application</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a>&lt;<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="type parameter in ByteArrayMapper">T</a>&gt; - Interface in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
+<dd>
+<div class="block">A mapper to transform <code>byte[]</code> buffer regions into a desired type <code>T</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/serializer/utils/ByteArraySerializer.html#byteArraySerializer(boolean)" class="member-name-link">byteArraySerializer(boolean)</a> - Static method in class io.servicetalk.serializer.utils.<a href="io/servicetalk/serializer/utils/ByteArraySerializer.html" title="class in io.servicetalk.serializer.utils">ByteArraySerializer</a></dt>
 <dd>
 <div class="block">Create a new instance.</div>
@@ -4308,6 +4316,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">This method is like <a href="io/servicetalk/concurrent/api/Single.html#concat(io.servicetalk.concurrent.api.Publisher)"><code>Single.concat(Publisher)</code></a> except <code>next</code> will be subscribed to and cancelled if this
  <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is cancelled or terminates with <a href="io/servicetalk/concurrent/SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html#concurrentRequestPenalty()" class="member-name-link">concurrentRequestPenalty()</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></dt>
+<dd>
+<div class="block">The penalty factory to apply to concurrent requests.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentSubscription.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">ConcurrentSubscription</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
@@ -7185,15 +7197,19 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The penalty factor for local cancellation of requests.</div>
 </dd>
-<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#ewmaCancellationPenalty(long)" class="member-name-link">ewmaCancellationPenalty(long)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#ewmaCancellationPenalty(int)" class="member-name-link">ewmaCancellationPenalty(int)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
 <dd>
 <div class="block">Set the penalty factor for local cancellation of requests.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#ewmaConcurrentRequestPenalty(int)" class="member-name-link">ewmaConcurrentRequestPenalty(int)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
+<dd>
+<div class="block">Set the penalty factory to apply to concurrent requests.</div>
 </dd>
 <dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html#ewmaErrorPenalty()" class="member-name-link">ewmaErrorPenalty()</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></dt>
 <dd>
 <div class="block">The penalty factor for requests that were classified as an error.</div>
 </dd>
-<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#ewmaErrorPenalty(long)" class="member-name-link">ewmaErrorPenalty(long)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
+<dt><a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html#ewmaErrorPenalty(int)" class="member-name-link">ewmaErrorPenalty(int)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></dt>
 <dd>
 <div class="block">Set the penalty factor for requests that were classified as an error.</div>
 </dd>
@@ -8686,13 +8702,22 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#fromInputStream(java.io.InputStream)" class="member-name-link">fromInputStream(InputStream)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
-<div class="block">Create a new <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that when subscribed will emit all data from the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> to the
- <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> and then <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#fromInputStream(java.io.InputStream,io.servicetalk.concurrent.api.ByteArrayMapper)"><code>Publisher.fromInputStream(InputStream, ByteArrayMapper)</code></a> with
+ <a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray()"><code>ByteArrayMapper.toByteArray()</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#fromInputStream(java.io.InputStream,int)" class="member-name-link">fromInputStream(InputStream, int)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#fromInputStream(java.io.InputStream,io.servicetalk.concurrent.api.ByteArrayMapper)"><code>Publisher.fromInputStream(InputStream, ByteArrayMapper)</code></a> with
+ <a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray(int)"><code>ByteArrayMapper.toByteArray(int)</code></a>.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#fromInputStream(java.io.InputStream,io.servicetalk.concurrent.api.ByteArrayMapper)" class="member-name-link">fromInputStream(InputStream, ByteArrayMapper&lt;T&gt;)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
 <div class="block">Create a new <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that when subscribed will emit all data from the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a> to the
- <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> and then <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.</div>
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> as a mapped type <code>T</code> and then <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#fromIterable(java.lang.Iterable)" class="member-name-link">fromIterable(Iterable&lt;? extends T&gt;)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
@@ -12116,6 +12141,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Determine if fd addresses are supported.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html#isHealthy()" class="member-name-link">isHealthy()</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a></dt>
+<dd>
+<div class="block">Determine the health status of this host.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/DefaultHttpSetCookie.html#isHttpOnly()" class="member-name-link">isHttpOnly()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpSetCookie.html" title="class in io.servicetalk.http.api">DefaultHttpSetCookie</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpSetCookie.html#isHttpOnly()" class="member-name-link">isHttpOnly()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a></dt>
@@ -12794,14 +12823,6 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A factory for creating <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances.</div>
 </dd>
-<dt><a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserver)" class="member-name-link">loadBalancerObserver(LoadBalancerObserver)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserver)" class="member-name-link">loadBalancerObserver(LoadBalancerObserver)</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a></dt>
-<dd>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">use the overload that takes a <a href="io/servicetalk/loadbalancer/LoadBalancerObserverFactory.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserverFactory</code></a></div>
-</div>
-</dd>
 <dt><a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserverFactory)" class="member-name-link">loadBalancerObserver(LoadBalancerObserverFactory)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserverFactory)" class="member-name-link">loadBalancerObserver(LoadBalancerObserverFactory)</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a></dt>
@@ -12812,6 +12833,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">An observer that provides visibility into a <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html" class="type-name-link" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a> - Interface in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
+<dd>
+<div class="block">A description of a host.</div>
+</dd>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.HostObserver.html" class="type-name-link" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a> - Interface in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
 <dd>
 <div class="block">An observer for <code>Host</code> events.</div>
@@ -12819,12 +12844,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserverFactory.html" class="type-name-link" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserverFactory</a> - Interface in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
 <dd>
 <div class="block">Factory of <a href="io/servicetalk/loadbalancer/LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver</code></a> instances.</div>
-</dd>
-<dt><a href="io/servicetalk/loadbalancer/LoadBalancerPolicies.html" class="type-name-link" title="class in io.servicetalk.loadbalancer">LoadBalancerPolicies</a> - Class in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
-<dd>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicies</code></a>.</div>
-</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/LoadBalancerReadyEvent.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancerReadyEvent</a> - Interface in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
 <dd>
@@ -12848,6 +12867,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" class="type-name-link" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="type parameter in LoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="type parameter in LoadBalancingPolicy">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt; - Class in <a href="io/servicetalk/loadbalancer/package-summary.html">io.servicetalk.loadbalancer</a></dt>
 <dd>
 <div class="block">Definition of the selector mechanism used for load balancing.</div>
+</dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html#loadBalancingWeight()" class="member-name-link">loadBalancingWeight()</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerObserver.Host.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a></dt>
+<dd>
+<div class="block">The weight of the host, relative to the weights of associated hosts as used for load balancing.</div>
 </dd>
 <dt><a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html#loadBalancingWeight()" class="member-name-link">loadBalancingWeight()</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a></dt>
 <dd>
@@ -13108,6 +13131,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Make a timeout header value from the specified duration.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#map(byte%5B%5D,int,int)" class="member-name-link">map(byte[], int, int)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
+<dd>
+<div class="block">Maps a specified <code>byte[]</code> buffer region into a <code>T</code>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#map(java.util.function.Function)" class="member-name-link">map(Function&lt;? super T, ? extends R&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
 <div class="block">Transforms elements emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> into a different type.</div>
@@ -13192,6 +13219,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/HttpSetCookie.html#maxAge()" class="member-name-link">maxAge()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a></dt>
 <dd>
 <div class="block">Returns the maximum age of this <a href="io/servicetalk/http/api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a> in seconds if specified.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#maxBufferSize()" class="member-name-link">maxBufferSize()</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
+<dd>
+<div class="block">Returns the maximum allowed buffer size for the <a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#map(byte%5B%5D,int,int)"><code>ByteArrayMapper.map(byte[], int, int)</code></a> operation.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#maxCapacity()" class="member-name-link">maxCapacity()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -15646,6 +15677,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Callback for when a <code>Host</code> transitions from unhealthy to healthy.</div>
 </dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.html#onHostSetChanged(java.util.Collection)" class="member-name-link">onHostSetChanged(Collection&lt;? extends LoadBalancerObserver.Host&gt;)</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a></dt>
+<dd>
+<div class="block">Callback for when the set of hosts used by the load balancer has changed.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/WriteDemandEstimator.html#onItemWrite(java.lang.Object,long,long)" class="member-name-link">onItemWrite(Object, long, long)</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/WriteDemandEstimator.html" title="interface in io.servicetalk.transport.netty.internal">WriteDemandEstimator</a></dt>
 <dd>
 <div class="block">Callback whenever an item is written on the connection.</div>
@@ -16090,11 +16125,6 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:P">P</h2>
 <dl class="index">
-<dt><a href="io/servicetalk/loadbalancer/LoadBalancerPolicies.html#p2c()" class="member-name-link">p2c()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancerPolicies</a></dt>
-<dd>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Builder for the power of two choices (P2C) <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
-</dd>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html#p2c()" class="member-name-link">p2c()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicies</a></dt>
 <dd>
 <div class="block">Builder for the power of two choices (P2C) <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
@@ -19046,11 +19076,6 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html#%3Cinit%3E(ResolvedAddress,io.servicetalk.client.api.ServiceDiscovererEvent.Status,double,int)" class="member-name-link">RichServiceDiscovererEvent(ResolvedAddress, ServiceDiscovererEvent.Status, double, int)</a> - Constructor for class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/loadbalancer/LoadBalancerPolicies.html#roundRobin()" class="member-name-link">roundRobin()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancerPolicies</a></dt>
-<dd>
-<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Builder for the round-robin <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
-</dd>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html#roundRobin()" class="member-name-link">roundRobin()</a> - Static method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicies</a></dt>
 <dd>
 <div class="block">Builder for the round-robin <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
@@ -22305,6 +22330,14 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckResponse.html#toBuilder()" class="member-name-link">toBuilder()</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray()" class="member-name-link">toByteArray()</a> - Static method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
+<dd>
+<div class="block">Mapper from the buffer region to an independent <code>byte[]</code> buffer.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#toByteArray(int)" class="member-name-link">toByteArray(int)</a> - Static method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ByteArrayMapper.html" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a></dt>
+<dd>
+<div class="block">Mapper from the buffer region to an independent <code>byte[]</code> buffer.</div>
+</dd>
 <dt><a href="io/servicetalk/buffer/netty/BufferUtils.html#toByteBuf(io.servicetalk.buffer.api.Buffer)" class="member-name-link">toByteBuf(Buffer)</a> - Static method in class io.servicetalk.buffer.netty.<a href="io/servicetalk/buffer/netty/BufferUtils.html" title="class in io.servicetalk.buffer.netty">BufferUtils</a></dt>
 <dd>
 <div class="block">Return a <code>ByteBuf</code> for the given buffer.</div>
