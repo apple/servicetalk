@@ -191,4 +191,46 @@ class RoundRobinSelectorTest {
                 PREDICATE, null, false).toFuture().get());
         assertThat(e.getCause(), isA(NoActiveHostException.class));
     }
+
+    @Test
+    void equalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts =
+                SelectorTestHelpers.generateHosts("addr-1", "addr-2", "addr-3", "addr-4");
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(1).isHealthy()).thenReturn(false);
+        init(hosts);
+
+        List<String> addresses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            addresses.add(connection.address());
+        }
+        assertThat(addresses, contains("addr-3", "addr-4", "addr-3", "addr-4"));
+    }
+
+    @Test
+    void unequalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(
+                "addr-1", "addr-2", "addr-3", "addr-4");
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(1).isHealthy()).thenReturn(false);
+        when(hosts.get(0).weight()).thenReturn(1.0);
+        when(hosts.get(1).weight()).thenReturn(1.1);
+        when(hosts.get(2).weight()).thenReturn(1.2);
+        when(hosts.get(3).weight()).thenReturn(1.3);
+        init(hosts);
+
+        // The stream of 7 selections for healthy elements is
+        //  [addr-2, addr-3, addr-4, addr-1, addr-2, addr-3, addr-4]
+        // Since 1 and 2 are unhealthy we expect the first 4 picks to be
+        //  [   X  , addr-3, addr-4,   X   ,   X   , addr-3, addr-4]
+        List<String> addresses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            addresses.add(connection.address());
+        }
+        assertThat(addresses, contains("addr-3", "addr-4", "addr-3", "addr-4"));
+    }
 }
