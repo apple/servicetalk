@@ -158,7 +158,10 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         // after an unhealthy node to effectively receive double traffic.
         final void foundUnhealthy(int index) {
             int i = this.index.get();
+            // We have to check against `i - 1` because we perform a getAndIncrement so the index we returned from
+            // `nextIndex()` is one behind where index currently is.
             if (index == (Integer.toUnsignedLong(i) - 1) % hostsSize) {
+                // We do CAS to conditionally advance the cursor only if someone else hasn't already.
                 this.index.compareAndSet(i, i + 1);
             }
         }
