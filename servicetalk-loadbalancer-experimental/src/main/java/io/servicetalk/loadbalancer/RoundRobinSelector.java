@@ -60,7 +60,8 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         this(new AtomicInteger(), hosts, lbDescription, failOpen, ignoreWeights);
     }
 
-    private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
+    // visible for testing purposes.
+    RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
                                final String targetResource, final boolean failOpen, final boolean ignoreWeights) {
         super(hosts, targetResource);
         this.index = index;
@@ -149,15 +150,15 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         // Get the index of the next host
         abstract int nextHost();
 
-        protected final int nextIndex() {
-            return index.getAndIncrement();
+        protected final long nextIndex() {
+            return Integer.toUnsignedLong(index.getAndIncrement());
         }
 
         // Let the scheduler know the index was found to be unhealthy in an attempt to avoid causing the node
         // after an unhealthy node to effectively receive double traffic.
         final void foundUnhealthy(int index) {
             int i = this.index.get();
-            if (index == (i - 1) % hostsSize) {
+            if (index == (Integer.toUnsignedLong(i) - 1) % hostsSize) {
                 this.index.compareAndSet(i, i + 1);
             }
         }
@@ -171,7 +172,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
         @Override
         int nextHost() {
-            return (int) (Integer.toUnsignedLong(nextIndex()) % hostsSize);
+            return (int) (nextIndex() % hostsSize);
         }
     }
 
@@ -191,7 +192,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         @Override
         int nextHost() {
             while (true) {
-                long counter = Integer.toUnsignedLong(nextIndex());
+                long counter = nextIndex();
                 long pass = counter / hostsSize;
                 int i = (int) counter % hostsSize;
                 // We add a unique offset for each offset which could be anything so long as it's constant throughout

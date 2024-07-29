@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.when;
 class RoundRobinSelectorTest {
 
     private boolean failOpen;
+    private AtomicInteger index = new AtomicInteger();
     @Nullable
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
@@ -50,12 +52,14 @@ class RoundRobinSelectorTest {
     }
 
     void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
-        selector = new RoundRobinSelector<>(hosts, "testResource", failOpen, false);
+        selector = new RoundRobinSelector<>(index, hosts, "testResource", failOpen, false);
     }
 
-    @Test
-    void roundRobining() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: negativeIndex={0}")
+    @ValueSource(booleans = {true, false})
+    void roundRobining(boolean negativeIndex) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
+        index.set(negativeIndex ? -1000 : 0);
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -192,12 +196,14 @@ class RoundRobinSelectorTest {
         assertThat(e.getCause(), isA(NoActiveHostException.class));
     }
 
-    @Test
-    void equalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: negativeIndex={0}")
+    @ValueSource(booleans = {true, false})
+    void equalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode(boolean negativeIndex) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts =
                 SelectorTestHelpers.generateHosts("addr-1", "addr-2", "addr-3", "addr-4");
         when(hosts.get(0).isHealthy()).thenReturn(false);
         when(hosts.get(1).isHealthy()).thenReturn(false);
+        index.set(negativeIndex ? -1000 : 0);
         init(hosts);
 
         List<String> addresses = new ArrayList<>();
