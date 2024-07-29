@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 class RoundRobinSelectorTest {
 
     private boolean failOpen;
-    private AtomicInteger index = new AtomicInteger();
+    private final AtomicInteger index = new AtomicInteger();
     @Nullable
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
