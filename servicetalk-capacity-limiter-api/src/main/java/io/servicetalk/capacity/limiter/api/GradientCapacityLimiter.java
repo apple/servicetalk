@@ -150,7 +150,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
      * Needs to be called while holding the lock.
      */
     private int updateLimit(final long timestampNs, final double shortLatencyMillis, final double longLatencyMillis) {
-        assert lock.isLocked();
+        assert lock.isHeldByCurrentThread();
         if (isNaN(longLatencyMillis) || isNaN(shortLatencyMillis) || shortLatencyMillis == 0) {
             return -1;
         }

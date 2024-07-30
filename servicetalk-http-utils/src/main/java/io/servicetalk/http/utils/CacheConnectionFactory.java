@@ -147,7 +147,7 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                     try {
                                         subscriber.onSuccess(result1);
                                     } finally {
-                                        lockRemoveFromMap();C
+                                        lockRemoveFromMap();
                                     }
                                 }
 
