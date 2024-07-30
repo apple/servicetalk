@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
@@ -67,7 +68,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GradientCapacityLimiter.class);
 
-    private final Object lock = new Object();
+    private final ReentrantLock lock = new ReentrantLock();
 
     private final String name;
     private final int min;
@@ -128,12 +129,15 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         int newLimit;
 
         Ticket ticket = null;
-        synchronized (lock) {
+        lock.lock();
+        try {
             newLimit = (int) limit;
             if (pending < limit) {
                 newPending = ++pending;
                 ticket = new DefaultTicket(this, newLimit - newPending, newPending);
             }
+        } finally {
+            lock.unlock();
         }
 
         if (ticket != null) {
@@ -143,9 +147,10 @@ final class GradientCapacityLimiter implements CapacityLimiter {
     }
 
     /**
-     * Needs to be called within a synchronized block.
+     * Needs to be called while holding the lock.
      */
     private int updateLimit(final long timestampNs, final double shortLatencyMillis, final double longLatencyMillis) {
+        assert lock.isLocked();
         if (isNaN(longLatencyMillis) || isNaN(shortLatencyMillis) || shortLatencyMillis == 0) {
             return -1;
         }
@@ -175,7 +180,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         final long rttMillis = NANOSECONDS.toMillis(durationNs);
         int newPending;
         int limit;
-        synchronized (lock) {
+        lock.lock();
+        try {
             limit = (int) this.limit;
             final double longLatencyMillis = longLatency.observe(nowNs, rttMillis);
             final double shortLatencyMillis = shortLatency.observe(nowNs, rttMillis);
@@ -184,6 +190,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
             if ((nowNs - lastSamplingNs) >= limitUpdateIntervalNs) {
                 limit = updateLimit(nowNs, shortLatencyMillis, longLatencyMillis);
             }
+        } finally {
+            lock.unlock();
         }
 
         observer.onActiveRequestsDecr();
@@ -194,9 +202,12 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         int newPending;
         double newLimit;
 
-        synchronized (lock) {
+        lock.lock();
+        try {
             newLimit = limit = max(min, limit * (limit >= max ? backoffRatioOnLimit : backoffRatioOnLoss));
             newPending = --pending;
+        } finally {
+            lock.unlock();
         }
 
         observer.onActiveRequestsDecr();
@@ -207,9 +218,12 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         int newPending;
         double newLimit;
 
-        synchronized (lock) {
+        lock.lock();
+        try {
             newLimit = limit;
             newPending = --pending;
+        } finally {
+            lock.unlock();
         }
         observer.onActiveRequestsDecr();
         return (int) (newLimit - newPending);
@@ -217,7 +231,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
     @Override
     public String toString() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             return "GradientCapacityLimiter{" +
                     ", name='" + name + '\'' +
                     ", min=" + min +
@@ -232,6 +247,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
                     ", limit=" + limit +
                     ", lastSamplingNs=" + lastSamplingNs +
                     '}';
+        } finally {
+            lock.unlock();
         }
     }
 
