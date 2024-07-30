@@ -134,7 +134,6 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                         // map entry safely.
                                         lock.lock();
                                         try {
-                                            // TODO: may not be v-thread safe.
                                             cancellable.cancel();
                                         } finally {
                                             lock.unlock();
