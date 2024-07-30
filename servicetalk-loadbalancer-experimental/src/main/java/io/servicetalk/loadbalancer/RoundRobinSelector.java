@@ -84,6 +84,10 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             if (host.isHealthy()) {
                 Single<C> result = selectFromHost(host, selector, forceNewConnectionAndReserve, context);
                 if (result != null) {
+                    if (i != 0) {
+                        // let the scheduler attempt to skip past the bad hosts for fairness reasons.
+                        scheduler.foundUnhealthy(cursor, i);
+                    }
                     return result;
                 }
             }
@@ -92,9 +96,6 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             if (failOpen && failOpenHost == null && host.canMakeNewConnections()) {
                 failOpenHost = host;
             }
-
-            // let the scheduler attempt to skip this host for fairness reasons.
-            scheduler.foundUnhealthy(localCursor);
         }
         if (failOpenHost != null) {
             Single<C> result = selectFromHost(failOpenHost, selector, forceNewConnectionAndReserve, context);
@@ -156,13 +157,14 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
 
         // Let the scheduler know the index was found to be unhealthy in an attempt to avoid causing the node
         // after an unhealthy node to effectively receive double traffic.
-        final void foundUnhealthy(int index) {
-            int i = this.index.get();
+        final void foundUnhealthy(int cursor, int unhealthyCount) {
+            int i = index.get();
             // We have to check against `i - 1` because we perform a getAndIncrement so the index we returned from
             // `nextIndex()` is one behind where index currently is.
-            if (index == (Integer.toUnsignedLong(i) - 1) % hostsSize) {
+
+            if (cursor == (Integer.toUnsignedLong(i) - 1) % hostsSize) {
                 // We do CAS to conditionally advance the cursor only if someone else hasn't already.
-                this.index.compareAndSet(i, i + 1);
+                index.compareAndSet(i, i + unhealthyCount);
             }
         }
     }
