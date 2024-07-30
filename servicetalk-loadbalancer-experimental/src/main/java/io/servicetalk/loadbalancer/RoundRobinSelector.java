@@ -60,7 +60,8 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         this(new AtomicInteger(), hosts, lbDescription, failOpen, ignoreWeights);
     }
 
-    private RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
+    // visible for testing purposes.
+    RoundRobinSelector(final AtomicInteger index, final List<? extends Host<ResolvedAddress, C>> hosts,
                                final String targetResource, final boolean failOpen, final boolean ignoreWeights) {
         super(hosts, targetResource);
         this.index = index;
@@ -83,6 +84,10 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             if (host.isHealthy()) {
                 Single<C> result = selectFromHost(host, selector, forceNewConnectionAndReserve, context);
                 if (result != null) {
+                    if (i != 0) {
+                        // let the scheduler attempt to skip past the bad hosts for fairness reasons.
+                        scheduler.foundUnhealthy(cursor, i);
+                    }
                     return result;
                 }
             }
@@ -134,22 +139,45 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     }
 
     private abstract static class Scheduler {
-        abstract int nextHost();
-    }
-
-    private static final class ConstantScheduler extends Scheduler {
 
         private final AtomicInteger index;
-        private final int hostsSize;
+        protected final int hostsSize;
 
-        ConstantScheduler(AtomicInteger index, int hostsSize) {
+        Scheduler(final AtomicInteger index, final int hostsSize) {
             this.index = index;
             this.hostsSize = hostsSize;
         }
 
+        // Get the index of the next host
+        abstract int nextHost();
+
+        protected final long nextIndex() {
+            return Integer.toUnsignedLong(index.getAndIncrement());
+        }
+
+        // Let the scheduler know the index was found to be unhealthy in an attempt to avoid causing the node
+        // after an unhealthy node to effectively receive double traffic.
+        final void foundUnhealthy(int cursor, int unhealthyCount) {
+            int i = index.get();
+            // We have to check against `i - 1` because we perform a getAndIncrement so the index we returned from
+            // `nextIndex()` is one behind where index currently is.
+
+            if (cursor == (Integer.toUnsignedLong(i) - 1) % hostsSize) {
+                // We do CAS to conditionally advance the cursor only if someone else hasn't already.
+                index.compareAndSet(i, i + unhealthyCount);
+            }
+        }
+    }
+
+    private static final class ConstantScheduler extends Scheduler {
+
+        ConstantScheduler(AtomicInteger index, int hostsSize) {
+            super(index, hostsSize);
+        }
+
         @Override
         int nextHost() {
-            return (int) (Integer.toUnsignedLong(index.getAndIncrement()) % hostsSize);
+            return (int) (nextIndex() % hostsSize);
         }
     }
 
@@ -159,21 +187,19 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     // See the java-grpc library for more details:
     // https://github.com/grpc/grpc-java/blob/da619e2b/xds/src/main/java/io/grpc/xds/WeightedRoundRobinLoadBalancer.java
     private static final class StrideScheduler extends Scheduler {
-
-        private final AtomicInteger index;
         private final int[] weights;
 
         StrideScheduler(AtomicInteger index, int[] weights) {
-            this.index = index;
+            super(index, weights.length);
             this.weights = weights;
         }
 
         @Override
         int nextHost() {
             while (true) {
-                long counter = Integer.toUnsignedLong(index.getAndIncrement());
-                long pass = counter / weights.length;
-                int i = (int) counter % weights.length;
+                long counter = nextIndex();
+                long pass = counter / hostsSize;
+                int i = (int) counter % hostsSize;
                 // We add a unique offset for each offset which could be anything so long as it's constant throughout
                 // iteration. This is helpful in the  case where weights are [1, .. 1, 5] since the scheduling could
                 // otherwise look something like this:

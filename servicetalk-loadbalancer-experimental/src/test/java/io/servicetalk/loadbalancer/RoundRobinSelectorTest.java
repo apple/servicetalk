@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.loadbalancer.SelectorTestHelpers.PREDICATE;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.when;
 class RoundRobinSelectorTest {
 
     private boolean failOpen;
+    private final AtomicInteger index = new AtomicInteger();
     @Nullable
     private HostSelector<String, TestLoadBalancedConnection> selector;
 
@@ -50,12 +52,14 @@ class RoundRobinSelectorTest {
     }
 
     void init(List<Host<String, TestLoadBalancedConnection>> hosts) {
-        selector = new RoundRobinSelector<>(hosts, "testResource", failOpen, false);
+        selector = new RoundRobinSelector<>(index, hosts, "testResource", failOpen, false);
     }
 
-    @Test
-    void roundRobining() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: negativeIndex={0}")
+    @ValueSource(booleans = {true, false})
+    void roundRobining(boolean negativeIndex) throws Exception {
         List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts("addr-1", "addr-2");
+        index.set(negativeIndex ? -1000 : 0);
         init(hosts);
         List<String> addresses = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -190,5 +194,49 @@ class RoundRobinSelectorTest {
         Exception e = assertThrows(ExecutionException.class, () -> selector.selectConnection(
                 PREDICATE, null, false).toFuture().get());
         assertThat(e.getCause(), isA(NoActiveHostException.class));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: negativeIndex={0}")
+    @ValueSource(booleans = {true, false})
+    void equalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode(boolean negativeIndex) throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts =
+                SelectorTestHelpers.generateHosts("addr-1", "addr-2", "addr-3", "addr-4");
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(1).isHealthy()).thenReturn(false);
+        index.set(negativeIndex ? -1000 : 0);
+        init(hosts);
+
+        List<String> addresses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            addresses.add(connection.address());
+        }
+        assertThat(addresses, contains("addr-3", "addr-4", "addr-3", "addr-4"));
+    }
+
+    @Test
+    void unequalWeightsDoesNotOverPrioritizeTheNodeAfterAFailingNode() throws Exception {
+        List<Host<String, TestLoadBalancedConnection>> hosts = SelectorTestHelpers.generateHosts(
+                "addr-1", "addr-2", "addr-3", "addr-4");
+        when(hosts.get(0).isHealthy()).thenReturn(false);
+        when(hosts.get(1).isHealthy()).thenReturn(false);
+        when(hosts.get(0).weight()).thenReturn(1.0);
+        when(hosts.get(1).weight()).thenReturn(1.1);
+        when(hosts.get(2).weight()).thenReturn(1.2);
+        when(hosts.get(3).weight()).thenReturn(1.3);
+        init(hosts);
+
+        // The stream of 7 selections for healthy elements is
+        //  [addr-2, addr-3, addr-4, addr-1, addr-2, addr-3, addr-4]
+        // Since 1 and 2 are unhealthy we expect the first 4 picks to be
+        //  [   X  , addr-3, addr-4,   X   ,   X   , addr-3, addr-4]
+        List<String> addresses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            TestLoadBalancedConnection connection = selector.selectConnection(
+                    PREDICATE, null, true).toFuture().get();
+            addresses.add(connection.address());
+        }
+        assertThat(addresses, contains("addr-3", "addr-4", "addr-3", "addr-4"));
     }
 }
