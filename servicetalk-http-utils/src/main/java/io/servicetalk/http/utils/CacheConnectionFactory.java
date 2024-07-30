@@ -29,12 +29,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
 final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
         extends DelegatingConnectionFactory<ResolvedAddress, C> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheConnectionFactory.class);
+
+    private final Lock lock = new ReentrantLock();
+    // access to `map` must be protected by `lock`.
     private final Map<ResolvedAddress, Item<C>> map = new HashMap<>();
     private final ToIntFunction<ResolvedAddress> maxConcurrencyFunc;
 
@@ -63,7 +68,8 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
             }
 
             Single<C> result;
-            synchronized (map) {
+            lock.lock();
+            try {
                 final Item<C> item1 = map.get(resolvedAddress);
                 if (item1 == null || (result = item1.addSubscriber(maxConcurrency)) == null) {
                     final Item<C> item2 = new Item<>();
@@ -110,8 +116,11 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                 }
 
                                 private void lockRemoveFromMap() {
-                                    synchronized (map) {
+                                    lock.lock();
+                                    try {
                                         map.remove(resolvedAddress, item2);
+                                    } finally {
+                                        lock.unlock();
                                     }
                                 }
                             })
@@ -123,8 +132,11 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                         // Acquire the lock before cache operator processes cancel, so if it results
                                         // in an upstream cancel we will be holding the lock and able to remove the
                                         // map entry safely.
-                                        synchronized (map) {
+                                        lock.lock();
+                                        try {
                                             cancellable.cancel();
+                                        } finally {
+                                            lock.unlock();
                                         }
                                     });
                                 }
@@ -153,12 +165,17 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                     // pending connection attempt is exceeded. When the single completes we don't need
                                     // to cache the connection anymore because the LoadBalancer above will cache the
                                     // connection. This also help keep memory down from the map.
-                                    synchronized (map) {
+                                    lock.lock();
+                                    try {
                                         map.remove(resolvedAddress, item2);
+                                    } finally {
+                                        lock.unlock();
                                     }
                                 }
                             });
                 }
+            } finally {
+                lock.unlock();
             }
 
             return result.shareContextOnSubscribe();
