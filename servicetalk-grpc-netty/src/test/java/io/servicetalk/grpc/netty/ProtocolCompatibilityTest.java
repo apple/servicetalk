@@ -248,7 +248,7 @@ class ProtocolCompatibilityTest {
     }
 
     private static Collection<Arguments> statusMessageParams() {
-        final String[] messages = new String[] {
+        final String[] messages = {
                 "abc", "Hello, World!", "a\r\nbc", "a%bc", "~ what? ~",
         };
 
