@@ -19,4 +19,6 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <suppress checks="IllegalInstantiationCheck"
+            files="io[\\/]servicetalk[\\/]grpc[\\/]internal[\\/]GrpcStatusUtils.java"/>
 </suppressions>

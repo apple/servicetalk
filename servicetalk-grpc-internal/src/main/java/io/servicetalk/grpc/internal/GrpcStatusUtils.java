@@ -108,7 +108,7 @@ public final class GrpcStatusUtils {
         for (int i = 0; i < messageBytes.length;) {
             if (messageBytes[i] == '%' && i + 2 < messageBytes.length) {
                 try {
-                    buf.put((byte)Integer.parseInt(new String(messageBytes, i + 1, 2, StandardCharsets.US_ASCII), 16));
+                    buf.put((byte) Integer.parseInt(new String(messageBytes, i + 1, 2, StandardCharsets.US_ASCII), 16));
                     i += 3;
                     continue;
                 } catch (NumberFormatException e) {

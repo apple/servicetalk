@@ -249,7 +249,7 @@ class ProtocolCompatibilityTest {
 
     private static Collection<Arguments> statusMessageParams() {
         final String[] messages = new String[] {
-                "abc", "Hello, World!", "a\r\nbc", "a%bc", "~ what? ~"
+                "abc", "Hello, World!", "a\r\nbc", "a%bc", "~ what? ~",
         };
 
         List<Arguments> args = new ArrayList<>();
@@ -1682,7 +1682,6 @@ class ProtocolCompatibilityTest {
                             }
                         };
                     }
-
 
                     private CompatResponse response(final int value) throws Exception {
                         final String description = statusMessage == null ? CUSTOM_ERROR_MESSAGE : statusMessage;

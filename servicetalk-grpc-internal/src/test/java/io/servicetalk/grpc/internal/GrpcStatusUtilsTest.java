@@ -96,5 +96,4 @@ final class GrpcStatusUtilsTest {
                 Arguments.of("~ what? ~", "%7E what? %7E")
         );
     }
-
 }
