@@ -22,6 +22,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
@@ -36,7 +37,7 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffDeltaJitter;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofExponentialBackoffDeltaJitter;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
@@ -95,7 +96,7 @@ public final class GatewayServer {
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = HttpServers.forPort(8080)
                     .ioExecutor(ioExecutor)
-                    .appendServiceFilter(new BadResponseHandlingServiceFilter())
+                    .appendServiceFilter(new HttpResponseExceptionHandlingServiceFilter())
                     .listenStreamingAndAwait(gatewayService);
 
             LOGGER.info("Listening on {}", serverContext.listenAddress());
@@ -118,8 +119,15 @@ public final class GatewayServer {
                                 .build())
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500), false))
-                        // Apply a filter that returns an error if any response status code is not 200 OK
-                        .appendClientFilter(new ResponseCheckingClientFilter(backendName))
+                        // Apply a filter that returns an error if any response status code is not 200 OK.
+                        // For this purpose we use a responseMapper feature of RetryingHttpRequesterFilter that can be
+                        // additionally configured to retry those status codes, if necessary. But more important,
+                        // it helps to properly drain the failed response without leaking unused data and resources.
+                        .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                                .responseMapper(responseMetaData -> OK.equals(responseMetaData.status()) ? null :
+                                        new HttpResponseException("Bad response status from " + backendName + ": " +
+                                                responseMetaData.status(), responseMetaData))
+                                .build())
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }

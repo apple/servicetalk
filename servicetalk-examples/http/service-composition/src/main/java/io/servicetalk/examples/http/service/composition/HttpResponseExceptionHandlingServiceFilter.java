@@ -16,7 +16,6 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.examples.http.service.composition.ResponseCheckingClientFilter.BadResponseStatusException;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -24,15 +23,16 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Example service filter that returns a response with the exception message if the wrapped service completes with a
- * {@link BadResponseStatusException}.
+ * {@link HttpResponseException}.
  */
-final class BadResponseHandlingServiceFilter implements StreamingHttpServiceFilterFactory {
+final class HttpResponseExceptionHandlingServiceFilter implements StreamingHttpServiceFilterFactory {
     @Override
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {
@@ -40,12 +40,13 @@ final class BadResponseHandlingServiceFilter implements StreamingHttpServiceFilt
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 return super.handle(ctx, request, responseFactory).onErrorResume(cause -> {
-                    if (cause instanceof BadResponseStatusException) {
+                    if (cause instanceof HttpResponseException) {
                         // It's useful to include the exception message in the payload for demonstration purposes, but
                         // this is not recommended in production as it may leak internal information.
                         return responseFactory.internalServerError().toResponse().map(
                                 resp -> resp.payloadBody(cause.getMessage(), textSerializerUtf8()).toStreamingResponse());
                     }
+                    // Pass all other exceptions as-is, they will be handled by default HttpExceptionMapperServiceFilter
                     return failed(cause);
                 });
             }
