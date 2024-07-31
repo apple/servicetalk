@@ -21,7 +21,7 @@ import io.servicetalk.grpc.api.GrpcLifecycleObserver.GrpcExchangeObserver;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver.GrpcRequestObserver;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver.GrpcResponseObserver;
 import io.servicetalk.grpc.api.GrpcStatus;
-import io.servicetalk.grpc.internal.StatusMessageUtils;
+import io.servicetalk.grpc.internal.GrpcStatusUtils;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -180,7 +180,7 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
             if (statusStr == null) {
                 return null;
             }
-            final CharSequence statusMsg = StatusMessageUtils.getStatusMessage(headers);
+            final CharSequence statusMsg = GrpcStatusUtils.getStatusMessage(headers);
             return new GrpcStatus(fromCodeValue(statusStr), statusMsg == null ? null : statusMsg.toString());
         }
     }

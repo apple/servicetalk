@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-final class StatusMessageUtilsTest {
+final class GrpcStatusUtilsTest {
 
     private HttpHeaders headers;
 
@@ -38,23 +38,23 @@ final class StatusMessageUtilsTest {
         headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: decoded={0} encoded={1}")
     @MethodSource("messageSamples")
     void testMessageEncoding(String decoded, String encoded) {
-        StatusMessageUtils.setStatusMessage(headers, decoded);
-        assertEquals(encoded, headers.get(StatusMessageUtils.GRPC_STATUS_MESSAGE));
+        GrpcStatusUtils.setStatusMessage(headers, decoded);
+        assertEquals(encoded, headers.get(GrpcStatusUtils.GRPC_STATUS_MESSAGE));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: decoded={0} encoded={1}")
     @MethodSource("messageSamples")
     void testMessageDecoding(String decoded, String encoded) {
-        headers.set(StatusMessageUtils.GRPC_STATUS_MESSAGE, encoded);
-        assertEquals(decoded, StatusMessageUtils.getStatusMessage(headers));
+        headers.set(GrpcStatusUtils.GRPC_STATUS_MESSAGE, encoded);
+        assertEquals(decoded, GrpcStatusUtils.getStatusMessage(headers));
     }
 
     @Test
     void testNullMessageDecoding() {
-        assertNull(StatusMessageUtils.getStatusMessage(headers));
+        assertNull(GrpcStatusUtils.getStatusMessage(headers));
     }
 
     /**
@@ -64,11 +64,11 @@ final class StatusMessageUtilsTest {
      */
     @Test
     void testPercentAtEndMessageDecoding() {
-        headers.set(StatusMessageUtils.GRPC_STATUS_MESSAGE, "aa%");
-        assertEquals("aa%", StatusMessageUtils.getStatusMessage(headers));
+        headers.set(GrpcStatusUtils.GRPC_STATUS_MESSAGE, "aa%");
+        assertEquals("aa%", GrpcStatusUtils.getStatusMessage(headers));
 
-        headers.set(StatusMessageUtils.GRPC_STATUS_MESSAGE, "aa% ");
-        assertEquals("aa% ", StatusMessageUtils.getStatusMessage(headers));
+        headers.set(GrpcStatusUtils.GRPC_STATUS_MESSAGE, "aa% ");
+        assertEquals("aa% ", GrpcStatusUtils.getStatusMessage(headers));
     }
 
     /**
@@ -80,11 +80,11 @@ final class StatusMessageUtilsTest {
      */
     @Test
     void testInvalidNumberDecoding() {
-        headers.set(StatusMessageUtils.GRPC_STATUS_MESSAGE, "%z0");
-        assertEquals("%z0", StatusMessageUtils.getStatusMessage(headers));
+        headers.set(GrpcStatusUtils.GRPC_STATUS_MESSAGE, "%z0");
+        assertEquals("%z0", GrpcStatusUtils.getStatusMessage(headers));
 
-        headers.set(StatusMessageUtils.GRPC_STATUS_MESSAGE, "%7E%z0%7e");
-        assertEquals("~%z0~", StatusMessageUtils.getStatusMessage(headers));
+        headers.set(GrpcStatusUtils.GRPC_STATUS_MESSAGE, "%7E%z0%7e");
+        assertEquals("~%z0~", GrpcStatusUtils.getStatusMessage(headers));
     }
 
     static Stream<Arguments> messageSamples() {

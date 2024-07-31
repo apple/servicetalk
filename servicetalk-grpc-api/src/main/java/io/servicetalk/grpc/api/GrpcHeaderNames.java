@@ -15,7 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.grpc.internal.StatusMessageUtils;
+import io.servicetalk.grpc.internal.GrpcStatusUtils;
 import io.servicetalk.http.api.HttpHeaderNames;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
@@ -60,7 +60,7 @@ public final class GrpcHeaderNames {
      *
      * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
-    public static final CharSequence GRPC_STATUS_MESSAGE = StatusMessageUtils.GRPC_STATUS_MESSAGE;
+    public static final CharSequence GRPC_STATUS_MESSAGE = GrpcStatusUtils.GRPC_STATUS_MESSAGE;
 
     /**
      * Message-Type → {@code grpc-message-type}

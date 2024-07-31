@@ -29,7 +29,7 @@ import io.servicetalk.encoding.api.internal.ContentCodecToBufferDecoder;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.grpc.api.DefaultGrpcMetadata.LazyContextMapSupplier;
-import io.servicetalk.grpc.internal.StatusMessageUtils;
+import io.servicetalk.grpc.internal.GrpcStatusUtils;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
@@ -257,7 +257,7 @@ final class GrpcUtils {
                           @Nullable final BufferAllocator allocator) {
         trailers.set(GRPC_STATUS, valueOf(status.code().value()));
         if (status.description() != null) {
-            StatusMessageUtils.setStatusMessage(trailers, status.description());
+            GrpcStatusUtils.setStatusMessage(trailers, status.description());
         }
         if (details != null) {
             assert allocator != null;
@@ -470,7 +470,7 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final CharSequence statusMsg = StatusMessageUtils.getStatusMessage(headers);
+        final CharSequence statusMsg = GrpcStatusUtils.getStatusMessage(headers);
         final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, statusMsg == null ? null : statusMsg.toString());
         return new GrpcStatusException(grpcStatus, new StatusSupplier(headers, grpcStatus));
     }

@@ -44,14 +44,14 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
  * Note that much of the actual encoding and decoding logic is borrowed from the {@code io.grpc.Status} class,
  * specifically the {@code io.grpc.Status#StatusMessageMarshaller}.
  */
-public final class StatusMessageUtils {
+public final class GrpcStatusUtils {
 
     public static final CharSequence GRPC_STATUS_MESSAGE = newAsciiString("grpc-message");
 
     private static final byte[] HEX =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-    private StatusMessageUtils() {
+    private GrpcStatusUtils() {
         // singleton
     }
 
@@ -62,8 +62,16 @@ public final class StatusMessageUtils {
      * @param message the message to set.
      */
     public static void setStatusMessage(final HttpHeaders headers, final CharSequence message) {
-        final boolean needsEncoding = message.chars().anyMatch(c -> isEscapingChar((char) c));
-        headers.set(GRPC_STATUS_MESSAGE, needsEncoding ? encodeMessage(message) : message);
+        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        for (int i = 0; i < messageBytes.length; i++) {
+            final byte b = messageBytes[i];
+            // If there are only non escaping characters, skip the slow path.
+            if (isEscapingChar(b)) {
+                headers.set(GRPC_STATUS_MESSAGE, encodeMessage(messageBytes, i));
+                return;
+            }
+        }
+        headers.set(GRPC_STATUS_MESSAGE, message);
     }
 
     /**
@@ -74,42 +82,40 @@ public final class StatusMessageUtils {
      */
     @Nullable
     public static CharSequence getStatusMessage(final HttpHeaders headers) {
-        final CharSequence msg = headers.get(GRPC_STATUS_MESSAGE);
-        if (msg == null) {
+        final CharSequence message = headers.get(GRPC_STATUS_MESSAGE);
+        if (message == null) {
             return null;
         }
 
-        final int msgLength = msg.length();
-        for (int i = 0; i < msgLength; i++) {
-            char b = msg.charAt(i);
-            if (b < ' ' || b >= '~' || (b == '%' && i + 2 < msgLength)) {
-                // fast-pathing did not work, perform actual decoding
-                return decodeMessage(msg);
+        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+        for (int i = 0; i < messageBytes.length; i++) {
+            byte b = messageBytes[i];
+            if (b < ' ' || b >= '~' || (b == '%' && i + 2 < messageBytes.length)) {
+                return decodeMessage(messageBytes);
             }
         }
-        return msg;
+        return message;
     }
 
     /**
      * Decodes the {@link CharSequence} removing the percent-encoding where needed.
      *
-     * @param msg the message to decode.
+     * @param messageBytes the message to decode.
      * @return the deocded message.
      */
-    private static CharSequence decodeMessage(final CharSequence msg) {
-        final int msgLength =  msg.length();
-        final ByteBuffer buf = ByteBuffer.allocate(msgLength);
-        for (int i = 0; i < msgLength;) {
-            if (msg.charAt(i) == '%' && i + 2 < msgLength) {
+    private static CharSequence decodeMessage(final byte[] messageBytes) {
+        ByteBuffer buf = ByteBuffer.allocate(messageBytes.length);
+        for (int i = 0; i < messageBytes.length;) {
+            if (messageBytes[i] == '%' && i + 2 < messageBytes.length) {
                 try {
-                    buf.put((byte) Integer.parseInt(msg.subSequence(i + 1, i + 3).toString(), 16));
+                    buf.put((byte)Integer.parseInt(new String(messageBytes, i + 1, 2, StandardCharsets.US_ASCII), 16));
                     i += 3;
                     continue;
                 } catch (NumberFormatException e) {
                     // ignore, fall through, just push the bytes.
                 }
             }
-            buf.put((byte) msg.charAt(i));
+            buf.put(messageBytes[i]);
             i += 1;
         }
         return new String(buf.array(), 0, buf.position(), StandardCharsets.UTF_8);
@@ -121,22 +127,26 @@ public final class StatusMessageUtils {
      * @param b the character to check.
      * @return true if it needs escaping, false otherwise.
      */
-    private static boolean isEscapingChar(char b) {
+    private static boolean isEscapingChar(byte b) {
         return b < ' ' || b >= '~' || b == '%';
     }
 
     /**
      * Performs encoding of the message by using a percent-encoding scheme.
      *
-     * @param msg the message to percent encode.
+     * @param msgBytes the encoded message.
+     * @param ri the reader index previously iterated to.
      * @return the encoded message.
      */
-    private static CharSequence encodeMessage(final CharSequence msg) {
-        byte[] escapedBytes = new byte[msg.length() * 3];
-        int ri = 0;
+    private static CharSequence encodeMessage(byte[] msgBytes, int ri) {
+        byte[] escapedBytes = new byte[ri + (msgBytes.length - ri) * 3];
+        // copy over the good bytes
+        if (ri != 0) {
+            System.arraycopy(msgBytes, 0, escapedBytes, 0, ri);
+        }
         int wi = ri;
-        for (; ri < msg.length(); ri++) {
-            char b = msg.charAt(ri);
+        for (; ri < msgBytes.length; ri++) {
+            byte b = msgBytes[ri];
             // Manually implement URL encoding, per the gRPC spec.
             if (isEscapingChar(b)) {
                 escapedBytes[wi] = '%';
@@ -145,7 +155,7 @@ public final class StatusMessageUtils {
                 wi += 3;
                 continue;
             }
-            escapedBytes[wi++] = (byte) b;
+            escapedBytes[wi++] = b;
         }
         return new String(escapedBytes, 0, wi, StandardCharsets.UTF_8);
     }
