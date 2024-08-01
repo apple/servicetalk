@@ -93,7 +93,10 @@ final class GrpcStatusUtilsTest {
                 Arguments.of("Hello, World!", "Hello, World!"),
                 Arguments.of("a\r\nbc", "a%0D%0Abc"),
                 Arguments.of("a%bc", "a%25bc"),
-                Arguments.of("~ what? ~", "%7E what? %7E")
+                Arguments.of("~ what? ~", "%7E what? %7E"),
+                Arguments.of("фяї", "%D1%84%D1%8F%D1%97"),
+                Arguments.of("üñö", "%C3%BC%C3%B1%C3%B6"),
+                Arguments.of("非常感謝", "%E9%9D%9E%E5%B8%B8%E6%84%9F%E8%AC%9D")
         );
     }
 }

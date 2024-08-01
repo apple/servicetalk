@@ -249,7 +249,7 @@ class ProtocolCompatibilityTest {
 
     private static Collection<Arguments> statusMessageParams() {
         final String[] messages = {
-                "abc", "Hello, World!", "a\r\nbc", "a%bc", "~ what? ~",
+                "abc", "Hello, World!", "a\r\nbc", "a%bc", "~ what? ~", "фяї", "üñö", "非常感謝",
         };
 
         List<Arguments> args = new ArrayList<>();

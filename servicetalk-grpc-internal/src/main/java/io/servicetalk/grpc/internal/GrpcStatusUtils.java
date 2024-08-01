@@ -62,12 +62,26 @@ public final class GrpcStatusUtils {
      * @param message the message to set.
      */
     public static void setStatusMessage(final HttpHeaders headers, final CharSequence message) {
-        final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
-        for (int i = 0; i < messageBytes.length; i++) {
-            final byte b = messageBytes[i];
-            // If there are only non escaping characters, skip the slow path.
-            if (isEscapingChar(b)) {
-                headers.set(GRPC_STATUS_MESSAGE, encodeMessage(messageBytes, i));
+        for (int i = 0; i < message.length(); i++) {
+            char c = message.charAt(i);
+            // If there are only ASCII non-escaping characters we can skip the slower paths.
+            if (c > 127 || isEscapingChar((byte) c)) {
+                // We have non ASCII compatible characters. We must encode the string as UTF-8 and then
+                // possibly percent encode.
+                final byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
+
+                // Next we need to see if we have to percent encode the bytes form.
+                for (int j = i; j < messageBytes.length; j++) {
+                    if (isEscapingChar(messageBytes[j])) {
+                        // Character that needs escaping found, continue on slow path with encoding.
+                        headers.set(GRPC_STATUS_MESSAGE, encodeMessage(messageBytes, j));
+                        return;
+                    }
+                }
+
+                // The UTF-8 encoded form doesn't require percent encoding. Use the ISO-8859-1 charset to preserve
+                // the byte representation of the string.
+                headers.set(GRPC_STATUS_MESSAGE, new String(messageBytes, StandardCharsets.ISO_8859_1));
                 return;
             }
         }
@@ -157,6 +171,6 @@ public final class GrpcStatusUtils {
             }
             escapedBytes[wi++] = b;
         }
-        return new String(escapedBytes, 0, wi, StandardCharsets.UTF_8);
+        return new String(escapedBytes, 0, wi, StandardCharsets.ISO_8859_1);
     }
 }
