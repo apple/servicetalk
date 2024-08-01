@@ -26,12 +26,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 final class GrpcStatusUtilsTest {
 
-    private HttpHeaders headers;
+    private HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
 
     @BeforeEach
     void beforeEach() {
