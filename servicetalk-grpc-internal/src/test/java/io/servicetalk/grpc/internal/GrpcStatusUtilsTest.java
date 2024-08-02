@@ -31,12 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 final class GrpcStatusUtilsTest {
 
-    private HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-
-    @BeforeEach
-    void beforeEach() {
-        headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-    }
+    private final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
 
     @ParameterizedTest(name = "{displayName} [{index}]: decoded={0} encoded={1}")
     @MethodSource("messageSamples")
