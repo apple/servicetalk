@@ -133,9 +133,13 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         try {
             newLimit = (int) limit;
             if (pending < limit) {
-                newPending = ++pending;
+                newPending = pending + 1;
                 ticket = new DefaultTicket(this, newLimit - newPending, newPending);
             }
+            // update the state last just in case anything throws.
+            ++pending;
+        } catch (Throwable t) {
+            LOGGER.error("Exception while attempting to acquire ticket", t);
         } finally {
             lock.unlock();
         }
@@ -170,7 +174,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
         final double headroom = gradient >= 1 ? this.headroom.apply(gradient, limit) : 0;
         final double oldLimit = limit;
-        final int newLimit = (int) (limit = min(max, max(min, (gradient * limit) + headroom)));
+        limit = min(max, max(min, (gradient * limit) + headroom));
+        final int newLimit = (int) limit;
         observer.onLimitChange(longLatencyMillis, shortLatencyMillis, gradient, oldLimit, newLimit);
         return newLimit;
     }
@@ -183,13 +188,17 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         lock.lock();
         try {
             limit = (int) this.limit;
+            // On the return pathway update the state first just in case any of the interfaces throw exceptions.
+            newPending = --pending;
             final double longLatencyMillis = longLatency.observe(nowNs, rttMillis);
             final double shortLatencyMillis = shortLatency.observe(nowNs, rttMillis);
 
-            newPending = --pending;
             if ((nowNs - lastSamplingNs) >= limitUpdateIntervalNs) {
                 limit = updateLimit(nowNs, shortLatencyMillis, longLatencyMillis);
             }
+        } catch (Throwable t) {
+            LOGGER.error("Exception caught updating state machine", t);
+            throw t;
         } finally {
             lock.unlock();
         }
