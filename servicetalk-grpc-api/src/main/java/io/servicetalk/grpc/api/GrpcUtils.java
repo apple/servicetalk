@@ -29,6 +29,7 @@ import io.servicetalk.encoding.api.internal.ContentCodecToBufferDecoder;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.grpc.api.DefaultGrpcMetadata.LazyContextMapSupplier;
+import io.servicetalk.grpc.internal.GrpcStatusUtils;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
@@ -70,7 +71,6 @@ import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ACCEPT_ENCODI
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_MESSAGE_ENCODING;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_DETAILS_BIN;
-import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS_MESSAGE;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC_PROTO;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PREFIX;
@@ -257,7 +257,7 @@ final class GrpcUtils {
                           @Nullable final BufferAllocator allocator) {
         trailers.set(GRPC_STATUS, valueOf(status.code().value()));
         if (status.description() != null) {
-            trailers.set(GRPC_STATUS_MESSAGE, status.description());
+            GrpcStatusUtils.setStatusMessage(trailers, status.description());
         }
         if (details != null) {
             assert allocator != null;
@@ -470,7 +470,7 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final CharSequence statusMsg = headers.get(GRPC_STATUS_MESSAGE);
+        final CharSequence statusMsg = GrpcStatusUtils.getStatusMessage(headers);
         final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, statusMsg == null ? null : statusMsg.toString());
         return new GrpcStatusException(grpcStatus, new StatusSupplier(headers, grpcStatus));
     }
