@@ -332,38 +332,37 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
         @Override
         public int completed() {
-            signal(SIGNAL_COMPLETED);
-            return delegate.completed();
+            return signal(SIGNAL_COMPLETED) ? delegate.completed() : -1;
         }
 
         @Override
         public int dropped() {
-            signal(SIGNAL_DROPPED);
-            return delegate.dropped();
+            return signal(SIGNAL_DROPPED) ? delegate.dropped() : -1;
         }
 
         @Override
         public int failed(final Throwable error) {
-            signal(SIGNAL_FAILED);
-            return delegate.failed(error);
+            return signal(SIGNAL_FAILED) ? delegate.failed(error) : -1;
         }
 
         @Override
         public int ignored() {
-            signal(SIGNAL_IGNORED);
-            return delegate.ignored();
+            return signal(SIGNAL_IGNORED) ? delegate.ignored() : -1;
         }
 
-        private void signal(final int newSignal) {
+        // returns true if this was the first signal triggered, false otherwise.
+        private boolean signal(final int newSignal) {
             for (;;) {
                 final int oldValue = signaled;
                 if (signaledUpdater.compareAndSet(this, oldValue, oldValue | newSignal)) {
-                    if (oldValue > NOT_SIGNALED) {
+                    if (oldValue == NOT_SIGNALED) {
+                        return true;
+                    } else {
                         // We have a double signal, log this event since it is not expected.
                         LOGGER.warn("{} signaled completion more than once. Already signaled with {}, new signal {}.",
                                 getClass().getSimpleName(), oldValue, newSignal);
+                        return false;
                     }
-                    return;
                 }
             }
         }
@@ -375,6 +374,16 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     ", requestHashCode=" + requestHashCode +
                     ", signaled=" + signaled +
                     '}';
+        }
+
+        // TODO: this should be removed after we're confident we're not leaking tickets.
+        @Override
+        protected void finalize() throws Throwable {
+            if (signaledUpdater.get(this) != NOT_SIGNALED) {
+                LOGGER.warn("Ticket for request with hashCode {} was abandoned. Considering it ignored.",
+                        requestHashCode);
+                ignored();
+            }
         }
     }
 }
