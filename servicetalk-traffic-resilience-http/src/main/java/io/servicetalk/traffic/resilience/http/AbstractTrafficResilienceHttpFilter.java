@@ -161,7 +161,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Classification classification = classifier.apply(request);
             Ticket ticket = partition.tryAcquire(classification, meta);
             if (ticket != null) {
-                ticket = new TrackingDelegatingTicket(ticket, request.hashCode());
+                ticket = new TrackingDelegatingTicket(ticket, request);
             }
 
             if (ticket == null) {
@@ -316,13 +316,13 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         /**
          * Contains the hash code of the request which acquired this ticket.
          */
-        private final int requestHashCode;
+        private final StreamingHttpRequest parentRequest;
 
         private volatile int signaled;
 
-        TrackingDelegatingTicket(final Ticket delegate, final int requestHashCode) {
+        TrackingDelegatingTicket(final Ticket delegate, final StreamingHttpRequest parentRequest) {
             this.delegate = delegate;
-            this.requestHashCode = requestHashCode;
+            this.parentRequest = parentRequest;
         }
 
         @Override
@@ -371,7 +371,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         public String toString() {
             return "TrackingDelegatingTicket{" +
                     "delegate=" + delegate +
-                    ", requestHashCode=" + requestHashCode +
+                    ", requestHashCode=" + parentRequest.hashCode() +
+                    ", requestHost=" + parentRequest.host() +
                     ", signaled=" + signaled +
                     '}';
         }
@@ -380,8 +381,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         @Override
         protected void finalize() throws Throwable {
             if (signaledUpdater.get(this) != NOT_SIGNALED) {
-                LOGGER.warn("Ticket for request with hashCode {} was abandoned. Considering it ignored.",
-                        requestHashCode);
+                LOGGER.warn("Ticket was abandoned. Considering it ignored. Ticket: {}", this.toString());
                 ignored();
             }
             super.finalize();

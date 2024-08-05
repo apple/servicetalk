@@ -21,5 +21,5 @@
 <suppressions>
   <!-- The list of test cases must be kept single-line each. -->
   <suppress checks="NoFinalizer"
-            files="io[\\/]servicetalk[\\/]traffic[\\/]resilience[\\/]http[\\/]AbstractTrafficResilienceHttpFilter.java"/>
+          files="io[\\/]servicetalk[\\/]traffic[\\/]resilience[\\/]http[\\/]AbstractTrafficResilienceHttpFilter.java"/>
 </suppressions>
