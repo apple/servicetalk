@@ -21,19 +21,19 @@ import javax.annotation.Nullable;
 
 /**
  * A provider of capacity for a client or server.
- * <p>
+ * <p/>
  * <h2>Capacity</h2>
  * Capacity for an entity is defined as the number of concurrent requests that it can process without significantly
  * affecting resource consumption or likelihood to successfully process in a timely manner given currently
  * available resources vs resources required to process the new request.
  * This capacity offered can be static or dynamic and the semantics of determination is left to implementations.
- * <p>
+ * <p/>
  * <h2>Consumption</h2>
  * As the capacity is defined in terms of concurrent requests, as {@link #tryAcquire(Classification, ContextMap)
  * new requests are seen}, some portion of this capacity is deemed to be consumed till a subsequent callback marks
  * the end of processing for that request. Number of times that {@link #tryAcquire(Classification, ContextMap)}
  * is called without a corresponding termination callback is termed as demand.
- * <p>
+ * <p/>
  * <h2>Request Lifetime</h2>
  * Request processing starts when {@link #tryAcquire(Classification, ContextMap)} is called and returns a non-null
  * {@link Ticket} and terminates when either one of the following occurs:
@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
  *     <li>When the request fails due to a local error (Default: {@link Ticket#failed(Throwable)})</li>
  *     <li>When the request is cancelled (Default: {@link Ticket#ignored()})</li>
  * </ul>
- * <p>
+ * <p/>
  * <h2>Request Classifications</h2>
  * Requests can be classified with different classes, that can be taken into consideration when a
  * {@link CapacityLimiter} implementation supports this.
