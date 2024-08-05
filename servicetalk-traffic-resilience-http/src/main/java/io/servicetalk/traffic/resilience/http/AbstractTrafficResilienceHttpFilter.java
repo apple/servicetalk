@@ -384,6 +384,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                         requestHashCode);
                 ignored();
             }
+            super.finalize();
         }
     }
 }
