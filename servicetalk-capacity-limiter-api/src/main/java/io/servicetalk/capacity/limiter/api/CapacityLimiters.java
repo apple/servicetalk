@@ -32,7 +32,7 @@ public final class CapacityLimiters {
 
     /**
      * Returns a NO-OP {@link CapacityLimiter} that has no logic around acquiring or releasing a permit for a request;
-     * thus it allows everything to go through, similarly to a non-existing {@link CapacityLimiter}.
+     * thus it allows everything to go through, similar to a non-existing {@link CapacityLimiter}.
      * <p>
      * This {@link CapacityLimiter} allows for situations where partitioned configurations are in use through
      * a resilience filter, and you want to limit one partition but not necessary the other.

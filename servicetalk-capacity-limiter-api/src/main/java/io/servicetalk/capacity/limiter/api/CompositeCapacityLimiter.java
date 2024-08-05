@@ -53,8 +53,8 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
     public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap context) {
         Ticket[] results = null;
         int idx = 0;
-        for (CapacityLimiter provider : providers) {
-            Ticket ticket = provider.tryAcquire(classification, context);
+        for (final CapacityLimiter provider : providers) {
+            final Ticket ticket = provider.tryAcquire(classification, context);
             if (ticket != null) {
                 if (results == null) {
                     results = new Ticket[providers.size()];
@@ -74,7 +74,7 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
         return compositeResult(results);
     }
 
-    private static int completed(Ticket[] results) {
+    private static int completed(final Ticket[] results) {
         int remaining = 1;
         for (Ticket ticket : results) {
             if (ticket == null) {
@@ -88,7 +88,7 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
         return remaining;
     }
 
-    private static int failed(Throwable cause, Ticket[] results) {
+    private static int failed(final Throwable cause, final Ticket[] results) {
         int remaining = 1;
         for (Ticket ticket : results) {
             if (ticket == null) {
@@ -102,7 +102,7 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
         return remaining;
     }
 
-    private static int dropped(Ticket[] results) {
+    private static int dropped(final Ticket[] results) {
         int remaining = 1;
         for (Ticket ticket : results) {
             if (ticket == null) {
@@ -116,9 +116,9 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
         return remaining;
     }
 
-    private static int cancelled(Ticket[] results) {
+    private static int ignored(final Ticket[] results) {
         int remaining = 1;
-        for (Ticket ticket : results) {
+        for (final Ticket ticket : results) {
             if (ticket == null) {
                 break;
             }
@@ -156,7 +156,7 @@ final class CompositeCapacityLimiter implements CapacityLimiter {
 
             @Override
             public int ignored() {
-                return CompositeCapacityLimiter.cancelled(tickets);
+                return CompositeCapacityLimiter.ignored(tickets);
             }
         };
     }
