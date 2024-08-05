@@ -125,19 +125,16 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
     @Override
     public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap meta) {
-        int newPending;
-        int newLimit;
-
         Ticket ticket = null;
         lock.lock();
         try {
-            newLimit = (int) limit;
+            final int newLimit = (int) limit;
             if (pending < limit) {
-                newPending = pending + 1;
+                final int newPending = pending + 1;
                 ticket = new DefaultTicket(this, newLimit - newPending, newPending);
+                // update the state last just in case anything throws.
+                ++pending;
             }
-            // update the state last just in case anything throws.
-            ++pending;
         } catch (Throwable t) {
             LOGGER.error("Exception while attempting to acquire ticket", t);
         } finally {
@@ -145,7 +142,12 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         }
 
         if (ticket != null) {
-            observer.onActiveRequestsIncr();
+            try {
+                observer.onActiveRequestsIncr();
+            } catch (Throwable t) {
+                ticket.ignored();
+                throw t;
+            }
         }
         return ticket;
     }
