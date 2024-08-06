@@ -15,19 +15,110 @@
  */
 package io.servicetalk.examples.grpc.helloworld.blocking;
 
+import io.servicetalk.capacity.limiter.api.CapacityLimiter;
+import io.servicetalk.capacity.limiter.api.CapacityLimiters;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.grpc.api.GrpcServerContext;
 import io.servicetalk.grpc.netty.GrpcClients;
+import io.servicetalk.grpc.netty.GrpcServers;
 
+import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
+import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
+
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static io.servicetalk.concurrent.api.Single.succeeded;
 
 public final class BlockingHelloWorldClient {
     public static void main(String[] args) throws Exception {
-        try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
-                .buildBlocking(new ClientFactory())) {
-            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
-            System.out.println(reply);
+
+        final double fraction = 0.1;
+
+        GrpcServerContext serverContext = GrpcServers.forPort(8080)
+                .listenAndAwait((Greeter.GreeterService) (ctx, request) -> {
+                    Completable timer;
+                    if (ThreadLocalRandom.current().nextDouble() < fraction) {
+                        // new Random().nextInt(1000)
+                        timer = io.servicetalk.concurrent.api.Executors.global()
+                                .timer(Duration.ofSeconds(10));
+                    } else {
+                        timer = Completable.completed();
+                    }
+
+                    return timer.concat(succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()));
+                });
+
+        // Share the limiter.
+        CapacityLimiter limiter = CapacityLimiters.fixedCapacity(1)
+                .stateObserver((limit, pending) -> {
+                            if (limit == pending) {
+//                                System.err.println("limit == pending. " + limit);
+                            }
+                        }
+                )
+                .build();
+
+        final TrafficResilienceHttpClientFilter resilienceHttpClientFilter = new TrafficResilienceHttpClientFilter.Builder(
+                () -> limiter
+        ).build();
+
+        final int numClients = 60;
+        final CountDownLatch latch = new CountDownLatch(numClients);
+        final AtomicBoolean finished = new AtomicBoolean();
+        ExecutorService executor = Executors.newCachedThreadPool();
+        AtomicLong counter = new AtomicLong();
+        final AtomicInteger consecutiveFailures = new AtomicInteger();
+        final int failureLimit = 200;
+
+        for (int i = 0; i < numClients; i++) {
+            executor.execute(() -> {
+                try {
+                    try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+                            .defaultTimeout(Duration.ofMillis(50))
+                            .initializeHttp(http -> {
+                                http.appendClientFilter(resilienceHttpClientFilter);
+                            })
+                            .buildBlocking(new ClientFactory())) {
+                        while (!finished.get()) {
+                            try {
+                                HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
+                                reply.getMessage();
+                                System.out.print(".");
+                                consecutiveFailures.set(0);
+                            } catch (Exception ex) {
+                                System.out.print("!");
+                                if (consecutiveFailures.incrementAndGet() >= failureLimit) {
+                                    finished.set(true);
+                                    System.out.printf("\nConsecutive failure threshold reached (%d). Terminating.\n", failureLimit);
+                                }
+                            }
+                            if (counter.incrementAndGet() % 100 == 0) {
+                                System.out.print('\n');
+                            }
+                            Thread.sleep(300);
+                        }
+                        latch.countDown();
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
         }
+
+        latch.await();
+        serverContext.close();
+        executor.shutdown();
+        System.out.println("Terminating.");
     }
 }
