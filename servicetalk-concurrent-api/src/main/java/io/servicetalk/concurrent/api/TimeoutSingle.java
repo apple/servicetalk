@@ -140,6 +140,8 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 } finally {
                     target.onSuccess(result);
                 }
+            } else {
+                System.out.println("Result was abandoned: " + result);
             }
         }
 

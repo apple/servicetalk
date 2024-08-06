@@ -117,6 +117,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
+                // Could this be the problem? `Single.timeout` will orphan the result in the race case.
                 final Single<StreamingHttpResponse> timeoutResponse = response.timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {

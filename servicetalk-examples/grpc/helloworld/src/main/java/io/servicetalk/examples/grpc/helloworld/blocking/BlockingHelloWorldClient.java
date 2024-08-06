@@ -49,9 +49,8 @@ public final class BlockingHelloWorldClient {
                 .listenAndAwait((Greeter.GreeterService) (ctx, request) -> {
                     Completable timer;
                     if (ThreadLocalRandom.current().nextDouble() < fraction) {
-                        // new Random().nextInt(1000)
                         timer = io.servicetalk.concurrent.api.Executors.global()
-                                .timer(Duration.ofSeconds(10));
+                                .timer(Duration.ofMillis(50));
                     } else {
                         timer = Completable.completed();
                     }
@@ -60,18 +59,9 @@ public final class BlockingHelloWorldClient {
                 });
 
         // Share the limiter.
-        CapacityLimiter limiter = CapacityLimiters.fixedCapacity(1)
-                .stateObserver((limit, pending) -> {
-                            if (limit == pending) {
-//                                System.err.println("limit == pending. " + limit);
-                            }
-                        }
-                )
-                .build();
-
-        final TrafficResilienceHttpClientFilter resilienceHttpClientFilter = new TrafficResilienceHttpClientFilter.Builder(
-                () -> limiter
-        ).build();
+        CapacityLimiter limiter = CapacityLimiters.fixedCapacity(1).build();
+        final TrafficResilienceHttpClientFilter resilienceHttpClientFilter =
+                new TrafficResilienceHttpClientFilter.Builder(() -> limiter).build();
 
         final int numClients = 60;
         final CountDownLatch latch = new CountDownLatch(numClients);
@@ -79,7 +69,7 @@ public final class BlockingHelloWorldClient {
         ExecutorService executor = Executors.newCachedThreadPool();
         AtomicLong counter = new AtomicLong();
         final AtomicInteger consecutiveFailures = new AtomicInteger();
-        final int failureLimit = 200;
+        final int failureLimit = 600;
 
         for (int i = 0; i < numClients; i++) {
             executor.execute(() -> {
