@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -31,6 +32,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
@@ -51,6 +54,8 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
@@ -62,6 +67,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.handler.ssl.SslContext;
+import io.servicetalk.transport.api.TransportObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +147,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = defaultLoadBalancer();
         this.serviceDiscoverer = new CastedServiceDiscoverer<>(serviceDiscoverer);
-        clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
+        clientFilterFactory = appendFilter(appendFilter(clientFilterFactory, new LeakFilter("first")), HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
 
     private DefaultSingleAddressHttpClientBuilder(final U address,
@@ -328,6 +334,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             // Internal retries must be one of the last filters in the chain.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);
+
+            // See if we're leaking here.
+            currClientFilterFactory = appendFilter(currClientFilterFactory, new LeakFilter("end"));
+
             FilterableStreamingHttpClient wrappedClient =
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus);
 
@@ -348,6 +358,26 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
+        }
+    }
+
+    private static class LeakFilter implements StreamingHttpClientFilterFactory {
+
+        private final String name;
+
+        LeakFilter(final String name) {
+            this.name = name;
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate, StreamingHttpRequest request) {
+
+                    return delegate.request(request).map(resp -> resp.transformPayloadBody(body -> body.detectLeaks("LeakFilter - " + name)));
+                }
+            };
         }
     }
 

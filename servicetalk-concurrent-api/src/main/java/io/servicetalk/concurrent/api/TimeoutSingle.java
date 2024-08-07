@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -32,10 +33,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+public class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
     private final io.servicetalk.concurrent.Executor timeoutExecutor;
     private final long durationNs;
+
+    @Nullable
+    private final Consumer<? super T> cleanup;
 
     TimeoutSingle(final Single<T> original,
                   final Duration duration,
@@ -43,6 +47,17 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         this.original = original;
         this.durationNs = duration.toNanos();
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
+        cleanup = null;
+    }
+
+    public TimeoutSingle(final Single<T> original,
+                  final Duration duration,
+                  Consumer<? super T> cleanup,
+                  final io.servicetalk.concurrent.Executor timeoutExecutor) {
+        this.original = original;
+        this.durationNs = duration.toNanos();
+        this.timeoutExecutor = requireNonNull(timeoutExecutor);
+        this.cleanup = cleanup;
     }
 
     TimeoutSingle(final Single<T> original,
@@ -52,13 +67,14 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         this.original = original;
         this.durationNs = unit.toNanos(duration);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
+        cleanup = null;
     }
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber,
                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
+                TimeoutSubscriber.newInstance(this, subscriber, cleanup, contextMap, contextProvider),
                 contextMap, contextProvider);
     }
 
@@ -84,17 +100,21 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         private final AsyncContextProvider contextProvider;
         @Nullable
         private Cancellable timerCancellable;
+        @Nullable Consumer<? super X> cleanup;
 
         private TimeoutSubscriber(TimeoutSingle<X> parent, Subscriber<? super X> target,
+                                  @Nullable Consumer<? super X> cleanup,
                                   AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.target = target;
             this.contextProvider = contextProvider;
+            this.cleanup = cleanup;
         }
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutSingle<X> parent, Subscriber<? super X> target,
+                                                    final Consumer<? super X> cleanup,
                                                     ContextMap contextMap, AsyncContextProvider contextProvider) {
-            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, contextProvider);
+            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, cleanup, contextProvider);
             Cancellable localTimerCancellable;
             try {
                 // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
@@ -141,7 +161,10 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     target.onSuccess(result);
                 }
             } else {
-                System.out.println("Result was abandoned: " + result);
+//                System.out.println("Result was abandoned: " + result);
+//                if (cleanup != null) {
+//                    cleanup.accept(result);
+//                }
             }
         }
 

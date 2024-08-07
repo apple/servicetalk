@@ -953,6 +953,30 @@ public abstract class Publisher<T> {
         return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency);
     }
 
+    public final Publisher<T> detectLeaks(final String note) {
+        return detectLeaks(() -> note);
+    }
+
+    public final Publisher<T> detectLeaks(final Supplier<String> note) {
+        Object parent = this;
+        return this.beforeOnSubscribe(new Consumer<Subscription>() {
+
+            private volatile boolean subscribed;
+            @Override
+            public void accept(Subscription subscription) {
+                subscribed = true;
+            }
+
+            @Override
+            protected void finalize() throws Throwable {
+                if (!subscribed) {
+                    LOGGER.error("Failed to be subscribed. Note: {}. Publisher: {}", note.get(), parent);
+                }
+                super.finalize();
+            }
+        });
+    }
+
     /**
      * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
      * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned

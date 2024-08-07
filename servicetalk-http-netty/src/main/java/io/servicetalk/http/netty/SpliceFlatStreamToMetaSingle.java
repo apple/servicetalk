@@ -102,6 +102,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         @SuppressWarnings("unused")
         private volatile Object maybePayloadSub;
 
+        @Nullable
+        private volatile Object previous;
+
         /**
          * Once a {@link #maybePayloadSub} is set to a {@link PublisherSource.Subscriber} we cache a copy in a
          * non-volatile field to allow caching in register and avoid instanceof and casting on the hot path.
@@ -194,6 +197,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 MetaData meta = (MetaData) obj;
                 // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
                 metaSeenInOnNext = true;
+                // This will be the http response.
                 final Data data;
                 try {
                     data = parent.packer.apply(meta, maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
@@ -218,8 +222,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         @Nonnull
         private Publisher<Payload> newPayloadPublisher() {
             return new SubscribablePublisher<Payload>() {
+
+                private volatile boolean subscribed;
                 @Override
                 protected void handleSubscribe(PublisherSource.Subscriber<? super Payload> newSubscriber) {
+                    subscribed = true;
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
                     // on maybePayloadSubUpdater. Otherwise there is a potential for concurrent invocation on the
@@ -250,7 +257,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                         }
                     }
                 }
-            };
+            }.detectLeaks(() -> String.format("SpliceFlatStreamToMetaSingle - %s - %s", maybePayloadSubUpdater.get(this).toString(), previous.toString()));
         }
 
         @SuppressWarnings("unchecked")
@@ -285,6 +292,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 payloadSubscriber.onComplete();
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, EMPTY_COMPLETED);
+                previous = maybeSubscriber;
                 if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(this, EMPTY_COMPLETED,
                             EMPTY_COMPLETED_DELIVERED)) {

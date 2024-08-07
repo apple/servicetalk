@@ -173,7 +173,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                         if (maybePublisher != null && maybePublisher.get() != null) {
                             // No-one subscribed to the message (or there is none), so if there is a message
                             // tell the user to clean it up.
-                            LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                            LOGGER.trace("Discovered un-drained HTTP response message body which has " +
                                     "been dropped by user code - this is a strong indication of a bug " +
                                     "in a user-defined filter. Responses (or their message body) must " +
                                     "be fully consumed before discarding.");

@@ -50,6 +50,7 @@ public final class BlockingHelloWorldClient {
                     Completable timer;
                     if (ThreadLocalRandom.current().nextDouble() < fraction) {
                         timer = io.servicetalk.concurrent.api.Executors.global()
+
                                 .timer(Duration.ofMillis(50));
                     } else {
                         timer = Completable.completed();
@@ -88,15 +89,21 @@ public final class BlockingHelloWorldClient {
                                 consecutiveFailures.set(0);
                             } catch (Exception ex) {
                                 System.out.print("!");
-                                if (consecutiveFailures.incrementAndGet() >= failureLimit) {
-                                    finished.set(true);
+                                if (consecutiveFailures.incrementAndGet() >= failureLimit && finished.compareAndSet(false, true)) {
+                                    System.gc(); // hopefully this will hit the finalizers and emit log statements.
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch (InterruptedException ignored) {
+                                        // noop
+                                    }
+                                    System.gc();
                                     System.out.printf("\nConsecutive failure threshold reached (%d). Terminating.\n", failureLimit);
                                 }
                             }
                             if (counter.incrementAndGet() % 100 == 0) {
                                 System.out.print('\n');
                             }
-                            Thread.sleep(300);
+                            Thread.sleep(100);
                         }
                         latch.countDown();
                     }
