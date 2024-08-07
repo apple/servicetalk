@@ -171,6 +171,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // cancelled.
                 assert state == TERMINATED;
                 if (discardEventsAfterCancel) {
+                    toSource(response.payloadBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                     return;
                 }
                 subscriber.onSuccess(response.transformMessageBody(payload -> {

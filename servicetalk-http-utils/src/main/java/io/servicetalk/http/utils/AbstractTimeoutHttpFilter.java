@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TimeoutSingle;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -34,6 +35,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
@@ -119,10 +121,12 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
                 // Could this be the problem? `Single.timeout` will orphan the result in the race case.
-                final Single<StreamingHttpResponse> timeoutResponse = new TimeoutSingle<>(response, timeout, resp -> {
-                    // Attempt to drain the body.
-                    resp.payloadBody().ignoreElements().subscribe();
-                }, useForTimeout);
+                final Single<StreamingHttpResponse> timeoutResponse =
+                        // response.timeout(timeout, useForTimeout); // this appears to be _one of_ the leaks.
+                    new TimeoutSingle<>(response, timeout, resp -> {
+                        // drain the body.
+                        toSource(resp.payloadBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    }, useForTimeout);
 
                 if (fullRequestResponse) {
                     final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();

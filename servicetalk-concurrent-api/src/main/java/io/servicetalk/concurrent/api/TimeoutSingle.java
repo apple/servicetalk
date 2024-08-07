@@ -18,6 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.context.api.ContextMap;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -161,10 +163,10 @@ public class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     target.onSuccess(result);
                 }
             } else {
-//                System.out.println("Result was abandoned: " + result);
-//                if (cleanup != null) {
-//                    cleanup.accept(result);
-//                }
+                if (cleanup != null) {
+                    System.out.println("Result was abandoned: " + result);
+                    cleanup.accept(result);
+                }
             }
         }
 
