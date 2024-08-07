@@ -18,6 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -29,10 +30,12 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
@@ -40,6 +43,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluencer {
+
+    private static final Consumer<StreamingHttpResponse> CLEANER = (resp) -> {
+        toSource(resp.payloadBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+    };
+
     /**
      * Establishes the timeout for a given request.
      */
@@ -117,8 +125,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                final Single<StreamingHttpResponse> timeoutResponse = response.timeout(timeout, useForTimeout);
-
+                final Single<StreamingHttpResponse> timeoutResponse = response.timeout(timeout, useForTimeout, CLEANER);
                 if (fullRequestResponse) {
                     final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {

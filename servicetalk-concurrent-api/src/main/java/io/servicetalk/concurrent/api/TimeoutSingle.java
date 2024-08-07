@@ -18,11 +18,14 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.context.api.ContextMap;
 
-import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -33,25 +36,24 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimeoutSingle.class);
+
     private final Single<T> original;
     private final io.servicetalk.concurrent.Executor timeoutExecutor;
     private final long durationNs;
-
-    TimeoutSingle(final Single<T> original,
-                  final Duration duration,
-                  final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        this.original = original;
-        this.durationNs = duration.toNanos();
-        this.timeoutExecutor = requireNonNull(timeoutExecutor);
-    }
+    @Nullable
+    private final Consumer<? super T> cleanup;
 
     TimeoutSingle(final Single<T> original,
                   final long duration,
                   final TimeUnit unit,
-                  final io.servicetalk.concurrent.Executor timeoutExecutor) {
+                  final io.servicetalk.concurrent.Executor timeoutExecutor,
+                  @Nullable Consumer<? super T> cleanup) {
         this.original = original;
         this.durationNs = unit.toNanos(duration);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
+        this.cleanup = cleanup;
     }
 
     @Override
@@ -139,6 +141,12 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     stopTimer();
                 } finally {
                     target.onSuccess(result);
+                }
+            } else {
+                if (parent.cleanup != null) {
+                    parent.cleanup.accept(result);
+                } else if (result != null) {
+                    LOGGER.trace("Racing result of type {} has been abandoned", result.getClass().getName());
                 }
             }
         }

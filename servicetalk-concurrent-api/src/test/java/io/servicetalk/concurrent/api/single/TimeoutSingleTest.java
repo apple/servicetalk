@@ -30,8 +30,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -160,6 +162,24 @@ class TimeoutSingleTest {
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
         assertThat(this.subscriber.awaitOnError(), instanceOf(TimeoutException.class));
+    }
+
+    @Test
+    void resourcesCanBeCleanedUp() {
+        AtomicReference<Integer> cleaned = new AtomicReference<>();
+        toSource(source.timeout(Duration.ofNanos(1), testExecutor, cleaned::set)).subscribe(subscriber);
+        assertThat(testExecutor.scheduledTasksPending(), is(1));
+
+        // Sleep for at least as much time as the expiration time, because we just subscribed data.
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+
+        Integer result = 1;
+        source.onSuccess(result);
+        assertThat(cleaned.get(), sameInstance(result));
     }
 
     private void init() {
