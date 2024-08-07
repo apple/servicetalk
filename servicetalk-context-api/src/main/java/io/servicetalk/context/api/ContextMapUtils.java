@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.internal;
+package io.servicetalk.context.api;
 
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 
 import javax.annotation.Nullable;
@@ -26,11 +25,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Shared utilities for {@link ContextMap}.
- *
- * @deprecated This class will be removed in the future releases.
  */
-@Deprecated
-public final class ContextMapUtils {    // FIXME: 0.43 - remove deprecated class
+final class ContextMapUtils {
     private ContextMapUtils() {
         // no instances
     }
@@ -41,13 +37,13 @@ public final class ContextMapUtils {    // FIXME: 0.43 - remove deprecated class
      * @param map {@link ContextMap} to convert
      * @return {@link String} representation of the context map
      */
-    public static String toString(final ContextMap map) {
+    static String toString(final ContextMap map) {
         final String simpleName = map.getClass().getSimpleName();
         final int size = map.size();
         if (size == 0) {
             return simpleName + '@' + toHexString(identityHashCode(map)) + ":{}";
         }
-        // 12 is 1 characters for '@' + 8 hash code integer in hex form + 1 character for ':' + 2 characters for "{}".
+        // 12 is 1 character for '@' + 8 hash code integer in hex form + 1 character for ':' + 2 characters for "{}".
         // Assume size of 90 for each key/value pair: 42 overhead characters for formatting + 16 characters for key
         // name + 16 characters for key type + 16 characters for value.
         StringBuilder sb = new StringBuilder(simpleName.length() + 12 + size * 90);
@@ -75,7 +71,7 @@ public final class ContextMapUtils {    // FIXME: 0.43 - remove deprecated class
      * @return {@code true} if both {@link ContextMap}(s) are equal (contains the same elements), {@code false}
      * otherwise.
      */
-    public static boolean equals(final ContextMap first, final ContextMap second) {
+    static boolean equals(final ContextMap first, final ContextMap second) {
         if (first.size() != second.size()) {
             return false;
         }
@@ -92,7 +88,7 @@ public final class ContextMapUtils {    // FIXME: 0.43 - remove deprecated class
      * @throws NullPointerException if {@code key == null}
      * @throws IllegalArgumentException if type of the {@code value} does not match with {@link Key#type()}
      */
-    public static void ensureType(final Key<?> key, @Nullable final Object value) {
+    static void ensureType(final Key<?> key, @Nullable final Object value) {
         requireNonNull(key);
         if (value != null && !key.type().isInstance(value)) {
             throw new IllegalArgumentException("Type of the value " + value + '(' + value.getClass() + ')' +
