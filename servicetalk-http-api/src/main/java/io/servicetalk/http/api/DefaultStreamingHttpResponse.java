@@ -154,7 +154,7 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
 
     @Override
     public Single<HttpResponse> toResponse() {
-        return payloadHolder.aggregate().uncancellable().map(pair -> new DefaultHttpResponse(this, pair.payload, pair.trailers));
+        return payloadHolder.aggregate().map(pair -> new DefaultHttpResponse(this, pair.payload, pair.trailers));
     }
 
     @Override
