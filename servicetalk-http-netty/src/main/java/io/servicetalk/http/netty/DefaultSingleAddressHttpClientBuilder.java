@@ -375,7 +375,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 @Override
                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate, StreamingHttpRequest request) {
 
-                    return delegate.request(request).map(resp -> resp.transformPayloadBody(body -> body.detectLeaks("LeakFilter - " + name)));
+                    return delegate.request(request);
                 }
             };
         }

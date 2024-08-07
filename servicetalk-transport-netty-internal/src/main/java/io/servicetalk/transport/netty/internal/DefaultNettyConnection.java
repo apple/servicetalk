@@ -557,7 +557,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                         public void cancel() {
                             observer.readCancelled();
                             subscription.cancel();
-                            System.err.println("registerReadObserver cancelled");
                         }
                     });
                 }

@@ -33,8 +33,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.http.netty.HttpMessageDiscardWatchdogServiceFilter.generifyAtomicReference;
@@ -70,7 +68,6 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return delegate().request(request).map(response -> {
-//                    LOGGER.warn("Stack trace", new Exception());
                     // always write the buffer publisher into the request context. When a downstream subscriber
                     // arrives, mark the message as subscribed explicitly (having a message present and no
                     // subscription is an indicator that it must be freed later on).
