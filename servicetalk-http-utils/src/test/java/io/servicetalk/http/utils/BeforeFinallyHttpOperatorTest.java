@@ -50,6 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -589,6 +590,37 @@ class BeforeFinallyHttpOperatorTest {
         payloadSubscriber2.awaitSubscription().request(MAX_VALUE);
         assertThat(payloadSubscriber2.awaitOnError(), is(instanceOf(DuplicateSubscribeException.class)));
         verify(beforeFinally).onError(any(DuplicateSubscribeException.class));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
+    @ValueSource(booleans = {true, false})
+    void cancellationRacesWithOnSuccessDrainTheMessageBody(boolean discardEventsAfterCancel) {
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, discardEventsAfterCancel)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        // Trigger cancellation.
+        subscriber.cancellable.cancel();
+        verify(beforeFinally).cancel();
+
+        PublisherSource.Processor<Buffer, Buffer> payload = Processors.newPublisherProcessor();
+        AtomicBoolean subscribedAndCancelled = new AtomicBoolean();
+        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(fromSource(payload)
+                .beforeCancel(() -> subscribedAndCancelled.set(true)));
+        responseSingle.onSuccess(response);
+
+        responseSingle.verifyCancelled();
+        if (discardEventsAfterCancel) {
+            subscriber.verifyNoResponseReceived();
+        } else {
+            subscriber.verifyResponseReceived();
+        }
+
+        // How to verify that the payload was subscribed then cancelled?
+        assertThat(subscribedAndCancelled.get(), is(true));
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

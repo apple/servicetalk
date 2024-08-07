@@ -170,15 +170,12 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
                 assert state == TERMINATED;
-                if (discardEventsAfterCancel) {
-                    return;
+                // Since we've been cancelled we need to drain the request body.
+                toSource(response.payloadBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                if (!discardEventsAfterCancel) {
+                    subscriber.onSuccess(response.transformMessageBody(payload ->
+                        Publisher.failed(new CancellationException("Received response post cancel."))));
                 }
-                subscriber.onSuccess(response.transformMessageBody(payload -> {
-                    // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
-                    // connection and indicate that there is no one else that will subscribe.
-                    toSource(payload).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                    return Publisher.failed(new CancellationException("Received response post cancel."));
-                }));
             }
             dereferenceSubscriber();
         }

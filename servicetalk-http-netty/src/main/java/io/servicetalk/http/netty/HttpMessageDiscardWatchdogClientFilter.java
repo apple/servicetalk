@@ -78,7 +78,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                         // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
                         // (i.e. during a retry) and so previous message body needs to be cleaned up by the
                         // user.
-                        LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                        LOGGER.warn("non-cleaner: Discovered un-drained HTTP response message body which has " +
                                 "been dropped by user code - this is a strong indication of a bug " +
                                 "in a user-defined filter. Response payload (message) body must " +
                                 "be fully consumed before retrying.");
@@ -112,7 +112,8 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                 if (maybePublisher != null && maybePublisher.getAndSet(null) != null) {
                                     // No-one subscribed to the message (or there is none), so if there is a message
                                     // tell the user to clean it up.
-                                    LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                    // TODO: in this filter, this is the pathway that is failing with a TimeoutException
+                                    LOGGER.warn("cleaner: Discovered un-drained HTTP response message body which has " +
                                             "been dropped by user code - this is a strong indication of a bug " +
                                             "in a user-defined filter. Response payload (message) body must " +
                                             "be fully consumed before discarding.");
