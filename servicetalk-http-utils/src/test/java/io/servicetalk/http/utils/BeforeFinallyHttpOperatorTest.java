@@ -611,15 +611,12 @@ class BeforeFinallyHttpOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(fromSource(payload)
                 .beforeCancel(() -> subscribedAndCancelled.set(true)));
         responseSingle.onSuccess(response);
-
         responseSingle.verifyCancelled();
         if (discardEventsAfterCancel) {
             subscriber.verifyNoResponseReceived();
         } else {
             subscriber.verifyResponseReceived();
         }
-
-        // How to verify that the payload was subscribed then cancelled?
         assertThat(subscribedAndCancelled.get(), is(true));
     }
 
