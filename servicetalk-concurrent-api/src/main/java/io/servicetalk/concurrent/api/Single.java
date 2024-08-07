@@ -1377,6 +1377,31 @@ public abstract class Single<T> {
         return new BeforeFinallySingle<>(this, doFinally);
     }
 
+    public final Single<T> uncancellable() {
+        return this.liftSync(new SingleOperator<T, T>() {
+            @Override
+            public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+                return new Subscriber<T>() {
+                    @Override
+                    public void onSubscribe(Cancellable cancellable) {
+                        // ignore the cancellable
+                        subscriber.onSubscribe(Cancellable.IGNORE_CANCEL);
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable T result) {
+                        subscriber.onSuccess(result);
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        subscriber.onError(t);
+                    }
+                };
+            }
+        });
+    }
+
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
      * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned

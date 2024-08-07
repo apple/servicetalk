@@ -250,40 +250,9 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
-                .beforeFinally(new SingleTerminalSignalConsumer<StreamingHttpResponse>() {
-                    @Override
-                    public void onSuccess(@Nullable StreamingHttpResponse result) {
-                        try {
-                            if (breaker != null) {
-                                breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
-                            }
-                        } finally {
-                            onSuccessTicketTerminal.accept(ticket);
-                            ticketObserver.onComplete();
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable throwable) {
-                        AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
-                        ticketObserver.onError(throwable);
-                    }
-
-                    @Override
-                    public void cancel() {
-                        try {
-                            if (breaker != null) {
-                                breaker.ignorePermit();
-                            }
-                        } finally {
-                            onCancellationTicketTerminal.accept(ticket);
-                            ticketObserver.onCancel();
-                        }
-                    }
-                });
-//                .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
+//                .beforeFinally(new SingleTerminalSignalConsumer<StreamingHttpResponse>() {
 //                    @Override
-//                    public void onComplete() {
+//                    public void onSuccess(@Nullable StreamingHttpResponse result) {
 //                        try {
 //                            if (breaker != null) {
 //                                breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
@@ -295,7 +264,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 //                    }
 //
 //                    @Override
-//                    public void onError(final Throwable throwable) {
+//                    public void onError(Throwable throwable) {
 //                        AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
 //                        ticketObserver.onError(throwable);
 //                    }
@@ -311,7 +280,38 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 //                            ticketObserver.onCancel();
 //                        }
 //                    }
-//                }, true));
+//                });
+                .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        try {
+                            if (breaker != null) {
+                                breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
+                            }
+                        } finally {
+                            onSuccessTicketTerminal.accept(ticket);
+                            ticketObserver.onComplete();
+                        }
+                    }
+
+                    @Override
+                    public void onError(final Throwable throwable) {
+                        AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
+                        ticketObserver.onError(throwable);
+                    }
+
+                    @Override
+                    public void cancel() {
+                        try {
+                            if (breaker != null) {
+                                breaker.ignorePermit();
+                            }
+                        } finally {
+                            onCancellationTicketTerminal.accept(ticket);
+                            ticketObserver.onCancel();
+                        }
+                    }
+                }, true));
     }
 
     private void onError(final Throwable throwable, @Nullable final CircuitBreaker breaker,
