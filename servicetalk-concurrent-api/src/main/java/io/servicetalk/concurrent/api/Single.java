@@ -632,6 +632,8 @@ public abstract class Single<T> {
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
+     * Note: this variant of timeout doesn't have a way to dispose of resources in the event that a result is
+     * provided after cancellation.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param unit The units for {@code duration}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
@@ -650,6 +652,8 @@ public abstract class Single<T> {
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
+     * Note: this variant of timeout doesn't have a way to dispose of resources in the event that a result is
+     * provided after cancellation.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param unit The units for {@code duration}.
      * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
@@ -660,7 +664,7 @@ public abstract class Single<T> {
      */
     public final Single<T> timeout(long duration, TimeUnit unit,
                                    io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
+        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor, null);
     }
 
     /**
@@ -672,6 +676,8 @@ public abstract class Single<T> {
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
      * {@link Subscriber} will via {@link Subscriber#onError(Throwable) terminated}.
+     * Note: this variant of timeout doesn't have a way to dispose of resources in the event that a result is
+     * provided after cancellation.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
@@ -689,6 +695,8 @@ public abstract class Single<T> {
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
+     * Note: this variant of timeout doesn't have a way to dispose of resources in the event that a result is
+     * provided after cancellation.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
      * notifications.
@@ -697,7 +705,31 @@ public abstract class Single<T> {
      * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutSingle<>(this, duration, timeoutExecutor);
+        return new TimeoutSingle<>(this, duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor, null);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}. If the cancellation races with a successful result, the
+     * result will be cleaned up via the provided cleanup logic.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
+     * @param cleanup Cleanup logic to execute in the case that the cancellation of the upstream resources is
+     * doesn't prevent the response being returned.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor,
+                                   Consumer<? super T> cleanup) {
+        return new TimeoutSingle<>(this, duration.toNanos(), TimeUnit.NANOSECONDS,
+                timeoutExecutor, requireNonNull(cleanup, "cleanup"));
     }
 
     /**
