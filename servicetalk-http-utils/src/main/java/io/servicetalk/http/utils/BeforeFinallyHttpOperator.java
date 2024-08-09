@@ -147,6 +147,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
                 try {
+                    // TODO: We may also need to complete the `beforeFinally()` if we're in the PROCESSING state.
+                    //  and also audit something else?
+                    //  Investigate if rdar://105295860 (BeforeFinallyHttpOperator: callbacks will be invoked more
+                    //  than once if users re-subscribe to response payload body) could be another source of
+                    //  misaligned limiter counters. Note that it does not affect iCloud because we guarantee we
+                    //  never re-subscribe inside http-client-servicetalk, but could be an issue for other users
+                    //  of ServiceTalk.
                     if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                         beforeFinally.cancel();
                     }
