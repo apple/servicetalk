@@ -171,11 +171,13 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
 
         private final SingleSource.Subscriber<? super StreamingHttpResponse> delegate;
         @SuppressWarnings("unused")
+        @Nullable
         private volatile Object state;
 
         CleanupSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> delegate) {
             this.delegate = delegate;
         }
+
         @Override
         public void onSubscribe(Cancellable cancellable) {
             delegate.onSubscribe(() -> {
@@ -203,7 +205,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         }
 
         private void onCancel() {
-            Object current = stateUpdater.compareAndSet(this, null, COMPLETE);
+            Object current = stateUpdater.getAndSet(this, COMPLETE);
             if (current instanceof StreamingHttpResponse) {
                 clean((StreamingHttpResponse) current);
             }
