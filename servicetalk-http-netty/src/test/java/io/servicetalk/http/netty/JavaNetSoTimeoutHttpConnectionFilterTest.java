@@ -35,7 +35,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,7 +67,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Disabled   // FIXME: remove before merging
 class JavaNetSoTimeoutHttpConnectionFilterTest {
 
     @RegisterExtension
@@ -84,7 +82,7 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     private static final String RETURN_RESPONSE_DELAY_MS = "RETURN_RESPONSE_DELAY_MS";
     private static final String RESPONSE_PAYLOAD_DELAY_MS = "RESPONSE_PAYLOAD_DELAY_MS";
 
-    private static final Duration READ_TIMEOUT_VALUE = Duration.ofMillis(CI ? 1000 : 100);
+    private static final Duration READ_TIMEOUT_VALUE = Duration.ofMillis(CI ? 1000 : 100);  // FIXME: 1000 -> 500
     private static final String SERVER_DELAY_VALUE = CI ? "2000" : "200";
 
     private static final Key<Duration> READ_TIMEOUT_KEY = newKey("READ_TIMEOUT_KEY", Duration.class);
@@ -253,8 +251,23 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
                 request.addHeader(EXPECT, CONTINUE);
             }
             request.context().put(READ_TIMEOUT_KEY, READ_TIMEOUT_VALUE);
-            Iterator<Buffer> payload = client.request(request).payloadBody().iterator();
-            assertThat(payload.hasNext(), is(true));
+            BlockingStreamingHttpResponse response;
+            try {
+                response = client.request(request);
+            } catch (RuntimeException re) {
+                throw new RuntimeException("Response meta-data failed", re);
+            }
+            Iterator<Buffer> payload;
+            try {
+                payload = response.payloadBody().iterator();
+            } catch (RuntimeException re) {
+                throw new RuntimeException("Response payload subscribe failed", re);
+            }
+            try {
+                assertThat(payload.hasNext(), is(true));
+            } catch (RuntimeException re) {
+                throw new RuntimeException("Response payload hasNext() failed", re);
+            }
             assertThat(payload.next().toString(US_ASCII), is(equalTo("Hello")));
             payload.next();
         });
