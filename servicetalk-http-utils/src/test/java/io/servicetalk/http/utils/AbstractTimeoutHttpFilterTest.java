@@ -253,8 +253,8 @@ abstract class AbstractTimeoutHttpFilterTest {
         AtomicBoolean cancelPropagated = new AtomicBoolean();
         StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2),
                         fullRequestResponse, defaultStrategy(), responseSingle.beforeCancel(() ->
-                                cancelPropagated.set(true))).
-                        afterOnSubscribe(doCancel::set))
+                                cancelPropagated.set(true)))
+                        .afterOnSubscribe(doCancel::set))
                 .then(() -> immediate().schedule(() -> {
                             StreamingHttpResponse response = mock(StreamingHttpResponse.class);
                             when(response.transformMessageBody(any())).thenReturn(response);
@@ -264,12 +264,11 @@ abstract class AbstractTimeoutHttpFilterTest {
                 .expectSuccess()
                 .verify();
         assertThat("No subscribe for response single", responseSingle.isSubscribed(), is(true));
-        responseSingle.isSubscribed();
-        assertThat(doCancel.get(), is(notNullValue()));
 
         // We rely on the Single.timeout(..) operator to swallow the losing cancellation so that our CleanupSubscriber
         // doesn't end up being the second subscriber to the response body. If that behavior changes we may need to be
         // more defensive.
+        assertThat(doCancel.get(), is(notNullValue()));
         doCancel.get().cancel();
         assertThat(cancelPropagated.get(), is(false));
     }
