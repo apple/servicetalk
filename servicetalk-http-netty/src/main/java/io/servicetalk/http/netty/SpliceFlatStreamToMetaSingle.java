@@ -72,12 +72,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         return new SplicingSubscriber<>(this, subscriber);
     }
 
-    /* Visible for testing */
-    static final class SplicingSubscriber<Data, MetaData, Payload> implements PublisherSource.Subscriber<Object> {
+    private static final class SplicingSubscriber<Data, MetaData, Payload>
+            implements PublisherSource.Subscriber<Object> {
+
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object>
-                maybePayloadSubUpdater = AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class,
-                Object.class, "maybePayloadSub");
+        private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object> maybePayloadSubUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class, Object.class, "maybePayloadSub");
 
         private static final String CANCELED = "CANCELED";
         private static final String PENDING = "PENDING";
