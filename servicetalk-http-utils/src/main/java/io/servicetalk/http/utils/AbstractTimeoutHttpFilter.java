@@ -167,10 +167,9 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         private static final AtomicReferenceFieldUpdater<CleanupSubscriber, Object> stateUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(CleanupSubscriber.class, Object.class, "state");
 
-        private static final Object COMPLETE = "cancelled";
+        private static final String COMPLETE = "complete";
 
         private final SingleSource.Subscriber<? super StreamingHttpResponse> delegate;
-        @SuppressWarnings("unused")
         @Nullable
         private volatile Object state;
 
@@ -181,8 +180,14 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         @Override
         public void onSubscribe(Cancellable cancellable) {
             delegate.onSubscribe(() -> {
-                onCancel();
-                cancellable.cancel();
+                try {
+                    Object current = stateUpdater.getAndSet(this, COMPLETE);
+                    if (current instanceof StreamingHttpResponse) {
+                        clean((StreamingHttpResponse) current);
+                    }
+                } finally {
+                    cancellable.cancel();
+                }
             });
         }
 
@@ -200,15 +205,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
 
         @Override
         public void onError(Throwable t) {
-            assert !(stateUpdater.get(this) instanceof StreamingHttpResponse);
+            assert !(state instanceof StreamingHttpResponse);
             delegate.onError(t);
-        }
-
-        private void onCancel() {
-            Object current = stateUpdater.getAndSet(this, COMPLETE);
-            if (current instanceof StreamingHttpResponse) {
-                clean((StreamingHttpResponse) current);
-            }
         }
 
         private void clean(StreamingHttpResponse httpResponse) {
