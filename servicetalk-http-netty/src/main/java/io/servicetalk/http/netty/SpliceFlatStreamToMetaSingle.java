@@ -202,14 +202,16 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                     if (maybePayloadSubUpdater.compareAndSet(this, null, PENDING)) {
                         payload = newPayloadPublisher();
                     } else {
-                        assert maybePayloadSub == CANCELED;
-                        maybePayloadSubUpdater.compareAndSet(this, CANCELED, EMPTY_COMPLETED_DELIVERED);
+                        final Object maybePayloadSub = this.maybePayloadSub;
+                        assert maybePayloadSub == CANCELED : "Expected CANCELED but got: " + maybePayloadSub;
+                        boolean cas = maybePayloadSubUpdater.compareAndSet(this, CANCELED, EMPTY_COMPLETED_DELIVERED);
+                        assert cas : "Could not transition from CANCELED to EMPTY_COMPLETED_DELIVERED";
                         payload = Publisher.failed(newCancellationException());
                     }
                     data = parent.packer.apply(meta, payload);
                     assert data != null : "Packer function must return non-null Data";
                 } catch (Throwable t) {
-                    assert rawSubscription != null;
+                    assert rawSubscription != null : "Expected rawSubscription but got null";
                     // We know that there is nothing else that can happen on this stream as we are not sending the
                     // data to the dataSubscriber.
                     rawSubscription.cancel();
@@ -234,7 +236,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                     // Subscriber which is not allowed by the Reactive Streams specification.
                     newSubscriber.onSubscribe(delayedSubscription);
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
-                        assert rawSubscription != null;
+                        assert rawSubscription != null : "Expected rawSubscription but got null";
                         delayedSubscription.delayedSubscription(rawSubscription);
                     } else {
                         // Entering this branch means either a duplicate subscriber or a stream that completed or failed
@@ -317,7 +319,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         }
 
         private void ensureResultSubscriberOnSubscribe() {
-            assert !metaSeenInOnNext;
+            assert !metaSeenInOnNext : "Already seen meta-data";
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
                 // Since we are going to deliver data or a terminal signal right after this,
