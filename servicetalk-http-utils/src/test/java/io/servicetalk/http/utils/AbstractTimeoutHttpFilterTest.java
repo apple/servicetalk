@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
@@ -65,6 +66,7 @@ import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -241,6 +243,35 @@ abstract class AbstractTimeoutHttpFilterTest {
         response.onSuccess(responseRawWith(payloadBody.beforeCancel(() -> cancelled.set(true))));
         assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
         assertThat("Payload body wasn't cancelled as part of draining", cancelled.get(), is(true));
+    }
+
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
+    @ValueSource(booleans = {false, true})
+    void responseCompletesBeforeTimeoutWithFollowingCancel(boolean fullRequestResponse) {
+        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
+        AtomicReference<Cancellable> doCancel = new AtomicReference<>();
+        AtomicBoolean cancelPropagated = new AtomicBoolean();
+        StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2),
+                        fullRequestResponse, defaultStrategy(), responseSingle.beforeCancel(() ->
+                                cancelPropagated.set(true))).
+                        afterOnSubscribe(doCancel::set))
+                .then(() -> immediate().schedule(() -> {
+                            StreamingHttpResponse response = mock(StreamingHttpResponse.class);
+                            when(response.transformMessageBody(any())).thenReturn(response);
+                            responseSingle.onSuccess(response);
+                        },
+                        ofMillis(1L)))
+                .expectSuccess()
+                .verify();
+        assertThat("No subscribe for response single", responseSingle.isSubscribed(), is(true));
+        responseSingle.isSubscribed();
+        assertThat(doCancel.get(), is(notNullValue()));
+
+        // We rely on the Single.timeout(..) operator to swallow the losing cancellation so that our CleanupSubscriber
+        // doesn't end up being the second subscriber to the response body. If that behavior changes we may need to be
+        // more defensive.
+        doCancel.get().cancel();
+        assertThat(cancelPropagated.get(), is(false));
     }
 
     private static Single<StreamingHttpResponse> responseWith(Publisher<Buffer> payloadBody) {
