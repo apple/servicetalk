@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CancellationException;
 
@@ -60,7 +62,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(2);
         upstream.onNext(one, last);
@@ -77,7 +79,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         upstream.onComplete();
         assertThat(data.getPayload().toFuture().get(), empty());
     }
@@ -90,34 +92,49 @@ class SpliceFlatStreamToMetaSingleTest {
         assertThat(dataSubscriber.awaitOnError(), instanceOf(IllegalStateException.class));
     }
 
-    @Test
-    void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe() {
+    @ParameterizedTest(name = "{displayName} [{index}]: terminateUpstreamWithError={0}")
+    @ValueSource(booleans = {false, true})
+    void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe(boolean terminateUpstreamWithError) {
         Single<Data> op = upstream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         toSource(op).subscribe(dataSubscriber);
+        upstream.onSubscribe(subscription);
         dataSubscriber.awaitSubscription().cancel();
+        assertTrue(subscription.isCancelled());
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.awaitOnError(), instanceOf(CancellationException.class));
+        assertPayloadSubscriberReceivesCancellationException(terminateUpstreamWithError);
     }
 
-    @Test
-    void cancelDataAfterDataCompleteShouldIgnoreCancelAndDeliverPublisherOnComplete() {
+    @ParameterizedTest(name = "{displayName} [{index}]: terminateUpstreamWithError={0}")
+    @ValueSource(booleans = {false, true})
+    void cancelDataAfterDataCompleteShouldCancelUpstreamAndFailPublisherOnSubscribe(
+            boolean terminateUpstreamWithError) {
         Single<Data> op = upstream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         toSource(op).subscribe(dataSubscriber);
+        upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
+        assertFalse(subscription.isCancelled());
         dataSubscriber.awaitSubscription().cancel();
+        assertTrue(subscription.isCancelled());
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.awaitSubscription().request(3);
-        upstream.onNext(one, two, last);
-        upstream.onComplete();
-        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
-        payloadSubscriber.awaitOnComplete();
+        assertPayloadSubscriberReceivesCancellationException(terminateUpstreamWithError);
+    }
+
+    private void assertPayloadSubscriberReceivesCancellationException(boolean terminateUpstreamWithError) {
+        assertThat(payloadSubscriber.awaitOnError(), instanceOf(CancellationException.class));
+        // Verify payloadSubscriber does not receive a terminal signal two times. If received, TestPublisherSubscriber
+        // will throw IllegalStateException: Subscriber has already terminated.
+        if (terminateUpstreamWithError) {
+            upstream.onError(DELIBERATE_EXCEPTION);
+        } else {
+            upstream.onComplete();
+        }
     }
 
     @Test
@@ -131,37 +148,51 @@ class SpliceFlatStreamToMetaSingleTest {
         assertThat(dataSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void streamErrorAfterPublisherSubscribeShouldDeliverError() {
+    @ParameterizedTest(name = "{displayName} [{index}]: withPayload={0}")
+    @ValueSource(booleans = {false, true})
+    void streamErrorAfterPublisherSubscribeShouldDeliverError(boolean withPayload) {
         Single<Data> op = upstream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(1);
-        upstream.onNext(one);
+        if (withPayload) {
+            upstream.onNext(one);
+        }
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
-        assertThat(payloadSubscriber.takeOnNext(), is(one));
+        if (withPayload) {
+            assertThat(payloadSubscriber.takeOnNext(), is(one));
+        } else {
+            assertThat(payloadSubscriber.pollAllOnNext(), is(empty()));
+        }
         assertThat(payloadSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void streamCompleteAfterPublisherSubscribeShouldDeliverComplete() {
+    @ParameterizedTest(name = "{displayName} [{index}]: withPayload={0}")
+    @ValueSource(booleans = {false, true})
+    void streamCompleteAfterPublisherSubscribeShouldDeliverComplete(boolean withPayload) {
         Single<Data> op = upstream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
-        upstream.onNext(one, two, last);
+        if (withPayload) {
+            upstream.onNext(one, two, last);
+        }
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        if (withPayload) {
+            assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        } else {
+            assertThat(payloadSubscriber.pollAllOnNext(), is(empty()));
+        }
         payloadSubscriber.awaitOnComplete();
     }
 
@@ -172,7 +203,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         upstream.onComplete();
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitOnComplete();
@@ -186,7 +217,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         toSource(data.getPayload()).subscribe(payloadSubscriber);
@@ -200,7 +231,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
@@ -218,7 +249,7 @@ class SpliceFlatStreamToMetaSingleTest {
         upstream.onNext(metaData);
         Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.meta(), equalTo(data.meta()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
