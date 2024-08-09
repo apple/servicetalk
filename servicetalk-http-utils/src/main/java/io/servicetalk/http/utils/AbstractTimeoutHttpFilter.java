@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -28,11 +31,13 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
@@ -117,7 +122,9 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                final Single<StreamingHttpResponse> timeoutResponse = response.timeout(timeout, useForTimeout);
+                final Single<StreamingHttpResponse> timeoutResponse = response
+                        .<StreamingHttpResponse>liftSync(CleanupSubscriber::new)
+                        .timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
                     final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();
@@ -149,6 +156,62 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         assert strategy != null;
         return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
                 context.executor() : context.ioExecutor();
+    }
+
+    // This is responsible for ensuring that we don't abandon the response resources due to the use of Single.timeout.
+    // It does so by retaining a reference to the StreamingHttpResponse in case we receive a cancellation. It will
+    // then attempt to drain the resource. We're protected from multiple subscribes because the TimeoutSingle will
+    // short circuit also on upstream cancellation, although that is not obviously correct behavior.
+    private static final class CleanupSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
+
+        private static final AtomicReferenceFieldUpdater<CleanupSubscriber, Object> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(CleanupSubscriber.class, Object.class, "state");
+
+        private static final Object COMPLETE = "cancelled";
+
+        private final SingleSource.Subscriber<? super StreamingHttpResponse> delegate;
+        @SuppressWarnings("unused")
+        private volatile Object state;
+
+        CleanupSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> delegate) {
+            this.delegate = delegate;
+        }
+        @Override
+        public void onSubscribe(Cancellable cancellable) {
+            delegate.onSubscribe(() -> {
+                onCancel();
+                cancellable.cancel();
+            });
+        }
+
+        @Override
+        public void onSuccess(@Nullable StreamingHttpResponse result) {
+            assert result != null;
+            if (stateUpdater.compareAndSet(this, null, result)) {
+                // We win.
+                delegate.onSuccess(result);
+            } else {
+                // we lost to cancellation. No need to send it forward.
+                clean(result);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            assert !(stateUpdater.get(this) instanceof StreamingHttpResponse);
+            delegate.onError(t);
+        }
+
+        private void onCancel() {
+            Object current = stateUpdater.compareAndSet(this, null, COMPLETE);
+            if (current instanceof StreamingHttpResponse) {
+                clean((StreamingHttpResponse) current);
+            }
+        }
+
+        private void clean(StreamingHttpResponse httpResponse) {
+            toSource(httpResponse.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+        }
     }
 
     private static final class MappedTimeoutException extends TimeoutException {

@@ -220,8 +220,35 @@ abstract class AbstractTimeoutHttpFilterTest {
         assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
     }
 
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
+    @ValueSource(booleans = {false, true})
+    void responseRacesWithCancellationStillHaveBodyDrained(boolean fullResponse) {
+        Duration timeout = ofMillis(100L);
+        TestSingle<StreamingHttpResponse> response = new TestSingle<>();
+        StepVerifiers.create(applyFilter(timeout, fullResponse, defaultStrategy(), response)
+
+                        .flatMapPublisher(StreamingHttpResponse::payloadBody))
+                .thenRequest(MAX_VALUE)
+                .expectErrorMatches(t -> TimeoutException.class.isInstance(t) &&
+                        (Thread.currentThread() instanceof IoThreadFactory.IoThread ^
+                                defaultStrategy().isRequestResponseOffloaded()))
+                .verify();
+
+        // We should be subscribed at this point.
+        response.awaitSubscribed();
+        TestPublisher<Buffer> payloadBody = new TestPublisher<>();
+        AtomicBoolean cancelled = new AtomicBoolean();
+        response.onSuccess(responseRawWith(payloadBody.beforeCancel(() -> cancelled.set(true))));
+        assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
+        assertThat("Payload body wasn't cancelled as part of draining", cancelled.get(), is(true));
+    }
+
     private static Single<StreamingHttpResponse> responseWith(Publisher<Buffer> payloadBody) {
-        return succeeded(newResponse(OK, HTTP_1_1, EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR,
-                DefaultHttpHeadersFactory.INSTANCE).payloadBody(payloadBody));
+        return succeeded(responseRawWith(payloadBody));
+    }
+
+    private static StreamingHttpResponse responseRawWith(Publisher<Buffer> payloadBody) {
+        return newResponse(OK, HTTP_1_1, EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR,
+                DefaultHttpHeadersFactory.INSTANCE).payloadBody(payloadBody);
     }
 }
