@@ -26,8 +26,6 @@ final class StacklessCancellationException extends CancellationException {
         super(message);
     }
 
-    // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
-    // Classloader.
     @Override
     public Throwable fillInStackTrace() {
         return this;
