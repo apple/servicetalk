@@ -15,16 +15,20 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.context.api.ContextMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,6 +54,44 @@ class SingleAmbWithAsyncTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> SECOND_EXEC = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX)
             .setClassLevel(true);
+
+    @ParameterizedTest(name = "{displayName} [{index}] terminatesWithSuccess={0} completeFirst={1}")
+    @CsvSource({
+        "true, true",
+        "true, false",
+        "false, true",
+        "false, false"
+    })
+    void terminalSignalDoesNotInvokeCancelOnTheSameCancellable(boolean terminatesWithSuccess, boolean completeFirst) {
+        TestSingle<Integer> first = new TestSingle<>();
+        TestSingle<Integer> second = new TestSingle<>();
+        TestCancellable firstCancellable = new TestCancellable();
+        TestCancellable secondCancellable = new TestCancellable();
+        TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+
+        toSource(first.ambWith(second)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onSubscribe(firstCancellable);
+        second.onSubscribe(secondCancellable);
+
+        if (terminatesWithSuccess) {
+            if (completeFirst) {
+                first.onSuccess(1);
+            } else {
+                second.onSuccess(1);
+            }
+            assertThat("Unexpected result delivered", subscriber.awaitOnSuccess(), is(1));
+        } else {
+            if (completeFirst) {
+                first.onError(DELIBERATE_EXCEPTION);
+            } else {
+                second.onError(DELIBERATE_EXCEPTION);
+            }
+            assertThat("Unexpected result delivered", subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        }
+        assertThat("Another Single not cancelled", secondCancellable.isCancelled(), is(completeFirst));
+        assertThat("Reactive Streams Rule 2.3 violation", firstCancellable.isCancelled(), is(!completeFirst));
+    }
 
     @Test
     void offloadSuccessFromFirst() throws Exception {

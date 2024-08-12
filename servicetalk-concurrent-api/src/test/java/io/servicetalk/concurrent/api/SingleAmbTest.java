@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -35,7 +36,6 @@ class SingleAmbTest {
     private final TestSingle<Integer> first = new TestSingle<>();
     private final TestSingle<Integer> second = new TestSingle<>();
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
-    private final TestCancellable cancellable = new TestCancellable();
 
     private enum AmbParam {
         AMB_WITH {
@@ -72,6 +72,7 @@ class SingleAmbTest {
     void successFirst(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
     }
 
@@ -80,6 +81,7 @@ class SingleAmbTest {
     void successSecond(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
     }
 
@@ -88,6 +90,7 @@ class SingleAmbTest {
     void failFirst(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
     }
 
@@ -96,6 +99,7 @@ class SingleAmbTest {
     void failSecond(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
     }
 
@@ -104,6 +108,7 @@ class SingleAmbTest {
     void successFirstThenSecond(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
         second.onSuccess(2);
     }
@@ -113,6 +118,7 @@ class SingleAmbTest {
     void successSecondThenFirst(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
         first.onSuccess(2);
     }
@@ -122,6 +128,7 @@ class SingleAmbTest {
     void failFirstThenSecond(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
@@ -131,6 +138,7 @@ class SingleAmbTest {
     void failSecondThenFirst(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
@@ -140,6 +148,7 @@ class SingleAmbTest {
     void successFirstThenSecondFail(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
@@ -149,6 +158,7 @@ class SingleAmbTest {
     void successSecondThenFirstFail(final AmbParam ambParam) {
         init(ambParam);
         sendSuccessToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
@@ -158,6 +168,7 @@ class SingleAmbTest {
     void failFirstThenSecondSuccess(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(first);
+        verifyNotCancelled(first);
         verifyCancelled(second);
         second.onSuccess(2);
     }
@@ -167,8 +178,29 @@ class SingleAmbTest {
     void failSecondThenFirstSuccess(final AmbParam ambParam) {
         init(ambParam);
         sendErrorToAndVerify(second);
+        verifyNotCancelled(second);
         verifyCancelled(first);
         first.onSuccess(2);
+    }
+
+    @Test
+    void doNotCancelCompletedWithMoreSingles() {
+        final TestSingle<Integer> first = new TestSingle<>();
+        final TestSingle<Integer> second = new TestSingle<>();
+        final TestSingle<Integer> third = new TestSingle<>();
+        final TestSingle<Integer> fourth = new TestSingle<>();
+
+        final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+        toSource(amb(first, second, third, fourth)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+
+        third.onSuccess(1);
+        assertThat("Unexpected result.", subscriber.awaitOnSuccess(), is(1));
+
+        verifyNotCancelled(third);
+        verifyCancelled(first);
+        verifyCancelled(second);
+        verifyCancelled(fourth);
     }
 
     private void sendSuccessToAndVerify(final TestSingle<Integer> source) {
@@ -181,8 +213,15 @@ class SingleAmbTest {
         assertThat("Unexpected error result.", subscriber.awaitOnError(), is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
-    private void verifyCancelled(final TestSingle<Integer> other) {
-        other.onSubscribe(cancellable);
+    private void verifyNotCancelled(final TestSingle<Integer> single) {
+        final TestCancellable cancellable = new TestCancellable();
+        single.onSubscribe(cancellable);
+        assertThat("Other source not cancelled.", cancellable.isCancelled(), is(false));
+    }
+
+    private void verifyCancelled(final TestSingle<Integer> single) {
+        final TestCancellable cancellable = new TestCancellable();
+        single.onSubscribe(cancellable);
         assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
     }
 }

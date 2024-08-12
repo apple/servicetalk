@@ -78,6 +78,7 @@ final class AmbSingles<T> extends Single<T> {
 
     static final class AmbSubscriber<T> extends DelayedCancellable implements Subscriber<T> {
         private final State<T> state;
+        private volatile boolean propagateCancel = true;
 
         AmbSubscriber(final State<T> state) {
             this.state = state;
@@ -90,12 +91,21 @@ final class AmbSingles<T> extends Single<T> {
 
         @Override
         public void onSuccess(@Nullable final T result) {
+            propagateCancel = false;
             state.trySuccess(result);
         }
 
         @Override
         public void onError(final Throwable t) {
+            propagateCancel = false;
             state.tryError(t);
+        }
+
+        @Override
+        public void cancel() {
+            if (propagateCancel) {
+                super.cancel();
+            }
         }
     }
 
