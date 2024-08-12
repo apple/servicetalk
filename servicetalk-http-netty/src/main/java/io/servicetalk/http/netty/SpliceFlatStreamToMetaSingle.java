@@ -33,6 +33,7 @@ import io.servicetalk.http.netty.H2ClientParentConnectionContext.StacklessCancel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
@@ -257,10 +258,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                             newSubscriber.onError((Throwable) maybeSubscriber);
                         } else if (maybeSubscriber == CANCELED && maybePayloadSubUpdater
                                 .compareAndSet(SplicingSubscriber.this, maybeSubscriber, EMPTY_COMPLETED_DELIVERED)) {
-                            // Premature cancel
-                            newSubscriber.onError(StacklessCancellationException.newInstance(
+                            // Premature cancel, capture the full caller stack-trace to understand which code path
+                            // subscribes to the payload after cancellation.
+                            newSubscriber.onError(new CancellationException(
                                     "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
-                                            maybeSubscriber, getClass(), "handleSubscribe(...)"));
+                                            maybeSubscriber));
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
                             newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber,
