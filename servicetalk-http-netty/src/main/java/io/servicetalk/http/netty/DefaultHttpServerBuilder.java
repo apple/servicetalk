@@ -49,6 +49,7 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.TransportConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 
@@ -227,6 +228,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
         this.config.tcpConfig().sslConfig(config, acceptInsecureConnections);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder transportConfig(final TransportConfig transportConfig) {
+        this.config.tcpConfig().transportConfig(transportConfig);
         return this;
     }
 

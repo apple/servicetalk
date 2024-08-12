@@ -86,6 +86,8 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
                                        final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
+        delegate = delegate.andThen(new TransportConfigInitializer(config.transportConfig()));
+
         final ClientSslConfig sslConfig = config.sslConfig();
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,

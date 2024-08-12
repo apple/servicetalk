@@ -23,6 +23,7 @@ import java.util.function.Consumer;
  * Configuration for a proxy.
  *
  * @param <A> the type of address
+ * @see ProxyConfigBuilder
  */
 public interface ProxyConfig<A> {
 

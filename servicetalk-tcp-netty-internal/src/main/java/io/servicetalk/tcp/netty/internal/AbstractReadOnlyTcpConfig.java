@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.api.TransportConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -40,12 +41,14 @@ abstract class AbstractReadOnlyTcpConfig {
     private final FlushStrategy flushStrategy;
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
+    private final TransportConfig transportConfig;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig from) {
         options = nonNullOptions(from.options());
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
+        transportConfig = from.transportConfig();
     }
 
     AbstractReadOnlyTcpConfig(final AbstractReadOnlyTcpConfig from) {
@@ -53,6 +56,7 @@ abstract class AbstractReadOnlyTcpConfig {
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
+        transportConfig = from.transportConfig();
     }
 
     @SuppressWarnings("rawtypes")
@@ -113,4 +117,13 @@ abstract class AbstractReadOnlyTcpConfig {
      */
     @Nullable
     public abstract SslConfig sslConfig();
+
+    /**
+     * Get the {@link TransportConfig}.
+     *
+     * @return {@link TransportConfig} to use
+     */
+    public final TransportConfig transportConfig() {
+        return transportConfig;
+    }
 }

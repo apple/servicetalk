@@ -22,6 +22,7 @@ import javax.net.ssl.SSLParameters;
 
 /**
  * Specifies the configuration for client side TLS/SSL.
+ *
  * @see ClientSslConfigBuilder
  */
 public interface ClientSslConfig extends SslConfig {
