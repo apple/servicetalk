@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -173,9 +174,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // body or risk leaking hot resources which are commonly attached to a message body.
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 if (!discardEventsAfterCancel) {
-                    subscriber.onSuccess(response.transformMessageBody(payload ->
-                        Publisher.failed(StacklessCancellationException.newInstance(
-                                "Received response post cancel", getClass(), "onSuccess"))));
+                    // Wrap with defer to capture the Subscriber's stack-trace
+                    subscriber.onSuccess(response.transformMessageBody(payload -> Publisher.defer(() ->
+                            Publisher.failed(new CancellationException("Received response post cancel")))));
                 }
             }
             dereferenceSubscriber();
