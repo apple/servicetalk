@@ -206,7 +206,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                         assert maybePayloadSub == CANCELED : "Expected CANCELED but got: " + maybePayloadSub;
                         boolean cas = maybePayloadSubUpdater.compareAndSet(this, CANCELED, EMPTY_COMPLETED_DELIVERED);
                         assert cas : "Could not transition from CANCELED to EMPTY_COMPLETED_DELIVERED";
-                        payload = Publisher.failed(newCancellationException());
+                        payload = Publisher.failed(StacklessCancellationException.newInstance(
+                                "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
+                                        maybePayloadSub, getClass(), "onNext(...)"));
                     }
                     data = parent.packer.apply(meta, payload);
                     assert data != null : "Packer function must return non-null Data";
@@ -256,7 +258,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                         } else if (maybeSubscriber == CANCELED && maybePayloadSubUpdater
                                 .compareAndSet(SplicingSubscriber.this, maybeSubscriber, EMPTY_COMPLETED_DELIVERED)) {
                             // Premature cancel
-                            newSubscriber.onError(newCancellationException());
+                            newSubscriber.onError(StacklessCancellationException.newInstance(
+                                    "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
+                                            maybeSubscriber, getClass(), "handleSubscribe(...)"));
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
                             newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber,
@@ -331,11 +335,6 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         private void terminateWithIllegalStateException(PublisherSource.Subscriber<Payload> subscriber) {
             subscriber.onError(new IllegalStateException("Duplicate Subscribers are not allowed. Existing: " +
                     subscriber + ", failed the race with a duplicate, but neither has seen onNext()"));
-        }
-
-        private static StacklessCancellationException newCancellationException() {
-            return StacklessCancellationException.newInstance(
-                    "Canceled prematurely from Data", SplicingSubscriber.class, "cancelData(..)");
         }
     }
 }
