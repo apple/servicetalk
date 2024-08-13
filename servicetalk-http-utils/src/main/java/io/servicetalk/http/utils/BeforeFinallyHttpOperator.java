@@ -30,12 +30,12 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Helper operator for signaling the end of an HTTP Request/Response cycle.
@@ -114,33 +114,30 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
 
     private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
 
-        private enum State {
-            IDLE,
-            PROCESSING_PAYLOAD,
-            RESPONSE_COMPLETE
-        }
-
-        private static final AtomicReferenceFieldUpdater<ResponseCompletionSubscriber, State> responseCompleteStateUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(ResponseCompletionSubscriber.class, State.class, "state");
+        private static final int IDLE = 0;
+        private static final int PROCESSING_PAYLOAD = 1;
+        private static final int RESPONSE_COMPLETE = -1;
+        private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
+                newUpdater(ResponseCompletionSubscriber.class, "state");
         private static final SingleSource.Subscriber<StreamingHttpResponse> NOOP_SUBSCRIBER =
-                new SingleSource.Subscriber<StreamingHttpResponse>() {
-                    @Override
-                    public void onSubscribe(final Cancellable cancellable) {
-                    }
+            new SingleSource.Subscriber<StreamingHttpResponse>() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                }
 
-                    @Override
-                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
-                    }
+                @Override
+                public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                }
 
-                    @Override
-                    public void onError(final Throwable t) {
-                    }
-                };
+                @Override
+                public void onError(final Throwable t) {
+                }
+            };
 
         private SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
         private final TerminalSignalConsumer beforeFinally;
         private final boolean discardEventsAfterCancel;
-        private volatile State state = State.IDLE;
+        private volatile int state;
 
         ResponseCompletionSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> sub,
                                      final TerminalSignalConsumer beforeFinally,
@@ -154,8 +151,8 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
                 try {
-                    final State previous = responseCompleteStateUpdater.getAndSet(this, State.RESPONSE_COMPLETE);
-                    if ((previous == State.IDLE || previous == State.PROCESSING_PAYLOAD)) {
+                    final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
+                    if ((previous == IDLE || previous == PROCESSING_PAYLOAD)) {
                         beforeFinally.cancel();
                     }
                 } finally {
@@ -169,22 +166,22 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (responseCompleteStateUpdater.compareAndSet(this, State.IDLE, State.PROCESSING_PAYLOAD)) {
+            } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformMessageBody(payload ->
                         payload.liftSync(messageBodySubscriber ->
                                 // TODO: is this legal to do here? It seems intrinsically racy in the error case but
                                 //  perhaps that will always be undefined behavior.
                                 // Only the first subscriber needs to be wrapped. Followup subscribers will
                                 // most likely fail because duplicate subscriptions to message bodies are not allowed.
-                                responseCompleteStateUpdater.compareAndSet(this,
-                                        State.PROCESSING_PAYLOAD, State.RESPONSE_COMPLETE) ?
+                                stateUpdater.compareAndSet(this,
+                                        PROCESSING_PAYLOAD, RESPONSE_COMPLETE) ?
                                         new MessageBodySubscriber(messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
                                         messageBodySubscriber)
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
-                assert state == State.RESPONSE_COMPLETE;
+                assert state == RESPONSE_COMPLETE;
                 // The request has been cancelled, but we still received a response. We need to discard the response
                 // body or risk leaking hot resources which are commonly attached to a message body.
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
@@ -199,7 +196,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         @Override
         public void onError(final Throwable t) {
             try {
-                if (responseCompleteStateUpdater.compareAndSet(this, State.IDLE, State.RESPONSE_COMPLETE)) {
+                if (stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
                     beforeFinally.onError(t);
                 } else if (discardEventsAfterCancel) {
                     return;
@@ -214,7 +211,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         private void sendNullResponse() {
             try {
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-                if (responseCompleteStateUpdater.compareAndSet(this, State.IDLE, State.RESPONSE_COMPLETE)) {
+                if (stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
                     beforeFinally.onComplete();
                 } else if (discardEventsAfterCancel) {
                     return;
@@ -243,7 +240,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         private static final int TERMINATED = -1;
 
         private static final AtomicIntegerFieldUpdater<MessageBodySubscriber> stateUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(MessageBodySubscriber.class, "state");
+                newUpdater(MessageBodySubscriber.class, "state");
 
         private final Subscriber<? super Object> subscriber;
         private final TerminalSignalConsumer beforeFinally;
