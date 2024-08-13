@@ -183,6 +183,11 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                 try {
                     Object current = stateUpdater.getAndSet(this, COMPLETE);
                     if (current instanceof StreamingHttpResponse) {
+                        // Because of the nature of the Single.timeout(..) operator we know that if we get a cancel
+                        // call the message will never be escape the `.timeout(..)` operator because it will have
+                        // taken ownership of the response so it can send its TimeoutException. Therefore, it is our
+                        // responsibility to clean up the message body. This behavior is verified by the
+                        // `responseCompletesBeforeTimeoutWithFollowingCancel` test in the suite.
                         clean((StreamingHttpResponse) current);
                     }
                 } finally {
