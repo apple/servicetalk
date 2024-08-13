@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
-import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -120,22 +119,23 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             PROCESSING_PAYLOAD,
             RESPONSE_COMPLETE
         }
+
         private static final AtomicReferenceFieldUpdater<ResponseCompletionSubscriber, State> responseCompleteStateUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(ResponseCompletionSubscriber.class, State.class, "state");
         private static final SingleSource.Subscriber<StreamingHttpResponse> NOOP_SUBSCRIBER =
                 new SingleSource.Subscriber<StreamingHttpResponse>() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-            }
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                    }
 
-            @Override
-            public void onSuccess(@Nullable final StreamingHttpResponse result) {
-            }
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
 
-            @Override
-            public void onError(final Throwable t) {
-            }
-        };
+                    @Override
+                    public void onError(final Throwable t) {
+                    }
+                };
 
         private SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
         private final TerminalSignalConsumer beforeFinally;
@@ -171,8 +171,15 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 sendNullResponse();
             } else if (responseCompleteStateUpdater.compareAndSet(this, State.IDLE, State.PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformMessageBody(payload ->
-                        payload.liftSync(messageBodySubscriber -> new MessageBodySubscriber(this, messageBodySubscriber,
-                                beforeFinally, discardEventsAfterCancel))
+                        payload.liftSync(messageBodySubscriber ->
+                                // TODO: is this legal to do here? It seems intrinsically racy in the error case but
+                                //  perhaps that will always be undefined behavior.
+                                // Only the first subscriber needs to be wrapped. Followup subscribers will
+                                // most likely fail because duplicate subscriptions to message bodies are not allowed.
+                                responseCompleteStateUpdater.compareAndSet(this,
+                                        State.PROCESSING_PAYLOAD, State.RESPONSE_COMPLETE) ?
+                                        new MessageBodySubscriber(messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
+                                        messageBodySubscriber)
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
@@ -183,7 +190,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 if (!discardEventsAfterCancel) {
                     subscriber.onSuccess(response.transformMessageBody(payload ->
-                        Publisher.failed(new CancellationException("Received response post cancel."))));
+                            Publisher.failed(new CancellationException("Received response post cancel."))));
                 }
             }
             dereferenceSubscriber();
@@ -227,92 +234,71 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.4/README.md#3.13
             subscriber = NOOP_SUBSCRIBER;
         }
+    }
 
-        private static final class MessageBodySubscriber implements Subscriber<Object> {
+    private static final class MessageBodySubscriber implements Subscriber<Object> {
 
-            private static final int PROCESSING_PAYLOAD = 0;
-            private static final int CANCELLED = 2;
-            private static final int TERMINATED = -1;
+        private static final int PROCESSING_PAYLOAD = 0;
+        private static final int CANCELLED = 2;
+        private static final int TERMINATED = -1;
 
-            private static final AtomicIntegerFieldUpdater<MessageBodySubscriber> stateUpdater =
-                    AtomicIntegerFieldUpdater.newUpdater(MessageBodySubscriber.class, "state");
+        private static final AtomicIntegerFieldUpdater<MessageBodySubscriber> stateUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(MessageBodySubscriber.class, "state");
 
-            private final ResponseCompletionSubscriber parent;
-            private final Subscriber<? super Object> subscriber;
-            private final TerminalSignalConsumer beforeFinally;
-            private final boolean discardEventsAfterCancel;
-            private volatile int state;
+        private final Subscriber<? super Object> subscriber;
+        private final TerminalSignalConsumer beforeFinally;
+        private final boolean discardEventsAfterCancel;
+        private volatile int state;
 
-            MessageBodySubscriber(final ResponseCompletionSubscriber parent,
-                                  final Subscriber<? super Object> subscriber,
-                                  final TerminalSignalConsumer beforeFinally,
-                                  final boolean discardEventsAfterCancel) {
-                this.parent = parent;
-                this.subscriber = subscriber;
-                this.beforeFinally = beforeFinally;
-                this.discardEventsAfterCancel = discardEventsAfterCancel;
-            }
+        MessageBodySubscriber(final Subscriber<? super Object> subscriber,
+                              final TerminalSignalConsumer beforeFinally,
+                              final boolean discardEventsAfterCancel) {
+            this.subscriber = subscriber;
+            this.beforeFinally = beforeFinally;
+            this.discardEventsAfterCancel = discardEventsAfterCancel;
+        }
 
-            @Override
-            public void onSubscribe(final Subscription subscription) {
-                if (!responseCompleteStateUpdater.compareAndSet(parent, State.PROCESSING_PAYLOAD, State.RESPONSE_COMPLETE)) {
-                    // There was a cancellation between providing the response and subscribing to the payload
-                    // body. We must discard everything.
-                    subscription.cancel();
-                    subscriber.onSubscribe(new Subscription() {
-                        @Override
-                        public void request(long n) {
-
-                        }
-
-                        @Override
-                        public void cancel() {
-
-                        }
-                    });
-                    subscriber.onError(new DuplicateSubscribeException(null, subscriber, "TODO: be better"));
-                    return;
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            subscriber.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    subscription.request(n);
                 }
-                subscriber.onSubscribe(new Subscription() {
-                    @Override
-                    public void request(final long n) {
-                        subscription.request(n);
-                    }
 
-                    @Override
-                    public void cancel() {
-                        try {
-                            beforeFinally.cancel();
-                        } finally {
-                            if (CANCELLED != stateUpdater.getAndSet(MessageBodySubscriber.this, CANCELLED)) {
-                                subscription.cancel();
-                            }
+                @Override
+                public void cancel() {
+                    try {
+                        beforeFinally.cancel();
+                    } finally {
+                        if (CANCELLED != stateUpdater.getAndSet(MessageBodySubscriber.this, CANCELLED)) {
+                            subscription.cancel();
                         }
                     }
-                });
-            }
-
-            @Override
-            public void onNext(@Nullable final Object o) {
-                if (!discardEventsAfterCancel || state == PROCESSING_PAYLOAD) {
-                    subscriber.onNext(o);
                 }
-            }
+            });
+        }
 
-            @Override
-            public void onError(final Throwable t) {
-                if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED) || !discardEventsAfterCancel) {
-                    beforeFinally.onError(t);
-                    subscriber.onError(t);
-                }
+        @Override
+        public void onNext(@Nullable final Object o) {
+            if (!discardEventsAfterCancel || state == PROCESSING_PAYLOAD) {
+                subscriber.onNext(o);
             }
+        }
 
-            @Override
-            public void onComplete() {
-                if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED) || !discardEventsAfterCancel) {
-                    beforeFinally.onComplete();
-                    subscriber.onComplete();
-                }
+        @Override
+        public void onError(final Throwable t) {
+            if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED) || !discardEventsAfterCancel) {
+                beforeFinally.onError(t);
+                subscriber.onError(t);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED) || !discardEventsAfterCancel) {
+                beforeFinally.onComplete();
+                subscriber.onComplete();
             }
         }
     }
