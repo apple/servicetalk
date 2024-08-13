@@ -28,7 +28,6 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.netty.H2ClientParentConnectionContext.StacklessCancellationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
