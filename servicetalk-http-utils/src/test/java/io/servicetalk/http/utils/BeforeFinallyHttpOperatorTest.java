@@ -295,7 +295,7 @@ class BeforeFinallyHttpOperatorTest {
         subscriber.verifyResponseReceived();
 
         subscriber.cancellable.cancel();
-        verifyNoInteractions(beforeFinally);
+        verify(beforeFinally).cancel();
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
 
@@ -315,6 +315,8 @@ class BeforeFinallyHttpOperatorTest {
             payload.onError(payloadTerminal.cause());
         }
         if (discardEventsAfterCancel) {
+            // TODO: these are failing because cancellation happened before subscribing to the message body and now
+            //  we're skipping events.
             assertThat("Unexpected payload body items", payloadSubscriber.pollAllOnNext(), empty());
             assertThat("Payload body terminated unexpectedly",
                     payloadSubscriber.pollTerminal(100, MILLISECONDS), is(nullValue()));
@@ -593,7 +595,8 @@ class BeforeFinallyHttpOperatorTest {
         toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber2);
         payloadSubscriber2.awaitSubscription().request(MAX_VALUE);
         assertThat(payloadSubscriber2.awaitOnError(), is(instanceOf(DuplicateSubscribeException.class)));
-        verify(beforeFinally).onError(any(DuplicateSubscribeException.class));
+        // second subscribe shouldn't interact.
+        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
