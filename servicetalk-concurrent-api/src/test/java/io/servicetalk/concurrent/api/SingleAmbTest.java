@@ -15,12 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Single.amb;
@@ -183,24 +187,42 @@ class SingleAmbTest {
         first.onSuccess(2);
     }
 
-    @Test
-    void doNotCancelCompletedWithMoreSingles() {
-        final TestSingle<Integer> first = new TestSingle<>();
-        final TestSingle<Integer> second = new TestSingle<>();
-        final TestSingle<Integer> third = new TestSingle<>();
-        final TestSingle<Integer> fourth = new TestSingle<>();
+    @ParameterizedTest(name = "{displayName} [{index}] index={0}")
+    @ValueSource(ints = {0, 1, 2, 3})
+    void doNotCancelCompletedWithMoreSingles(final int index) {
+        final List<TestSingle<Integer>> singles = Arrays.asList(new TestSingle<>(), new TestSingle<>(),
+                new TestSingle<>(), new TestSingle<>());
 
         final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
-        toSource(amb(first, second, third, fourth)).subscribe(subscriber);
+        toSource(amb(singles.get(0), singles.get(1), singles.get(2), singles.get(3))).subscribe(subscriber);
         subscriber.awaitSubscription();
 
-        third.onSuccess(1);
+        final TestSingle<Integer> terminates = singles.get(index);
+        terminates.onSuccess(1);
         assertThat("Unexpected result.", subscriber.awaitOnSuccess(), is(1));
 
-        verifyNotCancelled(third);
+        verifyNotCancelled(terminates);
+        for (int i = 0; i < singles.size(); i++) {
+            if (i != index) {
+                verifyCancelled(singles.get(i));
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}, completeFirst={1}")
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    void receiveTerminationSignalAfterCancel(final boolean error, final boolean completeFirst) {
+        toSource(amb(first, second)).subscribe(subscriber);
+        final Cancellable subscription = subscriber.awaitSubscription();
+        subscription.cancel();
+
         verifyCancelled(first);
         verifyCancelled(second);
-        verifyCancelled(fourth);
+        if (error) {
+            sendErrorToAndVerify(completeFirst ? first : second);
+        } else {
+            sendSuccessToAndVerify(completeFirst ? first : second);
+        }
     }
 
     private void sendSuccessToAndVerify(final TestSingle<Integer> source) {
@@ -213,15 +235,15 @@ class SingleAmbTest {
         assertThat("Unexpected error result.", subscriber.awaitOnError(), is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
-    private void verifyNotCancelled(final TestSingle<Integer> single) {
+    private static void verifyNotCancelled(final TestSingle<Integer> single) {
         final TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable);
-        assertThat("Other source not cancelled.", cancellable.isCancelled(), is(false));
+        assertThat("Single cancelled when no cancellation was expected.", cancellable.isCancelled(), is(false));
     }
 
-    private void verifyCancelled(final TestSingle<Integer> single) {
+    private static void verifyCancelled(final TestSingle<Integer> single) {
         final TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable);
-        assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
+        assertThat("Single not cancelled, but cancellation was expected.", cancellable.isCancelled(), is(true));
     }
 }
