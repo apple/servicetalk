@@ -233,7 +233,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder transportConfig(final TransportConfig transportConfig) {
-        this.config.tcpConfig().transportConfig(transportConfig);
+        config.tcpConfig().transportConfig(transportConfig);
         return this;
     }
 
