@@ -17,12 +17,14 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpContextKeys;
@@ -42,9 +44,12 @@ import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -166,6 +171,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                 }
                                 return body;
                             }))
+                            .<StreamingHttpResponse>liftSync(ResponseTrap::new)
                             // Defer timeout counter until after the request payload body is complete
                             .ambWith(SourceAdapters.fromSource(requestProcessor)
                                     // Start timeout counter after requestProcessor completes
@@ -174,6 +180,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                                     "Read timed out after " + timeout.toMillis() +
                                                             "ms waiting for response meta-data")
                                                     .initCause(t))))
+                            .<StreamingHttpResponse>liftSync(CancelTrap::new)
                             .map(response -> response.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
                                     .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
                                             "Read timed out after " + timeout.toMillis() +
@@ -183,6 +190,108 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 });
             }
         };
+    }
+
+    // The purpose of the `ResponseTrap` and `CancelTrap` is to prevent resource leaks and duplicate message body
+    // subscribes.
+    // The `CancelTrap` applies post-amb operator and acts to create a choke point for cancellation and
+    // responses: if cancellation happens first then that will be forwarded and any responses will be cleaned/disposed
+    // of. This lets the `ResponseTrap` make the assumption that if it gets a `.cancel()` call, it's safe to dispose
+    // of the response without worrying about races upstream. This is because the cancel originated upstream and the
+    // door is now latched, or it came from the other branch of the `ambWith` because that branch 'won'.
+    private static final class ResponseTrap implements Subscriber<StreamingHttpResponse> {
+
+        // The terminal state.
+        private static final String CANCELLED = "cancelled";
+
+        private static final AtomicReferenceFieldUpdater<ResponseTrap, Object> responseUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(ResponseTrap.class, Object.class, "response");
+        private final Subscriber<? super StreamingHttpResponse> delegate;
+
+
+        @Nullable
+        private volatile Object response;
+
+        public ResponseTrap(final Subscriber<? super StreamingHttpResponse> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            delegate.onSubscribe(() -> {
+                try {
+                    Object result = responseUpdater.getAndSet(this, CANCELLED);
+                    if (result instanceof StreamingHttpResponse) {
+                        clean((StreamingHttpResponse) result);
+                    }
+                } finally {
+                    cancellable.cancel();
+                }
+            });
+        }
+
+        @Override
+        public void onSuccess(@Nullable StreamingHttpResponse result) {
+            try {
+                if (!responseUpdater.compareAndSet(this, null, result == null ? CANCELLED : result)) {
+                    assert response == CANCELLED;
+                    if (result != null) {
+                        clean(result);
+                    }
+                }
+            } finally {
+                delegate.onSuccess(result);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            delegate.onError(t);
+        }
+    }
+
+    private static final class CancelTrap implements Subscriber<StreamingHttpResponse> {
+
+        private final AtomicBoolean once = new AtomicBoolean();
+        private final Subscriber<? super StreamingHttpResponse> delegate;
+
+        CancelTrap(final Subscriber<? super StreamingHttpResponse> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            assert !once.get();
+            delegate.onSubscribe(() -> {
+                try {
+                    once();
+                } finally {
+                    cancellable.cancel();
+                }
+            });
+        }
+
+        @Override
+        public void onSuccess(@Nullable StreamingHttpResponse result) {
+            if (once()) {
+                delegate.onSuccess(result);
+            } else if (result != null) {
+                clean(result);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            if (once()) {
+                delegate.onError(t);
+            } else {
+                // anything to do here?
+            }
+        }
+
+        private boolean once() {
+            return !once.getAndSet(true);
+        }
     }
 
     private Executor contextExecutor(final HttpRequestMetaData requestMetaData,
@@ -224,5 +333,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                                            final String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessSocketTimeoutException(message), clazz, method);
         }
+    }
+
+    private static void clean(StreamingHttpResponse response) {
+        toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
     }
 }
