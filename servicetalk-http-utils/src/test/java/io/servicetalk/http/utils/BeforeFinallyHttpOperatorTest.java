@@ -76,7 +76,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -250,9 +249,6 @@ class BeforeFinallyHttpOperatorTest {
         responseSingle.verifyCancelled();
     }
 
-    // TODO: do we have a test where we get a cancel from the Single after we have delivered the payload and someone
-    //  has subscribed to it?
-
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
     @ValueSource(booleans = {false, true})
     void cancelAfterOnError(boolean discardEventsAfterCancel) {
@@ -276,7 +272,7 @@ class BeforeFinallyHttpOperatorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadTerminal={1}")
     @MethodSource("booleanTerminalNotification")
-    void cancelBeforeOnNextThenTerminate(boolean discardEventsAfterCancel, TerminalNotification payloadTerminal) {
+    void cancelBeforeMessageBodySubscribe(boolean discardEventsAfterCancel, TerminalNotification payloadTerminal) {
         TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
         TestSubscription payloadSubscription = new TestSubscription();
         TestPublisherSubscriber<Buffer> payloadSubscriber = new TestPublisherSubscriber<>();
@@ -314,11 +310,58 @@ class BeforeFinallyHttpOperatorTest {
         } else {
             payload.onError(payloadTerminal.cause());
         }
+
+        assertThat("Unexpected payload body items",
+                payloadSubscriber.pollAllOnNext(), contains(EMPTY_BUFFER));
+        if (payloadTerminal.cause() == null) {
+            payloadSubscriber.awaitOnComplete();
+        } else {
+            assertThat(payloadSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadTerminal={1}")
+    @MethodSource("booleanTerminalNotification")
+    void cancelAfterMessageBodySubscribe(boolean discardEventsAfterCancel, TerminalNotification payloadTerminal) {
+        TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().disableAutoOnSubscribe().build();
+        TestSubscription payloadSubscription = new TestSubscription();
+        TestPublisherSubscriber<Buffer> payloadSubscriber = new TestPublisherSubscriber<>();
+
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, discardEventsAfterCancel)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        responseSingle.onSuccess(reqRespFactory.ok().payloadBody(payload));
+
+        verifyNoInteractions(beforeFinally);
+        responseSingle.verifyNotCancelled();
+        subscriber.verifyResponseReceived();
+
+        assert subscriber.response != null;
+        toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber);
+        payload.onSubscribe(payloadSubscription);
+        payloadSubscriber.awaitSubscription().request(MAX_VALUE);
+
+        // We unconditionally cancel and let the original single handle the cancel post terminate
+        subscriber.cancellable.cancel();
+        // The ownership of `beforeFinally` has been transferred to the message body subscription.
+        verify(beforeFinally, Mockito.never()).cancel();
+        responseSingle.verifyCancelled();
+
+        assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
+        payloadSubscriber.awaitSubscription().cancel();
+        assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
+
+        payload.onNext(EMPTY_BUFFER);
+        if (payloadTerminal.cause() == null) {
+            payload.onComplete();
+        } else {
+            payload.onError(payloadTerminal.cause());
+        }
         if (discardEventsAfterCancel) {
-            // TODO: this branch is failing because cancellation happened before we subscribed to the payload body
-            //  so we didn't wrap it with anything. What should happen? If we don't do anything then we break
-            //  the RS pattern because the request payload stream wasn't cancelled, so if we must send something
-            //  or it is a hung stream.
             assertThat("Unexpected payload body items", payloadSubscriber.pollAllOnNext(), empty());
             assertThat("Payload body terminated unexpectedly",
                     payloadSubscriber.pollTerminal(100, MILLISECONDS), is(nullValue()));
@@ -521,7 +564,11 @@ class BeforeFinallyHttpOperatorTest {
         assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
 
         assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER));
-//        assertThat("Unexpected payload body termination", subscriberTerminal.get(), equalTo(payloadTerminal));
+        if (!fromOnNext) {
+            // We are discarding events after cancel, so if we cancel from onNext we won't be fed the terminal events.
+            assertThat("Unexpected payload body termination", subscriberTerminal.get(),
+                    equalTo(payloadTerminal));
+        }
         if (fromOnNext) {
             verify(beforeFinally).cancel();
         } else if (payloadTerminal.cause() == null) {

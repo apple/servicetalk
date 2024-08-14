@@ -185,9 +185,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                 // Only the first subscriber needs to be wrapped. Followup subscribers will
                                 // most likely fail because duplicate subscriptions to message bodies are not allowed.
                                 stateUpdater.compareAndSet(this,
-                                        PROCESSING_PAYLOAD, RESPONSE_COMPLETE) ?
-                                        new MessageBodySubscriber(messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
-                                        discardEventsAfterCancel ? new CancelledSubscriber(messageBodySubscriber) : messageBodySubscriber)
+                                        PROCESSING_PAYLOAD, RESPONSE_COMPLETE) ? new MessageBodySubscriber(
+                                                messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
+                                        messageBodySubscriber)
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
@@ -311,51 +311,13 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         }
     }
 
-    // TODO: do we really need this?
-    private static final class CancelledSubscriber implements Subscriber<Object> {
-
-        private final Subscriber<Object> delegate;
-
-        CancelledSubscriber(final Subscriber<Object> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void onSubscribe(Subscription subscription) {
-            subscription.cancel();
-            delegate.onSubscribe(new Subscription() {
-                @Override
-                public void request(long n) {
-                    // TODO: validate `n`
-                }
-
-                @Override
-                public void cancel() {
-                }
-            });
-            delegate.onError(new CancellationException("Subscribed to response body post cancel."));
-        }
-
-        @Override
-        public void onNext(@Nullable Object o) {
-        }
-
-        @Override
-        public void onError(Throwable t) {
-        }
-
-        @Override
-        public void onComplete() {
-        }
-    }
-
     private static final class OnceTerminalSignalConsumer implements TerminalSignalConsumer {
 
         private final TerminalSignalConsumer delegate;
         // TODO: inline.
         private final AtomicBoolean once = new AtomicBoolean();
 
-        public OnceTerminalSignalConsumer(final TerminalSignalConsumer delegate) {
+        OnceTerminalSignalConsumer(final TerminalSignalConsumer delegate) {
             this.delegate = delegate;
         }
 
