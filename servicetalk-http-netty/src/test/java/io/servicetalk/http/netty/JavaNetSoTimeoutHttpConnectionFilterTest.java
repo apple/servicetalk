@@ -439,10 +439,6 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
                 .payloadBody(client().executionContext().bufferAllocator().fromAscii("World"));
     }
 
-    private static Single<StreamingHttpResponse> responseWith(Publisher<Buffer> payloadBody) {
-        return succeeded(responseRawWith(payloadBody));
-    }
-
     private static StreamingHttpResponse responseRawWith(Publisher<Buffer> payloadBody) {
         return newResponse(OK, HTTP_1_1, EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR,
                 DefaultHttpHeadersFactory.INSTANCE).payloadBody(payloadBody);
