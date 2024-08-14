@@ -18,16 +18,24 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.buffer.api.CompositeBuffer;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestExecutor;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.JavaNetSoTimeoutHttpConnectionFilter;
 import io.servicetalk.transport.api.ServerContext;
@@ -40,21 +48,34 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -63,9 +84,12 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class JavaNetSoTimeoutHttpConnectionFilterTest {
 
@@ -91,6 +115,9 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     private static ServerContext server;
     @Nullable
     private static BlockingHttpClient client;
+
+    @Nullable
+    private static TestExecutor timeoutExecutor;
 
     @BeforeAll
     static void setUp() throws Exception {
@@ -125,6 +152,8 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
                 .appendConnectionFilter(new JavaNetSoTimeoutHttpConnectionFilter(
                         (metaData, timeSource) -> metaData.context().get(READ_TIMEOUT_KEY)))
                 .buildBlocking();
+
+        timeoutExecutor = new TestExecutor();
     }
 
     @AfterAll
@@ -285,6 +314,120 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
         assertThat(e.getMessage(), startsWith("timeout"));
     }
 
+    @Test
+    void racingResponsesAreCleanedUp() {
+        AtomicBoolean isCancelled = new AtomicBoolean();
+        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
+        final Duration timeout = Duration.ofMillis(100);
+        Future<StreamingHttpResponse> result = applyFilter(timeout, responseSingle
+                .whenCancel(() -> isCancelled.set(true))).toFuture();
+
+        assertThat(responseSingle.isSubscribed(), is(true));
+        testExecutor().advanceTimeBy(100, TimeUnit.MILLISECONDS);
+
+        ExecutionException ex = assertThrows(ExecutionException.class, () -> result.get());
+        assertThat(ex.getCause(), isA(SocketTimeoutException.class));
+
+        // the response should have been cancelled.
+        assertThat(isCancelled.get(), is(true));
+
+        // Now send a 'losing' response to simulate the race condition.
+        AtomicBoolean responseDrained = new AtomicBoolean();
+        StreamingHttpResponse response = responseRawWith(Publisher.<Buffer>empty()
+                .afterFinally(() -> responseDrained.set(true)));
+        responseSingle.onSuccess(response);
+        assertThat(responseDrained.get(), is(true));
+    }
+
+    @Test
+    void timerIsCancelledOnSuccessfulResponse() throws Exception {
+        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
+        final Duration timeout = Duration.ofMillis(100);
+        Future<StreamingHttpResponse> responseFuture = applyFilter(timeout, responseSingle).toFuture();
+        responseSingle.awaitSubscribed();
+
+        responseSingle.onSuccess(responseRawWith(Publisher.empty()));
+        responseFuture.get();
+        assertThat(testExecutor().scheduledTasksPending(), is(0));
+    }
+
+    @Test
+    void timerLosingRaceDoesntTriggerRequestCancellation() throws Exception {
+        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
+        final Duration timeout = Duration.ofMillis(100);
+        AtomicBoolean responseCancelled = new AtomicBoolean();
+        Future<StreamingHttpResponse> responseFuture = applyFilter(timeout, responseSingle
+                .whenCancel(() -> responseCancelled.set(true)), true).toFuture();
+        responseSingle.awaitSubscribed();
+
+        responseSingle.onSuccess(responseRawWith(Publisher.empty()));
+        responseFuture.get();
+        assertThat(testExecutor().scheduledTasksPending(), is(1));
+        testExecutor().advanceTimeBy(100, TimeUnit.MILLISECONDS);
+        assertThat(testExecutor().scheduledTasksPending(), is(0));
+
+        assertThat(responseCancelled.get(), is(false));
+    }
+
+    @Test
+    void upstreamCancellationIsAlwaysPropagated() throws Exception {
+        // Note that this behavior is subjective: it could be reasonable that we latch on the first result and so
+        // if a response triggers before upstream cancellation, the upstream cancellation would not be propagated.
+        AtomicBoolean isCancelled = new AtomicBoolean();
+        TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
+        final Duration timeout = Duration.ofMillis(100);
+        CountDownLatch responseReceived = new CountDownLatch(1);
+        Cancellable cancellable = applyFilter(timeout, responseSingle)
+                .whenOnSuccess(resp -> responseReceived.countDown())
+                .toCompletable().subscribe();
+
+        responseSingle.awaitSubscribed();
+        responseSingle.onSubscribe(() -> isCancelled.set(true));
+        responseSingle.onSuccess(responseRawWith(Publisher.empty()));
+        responseReceived.await();
+        cancellable.cancel();
+        assertThat(isCancelled.get(), is(true));
+    }
+
+    private static Single<StreamingHttpResponse> applyFilter(Duration timeout, Single<StreamingHttpResponse> response) {
+        return applyFilter(timeout, response, false);
+    }
+
+    private static Single<StreamingHttpResponse> applyFilter(Duration timeout, Single<StreamingHttpResponse> response, boolean ignoreCancel) {
+        FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
+        // TODO: how do I consume the request?
+        ArgumentCaptor<StreamingHttpRequest> requestCaptor = ArgumentCaptor.forClass(StreamingHttpRequest.class);
+        when(connection.request(requestCaptor.capture())).thenAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                requestCaptor.getValue().messageBody().ignoreElements().toFuture().get();
+                return response;
+            }
+        });
+
+        Executor exec = ignoreCancel ? new DelegatingExecutor(testExecutor()) {
+            @Override
+            public Cancellable schedule(Runnable task, long delay, TimeUnit unit) throws RejectedExecutionException {
+                super.schedule(task, delay, unit);
+                return Cancellable.IGNORE_CANCEL;
+            }
+
+            @Override
+            public Cancellable schedule(Runnable task, Duration delay) throws RejectedExecutionException {
+                super.schedule(task, delay);
+                return Cancellable.IGNORE_CANCEL;
+            }
+        } : testExecutor();
+
+        return new JavaNetSoTimeoutHttpConnectionFilter(timeout, exec).create(connection)
+                .request(newRequest().toStreamingRequest());
+    }
+
+    private static TestExecutor testExecutor() {
+        assert timeoutExecutor != null;
+        return timeoutExecutor;
+    }
+
     private static BlockingHttpClient client() {
         assert client != null;
         return client;
@@ -293,6 +436,15 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     private static HttpRequest newRequest() {
         return client().post("/")
                 .payloadBody(client().executionContext().bufferAllocator().fromAscii("World"));
+    }
+
+    private static Single<StreamingHttpResponse> responseWith(Publisher<Buffer> payloadBody) {
+        return succeeded(responseRawWith(payloadBody));
+    }
+
+    private static StreamingHttpResponse responseRawWith(Publisher<Buffer> payloadBody) {
+        return newResponse(OK, HTTP_1_1, EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR,
+                DefaultHttpHeadersFactory.INSTANCE).payloadBody(payloadBody);
     }
 
     private static BlockingStreamingHttpRequest newStreamingRequest() {
