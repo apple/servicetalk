@@ -315,8 +315,10 @@ class BeforeFinallyHttpOperatorTest {
             payload.onError(payloadTerminal.cause());
         }
         if (discardEventsAfterCancel) {
-            // TODO: these are failing because cancellation happened before subscribing to the message body and now
-            //  we're skipping events.
+            // TODO: this branch is failing because cancellation happened before we subscribed to the payload body
+            //  so we didn't wrap it with anything. What should happen? If we don't do anything then we break
+            //  the RS pattern because the request payload stream wasn't cancelled, so if we must send something
+            //  or it is a hung stream.
             assertThat("Unexpected payload body items", payloadSubscriber.pollAllOnNext(), empty());
             assertThat("Payload body terminated unexpectedly",
                     payloadSubscriber.pollTerminal(100, MILLISECONDS), is(nullValue()));

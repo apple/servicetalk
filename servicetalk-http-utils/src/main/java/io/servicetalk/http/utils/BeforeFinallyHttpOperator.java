@@ -61,7 +61,18 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *                     .liftSync(new BeforeFinallyHttpOperator(tracker));
  * }</pre>
  *
- * We really want two things: to emit signals and to swallow all events after cancellation if so configured.
+ * What are the invariants that we want to support:
+ * - Single terminal event is called, eg only one of onComplete(), onError(..), or cancel().
+ * - if discardEventsAfterCancel is called and the `cancel()` operation 'wins', the `onError` and `onSuccess(response)`
+ *   pathways will not emit an event.
+ *   - Does that means we quit emitting from the message body as well?
+ *     - It has its own cancel notion: does that take over once the message body has been subscribed to, and does that
+ *       cancel() need honor the `discardEventsAfterCancel` flag?
+ * - Support multiple subscribes to the message body
+ *   - Does this mean that the first terminal event wins, or that the first subscribe gets to set the terminal event?
+ *     - I'd say first subscribe 'wins' since in most real cases the second will result in a
+ *       `DuplicateSubscribeException`.
+ *
  */
 public final class BeforeFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
@@ -176,7 +187,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                 stateUpdater.compareAndSet(this,
                                         PROCESSING_PAYLOAD, RESPONSE_COMPLETE) ?
                                         new MessageBodySubscriber(messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
-                                        messageBodySubscriber)
+                                        discardEventsAfterCancel ? new CancelledSubscriber(messageBodySubscriber) : messageBodySubscriber)
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
@@ -297,6 +308,44 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 beforeFinally.onComplete();
                 subscriber.onComplete();
             }
+        }
+    }
+
+    // TODO: do we really need this?
+    private static final class CancelledSubscriber implements Subscriber<Object> {
+
+        private final Subscriber<Object> delegate;
+
+        CancelledSubscriber(final Subscriber<Object> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSubscribe(Subscription subscription) {
+            subscription.cancel();
+            delegate.onSubscribe(new Subscription() {
+                @Override
+                public void request(long n) {
+                    // TODO: validate `n`
+                }
+
+                @Override
+                public void cancel() {
+                }
+            });
+            delegate.onError(new CancellationException("Subscribed to response body post cancel."));
+        }
+
+        @Override
+        public void onNext(@Nullable Object o) {
+        }
+
+        @Override
+        public void onError(Throwable t) {
+        }
+
+        @Override
+        public void onComplete() {
         }
     }
 
