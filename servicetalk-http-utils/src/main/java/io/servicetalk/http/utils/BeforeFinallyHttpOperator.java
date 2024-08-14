@@ -45,7 +45,13 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
  * across both sources.</p>
  * <p>This operator ensures that the provided callback is triggered just once whenever the sources reach a terminal
- * state across both sources.</p>
+ * state across both sources. An important question is when the ownership of the callback is transferred from the
+ * {@link Single} source and the payload {@link Publisher}. In this case ownership is transferred the first time the
+ * payload is subscribed to. This means that if a cancellation of the response {@link Single} occurs after the response
+ * has been emitted but before the message body has been subscribed to, the callback will observe a cancel. However, if
+ * the message payload has been subscribed to, the cancellation of the {@link Single} will have no effect and the result
+ * is dictated by the terminal event of the payload body. If the body is subscribed to multiple times, only the first
+ * subscribe will receive ownership of the terminal events.</p>
  *
  * Example usage tracking the begin and end of a request:
  *
@@ -60,19 +66,6 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new BeforeFinallyHttpOperator(tracker));
  * }</pre>
- *
- * What are the invariants that we want to support:
- * - Single terminal event is called, eg only one of onComplete(), onError(..), or cancel().
- * - if discardEventsAfterCancel is called and the `cancel()` operation 'wins', the `onError` and `onSuccess(response)`
- *   pathways will not emit an event.
- *   - Does that means we quit emitting from the message body as well?
- *     - It has its own cancel notion: does that take over once the message body has been subscribed to, and does that
- *       cancel() need honor the `discardEventsAfterCancel` flag?
- * - Support multiple subscribes to the message body
- *   - Does this mean that the first terminal event wins, or that the first subscribe gets to set the terminal event?
- *     - I'd say first subscribe 'wins' since in most real cases the second will result in a
- *       `DuplicateSubscribeException`.
- *
  */
 public final class BeforeFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
