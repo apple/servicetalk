@@ -68,6 +68,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {    // F
                                        final ExecutionContext<?> executionContext) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
+        delegate = delegate.andThen(new TransportConfigInitializer(config.transportConfig()));
+
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     channel -> new TcpConnectionInfo(channel,

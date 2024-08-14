@@ -52,4 +52,11 @@ public class DelayedCancellable implements Cancellable {
             oldCancellable.cancel();
         }
     }
+
+    /**
+     * Ignores any subsequent calls to {@link #cancel()}, preventing propagating the cancellation further up the stream.
+     */
+    protected final void ignoreCancel() {
+        currentUpdater.set(this, IGNORE_CANCEL);
+    }
 }

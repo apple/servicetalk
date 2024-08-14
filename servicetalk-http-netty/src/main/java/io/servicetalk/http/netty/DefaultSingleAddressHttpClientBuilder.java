@@ -60,6 +60,7 @@ import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportConfig;
 
 import io.netty.handler.ssl.SslContext;
 import org.slf4j.Logger;
@@ -644,6 +645,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
         config.inferSniHostname(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> transportConfig(final TransportConfig transportConfig) {
+        config.tcpConfig().transportConfig(transportConfig);
         return this;
     }
 

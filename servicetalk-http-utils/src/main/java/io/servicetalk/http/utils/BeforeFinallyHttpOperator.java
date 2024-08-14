@@ -197,8 +197,9 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 // body or risk leaking hot resources which are commonly attached to a message body.
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 if (!discardEventsAfterCancel) {
-                    subscriber.onSuccess(response.transformMessageBody(payload ->
-                            Publisher.failed(new CancellationException("Received response post cancel."))));
+                    // Wrap with defer to capture the Subscriber's stack-trace
+                    subscriber.onSuccess(response.transformMessageBody(payload -> Publisher.defer(() ->
+                            Publisher.failed(new CancellationException("Received response post cancel")))));
                 }
             }
             dereferenceSubscriber();

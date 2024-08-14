@@ -19,6 +19,8 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportConfig;
+import io.servicetalk.transport.api.TransportConfigBuilder;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 
 import io.netty.channel.ChannelOption;
@@ -41,6 +43,8 @@ import static java.util.Objects.requireNonNull;
  */
 abstract class AbstractTcpConfig {
 
+    private static final TransportConfig DEFAULT_TRANSPORT_CONFIG = new TransportConfigBuilder().build();
+
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
@@ -48,6 +52,7 @@ abstract class AbstractTcpConfig {
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private UserDataLoggerConfig wireLoggerConfig;
+    private TransportConfig transportConfig = DEFAULT_TRANSPORT_CONFIG;
 
     protected AbstractTcpConfig() {
         socketOption(SO_KEEPALIVE, true);
@@ -58,6 +63,7 @@ abstract class AbstractTcpConfig {
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
         wireLoggerConfig = from.wireLoggerConfig;
+        transportConfig = from.transportConfig;
     }
 
     @Nullable
@@ -77,6 +83,10 @@ abstract class AbstractTcpConfig {
     @Nullable
     final UserDataLoggerConfig wireLoggerConfig() {
         return wireLoggerConfig;
+    }
+
+    final TransportConfig transportConfig() {
+        return transportConfig;
     }
 
     /**
@@ -124,5 +134,14 @@ abstract class AbstractTcpConfig {
                                         final LogLevel logLevel,
                                         final BooleanSupplier logUserData) {
         wireLoggerConfig = new DefaultUserDataLoggerConfig(loggerName, logLevel, logUserData);
+    }
+
+    /**
+     * Sets the transport configuration.
+     *
+     * @param transportConfig {@link TransportConfig} to use
+     */
+    public final void transportConfig(final TransportConfig transportConfig) {
+        this.transportConfig = requireNonNull(transportConfig);
     }
 }
