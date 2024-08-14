@@ -393,7 +393,8 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
         return applyFilter(timeout, response, false);
     }
 
-    private static Single<StreamingHttpResponse> applyFilter(Duration timeout, Single<StreamingHttpResponse> response, boolean ignoreCancel) {
+    private static Single<StreamingHttpResponse> applyFilter(Duration timeout, Single<StreamingHttpResponse> response,
+                                                             boolean ignoreCancel) {
         FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
         // TODO: how do I consume the request?
         ArgumentCaptor<StreamingHttpRequest> requestCaptor = ArgumentCaptor.forClass(StreamingHttpRequest.class);
