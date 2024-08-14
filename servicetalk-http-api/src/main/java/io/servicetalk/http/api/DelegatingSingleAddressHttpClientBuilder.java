@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportConfig;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
@@ -218,6 +219,12 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
     @Override
     public SingleAddressHttpClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
         delegate = delegate.inferSniHostname(shouldInfer);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> transportConfig(final TransportConfig transportConfig) {
+        delegate = delegate.transportConfig(transportConfig);
         return this;
     }
 

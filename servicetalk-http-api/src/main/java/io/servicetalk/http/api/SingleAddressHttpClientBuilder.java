@@ -29,6 +29,8 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportConfig;
+import io.servicetalk.transport.api.TransportConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
@@ -401,4 +403,17 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}
      */
     SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer);
+
+    /**
+     * Set the transport configuration.
+     *
+     * @param transportConfig {@link TransportConfig} to use
+     * @return {@code this}
+     * @see TransportConfigBuilder
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default SingleAddressHttpClientBuilder<U, R> transportConfig(TransportConfig transportConfig) {
+        throw new UnsupportedOperationException("Setting transport config is not yet supported by " +
+                getClass().getName());
+    }
 }
