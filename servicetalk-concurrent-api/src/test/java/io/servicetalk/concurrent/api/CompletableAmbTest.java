@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -32,10 +31,9 @@ import static org.hamcrest.Matchers.is;
 
 class CompletableAmbTest {
 
-    private TestCompletable first;
-    private TestCompletable second;
-    private TestCompletableSubscriber subscriber;
-    private TestCancellable cancellable;
+    private final TestCompletable first = new TestCompletable();
+    private final TestCompletable second = new TestCompletable();
+    private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
 
     private enum AmbParam {
         AMB_WITH {
@@ -60,14 +58,6 @@ class CompletableAmbTest {
         abstract BiFunction<Completable, Completable, Completable> get();
     }
 
-    @BeforeEach
-    void beforeEach() {
-        first = new TestCompletable();
-        second = new TestCompletable();
-        subscriber = new TestCompletableSubscriber();
-        cancellable = new TestCancellable();
-    }
-
     private void setUp(final BiFunction<Completable, Completable, Completable> ambSupplier) {
         toSource(ambSupplier.apply(first, second)).subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -81,6 +71,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -89,6 +80,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -97,6 +89,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -105,6 +98,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -113,6 +107,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
         second.onComplete();
     }
 
@@ -122,6 +117,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
         first.onComplete();
     }
 
@@ -131,6 +127,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
@@ -140,6 +137,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
@@ -149,6 +147,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
@@ -158,6 +157,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
@@ -167,6 +167,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
+        verifyNotCancelled(first);
         second.onComplete();
     }
 
@@ -176,6 +177,7 @@ class CompletableAmbTest {
         setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
+        verifyNotCancelled(second);
         first.onComplete();
     }
 
@@ -189,8 +191,15 @@ class CompletableAmbTest {
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
-    private void verifyCancelled(final TestCompletable other) {
-        other.onSubscribe(cancellable);
-        assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
+    private static void verifyNotCancelled(final TestCompletable completable) {
+        final TestCancellable cancellable = new TestCancellable();
+        completable.onSubscribe(cancellable);
+        assertThat("Completable cancelled when no cancellation was expected.", cancellable.isCancelled(), is(false));
+    }
+
+    private static void verifyCancelled(final TestCompletable completable) {
+        final TestCancellable cancellable = new TestCancellable();
+        completable.onSubscribe(cancellable);
+        assertThat("Completable not cancelled, but cancellation was expected.", cancellable.isCancelled(), is(true));
     }
 }

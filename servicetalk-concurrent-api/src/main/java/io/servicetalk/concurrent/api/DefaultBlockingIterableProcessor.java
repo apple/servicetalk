@@ -103,7 +103,7 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
 
         @Override
         public void close() {
-            terminal = TerminalNotification.error(new CancellationException());
+            terminal = TerminalNotification.error(new CancellationException("BlockingIterator closed"));
         }
 
         @Override

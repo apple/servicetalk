@@ -90,11 +90,13 @@ final class AmbSingles<T> extends Single<T> {
 
         @Override
         public void onSuccess(@Nullable final T result) {
+            ignoreCancel();
             state.trySuccess(result);
         }
 
         @Override
         public void onError(final Throwable t) {
+            ignoreCancel();
             state.tryError(t);
         }
     }
