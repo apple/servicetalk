@@ -174,8 +174,8 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                             }))
                             // Defer timeout counter until after the request payload body is complete
                             .<StreamingHttpResponse>liftSync(subscriber ->
-                                    new RequestTimeoutSubscriber(subscriber, SourceAdapters.fromSource(requestProcessor),
-                                            timeout, timeoutExecutor))
+                                    new RequestTimeoutSubscriber(subscriber,
+                                            SourceAdapters.fromSource(requestProcessor), timeout, timeoutExecutor))
                             .shareContextOnSubscribe();
                 });
             }
@@ -197,13 +197,12 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         @SuppressWarnings("unused")
         private volatile int once;
 
-        public RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
+        RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
                                         Duration timeout, Executor timeoutExecutor) {
             this.delegate = delegate;
             this.requestComplete = requestComplete;
             this.timeout = timeout;
             this.timeoutExecutor = timeoutExecutor;
-
         }
 
         @Override
@@ -287,7 +286,8 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
     }
 
     private static StacklessSocketTimeoutException newStacklessSocketTimeoutException(final String message) {
-        return StacklessSocketTimeoutException.newInstance(message, JavaNetSoTimeoutHttpConnectionFilter.class, "request");
+        return StacklessSocketTimeoutException.newInstance(message, JavaNetSoTimeoutHttpConnectionFilter.class,
+                "request");
     }
 
     private static final class StacklessSocketTimeoutException extends SocketTimeoutException {
