@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.TransportConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
@@ -92,6 +93,12 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config, final boolean acceptInsecureConnections) {
         delegate = delegate.sslConfig(config, acceptInsecureConnections);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder transportConfig(final TransportConfig transportConfig) {
+        delegate = delegate.transportConfig(transportConfig);
         return this;
     }
 

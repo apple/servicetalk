@@ -61,7 +61,7 @@ interface LatencyTracker {
      */
     final class EMA implements LatencyTracker {
 
-        private final double tau;
+        private final double invTau;
         @Nullable
         private final LatencyTracker calmTracker;
         @Nullable
@@ -75,7 +75,7 @@ interface LatencyTracker {
          * @param halfLifeNs The decay window of the EMA.
          */
         EMA(final long halfLifeNs) {
-            this.tau = halfLifeNs / log(2);
+            this.invTau = 1.0 / (halfLifeNs / log(2));
             this.calmTracker = null;
             this.calmRatio = null;
         }
@@ -94,7 +94,7 @@ interface LatencyTracker {
         EMA(final long halfLifeNs, final LatencyTracker calmTracker,
             final BiFunction<Double, Double, Float> calmRatio) {
             NumberUtils.ensurePositive(halfLifeNs, "halfLifeNs");
-            this.tau = halfLifeNs / log(2);
+            this.invTau = 1.0 / (halfLifeNs / log(2));
             this.calmTracker = requireNonNull(calmTracker);
             this.calmRatio = requireNonNull(calmRatio);
         }
@@ -112,7 +112,7 @@ interface LatencyTracker {
                 }
             }
 
-            final double tmp = (timestampNs - lastTimeNanos) / tau;
+            final double tmp = (timestampNs - lastTimeNanos) * invTau;
             final double w = exp(-tmp);
             ewma = ewma * w + latency * (1d - w);
             lastTimeNanos = timestampNs;

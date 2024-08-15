@@ -31,6 +31,8 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportConfig;
+import io.servicetalk.transport.api.TransportConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
@@ -113,12 +115,25 @@ public interface HttpServerBuilder {
     }
 
     /**
+     * Set the transport configuration.
+     *
+     * @param transportConfig {@link TransportConfig} to use.
+     * @return {@code this}.
+     * @see TransportConfigBuilder
+     */
+    // FIXME: 0.43 - consider removing default impl
+    default HttpServerBuilder transportConfig(TransportConfig transportConfig) {
+        throw new UnsupportedOperationException("Setting transport config is not yet supported by " +
+                getClass().getName());
+    }
+
+    /**
      * Adds a {@link SocketOption} that is applied to connected/accepted socket channels.
      *
      * @param <T> the type of the value.
      * @param option the option to apply.
      * @param value the value.
-     * @return this.
+     * @return {@code this}.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
      */
@@ -129,7 +144,7 @@ public interface HttpServerBuilder {
      * @param <T> the type of the value.
      * @param option the option to apply.
      * @param value the value.
-     * @return this.
+     * @return {@code this}.
      * @see StandardSocketOptions
      * @see ServiceTalkSocketOptions
      */

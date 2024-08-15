@@ -22,6 +22,8 @@ import java.util.function.BiFunction;
 
 /**
  * Configuration options for <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
+ *
+ * @see RedirectConfigBuilder
  */
 public interface RedirectConfig {
 

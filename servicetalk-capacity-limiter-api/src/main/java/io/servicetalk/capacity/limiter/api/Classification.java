@@ -28,7 +28,7 @@ package io.servicetalk.capacity.limiter.api;
  * future supported classifications. This is an implementation detail of the respective {@link CapacityLimiter}.
  * <p>
  * Classification is treated as a hint for a {@link CapacityLimiter} and are expected to be strictly respected,
- * they are a best effort approach to communicate user's desire to the {@link CapacityLimiter}.
+ * as they are the best effort approach to communicate user's desire to the {@link CapacityLimiter}.
  */
 @FunctionalInterface
 public interface Classification {

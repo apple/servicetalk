@@ -15,10 +15,11 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TimeoutSingle;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -30,6 +31,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -120,13 +122,9 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
-                // Could this be the problem? `Single.timeout` will orphan the result in the race case.
-                final Single<StreamingHttpResponse> timeoutResponse =
-                        // response.timeout(timeout, useForTimeout); // this appears to be _one of_ the leaks.
-                    new TimeoutSingle<>(response, timeout, resp -> {
-                        // drain the body.
-                        toSource(resp.payloadBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                    }, useForTimeout);
+                final Single<StreamingHttpResponse> timeoutResponse = response
+                        .<StreamingHttpResponse>liftSync(CleanupSubscriber::new)
+                        .timeout(timeout, useForTimeout);
 
                 if (fullRequestResponse) {
                     final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();
@@ -158,6 +156,66 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         assert strategy != null;
         return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
                 context.executor() : context.ioExecutor();
+    }
+
+    // This is responsible for ensuring that we don't abandon the response resources due to the use of Single.timeout.
+    // It does so by retaining a reference to the StreamingHttpResponse in case we receive a cancellation. It will
+    // then attempt to drain the resource. We're protected from multiple subscribes because the TimeoutSingle will
+    // short circuit also on upstream cancellation, although that is not obviously correct behavior.
+    private static final class CleanupSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
+
+        private static final AtomicReferenceFieldUpdater<CleanupSubscriber, Object> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(CleanupSubscriber.class, Object.class, "state");
+
+        private static final String COMPLETE = "complete";
+
+        private final SingleSource.Subscriber<? super StreamingHttpResponse> delegate;
+        @Nullable
+        private volatile Object state;
+
+        CleanupSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSubscribe(Cancellable cancellable) {
+            delegate.onSubscribe(() -> {
+                try {
+                    Object current = stateUpdater.getAndSet(this, COMPLETE);
+                    if (current instanceof StreamingHttpResponse) {
+                        // Because of the nature of the Single.timeout(..) operator we know that if we get a cancel
+                        // call the message will never be escape the `.timeout(..)` operator because it will have
+                        // 'completed'. Therefore, it is our responsibility to clean up the message body. This behavior
+                        // is verified by the `responseCompletesBeforeTimeoutWithFollowingCancel` test in the suite.
+                        clean((StreamingHttpResponse) current);
+                    }
+                } finally {
+                    cancellable.cancel();
+                }
+            });
+        }
+
+        @Override
+        public void onSuccess(@Nullable StreamingHttpResponse result) {
+            assert result != null;
+            if (stateUpdater.compareAndSet(this, null, result)) {
+                // We win.
+                delegate.onSuccess(result);
+            } else {
+                // we lost to cancellation. No need to send it forward.
+                clean(result);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            assert !(state instanceof StreamingHttpResponse);
+            delegate.onError(t);
+        }
+
+        private void clean(StreamingHttpResponse httpResponse) {
+            toSource(httpResponse.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+        }
     }
 
     private static final class MappedTimeoutException extends TimeoutException {

@@ -21,32 +21,31 @@ import javax.annotation.Nullable;
 
 /**
  * A provider of capacity for a client or server.
- * <br><br>
- * <h2>Capacity</h2>
+ * <p>
+ * <strong>Capacity</strong>
  * Capacity for an entity is defined as the number of concurrent requests that it can process without significantly
  * affecting resource consumption or likelihood to successfully process in a timely manner given currently
  * available resources vs resources required to process the new request.
  * This capacity offered can be static or dynamic and the semantics of determination is left to implementations.
- * <br><br>
- * <h2>Consumption</h2>
+ * <p>
+ * <strong>Consumption</strong>
  * As the capacity is defined in terms of concurrent requests, as {@link #tryAcquire(Classification, ContextMap)
  * new requests are seen}, some portion of this capacity is deemed to be consumed till a subsequent callback marks
  * the end of processing for that request. Number of times that {@link #tryAcquire(Classification, ContextMap)}
  * is called without a corresponding termination callback is termed as demand.
- * <br><br>
- * <h2>Request Lifetime</h2>
+ * <p>
+ * <strong>Request Lifetime</strong>
  * Request processing starts when {@link #tryAcquire(Classification, ContextMap)} is called and returns a non-null
  * {@link Ticket} and terminates when either one of the following occurs:
  * <ul>
- *     <li>When the request is successfully completed =&gt; (Default: {@link Ticket#completed()})
- *     <li>When the request fails due to an external capacity rejection i.e., dropped =&gt; (Default:
- *     {@link Ticket#dropped()})
- *     </li>
- *     <li>When the request fails due to a local error =&gt; (Default: {@link Ticket#failed(Throwable)})
- *     <li>When the request is cancelled (Default: {@link Ticket#dropped()})
+ *     <li>When the request is successfully completed (Default: {@link Ticket#completed()})</li>
+ *     <li>When the request fails due to an external capacity rejection i.e., dropped (Default:
+ *     {@link Ticket#dropped()})</li>
+ *     <li>When the request fails due to a local error (Default: {@link Ticket#failed(Throwable)})</li>
+ *     <li>When the request is cancelled (Default: {@link Ticket#ignored()})</li>
  * </ul>
- * <br>
- * <h2>Request Classifications</h2>
+ * <p>
+ * <strong>Request Classifications</strong>
  * Requests can be classified with different classes, that can be taken into consideration when a
  * {@link CapacityLimiter} implementation supports this.
  * {@link Classification} is used as hint from the user of the importance of the incoming request, and are not
@@ -57,6 +56,7 @@ public interface CapacityLimiter {
 
     /**
      * Identifying name for this {@link CapacityLimiter}.
+     *
      * @return the name of this {@link CapacityLimiter}.
      */
     String name();
@@ -75,19 +75,21 @@ public interface CapacityLimiter {
     Ticket tryAcquire(Classification classification, @Nullable ContextMap context);
 
     /**
-     * Representation of the state of the {@link CapacityLimiter} when a {@link Ticket} is issued.
+     * Representation of the state of the {@link CapacityLimiter} when the {@link Ticket} is issued.
      */
     interface LimiterState {
         /**
          * Returns the remaining allowance of the {@link CapacityLimiter} when the {@link Ticket} was issued.
+         *
          * @return the remaining allowance of the {@link CapacityLimiter} when the {@link Ticket} was issued.
          */
         int remaining();
 
         /**
-         * Returns the current pending (in use capacity) demand.
+         * Returns the current pending (in use capacity) demand when the {@link Ticket} was issued.
+         * <p>
          * If the pending is unknown a negative value i.e., -1 is allowed to express this.
-         * @return the current pending (in use capacity) demand.
+         * @return the current pending (in use capacity) demand when the {@link Ticket} was issued.
          */
         int pending();
     }
@@ -106,6 +108,7 @@ public interface CapacityLimiter {
 
         /**
          * Representation of the state of the {@link CapacityLimiter} when this {@link Ticket} was issued.
+         *
          * @return the {@link LimiterState state} of the limiter at the time this {@link Ticket} was issued.
          */
         LimiterState state();
@@ -120,8 +123,10 @@ public interface CapacityLimiter {
         int completed();
 
         /**
-         * Callback to indicate that a request was dropped externally (eg. peer rejection) due to capacity
-         * issues. Loss based algorithms tend to reduce the limit by a multiplier on such events.
+         * Callback to indicate that a request was dropped externally (e.g. peer rejection) due to capacity
+         * issues.
+         * <p>
+         * Note that loss-based algorithms tend to reduce the limit by a multiplier on such events.
          *
          * @return An integer as hint (if positive), that represents an estimated remaining capacity after
          * this {@link Ticket ticket's} terminal callback. If supported, a positive number means there is capacity.
@@ -130,8 +135,9 @@ public interface CapacityLimiter {
         int dropped();
 
         /**
-         * Callback to indicate that a request has failed. Algorithms may choose to act upon failures ie. Circuit
-         * Breaking.
+         * Callback to indicate that a request has failed.
+         * <p>
+         * Algorithms may choose to act upon failures (i.e. Circuit Breaking).
          *
          * @param error the failure cause.
          * @return An integer as hint (if positive), that represents an estimated remaining capacity after
@@ -142,8 +148,9 @@ public interface CapacityLimiter {
 
         /**
          * Callback to indicate that a request had not a capacity deterministic termination.
+         * <p>
          * Ignoring a {@link Ticket} is a way to indicate to the {@link CapacityLimiter} that this operation's
-         * termination, should not be considered towards a decision for modifying the limits. e.g., An algorithm that
+         * termination should not be considered towards a decision for modifying the limits. e.g., An algorithm that
          * measures delays (time start - time end), can use that to ignore a particular result from the feedback loop.
          *
          * @return An integer as hint (if positive), that represents an estimated remaining capacity after

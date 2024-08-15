@@ -10,6 +10,7 @@ jobs:
     name: Snapshot JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         java: [ 8, 11 ]
     steps:

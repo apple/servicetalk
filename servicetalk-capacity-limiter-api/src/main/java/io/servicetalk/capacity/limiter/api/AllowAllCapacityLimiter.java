@@ -24,7 +24,7 @@ import static java.lang.Integer.MAX_VALUE;
 final class AllowAllCapacityLimiter implements CapacityLimiter {
     static final CapacityLimiter INSTANCE = new AllowAllCapacityLimiter();
     private static final int UNSUPPORTED = -1;
-    private static final Ticket noOpToken = new DefaultTicket();
+    private static final Ticket DEFAULT_TICKET = new DefaultTicket();
 
     private AllowAllCapacityLimiter() {
         // Singleton
@@ -37,7 +37,7 @@ final class AllowAllCapacityLimiter implements CapacityLimiter {
 
     @Override
     public Ticket tryAcquire(final Classification classification, @Nullable final ContextMap context) {
-        return noOpToken;
+        return DEFAULT_TICKET;
     }
 
     @Override
@@ -73,7 +73,7 @@ final class AllowAllCapacityLimiter implements CapacityLimiter {
 
         @Override
         public int pending() {
-            return -1;
+            return UNSUPPORTED;
         }
 
         @Override
