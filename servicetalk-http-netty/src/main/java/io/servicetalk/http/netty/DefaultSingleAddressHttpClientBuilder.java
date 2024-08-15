@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
-import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.DelegatingServiceDiscoverer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -33,7 +32,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
@@ -57,6 +56,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
+import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
@@ -68,7 +68,6 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportConfig;
 
 import io.netty.handler.ssl.SslContext;
-import io.servicetalk.transport.api.TransportObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -375,10 +374,38 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate, StreamingHttpRequest request) {
-
-                    return delegate.request(request);
+                    return delegate.request(request).liftSync(new BeforeFinallyHttpOperator(new Tracker()));
                 }
             };
+        }
+
+        private final class Tracker implements TerminalSignalConsumer {
+
+            private volatile boolean finished;
+
+            @Override
+            public void onComplete() {
+                finished = true;
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                finished = true;
+            }
+
+            @Override
+            public void cancel() {
+                finished = true;
+            }
+
+            @Override
+            protected void finalize() throws Throwable {
+                if (!finished) {
+                    LOGGER.error("{}: Leaked tracker detected", name);
+                    finished = true;
+                }
+                super.finalize();
+            }
         }
     }
 

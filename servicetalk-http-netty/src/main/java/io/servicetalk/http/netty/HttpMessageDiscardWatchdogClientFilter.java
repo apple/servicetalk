@@ -116,7 +116,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                     LOGGER.warn("cleaner: Discovered un-drained HTTP response message body which has " +
                                             "been dropped by user code - this is a strong indication of a bug " +
                                             "in a user-defined filter. Response payload (message) body must " +
-                                            "be fully consumed before discarding.");
+                                            "be fully consumed before discarding. Class: {}", cause.getClass().getSimpleName());
                                 }
                                 return Single.<StreamingHttpResponse>failed(cause).shareContextOnSubscribe();
                             });

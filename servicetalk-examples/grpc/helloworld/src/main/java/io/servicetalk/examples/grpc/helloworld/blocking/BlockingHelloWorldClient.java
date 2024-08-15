@@ -27,6 +27,7 @@ import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
+import io.servicetalk.http.utils.JavaNetSoTimeoutHttpConnectionFilter;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 
 import java.time.Duration;
@@ -36,7 +37,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
@@ -68,9 +68,9 @@ public final class BlockingHelloWorldClient {
         final CountDownLatch latch = new CountDownLatch(numClients);
         final AtomicBoolean finished = new AtomicBoolean();
         ExecutorService executor = Executors.newCachedThreadPool();
-        AtomicLong counter = new AtomicLong();
         final AtomicInteger consecutiveFailures = new AtomicInteger();
         final int failureLimit = 600;
+        final Output output = new Output();
 
         for (int i = 0; i < numClients; i++) {
             executor.execute(() -> {
@@ -78,17 +78,19 @@ public final class BlockingHelloWorldClient {
                     try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                             .defaultTimeout(Duration.ofMillis(50))
                             .initializeHttp(http -> {
-                                http.appendClientFilter(resilienceHttpClientFilter);
+                                http.appendConnectionFilter(
+                                        new JavaNetSoTimeoutHttpConnectionFilter(Duration.ofMillis(50)))
+                                .appendClientFilter(resilienceHttpClientFilter);
                             })
                             .buildBlocking(new ClientFactory())) {
                         while (!finished.get()) {
                             try {
                                 HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
                                 reply.getMessage();
-                                System.out.print(".");
+                                output.success();
                                 consecutiveFailures.set(0);
                             } catch (Exception ex) {
-                                System.out.print("!");
+                                output.failed();
                                 if (consecutiveFailures.incrementAndGet() >= failureLimit && finished.compareAndSet(false, true)) {
                                     System.gc(); // hopefully this will hit the finalizers and emit log statements.
                                     try {
@@ -99,9 +101,6 @@ public final class BlockingHelloWorldClient {
                                     System.gc();
                                     System.out.printf("\nConsecutive failure threshold reached (%d). Terminating.\n", failureLimit);
                                 }
-                            }
-                            if (counter.incrementAndGet() % 100 == 0) {
-                                System.out.print('\n');
                             }
                             Thread.sleep(100);
                         }
@@ -117,5 +116,32 @@ public final class BlockingHelloWorldClient {
         serverContext.close();
         executor.shutdown();
         System.out.println("Terminating.");
+    }
+
+    private static class Output {
+        private long counter;
+
+        void success() {
+            emit('.');
+        }
+
+        void failed() {
+            emit('!');
+        }
+
+        private synchronized void emit(char result) {
+            if (true) {
+                return;
+            }
+            if (newline()) {
+                System.out.println(result);
+            } else {
+                System.out.print(result);
+            }
+        }
+
+        private boolean newline() {
+            return ++counter % 100 == 0;
+        }
     }
 }
