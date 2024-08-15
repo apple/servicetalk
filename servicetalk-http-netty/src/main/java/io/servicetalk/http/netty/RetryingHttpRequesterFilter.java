@@ -241,10 +241,6 @@ public final class RetryingHttpRequesterFilter
             // re-applying operators duplicates logic that isn't desirable and lead to StackOverflowException.
             final Publisher<Object> originalMessageBody = request.messageBody();
             final AtomicReference<ContextMap> contextRef = new AtomicReference<>();
-            if (true) {
-                // effectively disable retries to see if the system becomes stable if they're disabled.
-                return delegate.request(request);
-            }
             Single<StreamingHttpResponse> single = Single.defer(() -> {
                 final Single<StreamingHttpResponse> reqSingle = delegate.request(
                         request.transformMessageBody(mayReplayRequestPayload ?

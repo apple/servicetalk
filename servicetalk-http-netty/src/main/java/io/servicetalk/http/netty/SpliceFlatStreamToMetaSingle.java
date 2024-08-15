@@ -102,7 +102,6 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         @SuppressWarnings("unused")
         private volatile Object maybePayloadSub;
 
-
         /**
          * Once a {@link #maybePayloadSub} is set to a {@link PublisherSource.Subscriber} we cache a copy in a
          * non-volatile field to allow caching in register and avoid instanceof and casting on the hot path.
