@@ -182,7 +182,8 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         };
     }
 
-    private static final class RequestTimeoutSubscriber implements Subscriber<StreamingHttpResponse> {
+    // package private for testing purposes
+    static final class RequestTimeoutSubscriber implements Subscriber<StreamingHttpResponse> {
 
         private static final AtomicIntegerFieldUpdater<RequestTimeoutSubscriber> onceUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(RequestTimeoutSubscriber.class, "once");
