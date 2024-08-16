@@ -1787,9 +1787,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore, the result is
      * said to be <strong>ambiguous</strong> relative to which source it originated from. After the first source
-     * terminates the non-terminated source will be cancelled.
+     * terminates, only the non-terminated source will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1801,7 +1801,7 @@ public abstract class Single<T> {
      *
      * @param other {@link Single} to subscribe to and race with this {@link Single} to propagate to the return value.
      * @return A new {@link Single} that terminates with the result (either success or error) of either this
-     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore, the result is
      * said to be <strong>ambiguous</strong> relative to which source it originated from.
      * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
@@ -2315,9 +2315,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
-     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
-     * cancelled.
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates, only the non-terminated sources
+     * will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2330,7 +2330,7 @@ public abstract class Single<T> {
      * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
      * relative to which source it originated from.
      * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
@@ -2341,9 +2341,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
-     * relative to which source it originated from. After the first source terminates the non-terminated sources will be
-     * cancelled.
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates, only the non-terminated sources
+     * will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2356,7 +2356,7 @@ public abstract class Single<T> {
      * @param singles {@link Single}s to subscribe to and race to propagate to the return value.
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
      * relative to which source it originated from.
      * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
@@ -2366,7 +2366,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates, only the non-terminated sources
+     * will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2380,6 +2382,7 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
+     * @see #amb(Single[])
      * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
@@ -2389,7 +2392,9 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
-     * passed {@code singles} that terminates first.
+     * passed {@code singles} that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+     * relative to which source it originated from. After the first source terminates, only the non-terminated sources
+     * will be cancelled.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2403,6 +2408,7 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
+     * @see #amb(Iterable)
      * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> anyOf(final Iterable<Single<? extends T>> singles) {

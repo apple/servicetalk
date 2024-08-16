@@ -55,6 +55,9 @@ public class DelayedCancellable implements Cancellable {
 
     /**
      * Ignores any subsequent calls to {@link #cancel()}, preventing propagating the cancellation further up the stream.
+     * <p>
+     * Note: if {@link #delayedCancellable(Cancellable)} is called after this method, the provided {@link Cancellable}
+     * will be immediately cancelled to prevent leakage of resources.
      */
     protected final void ignoreCancel() {
         currentUpdater.set(this, IGNORE_CANCEL);
