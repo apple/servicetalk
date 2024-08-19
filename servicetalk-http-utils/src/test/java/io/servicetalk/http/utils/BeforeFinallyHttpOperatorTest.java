@@ -36,6 +36,7 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,7 +77,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.atMostOnce;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -90,6 +91,11 @@ class BeforeFinallyHttpOperatorTest {
 
     @Mock
     private TerminalSignalConsumer beforeFinally;
+
+    @AfterEach
+    void ensureOnlyOneSignal() {
+        verifyNoMoreInteractions(beforeFinally);
+    }
 
     @SuppressWarnings("unused")
     private static Stream<Arguments> booleanTerminalNotification() {
@@ -111,7 +117,6 @@ class BeforeFinallyHttpOperatorTest {
         verify(beforeFinally).onComplete();
 
         subscriber.verifyNullResponseReceived();
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -176,7 +181,6 @@ class BeforeFinallyHttpOperatorTest {
             Exception ex = assertThrows(Exception.class, () -> subscriber.response.payloadBody().toFuture().get());
             assertThat(ex.getCause(), instanceOf(CancellationException.class));
         }
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -199,7 +203,6 @@ class BeforeFinallyHttpOperatorTest {
         } else {
             subscriber.verifyNullResponseReceived();
         }
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -222,7 +225,6 @@ class BeforeFinallyHttpOperatorTest {
         } else {
             assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
         }
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")
@@ -265,7 +267,6 @@ class BeforeFinallyHttpOperatorTest {
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
-        verifyNoMoreInteractions(beforeFinally);
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -354,6 +355,7 @@ class BeforeFinallyHttpOperatorTest {
         assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
         payloadSubscriber.awaitSubscription().cancel();
         assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
+        verify(beforeFinally).cancel();
 
         payload.onNext(EMPTY_BUFFER);
         if (payloadTerminal.cause() == null) {
@@ -412,8 +414,10 @@ class BeforeFinallyHttpOperatorTest {
                 payloadSubscriber.pollAllOnNext(), contains(EMPTY_BUFFER));
         if (payloadTerminal.cause() == null) {
             payloadSubscriber.awaitOnComplete();
+            verify(beforeFinally).onComplete();
         } else {
             assertThat(payloadSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+            verify(beforeFinally).onError(DELIBERATE_EXCEPTION);
         }
 
         assertThat("Payload was prematurely cancelled", payloadSubscription.isCancelled(), is(false));
@@ -460,11 +464,14 @@ class BeforeFinallyHttpOperatorTest {
                 if (receivedPayload.size() == 1) {
                     assert subscription != null;
                     subscription.cancel();
-                    subscription.cancel(); // second to make sure it's idempotent.
-                    verify(payloadSubscription, atMostOnce()).cancel();
-                    verify(beforeFinally).cancel();
+                    subscription.cancel();  // intentionally cancel two times to make sure it's idempotent
+                    verify(payloadSubscription, Mockito.never()).cancel();
+                    verifyNoMoreInteractions(beforeFinally);
                     payload.onNext(EMPTY_BUFFER);
                 }
+                verify(payloadSubscription, Mockito.never()).cancel();
+                verifyNoMoreInteractions(beforeFinally);
+                // Cancel will be propagated after this method returns
             }
 
             @Override
@@ -484,10 +491,8 @@ class BeforeFinallyHttpOperatorTest {
         verify(payloadSubscription).cancel();
         verify(beforeFinally).cancel();
 
-        assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER));
+        assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER, EMPTY_BUFFER));
         assertThat("Unexpected payload body termination", subscriberTerminal.get(), is(nullValue()));
-
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] fromOnNext={0} payloadTerminal={1}")
@@ -570,7 +575,6 @@ class BeforeFinallyHttpOperatorTest {
         } else {
             verify(beforeFinally).onError(payloadTerminal.cause());
         }
-        verifyNoMoreInteractions(beforeFinally);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0}")

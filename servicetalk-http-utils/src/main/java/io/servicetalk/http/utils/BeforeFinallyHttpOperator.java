@@ -366,6 +366,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             }
         }
 
+        @Override
         public void onError(final Throwable t) {
             if (!discardEventsAfterCancel) {
                 try {
