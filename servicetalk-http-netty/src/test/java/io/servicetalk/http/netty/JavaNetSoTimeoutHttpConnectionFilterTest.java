@@ -119,7 +119,6 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     private static ServerContext server;
     @Nullable
     private static BlockingHttpClient client;
-    
     private static TestExecutor testExecutor;
 
     @BeforeAll
@@ -155,7 +154,6 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
                 .appendConnectionFilter(new JavaNetSoTimeoutHttpConnectionFilter(
                         (metaData, timeSource) -> metaData.context().get(READ_TIMEOUT_KEY)))
                 .buildBlocking();
-
     }
 
     @AfterAll
