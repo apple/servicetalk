@@ -65,24 +65,27 @@ public final class BlockingHelloWorldClient {
                 new TrafficResilienceHttpClientFilter.Builder(() -> limiter).build();
 
         final int numClients = 60;
-        final CountDownLatch latch = new CountDownLatch(numClients);
+        final CountDownLatch finishedLatch = new CountDownLatch(numClients);
+        final CountDownLatch startRequestsLatch = new CountDownLatch(1);
         final AtomicBoolean finished = new AtomicBoolean();
         ExecutorService executor = Executors.newCachedThreadPool();
         final AtomicInteger consecutiveFailures = new AtomicInteger();
         final int failureLimit = 600;
         final Output output = new Output();
-
         for (int i = 0; i < numClients; i++) {
+            final int ii = i;
             executor.execute(() -> {
                 try {
+                    System.out.println("Creating new client " + ii);
                     try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                             .defaultTimeout(Duration.ofMillis(50))
                             .initializeHttp(http -> {
                                 http.appendConnectionFilter(
-                                        new JavaNetSoTimeoutHttpConnectionFilter(Duration.ofMillis(50)))
-                                .appendClientFilter(resilienceHttpClientFilter);
+                                        new JavaNetSoTimeoutHttpConnectionFilter(Duration.ofMillis(50)));
+                                http.appendClientFilter(resilienceHttpClientFilter);
                             })
                             .buildBlocking(new ClientFactory())) {
+                        startRequestsLatch.await();
                         while (!finished.get()) {
                             try {
                                 HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
@@ -104,15 +107,20 @@ public final class BlockingHelloWorldClient {
                             }
                             Thread.sleep(100);
                         }
-                        latch.countDown();
+                        finishedLatch.countDown();
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
+                } finally {
+
                 }
             });
+            Thread.sleep(100); // give our clients time to startup and emit their config.
         }
 
-        latch.await();
+        System.out.println("Starting main loop.");
+        startRequestsLatch.countDown();
+        finishedLatch.await();
         serverContext.close();
         executor.shutdown();
         System.out.println("Terminating.");
@@ -120,6 +128,8 @@ public final class BlockingHelloWorldClient {
 
     private static class Output {
         private long counter;
+
+        private final String clear = "\r                                                               \r";
 
         void success() {
             emit('.');
@@ -130,14 +140,10 @@ public final class BlockingHelloWorldClient {
         }
 
         private synchronized void emit(char result) {
-            if (true) {
-                return;
-            }
             if (newline()) {
-                System.out.println(result);
-            } else {
-                System.out.print(result);
+                System.out.print(clear);
             }
+            System.out.print(result);
         }
 
         private boolean newline() {

@@ -50,6 +50,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -270,11 +271,29 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             StreamingHttpConnectionFilterFactory connectionFilterFactory =
                     ctx.builder.addIdleTimeoutConnectionFilter ?
-                            appendConnectionFilter(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
+                            appendStreamingHttpConnectionFilterFactory(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
                             ctx.builder.connectionFilterFactory;
 
-            connectionFilterFactory = appendConnectionFilter(connectionFilterFactory,
+            connectionFilterFactory = appendStreamingHttpConnectionFilterFactory(connectionFilterFactory,
                     HttpMessageDiscardWatchdogClientFilter.INSTANCE);
+
+            connectionFilterFactory = appendStreamingHttpConnectionFilterFactory(connectionFilterFactory, new StreamingHttpConnectionFilterFactory() {
+                private final LeakFilter leakFilter = new LeakFilter("connection-filter");
+                @Override
+                public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection) {
+                    return new StreamingHttpConnectionFilter(connection) {
+                        @Override
+                        public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+                            return leakFilter.doRequest(connection, request);
+                        }
+                    };
+                }
+
+                @Override
+                public String toString() {
+                    return "ConnectionLeakFilter";
+                }
+            });
 
             if (roConfig.isH2PriorKnowledge() &&
                     // Direct connection or HTTP proxy
@@ -369,19 +388,36 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             this.name = name;
         }
 
+        Single<StreamingHttpResponse> doRequest(StreamingHttpRequester delegate, StreamingHttpRequest request) {
+            return delegate.request(request)
+                .liftSync(new BeforeFinallyHttpOperator(new Tracker("liftSync(..)")))
+                .map(response -> {
+                    // Also a more fine graned version
+                    Tracker tracker = new Tracker("response.map(..)");
+                    return response.transformMessageBody(body -> body.whenOnSubscribe(subscription -> {
+                        tracker.onComplete();
+                    }));
+                });
+        }
+
         @Override
         public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate, StreamingHttpRequest request) {
-                    return delegate.request(request).liftSync(new BeforeFinallyHttpOperator(new Tracker()));
+                    return doRequest(delegate, request);
                 }
             };
         }
 
         private final class Tracker implements TerminalSignalConsumer {
 
+            private final String position;
             private volatile boolean finished;
+
+            Tracker(final String position) {
+                this.position = position;
+            }
 
             @Override
             public void onComplete() {
@@ -401,7 +437,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             @Override
             protected void finalize() throws Throwable {
                 if (!finished) {
-                    LOGGER.error("{}: Leaked tracker detected", name);
+                    LOGGER.error("{} - {}: Leaked tracker detected", name, position);
                     finished = true;
                 }
                 super.finalize();
@@ -412,6 +448,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
+        System.out.println("Appending connection factory filter: " + second);
         // For now this delegates to the deprecated method but needs to be fixed up once the deprecated append
         // method is being removed.
         return first.append(second);
@@ -460,6 +497,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
             @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
+        System.out.println("Appending client filter factory: " + appendClientFilterFactory);
         if (appendClientFilterFactory instanceof RetryingHttpRequesterFilter) {
             if (currClientFilterFactory == null) {
                 return (client, lbEventStream, sdStatus) -> {
@@ -565,7 +603,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         requireNonNull(factory);
-        connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
+        connectionFilterFactory = appendStreamingHttpConnectionFilterFactory(connectionFilterFactory, factory);
         strategyComputation.add(factory);
         checkIfHostHeaderHttpRequesterFilter(factory);
         checkIfIdleTimeoutConnectionFilter(factory);
@@ -594,9 +632,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     // Use another method to keep final references and avoid StackOverflowError
-    private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
+    private static StreamingHttpConnectionFilterFactory appendStreamingHttpConnectionFilterFactory(
             @Nullable final StreamingHttpConnectionFilterFactory current,
             final StreamingHttpConnectionFilterFactory next) {
+        System.out.println("Appending StreamingHttpConnectionFilterFactory: " + next);
         return current == null ? next : connection -> current.create(next.create(connection));
     }
 

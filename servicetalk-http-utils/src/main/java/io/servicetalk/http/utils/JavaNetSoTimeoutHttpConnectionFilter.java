@@ -17,12 +17,16 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.TimeSource;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpContextKeys;
@@ -37,14 +41,19 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AbstractTimeoutHttpFilter.FixedDuration;
 import io.servicetalk.transport.api.ExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -72,6 +81,8 @@ import static java.util.Objects.requireNonNull;
  * @see java.net.Socket#setSoTimeout(int)
  */
 public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttpConnectionFilterFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaNetSoTimeoutHttpConnectionFilter.class);
 
     private final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest;
     @Nullable
@@ -167,22 +178,128 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                 return body;
                             }))
                             // Defer timeout counter until after the request payload body is complete
-                            .ambWith(SourceAdapters.fromSource(requestProcessor)
-                                    // Start timeout counter after requestProcessor completes
-                                    .concat(Single.<StreamingHttpResponse>never().timeout(timeout, timeoutExecutor)
-                                            .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
-                                                    "Read timed out after " + timeout.toMillis() +
-                                                            "ms waiting for response meta-data")
-                                                    .initCause(t))))
-                            .map(response -> response.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
-                                    .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
-                                            "Read timed out after " + timeout.toMillis() +
-                                                    "ms waiting for the next response payload body chunk")
-                                            .initCause(t))))
+                            .<StreamingHttpResponse>liftSync(subscriber ->
+                                    new RequestTimeoutSubscriber(subscriber,
+                                            SourceAdapters.fromSource(requestProcessor), timeout, timeoutExecutor))
                             .shareContextOnSubscribe();
                 });
             }
         };
+    }
+
+    // package private for testing purposes
+    static final class RequestTimeoutSubscriber implements Subscriber<StreamingHttpResponse> {
+
+        private static final AtomicIntegerFieldUpdater<RequestTimeoutSubscriber> onceUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(RequestTimeoutSubscriber.class, "once");
+
+        private final DelayedCancellable requestCancellable = new DelayedCancellable();
+        private final Cancellable timeoutCancellable;
+        private final Subscriber<? super StreamingHttpResponse> delegate;
+
+        private final Duration timeout;
+        private final Executor timeoutExecutor;
+        @SuppressWarnings("unused")
+        private volatile int once;
+
+        RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
+                                        Duration timeout, Executor timeoutExecutor) {
+            this.delegate = delegate;
+            this.timeout = timeout;
+            this.timeoutExecutor = timeoutExecutor;
+            timeoutCancellable = requestComplete.concat(Completable.never()
+                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe();
+        }
+
+        @Override
+        public void onSubscribe(Cancellable cancellable) {
+            try {
+                delegate.onSubscribe(() -> {
+                    // We don't need to condition cancellation here on the `once()` call because the `DelayedCancellable`
+                    // will already enforce idempotency of the cancel call, and it's fine if we're racing cancels with the
+                    // results since cleanup is gated on the `once()` call.
+                    once();
+                    Throwable t = null;
+                    try {
+                        timeoutCancellable.cancel();
+                    } catch (Throwable tt) {
+                        t = tt;
+                    }
+                    try {
+                        requestCancellable.cancel();
+                    } catch (Throwable tt) {
+                        if (t == null) {
+                            t = tt;
+                        } else {
+                            t.addSuppressed(tt);
+                        }
+                    }
+                    if (t != null) {
+                        throwException(t);
+                    }
+                });
+                requestCancellable.delayedCancellable(cancellable);
+            } catch (Throwable cause) {
+                try {
+                    cancellable.cancel();
+                } catch (Throwable t) {
+                    cause.addSuppressed(t);
+                }
+                onError(cause);
+                LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", delegate, cause);
+            }
+        }
+
+        private void handleInterruptions(Throwable t) {
+            if (once()) {
+                requestCancellable.cancel();
+                Throwable result = t;
+                // We can get a SocketTimeoutException waiting for a 100 Continue response.
+                if (t instanceof TimeoutException) {
+                result = newStacklessSocketTimeoutException(
+                        "Read timed out after " + timeout.toMillis() +
+                                "ms waiting for response meta-data")
+                        .initCause(t);
+                }
+                delegate.onError(result);
+            }
+        }
+
+        @Override
+        public void onSuccess(@Nullable StreamingHttpResponse result) {
+            if (once()) {
+                timeoutCancellable.cancel();
+                if (result != null) {
+                    result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
+                            .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
+                                    "Read timed out after " + timeout.toMillis() +
+                                            "ms waiting for the next response payload body chunk")
+                                    .initCause(t)));
+                }
+                delegate.onSuccess(result);
+            } else {
+                if (result != null) {
+                    toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                }
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            if (once()) {
+                try {
+                    timeoutCancellable.cancel();
+                } catch (Throwable tt) {
+                    delegate.onError(tt);
+                    return;
+                }
+                delegate.onError(t);
+            }
+        }
+
+        private boolean once() {
+            return 0 == onceUpdater.getAndSet(this, 1);
+        }
     }
 
     private Executor contextExecutor(final HttpRequestMetaData requestMetaData,
@@ -203,8 +320,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         return HttpExecutionStrategies.offloadNone();
     }
 
-    private StacklessSocketTimeoutException newStacklessSocketTimeoutException(final String message) {
-        return StacklessSocketTimeoutException.newInstance(message, this.getClass(), "request");
+    private static StacklessSocketTimeoutException newStacklessSocketTimeoutException(final String message) {
+        return StacklessSocketTimeoutException.newInstance(message, JavaNetSoTimeoutHttpConnectionFilter.class,
+                "request");
     }
 
     private static final class StacklessSocketTimeoutException extends SocketTimeoutException {

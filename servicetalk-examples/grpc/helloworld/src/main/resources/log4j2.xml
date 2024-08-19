@@ -25,7 +25,7 @@
     <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
 
     <!-- Prints default subscriber errors-->
-    <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
+    <Logger name="io.servicetalk.concurrent.api" level="INFO"/>
 
     <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
     <Root level="${sys:servicetalk.logger.level:-INFO}">
