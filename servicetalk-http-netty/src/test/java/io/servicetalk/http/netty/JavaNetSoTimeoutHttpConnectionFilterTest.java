@@ -44,7 +44,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -123,6 +122,7 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
 
     @BeforeAll
     static void setUp() throws Exception {
+        testExecutor = testExecutorExtension.executor();
         server = newServerBuilder(SERVER_CTX).listenStreamingAndAwait((ctx, request, responseFactory) -> {
             Buffer hello = ctx.executionContext().bufferAllocator().fromAscii("Hello");
 
@@ -167,11 +167,6 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
                 server.close();
             }
         }
-    }
-
-    @BeforeEach
-    void init() {
-        testExecutor = testExecutorExtension.executor();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: expectContinue={0} withServerDelays={1} withZeroTimeout={2}")
