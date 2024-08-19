@@ -173,7 +173,7 @@ class JavaNetSoTimeoutHttpConnectionFilterTest {
     void init() {
         testExecutor = testExecutorExtension.executor();
     }
-    
+
     @ParameterizedTest(name = "{displayName} [{index}]: expectContinue={0} withServerDelays={1} withZeroTimeout={2}")
     @CsvSource({
             "false,false,false",
