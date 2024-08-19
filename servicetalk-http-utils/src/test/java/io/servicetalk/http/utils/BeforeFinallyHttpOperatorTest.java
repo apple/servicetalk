@@ -564,14 +564,8 @@ class BeforeFinallyHttpOperatorTest {
         assertThat("Payload was not cancelled", payloadSubscription.isCancelled(), is(true));
 
         assertThat("Unexpected payload body items", receivedPayload, contains(EMPTY_BUFFER));
-        if (!fromOnNext) {
-            // We are discarding events after cancel, so if we cancel from onNext we won't be fed the terminal events.
-            assertThat("Unexpected payload body termination", subscriberTerminal.get(),
-                    equalTo(payloadTerminal));
-        }
-        if (fromOnNext) {
-            verify(beforeFinally).cancel();
-        } else if (payloadTerminal.cause() == null) {
+        assertThat("Unexpected payload body termination", subscriberTerminal.get(), equalTo(payloadTerminal));
+        if (payloadTerminal.cause() == null) {
             verify(beforeFinally).onComplete();
         } else {
             verify(beforeFinally).onError(payloadTerminal.cause());
