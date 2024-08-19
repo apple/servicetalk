@@ -41,6 +41,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AbstractTimeoutHttpFilter.FixedDuration;
 import io.servicetalk.transport.api.ExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
@@ -51,6 +53,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -78,6 +81,8 @@ import static java.util.Objects.requireNonNull;
  * @see java.net.Socket#setSoTimeout(int)
  */
 public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttpConnectionFilterFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaNetSoTimeoutHttpConnectionFilter.class);
 
     private final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest;
     @Nullable
@@ -189,10 +194,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 AtomicIntegerFieldUpdater.newUpdater(RequestTimeoutSubscriber.class, "once");
 
         private final DelayedCancellable requestCancellable = new DelayedCancellable();
-        private final DelayedCancellable timeoutCancellable = new DelayedCancellable();
+        private final Cancellable timeoutCancellable;
         private final Subscriber<? super StreamingHttpResponse> delegate;
 
-        private final Completable requestComplete;
         private final Duration timeout;
         private final Executor timeoutExecutor;
         @SuppressWarnings("unused")
@@ -201,24 +205,49 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
                                         Duration timeout, Executor timeoutExecutor) {
             this.delegate = delegate;
-            this.requestComplete = requestComplete;
             this.timeout = timeout;
             this.timeoutExecutor = timeoutExecutor;
+            timeoutCancellable = requestComplete.concat(Completable.never()
+                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            delegate.onSubscribe(() -> {
-                // We don't need to condition cancellation here on the `once()` call because the `DelayedCancellable`
-                // will already enforce idempotency of the cancel call, and it's fine if we're racing cancels with the
-                // results since cleanup is gated on the `once()` call.
-                once();
-                timeoutCancellable.cancel();
-                requestCancellable.cancel();
-            });
-            requestCancellable.delayedCancellable(cancellable);
-            timeoutCancellable.delayedCancellable(requestComplete.concat(Completable.never()
-                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe());
+            try {
+                delegate.onSubscribe(() -> {
+                    // We don't need to condition cancellation here on the `once()` call because the `DelayedCancellable`
+                    // will already enforce idempotency of the cancel call, and it's fine if we're racing cancels with the
+                    // results since cleanup is gated on the `once()` call.
+                    once();
+                    Throwable t = null;
+                    try {
+                        timeoutCancellable.cancel();
+                    } catch (Throwable tt) {
+                        t = tt;
+                    }
+                    try {
+                        requestCancellable.cancel();
+                    } catch (Throwable tt) {
+                        if (t == null) {
+                            t = tt;
+                        } else {
+                            t.addSuppressed(tt);
+                        }
+                    }
+                    if (t != null) {
+                        throwException(t);
+                    }
+                });
+                requestCancellable.delayedCancellable(cancellable);
+            } catch (Throwable cause) {
+                try {
+                    cancellable.cancel();
+                } catch (Throwable t) {
+                    cause.addSuppressed(t);
+                }
+                onError(cause);
+                LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", delegate, cause);
+            }
         }
 
         private void handleInterruptions(Throwable t) {
@@ -258,7 +287,12 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         @Override
         public void onError(Throwable t) {
             if (once()) {
-                timeoutCancellable.cancel();
+                try {
+                    timeoutCancellable.cancel();
+                } catch (Throwable tt) {
+                    delegate.onError(tt);
+                    return;
+                }
                 delegate.onError(t);
             }
         }
