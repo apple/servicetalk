@@ -294,7 +294,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         }
 
         private boolean once() {
-            return 0 == onceUpdater.getAndSet(this, 1);
+            return onceUpdater.compareAndSet(this, 0, 1);
         }
     }
 
