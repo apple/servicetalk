@@ -203,7 +203,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         private volatile int once;
 
         RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
-                                        Duration timeout, Executor timeoutExecutor) {
+                                 Duration timeout, Executor timeoutExecutor) {
             this.delegate = delegate;
             this.timeout = timeout;
             this.timeoutExecutor = timeoutExecutor;
@@ -215,9 +215,6 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         public void onSubscribe(Cancellable cancellable) {
             try {
                 delegate.onSubscribe(() -> {
-                    // We don't need to condition cancellation here on the `once()` call because the `DelayedCancellable`
-                    // will already enforce idempotency of the cancel call, and it's fine if we're racing cancels with the
-                    // results since cleanup is gated on the `once()` call.
                     once();
                     Throwable t = null;
                     try {
@@ -256,10 +253,8 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 Throwable result = t;
                 // We can get a SocketTimeoutException waiting for a 100 Continue response.
                 if (t instanceof TimeoutException) {
-                result = newStacklessSocketTimeoutException(
-                        "Read timed out after " + timeout.toMillis() +
-                                "ms waiting for response meta-data")
-                        .initCause(t);
+                    result = newStacklessSocketTimeoutException("Read timed out after " + timeout.toMillis() +
+                            "ms waiting for response meta-data").initCause(t);
                 }
                 delegate.onError(result);
             }
