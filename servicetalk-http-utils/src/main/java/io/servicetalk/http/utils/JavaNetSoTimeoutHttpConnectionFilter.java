@@ -189,9 +189,10 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 AtomicIntegerFieldUpdater.newUpdater(RequestTimeoutSubscriber.class, "once");
 
         private final DelayedCancellable requestCancellable = new DelayedCancellable();
-        private final Cancellable timeoutCancellable;
+        private final DelayedCancellable timeoutCancellable = new DelayedCancellable();
         private final Subscriber<? super StreamingHttpResponse> delegate;
 
+        private final Completable requestComplete;
         private final Duration timeout;
         private final Executor timeoutExecutor;
         @SuppressWarnings("unused")
@@ -200,26 +201,21 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
                                  Duration timeout, Executor timeoutExecutor) {
             this.delegate = delegate;
+            this.requestComplete = requestComplete;
             this.timeout = timeout;
             this.timeoutExecutor = timeoutExecutor;
-            timeoutCancellable = requestComplete.concat(Completable.never()
-                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            try {
-                delegate.onSubscribe(() -> {
-                    once();
-                    timeoutCancellable.cancel();
-                    requestCancellable.cancel();
-                });
-            } catch (Throwable cause) {
-                // This resource has already been initialized by our constructor and needs to be cleaned.
+            delegate.onSubscribe(() -> {
+                once();
                 timeoutCancellable.cancel();
-                throw cause;
-            }
+                requestCancellable.cancel();
+            });
             requestCancellable.delayedCancellable(cancellable);
+            timeoutCancellable.delayedCancellable(requestComplete.concat(Completable.never()
+                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe());
         }
 
         private void handleInterruptions(Throwable t) {
