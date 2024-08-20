@@ -60,6 +60,7 @@ public final class TerminalNotification {
         if (this == COMPLETE) {
             subscriber.onComplete();
         } else {
+            assert cause != null;
             subscriber.onError(cause);
         }
     }
