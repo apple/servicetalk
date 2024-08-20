@@ -51,6 +51,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -210,8 +211,11 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         public void onSubscribe(Cancellable cancellable) {
             delegate.onSubscribe(() -> {
                 once();
-                timeoutCancellable.cancel();
-                requestCancellable.cancel();
+                try {
+                    timeoutCancellable.cancel();
+                } finally {
+                    requestCancellable.cancel();
+                }
             });
             requestCancellable.delayedCancellable(cancellable);
             timeoutCancellable.delayedCancellable(requestComplete.concat(Completable.never()
@@ -222,6 +226,8 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
             if (once()) {
                 try {
                     requestCancellable.cancel();
+                } catch (Throwable tt) {
+                    addSuppressed(t, tt);
                 } finally {
                     Throwable result = t;
                     // We can get a SocketTimeoutException waiting for a 100 Continue response.
@@ -237,27 +243,37 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         @Override
         public void onSuccess(@Nullable StreamingHttpResponse result) {
             if (once()) {
-                timeoutCancellable.cancel();
-                if (result != null) {
-                    result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
-                            .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
-                                    "Read timed out after " + timeout.toMillis() +
-                                            "ms waiting for the next response payload body chunk")
-                                    .initCause(t)));
+                try {
+                    timeoutCancellable.cancel();
+                    if (result != null) {
+                        result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
+                                .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
+                                        "Read timed out after " + timeout.toMillis() +
+                                                "ms waiting for the next response payload body chunk")
+                                        .initCause(t)));
+                    }
+                    delegate.onSuccess(result);
+                    return;
+                } catch (Throwable t) {
+                    delegate.onError(t);
                 }
-                delegate.onSuccess(result);
-            } else {
-                if (result != null) {
-                    toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                }
+            }
+            // If we get here the message was not consumed, so we need to clean it up.
+            if (result != null) {
+                toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
             }
         }
 
         @Override
         public void onError(Throwable t) {
             if (once()) {
-                timeoutCancellable.cancel();
-                delegate.onError(t);
+                try {
+                    timeoutCancellable.cancel();
+                } catch (Throwable tt) {
+                    addSuppressed(t, tt);
+                } finally {
+                    delegate.onError(t);
+                }
             }
         }
 
