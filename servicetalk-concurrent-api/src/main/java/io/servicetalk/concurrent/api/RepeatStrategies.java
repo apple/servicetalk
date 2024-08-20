@@ -37,6 +37,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public final class RepeatStrategies {
 
+    private static final Completable TERMINATE_REPEAT = failed(TerminateRepeatException.INSTANCE);
+
     /**
      * An {@link Exception} instance used to indicate termination of repeats.
      */
@@ -273,7 +275,7 @@ public final class RepeatStrategies {
         };
     }
 
-    private static Completable terminateRepeat() {
-        return failed(TerminateRepeatException.INSTANCE);
+    static Completable terminateRepeat() {
+        return TERMINATE_REPEAT;
     }
 }

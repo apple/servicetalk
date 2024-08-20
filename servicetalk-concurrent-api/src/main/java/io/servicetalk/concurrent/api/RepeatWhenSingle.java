@@ -28,14 +28,10 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
-    private static final Exception END_REPEAT_EXCEPTION =
-            unknownStackTrace(new Exception(), RepeatWhenSingle.class, "<init>");
-    static final Completable END_REPEAT_COMPLETABLE = Completable.failed(END_REPEAT_EXCEPTION);
     private final Single<T> original;
     private final BiIntFunction<? super T, ? extends Completable> repeater;
 

@@ -46,7 +46,7 @@ import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.api.RepeatWhenSingle.END_REPEAT_COMPLETABLE;
+import static io.servicetalk.concurrent.api.RepeatStrategies.terminateRepeat;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
@@ -1002,7 +1002,7 @@ public abstract class Single<T> {
      * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return repeatWhen((i, __) -> shouldRepeat.test(i) ? Completable.completed() : END_REPEAT_COMPLETABLE);
+        return repeatWhen((i, __) -> shouldRepeat.test(i) ? Completable.completed() : terminateRepeat());
     }
 
     /**
@@ -1031,7 +1031,7 @@ public abstract class Single<T> {
      * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(BiIntPredicate<? super T> shouldRepeat) {
-        return repeatWhen((i, t) -> shouldRepeat.test(i, t) ? Completable.completed() : END_REPEAT_COMPLETABLE);
+        return repeatWhen((i, t) -> shouldRepeat.test(i, t) ? Completable.completed() : terminateRepeat());
     }
 
     /**
