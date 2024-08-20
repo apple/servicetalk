@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -365,7 +366,16 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             assert requestCount == 0;
             subscription = new SubscriptionImpl(subscriber);
             this.subscription = subscription;
-            subscriber.onSubscribe(subscription);
+            try {
+                subscriber.onSubscribe(subscription);
+            } catch (Throwable t) {
+                handleExceptionFromOnSubscribe(subscriber, t);
+                resetSubscription();
+                emitCatchError(null,
+                        StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "subscribe0")
+                                .initCause(t), false);
+                return;
+            }
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
             if (subscription == this.subscription && !processPending(subscription) &&

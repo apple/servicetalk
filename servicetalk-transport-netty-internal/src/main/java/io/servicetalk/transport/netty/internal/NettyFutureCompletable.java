@@ -17,10 +17,13 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import io.netty.util.concurrent.Future;
 
 import java.util.function.Supplier;
+
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 /**
  * A {@link Completable} that wraps a netty {@link Future}.
@@ -39,9 +42,16 @@ public final class NettyFutureCompletable extends SubscribableCompletable {
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
+    protected void handleSubscribe(final Subscriber subscriber) {
+        final DelayedCancellable cancellable = new DelayedCancellable();
+        try {
+            subscriber.onSubscribe(cancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         Future<?> future = futureSupplier.get();
-        subscriber.onSubscribe(() -> future.cancel(true));
+        cancellable.delayedCancellable(() -> future.cancel(true));
         connectToSubscriber(subscriber, future);
     }
 

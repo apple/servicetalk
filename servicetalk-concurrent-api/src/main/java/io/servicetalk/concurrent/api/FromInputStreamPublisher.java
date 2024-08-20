@@ -97,10 +97,14 @@ final class FromInputStreamPublisher<T> extends Publisher<T> implements Publishe
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         if (subscribedUpdater.compareAndSet(this, 0, 1)) {
+            final InputStreamPublisherSubscription<T> subscription =
+                    new InputStreamPublisherSubscription<>(stream, subscriber, mapper);
             try {
-                subscriber.onSubscribe(new InputStreamPublisherSubscription<>(stream, subscriber, mapper));
+                subscriber.onSubscribe(subscription);
             } catch (Throwable t) {
                 handleExceptionFromOnSubscribe(subscriber, t);
+                // Ownership of the stream is transferred to a new Subscriber, we must close it in case of an error.
+                subscription.closeStreamOnError(t);
             }
         } else {
             deliverErrorFromSource(subscriber, new DuplicateSubscribeException(null, subscriber));

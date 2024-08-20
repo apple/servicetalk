@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 /**
@@ -36,7 +37,12 @@ final class CompletableProcessor extends Completable implements Processor {
         // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
-        subscriber.onSubscribe(delayedCancellable);
+        try {
+            subscriber.onSubscribe(delayedCancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         if (stack.push(subscriber)) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of

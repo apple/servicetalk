@@ -55,6 +55,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
@@ -183,7 +184,13 @@ public final class TcpServerBinder {
         return new SubscribableSingle<ServerContext>() {
             @Override
             protected void handleSubscribe(Subscriber<? super ServerContext> subscriber) {
-                subscriber.onSubscribe(() -> future.cancel(true));
+                try {
+                    subscriber.onSubscribe(() -> future.cancel(true));
+                } catch (Throwable t) {
+                    handleExceptionFromOnSubscribe(subscriber, t);
+                    future.cancel(true);
+                    return;
+                }
                 future.addListener((ChannelFuture f) -> {
                     Channel channel = f.channel();
                     Throwable cause = f.cause();

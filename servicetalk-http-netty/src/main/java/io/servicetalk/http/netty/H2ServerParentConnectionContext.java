@@ -55,6 +55,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
@@ -198,7 +199,13 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
-                subscriber.onSubscribe(delayedCancellable);
+                try {
+                    subscriber.onSubscribe(delayedCancellable);
+                } catch (Throwable cause) {
+                    ChannelCloseUtils.close(channel, cause);
+                    handleExceptionFromOnSubscribe(subscriber, cause);
+                    return;
+                }
                 // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);

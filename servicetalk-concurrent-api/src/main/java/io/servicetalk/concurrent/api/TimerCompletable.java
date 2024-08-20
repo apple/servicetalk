@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -44,7 +45,12 @@ final class TimerCompletable extends Completable implements CompletableSource {
     @Override
     protected void handleSubscribe(final Subscriber subscriber) {
         DelayedCancellable cancellable = new DelayedCancellable();
-        subscriber.onSubscribe(cancellable);
+        try {
+            subscriber.onSubscribe(cancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         try {
             cancellable.delayedCancellable(
                     timeoutExecutor.schedule(subscriber::onComplete, delayNs, NANOSECONDS));
