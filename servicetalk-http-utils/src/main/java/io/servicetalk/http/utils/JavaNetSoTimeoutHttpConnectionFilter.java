@@ -51,7 +51,6 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -209,7 +208,6 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            requestCancellable.delayedCancellable(cancellable);
             try {
                 delegate.onSubscribe(() -> {
                     once();
@@ -217,21 +215,26 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                     requestCancellable.cancel();
                 });
             } catch (Throwable cause) {
-                handleExceptionFromOnSubscribe(this, cause);
-                cancellable.cancel();
+                // This resource has already been initialized by our constructor and needs to be cleaned.
+                timeoutCancellable.cancel();
+                throw cause;
             }
+            requestCancellable.delayedCancellable(cancellable);
         }
 
         private void handleInterruptions(Throwable t) {
             if (once()) {
-                requestCancellable.cancel();
-                Throwable result = t;
-                // We can get a SocketTimeoutException waiting for a 100 Continue response.
-                if (t instanceof TimeoutException) {
-                    result = newStacklessSocketTimeoutException("Read timed out after " + timeout.toMillis() +
-                            "ms waiting for response meta-data").initCause(t);
+                try {
+                    requestCancellable.cancel();
+                } finally {
+                    Throwable result = t;
+                    // We can get a SocketTimeoutException waiting for a 100 Continue response.
+                    if (t instanceof TimeoutException) {
+                        result = newStacklessSocketTimeoutException("Read timed out after " + timeout.toMillis() +
+                                "ms waiting for response meta-data").initCause(t);
+                    }
+                    delegate.onError(result);
                 }
-                delegate.onError(result);
             }
         }
 
