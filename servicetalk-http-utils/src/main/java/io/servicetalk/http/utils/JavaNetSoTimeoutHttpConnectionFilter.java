@@ -218,6 +218,10 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 }
             });
             requestCancellable.delayedCancellable(cancellable);
+            // We only initialize the timer after the successful call to `delegate.onSubscribe(..)` to avoid
+            // RS spec violations from the timer firing before an `onSubscribe(..)` call. This also means we
+            // don't need to worry about `delegate.onSubscribe(..)` throwing since we don't initialize resources
+            // until after the call is successful.
             timeoutCancellable.delayedCancellable(requestComplete.concat(Completable.never()
                     .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe());
         }
