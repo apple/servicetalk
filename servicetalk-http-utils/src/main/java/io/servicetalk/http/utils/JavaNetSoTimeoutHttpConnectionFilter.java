@@ -209,17 +209,16 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
+            requestCancellable.delayedCancellable(cancellable);
             try {
                 delegate.onSubscribe(() -> {
                     once();
                     timeoutCancellable.cancel();
                     requestCancellable.cancel();
                 });
-                requestCancellable.delayedCancellable(cancellable);
             } catch (Throwable cause) {
-                once();
-                timeoutCancellable.cancel();
-                handleExceptionFromOnSubscribe(delegate, cause);
+                handleExceptionFromOnSubscribe(this, cause);
+                cancellable.cancel();
             }
         }
 
