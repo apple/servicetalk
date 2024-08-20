@@ -42,9 +42,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AbstractTimeoutHttpFilter.FixedDuration;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
@@ -54,7 +51,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -82,8 +79,6 @@ import static java.util.Objects.requireNonNull;
  * @see java.net.Socket#setSoTimeout(int)
  */
 public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttpConnectionFilterFactory {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(JavaNetSoTimeoutHttpConnectionFilter.class);
 
     private final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest;
     @Nullable
@@ -217,34 +212,14 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
             try {
                 delegate.onSubscribe(() -> {
                     once();
-                    Throwable t = null;
-                    try {
-                        timeoutCancellable.cancel();
-                    } catch (Throwable tt) {
-                        t = tt;
-                    }
-                    try {
-                        requestCancellable.cancel();
-                    } catch (Throwable tt) {
-                        if (t == null) {
-                            t = tt;
-                        } else {
-                            t.addSuppressed(tt);
-                        }
-                    }
-                    if (t != null) {
-                        throwException(t);
-                    }
+                    timeoutCancellable.cancel();
+                    requestCancellable.cancel();
                 });
                 requestCancellable.delayedCancellable(cancellable);
             } catch (Throwable cause) {
-                try {
-                    cancellable.cancel();
-                } catch (Throwable t) {
-                    cause.addSuppressed(t);
-                }
-                onError(cause);
-                LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", delegate, cause);
+                once();
+                timeoutCancellable.cancel();
+                handleExceptionFromOnSubscribe(delegate, cause);
             }
         }
 
@@ -283,12 +258,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
         @Override
         public void onError(Throwable t) {
             if (once()) {
-                try {
-                    timeoutCancellable.cancel();
-                } catch (Throwable tt) {
-                    delegate.onError(tt);
-                    return;
-                }
+                timeoutCancellable.cancel();
                 delegate.onError(t);
             }
         }
