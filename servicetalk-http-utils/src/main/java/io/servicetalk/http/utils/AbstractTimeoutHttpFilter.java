@@ -29,6 +29,9 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -45,6 +48,9 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluencer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTimeoutHttpFilter.class);
+
     /**
      * Establishes the timeout for a given request.
      */
@@ -199,12 +205,16 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         public void onSuccess(@Nullable StreamingHttpResponse result) {
             assert result != null;
             if (stateUpdater.compareAndSet(this, null, result)) {
-                // We win.
-                delegate.onSuccess(result);
-            } else {
-                // we lost to cancellation. No need to send it forward.
-                clean(result);
+                try {
+                    // We win the race: forward the response.
+                    delegate.onSuccess(result);
+                    return;
+                } catch (Throwable t) {
+                    LOGGER.warn("Exception thrown by onSuccess of Subscriber {}. Draining response.", delegate, t);
+                }
             }
+            // We lost to cancellation or there was an exception in onSuccess, so we must dispose of the resource.
+            clean(result);
         }
 
         @Override

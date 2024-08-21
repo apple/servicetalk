@@ -42,6 +42,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AbstractTimeoutHttpFilter.FixedDuration;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
@@ -79,6 +82,8 @@ import static java.util.Objects.requireNonNull;
  * @see java.net.Socket#setSoTimeout(int)
  */
 public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttpConnectionFilterFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaNetSoTimeoutHttpConnectionFilter.class);
 
     private final BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest;
     @Nullable
@@ -246,9 +251,14 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
 
         @Override
         public void onSuccess(@Nullable StreamingHttpResponse result) {
-            if (once()) {
-                try {
-                    timeoutCancellable.cancel();
+            try {
+                if (once()) {
+                    try {
+                        timeoutCancellable.cancel();
+                    } catch (Throwable t) {
+                        delegate.onError(t);
+                        return;
+                    }
                     if (result != null) {
                         result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
                                 .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
@@ -256,15 +266,18 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                                 "ms waiting for the next response payload body chunk")
                                         .initCause(t)));
                     }
-                    delegate.onSuccess(result);
-                    return;
-                } catch (Throwable t) {
-                    delegate.onError(t);
+                    try {
+                        delegate.onSuccess(result);
+                        result = null; // ownership of the response passed to delegate.
+                    } catch (Throwable t) {
+                        LOGGER.warn("Exception thrown by onSuccess of Subscriber {}. Draining response.", delegate, t);
+                    }
                 }
-            }
-            // If we get here the message was not consumed, so we need to clean it up.
-            if (result != null) {
-                toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+            } finally {
+                if (result != null) {
+                    // If we get here the response was not consumed, so we need to clean it up.
+                    toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                }
             }
         }
 
