@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -28,6 +29,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -146,6 +149,44 @@ class SpliceFlatStreamToMetaSingleTest {
         assertTrue(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         assertThat(dataSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void cancelUpstreamIfPayloadSubscriberThrowsFromOnSubscribe() {
+        Single<Data> op = upstream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
+        toSource(op).subscribe(dataSubscriber);
+        upstream.onSubscribe(subscription);
+        upstream.onNext(metaData);
+        Data data = dataSubscriber.awaitOnSuccess();
+        assertThat(data, is(notNullValue()));
+        assertThat(data.meta(), equalTo(metaData.meta()));
+        assertFalse(subscription.isCancelled());
+
+        Publisher<Payload> payload = data.getPayload();
+        AtomicReference<Throwable> onError = new AtomicReference<>();
+        toSource(payload).subscribe(new PublisherSource.Subscriber<Payload>() {
+            @Override
+            public void onSubscribe(final PublisherSource.Subscription subscription) {
+                throw DELIBERATE_EXCEPTION;
+            }
+
+            @Override
+            public void onNext(@Nullable final Payload payload) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                onError.set(t);
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        assertTrue(subscription.isCancelled(), "Upstream subscription not cancelled");
+        assertThat(onError.get(), is(DELIBERATE_EXCEPTION));
+        toSource(payload).subscribe(dupePayloadSubscriber);
+        assertThat(dupePayloadSubscriber.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: withPayload={0}")

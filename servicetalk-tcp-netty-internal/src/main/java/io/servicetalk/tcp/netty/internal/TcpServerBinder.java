@@ -55,11 +55,13 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.ExecutionContextUtils.channelExecutionContext;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -183,7 +185,22 @@ public final class TcpServerBinder {
         return new SubscribableSingle<ServerContext>() {
             @Override
             protected void handleSubscribe(Subscriber<? super ServerContext> subscriber) {
-                subscriber.onSubscribe(() -> future.cancel(true));
+                try {
+                    subscriber.onSubscribe(() -> future.cancel(true));
+                } catch (Throwable t) {
+                    handleExceptionFromOnSubscribe(subscriber, t);
+                    future.addListener((ChannelFuture f) -> {
+                        Channel channel = f.channel();
+                        Throwable cause = f.cause();
+                        if (cause == null) {
+                            channel.close();
+                        } else {
+                            close(channel, addSuppressed(t, cause));
+                        }
+                    });
+                    future.cancel(true);
+                    return;
+                }
                 future.addListener((ChannelFuture f) -> {
                     Channel channel = f.channel();
                     Throwable cause = f.cause();
@@ -191,8 +208,8 @@ public final class TcpServerBinder {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet,
                                 connectionAcceptor, executionContext));
                     } else {
-                        close(channel, f.cause());
-                        subscriber.onError(f.cause());
+                        close(channel, cause);
+                        subscriber.onError(cause);
                     }
                 });
             }

@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 
 abstract class ChannelInitSingle<T> extends SubscribableSingle<T> {
@@ -42,7 +43,13 @@ abstract class ChannelInitSingle<T> extends SubscribableSingle<T> {
             deliverErrorFromSource(subscriber, cause);
             return;
         }
-        subscriber.onSubscribe(channel::close);
+        try {
+            subscriber.onSubscribe(channel::close);
+        } catch (Throwable cause) {
+            close(channel, cause);
+            handleExceptionFromOnSubscribe(subscriber, cause);
+            return;
+        }
         // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
         // callbacks that interact with the subscriber.
         channel.pipeline().addLast(newChannelHandler(subscriber));

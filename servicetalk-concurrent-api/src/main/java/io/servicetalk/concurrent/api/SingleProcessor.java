@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
  * {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
@@ -37,7 +39,12 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
-        subscriber.onSubscribe(delayedCancellable);
+        try {
+            subscriber.onSubscribe(delayedCancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         if (stack.push(subscriber)) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of

@@ -623,6 +623,38 @@ class NettyChannelPublisherTest {
     }
 
     @Test
+    void closeChannelIfPayloadSubscriberThrowsFromOnSubscribe() {
+        AtomicReference<Throwable> onError = new AtomicReference<>();
+        toSource(publisher).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                throw DELIBERATE_EXCEPTION;
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                onError.set(t);
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        assertThat(onError.get(), sameInstance(DELIBERATE_EXCEPTION));
+        assertFalse(channel.isActive());
+        assertFalse(channel.isOpen());
+
+        toSource(publisher).subscribe(subscriber2);
+        Throwable cause = subscriber2.awaitOnError();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     void testSubscribeAndRequestWithinOnCompleteWithPendingData() throws Exception {
         // With data queued up for multiple payloads in NettyChannelPublisher, when an existing subscriber terminates
         // and a new Subscriber requests data synchronously from the previous terminal signal, the demand should be

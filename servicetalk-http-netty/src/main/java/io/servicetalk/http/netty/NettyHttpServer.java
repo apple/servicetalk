@@ -89,6 +89,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
@@ -545,7 +546,12 @@ final class NettyHttpServer {
 
         @Override
         protected void handleSubscribe(final Subscriber subscriber) {
-            subscriber.onSubscribe(this);
+            try {
+                subscriber.onSubscribe(this);
+            } catch (Throwable t) {
+                handleExceptionFromOnSubscribe(subscriber, t);
+                return;
+            }
             for (;;) {
                 final Object cState = state;
                 if (cState instanceof TerminalNotification) {
