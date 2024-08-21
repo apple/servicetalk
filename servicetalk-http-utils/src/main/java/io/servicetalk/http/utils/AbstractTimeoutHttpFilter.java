@@ -210,6 +210,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                     delegate.onSuccess(result);
                     return;
                 } catch (Throwable t) {
+                    // We can't call onError since we already called onSuccess so just log and fall through to cleanup.
                     LOGGER.warn("Exception thrown by onSuccess of Subscriber {}. Draining response.", delegate, t);
                 }
             }
