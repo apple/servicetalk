@@ -68,6 +68,11 @@ subprojects {
     }
   }
 
+  // Configure dependency locking: https://docs.gradle.org/current/userguide/dependency_locking.html
+  dependencyLocking {
+    lockMode = LockMode.STRICT
+  }
+
   configurations {
     annotationProcessor {
       resolutionStrategy.activateDependencyLocking()
@@ -79,12 +84,7 @@ subprojects {
       resolutionStrategy.activateDependencyLocking()
     }
   }
-  dependencyLocking {
-    lockMode = LockMode.STRICT
-  }
-}
 
-allprojects {
   tasks.register("resolveAndLockAll") {
     notCompatibleWithConfigurationCache("Filters configurations at execution time")
     doFirst {
