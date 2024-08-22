@@ -4,7 +4,7 @@
 com.fasterxml.jackson:jackson-bom:2.16.2=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-bom:3.25.3=compileClasspath,runtimeClasspath
-io.netty:netty-bom:4.1.111.Final=compileClasspath,runtimeClasspath
+io.netty:netty-bom:4.1.112.Final=compileClasspath,runtimeClasspath
 io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:1.28.0-alpha=compileClasspath,runtimeClasspath
 io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:1.28.0=compileClasspath,runtimeClasspath
 io.opentelemetry:opentelemetry-api:1.28.0=compileClasspath,runtimeClasspath

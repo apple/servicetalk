@@ -33,4 +33,4 @@ org.apache.logging.log4j:log4j-slf4j-impl:2.23.1=runtimeClasspath
 org.glassfish.jersey:jersey-bom:2.41=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
-empty=annotationProcessor,testAnnotationProcessor
+empty=annotationProcessor
