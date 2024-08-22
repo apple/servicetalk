@@ -65,7 +65,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -259,21 +258,22 @@ class RetryingHttpRequesterFilterTest {
         AtomicInteger responseDrained = new AtomicInteger();
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final int maxTotalRetries = 4;
+        final String retryMessage = "Retryable header";
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
                         .returnFailedResponses(returnFailedResponses)
                         .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
-                                    new HttpResponseException("Retryable header", metaData) : null)
+                                    new HttpResponseException(retryMessage, metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> {
                             if (throwable instanceof HttpResponseException &&
-                                    ((HttpResponseException) throwable).getMessage().equals("Retryable header")) {
+                                    retryMessage.equals(throwable.getMessage())) {
                                 return ofImmediate(maxTotalRetries - 1);
                             } else {
-                                throw new RuntimeException("Unexpected exception type");
+                                throw new RuntimeException("Unexpected exception");
                             }
                         })
                         .onRequestRetry((count, req, t) ->
