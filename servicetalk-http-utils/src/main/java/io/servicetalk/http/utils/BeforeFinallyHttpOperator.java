@@ -155,7 +155,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             subscriber.onSubscribe(() -> {
                 try {
                     final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
-                    if ((previous == IDLE || previous == PROCESSING_PAYLOAD)) {
+                    if (previous == IDLE || previous == PROCESSING_PAYLOAD) {
                         beforeFinally.cancel();
                     }
                 } finally {
