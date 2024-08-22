@@ -65,6 +65,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -251,21 +252,30 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
     }
 
-    @Test
-    void testResponseMapper() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testResponseMapper(final boolean returnFailedResponses) throws Exception {
         AtomicInteger newConnectionCreated = new AtomicInteger();
         AtomicInteger responseDrained = new AtomicInteger();
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final int maxTotalRetries = 4;
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
+                        .returnFailedResponses(returnFailedResponses)
                         .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
                                     new HttpResponseException("Retryable header", metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
-                        .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1))
+                        .retryResponses((requestMetaData, throwable) -> {
+                            if (throwable instanceof HttpResponseException &&
+                                    ((HttpResponseException) throwable).getMessage().equals("Retryable header")) {
+                                return ofImmediate(maxTotalRetries - 1);
+                            } else {
+                                throw new RuntimeException("Unexpected exception type");
+                            }
+                        })
                         .onRequestRetry((count, req, t) ->
                                 assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
@@ -281,9 +291,14 @@ class RetryingHttpRequesterFilterTest {
                     };
                 })
                 .buildBlocking();
-        HttpResponseException e = assertThrows(HttpResponseException.class,
-                () -> normalClient.request(normalClient.get("/")));
-        assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
+        if (returnFailedResponses) {
+            HttpResponse response = normalClient.request(normalClient.get("/"));
+            assertThat(response.status(), is(HttpResponseStatus.OK));
+        } else {
+            HttpResponseException e = assertThrows(HttpResponseException.class,
+                    () -> normalClient.request(normalClient.get("/")));
+            assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
+        }
         // The load balancer is allowed to be not ready one time, which is counted against total retry attempts but not
         // against actual requests being issued.
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), allOf(greaterThanOrEqualTo(maxTotalRetries),
