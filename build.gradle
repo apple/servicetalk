@@ -67,4 +67,35 @@ subprojects {
       }
     }
   }
+
+  // Configure dependency locking: https://docs.gradle.org/current/userguide/dependency_locking.html
+  dependencyLocking {
+    lockMode = LockMode.STRICT
+  }
+
+  configurations {
+    annotationProcessor {
+      resolutionStrategy.activateDependencyLocking()
+    }
+    compileClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
+    runtimeClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
+  }
+
+  tasks.register("resolveAndLockAll") {
+    notCompatibleWithConfigurationCache("Filters configurations at execution time")
+    doFirst {
+      assert gradle.startParameter.writeDependencyLocks :
+          "$path must be run from the command line with the `--write-locks` flag"
+    }
+    doLast {
+      configurations.findAll {
+        // Add any custom filtering on the configurations to be resolved
+        it.canBeResolved
+      }.each { it.resolve() }
+    }
+  }
 }
