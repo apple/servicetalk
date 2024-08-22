@@ -21,6 +21,8 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
@@ -91,15 +93,16 @@ public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(true, false, false, 1, null,
+            new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
                     (__, ___) -> NO_RETRIES, null);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, false, 0, null,
+            new RetryingHttpRequesterFilter(false, true, false, false, 0, null,
                     (__, ___) -> NO_RETRIES, null);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
+    private final boolean returnFailedResponses;
     private final int maxTotalRetries;
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -109,13 +112,14 @@ public final class RetryingHttpRequesterFilter
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
-            final int maxTotalRetries,
+            final boolean returnFailedResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
+        this.returnFailedResponses = returnFailedResponses;
         this.maxTotalRetries = maxTotalRetries;
         this.responseMapper = responseMapper;
         this.retryFor = retryFor;
@@ -190,11 +194,13 @@ public final class RetryingHttpRequesterFilter
                                     !(lbEvent instanceof LoadBalancerReadyEvent &&
                                             ((LoadBalancerReadyEvent) lbEvent).isReady()))
                             .ignoreElements();
-                    return applyRetryCallbacks(
+                    return applyRetryCallbacksAndDraining(
                             sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
                 }
 
-                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                // Unwrap a WrappedResponseException before asking the policy for a policy.
+                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData,
+                        t instanceof WrappedResponseException ? ((WrappedResponseException) t).exception : t);
                 if (backOffPolicy != NO_RETRIES) {
                     final int offsetCount = count - lbNotReadyCount;
                     Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
@@ -203,15 +209,46 @@ public final class RetryingHttpRequesterFilter
                         retryWhen = retryWhen.concat(executor.timer(constant));
                     }
 
-                    return applyRetryCallbacks(retryWhen, count, t);
+                    return applyRetryCallbacksAndDraining(retryWhen, count, t);
                 }
 
                 return failed(t);
             }
 
-            Completable applyRetryCallbacks(final Completable completable, final int retryCount, final Throwable t) {
-                return retryCallbacks == null ? completable :
-                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t));
+            Completable applyRetryCallbacksAndDraining(final Completable completable, final int retryCount,
+                                                       final Throwable t) {
+                if (retryCallbacks == null && !(t instanceof WrappedResponseException)) {
+                    // No wrap necessary.
+                    return completable;
+                }
+                return completable.liftSync(subscriber -> new CompletableSource.Subscriber() {
+                    @Override
+                    public void onSubscribe(Cancellable cancellable) {
+                        subscriber.onSubscribe(cancellable);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        try {
+                            if (retryCallbacks != null) {
+                                retryCallbacks.beforeRetry(retryCount, requestMetaData, t);
+                            }
+                            if (t instanceof WrappedResponseException) {
+                                drainResponse(((WrappedResponseException) t).response).subscribe();
+                            }
+                        } finally {
+                            subscriber.onComplete();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable tt) {
+                        // If we're retrying due to a wrapped response it's because the users want the actual response,
+                        // not an exception. Therefore, we return the wrapped response and let it  get unwrapped at the
+                        // end of the retry pipeline.
+                        subscriber.onError(t instanceof WrappedResponseException ? t : tt);
+                    }
+                });
             }
         }
 
@@ -258,19 +295,31 @@ public final class RetryingHttpRequesterFilter
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
-                    return (exception != null ?
-                            // Drain response payload body before discarding it:
-                            resp.payloadBody().ignoreElements().onErrorComplete()
-                                    .concat(Single.<StreamingHttpResponse>failed(exception)) :
-                            Single.succeeded(resp))
-                            .shareContextOnSubscribe();
+                    if (exception == null) {
+                        return Single.succeeded(resp).shareContextOnSubscribe();
+                    }
+                    if (returnFailedResponses) {
+                        return Single.failed(new WrappedResponseException(resp, exception));
+                    } else {
+                        return drainResponse(resp).concat(Single.<StreamingHttpResponse>failed(exception));
+                    }
                 });
             }
 
             // 1. Metadata is shared across retries
             // 2. Publisher state is restored to original state for each retry
             // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
-            return single.retryWhen(retryStrategy(request, executionContext(), true));
+            single = single.retryWhen(retryStrategy(request, executionContext(), true));
+            if (returnFailedResponses) {
+                single = single.onErrorResume(t -> {
+                    if (t instanceof WrappedResponseException) {
+                        return Single.succeeded(((WrappedResponseException) t).response);
+                    } else {
+                        return Single.failed(t);
+                    }
+                });
+            }
+            return single;
         }
     }
 
@@ -719,6 +768,7 @@ public final class RetryingHttpRequesterFilter
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
+        private boolean returnFailedResponses;
 
         private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
                 retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediateBounded();
@@ -744,6 +794,11 @@ public final class RetryingHttpRequesterFilter
 
         @Nullable
         private RetryCallbacks onRequestRetry;
+
+        public Builder returnFailedResponses(final boolean returnFailedResponses) {
+            this.returnFailedResponses = returnFailedResponses;
+            return this;
+        }
 
         /**
          * By default, automatic retries wait for the associated {@link LoadBalancer} to be
@@ -1054,7 +1109,30 @@ public final class RetryingHttpRequesterFilter
                         return NO_RETRIES;
                     };
             return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
-                    maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
+                    returnFailedResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
+        }
+    }
+
+    private static Completable drainResponse(StreamingHttpResponse resp) {
+        return resp.payloadBody().ignoreElements().onErrorComplete();
+    }
+
+    private static final class WrappedResponseException extends Exception {
+
+        private static final long serialVersionUID = 3905983622734400759L;
+
+        final StreamingHttpResponse response;
+        final HttpResponseException exception;
+
+        WrappedResponseException(final StreamingHttpResponse response, final HttpResponseException exception) {
+            this.response = response;
+            this.exception = exception;
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            // just a carrier, the stack traces are not important.
+            return this;
         }
     }
 }
