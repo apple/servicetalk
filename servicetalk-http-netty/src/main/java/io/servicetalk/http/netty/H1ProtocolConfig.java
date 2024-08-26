@@ -55,6 +55,18 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
     int maxStartLineLength();
 
     /**
+     * Maximum allowed length of an HTTP <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-4.1">chunk</a>
+     * for an HTTP message.
+     * <p>
+     * If the chunk received is larger than the {@code maxChunkSize} configured, it will be split up into multiple
+     * smaller chunk so that they fit inside the configured boundaries.
+     *
+     * @return the maximum allowed length of an HTTP
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-4.1">chunk</a> for an HTTP message.
+     */
+    int maxChunkSize();
+
+    /**
      * Maximum length of the HTTP <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse.
      * <p>

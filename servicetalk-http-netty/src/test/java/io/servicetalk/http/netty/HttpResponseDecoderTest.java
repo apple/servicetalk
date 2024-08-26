@@ -64,6 +64,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.lang.Integer.max;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,20 +86,25 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
 
-    private final EmbeddedChannel channel = newChannel(false);
-    private final EmbeddedChannel channelSpecException = newChannel(true);
+    private final EmbeddedChannel channel = newChannel(false, 8192);
+    private final EmbeddedChannel channelSpecException = newChannel(true, 8192);
 
-    private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+    private EmbeddedChannel newChannel(boolean allowLFWithoutCR, final int maxChunkSize) {
         final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
         signalsQueue.offer(REQUEST_SIGNAL);
         return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
-                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, maxChunkSize));
     }
 
     @Override
     EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channel(final boolean crlf, final int maxChunkSize) {
+        return newChannel(!crlf, maxChunkSize);
     }
 
     @Override

@@ -37,6 +37,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.lang.Integer.max;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -49,18 +50,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
-    private final EmbeddedChannel channel = newChannel(false);
-    private final EmbeddedChannel channelSpecException = newChannel(true);
+    private final EmbeddedChannel channel = newChannel(false, 8192);
+    private final EmbeddedChannel channelSpecException = newChannel(true, 8192);
 
-    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR, final int maxChunkSize) {
         return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
                 DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, maxChunkSize));
     }
 
     @Override
     EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channel(final boolean crlf, final int maxChunkSize) {
+        return newChannel(!crlf, maxChunkSize);
     }
 
     @Override

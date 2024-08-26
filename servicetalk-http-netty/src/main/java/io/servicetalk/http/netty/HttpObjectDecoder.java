@@ -129,6 +129,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private final int maxStartLineLength;
     private final int maxHeaderFieldLength;
+    private final int maxChunkSize;
 
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
@@ -179,12 +180,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                       final int maxStartLineLength, final int maxHeaderFieldLength,
                       final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                      final CloseHandler closeHandler) {
+                      final CloseHandler closeHandler, final int maxChunkSize) {
         super(alloc);
         this.closeHandler = requireNonNull(closeHandler);
         this.headersFactory = requireNonNull(headersFactory);
         this.maxStartLineLength = ensurePositive(maxStartLineLength, "maxStartLineLength");
         this.maxHeaderFieldLength = ensurePositive(maxHeaderFieldLength, "maxHeaderFieldLength");
+        this.maxChunkSize = ensurePositive(maxChunkSize, "maxChunkSize");
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
         this.allowLFWithoutCR = allowLFWithoutCR;
     }
@@ -362,7 +364,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             case READ_VARIABLE_LENGTH_CONTENT: {
                 // Keep reading data as a chunk until the end of connection is reached.
-                int toRead = buffer.readableBytes();
+                int toRead = Math.min(buffer.readableBytes(), maxChunkSize);
                 if (toRead > 0) {
                     onDataSeen();
                     ByteBuf content = buffer.readRetainedSlice(toRead);
@@ -372,7 +374,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 return;
             }
             case READ_FIXED_LENGTH_CONTENT: {
-                int toRead = buffer.readableBytes();
+                int readLimit = buffer.readableBytes();
 
                 // Check if the buffer is readable first as we use the readable byte count
                 // to create the HttpChunk. This is needed as otherwise we may end up with
@@ -380,11 +382,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // handled like it is the last HttpChunk.
                 //
                 // See https://github.com/netty/netty/issues/433
-                if (toRead == 0) {
+                if (readLimit == 0) {
                     return;
                 }
                 onDataSeen();
 
+                int toRead = Math.min(readLimit, maxChunkSize);
                 if (toRead > chunkSize) {
                     toRead = (int) chunkSize;
                 }
@@ -424,7 +427,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // fall-through
             }
             case READ_CHUNKED_CONTENT: {
-                final int toRead = min((int) min(Integer.MAX_VALUE, chunkSize), buffer.readableBytes());
+                assert chunkSize <= Integer.MAX_VALUE;
+                final int toRead = Math.min(Math.min((int) chunkSize, maxChunkSize), buffer.readableBytes());
                 if (toRead == 0) {
                     return;
                 }

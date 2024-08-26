@@ -35,6 +35,7 @@ public final class H1ProtocolConfigBuilder {
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
+    private int maxChunkSize = 8192;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
@@ -106,6 +107,18 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the maximum allowed length of an HTTP
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-4.1">chunk</a> for an HTTP message.
+     *
+     * @param maxChunkSize maximum size in bytes per chunk.
+     * @return {@code this}
+     */
+    public H1ProtocolConfigBuilder maxChunkSize(final int maxChunkSize) {
+        this.maxChunkSize = ensurePositive(maxChunkSize, "maxChunkSize");
+        return this;
+    }
+
+    /**
      * Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> for a guess for future buffer
@@ -153,7 +166,8 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
+                maxChunkSize);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -162,6 +176,7 @@ public final class H1ProtocolConfigBuilder {
         private final int maxPipelinedRequests;
         private final int maxStartLineLength;
         private final int maxHeaderFieldLength;
+        private final int maxChunkSize;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
         private final H1SpecExceptions specExceptions;
@@ -169,7 +184,7 @@ public final class H1ProtocolConfigBuilder {
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
-                                final H1SpecExceptions specExceptions) {
+                                final H1SpecExceptions specExceptions, final int maxChunkSize) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
@@ -177,6 +192,7 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
+            this.maxChunkSize = maxChunkSize;
         }
 
         @Override
@@ -197,6 +213,11 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public int maxHeaderFieldLength() {
             return maxHeaderFieldLength;
+        }
+
+        @Override
+        public int maxChunkSize() {
+            return maxChunkSize;
         }
 
         @Override
@@ -222,6 +243,7 @@ public final class H1ProtocolConfigBuilder {
                     ", maxPipelinedRequests=" + maxPipelinedRequests +
                     ", maxStartLineLength=" + maxStartLineLength +
                     ", maxHeaderFieldLength=" + maxHeaderFieldLength +
+                    ", maxChunkSize=" + maxChunkSize +
                     ", headersEncodedSizeEstimate=" + headersEncodedSizeEstimate +
                     ", trailersEncodedSizeEstimate=" + trailersEncodedSizeEstimate +
                     ", specExceptions=" + specExceptions +

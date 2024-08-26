@@ -25,6 +25,9 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -83,6 +86,8 @@ abstract class HttpObjectDecoderTest {
     }
 
     abstract EmbeddedChannel channel();
+
+    abstract EmbeddedChannel channel(boolean crlf, int maxChunkSize);
 
     abstract EmbeddedChannel channelSpecException();
 
@@ -803,6 +808,31 @@ abstract class HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0} maxChunkSize={1}")
+    @MethodSource("maxChunkSizeArgs")
+    void chunkLargerThanMaxChunkSize(boolean crlf, int maxChunkSize) {
+        EmbeddedChannel channel = channel(crlf, maxChunkSize);
+        String br = br(crlf);
+        int chunkSize = 128;
+        writeMsg(startLineForContent() + br +
+                "Host: servicetalk.io" + br +
+                "Connection: keep-alive" + br +
+                "Transfer-Encoding: chunked" + br + br, channel);
+        writeChunk(chunkSize, channel);
+        writeMsg("0\r\n" + "TrailerStatus: good" + br + br, channel);
+        validateWithContent(-chunkSize, true, channel);
+    }
+
+    private static List<Arguments> maxChunkSizeArgs() {
+        final List<Arguments> args = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            for (int maxChunkSize : new int[] {1, 10, 100, 128}) {
+                args.add(Arguments.of(crlf, maxChunkSize));
+            }
+        }
+        return args;
     }
 
     @Test

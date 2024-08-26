@@ -49,6 +49,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -77,9 +78,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
                         final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
-                        final CloseHandler closeHandler) {
+                        final CloseHandler closeHandler, final int maxChunkSize) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
-                allowLFWithoutCR, closeHandler);
+                allowLFWithoutCR, closeHandler, maxChunkSize);
         this.methodQueue = requireNonNull(methodQueue);
         this.signalsQueue = requireNonNull(signalsQueue);
     }
