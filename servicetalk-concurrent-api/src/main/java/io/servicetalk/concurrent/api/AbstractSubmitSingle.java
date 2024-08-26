@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.util.concurrent.Callable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractSubmitSingle<T> extends Single<T> implements SingleSource<T> {
@@ -35,7 +36,12 @@ abstract class AbstractSubmitSingle<T> extends Single<T> implements SingleSource
     @Override
     protected final void handleSubscribe(final Subscriber<? super T> subscriber) {
         DelayedCancellable cancellable = new DelayedCancellable();
-        subscriber.onSubscribe(cancellable);
+        try {
+            subscriber.onSubscribe(cancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         final Cancellable eCancellable;
         try {
             eCancellable = runExecutor.execute(() -> {

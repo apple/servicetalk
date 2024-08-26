@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.oio.api.PayloadWriter;
 
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -193,7 +193,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private void processClosed(TerminalNotification currClosed) throws IOException {
         Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
         if (currState instanceof Subscriber &&
-                !ConnectedPublisher.CONNECTED_PUBLISHER_CANCELLED.equals(currClosed.cause())) {
+                !(currClosed.cause() instanceof StacklessCancelledIOException)) {
             currClosed.terminate((Subscriber<?>) currState);
         }
         throw newAlreadyClosed(currClosed.cause());
@@ -275,8 +275,6 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private static final class ConnectedPublisher<T> extends Publisher<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedPublisher.class);
-        private static final IOException CONNECTED_PUBLISHER_CANCELLED = unknownStackTrace(
-                new IOException("Connected Publisher cancel()"), ConnectablePayloadWriter.class, "cancel()");
         private final ConnectablePayloadWriter<T> outer;
 
         ConnectedPublisher(final ConnectablePayloadWriter<T> outer) {
@@ -329,7 +327,11 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
                     @Override
                     public void cancel() {
-                        if (closedUpdater.compareAndSet(outer, null, error(CONNECTED_PUBLISHER_CANCELLED))) {
+                        if (outer.closed != null) {
+                            return;
+                        }
+                        if (closedUpdater.compareAndSet(outer, null,
+                                error(StacklessCancelledIOException.newCancelledException()))) {
                             terminateRequestN();
                         }
                     }
@@ -377,5 +379,24 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private enum State {
         DISCONNECTED, CONNECTING, WAITING_FOR_CONNECTED, CONNECTED, TERMINATING, TERMINATED
+    }
+
+    private static final class StacklessCancelledIOException extends IOException {
+        private static final long serialVersionUID = 8114924638812910795L;
+
+        private StacklessCancelledIOException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            // Don't fill in the stacktrace to reduce performance overhead
+            return this;
+        }
+
+        static StacklessCancelledIOException newCancelledException() {
+            return ThrowableUtils.unknownStackTrace(new StacklessCancelledIOException("Connected Publisher cancel()"),
+                    ConnectedPublisher.class, "cancel()");
+        }
     }
 }

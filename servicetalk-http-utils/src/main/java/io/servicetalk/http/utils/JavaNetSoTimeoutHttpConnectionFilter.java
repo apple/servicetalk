@@ -41,6 +41,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.AbstractTimeoutHttpFilter.FixedDuration;
 import io.servicetalk.transport.api.ExecutionContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -194,91 +195,87 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 AtomicIntegerFieldUpdater.newUpdater(RequestTimeoutSubscriber.class, "once");
 
         private final DelayedCancellable requestCancellable = new DelayedCancellable();
-        private final Cancellable timeoutCancellable;
+        private final DelayedCancellable timeoutCancellable = new DelayedCancellable();
         private final Subscriber<? super StreamingHttpResponse> delegate;
 
+        private final Completable requestComplete;
         private final Duration timeout;
         private final Executor timeoutExecutor;
         @SuppressWarnings("unused")
         private volatile int once;
 
         RequestTimeoutSubscriber(Subscriber<? super StreamingHttpResponse> delegate, Completable requestComplete,
-                                        Duration timeout, Executor timeoutExecutor) {
+                                 Duration timeout, Executor timeoutExecutor) {
             this.delegate = delegate;
+            this.requestComplete = requestComplete;
             this.timeout = timeout;
             this.timeoutExecutor = timeoutExecutor;
-            timeoutCancellable = requestComplete.concat(Completable.never()
-                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            try {
-                delegate.onSubscribe(() -> {
-                    // We don't need to condition cancellation here on the `once()` call because the `DelayedCancellable`
-                    // will already enforce idempotency of the cancel call, and it's fine if we're racing cancels with the
-                    // results since cleanup is gated on the `once()` call.
-                    once();
-                    Throwable t = null;
-                    try {
-                        timeoutCancellable.cancel();
-                    } catch (Throwable tt) {
-                        t = tt;
-                    }
-                    try {
-                        requestCancellable.cancel();
-                    } catch (Throwable tt) {
-                        if (t == null) {
-                            t = tt;
-                        } else {
-                            t.addSuppressed(tt);
-                        }
-                    }
-                    if (t != null) {
-                        throwException(t);
-                    }
-                });
-                requestCancellable.delayedCancellable(cancellable);
-            } catch (Throwable cause) {
+            delegate.onSubscribe(() -> {
+                once();
                 try {
-                    cancellable.cancel();
-                } catch (Throwable t) {
-                    cause.addSuppressed(t);
+                    timeoutCancellable.cancel();
+                } finally {
+                    requestCancellable.cancel();
                 }
-                onError(cause);
-                LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", delegate, cause);
-            }
+            });
+            requestCancellable.delayedCancellable(cancellable);
+            // We only initialize the timer after the successful call to `delegate.onSubscribe(..)` to avoid
+            // RS spec violations from the timer firing before an `onSubscribe(..)` call. This also means we
+            // don't need to worry about `delegate.onSubscribe(..)` throwing since we don't initialize resources
+            // until after the call is successful.
+            timeoutCancellable.delayedCancellable(requestComplete.concat(Completable.never()
+                    .timeout(timeout, timeoutExecutor)).beforeOnError(this::handleInterruptions).subscribe());
         }
 
         private void handleInterruptions(Throwable t) {
             if (once()) {
-                requestCancellable.cancel();
-                Throwable result = t;
-                // We can get a SocketTimeoutException waiting for a 100 Continue response.
-                if (t instanceof TimeoutException) {
-                result = newStacklessSocketTimeoutException(
-                        "Read timed out after " + timeout.toMillis() +
-                                "ms waiting for response meta-data")
-                        .initCause(t);
+                try {
+                    requestCancellable.cancel();
+                } catch (Throwable tt) {
+                    addSuppressed(t, tt);
+                } finally {
+                    Throwable result = t;
+                    // We can get a SocketTimeoutException waiting for a 100 Continue response.
+                    if (t instanceof TimeoutException) {
+                        result = newStacklessSocketTimeoutException("Read timed out after " + timeout.toMillis() +
+                                "ms waiting for response meta-data").initCause(t);
+                    }
+                    delegate.onError(result);
                 }
-                delegate.onError(result);
             }
         }
 
         @Override
         public void onSuccess(@Nullable StreamingHttpResponse result) {
-            if (once()) {
-                timeoutCancellable.cancel();
-                if (result != null) {
-                    result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
-                            .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
-                                    "Read timed out after " + timeout.toMillis() +
-                                            "ms waiting for the next response payload body chunk")
-                                    .initCause(t)));
+            try {
+                if (once()) {
+                    try {
+                        timeoutCancellable.cancel();
+                    } catch (Throwable t) {
+                        delegate.onError(t);
+                        return;
+                    }
+                    if (result != null) {
+                        result = result.transformMessageBody(p -> p.timeout(timeout, timeoutExecutor)
+                                .onErrorMap(TimeoutException.class, t -> newStacklessSocketTimeoutException(
+                                        "Read timed out after " + timeout.toMillis() +
+                                                "ms waiting for the next response payload body chunk")
+                                        .initCause(t)));
+                    }
+                    try {
+                        delegate.onSuccess(result);
+                        result = null; // ownership of the response passed to delegate.
+                    } catch (Throwable t) {
+                        LOGGER.warn("Exception thrown by onSuccess of Subscriber {}. Draining response.", delegate, t);
+                    }
                 }
-                delegate.onSuccess(result);
-            } else {
+            } finally {
                 if (result != null) {
+                    // If we get here the response was not consumed, so we need to clean it up.
                     toSource(result.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 }
             }
@@ -290,15 +287,15 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                 try {
                     timeoutCancellable.cancel();
                 } catch (Throwable tt) {
-                    delegate.onError(tt);
-                    return;
+                    addSuppressed(t, tt);
+                } finally {
+                    delegate.onError(t);
                 }
-                delegate.onError(t);
             }
         }
 
         private boolean once() {
-            return 0 == onceUpdater.getAndSet(this, 1);
+            return onceUpdater.compareAndSet(this, 0, 1);
         }
     }
 

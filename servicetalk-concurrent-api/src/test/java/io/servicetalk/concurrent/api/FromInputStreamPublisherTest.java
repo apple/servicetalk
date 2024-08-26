@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -142,6 +143,32 @@ class FromInputStreamPublisherTest {
     void closeStreamOnCancelByDefault() throws Exception {
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().cancel();
+        verify(inputStream).close();
+    }
+
+    @Test
+    void closeStreamOnThrowingSubscriber() throws Exception {
+        AtomicReference<Throwable> onError = new AtomicReference<>();
+        toSource(pub).subscribe(new Subscriber<byte[]>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                throw DELIBERATE_EXCEPTION;
+            }
+
+            @Override
+            public void onNext(@Nullable final byte[] bytes) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                onError.set(t);
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        assertThat(onError.get(), is(DELIBERATE_EXCEPTION));
         verify(inputStream).close();
     }
 

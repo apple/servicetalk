@@ -149,7 +149,13 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
-                subscriber.onSubscribe(delayedCancellable);
+                try {
+                    subscriber.onSubscribe(delayedCancellable);
+                } catch (Throwable cause) {
+                    close(channel, cause);
+                    handleExceptionFromOnSubscribe(subscriber, cause);
+                    return;
+                }
                 // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);

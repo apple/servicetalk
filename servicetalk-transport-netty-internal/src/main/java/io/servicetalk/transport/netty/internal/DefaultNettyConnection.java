@@ -80,6 +80,7 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -522,7 +523,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
-                subscriber.onSubscribe(delayedCancellable);
+                try {
+                    subscriber.onSubscribe(delayedCancellable);
+                } catch (Throwable cause) {
+                    close(channel, cause);
+                    handleExceptionFromOnSubscribe(subscriber, cause);
+                    return;
+                }
                 // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(nettyInboundHandler);

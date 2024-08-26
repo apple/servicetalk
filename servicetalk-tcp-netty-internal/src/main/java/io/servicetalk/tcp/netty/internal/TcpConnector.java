@@ -54,6 +54,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
@@ -97,8 +98,16 @@ public final class TcpConnector {
         return new SubscribableSingle<C>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
-                ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory,
-                        observer.onNewConnection(localAddress, resolvedRemoteAddress));
+                final ConnectionObserver connectionObserver =
+                        observer.onNewConnection(localAddress, resolvedRemoteAddress);
+                final ConnectHandler<C> connectHandler;
+                try {
+                     connectHandler = new ConnectHandler<>(subscriber, connectionFactory, connectionObserver);
+                } catch (Throwable t) {
+                    connectionObserver.connectionClosed(t);
+                    handleExceptionFromOnSubscribe(subscriber, t);
+                    return;
+                }
                 try {
                     Future<?> connectFuture = connect0(localAddress, resolvedRemoteAddress, config, autoRead,
                             executionContext, connectHandler);

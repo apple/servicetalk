@@ -44,7 +44,13 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
  * across both sources.</p>
  * <p>This operator ensures that the provided callback is triggered just once whenever the sources reach a terminal
- * state across both sources.</p>
+ * state across both sources. An important question is when the ownership of the callback is transferred from the
+ * {@link Single} source and the payload {@link Publisher}. In this case ownership is transferred the first time the
+ * payload is subscribed to. This means that if a cancellation of the response {@link Single} occurs after the response
+ * has been emitted but before the message body has been subscribed to, the callback will observe a cancel. However, if
+ * the message payload has been subscribed to, the cancellation of the {@link Single} will have no effect and the result
+ * is dictated by the terminal event of the payload body. If the body is subscribed to multiple times, only the first
+ * subscribe will receive ownership of the terminal events.</p>
  *
  * Example usage tracking the begin and end of a request:
  *
@@ -110,9 +116,10 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
     }
 
     private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
+
         private static final int IDLE = 0;
         private static final int PROCESSING_PAYLOAD = 1;
-        private static final int TERMINATED = -1;
+        private static final int RESPONSE_COMPLETE = -1;
         private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
                 newUpdater(ResponseCompletionSubscriber.class, "state");
         private static final SingleSource.Subscriber<StreamingHttpResponse> NOOP_SUBSCRIBER =
@@ -147,7 +154,8 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
                 try {
-                    if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                    final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
+                    if (previous == IDLE || previous == PROCESSING_PAYLOAD) {
                         beforeFinally.cancel();
                     }
                 } finally {
@@ -163,13 +171,18 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformMessageBody(payload ->
-                        payload.liftSync(messageBodySubscriber -> new MessageBodySubscriber(messageBodySubscriber,
-                                beforeFinally, discardEventsAfterCancel))
+                        payload.liftSync(messageBodySubscriber ->
+                                // Only the first subscriber needs to be wrapped. Followup subscribers will
+                                // most likely fail because duplicate subscriptions to message bodies are not allowed.
+                                stateUpdater.compareAndSet(this,
+                                        PROCESSING_PAYLOAD, RESPONSE_COMPLETE) ? new MessageBodySubscriber(
+                                                messageBodySubscriber, beforeFinally, discardEventsAfterCancel) :
+                                        messageBodySubscriber)
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
-                assert state == TERMINATED;
+                assert state == RESPONSE_COMPLETE;
                 // The request has been cancelled, but we still received a response. We need to discard the response
                 // body or risk leaking hot resources which are commonly attached to a message body.
                 toSource(response.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
@@ -185,7 +198,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         @Override
         public void onError(final Throwable t) {
             try {
-                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                if (stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
                     beforeFinally.onError(t);
                 } else if (discardEventsAfterCancel) {
                     return;
@@ -200,7 +213,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         private void sendNullResponse() {
             try {
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                if (stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
                     beforeFinally.onComplete();
                 } else if (discardEventsAfterCancel) {
                     return;
@@ -424,21 +437,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         }
 
         private int setTerminalState() {
-            for (;;) {
-                final int state = this.state;
-                if (state == TERMINATED) {
-                    // We already cancelled and have to discard further events
-                    return state;
-                }
-                if (state == PROCESSING_PAYLOAD) {
-                    if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
-                        return state;
-                    }
-                } else if (stateUpdater.compareAndSet(this, state, TERMINATED)) {
-                    // re-entry, but we can terminate because this is a final event:
-                    return state;
-                }
-            }
+            return stateUpdater.getAndSet(this, TERMINATED);
         }
 
         private void cancel0(final boolean propagateCancel) {

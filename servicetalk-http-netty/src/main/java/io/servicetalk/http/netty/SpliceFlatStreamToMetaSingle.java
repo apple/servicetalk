@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -236,7 +237,18 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
                     // on maybePayloadSubUpdater. Otherwise there is a potential for concurrent invocation on the
                     // Subscriber which is not allowed by the Reactive Streams specification.
-                    newSubscriber.onSubscribe(delayedSubscription);
+                    try {
+                        newSubscriber.onSubscribe(delayedSubscription);
+                    } catch (Throwable t) {
+                        handleExceptionFromOnSubscribe(newSubscriber, t);
+                        if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING,
+                                EMPTY_COMPLETED_DELIVERED)) {
+                            final Subscription subscription = rawSubscription;
+                            assert subscription != null : "Expected rawSubscription but got null";
+                            subscription.cancel();
+                        }
+                        return;
+                    }
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
                         assert rawSubscription != null : "Expected rawSubscription but got null";
                         delayedSubscription.delayedSubscription(rawSubscription);

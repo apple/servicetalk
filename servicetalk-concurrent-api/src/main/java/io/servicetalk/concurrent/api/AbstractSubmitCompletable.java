@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractSubmitCompletable extends Completable implements CompletableSource {
@@ -33,7 +34,12 @@ abstract class AbstractSubmitCompletable extends Completable implements Completa
     @Override
     protected final void handleSubscribe(final CompletableSource.Subscriber subscriber) {
         DelayedCancellable cancellable = new DelayedCancellable();
-        subscriber.onSubscribe(cancellable);
+        try {
+            subscriber.onSubscribe(cancellable);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         final Cancellable eCancellable;
         try {
             eCancellable = runExecutor.execute(() -> {
