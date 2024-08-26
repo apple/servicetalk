@@ -49,7 +49,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
