@@ -20,6 +20,8 @@ import io.servicetalk.capacity.limiter.api.CapacityLimiter.Ticket;
 import io.servicetalk.capacity.limiter.api.Classification;
 import io.servicetalk.capacity.limiter.api.RequestDroppedException;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.context.api.ContextMap;
@@ -62,6 +64,10 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     private static final RequestDroppedException BREAKER_REJECTION = unknownStackTrace(
             new RequestDroppedException("Service Unavailable", null, false, true),
             AbstractTrafficResilienceHttpFilter.class, "breakerRejection");
+
+    private static final String DEBUGGING_FLAG = "io.servicetalk.traffic.resilience.http.debug";
+
+    private static final boolean ENABLE_DEBUGGING = Boolean.getBoolean(DEBUGGING_FLAG);
 
     protected static final Single<StreamingHttpResponse> DEFAULT_CAPACITY_REJECTION =
             Single.failed(CAPACITY_REJECTION);
@@ -222,9 +228,10 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     private Single<StreamingHttpResponse> handleAllow(
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
             final Function<HttpResponseMetaData, Duration> delayProvider,
-            final StreamingHttpRequest request, final Ticket ticket, final TicketObserver ticketObserver,
+            final StreamingHttpRequest request, final Ticket baseTicket, final TicketObserver ticketObserver,
             @Nullable final CircuitBreaker breaker, final long startTimeNs) {
-        return delegate.apply(request)
+        final Ticket ticket = ENABLE_DEBUGGING ? new DebugTrackingDelegatingTicket(baseTicket) : baseTicket;
+        Single<StreamingHttpResponse> response = delegate.apply(request)
                 // The map is issuing an exception that will be propagated to the downstream BeforeFinallyHttpOperator
                 // in order to invoke the appropriate callbacks to release resources.
                 // If the BeforeFinallyHttpOperator comes earlier, the Single will succeed and only downstream will
@@ -280,6 +287,27 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                         }
                     }
                 }, true));
+        if (ENABLE_DEBUGGING) {
+            response = response.liftSync(subscriber -> new SingleSource.Subscriber<StreamingHttpResponse>() {
+                @Override
+                public void onSubscribe(Cancellable cancellable) {
+                    subscriber.onSubscribe(cancellable);
+                }
+
+                @Override
+                public void onSuccess(@Nullable StreamingHttpResponse result) {
+                    subscriber.onSuccess(result);
+                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, result == null ? null : result.status());
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    subscriber.onError(t);
+                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, t);
+                }
+            });
+        }
+        return response;
     }
 
     private void onError(final Throwable throwable, @Nullable final CircuitBreaker breaker,
@@ -298,7 +326,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
      * A ticket which delegates the actual calls to the delegate, but also tracks if the actual terminal signals
      * are called.
      */
-    static final class TrackingDelegatingTicket implements Ticket {
+    private static final class TrackingDelegatingTicket implements Ticket {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(TrackingDelegatingTicket.class);
 
@@ -332,29 +360,25 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
         @Override
         public int completed() {
-            signal(SIGNAL_COMPLETED);
-            return delegate.completed();
+            return signal(SIGNAL_COMPLETED) ? delegate.completed() : -1;
         }
 
         @Override
         public int dropped() {
-            signal(SIGNAL_DROPPED);
-            return delegate.dropped();
+            return signal(SIGNAL_DROPPED) ? delegate.dropped() : -1;
         }
 
         @Override
         public int failed(final Throwable error) {
-            signal(SIGNAL_FAILED);
-            return delegate.failed(error);
+            return signal(SIGNAL_FAILED) ? delegate.failed(error) : -1;
         }
 
         @Override
         public int ignored() {
-            signal(SIGNAL_IGNORED);
-            return delegate.ignored();
+            return signal(SIGNAL_IGNORED) ? delegate.ignored() : -1;
         }
 
-        private void signal(final int newSignal) {
+        private boolean signal(final int newSignal) {
             for (;;) {
                 final int oldValue = signaled;
                 if (signaledUpdater.compareAndSet(this, oldValue, oldValue | newSignal)) {
@@ -362,8 +386,10 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                         // We have a double signal, log this event since it is not expected.
                         LOGGER.warn("{} signaled completion more than once. Already signaled with {}, new signal {}.",
                                 getClass().getSimpleName(), oldValue, newSignal);
+                        return false;
+                    } else {
+                        return true;
                     }
-                    return;
                 }
             }
         }
@@ -375,6 +401,75 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     ", requestHashCode=" + requestHashCode +
                     ", signaled=" + signaled +
                     '}';
+        }
+    }
+
+    private static final class DebugTrackingDelegatingTicket implements Ticket {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(DebugTrackingDelegatingTicket.class);
+
+        private final Ticket delegate;
+        private volatile boolean completed;
+        @Nullable
+        private volatile Object terminationCause;
+
+        DebugTrackingDelegatingTicket(final Ticket delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public CapacityLimiter.LimiterState state() {
+            completed = true;
+            return delegate.state();
+        }
+
+        @Override
+        public int completed() {
+            completed = true;
+            return delegate.completed();
+        }
+
+        @Override
+        public int dropped() {
+            completed = true;
+            return delegate.dropped();
+        }
+
+        @Override
+        public int failed(Throwable error) {
+            completed = true;
+            return delegate.failed(error);
+        }
+
+        @Override
+        public int ignored() {
+            completed = true;
+            return delegate.ignored();
+        }
+
+        @Override
+        public String toString() {
+            return "DebugTrackingDelegatingTicket{" +
+                    "delegate=" + delegate +
+                    ", completed=" + completed +
+                    ", terminationCause=" + terminationCause +
+                    '}';
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            if (!completed) {
+                LOGGER.warn("Abandoned ticket detected: {}. Ignoring ticket.", this);
+                ignored();
+            }
+            super.finalize();
+        }
+
+        static void setTerminationCause(Ticket ticket, @Nullable Object result) {
+            if (ENABLE_DEBUGGING && ticket instanceof DebugTrackingDelegatingTicket) {
+                DebugTrackingDelegatingTicket t = (DebugTrackingDelegatingTicket) ticket;
+                t.terminationCause = result;
+            }
         }
     }
 }
