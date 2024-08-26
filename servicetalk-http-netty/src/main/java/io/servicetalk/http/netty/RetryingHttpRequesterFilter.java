@@ -205,6 +205,7 @@ public final class RetryingHttpRequesterFilter
 
                     return applyRetryCallbacks(retryWhen, count, t);
                 }
+
                 return failed(t);
             }
 

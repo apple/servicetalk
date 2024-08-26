@@ -109,11 +109,6 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
             public ExecutionStrategy requiredOffloads() {
                 return strategy;
             }
-
-            @Override
-            public String toString() {
-                return "ConnectionFactoryFilter$withStrategy@" + Integer.toHexString(System.identityHashCode(this));
-            }
         };
     }
 }
