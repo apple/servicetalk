@@ -65,6 +65,8 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             new RequestDroppedException("Service Unavailable", null, false, true),
             AbstractTrafficResilienceHttpFilter.class, "breakerRejection");
 
+    private static final String CANCELLED = "CANCELLED";
+    private static final String COMPLETE = "COMPLETE";
     private static final String DEBUGGING_FLAG = "io.servicetalk.traffic.resilience.http.debug";
 
     private static final boolean ENABLE_DEBUGGING = Boolean.getBoolean(DEBUGGING_FLAG);
@@ -231,15 +233,38 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final StreamingHttpRequest request, final Ticket baseTicket, final TicketObserver ticketObserver,
             @Nullable final CircuitBreaker breaker, final long startTimeNs) {
         final Ticket ticket = ENABLE_DEBUGGING ? new DebugTrackingDelegatingTicket(baseTicket) : baseTicket;
-        Single<StreamingHttpResponse> response = delegate.apply(request)
-                // The map is issuing an exception that will be propagated to the downstream BeforeFinallyHttpOperator
-                // in order to invoke the appropriate callbacks to release resources.
-                // If the BeforeFinallyHttpOperator comes earlier, the Single will succeed and only downstream will
-                // see the exception, preventing callbacks to release permits; which results in the limiter eventually
-                // throttling ALL future requests.
-                // Before returning an error, we have to drain the response payload body to properly release resources
-                // and avoid leaking a connection, except for the PassthroughRequestDroppedException case.
-                .flatMap(resp -> {
+        Single<StreamingHttpResponse> response = delegate.apply(request);
+        if (ENABLE_DEBUGGING) {
+            response = response.liftSync(subscriber -> new SingleSource.Subscriber<StreamingHttpResponse>() {
+                @Override
+                public void onSubscribe(Cancellable cancellable) {
+                    subscriber.onSubscribe(() -> {
+                        cancellable.cancel();
+                        DebugTrackingDelegatingTicket.setTerminationCause(ticket, CANCELLED);
+                    });
+                }
+
+                @Override
+                public void onSuccess(@Nullable StreamingHttpResponse result) {
+                    subscriber.onSuccess(result);
+                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, result);
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    subscriber.onError(t);
+                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, t);
+                }
+            });
+        }
+        // The map is issuing an exception that will be propagated to the downstream BeforeFinallyHttpOperator
+        // in order to invoke the appropriate callbacks to release resources.
+        // If the BeforeFinallyHttpOperator comes earlier, the Single will succeed and only downstream will
+        // see the exception, preventing callbacks to release permits; which results in the limiter eventually
+        // throttling ALL future requests.
+        // Before returning an error, we have to drain the response payload body to properly release resources
+        // and avoid leaking a connection, except for the PassthroughRequestDroppedException case.
+        return response.flatMap(resp -> {
                     if (breaker != null && breakerRejectionPredicate.test(resp)) {
                         return resp.payloadBody().ignoreElements()
                                 .concat(Single.<StreamingHttpResponse>failed(
@@ -287,27 +312,6 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                         }
                     }
                 }, true));
-        if (ENABLE_DEBUGGING) {
-            response = response.liftSync(subscriber -> new SingleSource.Subscriber<StreamingHttpResponse>() {
-                @Override
-                public void onSubscribe(Cancellable cancellable) {
-                    subscriber.onSubscribe(cancellable);
-                }
-
-                @Override
-                public void onSuccess(@Nullable StreamingHttpResponse result) {
-                    subscriber.onSuccess(result);
-                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, result == null ? null : result.status());
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    subscriber.onError(t);
-                    DebugTrackingDelegatingTicket.setTerminationCause(ticket, t);
-                }
-            });
-        }
-        return response;
     }
 
     private void onError(final Throwable throwable, @Nullable final CircuitBreaker breaker,
@@ -409,9 +413,12 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         private static final Logger LOGGER = LoggerFactory.getLogger(DebugTrackingDelegatingTicket.class);
 
         private final Ticket delegate;
-        private volatile boolean completed;
+        private volatile boolean ticketCompleted;
+        private volatile boolean responseBodySubscribed;
         @Nullable
-        private volatile Object terminationCause;
+        private volatile Object responseHeadCause;
+        @Nullable
+        private volatile Object responseBodyResult;
 
         DebugTrackingDelegatingTicket(final Ticket delegate) {
             this.delegate = delegate;
@@ -419,31 +426,31 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
         @Override
         public CapacityLimiter.LimiterState state() {
-            completed = true;
+            ticketCompleted = true;
             return delegate.state();
         }
 
         @Override
         public int completed() {
-            completed = true;
+            ticketCompleted = true;
             return delegate.completed();
         }
 
         @Override
         public int dropped() {
-            completed = true;
+            ticketCompleted = true;
             return delegate.dropped();
         }
 
         @Override
         public int failed(Throwable error) {
-            completed = true;
+            ticketCompleted = true;
             return delegate.failed(error);
         }
 
         @Override
         public int ignored() {
-            completed = true;
+            ticketCompleted = true;
             return delegate.ignored();
         }
 
@@ -451,14 +458,16 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         public String toString() {
             return "DebugTrackingDelegatingTicket{" +
                     "delegate=" + delegate +
-                    ", completed=" + completed +
-                    ", terminationCause=" + terminationCause +
+                    ", ticketCompleted=" + ticketCompleted +
+                    ", responseBodySubscribed=" + responseBodySubscribed +
+                    ", responseHeadCause=" + responseHeadCause +
+                    ", responseBodyResult=" + responseBodyResult +
                     '}';
         }
 
         @Override
         protected void finalize() throws Throwable {
-            if (!completed) {
+            if (!ticketCompleted) {
                 LOGGER.warn("Abandoned ticket detected: {}. Ignoring ticket.", this);
                 ignored();
             }
@@ -468,7 +477,31 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         static void setTerminationCause(Ticket ticket, @Nullable Object result) {
             if (ENABLE_DEBUGGING && ticket instanceof DebugTrackingDelegatingTicket) {
                 DebugTrackingDelegatingTicket t = (DebugTrackingDelegatingTicket) ticket;
-                t.terminationCause = result;
+                t.responseHeadCause = result;
+                if (result instanceof StreamingHttpResponse) {
+                    StreamingHttpResponse response = (StreamingHttpResponse) result;
+                    response.transformMessageBody(body ->
+                        body.beforeOnSubscribe(ignored -> {
+                            t.responseBodySubscribed = true;
+                        })
+                        .beforeFinally(new TerminalSignalConsumer() {
+                            @Override
+                            public void onComplete() {
+                                t.responseBodyResult = COMPLETE;
+                            }
+
+                            @Override
+                            public void onError(Throwable throwable) {
+                                t.responseBodyResult = throwable;
+                            }
+
+                            @Override
+                            public void cancel() {
+                                t.responseBodyResult = CANCELLED;
+                            }
+                        })
+                    );
+                }
             }
         }
     }
