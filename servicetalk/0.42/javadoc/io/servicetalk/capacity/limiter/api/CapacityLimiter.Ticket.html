@@ -108,7 +108,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#dropped()" class="member-name-link">dropped</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Callback to indicate that a request was dropped externally (eg.</div>
+<div class="block">Callback to indicate that a request was dropped externally (e.g.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#failed(java.lang.Throwable)" class="member-name-link">failed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</code></div>
@@ -167,8 +167,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="dropped()">
 <h3>dropped</h3>
 <div class="member-signature"><span class="return-type">int</span>&nbsp;<span class="element-name">dropped</span>()</div>
-<div class="block">Callback to indicate that a request was dropped externally (eg. peer rejection) due to capacity
- issues. Loss based algorithms tend to reduce the limit by a multiplier on such events.</div>
+<div class="block">Callback to indicate that a request was dropped externally (e.g. peer rejection) due to capacity
+ issues.
+ <p>
+ Note that loss-based algorithms tend to reduce the limit by a multiplier on such events.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>An integer as hint (if positive), that represents an estimated remaining capacity after
@@ -181,8 +183,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="failed(java.lang.Throwable)">
 <h3>failed</h3>
 <div class="member-signature"><span class="return-type">int</span>&nbsp;<span class="element-name">failed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;error)</span></div>
-<div class="block">Callback to indicate that a request has failed. Algorithms may choose to act upon failures ie. Circuit
- Breaking.</div>
+<div class="block">Callback to indicate that a request has failed.
+ <p>
+ Algorithms may choose to act upon failures (i.e. Circuit Breaking).</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>error</code> - the failure cause.</dd>
@@ -198,8 +201,9 @@ loadScripts(document, 'script');</script>
 <h3>ignored</h3>
 <div class="member-signature"><span class="return-type">int</span>&nbsp;<span class="element-name">ignored</span>()</div>
 <div class="block">Callback to indicate that a request had not a capacity deterministic termination.
+ <p>
  Ignoring a <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is a way to indicate to the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> that this operation's
- termination, should not be considered towards a decision for modifying the limits. e.g., An algorithm that
+ termination should not be considered towards a decision for modifying the limits. e.g., An algorithm that
  measures delays (time start - time end), can use that to ignore a particular result from the feedback loop.</div>
 <dl class="notes">
 <dt>Returns:</dt>

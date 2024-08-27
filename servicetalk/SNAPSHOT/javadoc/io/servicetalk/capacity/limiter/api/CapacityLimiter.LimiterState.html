@@ -78,7 +78,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public static interface </span><span class="element-name type-name-label">CapacityLimiter.LimiterState</span></div>
-<div class="block">Representation of the state of the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when a <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
+<div class="block">Representation of the state of the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when the <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -96,7 +96,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#pending()" class="member-name-link">pending</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns the current pending (in use capacity) demand.</div>
+<div class="block">Returns the current pending (in use capacity) demand when the <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> was issued.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#remaining()" class="member-name-link">remaining</a>()</code></div>
@@ -132,11 +132,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="pending()">
 <h3>pending</h3>
 <div class="member-signature"><span class="return-type">int</span>&nbsp;<span class="element-name">pending</span>()</div>
-<div class="block">Returns the current pending (in use capacity) demand.
+<div class="block">Returns the current pending (in use capacity) demand when the <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> was issued.
+ <p>
  If the pending is unknown a negative value i.e., -1 is allowed to express this.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the current pending (in use capacity) demand.</dd>
+<dd>the current pending (in use capacity) demand when the <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> was issued.</dd>
 </dl>
 </section>
 </li>

@@ -75,31 +75,30 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">CapacityLimiter</span></div>
 <div class="block">A provider of capacity for a client or server.
- <br><br>
- <h2>Capacity</h2>
+ <p>
+ <strong>Capacity</strong>
  Capacity for an entity is defined as the number of concurrent requests that it can process without significantly
  affecting resource consumption or likelihood to successfully process in a timely manner given currently
  available resources vs resources required to process the new request.
  This capacity offered can be static or dynamic and the semantics of determination is left to implementations.
- <br><br>
- <h2>Consumption</h2>
+ <p>
+ <strong>Consumption</strong>
  As the capacity is defined in terms of concurrent requests, as <a href="#tryAcquire(io.servicetalk.capacity.limiter.api.Classification,io.servicetalk.context.api.ContextMap)"><code>new requests are seen</code></a>, some portion of this capacity is deemed to be consumed till a subsequent callback marks
  the end of processing for that request. Number of times that <a href="#tryAcquire(io.servicetalk.capacity.limiter.api.Classification,io.servicetalk.context.api.ContextMap)"><code>tryAcquire(Classification, ContextMap)</code></a>
  is called without a corresponding termination callback is termed as demand.
- <br><br>
- <h2>Request Lifetime</h2>
+ <p>
+ <strong>Request Lifetime</strong>
  Request processing starts when <a href="#tryAcquire(io.servicetalk.capacity.limiter.api.Classification,io.servicetalk.context.api.ContextMap)"><code>tryAcquire(Classification, ContextMap)</code></a> is called and returns a non-null
  <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> and terminates when either one of the following occurs:
  <ul>
-     <li>When the request is successfully completed =&gt; (Default: <a href="CapacityLimiter.Ticket.html#completed()"><code>CapacityLimiter.Ticket.completed()</code></a>)
-     <li>When the request fails due to an external capacity rejection i.e., dropped =&gt; (Default:
-     <a href="CapacityLimiter.Ticket.html#dropped()"><code>CapacityLimiter.Ticket.dropped()</code></a>)
-     </li>
-     <li>When the request fails due to a local error =&gt; (Default: <a href="CapacityLimiter.Ticket.html#failed(java.lang.Throwable)"><code>CapacityLimiter.Ticket.failed(Throwable)</code></a>)
-     <li>When the request is cancelled (Default: <a href="CapacityLimiter.Ticket.html#dropped()"><code>CapacityLimiter.Ticket.dropped()</code></a>)
+     <li>When the request is successfully completed (Default: <a href="CapacityLimiter.Ticket.html#completed()"><code>CapacityLimiter.Ticket.completed()</code></a>)</li>
+     <li>When the request fails due to an external capacity rejection i.e., dropped (Default:
+     <a href="CapacityLimiter.Ticket.html#dropped()"><code>CapacityLimiter.Ticket.dropped()</code></a>)</li>
+     <li>When the request fails due to a local error (Default: <a href="CapacityLimiter.Ticket.html#failed(java.lang.Throwable)"><code>CapacityLimiter.Ticket.failed(Throwable)</code></a>)</li>
+     <li>When the request is cancelled (Default: <a href="CapacityLimiter.Ticket.html#ignored()"><code>CapacityLimiter.Ticket.ignored()</code></a>)</li>
  </ul>
- <br>
- <h2>Request Classifications</h2>
+ <p>
+ <strong>Request Classifications</strong>
  Requests can be classified with different classes, that can be taken into consideration when a
  <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> implementation supports this.
  <a href="Classification.html" title="interface in io.servicetalk.capacity.limiter.api"><code>Classification</code></a> is used as hint from the user of the importance of the incoming request, and are not
@@ -120,7 +119,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="CapacityLimiter.LimiterState.html" class="type-name-link" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.LimiterState</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">Representation of the state of the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when a <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
+<div class="block">Representation of the state of the <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when the <a href="CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
 </div>
 <div class="col-first odd-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="CapacityLimiter.Ticket.html" class="type-name-link" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a></code></div>

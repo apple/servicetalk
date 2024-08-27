@@ -272,9 +272,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig</a><wbr>(<a href="../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a>&nbsp;transportConfig)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Set the transport configuration.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)" class="member-name-link">transportObserver</a><wbr>(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 </div>
 </div>
@@ -380,6 +385,25 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="transportConfig(io.servicetalk.transport.api.TransportConfig)">
+<h3>transportConfig</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">transportConfig</span><wbr><span class="parameters">(<a href="../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a>&nbsp;transportConfig)</span></div>
+<div class="block">Set the transport configuration.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>transportConfig</code> - <a href="../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a> to use.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../transport/api/TransportConfigBuilder.html" title="class in io.servicetalk.transport.api"><code>TransportConfigBuilder</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="socketOption(java.net.SocketOption,T)">
 <h3 id="socketOption(java.net.SocketOption,java.lang.Object)">socketOption</h3>
 <div class="member-signature"><span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">socketOption</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
@@ -392,7 +416,7 @@ loadScripts(document, 'script');</script>
 <dd><code>option</code> - the option to apply.</dd>
 <dd><code>value</code> - the value.</dd>
 <dt>Returns:</dt>
-<dd>this.</dd>
+<dd><code>this</code>.</dd>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
@@ -416,7 +440,7 @@ loadScripts(document, 'script');</script>
 <dd><code>option</code> - the option to apply.</dd>
 <dd><code>value</code> - the value.</dd>
 <dt>Returns:</dt>
-<dd>this.</dd>
+<dd><code>this</code>.</dd>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">

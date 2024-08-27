@@ -123,17 +123,22 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the <code>SslContext</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api">UserDataLoggerConfig</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#wireLoggerConfig()" class="member-name-link">wireLoggerConfig</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportConfig()" class="member-name-link">transportConfig</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the <a href="../../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api">UserDataLoggerConfig</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#wireLoggerConfig()" class="member-name-link">wireLoggerConfig</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api"><code>UserDataLoggerConfig</code></a> for wire logging.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withSslConfigPeerHost(java.lang.String,int,java.lang.String,java.lang.String)" class="member-name-link">withSslConfigPeerHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;peerHost,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withSslConfigPeerHost(java.lang.String,int,java.lang.String,java.lang.String)" class="member-name-link">withSslConfigPeerHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;peerHost,
  int&nbsp;peerPort,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;sniHostname,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;hostnameVerificationAlgorithm)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Create a new <a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal"><code>ReadOnlyTcpClientConfig</code></a> replacing <a href="../../../transport/api/ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a>,
  <a href="../../../transport/api/ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a>, and <a href="../../../transport/api/ClientSslConfig.html#sniHostname()"><code>ClientSslConfig.sniHostname()</code></a>.</div>
 </div>
@@ -256,6 +261,17 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the <a href="../../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api"><code>UserDataLoggerConfig</code></a> for wire logging, or <code>null</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="transportConfig()">
+<h3>transportConfig</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></span>&nbsp;<span class="element-name">transportConfig</span>()</div>
+<div class="block">Get the <a href="../../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><a href="../../../transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a> to use</dd>
 </dl>
 </section>
 </li>

@@ -1025,7 +1025,7 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/capacity/limiter/api/CapacityLimiters.html#allowAll()" class="member-name-link">allowAll()</a> - Static method in class io.servicetalk.capacity.limiter.api.<a href="io/servicetalk/capacity/limiter/api/CapacityLimiters.html" title="class in io.servicetalk.capacity.limiter.api">CapacityLimiters</a></dt>
 <dd>
 <div class="block">Returns a NO-OP <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> that has no logic around acquiring or releasing a permit for a request;
- thus it allows everything to go through, similarly to a non-existing <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a>.</div>
+ thus it allows everything to go through, similar to a non-existing <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#allowDropRequestTrailers(boolean)" class="member-name-link">allowDropRequestTrailers(boolean)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -2777,6 +2777,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Build a new <a href="io/servicetalk/transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfigBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></dt>
+<dd>
+<div class="block">Builds a new <a href="io/servicetalk/transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextBuilder.html#build()" class="member-name-link">build()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextBuilder.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextBuilder</a></dt>
 <dd>
 <div class="block">Builds a new <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> or return the default context if none of the components are set in this
@@ -3247,7 +3251,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.LimiterState.html" class="type-name-link" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.LimiterState</a> - Interface in <a href="io/servicetalk/capacity/limiter/api/package-summary.html">io.servicetalk.capacity.limiter.api</a></dt>
 <dd>
-<div class="block">Representation of the state of the <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when a <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
+<div class="block">Representation of the state of the <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> when the <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> is issued.</div>
 </dd>
 <dt><a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html" class="type-name-link" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a> - Interface in <a href="io/servicetalk/capacity/limiter/api/package-summary.html">io.servicetalk.capacity.limiter.api</a></dt>
 <dd>
@@ -6677,7 +6681,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html#dropped()" class="member-name-link">dropped()</a> - Method in interface io.servicetalk.capacity.limiter.api.<a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a></dt>
 <dd>
-<div class="block">Callback to indicate that a request was dropped externally (eg.</div>
+<div class="block">Callback to indicate that a request was dropped externally (e.g.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#duplicate()" class="member-name-link">duplicate()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -9400,6 +9404,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block"><code>.grpc.health.v1.HealthCheckResponse.ServingStatus status = 1;</code></div>
 </dd>
+<dt><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html#getStatusMessage(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">getStatusMessage(HttpHeaders)</a> - Static method in class io.servicetalk.grpc.internal.<a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a></dt>
+<dd>
+<div class="block">Tries to read the status message from the <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> and percent-decode if necessary.</div>
+</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html#getStatusValue()" class="member-name-link">getStatusValue()</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckResponse.Builder</a></dt>
 <dd>
 <div class="block"><code>.grpc.health.v1.HealthCheckResponse.ServingStatus status = 1;</code></div>
@@ -9605,6 +9613,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Status-Message → <code>grpc-message</code></div>
 </dd>
+<dt><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html#GRPC_STATUS_MESSAGE" class="member-name-link">GRPC_STATUS_MESSAGE</a> - Static variable in class io.servicetalk.grpc.internal.<a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcHeaderNames.html#GRPC_TIMEOUT" class="member-name-link">GRPC_TIMEOUT</a> - Static variable in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcHeaderNames.html" title="class in io.servicetalk.grpc.api">GrpcHeaderNames</a></dt>
 <dd>
 <div class="block">Timeout → <code>grpc-timeout</code></div>
@@ -9926,6 +9936,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/grpc/api/GrpcStatusException.html#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatus,java.lang.Throwable)" class="member-name-link">GrpcStatusException(GrpcStatus, Throwable)</a> - Constructor for exception io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></dt>
 <dd>
 <div class="block">Constructs an instance with the given <a href="io/servicetalk/grpc/api/GrpcStatus.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatus</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" class="type-name-link" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a> - Class in <a href="io/servicetalk/grpc/internal/package-summary.html">io.servicetalk.grpc.internal</a></dt>
+<dd>
+<div class="block">Provides utilities around percent-encoding and decoding the GRPC status message.</div>
 </dd>
 <dt><a href="io/servicetalk/encoding/netty/ContentCodings.html#gzip()" class="member-name-link">gzip()</a> - Static method in class io.servicetalk.encoding.netty.<a href="io/servicetalk/encoding/netty/ContentCodings.html" title="class in io.servicetalk.encoding.netty">ContentCodings</a></dt>
 <dd>
@@ -11183,6 +11197,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanBuilder.html#ignoreActiveSpan()" class="member-name-link">ignoreActiveSpan()</a> - Method in interface io.servicetalk.opentracing.inmemory.api.<a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanBuilder.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemorySpanBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/internal/DelayedCancellable.html#ignoreCancel()" class="member-name-link">ignoreCancel()</a> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/DelayedCancellable.html" title="class in io.servicetalk.concurrent.internal">DelayedCancellable</a></dt>
+<dd>
+<div class="block">Ignores any subsequent calls to <a href="io/servicetalk/concurrent/internal/DelayedCancellable.html#cancel()"><code>DelayedCancellable.cancel()</code></a>, preventing propagating the cancellation further up the stream.</div>
+</dd>
 <dt><a href="io/servicetalk/client/api/internal/IgnoreConsumedEvent.html" class="type-name-link" title="class in io.servicetalk.client.api.internal">IgnoreConsumedEvent</a>&lt;<a href="io/servicetalk/client/api/internal/IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a>&gt; - Class in <a href="io/servicetalk/client/api/internal/package-summary.html">io.servicetalk.client.api.internal</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
@@ -13224,6 +13242,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the maximum allowed buffer size for the <a href="io/servicetalk/concurrent/api/ByteArrayMapper.html#map(byte%5B%5D,int,int)"><code>ByteArrayMapper.map(byte[], int, int)</code></a> operation.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfig.html#maxBytesPerRead()" class="member-name-link">maxBytesPerRead()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></dt>
+<dd>
+<div class="block">Maximum number of bytes per read operation.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfigBuilder.html#maxBytesPerRead(int)" class="member-name-link">maxBytesPerRead(int)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets maximum number of bytes per read operation.</div>
+</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#maxCapacity()" class="member-name-link">maxCapacity()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
 <div class="block">Returns the maximum allowed capacity of this buffer.</div>
@@ -13326,6 +13352,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Sets the maximum number of <a href="https://datatracker.ietf.org/doc/html/rfc7230#section-6.3.2">pipelined</a>
  HTTP requests to queue up.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfig.html#maxReadAttemptsPerSelect()" class="member-name-link">maxReadAttemptsPerSelect()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api">TransportConfig</a></dt>
+<dd>
+<div class="block">Maximum number of times the transport will attempt to read data when the selector notifies that there is
+ read data pending.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfigBuilder.html#maxReadAttemptsPerSelect(int)" class="member-name-link">maxReadAttemptsPerSelect(int)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets maximum number of times the transport will attempt to read data when the selector notifies that there is
+ read data pending.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/RedirectConfig.html#maxRedirects()" class="member-name-link">maxRedirects()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></dt>
 <dd>
@@ -16706,7 +16742,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.LimiterState.html#pending()" class="member-name-link">pending()</a> - Method in interface io.servicetalk.capacity.limiter.api.<a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.LimiterState.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.LimiterState</a></dt>
 <dd>
-<div class="block">Returns the current pending (in use capacity) demand.</div>
+<div class="block">Returns the current pending (in use capacity) demand when the <a href="io/servicetalk/capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter.Ticket</code></a> was issued.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpResponseStatus.html#PERMANENT_REDIRECT" class="member-name-link">PERMANENT_REDIRECT</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a></dt>
 <dd>
@@ -20489,6 +20525,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Updates the status of the server.</div>
 </dd>
+<dt><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html#setStatusMessage(io.servicetalk.http.api.HttpHeaders,java.lang.CharSequence)" class="member-name-link">setStatusMessage(HttpHeaders, CharSequence)</a> - Static method in class io.servicetalk.grpc.internal.<a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a></dt>
+<dd>
+<div class="block">Sets and potentially encodes the given status message.</div>
+</dd>
 <dt><a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html#setStatusValue(int)" class="member-name-link">setStatusValue(int)</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckResponse.Builder</a></dt>
 <dd>
 <div class="block"><code>.grpc.health.v1.HealthCheckResponse.ServingStatus status = 1;</code></div>
@@ -23189,6 +23229,36 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody()"><code>BlockingStreamingHttpResponse.payloadBody()</code></a> and <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable)</code></a>.</div>
 </div>
 </dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html#transportConfig()" class="member-name-link">transportConfig()</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpServerConfig</a></dt>
+<dd>
+<div class="block">Get the <a href="io/servicetalk/transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig(TransportConfig)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig(TransportConfig)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig(TransportConfig)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Set the transport configuration.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig(TransportConfig)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Set the transport configuration.</div>
+</dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html#transportConfig(io.servicetalk.transport.api.TransportConfig)" class="member-name-link">transportConfig(TransportConfig)</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerConfig</a></dt>
+<dd>
+<div class="block">Sets the transport configuration.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfig.html" class="type-name-link" title="interface in io.servicetalk.transport.api">TransportConfig</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Configuration for transport settings.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfigBuilder.html" class="type-name-link" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a> - Class in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Builder for <a href="io/servicetalk/transport/api/TransportConfig.html" title="interface in io.servicetalk.transport.api"><code>TransportConfig</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/TransportConfigBuilder.html#%3Cinit%3E()" class="member-name-link">TransportConfigBuilder()</a> - Constructor for class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/TransportConfigBuilder.html" title="class in io.servicetalk.transport.api">TransportConfigBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#transportError()" class="member-name-link">transportError()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html#transportError()" class="member-name-link">transportError()</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext</a></dt>

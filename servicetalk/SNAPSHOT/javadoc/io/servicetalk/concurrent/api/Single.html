@@ -3097,9 +3097,9 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <h3>ambWith</h3>
 <div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</span>&nbsp;<span class="element-name">ambWith</span><wbr><span class="parameters">(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;other)</span></div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of either this
- <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or the passed <code>other</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, whichever terminates first. Therefore the result is
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or the passed <code>other</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, whichever terminates first. Therefore, the result is
  said to be <strong>ambiguous</strong> relative to which source it originated from. After the first source
- terminates the non-terminated source will be cancelled.
+ terminates, only the non-terminated source will be cancelled.
  <p>
  From a sequential programming point of view this method is roughly equivalent to the following:
  <pre><code>
@@ -3113,7 +3113,7 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dd><code>other</code> - <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to subscribe to and race with this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to propagate to the return value.</dd>
 <dt>Returns:</dt>
 <dd>A new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of either this
- <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or the passed <code>other</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, whichever terminates first. Therefore the result is
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or the passed <code>other</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, whichever terminates first. Therefore, the result is
  said to be <strong>ambiguous</strong> relative to which source it originated from.</dd>
 <dt>See Also:</dt>
 <dd>
@@ -3672,9 +3672,9 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/SafeVarargs.html" title="class or interface in java.lang" class="external-link">@SafeVarargs</a>
 </span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</span>&nbsp;<span class="element-name">amb</span><wbr><span class="parameters">(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</span></div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
- relative to which source it originated from. After the first source terminates the non-terminated sources will be
- cancelled.
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+ relative to which source it originated from. After the first source terminates, only the non-terminated sources
+ will be cancelled.
  <p>
  From a sequential programming point of view this method is roughly equivalent to the following:
  <pre><code>
@@ -3690,7 +3690,7 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dd><code>singles</code> - <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s to subscribe to and race to propagate to the return value.</dd>
 <dt>Returns:</dt>
 <dd>A new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
  relative to which source it originated from.</dd>
 <dt>See Also:</dt>
 <dd>
@@ -3706,9 +3706,9 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <h3>amb</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</span>&nbsp;<span class="element-name">amb</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles)</span></div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
- relative to which source it originated from. After the first source terminates the non-terminated sources will be
- cancelled.
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+ relative to which source it originated from. After the first source terminates, only the non-terminated sources
+ will be cancelled.
  <p>
  From a sequential programming point of view this method is roughly equivalent to the following:
  <pre><code>
@@ -3724,7 +3724,7 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dd><code>singles</code> - <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>s to subscribe to and race to propagate to the return value.</dd>
 <dt>Returns:</dt>
 <dd>A new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
  relative to which source it originated from.</dd>
 <dt>See Also:</dt>
 <dd>
@@ -3741,7 +3741,9 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/SafeVarargs.html" title="class or interface in java.lang" class="external-link">@SafeVarargs</a>
 </span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</span>&nbsp;<span class="element-name">anyOf</span><wbr><span class="parameters">(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;...&nbsp;singles)</span></div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first.
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+ relative to which source it originated from. After the first source terminates, only the non-terminated sources
+ will be cancelled.
  <p>
  From a sequential programming point of view this method is roughly equivalent to the following:
  <pre><code>
@@ -3761,6 +3763,7 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
+<li><a href="#amb(io.servicetalk.concurrent.api.Single...)"><code>amb(Single[])</code></a></li>
 <li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
@@ -3772,7 +3775,9 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <h3>anyOf</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</span>&nbsp;<span class="element-name">anyOf</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singles)</span></div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that terminates with the result (either success or error) of whichever amongst the
- passed <code>singles</code> that terminates first.
+ passed <code>singles</code> that terminates first. Therefore, the result is said to be <strong>ambiguous</strong>
+ relative to which source it originated from. After the first source terminates, only the non-terminated sources
+ will be cancelled.
  <p>
  From a sequential programming point of view this method is roughly equivalent to the following:
  <pre><code>
@@ -3792,6 +3797,7 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="Single.html" title="class i
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
+<li><a href="#amb(java.lang.Iterable)"><code>amb(Iterable)</code></a></li>
 <li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>

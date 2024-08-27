@@ -131,6 +131,11 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the delayed <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a>.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ignoreCancel()" class="member-name-link">ignoreCancel</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Ignores any subsequent calls to <a href="#cancel()"><code>cancel()</code></a>, preventing propagating the cancellation further up the stream.</div>
+</div>
 </div>
 </div>
 </div>
@@ -185,6 +190,16 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <dt>Specified by:</dt>
 <dd><code><a href="../Cancellable.html#cancel()">cancel</a></code>&nbsp;in interface&nbsp;<code><a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ignoreCancel()">
+<h3>ignoreCancel</h3>
+<div class="member-signature"><span class="modifiers">protected final</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">ignoreCancel</span>()</div>
+<div class="block">Ignores any subsequent calls to <a href="#cancel()"><code>cancel()</code></a>, preventing propagating the cancellation further up the stream.
+ <p>
+ Note: if <a href="#delayedCancellable(io.servicetalk.concurrent.Cancellable)"><code>delayedCancellable(Cancellable)</code></a> is called after this method, the provided <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a>
+ will be immediately cancelled to prevent leakage of resources.</div>
 </section>
 </li>
 </ul>
