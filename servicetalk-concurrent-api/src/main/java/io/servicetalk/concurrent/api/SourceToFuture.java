@@ -45,6 +45,9 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Nullable
     private volatile Object value;
 
+    // The timestamp of the last `.get()` call. This is intended to help with debugging stuck threads via heap dumps.
+    private long lastGetTimestamp;
+
     private SourceToFuture() {
     }
 
@@ -91,7 +94,12 @@ abstract class SourceToFuture<T> implements Future<T> {
     public final T get() throws InterruptedException, ExecutionException {
         final Object value = this.value;
         if (value == null) {
-            latch.await();
+            lastGetTimestamp = System.currentTimeMillis();
+            try {
+                latch.await();
+            } finally {
+                lastGetTimestamp = 0;
+            }
             return reportGet(this.value);
         } else {
             return reportGet(value);
