@@ -44,7 +44,7 @@ public final class BlockingUtils {
      */
     public static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
         try {
-            return future.get();
+            return trackBlockingGet(future);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             future.cancel(false);
@@ -67,7 +67,7 @@ public final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         try {
-            return source.toFuture().get();
+            return trackBlockingGet(source.toFuture());
         } catch (final ExecutionException e) {
             return throwException(executionExceptionCause(e));
         }
@@ -84,7 +84,7 @@ public final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         try {
-            source.toFuture().get();
+            trackBlockingGet(source.toFuture());
         } catch (final ExecutionException e) {
             throwException(executionExceptionCause(e));
         }
@@ -92,5 +92,36 @@ public final class BlockingUtils {
 
     private static Throwable executionExceptionCause(ExecutionException original) {
         return (original.getCause() != null) ? original.getCause() : original;
+    }
+
+    private static <T> T trackBlockingGet(Future<T> future) throws InterruptedException, ExecutionException {
+        return new TimestampedFutureGetter<>(future).doGet();
+    }
+
+    // A helper to track the blocking time of futures.
+    private static final class TimestampedFutureGetter<T> {
+        private final Future<T> future;
+        private long getTimestampMs;
+
+        TimestampedFutureGetter(Future<T> future) {
+            this.future = future;
+        }
+
+        T doGet() throws InterruptedException, ExecutionException {
+            getTimestampMs = System.currentTimeMillis();
+            try {
+                return future.get();
+            } finally {
+                getTimestampMs = 0;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "FutureGetter{" +
+                    "future=" + future +
+                    ", getTimestampMs=" + getTimestampMs +
+                    '}';
+        }
     }
 }
