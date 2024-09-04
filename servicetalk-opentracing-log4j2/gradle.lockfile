@@ -4,7 +4,7 @@
 com.fasterxml.jackson:jackson-bom:2.16.2=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-bom:3.25.3=compileClasspath,runtimeClasspath
-io.netty:netty-bom:4.1.112.Final=compileClasspath,runtimeClasspath
+io.netty:netty-bom:4.1.113.Final=compileClasspath,runtimeClasspath
 io.opentracing:opentracing-api:0.33.0=compileClasspath,runtimeClasspath
 org.apache.logging.log4j:log4j-api:2.23.1=compileClasspath,runtimeClasspath
 org.apache.logging.log4j:log4j-bom:2.23.1=compileClasspath,runtimeClasspath
