@@ -25,8 +25,13 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -278,13 +283,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channelSpecException().finishAndReleaseAll());
     }
 
-    @Test
-    void validStartLine() {
-        validStartLine(true);
-        validStartLine(false);
-    }
-
-    private void validStartLine(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void validStartLine(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLine() + br + br, channel);
@@ -293,13 +294,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void validStartLineInThreeFrames() {
-        validStartLineInThreeFrames(true);
-        validStartLineInThreeFrames(false);
-    }
-
-    private void validStartLineInThreeFrames(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void validStartLineInThreeFrames(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertFalse(channel.writeInbound(fromAscii(startLine())));
@@ -310,13 +307,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void validStartLineInFourFrames() {
-        validStartLineInFourFrames(true);
-        validStartLineInFourFrames(false);
-    }
-
-    private void validStartLineInFourFrames(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void validStartLineInFourFrames(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertFalse(channel.writeInbound(fromAscii(startLine().substring(0, 3))));
@@ -328,13 +321,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void validStartLineAfterPrefaceCRLF() {
-        validStartLineAfterPrefaceCRLF(true);
-        validStartLineAfterPrefaceCRLF(false);
-    }
-
-    private void validStartLineAfterPrefaceCRLF(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void validStartLineAfterPrefaceCRLF(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg("\r\n" + startLine() + br + br, channel);
@@ -343,13 +332,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void validStartLineAfterPrefaceCRLFInSeparateFrame() {
-        validStartLineAfterPrefaceCRLFInSeparateFrame(true);
-        validStartLineAfterPrefaceCRLFInSeparateFrame(false);
-    }
-
-    private void validStartLineAfterPrefaceCRLFInSeparateFrame(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void validStartLineAfterPrefaceCRLFInSeparateFrame(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertFalse(channel.writeInbound(fromAscii("\r\n")));   // write control characters first
@@ -359,13 +344,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void tooManyPrefaceCharacters() {
-        tooManyPrefaceCharacters(true);
-        tooManyPrefaceCharacters(false);
-    }
-
-    private void tooManyPrefaceCharacters(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void tooManyPrefaceCharacters(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         DecoderException ex = assertThrows(DecoderException.class,
@@ -374,179 +355,96 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
-    @Test
-    void whitespaceNotAllowedBeforeHeaderFieldName() {
-        whitespaceNotAllowedBeforeHeaderFieldName(true);
-        whitespaceNotAllowedBeforeHeaderFieldName(false);
-    }
-
-    private void whitespaceNotAllowedBeforeHeaderFieldName(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void whitespaceNotAllowedBeforeHeaderFieldName(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderExceptionWithCause(startLine() + br +
                 " Host: servicetalk.io" + br + br, "Invalid header name", channel);
     }
 
-    @Test
-    void whitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
-        whitespaceNotAllowedBetweenHeaderFieldNameAndColon(true);
-        whitespaceNotAllowedBetweenHeaderFieldNameAndColon(false);
-    }
-
-    private void whitespaceNotAllowedBetweenHeaderFieldNameAndColon(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void whitespaceNotAllowedBetweenHeaderFieldNameAndColon(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderExceptionWithCause(startLine() + br +
                 "Host : servicetalk.io" + br + br, "Invalid header name", channel);
     }
 
-    @Test
-    void controlCharNotAllowedBeforeHeaderFieldValue() {
-        controlCharNotAllowedBeforeHeaderFieldValue(true);
-        controlCharNotAllowedBeforeHeaderFieldValue(false);
-    }
-
-    private void controlCharNotAllowedBeforeHeaderFieldValue(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void controlCharNotAllowedBeforeHeaderFieldValue(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderExceptionWithCause(startLine() + br +
                 "Host: \fservicetalk.io" + br + br, "Invalid value for the header", channel);
     }
 
-    @Test
-    void noEndOfHeaderName() {
-        noEndOfHeaderName(true);
-        noEndOfHeaderName(false);
-    }
-
-    private void noEndOfHeaderName(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void noEndOfHeaderName(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderException(startLine() + br +
                 "Host" + br + br, "Unable to find end of a header name", channel);
     }
 
-    @Test
-    void emptyHeaderName() {
-        emptyHeaderName(true);
-        emptyHeaderName(false);
-    }
-
-    private void emptyHeaderName(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void emptyHeaderName(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderException(startLine() + br +
                 ": some-value" + br + br, "Empty header name", channel);
     }
 
-    @Test
-    void whitespaceHeaderName() {
-        testBadHeaderName(" ");
-        testBadHeaderName("  ");
-        testBadHeaderName("\t");
-        testBadHeaderName("\t\t");
-    }
-
-    @Test
-    void embededWhitespaceHeaderName() {
-        testBadHeaderName("content length");
-        testBadHeaderName("content\tlength");
-    }
-
-    @Test
-    void trailingWhitespaceHeaderName() {
-        testBadHeaderName("content-length ");
-        testBadHeaderName("content-length\t");
-    }
-
-    private void testBadHeaderName(String badHeader) {
-        testBadHeaderName(badHeader, true);
-        testBadHeaderName(badHeader, false);
-    }
-
-    private void testBadHeaderName(String badHeader, boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] badHeader={0} crlf={1}")
+    @MethodSource("badHeaderNameArgs")
+    void testBadHeaderName(String badHeader, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderException(startLine() + br +
                 badHeader + ": 3" + br + br, "Invalid header name", channel);
     }
 
-    @Test
-    void headerNameWithControlChar() {
-        headerNameWithControlChar(true);
-        headerNameWithControlChar(false);
+    private static Collection<Arguments> badHeaderNameArgs() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            arguments.add(Arguments.of(" ", crlf)); // just whitespace
+            arguments.add(Arguments.of("  ", crlf)); // just whitespace
+            arguments.add(Arguments.of("\t", crlf)); // just whitespace
+            arguments.add(Arguments.of("\t\t", crlf)); // just whitespace
+            arguments.add(Arguments.of("content length", crlf)); // embedded whitespace
+            arguments.add(Arguments.of("content\tlength", crlf)); // embedded whitespace
+            arguments.add(Arguments.of("content-length ", crlf)); // trailing whitespace
+            arguments.add(Arguments.of("content-length\t", crlf)); // trailing whitespace
+        }
+        return arguments;
     }
 
-    private void headerNameWithControlChar(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerNameWithControlChar(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderExceptionWithCause(startLine() + br +
                 "H\0st: servicetalk.io" + br + br, "Invalid header name", channel);
     }
 
-    @Test
-    void headerNameWithObsText() {
-        headerNameWithObsText(true);
-        headerNameWithObsText(false);
-    }
-
-    private void headerNameWithObsText(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void headerNameWithObsText(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertDecoderExceptionWithCause(startLine() + br +
                 "Hóst: servicetalk.io" + br + br, "Invalid header name", channel);
     }
 
-    @Test
-    void headerFiledValueEmpty() {
-        testHeaderFiledValue("", "");
-        testHeaderFiledValue(" ", "");
-        testHeaderFiledValue("   ", "");
-    }
-
-    @Test
-    void headerFiledValue() {
-        testHeaderFiledValue("servicetalk.io", "servicetalk.io");
-        testHeaderFiledValue(" servicetalk.io", "servicetalk.io");
-        testHeaderFiledValue("servicetalk.io ", "servicetalk.io");
-        testHeaderFiledValue(" servicetalk.io ", "servicetalk.io");
-        testHeaderFiledValue("   servicetalk.io", "servicetalk.io");
-        testHeaderFiledValue("servicetalk.io   ", "servicetalk.io");
-        testHeaderFiledValue("   servicetalk.io   ", "servicetalk.io");
-    }
-
-    @Test
-    void headerFiledValueSingleCharacter() {
-        testHeaderFiledValue("s", "s");
-        testHeaderFiledValue(" s", "s");
-        testHeaderFiledValue("s ", "s");
-        testHeaderFiledValue(" s ", "s");
-        testHeaderFiledValue("   s", "s");
-        testHeaderFiledValue("s   ", "s");
-        testHeaderFiledValue("   s   ", "s");
-    }
-
-    @Test
-    void headerFiledValueCommaSeparated() {
-        testHeaderFiledValue("first, second, third", "first, second, third");
-    }
-
-    @Test
-    void headerFiledValueAllowsHTab() {
-        testHeaderFiledValue("service\talk.io", "service\talk.io");
-    }
-
-    @Test
-    void headerFiledValueAllowsObsText() {
-        testHeaderFiledValue("sêrvicêtalk.io", "sêrvicêtalk.io");
-    }
-
-    private void testHeaderFiledValue(String fieldValue, String expectedFieldValue) {
-        testHeaderFiledValue(fieldValue, expectedFieldValue, true);
-        testHeaderFiledValue(fieldValue, expectedFieldValue, false);
-    }
-
-    private void testHeaderFiledValue(String fieldValue, String expectedFieldValue, boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] fieldValue={0} expectedFieldValue={1} crlf={2}")
+    @MethodSource("headerFieldValueSource")
+    void testHeaderFiledValue(String fieldValue, String expectedFieldValue, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLine() + br +
@@ -556,13 +454,39 @@ abstract class HttpObjectDecoderTest {
         assertEmptyTrailers(channel);
     }
 
-    @Test
-    void multipleHeaderFiledValues() {
-        multipleHeaderFiledValues(true);
-        multipleHeaderFiledValues(false);
+    private static Collection<Arguments> headerFieldValueSource() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            arguments.add(Arguments.of("", "", crlf));
+            arguments.add(Arguments.of(" ", "", crlf));
+            arguments.add(Arguments.of("   ", "", crlf));
+
+            arguments.add(Arguments.of("servicetalk.io", "servicetalk.io", crlf));
+            arguments.add(Arguments.of(" servicetalk.io", "servicetalk.io", crlf));
+            arguments.add(Arguments.of("servicetalk.io ", "servicetalk.io", crlf));
+            arguments.add(Arguments.of(" servicetalk.io ", "servicetalk.io", crlf));
+            arguments.add(Arguments.of("   servicetalk.io", "servicetalk.io", crlf));
+            arguments.add(Arguments.of("servicetalk.io   ", "servicetalk.io", crlf));
+            arguments.add(Arguments.of("   servicetalk.io   ", "servicetalk.io", crlf));
+
+            arguments.add(Arguments.of("s", "s", crlf));
+            arguments.add(Arguments.of(" s", "s", crlf));
+            arguments.add(Arguments.of("s ", "s", crlf));
+            arguments.add(Arguments.of(" s ", "s", crlf));
+            arguments.add(Arguments.of("   s", "s", crlf));
+            arguments.add(Arguments.of("s   ", "s", crlf));
+            arguments.add(Arguments.of("   s   ", "s", crlf));
+
+            arguments.add(Arguments.of("first, second, third", "first, second, third", crlf)); // comma separated
+            arguments.add(Arguments.of("service\talk.io", "service\talk.io", crlf)); // allows h tab
+            arguments.add(Arguments.of("sêrvicêtalk.io", "sêrvicêtalk.io", crlf)); // allows obs text
+        }
+        return arguments;
     }
 
-    private void multipleHeaderFiledValues(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void multipleHeaderFiledValues(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLine() + br +
@@ -581,13 +505,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void zeroContentLength() {
-        zeroContentLength(true);
-        zeroContentLength(false);
-    }
-
-    private void zeroContentLength(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void zeroContentLength(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -597,13 +517,9 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(0, false, channel);
     }
 
-    @Test
-    void contentLengthNoTrailers() {
-        contentLengthNoTrailers(true);
-        contentLengthNoTrailers(false);
-    }
-
-    private void contentLengthNoTrailers(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void contentLengthNoTrailers(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int contentLength = 128;
@@ -615,18 +531,8 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(contentLength, false, channel);
     }
 
-    @Test
-    void chunkedNoTrailersChunkSizeWithoutSemicolon() {
-        chunkedNoTrailers(false, true);
-        chunkedNoTrailers(false, false);
-    }
-
-    @Test
-    void chunkedNoTrailersChunkSizeWithSemicolon() {
-        chunkedNoTrailers(true, true);
-        chunkedNoTrailers(true, false);
-    }
-
+    @ParameterizedTest(name = "{displayName} [{index}] addSemicolon={0} crlf={1}")
+    @MethodSource("biBooleanPermutationSource")
     private void chunkedNoTrailers(boolean addSemicolon, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
@@ -642,13 +548,9 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-chunkSize, false, channel);
     }
 
-    @Test
-    void chunkedWithContentLength() {
-        chunkedWithContentLength(true);
-        chunkedWithContentLength(false);
-    }
-
-    private void chunkedWithContentLength(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedWithContentLength(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 128;
@@ -665,13 +567,9 @@ abstract class HttpObjectDecoderTest {
                 metaData.headers().valuesIterator(CONTENT_LENGTH).hasNext(), is(false));
     }
 
-    @Test
-    void chunkedNoTrailersMultipleLargeContent() {
-        chunkedNoTrailersMultipleLargeContent(true);
-        chunkedNoTrailersMultipleLargeContent(false);
-    }
-
-    private void chunkedNoTrailersMultipleLargeContent(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoTrailersMultipleLargeContent(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 4096;
@@ -687,13 +585,9 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-(chunkSize * numChunks), false, channel);
     }
 
-    @Test
-    void chunkedNoTrailersNoChunkSize() {
-        chunkedNoTrailersNoChunkSize(true);
-        chunkedNoTrailersNoChunkSize(false);
-    }
-
-    private void chunkedNoTrailersNoChunkSize(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoTrailersNoChunkSize(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -706,13 +600,9 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    @Test
-    void chunkedNoTrailersInvalidChunkSize() {
-        chunkedNoTrailersInvalidChunkSize(true);
-        chunkedNoTrailersInvalidChunkSize(false);
-    }
-
-    private void chunkedNoTrailersInvalidChunkSize(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoTrailersInvalidChunkSize(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -725,13 +615,9 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    @Test
-    void chunkedNoTrailersNoChunkCRLF() {
-        chunkedNoTrailersNoChunkCRLF(true);
-        chunkedNoTrailersNoChunkCRLF(false);
-    }
-
-    private void chunkedNoTrailersNoChunkCRLF(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoTrailersNoChunkCRLF(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 128;
@@ -747,13 +633,9 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    @Test
-    void chunkedNoContentWithTrailers() {
-        chunkedNoContentWithTrailers(true);
-        chunkedNoContentWithTrailers(false);
-    }
-
-    private void chunkedNoContentWithTrailers(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoContentWithTrailers(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -765,13 +647,9 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(0, true, channel);
     }
 
-    @Test
-    void chunkedContentWithTrailers() {
-        chunkedContentWithTrailers(true);
-        chunkedContentWithTrailers(false);
-    }
-
-    private void chunkedContentWithTrailers(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedContentWithTrailers(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int chunkSize = 128;
@@ -784,13 +662,9 @@ abstract class HttpObjectDecoderTest {
         validateWithContent(-chunkSize, true, channel);
     }
 
-    @Test
-    void chunkedNoContentNoTrailers() {
-        chunkedNoContentNoTrailers(true);
-        chunkedNoContentNoTrailers(false);
-    }
-
-    private void chunkedNoContentNoTrailers(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void chunkedNoContentNoTrailers(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         writeMsg(startLineForContent() + br +
@@ -805,13 +679,9 @@ abstract class HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void unexpectedTrailersAfterContentLength() {
-        unexpectedTrailersAfterContentLength(true);
-        unexpectedTrailersAfterContentLength(false);
-    }
-
-    private void unexpectedTrailersAfterContentLength(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void unexpectedTrailersAfterContentLength(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         int contentLength = 128;
@@ -828,19 +698,9 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    @Test
-    void smuggleBeforeZeroContentLengthHeader() {
-        smuggleZeroContentLength(true, false);
-        smuggleZeroContentLength(true, true);
-    }
-
-    @Test
-    void smuggleAfterZeroContentLengthHeader() {
-        smuggleZeroContentLength(false, false);
-        smuggleZeroContentLength(false, true);
-    }
-
-    private void smuggleZeroContentLength(boolean smuggleBeforeContentLength, boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] smuggleBeforeContentLength={0} crlf={1}")
+    @MethodSource("biBooleanPermutationSource")
+    void smuggleZeroContentLength(boolean smuggleBeforeContentLength, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + br +
@@ -861,13 +721,13 @@ abstract class HttpObjectDecoderTest {
         assertEmptyTrailers(channel);
     }
 
-    @Test
-    void smuggleAfterTransferEncodingHeader() {
-        smuggleTransferEncoding(false, false);
-        smuggleTransferEncoding(false, true);
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void smuggleAfterTransferEncodingHeader(boolean crlf) {
+        smuggleTransferEncoding(false, crlf);
     }
 
-    void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding, boolean crlf) {
+    protected void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
@@ -886,19 +746,9 @@ abstract class HttpObjectDecoderTest {
         assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
     }
 
-    @Test
-    void smuggleNameBeforeNonZeroContentLengthHeader() {
-        smuggleNameZeroContentLengthHeader(true, false);
-        smuggleNameZeroContentLengthHeader(true, true);
-    }
-
-    @Test
-    void smuggleNameAfterNonZeroContentLengthHeader() {
-        smuggleNameZeroContentLengthHeader(false, false);
-        smuggleNameZeroContentLengthHeader(false, true);
-    }
-
-    private void smuggleNameZeroContentLengthHeader(boolean smuggleBeforeContentLength, boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] smuggleBeforeContentLength={0} crlf={1}")
+    @MethodSource("biBooleanPermutationSource")
+    void smuggleNameZeroContentLengthHeader(boolean smuggleBeforeContentLength, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
@@ -909,13 +759,9 @@ abstract class HttpObjectDecoderTest {
                 "Connection: keep-alive" + br + br, channel));
     }
 
-    @Test
-    void multipleContentLengthHeaders() {
-        multipleContentLengthHeaders(true);
-        multipleContentLengthHeaders(false);
-    }
-
-    private void multipleContentLengthHeaders(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void multipleContentLengthHeaders(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
@@ -927,13 +773,9 @@ abstract class HttpObjectDecoderTest {
         assertThat(e.getCause().getMessage(), startsWith("Multiple content-length values found"));
     }
 
-    @Test
-    void multipleContentLengthHeaderValues() {
-        multipleContentLengthHeaderValues(true);
-        multipleContentLengthHeaderValues(false);
-    }
-
-    private void multipleContentLengthHeaderValues(boolean crlf) {
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void multipleContentLengthHeaderValues(boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + br +
@@ -944,36 +786,8 @@ abstract class HttpObjectDecoderTest {
         assertThat(e.getCause().getMessage(), startsWith("Multiple content-length values found"));
     }
 
-    @Test
-    void signedPositiveContentLengthHeaderValues() {
-        malformedContentLengthHeaderValue("+1", true);
-        malformedContentLengthHeaderValue("+1", false);
-    }
-
-    @Test
-    void signedNegativeContentLengthHeaderValues() {
-        malformedContentLengthHeaderValue("-1", true);
-        malformedContentLengthHeaderValue("-1", false);
-    }
-
-    @Test
-    void malformedContentLengthHeaderValueWithSP() {
-        malformedContentLengthHeaderValue("1 2", true);
-        malformedContentLengthHeaderValue("1 2", false);
-    }
-
-    @Test
-    void malformedContentLengthHeaderValueWithLetter() {
-        malformedContentLengthHeaderValue("1a2", true);
-        malformedContentLengthHeaderValue("1a2", false);
-    }
-
-    @Test
-    void malformedContentLengthHeaderValueWithSymbol() {
-        malformedContentLengthHeaderValue("1-2", true);
-        malformedContentLengthHeaderValue("1-2", false);
-    }
-
+    @ParameterizedTest(name = "{displayName} [{index}] value={0} crlf={1}")
+    @MethodSource("malformedContentLengthHeaderValueSource")
     void malformedContentLengthHeaderValue(String value, boolean crlf) {
         EmbeddedChannel channel = channel(crlf);
         String br = br(crlf);
@@ -983,5 +797,30 @@ abstract class HttpObjectDecoderTest {
                 "Connection: keep-alive" + br + br, channel));
         assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
         assertThat(e.getCause().getMessage(), startsWith("Malformed 'content-length' value"));
+    }
+
+    private static Collection<Arguments> malformedContentLengthHeaderValueSource() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean crlf : new boolean[] {true, false}) {
+            arguments.add(Arguments.of("+1", crlf)); // signed positive
+            arguments.add(Arguments.of("-1", crlf)); // signed negative
+            arguments.add(Arguments.of("1 2", crlf)); // malformed content length with SP
+            arguments.add(Arguments.of("1a2", crlf)); // malformed content length with letter
+            arguments.add(Arguments.of("1-2", crlf)); // malformed content length with symbol
+        }
+        return arguments;
+    }
+
+    /**
+     * Returns all possible permutations for two different booleans.
+     */
+    private static Collection<Arguments> biBooleanPermutationSource() {
+        final List<Arguments> arguments = new ArrayList<>();
+        for (boolean arg1 : new boolean[] {true, false}) {
+            for (boolean arg2 : new boolean[] {true, false}) {
+                arguments.add(Arguments.of(arg1, arg2));
+            }
+        }
+        return arguments;
     }
 }

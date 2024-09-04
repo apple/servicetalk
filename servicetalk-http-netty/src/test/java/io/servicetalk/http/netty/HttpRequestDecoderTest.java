@@ -24,6 +24,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -340,9 +342,9 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         assertEmptyTrailers(channel());
     }
 
-    @Test
-    void smuggleBeforeTransferEncodingHeader() {
-        smuggleTransferEncoding(true, false);
-        smuggleTransferEncoding(true, true);
+    @ParameterizedTest(name = "{displayName} [{index}] crlf={0}")
+    @ValueSource(booleans = {true, false})
+    void smuggleBeforeTransferEncodingHeader(boolean crlf) {
+        smuggleTransferEncoding(true, crlf);
     }
 }
