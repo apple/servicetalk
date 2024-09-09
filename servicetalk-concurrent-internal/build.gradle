@@ -22,7 +22,6 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
@@ -35,6 +34,5 @@ dependencies {
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-annotations")
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
-  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

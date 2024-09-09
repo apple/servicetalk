@@ -25,7 +25,6 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))

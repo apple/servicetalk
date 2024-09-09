@@ -23,7 +23,6 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation enforcedPlatform("com.google.protobuf:protobuf-bom:$protobufVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

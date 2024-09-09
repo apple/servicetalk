@@ -21,5 +21,4 @@ dependencies {
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-router-api")
   implementation project(":servicetalk-transport-api")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }

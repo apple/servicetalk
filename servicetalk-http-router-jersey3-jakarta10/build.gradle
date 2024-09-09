@@ -94,7 +94,6 @@ dependencies {
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion" // replacement for com.sun.activation:jakarta.activation
   implementation "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion" // replacement for com.sun.xml.bind:jaxb-core
   implementation "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"

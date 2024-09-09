@@ -25,9 +25,7 @@ dependencies {
   implementation project(":servicetalk-opentracing-asynccontext") // ServiceTalk ScopeManager
   implementation project(":servicetalk-opentracing-log4j2") // optional: persist ServiceTalk ScopeManager traces to MDC
   implementation project(":servicetalk-opentracing-zipkin-publisher") // optional: publish traces to Zipkin
-
   implementation 'io.opentracing.brave:brave-opentracing:1.0.1' // optional: use 3rd party OpenTracing implementation
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

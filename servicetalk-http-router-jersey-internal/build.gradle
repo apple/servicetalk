@@ -29,6 +29,5 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-http-utils")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.glassfish.jersey.core:jersey-common"
 }
