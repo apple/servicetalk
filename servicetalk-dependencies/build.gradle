@@ -24,11 +24,14 @@ javaPlatform {
 
 dependencies {
   api platform(project(":servicetalk-bom"))
-  api platform("io.netty:netty-bom:${nettyVersion}")
-  api(platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}"))
-  api platform("com.google.protobuf:protobuf-bom:${protobufVersion}")
-  api platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
-  api platform("org.glassfish.jersey:jersey-bom:${jerseyVersion}")
+  api platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
+  api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
+  api platform("io.netty:netty-bom:$nettyVersion")
+  api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
+  api platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+      "$opentelemetryInstrumentationVersion")
+  api platform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
+  api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
 
   constraints {
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
@@ -39,12 +42,12 @@ dependencies {
     // Ideally these come from the Netty BOM
     api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
 
+    api "io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
     api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
-    // Matchers are exposed by `servicetalk-test-resources`
-    api "org.hamcrest:hamcrest:$hamcrestVersion"
+    api "org.hamcrest:hamcrest:$hamcrestVersion"  // Matchers are exposed by test-resources & buffer-api
     api "org.jctools:jctools-core:$jcToolsVersion"
     api "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"

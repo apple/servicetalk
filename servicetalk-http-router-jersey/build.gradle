@@ -16,16 +16,20 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+def actualJerseyVersion = "${jerseyVersion}"
+def actualJavaxActivationVersion = "${javaxActivationVersion}"
+def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersion}"
+def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersion}"
+def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersion}"
+def actualJaxRsVersion = "${jaxRsVersion}"
+
 // Dependencies must remain consistent between servicetalk-http-router-jerseyX modules
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation platform(project(":servicetalk-dependencies"))
-  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
-
+  api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   api project(":servicetalk-http-api")
   api project(":servicetalk-router-api")
-  api "jakarta.ws.rs:jakarta.ws.rs-api"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -35,20 +39,22 @@ dependencies {
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "com.sun.activation:jakarta.activation"
-  implementation "com.sun.xml.bind:jaxb-core"
-  implementation "jakarta.xml.bind:jakarta.xml.bind-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.sun.activation:jakarta.activation:$actualJavaxActivationVersion"
+  implementation "com.sun.xml.bind:jaxb-core:$actualJavaxJaxbCoreVersion"
+  implementation "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
-  implementation "org.slf4j:slf4j-api"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-  runtimeOnly "com.sun.xml.bind:jaxb-impl"
+  runtimeOnly "com.sun.xml.bind:jaxb-impl:$actualJavaxJaxbImplVersion"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson"
 
+  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-http-netty"))
