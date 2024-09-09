@@ -65,29 +65,18 @@ tasks.sourcesJar.dependsOn(copySourcesForJersey3)
 tasks.compileJava.dependsOn(copySourcesForJersey3)
 
 def actualJerseyVersion = "${jersey3VersionEE10}"
-def actualJavaxActivationVersion = "${javaxActivationVersionEE10}"
-def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE10}"
-def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE10}"
-def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE10}"
 def actualJaxRsVersion = "${jaxRsVersionEE10}"
 
 // Dependencies must remain consistent between servicetalk-http-router-jerseyX-internal modules
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  api platform("org.glassfish.jersey:jersey-bom:${actualJerseyVersion}")
-  api "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion"
-  api "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion"
-  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
-  api "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
-  api "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion"
-
   api project(":servicetalk-http-api")
-  api "jakarta.ws.rs:jakarta.ws.rs-api"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
 
+  implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-http-utils")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.glassfish.jersey.core:jersey-common"
 }

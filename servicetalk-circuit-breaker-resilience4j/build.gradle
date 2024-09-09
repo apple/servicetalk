@@ -17,14 +17,12 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-dependencies"))
-
   api project(":servicetalk-circuit-breaker-api")
-  api "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
+  api "io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion"
 
   implementation project(":servicetalk-annotations")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.hamcrest:hamcrest"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

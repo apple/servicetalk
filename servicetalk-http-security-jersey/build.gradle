@@ -16,19 +16,20 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+def actualJerseyVersion = "${jerseyVersion}"
+def actualJaxRsVersion = "${jaxRsVersion}"
+
 // Dependencies must remain consistent between servicetalk-http-security-jerseyX modules
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
 
-  api "jakarta.ws.rs:jakarta.ws.rs-api"
-
+  implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.glassfish.jersey.core:jersey-common"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-data-jackson-jersey")
@@ -43,6 +44,5 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
   testRuntimeOnly project(":servicetalk-test-resources")
 }

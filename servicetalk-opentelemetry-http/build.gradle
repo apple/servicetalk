@@ -17,33 +17,32 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testRuntimeOnly enforcedPlatform(project(":servicetalk-dependencies"))
-
+  api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
   api project(":servicetalk-http-api")
-  api "io.opentelemetry:opentelemetry-api:$opentelemetryVersion"
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:" +
-          "$opentelemetryInstrumentationVersion")
+  api "io.opentelemetry:opentelemetry-api"
 
+  implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+      "$opentelemetryInstrumentationVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv")
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
   testImplementation project(":servicetalk-opentelemetry-asynccontext")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "io.opentelemetry:opentelemetry-sdk-testing:$opentelemetryVersion"
-  testRuntimeOnly("io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure:" +
-          "$opentelemetryInstrumentationVersion")
+  testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-  testImplementation "org.slf4j:slf4j-api"
+  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  testRuntimeOnly enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
+  testRuntimeOnly "io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure"
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }
