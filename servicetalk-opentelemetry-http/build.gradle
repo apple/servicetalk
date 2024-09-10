@@ -25,7 +25,6 @@ dependencies {
       "$opentelemetryInstrumentationVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

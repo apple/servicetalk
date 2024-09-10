@@ -22,6 +22,5 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-loadbalancer")
   implementation project(":servicetalk-loadbalancer-experimental")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

@@ -25,7 +25,6 @@ dependencies {
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")
   implementation project(":servicetalk-opentracing-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

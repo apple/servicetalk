@@ -37,7 +37,6 @@ dependencies {
   implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-serializer-utils")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-test-resources")

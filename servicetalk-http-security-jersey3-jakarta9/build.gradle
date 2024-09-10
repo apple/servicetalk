@@ -80,7 +80,6 @@ dependencies {
   implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.glassfish.jersey.core:jersey-common"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

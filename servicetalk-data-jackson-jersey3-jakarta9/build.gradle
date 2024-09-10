@@ -88,7 +88,6 @@ dependencies {
   implementation project(":servicetalk-http-router-jersey3-jakarta9-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-netty")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
