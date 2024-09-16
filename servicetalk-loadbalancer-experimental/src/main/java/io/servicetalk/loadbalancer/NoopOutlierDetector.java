@@ -46,7 +46,7 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
     @Override
     public HealthIndicator<ResolvedAddress, C> newHealthIndicator(
             ResolvedAddress resolvedAddress, LoadBalancerObserver.HostObserver hostObserver) {
-        return outlierDetectorConfig.ewmaHalfLife().isZero() ? null :new EwmaHealthIndicator();
+        return outlierDetectorConfig.ewmaHalfLife().isZero() ? null : new EwmaHealthIndicator();
     }
 
     @Override
