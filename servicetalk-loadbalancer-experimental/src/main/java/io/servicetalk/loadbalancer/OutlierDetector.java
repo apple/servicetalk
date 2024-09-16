@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
+import javax.annotation.Nullable;
+
 /**
  * The representation of a health checking system for use with load balancing.
  */
@@ -33,6 +35,7 @@ interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> ext
      * @param address the resolved address of the destination.
      * @return new {@link HealthIndicator}.
      */
+    @Nullable
     HealthIndicator<ResolvedAddress, C> newHealthIndicator(ResolvedAddress address, HostObserver hostObserver);
 
     /**
