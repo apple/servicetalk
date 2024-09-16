@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ScoreSupplier;
 import java.util.concurrent.locks.StampedLock;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Math.ceil;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
