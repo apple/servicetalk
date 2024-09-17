@@ -423,7 +423,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
                     eventWeight(event), eventPriority(event));
-            indicator.setHost(host);
+            if (indicator != null) {
+                indicator.setHost(host);
+            }
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
                         final List<PrioritizedHostImpl<ResolvedAddress, C>> currentHosts = usedHosts;

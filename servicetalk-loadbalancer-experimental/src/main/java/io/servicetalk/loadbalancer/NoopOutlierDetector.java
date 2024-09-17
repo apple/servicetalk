@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,10 +42,11 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
         // noop.
     }
 
+    @Nullable
     @Override
     public HealthIndicator<ResolvedAddress, C> newHealthIndicator(
             ResolvedAddress resolvedAddress, LoadBalancerObserver.HostObserver hostObserver) {
-        return new BasicHealthIndicator();
+        return outlierDetectorConfig.ewmaHalfLife().isZero() ? null : new EwmaHealthIndicator();
     }
 
     @Override
@@ -52,10 +54,10 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
         return Publisher.never();
     }
 
-    private final class BasicHealthIndicator extends DefaultRequestTracker
+    private final class EwmaHealthIndicator extends DefaultRequestTracker
             implements HealthIndicator<ResolvedAddress, C> {
 
-        BasicHealthIndicator() {
+        EwmaHealthIndicator() {
             super(outlierDetectorConfig.ewmaHalfLife().toNanos(), outlierDetectorConfig.ewmaCancellationPenalty(),
                     outlierDetectorConfig.ewmaErrorPenalty(), outlierDetectorConfig.concurrentRequestPenalty());
         }

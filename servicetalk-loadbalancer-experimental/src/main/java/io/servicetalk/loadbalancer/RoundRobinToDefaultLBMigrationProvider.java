@@ -115,6 +115,7 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
         @Override
         public LoadBalancerFactory<ResolvedAddress, C> build() {
             OutlierDetectorConfig outlierDetectorConfig = new OutlierDetectorConfig.Builder()
+                    .ewmaHalfLife(Duration.ZERO)
                     .enforcingFailurePercentage(0)
                     .enforcingSuccessRate(0)
                     .enforcingConsecutive5xx(0)

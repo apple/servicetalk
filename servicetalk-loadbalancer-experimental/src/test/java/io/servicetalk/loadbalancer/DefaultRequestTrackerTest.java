@@ -16,6 +16,8 @@
 package io.servicetalk.loadbalancer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.util.function.LongUnaryOperator;
@@ -87,6 +89,21 @@ class DefaultRequestTrackerTest {
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> ofSeconds(1).toNanos());
         // this is 4 because we are calling the time twice...
         assertEquals(-2_000, requestTracker.score());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0L, 1L})
+    void zeroHalfLife(final long timeStep) {
+        final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
+        when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> timeStep);
+
+        final DefaultRequestTracker requestTracker = new TestRequestTracker(Duration.ofSeconds(0), nextValueProvider);
+        assertEquals(0, requestTracker.score());
+
+        // upon success score
+        requestTracker.onRequestSuccess(requestTracker.beforeRequestStart());
+        // super quick, so our score is the max it can be which is 0.
+        assertEquals(0, requestTracker.score());
     }
 
     static final class TestRequestTracker extends DefaultRequestTracker {
