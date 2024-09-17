@@ -92,7 +92,7 @@ class DefaultRequestTrackerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {0l, 1l})
+    @ValueSource(longs = {0L, 1L})
     void zeroHalfLife(final long timeStep) {
         final LongUnaryOperator nextValueProvider = mock(LongUnaryOperator.class);
         when(nextValueProvider.applyAsLong(anyLong())).thenAnswer(__ -> timeStep);
