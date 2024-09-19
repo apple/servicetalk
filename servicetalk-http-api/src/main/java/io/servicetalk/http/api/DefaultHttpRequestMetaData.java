@@ -307,6 +307,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
+    public boolean hasQueryParameter(final String key) {
+        return lazyParseQueryString().contains(key);
+    }
+
+    @Override
     public boolean hasQueryParameter(final String key, final String value) {
         return lazyParseQueryString().contains(key, value);
     }
