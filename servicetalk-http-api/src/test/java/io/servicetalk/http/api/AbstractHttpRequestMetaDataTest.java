@@ -656,7 +656,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/foo?bar", fixture.requestTarget());
         assertEquals("bar", fixture.rawQuery());
         assertNull(fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(singletonList("bar"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
@@ -682,8 +684,11 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(requestTarget, fixture.requestTarget());
         assertEquals(rawQuery, fixture.rawQuery());
         assertEquals(v1, fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertEquals(v2, fixture.queryParameter("baz"));
+        assertTrue(fixture.hasQueryParameter("baz"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(asList("bar", "baz"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
@@ -716,9 +721,13 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(requestTarget, fixture.requestTarget());
         assertEquals(rawQuery, fixture.rawQuery());
         assertEquals(v1, fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertEquals(v2, fixture.queryParameter("baz"));
+        assertTrue(fixture.hasQueryParameter("baz"));
         assertEquals(v3, fixture.queryParameter("zap"));
+        assertTrue(fixture.hasQueryParameter("zap"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(asList("bar", "baz", "zap"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();

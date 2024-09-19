@@ -141,6 +141,10 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return this;
     }
 
+    boolean contains(final String key) {
+        return params.get(key) != null;
+    }
+
     public boolean contains(final String key, final String value) {
         final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
