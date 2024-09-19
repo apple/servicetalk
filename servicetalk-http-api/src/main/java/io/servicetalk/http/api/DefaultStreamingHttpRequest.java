@@ -121,7 +121,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest addQueryParameter(String key, String value) {
+    public StreamingHttpRequest addQueryParameter(String key, @Nullable String value) {
         super.addQueryParameter(key, value);
         return this;
     }
@@ -139,7 +139,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest setQueryParameter(String key, String value) {
+    public StreamingHttpRequest setQueryParameter(String key, @Nullable String value) {
         super.setQueryParameter(key, value);
         return this;
     }

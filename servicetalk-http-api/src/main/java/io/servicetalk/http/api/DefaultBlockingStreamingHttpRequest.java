@@ -119,7 +119,7 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
+    public BlockingStreamingHttpRequest addQueryParameter(String key, @Nullable String value) {
         original.addQueryParameter(key, value);
         return this;
     }
@@ -137,7 +137,7 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
+    public BlockingStreamingHttpRequest setQueryParameter(String key, @Nullable String value) {
         original.setQueryParameter(key, value);
         return this;
     }

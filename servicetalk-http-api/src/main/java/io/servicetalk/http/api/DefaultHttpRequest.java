@@ -110,7 +110,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpRequest addQueryParameter(final String key, final String value) {
+    public HttpRequest addQueryParameter(final String key, @Nullable final String value) {
         original.addQueryParameter(key, value);
         return this;
     }
@@ -128,7 +128,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpRequest setQueryParameter(final String key, final String value) {
+    public HttpRequest setQueryParameter(final String key, @Nullable final String value) {
         original.setQueryParameter(key, value);
         return this;
     }
