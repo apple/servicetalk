@@ -60,6 +60,12 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> subsetSize(int subsetSize) {
+        delegate = delegate.subsetSize(subsetSize);
+        return this;
+    }
+
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancerObserver(
             @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
         delegate = delegate.loadBalancerObserver(loadBalancerObserverFactory);

@@ -71,6 +71,15 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
             LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
 
     /**
+     * Set the host subset size for the load balancer.
+     * This is valuable for limiting the number of outgoing connections when calling services that have
+     * a very high replica count.
+     * @param subsetSize the maximum number of healthy hosts to establish connections to
+     * @return {@code this}
+     */
+    LoadBalancerBuilder<ResolvedAddress, C> subsetSize(int subsetSize);
+
+    /**
      * Set the {@link LoadBalancerObserverFactory} to use with this load balancer.
      * @param loadBalancerObserverFactory the {@link LoadBalancerObserverFactory} to use, or {@code null} to not use an
      *                                    observer.

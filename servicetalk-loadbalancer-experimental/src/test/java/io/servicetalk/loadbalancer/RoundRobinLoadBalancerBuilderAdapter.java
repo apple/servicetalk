@@ -33,19 +33,24 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancingPolicy(
             LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy) {
-        throw new IllegalStateException("Cannot set new policy for old round robin");
+        throw new UnsupportedOperationException("Cannot set new policy for old round robin");
+    }
+
+    @Override
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> subsetSize(int subsetSize) {
+        throw new UnsupportedOperationException("Cannot set subset size for old round robin");
     }
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
             @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
-        throw new IllegalStateException("Cannot set a load balancer observer for old round robin");
+        throw new UnsupportedOperationException("Cannot set a load balancer observer for old round robin");
     }
 
     @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolConfig(
             ConnectionPoolConfig connectionPoolConfig) {
-        throw new IllegalStateException("Cannot set a connection pool strategy for old round robin");
+        throw new UnsupportedOperationException("Cannot set a connection pool strategy for old round robin");
     }
 
     @Override
