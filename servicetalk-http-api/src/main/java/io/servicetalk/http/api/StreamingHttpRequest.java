@@ -261,7 +261,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest query(@Nullable String query);
 
     @Override
-    StreamingHttpRequest addQueryParameter(String key, String value);
+    StreamingHttpRequest addQueryParameter(String key, @Nullable String value);
 
     @Override
     StreamingHttpRequest addQueryParameters(String key, Iterable<String> values);
@@ -270,7 +270,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest addQueryParameters(String key, String... values);
 
     @Override
-    StreamingHttpRequest setQueryParameter(String key, String value);
+    StreamingHttpRequest setQueryParameter(String key, @Nullable String value);
 
     @Override
     StreamingHttpRequest setQueryParameters(String key, Iterable<String> values);

@@ -119,7 +119,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest query(@Nullable String query);
 
     @Override
-    HttpRequest addQueryParameter(String key, String value);
+    HttpRequest addQueryParameter(String key, @Nullable String value);
 
     @Override
     HttpRequest addQueryParameters(String key, Iterable<String> values);
@@ -128,7 +128,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest addQueryParameters(String key, String... values);
 
     @Override
-    HttpRequest setQueryParameter(String key, String value);
+    HttpRequest setQueryParameter(String key, @Nullable String value);
 
     @Override
     HttpRequest setQueryParameters(String key, Iterable<String> values);

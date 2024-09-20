@@ -312,7 +312,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public boolean hasQueryParameter(final String key, final String value) {
+    public boolean hasQueryParameter(final String key, @Nullable final String value) {
         return lazyParseQueryString().contains(key, value);
     }
 
@@ -322,7 +322,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData addQueryParameter(final String key, final String value) {
+    public HttpRequestMetaData addQueryParameter(final String key, @Nullable final String value) {
         lazyParseQueryString().add(key, value);
         return this;
     }
@@ -340,7 +340,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData setQueryParameter(final String key, final String value) {
+    public HttpRequestMetaData setQueryParameter(final String key, @Nullable final String value) {
         lazyParseQueryString().set(key, value);
         return this;
     }
@@ -363,7 +363,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public boolean removeQueryParameters(final String key, final String value) {
+    public boolean removeQueryParameters(final String key, @Nullable final String value) {
         return lazyParseQueryString().remove(key, value);
     }
 
@@ -423,11 +423,16 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
                 Iterator<String> valuesItr = values.iterator();
                 if (valuesItr.hasNext()) {
                     String value = valuesItr.next();
-                    sb.append('=').append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
-                    while (valuesItr.hasNext()) {
-                        value = valuesItr.next();
-                        sb.append('&').append(encodedKey).append('=')
-                                .append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                    if (value != null) {
+                        sb.append('=').append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                        while (valuesItr.hasNext()) {
+                            value = valuesItr.next();
+                            sb.append('&').append(encodedKey);
+                            if (value != null) {
+                                sb.append('=')
+                                        .append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                            }
+                        }
                     }
                 }
             }
