@@ -287,8 +287,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      */
     default boolean hasQueryParameter(final String key) {
         // FIXME: 0.43 - remove default, force implementations to implement.
-        //  null value support was added and this method is now incorrect as default
-        return queryParameter(key) != null;
+        return queryParametersKeys().contains(key);
     }
 
     /**
