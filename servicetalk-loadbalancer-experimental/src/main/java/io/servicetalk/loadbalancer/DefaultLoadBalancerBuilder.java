@@ -36,7 +36,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
     private final String id;
-    private int subsetSize = Integer.MAX_VALUE;
+    private int randomSubsetSize = Integer.MAX_VALUE;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
 
     @Nullable
@@ -59,8 +59,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> subsetSize(int subsetSize) {
-        this.subsetSize = ensurePositive(subsetSize, "subsetSize");
+    public LoadBalancerBuilder<ResolvedAddress, C> randomSubsetSize(int randomSubsetSize) {
+        this.randomSubsetSize = ensurePositive(randomSubsetSize, "randomSubsetSize");
         return this;
     }
 
@@ -93,7 +93,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
-        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, subsetSize, loadBalancerObserverFactory,
+        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, randomSubsetSize, loadBalancerObserverFactory,
                 connectionPoolStrategyFactory, outlierDetectorConfig, getExecutor());
     }
 
