@@ -61,7 +61,7 @@ final class RoundRobinToDefaultLBMigrationProviderTest {
                 new RoundRobinLoadBalancerFactory.Builder<>();
         RoundRobinLoadBalancerBuilder<String, TestLoadBalancedConnection> result = provider.newBuilder(
                 "builder", builder);
-        assertThat(result, sameInstance(builder));
+        assertThat(result.build(), instanceOf(DefaultLoadBalancerBuilder.DefaultLoadBalancerFactory.class));
     }
 
     @Test
