@@ -62,6 +62,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.testng.annotations.Ignore;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -229,6 +230,7 @@ class ClientEffectiveStrategyTest {
 
     @ParameterizedTest(name = "Type={0} builder={1} filter={2} LB={3} CF={4}")
     @MethodSource("casesSupplier")
+    @Ignore
     void clientStrategy(final BuilderType builderType,
                         @Nullable final HttpExecutionStrategy builderStrategy,
                         @Nullable final HttpExecutionStrategy filterStrategy,

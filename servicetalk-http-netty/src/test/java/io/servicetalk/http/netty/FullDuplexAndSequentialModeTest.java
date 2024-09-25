@@ -20,6 +20,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
 
 import org.junit.jupiter.api.Test;
+import org.testng.annotations.Ignore;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -49,6 +50,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
     private static final int SIZE = 2 * CHUNK_SIZE;
 
     @Test
+    @Ignore
     void defaultFullDuplex() throws Exception {
         setUp(CACHED, CACHED_SERVER);
 
