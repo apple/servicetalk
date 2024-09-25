@@ -55,7 +55,7 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
     private static boolean isEnabled() {
         // Enabled by default.
         String propValue = System.getProperty(PROPERTY_NAME);
-        return propValue == null ? true : Boolean.parseBoolean(propValue);
+        return propValue == null || Boolean.parseBoolean(propValue);
     }
 
     private static final class DefaultLoadBalancerRoundRobinBuilder<ResolvedAddress, C extends LoadBalancedConnection>
