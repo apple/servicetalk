@@ -13,8 +13,14 @@ Netty for common networking protocols used in service to service communication. 
 
 See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.
 
-== Getting Started
+== Table of Contents
+* xref:#Getting_Started[Getting Started]
+* xref:#Supported_JVM[Supported JVM]
+* xref:#Compatibility[Compatibility]
+* xref:#Contributor_Setup[Contributor Setup]
+* xref:#Project_Communication[Project Communication]
 
+== Getting Started
 ServiceTalk releases are available on link:https://repo1.maven.org/maven2/io/servicetalk/[Maven Central].
 
 Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
@@ -24,16 +30,14 @@ NOTE: Builds of the development version are available in
 link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
 
 == Supported JVM
-The minimum supported JDK version is 1.8.
+* The minimum supported JDK version is 1.8.
 
 == Compatibility
-ServiceTalk follows link:https://semver.org/#semantic-versioning-200[SemVer 2.0.0]. API/ABI breaking changes will
-require package renaming for that module to avoid runtime classpath conflicts.
-
-NOTE: `0.x.y` releases are not stable and are permitted to break API/ABI.
+ServiceTalk follows link:https://semver.org/#semantic-versioning-200[SemVer 2.0.0]. 
+* API/ABI breaking changes will require package renaming for that module to avoid runtime classpath conflicts.
+* NOTE: `0.x.y` releases are not stable and are permitted to break API/ABI.
 
 == Contributor Setup
-
 IMPORTANT: If you're intending to contribute to ServiceTalk,
            make sure to first read the xref:CONTRIBUTING.adoc[contribution guidelines].
 
@@ -82,7 +86,7 @@ $ open servicetalk.ipr
 ----
 
 == Project Communication
-We encourage your participation asking questions and helping improve the ServiceTalk project.
-link:https://github.com/apple/servicetalk/issues[Github issues] and
-link:https://github.com/apple/servicetalk/pulls[pull requests] are the primary mechanisms of
+We encourage your participation by asking questions and helping improve the ServiceTalk project.
+* link:https://github.com/apple/servicetalk/issues[Github issues] 
+* link:https://github.com/apple/servicetalk/pulls[pull requests] are the primary mechanisms of
 participation and communication for ServiceTalk.
