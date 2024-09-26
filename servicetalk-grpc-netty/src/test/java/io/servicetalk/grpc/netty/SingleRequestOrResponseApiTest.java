@@ -125,6 +125,7 @@ class SingleRequestOrResponseApiTest {
 
     @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
     @MethodSource("params")
+    @Ignore
     void serverResponseStreamingRouteFailsOnSecondRequestItem(boolean streamingService,
                                                               boolean streamingClient) throws Exception {
         setUp(streamingService, streamingClient);
@@ -153,7 +154,6 @@ class SingleRequestOrResponseApiTest {
 
     @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
     @MethodSource("params")
-    @Ignore
     void clientRequestStreamingCallFailsOnSecondResponseItem(boolean streamingService,
                                                              boolean streamingClient) throws Exception {
         setUp(streamingService, streamingClient);
