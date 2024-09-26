@@ -16,13 +16,18 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.LoadBalancerObserver.HostObserver;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,9 +43,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.loadbalancer.ConnectionPoolConfig.DEFAULT_LINEAR_SEARCH_SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,6 +56,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             LoadBalancingPolicies.p2c().build();
+
+    private int subsetSize = Integer.MAX_VALUE;
 
     private Function<String, HostPriorityStrategy> hostPriorityStrategyFactory = DefaultHostPriorityStrategy::new;
 
@@ -223,6 +232,77 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         assertTrue(factory.currentOutlierDetector.get().cancelled);
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, Integer.MAX_VALUE})
+    void subsetting(final int subsetSize) throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        this.subsetSize = subsetSize;
+        // rr so we can test that each endpoint gets used deterministically.
+        this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
+        lb = newTestLoadBalancer();
+        for (int i = 1; i <= 4; i++) {
+            sendServiceDiscoveryEvents(upEvent("address-" + i));
+        }
+
+        assertThat(selectConnections(8), hasSize(Math.min(4, subsetSize)));
+    }
+
+    @Test
+    void subsettingWithUnhealthyHosts() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
+        outlierDetectorFactory = factory;
+        this.subsetSize = 2;
+        // rr so we can test that each endpoint gets used deterministically.
+        this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
+        lb = newTestLoadBalancer();
+        for (int i = 1; i <= 4; i++) {
+            sendServiceDiscoveryEvents(upEvent("address-" + i));
+        }
+
+        // find out which of our two addresses are in the subset.
+        Set<String> selectedAddresses1 = selectConnections(4);
+        assertThat(selectedAddresses1, hasSize(2));
+
+        // Make both unhealthy.
+        for (TestHealthIndicator i : factory.currentOutlierDetector.get().indicatorSet) {
+            if (selectedAddresses1.contains(i.host.address())) {
+                i.isHealthy = false;
+            }
+        }
+
+        // Trigger a rebuild of the subset and make sure that we're now using the other two hosts.
+        factory.currentOutlierDetector.get().healthStatusChanged.onNext(null);
+        Set<String> selectedAddresses2 = selectConnections(4);
+        assertThat(selectedAddresses2, hasSize(2));
+        for (String addr2 : selectedAddresses2) {
+            assertThat(selectedAddresses1, not(contains(addr2)));
+        }
+
+        // Recover the unhealthy endpoints. Based on the current implementation, they will again be
+        // selectable until we rebuild.
+        for (TestHealthIndicator i : factory.currentOutlierDetector.get().indicatorSet) {
+            i.isHealthy = true;
+        }
+
+        Set<String> selectedAddresses3 = selectConnections(4);
+        assertThat(selectedAddresses3, hasSize(4));
+
+        // Rebuild and we should now eject the trailing endpoings once more and get back to our normal state.
+        factory.currentOutlierDetector.get().healthStatusChanged.onNext(null);
+        Set<String> selectedAddresses4 = selectConnections(4);
+        assertThat(selectedAddresses4, equalTo(selectedAddresses1));
+    }
+
+    private Set<String> selectConnections(final int iterations) throws Exception {
+        Set<String> result = new HashSet<>();
+        for (int i = 0; i < iterations; i++) {
+            TestLoadBalancedConnection cxn = lb.selectConnection(any(), null).toFuture().get();
+            result.add(cxn.address());
+        }
+        return result;
+    }
+
     @Override
     TestableLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
@@ -236,6 +316,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 serviceDiscoveryPublisher,
                 hostPriorityStrategyFactory,
                 loadBalancingPolicy,
+                subsetSize,
                 LinearSearchConnectionPoolStrategy.factory(DEFAULT_LINEAR_SEARCH_SPACE),
                 connectionFactory,
                 NoopLoadBalancerObserver.factory(),
@@ -326,6 +407,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private static class TestOutlierDetector implements OutlierDetector<String, TestLoadBalancedConnection> {
 
         private final Set<TestHealthIndicator> indicatorSet = new HashSet<>();
+
+        final PublisherSource.Processor<Void, Void> healthStatusChanged = Processors.newPublisherProcessor();
         volatile boolean cancelled;
 
         @Override
@@ -351,7 +434,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
 
         @Override
         public Publisher<Void> healthStatusChanged() {
-            return Publisher.never();
+            return SourceAdapters.fromSource(healthStatusChanged);
         }
     }
 
