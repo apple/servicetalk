@@ -29,7 +29,7 @@ dependencies {
   api project(":servicetalk-http-netty")
     testImplementation 'junit:junit:4.13.1'
 
-    compileOnly project(":servicetalk-http-utils") // only for javadoc references
+  compileOnly project(":servicetalk-http-utils") // only for javadoc references
 
   implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-grpc-internal")
