@@ -26,7 +26,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.junit.Ignore;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
@@ -133,9 +133,14 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         }
     }
 
+    @RepeatedTest(1000)
+    void repro() throws Exception {
+        testConnectionClosed(ErrorSource.CONNECTION_REFUSED);
+    }
+
     @ParameterizedTest
     @EnumSource(ErrorSource.class)
-    @Ignore
+    // This is the failing test.
     void testConnectionClosed(ErrorSource errorSource) throws Exception {
         setUp(errorSource);
 
