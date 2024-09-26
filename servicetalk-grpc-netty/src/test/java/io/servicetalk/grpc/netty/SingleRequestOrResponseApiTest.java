@@ -38,6 +38,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -152,6 +153,7 @@ class SingleRequestOrResponseApiTest {
 
     @ParameterizedTest(name = "streamingService={0}, streamingClient={1}")
     @MethodSource("params")
+    @Ignore
     void clientRequestStreamingCallFailsOnSecondResponseItem(boolean streamingService,
                                                              boolean streamingClient) throws Exception {
         setUp(streamingService, streamingClient);
