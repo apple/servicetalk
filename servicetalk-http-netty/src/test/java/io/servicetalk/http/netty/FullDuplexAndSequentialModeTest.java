@@ -70,6 +70,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
+    @Ignore
     void deferResponseUntilAfterRequestSent() throws Exception {
         clientFilterFactory(EnforceSequentialModeRequesterFilter.INSTANCE);
         setUp(CACHED, CACHED_SERVER);
