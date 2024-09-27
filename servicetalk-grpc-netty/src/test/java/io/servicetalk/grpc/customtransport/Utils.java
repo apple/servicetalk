@@ -23,8 +23,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMaps;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
@@ -104,8 +104,8 @@ final class Utils {
     static final class ChannelGrpcServiceContext implements GrpcServiceContext {
         private final ListenableAsyncCloseable closeAsync;
         private final GrpcExecutionContext ctx;
-        private final ContextMap requestContext = new DefaultContextMap();
-        private final ContextMap responseContext = new DefaultContextMap();
+        private final ContextMap requestContext = ContextMaps.newDefaultMap();
+        private final ContextMap responseContext = ContextMaps.newDefaultMap();
 
         ChannelGrpcServiceContext(Channel channel, GrpcExecutionContext ctx) {
             closeAsync = toListenableAsyncCloseable(new AsyncCloseable() {
