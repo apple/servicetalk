@@ -90,10 +90,11 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
         return new BufferedInputStream(new ByteArrayInputStream(array));
     }
 
-    private static Future<StreamingHttpResponse> stallingSendRequest(StreamingHttpConnection connection,
+    private Future<StreamingHttpResponse> stallingSendRequest(StreamingHttpConnection connection,
                                                                      CountDownLatch continueRequest,
                                                                      InputStream payload) {
-        return connection.request(connection.post(SVC_ECHO).payloadBody(fromInputStream(payload, CHUNK_SIZE)
+        return connection.request(connection.post(SVC_ECHO).payloadBody(fromInputStream(payload, 1)
+                        .publishOn(clientExecutor)
                 .map(chunk -> {
                     try {
                         continueRequest.await();    // wait until the InputStream is closed
