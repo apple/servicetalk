@@ -27,7 +27,6 @@ dependencies {
   api project(":servicetalk-grpc-api")
   api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
-    testImplementation 'junit:junit:4.13.1'
 
   compileOnly project(":servicetalk-http-utils") // only for javadoc references
 
