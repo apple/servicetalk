@@ -131,7 +131,6 @@ public final class TcpConnector {
         ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                connectHandler.accept(channel);
                 // We need to intercept the `connect` call in the pipeline and add our listener because right after the
                 // pipeline finishes its `connect(..)` sequence the netty Bootstrap will add the `CLOSE_ON_FAILURE`
                 // listener to the connect future. That will close the channel and complete the close future before we
@@ -163,6 +162,7 @@ public final class TcpConnector {
                         super.connect(ctx, remoteAddress, localAddress, promise);
                     }
                 });
+                connectHandler.accept(channel);
             }
         };
 
