@@ -94,7 +94,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
                                                                      CountDownLatch continueRequest,
                                                                      InputStream payload) {
         return connection.request(connection.post(SVC_ECHO).payloadBody(fromInputStream(payload, 1)
-                        .publishOn(clientExecutor)
+                        .publishOn(connection.executionContext().executor())
                 .map(chunk -> {
                     try {
                         continueRequest.await();    // wait until the InputStream is closed

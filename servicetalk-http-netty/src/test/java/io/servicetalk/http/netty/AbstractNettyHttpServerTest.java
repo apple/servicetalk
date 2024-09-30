@@ -117,7 +117,7 @@ abstract class AbstractNettyHttpServerTest {
     private static IoExecutor clientIoExecutor;
     private static IoExecutor serverIoExecutor;
 
-    Executor clientExecutor;
+    private Executor clientExecutor;
     private Executor serverExecutor;
     private ExecutorSupplier clientExecutorSupplier;
     private ExecutorSupplier serverExecutorSupplier;
