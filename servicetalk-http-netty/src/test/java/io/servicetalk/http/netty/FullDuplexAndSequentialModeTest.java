@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.EnforceSequentialModeRequesterFilter;
@@ -93,8 +94,12 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
     private Future<StreamingHttpResponse> stallingSendRequest(StreamingHttpConnection connection,
                                                                      CountDownLatch continueRequest,
                                                                      InputStream payload) {
+        final HttpExecutionContext ctx = connection.executionContext();
+        final String callerThreadName = Thread.currentThread().getName();
         return connection.request(connection.post(SVC_ECHO).payloadBody(fromInputStream(payload, 1)
-                        .publishOn(connection.executionContext().executor())
+                        // We use `publishOn` to make sure we only publish from offload threads. Otherwise, in rare
+                        // circumstances, we end up publishing from the test runner and end up deadlocked.
+                        .publishOn(ctx.executor(), () -> callerThreadName.equals(Thread.currentThread().getName()))
                 .map(chunk -> {
                     try {
                         continueRequest.await();    // wait until the InputStream is closed
@@ -102,7 +107,7 @@ class FullDuplexAndSequentialModeTest extends AbstractNettyHttpServerTest {
                         Thread.currentThread().interrupt();
                         throwException(ie);
                     }
-                    return connection.executionContext().bufferAllocator().wrap(chunk);
+                    return ctx.bufferAllocator().wrap(chunk);
                 }))).toFuture();
     }
 }
