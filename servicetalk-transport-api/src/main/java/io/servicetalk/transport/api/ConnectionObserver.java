@@ -93,7 +93,7 @@ public interface ConnectionObserver {
      * Callback when a security handshake is initiated.
      * <p>
      * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
-     * There are may be exceptions:
+     * There are exceptions:
      * <ol>
      *     <li>For a TCP connection, when {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is configured and
      *     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
@@ -106,8 +106,35 @@ public interface ConnectionObserver {
      *
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
      * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
+     * @deprecated use {@link #onSecurityHandshake(ConnectionInfo)}
      */
-    SecurityHandshakeObserver onSecurityHandshake();
+    @Deprecated
+    default SecurityHandshakeObserver onSecurityHandshake() {  // FIXME: 0.43 - remove deprecated method
+        return NoopTransportObserver.NoopSecurityHandshakeObserver.INSTANCE;
+    }
+
+    /**
+     * Callback when a security handshake is initiated.
+     * <p>
+     * For a typical connection, this callback is invoked after {@link #onTransportHandshakeComplete(ConnectionInfo)}.
+     * There are exceptions:
+     * <ol>
+     *     <li>For a TCP connection, when {@link ServiceTalkSocketOptions#TCP_FASTOPEN_CONNECT} option is configured and
+     *     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
+     *     Open is available and configured, it may not actually happen if the
+     *     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is {@code null} or
+     *     rejected by the server.</li>
+     *     <li>For a proxy connections, the handshake may happen after an observer returned by
+     *     {@link #onProxyConnect(Object)} completes successfully.</li>
+     * </ol>
+     *
+     * @param info the {@link ConnectionInfo} or null if {@code TCP_FASTOPEN} is used.
+     * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
+     * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
+     */
+    default SecurityHandshakeObserver onSecurityHandshake(@Nullable ConnectionInfo info) {
+        return onSecurityHandshake();
+    }
 
     /**
      * Callback when a non-multiplexed connection is established and ready.

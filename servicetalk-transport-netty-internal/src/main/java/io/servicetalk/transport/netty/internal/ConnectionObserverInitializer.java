@@ -122,7 +122,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             this.connectionInfoFactory = connectionInfoFactory;
             this.handshakeOnActive = handshakeOnActive;
             if (fastOpen) {
-                reportSecurityHandshakeStarting();
+                reportSecurityHandshakeStarting(null);
             }
         }
 
@@ -130,32 +130,35 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void handlerAdded(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (channel.isActive()) {
-                reportTcpHandshakeComplete(channel);
+                final ConnectionInfo info = connectionInfoFactory.apply(channel);
+                reportTcpHandshakeComplete(info);
                 if (handshakeOnActive) {
-                    reportSecurityHandshakeStarting();
+                    reportSecurityHandshakeStarting(info);
                 }
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            reportTcpHandshakeComplete(ctx.channel());
+            final ConnectionInfo info = connectionInfoFactory.apply(ctx.channel());
+
+            reportTcpHandshakeComplete(info);
             if (handshakeOnActive) {
-                reportSecurityHandshakeStarting();
+                reportSecurityHandshakeStarting(info);
             }
             ctx.fireChannelActive();
         }
 
-        private void reportTcpHandshakeComplete(final Channel channel) {
+        private void reportTcpHandshakeComplete(final ConnectionInfo info) {
             if (!tcpHandshakeComplete) {
                 tcpHandshakeComplete = true;
-                observer.onTransportHandshakeComplete(connectionInfoFactory.apply(channel));
+                observer.onTransportHandshakeComplete(info);
             }
         }
 
-        void reportSecurityHandshakeStarting() {
+        void reportSecurityHandshakeStarting(@Nullable final ConnectionInfo info) {
             if (handshakeObserver == null) {
-                handshakeObserver = observer.onSecurityHandshake();
+                handshakeObserver = observer.onSecurityHandshake(info);
             }
         }
 
