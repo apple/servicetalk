@@ -60,7 +60,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * @param observer {@link ConnectionObserver} to report network events.
      * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
-     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean, SslConfig)}
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)}
      * instead
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
@@ -78,7 +78,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
      * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
-     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean, SslConfig)}
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)}
      * instead
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
