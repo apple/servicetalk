@@ -94,7 +94,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
                     channel -> new TcpConnectionInfo(channel,
                             // ExecutionContext can be null if users used deprecated ctor
                             executionContext == null ? null : channelExecutionContext(channel, executionContext),
-                            sslConfig, config.idleTimeoutMs()), true, !deferSslHandler ? sslConfig : null));
+                            sslConfig, config.idleTimeoutMs()), true, deferSslHandler ? null : sslConfig));
         }
 
         if (config.idleTimeoutMs() > 0L) {

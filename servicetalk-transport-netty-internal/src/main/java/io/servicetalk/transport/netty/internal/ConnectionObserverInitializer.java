@@ -49,7 +49,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     private final ConnectionObserver observer;
     private final Function<Channel, ConnectionInfo> connectionInfoFactory;
-    private final boolean handshakeOnActive;
     private final boolean client;
     @Nullable
     private final SslConfig sslConfig;
@@ -104,7 +103,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                                          @Nullable final SslConfig sslConfig) {
         this.observer = requireNonNull(observer);
         this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
-        this.handshakeOnActive = sslConfig != null;
         this.client = client;
         this.sslConfig = sslConfig;
     }
@@ -120,11 +118,11 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             }
         });
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
-                handshakeOnActive, isFastOpen(channel), sslConfig));
+                sslConfig != null, isFastOpen(channel), sslConfig));
     }
 
     private boolean isFastOpen(final Channel channel) {
-        return client && handshakeOnActive && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
+        return client && sslConfig != null && Boolean.TRUE.equals(channel.config().getOption(TCP_FASTOPEN_CONNECT)) &&
                 (Epoll.isTcpFastOpenClientSideAvailable() || KQueue.isTcpFastOpenClientSideAvailable());
     }
 
