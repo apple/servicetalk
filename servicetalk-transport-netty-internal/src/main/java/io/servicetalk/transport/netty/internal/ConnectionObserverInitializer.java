@@ -51,6 +51,8 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
     private final Function<Channel, ConnectionInfo> connectionInfoFactory;
     private final boolean handshakeOnActive;
     private final boolean client;
+    @Nullable
+    private final SslConfig sslConfig;
 
     /**
      * Creates a new instance.
@@ -58,7 +60,8 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * @param observer {@link ConnectionObserver} to report network events.
      * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
-     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)} instead
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean, SslConfig)}
+     * instead
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public ConnectionObserverInitializer(final ConnectionObserver observer,
@@ -75,15 +78,37 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
      * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean, SslConfig)}
+     * instead
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public ConnectionObserverInitializer(final ConnectionObserver observer,
                                          final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                          final boolean handshakeOnActive,
                                          final boolean client) {
+        this(observer, connectionInfoFactory, handshakeOnActive, client, null);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param observer {@link ConnectionObserver} to report network events
+     * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
+     * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
+     * @param handshakeOnActive {@code true} if the observed connection is secure
+     * @param client {@code true} if this initializer is used on the client-side
+     * @param sslConfig the {@link SslConfig} to supply to the observer on handshake.
+     */
+    public ConnectionObserverInitializer(final ConnectionObserver observer,
+                                         final Function<Channel, ConnectionInfo> connectionInfoFactory,
+                                         final boolean handshakeOnActive,
+                                         final boolean client,
+                                         @Nullable final SslConfig sslConfig) {
         this.observer = requireNonNull(observer);
         this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
         this.handshakeOnActive = handshakeOnActive;
         this.client = client;
+        this.sslConfig = sslConfig;
     }
 
     @Override
@@ -96,8 +121,8 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 observer.connectionClosed(t);
             }
         });
-        channel.pipeline().addLast(
-                new ConnectionObserverHandler(observer, connectionInfoFactory, handshakeOnActive, isFastOpen(channel)));
+        channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
+                handshakeOnActive, isFastOpen(channel), sslConfig));
     }
 
     private boolean isFastOpen(final Channel channel) {
@@ -113,16 +138,20 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         private boolean tcpHandshakeComplete;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
+        @Nullable
+        private final SslConfig sslConfig;
 
         ConnectionObserverHandler(final ConnectionObserver observer,
                                   final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                   final boolean handshakeOnActive,
-                                  final boolean fastOpen) {
+                                  final boolean fastOpen,
+                                  @Nullable final SslConfig sslConfig) {
             this.observer = observer;
             this.connectionInfoFactory = connectionInfoFactory;
             this.handshakeOnActive = handshakeOnActive;
+            this.sslConfig = sslConfig;
             if (fastOpen) {
-                reportSecurityHandshakeStarting(null);
+                reportSecurityHandshakeStarting(sslConfig);
             }
         }
 
@@ -130,35 +159,33 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void handlerAdded(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (channel.isActive()) {
-                final ConnectionInfo info = connectionInfoFactory.apply(channel);
-                reportTcpHandshakeComplete(info);
+                reportTcpHandshakeComplete(channel);
                 if (handshakeOnActive) {
-                    reportSecurityHandshakeStarting(info);
+                    reportSecurityHandshakeStarting(sslConfig);
                 }
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            final ConnectionInfo info = connectionInfoFactory.apply(ctx.channel());
-
-            reportTcpHandshakeComplete(info);
+            reportTcpHandshakeComplete(ctx.channel());
             if (handshakeOnActive) {
-                reportSecurityHandshakeStarting(info);
+                reportSecurityHandshakeStarting(sslConfig);
             }
             ctx.fireChannelActive();
         }
 
-        private void reportTcpHandshakeComplete(final ConnectionInfo info) {
+        private void reportTcpHandshakeComplete(final Channel channel) {
             if (!tcpHandshakeComplete) {
                 tcpHandshakeComplete = true;
-                observer.onTransportHandshakeComplete(info);
+                observer.onTransportHandshakeComplete(connectionInfoFactory.apply(channel));
             }
         }
 
-        void reportSecurityHandshakeStarting(@Nullable final ConnectionInfo info) {
+        void reportSecurityHandshakeStarting(@Nullable final SslConfig sslConfig) {
+            assert sslConfig != null;
             if (handshakeObserver == null) {
-                handshakeObserver = observer.onSecurityHandshake(info);
+                handshakeObserver = observer.onSecurityHandshake(sslConfig);
             }
         }
 

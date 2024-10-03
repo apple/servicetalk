@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -68,7 +69,8 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
         when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
-        when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
+        when(clientConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
+                .thenReturn(clientSecurityHandshakeObserver);
         when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
         when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
@@ -80,7 +82,8 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
         when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
-        when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
+        when(serverConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
+                .thenReturn(serverSecurityHandshakeObserver);
         when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
         when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);

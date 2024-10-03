@@ -19,6 +19,7 @@ import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
@@ -71,12 +72,13 @@ public class TcpServerChannelInitializer implements ChannelInitializer {    // F
         delegate = delegate.andThen(new TransportConfigInitializer(config.transportConfig()));
 
         if (observer != NoopConnectionObserver.INSTANCE) {
+            final ServerSslConfig sslConfig = config.sslConfig();
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     channel -> new TcpConnectionInfo(channel,
                             // ExecutionContext can be null if users used deprecated ctor
                             executionContext == null ? null : channelExecutionContext(channel, executionContext),
-                            config.sslConfig(), config.idleTimeoutMs()),
-                    config.sslConfig() != null, false));
+                            sslConfig, config.idleTimeoutMs()),
+                    sslConfig != null, false, sslConfig));
         }
 
         if (config.idleTimeoutMs() > 0L) {

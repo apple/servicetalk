@@ -68,10 +68,10 @@ public interface ConnectionObserver {
      *
      * @param info {@link ConnectionInfo} for the connection after transport handshake completes. Note that the
      * {@link ConnectionInfo#sslSession()} will always return {@code null} since it is called before the
-     * {@link ConnectionObserver#onSecurityHandshake() security handshake} is performed (and as a result no SSL session
-     * has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport) protocol.
-     * Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)} or
-     * {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
+     * {@link ConnectionObserver#onSecurityHandshake(SslConfig)}  security handshake} is performed (and as a result
+     * no SSL session has been established). Also, {@link ConnectionInfo#protocol()} will return L4 (transport)
+     * protocol. Finalized {@link ConnectionInfo} will be available via {@link #connectionEstablished(ConnectionInfo)}
+     * or {@link #multiplexedConnectionEstablished(ConnectionInfo)} callbacks.
      */
     default void onTransportHandshakeComplete(ConnectionInfo info) {
         onTransportHandshakeComplete();
@@ -106,7 +106,7 @@ public interface ConnectionObserver {
      *
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
      * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
-     * @deprecated use {@link #onSecurityHandshake(ConnectionInfo)}
+     * @deprecated use {@link #onSecurityHandshake(SslConfig)}
      */
     @Deprecated
     default SecurityHandshakeObserver onSecurityHandshake() {  // FIXME: 0.43 - remove deprecated method
@@ -128,11 +128,11 @@ public interface ConnectionObserver {
      *     {@link #onProxyConnect(Object)} completes successfully.</li>
      * </ol>
      *
-     * @param info the {@link ConnectionInfo} or null if {@code TCP_FASTOPEN} is used.
+     * @param sslConfig the {@link SslConfig} used when performing the security handshake.
      * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
      * @see <a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a>
      */
-    default SecurityHandshakeObserver onSecurityHandshake(@Nullable ConnectionInfo info) {
+    default SecurityHandshakeObserver onSecurityHandshake(SslConfig sslConfig) {
         return onSecurityHandshake();
     }
 

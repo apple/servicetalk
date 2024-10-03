@@ -84,8 +84,15 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public SecurityHandshakeObserver onSecurityHandshake() {
             return new BiSecurityHandshakeObserver(first.onSecurityHandshake(), second.onSecurityHandshake());
+        }
+
+        @Override
+        public SecurityHandshakeObserver onSecurityHandshake(final SslConfig sslConfig) {
+            return new BiSecurityHandshakeObserver(first.onSecurityHandshake(sslConfig),
+                    second.onSecurityHandshake(sslConfig));
         }
 
         @Override
