@@ -77,8 +77,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {    // F
                     channel -> new TcpConnectionInfo(channel,
                             // ExecutionContext can be null if users used deprecated ctor
                             executionContext == null ? null : channelExecutionContext(channel, executionContext),
-                            sslConfig, config.idleTimeoutMs()),
-                    sslConfig != null, false, sslConfig));
+                            sslConfig, config.idleTimeoutMs()), false, sslConfig));
         }
 
         if (config.idleTimeoutMs() > 0L) {

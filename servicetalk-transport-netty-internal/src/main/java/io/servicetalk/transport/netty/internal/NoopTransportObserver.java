@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
@@ -84,6 +85,11 @@ public final class NoopTransportObserver implements TransportObserver {
 
         @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
+            return NoopSecurityHandshakeObserver.INSTANCE;
+        }
+
+        @Override
+        public SecurityHandshakeObserver onSecurityHandshake(final SslConfig sslConfig) {
             return NoopSecurityHandshakeObserver.INSTANCE;
         }
 

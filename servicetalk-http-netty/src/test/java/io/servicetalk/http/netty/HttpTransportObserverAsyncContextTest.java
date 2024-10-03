@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopProxyConnectObserver;
@@ -206,7 +207,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public SecurityHandshakeObserver onSecurityHandshake() {
+            public SecurityHandshakeObserver onSecurityHandshake(final SslConfig config) {
                 // AsyncContext is unknown at this point because this event is triggered by network
                 return NoopSecurityHandshakeObserver.INSTANCE;
             }

@@ -86,7 +86,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                                          final Function<Channel, ConnectionInfo> connectionInfoFactory,
                                          final boolean handshakeOnActive,
                                          final boolean client) {
-        this(observer, connectionInfoFactory, handshakeOnActive, client, null);
+        this(observer, connectionInfoFactory, client, null);
     }
 
     /**
@@ -95,18 +95,16 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * @param observer {@link ConnectionObserver} to report network events
      * @param connectionInfoFactory {@link Function} that creates {@link ConnectionInfo} from the provided
      * {@link Channel} to report {@link ConnectionObserver#onTransportHandshakeComplete(ConnectionInfo)}
-     * @param handshakeOnActive {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
      * @param sslConfig the {@link SslConfig} to supply to the observer on handshake.
      */
     public ConnectionObserverInitializer(final ConnectionObserver observer,
                                          final Function<Channel, ConnectionInfo> connectionInfoFactory,
-                                         final boolean handshakeOnActive,
                                          final boolean client,
                                          @Nullable final SslConfig sslConfig) {
         this.observer = requireNonNull(observer);
         this.connectionInfoFactory = requireNonNull(connectionInfoFactory);
-        this.handshakeOnActive = handshakeOnActive;
+        this.handshakeOnActive = sslConfig != null;
         this.client = client;
         this.sslConfig = sslConfig;
     }
