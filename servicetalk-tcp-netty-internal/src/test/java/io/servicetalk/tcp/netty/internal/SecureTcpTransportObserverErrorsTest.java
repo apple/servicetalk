@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -178,7 +179,7 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
         verify(serverConnectionObserver, await()).onTransportHandshakeComplete(any());
         switch (errorReason) {
             case SECURE_CLIENT_TO_PLAIN_SERVER:
-                verify(clientConnectionObserver, await()).onSecurityHandshake();
+                verify(clientConnectionObserver, await()).onSecurityHandshake(any(SslConfig.class));
                 if (clientProvider == JDK) {
                     verify(clientSecurityHandshakeObserver, await()).handshakeFailed(any(SSLProtocolException.class));
                     verify(clientConnectionObserver, await()).connectionClosed(any(SSLProtocolException.class));
@@ -189,7 +190,7 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
                 serverConnectionClosed.await();
                 break;
             case PLAIN_CLIENT_TO_SECURE_SERVER:
-                verify(serverConnectionObserver, await()).onSecurityHandshake();
+                verify(serverConnectionObserver, await()).onSecurityHandshake(any(SslConfig.class));
                 clientConnected.await();
                 connection.get().write(from(DEFAULT_ALLOCATOR.fromAscii("Hello"))).toFuture().get();
                 verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(NotSslRecordException.class));
@@ -202,8 +203,8 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
             case MISSED_CLIENT_CERTIFICATE:
             case NOT_MATCHING_PROTOCOLS:
             case NOT_MATCHING_CIPHERS:
-                verify(clientConnectionObserver, await()).onSecurityHandshake();
-                verify(serverConnectionObserver, await()).onSecurityHandshake();
+                verify(clientConnectionObserver, await()).onSecurityHandshake(any(SslConfig.class));
+                verify(serverConnectionObserver, await()).onSecurityHandshake(any(SslConfig.class));
                 verify(clientSecurityHandshakeObserver, await()).handshakeFailed(any(SSLException.class));
                 verify(clientConnectionObserver, await()).connectionClosed(any(SSLException.class));
                 verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(SSLException.class));

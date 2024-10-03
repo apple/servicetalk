@@ -41,6 +41,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
@@ -161,7 +162,8 @@ class HttpsProxyTest {
         securityHandshakeObserver = mock(SecurityHandshakeObserver.class, "securityHandshakeObserver");
         when(transportObserver.onNewConnection(any(), any())).thenReturn(connectionObserver);
         when(connectionObserver.onProxyConnect(any())).thenReturn(proxyConnectObserver);
-        lenient().when(connectionObserver.onSecurityHandshake()).thenReturn(securityHandshakeObserver);
+        lenient().when(connectionObserver.onSecurityHandshake(any(SslConfig.class)))
+                .thenReturn(securityHandshakeObserver);
         lenient().when(connectionObserver.connectionEstablished(any())).thenReturn(NoopDataObserver.INSTANCE);
         lenient().when(connectionObserver.multiplexedConnectionEstablished(any()))
                 .thenReturn(NoopMultiplexedObserver.INSTANCE);
@@ -230,7 +232,7 @@ class HttpsProxyTest {
         assertTargetAddress();
 
         verifyProxyConnectComplete();
-        order.verify(connectionObserver).onSecurityHandshake();
+        order.verify(connectionObserver).onSecurityHandshake(any(SslConfig.class));
         order.verify(securityHandshakeObserver).handshakeComplete(any());
         if (expectedVersion.major() > 1) {
             order.verify(connectionObserver).multiplexedConnectionEstablished(any());
@@ -398,7 +400,7 @@ class HttpsProxyTest {
         assertTargetAddress();
 
         verifyProxyConnectComplete();
-        order.verify(connectionObserver).onSecurityHandshake();
+        order.verify(connectionObserver).onSecurityHandshake(any(SslConfig.class));
         order.verify(securityHandshakeObserver).handshakeFailed(e);
     }
 

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 
 import io.netty.channel.Channel;
@@ -29,10 +30,12 @@ import io.netty.handler.ssl.SslHandler;
 public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
+    private final SslConfig sslConfig;
 
-    DeferSslHandler(final Channel channel, final SslHandler handler) {
+    DeferSslHandler(final Channel channel, final SslHandler handler, final SslConfig sslConfig) {
         this.channel = channel;
         this.handler = handler;
+        this.sslConfig = sslConfig;
     }
 
     /**
@@ -42,7 +45,7 @@ public class DeferSslHandler extends ChannelDuplexHandler {
         final ChannelPipeline pipeline = channel.pipeline();
         final ConnectionObserverHandler observerHandler = pipeline.get(ConnectionObserverHandler.class);
         if (observerHandler != null) {
-            observerHandler.reportSecurityHandshakeStarting();
+            observerHandler.reportSecurityHandshakeStarting(sslConfig);
         }
         pipeline.replace(this, null, handler);
     }

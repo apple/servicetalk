@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
@@ -155,7 +156,7 @@ class SslCertificateCompressionTest {
                 }
 
                 @Override
-                public SecurityHandshakeObserver onSecurityHandshake() {
+                public SecurityHandshakeObserver onSecurityHandshake(final SslConfig config) {
                     inHandshake = true;
                     return new SecurityHandshakeObserver() {
                         @Override
