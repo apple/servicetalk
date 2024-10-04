@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,7 +158,9 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
                      final ServiceDiscovererEvent.Status missingRecordStatus,
-                     final boolean nxInvalidation) {
+                     final boolean nxInvalidation,
+                     final boolean tcpFallbackOnTimeout,
+                     final String datagramChannelStrategy) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
@@ -193,9 +195,6 @@ final class DefaultDnsClient implements DnsClient {
                 .localAddress(localAddress)
                 .channelType(datagramChannel(eventLoop))
                 .resolvedAddressTypes(resolvedAddressTypes)
-                // Enable TCP fallback to be able to handle truncated responses.
-                // https://tools.ietf.org/html/rfc7766
-                .socketChannelType(socketChannelClass)
                 // We should complete once the preferred address types could be resolved to ensure we always
                 // respond as fast as possible.
                 .completeOncePreferredResolved(completeOncePreferredResolved)
@@ -209,7 +208,12 @@ final class DefaultDnsClient implements DnsClient {
                                 // Use the same comparator as Netty uses by default.
                                 new NameServerComparator(preferredAddressType(resolvedAddressTypes).addressType())));
 
+        // Enable TCP fallback to be able to handle truncated responses.
+        // https://tools.ietf.org/html/rfc7766
+        DnsNameResolverBuilderUtils.enableTcpFallback(id, builder, socketChannelClass, tcpFallbackOnTimeout);
         DnsNameResolverBuilderUtils.consolidateCacheSize(id, builder, consolidateCacheSize);
+        DnsNameResolverBuilderUtils.datagramChannelStrategy(id, builder, datagramChannelStrategy);
+
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }

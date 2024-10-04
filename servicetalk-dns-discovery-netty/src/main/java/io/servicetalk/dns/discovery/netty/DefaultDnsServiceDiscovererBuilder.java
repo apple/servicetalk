@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,13 +58,23 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscovererBuilder.class);
 
-    /**
-     * @deprecated This system property is introduced temporarily as a way for users to skip binding and revert the
-     * preexisting behavior.
-     */
-    @Deprecated // FIXME: 0.43 - consider removing this system property
+    // FIXME: 0.43 - consider removing deprecated system properties.
+    //  Those were introduced temporarily as a way for us to experiment with new Netty features.
+    //  In the next major release, we should promote required features to builder API.
+    @Deprecated
+    private static final String DATAGRAM_CHANNEL_STRATEGY_PROPERTY =
+            "io.servicetalk.dns.discovery.netty.experimental.datagramChannelStrategy";
+    @Deprecated
+    private static final String TCP_FALLBACK_ON_TIMEOUT_PROPERTY =
+            "io.servicetalk.dns.discovery.netty.experimental.tcpFallbackOnTimeout";
+    @Deprecated
     private static final String SKIP_BINDING_PROPERTY = "io.servicetalk.dns.discovery.netty.skipBinding";
+    @Deprecated
     private static final String NX_DOMAIN_INVALIDATES_PROPERTY = "io.servicetalk.dns.discovery.nxdomain.invalidation";
+
+    private static final String DEFAULT_DATAGRAM_CHANNEL_STRATEGY =
+            getProperty(DATAGRAM_CHANNEL_STRATEGY_PROPERTY, "ChannelPerResolver");
+    private static final boolean DEFAULT_TCP_FALLBACK_ON_TIMEOUT = getBoolean(TCP_FALLBACK_ON_TIMEOUT_PROPERTY);
     private static final boolean DEFAULT_NX_DOMAIN_INVALIDATES = getBoolean(NX_DOMAIN_INVALIDATES_PROPERTY);
     @Nullable
     private static final SocketAddress DEFAULT_LOCAL_ADDRESS =
@@ -106,6 +116,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
             LOGGER.debug("Default negative TTL cache in seconds: {}", DEFAULT_NEGATIVE_TTL_CACHE_SECONDS);
             LOGGER.debug("Default missing records status: {}", DEFAULT_MISSING_RECOREDS_STATUS);
             LOGGER.debug("-D{}: {}", NX_DOMAIN_INVALIDATES_PROPERTY, DEFAULT_NX_DOMAIN_INVALIDATES);
+            LOGGER.debug("-D{}: {}", TCP_FALLBACK_ON_TIMEOUT_PROPERTY, DEFAULT_TCP_FALLBACK_ON_TIMEOUT);
+            LOGGER.debug("-D{}: {}", DATAGRAM_CHANNEL_STRATEGY_PROPERTY, DEFAULT_DATAGRAM_CHANNEL_STRATEGY);
         }
     }
 
@@ -396,7 +408,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
                 srvConcurrency, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, resolutionTimeout, dnsResolverAddressTypes, localAddress, dnsServerAddressStreamProvider,
-                observer, missingRecordStatus, nxInvalidation);
+                observer, missingRecordStatus, nxInvalidation,
+                DEFAULT_TCP_FALLBACK_ON_TIMEOUT, DEFAULT_DATAGRAM_CHANNEL_STRATEGY);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 
