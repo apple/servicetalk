@@ -779,6 +779,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <section class="detail" id="hasQueryParameter(java.lang.String,java.lang.String)">
 <h3>hasQueryParameter</h3>
 <div class="member-signature"><span class="return-type">boolean</span>&nbsp;<span class="element-name">hasQueryParameter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;value)</span></div>
 <div class="block">Returns <code>true</code> if a query parameter with the <code>key</code> and <code>value</code> exists, <code>false</code> otherwise.</div>
 <dl class="notes">
@@ -805,6 +806,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <section class="detail" id="addQueryParameter(java.lang.String,java.lang.String)">
 <h3>addQueryParameter</h3>
 <div class="member-signature"><span class="return-type"><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></span>&nbsp;<span class="element-name">addQueryParameter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;value)</span></div>
 <div class="block">Adds a new query parameter with the specified <code>key</code> and <code>value</code>, which will be
  <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.</div>
@@ -865,6 +867,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <section class="detail" id="setQueryParameter(java.lang.String,java.lang.String)">
 <h3>setQueryParameter</h3>
 <div class="member-signature"><span class="return-type"><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></span>&nbsp;<span class="element-name">setQueryParameter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;value)</span></div>
 <div class="block">Sets a query parameter with the specified <code>key</code> and <code>value</code>, which will be
  <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.
@@ -939,6 +942,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <section class="detail" id="removeQueryParameters(java.lang.String,java.lang.String)">
 <h3>removeQueryParameters</h3>
 <div class="member-signature"><span class="return-type">boolean</span>&nbsp;<span class="element-name">removeQueryParameters</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;value)</span></div>
 <div class="block">Removes all query parameters with the specified <code>key</code> and <code>value</code>.</div>
 <dl class="notes">

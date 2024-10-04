@@ -4582,10 +4582,18 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)" class="member-name-link">ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)</code></a> instead</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
 </div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)" class="member-name-link">ConnectionObserverInitializer(ConnectionObserver, Function&lt;Channel, ConnectionInfo&gt;, boolean, boolean)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)" class="member-name-link">ConnectionObserverInitializer(ConnectionObserver, Function&lt;Channel, ConnectionInfo&gt;, boolean, SslConfig)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html" title="class in io.servicetalk.transport.netty.internal">ConnectionObserverInitializer</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
@@ -15949,9 +15957,17 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#onSecurityHandshake()" class="member-name-link">onSecurityHandshake()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
 <dd>
-<div class="block">Callback when a security handshake is initiated.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/transport/api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserver.onSecurityHandshake(SslConfig)</code></a></div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#onSecurityHandshake()" class="member-name-link">onSecurityHandshake()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)" class="member-name-link">onSecurityHandshake(SslConfig)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
+<dd>
+<div class="block">Callback when a security handshake is initiated.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)" class="member-name-link">onSecurityHandshake(SslConfig)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.NoopConnectionObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver.NoopConnectionObserver</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/loadbalancer/LoadBalancerObserver.html#onServiceDiscoveryEvent(java.util.Collection,int,int)" class="member-name-link">onServiceDiscoveryEvent(Collection&lt;? extends ServiceDiscovererEvent&lt;?&gt;&gt;, int, int)</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a></dt>
 <dd>
@@ -17479,6 +17495,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:R">R</h2>
 <dl class="index">
+<dt><a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html#randomSubsetSize(int)" class="member-name-link">randomSubsetSize(int)</a> - Method in class io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html#randomSubsetSize(int)" class="member-name-link">randomSubsetSize(int)</a> - Method in interface io.servicetalk.loadbalancer.<a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a></dt>
+<dd>
+<div class="block">Set the random host subset size for the load balancer.</div>
+</dd>
 <dt><a href="io/servicetalk/utils/internal/RandomUtils.html" class="type-name-link" title="class in io.servicetalk.utils.internal">RandomUtils</a> - Class in <a href="io/servicetalk/utils/internal/package-summary.html">io.servicetalk.utils.internal</a></dt>
 <dd>
 <div class="block">Internal random utilities.</div>

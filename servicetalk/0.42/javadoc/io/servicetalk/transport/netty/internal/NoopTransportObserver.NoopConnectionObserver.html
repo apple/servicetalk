@@ -176,14 +176,19 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Callback when a security handshake is initiated.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete()" class="member-name-link">onTransportHandshakeComplete</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)" class="member-name-link">onSecurityHandshake</a><wbr>(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback when a transport handshake completes.</div>
+<div class="block">Callback when a security handshake is initiated.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">onTransportHandshakeComplete</a><wbr>(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete()" class="member-name-link">onTransportHandshakeComplete</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Callback when a transport handshake completes.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">onTransportHandshakeComplete</a><wbr>(<a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&nbsp;info)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Callback when a transport handshake completes.</div>
 </div>
 </div>
@@ -287,10 +292,10 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <dt>Parameters:</dt>
 <dd><code>info</code> - <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> for the connection after transport handshake completes. Note that the
  <a href="../../api/ConnectionInfo.html#sslSession()"><code>ConnectionInfo.sslSession()</code></a> will always return <code>null</code> since it is called before the
- <a href="../../api/ConnectionObserver.html#onSecurityHandshake()"><code>security handshake</code></a> is performed (and as a result no SSL session
- has been established). Also, <a href="../../api/ConnectionInfo.html#protocol()"><code>ConnectionInfo.protocol()</code></a> will return L4 (transport) protocol.
- Finalized <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> will be available via <a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.connectionEstablished(ConnectionInfo)</code></a> or
- <a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.multiplexedConnectionEstablished(ConnectionInfo)</code></a> callbacks.</dd>
+ <a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserver.onSecurityHandshake(SslConfig)</code></a>  security handshake} is performed (and as a result
+ no SSL session has been established). Also, <a href="../../api/ConnectionInfo.html#protocol()"><code>ConnectionInfo.protocol()</code></a> will return L4 (transport)
+ protocol. Finalized <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> will be available via <a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.connectionEstablished(ConnectionInfo)</code></a>
+ or <a href="../../api/ConnectionObserver.html#multiplexedConnectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.multiplexedConnectionEstablished(ConnectionInfo)</code></a> callbacks.</dd>
 </dl>
 </section>
 </li>
@@ -320,7 +325,7 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <div class="block">Callback when a security handshake is initiated.
  <p>
  For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a>.
- There are may be exceptions:
+ There are exceptions:
  <ol>
      <li>For a TCP connection, when <a href="../../api/ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
      the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
@@ -333,6 +338,40 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../../api/ConnectionObserver.html#onSecurityHandshake()">onSecurityHandshake</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
+<dt>Returns:</dt>
+<dd>a new <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">
+<h3>onSecurityHandshake</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></span>&nbsp;<span class="element-name">onSecurityHandshake</span><wbr><span class="parameters">(<a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">ConnectionObserver</a></code></span></div>
+<div class="block">Callback when a security handshake is initiated.
+ <p>
+ For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a>.
+ There are exceptions:
+ <ol>
+     <li>For a TCP connection, when <a href="../../api/ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
+     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
+     Open is available and configured, it may not actually happen if the
+     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
+     rejected by the server.</li>
+     <li>For a proxy connections, the handshake may happen after an observer returned by
+     <a href="../../api/ConnectionObserver.html#onProxyConnect(java.lang.Object)"><code>ConnectionObserver.onProxyConnect(Object)</code></a> completes successfully.</li>
+ </ol></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../api/ConnectionObserver.html#onSecurityHandshake(io.servicetalk.transport.api.SslConfig)">onSecurityHandshake</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>sslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> used when performing the security handshake.</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
 <dt>See Also:</dt>

@@ -100,14 +100,25 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
  boolean&nbsp;client)</code></div>
 <div class="col-last even-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)</code></a> instead</div>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
 </div>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)" class="member-name-link">ConnectionObserverInitializer</a><wbr>(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
- boolean&nbsp;handshakeOnActive,
+ boolean&nbsp;ignored,
  boolean&nbsp;client)</code></div>
 <div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
+</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)" class="member-name-link">ConnectionObserverInitializer</a><wbr>(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
+ boolean&nbsp;client,
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</code></div>
+<div class="col-last even-row-color">
 <div class="block">Creates a new instance.</div>
 </div>
 </div>
@@ -157,7 +168,8 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
  boolean&nbsp;handshakeOnActive,
  boolean&nbsp;client)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, boolean)</code></a> instead</div>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
 </div>
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
@@ -171,18 +183,42 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <li>
 <section class="detail" id="&lt;init&gt;(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,boolean)">
 <h3>ConnectionObserverInitializer</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ConnectionObserverInitializer</span><wbr><span class="parameters">(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">ConnectionObserverInitializer</span><wbr><span class="parameters">(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
- boolean&nbsp;handshakeOnActive,
+ boolean&nbsp;ignored,
  boolean&nbsp;client)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)"><code>ConnectionObserverInitializer(ConnectionObserver, Function, boolean, SslConfig)</code></a>
+ instead</div>
+</div>
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events</dd>
 <dd><code>connectionInfoFactory</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that creates <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> from the provided
  <code>Channel</code> to report <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></dd>
-<dd><code>handshakeOnActive</code> - <code>true</code> if the observed connection is secure</dd>
+<dd><code>ignored</code> - ignored parameter.</dd>
 <dd><code>client</code> - <code>true</code> if this initializer is used on the client-side</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(io.servicetalk.transport.api.ConnectionObserver,java.util.function.Function,boolean,io.servicetalk.transport.api.SslConfig)">
+<h3>ConnectionObserverInitializer</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ConnectionObserverInitializer</span><wbr><span class="parameters">(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;io.netty.channel.Channel,<wbr><a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a>&gt;&nbsp;connectionInfoFactory,
+ boolean&nbsp;client,
+ @Nullable
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig)</span></div>
+<div class="block">Creates a new instance.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events</dd>
+<dd><code>connectionInfoFactory</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that creates <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a> from the provided
+ <code>Channel</code> to report <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.onTransportHandshakeComplete(ConnectionInfo)</code></a></dd>
+<dd><code>client</code> - <code>true</code> if this initializer is used on the client-side</dd>
+<dd><code>sslConfig</code> - the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to supply to the observer on handshake.</dd>
 </dl>
 </section>
 </li>

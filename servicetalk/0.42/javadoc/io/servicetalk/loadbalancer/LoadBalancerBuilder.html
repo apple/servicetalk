@@ -158,6 +158,11 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#randomSubsetSize(int)" class="member-name-link">randomSubsetSize</a><wbr>(int&nbsp;randomSubsetSize)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Set the random host subset size for the load balancer.</div>
+</div>
 </div>
 </div>
 </div>
@@ -180,6 +185,22 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>loadBalancingPolicy</code> - the <code>loadBalancingPolicy</code> to use</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="randomSubsetSize(int)">
+<h3>randomSubsetSize</h3>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">randomSubsetSize</span><wbr><span class="parameters">(int&nbsp;randomSubsetSize)</span></div>
+<div class="block">Set the random host subset size for the load balancer.
+ This is valuable for limiting the number of outgoing connections when calling services that have
+ a very high replica count. It does so by selecting the specified number of hosts randomly from the total host
+ set and routing traffic only to these hosts.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>randomSubsetSize</code> - the maximum number of healthy hosts to establish connections to</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>
