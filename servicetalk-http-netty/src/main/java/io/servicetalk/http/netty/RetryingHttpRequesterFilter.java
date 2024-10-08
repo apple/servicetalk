@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -43,6 +44,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
@@ -55,6 +57,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
@@ -91,15 +94,16 @@ public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(true, false, false, 1, null,
+            new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
                     (__, ___) -> NO_RETRIES, null);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, false, 0, null,
+            new RetryingHttpRequesterFilter(false, true, false, false, 0, null,
                     (__, ___) -> NO_RETRIES, null);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
+    private final boolean returnFailedResponses;
     private final int maxTotalRetries;
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -109,13 +113,14 @@ public final class RetryingHttpRequesterFilter
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
-            final int maxTotalRetries,
+            final boolean returnFailedResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
+        this.returnFailedResponses = returnFailedResponses;
         this.maxTotalRetries = maxTotalRetries;
         this.responseMapper = responseMapper;
         this.retryFor = retryFor;
@@ -270,7 +275,15 @@ public final class RetryingHttpRequesterFilter
             // 1. Metadata is shared across retries
             // 2. Publisher state is restored to original state for each retry
             // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
-            return single.retryWhen(retryStrategy(request, executionContext(), true));
+            single = single.retryWhen(retryStrategy(request, executionContext(), true));
+            if (returnFailedResponses) {
+                single = single.onErrorResume(HttpResponseException.class, t -> {
+                    HttpResponseMetaData metaData = t.metaData();
+                    return Single.succeeded(StreamingHttpResponses.newResponse(metaData.status(), metaData.version(),
+                            metaData.headers(), DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE));
+                });
+            }
+            return single;
         }
     }
 
@@ -719,6 +732,7 @@ public final class RetryingHttpRequesterFilter
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
+        private boolean returnFailedResponses;
 
         private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
                 retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediateBounded();
@@ -744,6 +758,11 @@ public final class RetryingHttpRequesterFilter
 
         @Nullable
         private RetryCallbacks onRequestRetry;
+
+        public Builder returnFailedResponses(final boolean returnFailedResponses) {
+            this.returnFailedResponses = returnFailedResponses;
+            return this;
+        }
 
         /**
          * By default, automatic retries wait for the associated {@link LoadBalancer} to be
@@ -1054,7 +1073,7 @@ public final class RetryingHttpRequesterFilter
                         return NO_RETRIES;
                     };
             return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
-                    maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
+                    returnFailedResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }
     }
 }
