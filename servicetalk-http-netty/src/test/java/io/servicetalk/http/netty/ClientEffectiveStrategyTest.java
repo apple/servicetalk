@@ -56,6 +56,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -227,6 +228,7 @@ class ClientEffectiveStrategyTest {
         return arguments.stream();
     }
 
+    @Disabled // Disabled due to continued flakiness. See issue #2245 for more details.
     @ParameterizedTest(name = "Type={0} builder={1} filter={2} LB={3} CF={4}")
     @MethodSource("casesSupplier")
     void clientStrategy(final BuilderType builderType,
