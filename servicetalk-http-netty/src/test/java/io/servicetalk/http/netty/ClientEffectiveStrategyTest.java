@@ -62,6 +62,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.testng.annotations.Ignore;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -227,6 +228,7 @@ class ClientEffectiveStrategyTest {
         return arguments.stream();
     }
 
+    @Ignore // Disabled due to continued flakiness. See issue #2245 for more details.
     @ParameterizedTest(name = "Type={0} builder={1} filter={2} LB={3} CF={4}")
     @MethodSource("casesSupplier")
     void clientStrategy(final BuilderType builderType,
