@@ -24,25 +24,24 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
 dependencies {
-  implementation platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testImplementation enforcedPlatform("io.grpc:grpc-bom:$grpcVersion")
-
   api project(":servicetalk-grpc-api")
   api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
 
   compileOnly project(":servicetalk-http-utils") // only for javadoc references
+
+  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-loadbalancer-experimental")
-  implementation "org.slf4j:slf4j-api"
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.protobuf:protobuf-java"
 
+  testImplementation enforcedPlatform("io.grpc:grpc-bom:$grpcVersion")
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))

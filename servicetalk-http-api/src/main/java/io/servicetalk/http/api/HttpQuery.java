@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -91,8 +92,8 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return unmodifiableSet(params.keySet());
     }
 
-    public HttpQuery add(final String key, final String value) {
-        validateQueryParam(key, value);
+    public HttpQuery add(final String key, @Nullable final String value) {
+        validateQueryParam(key);
         getValues(key).add(value);
         markDirty();
         return this;
@@ -114,8 +115,8 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return this;
     }
 
-    public HttpQuery set(final String key, final String value) {
-        validateQueryParam(key, value);
+    public HttpQuery set(final String key, @Nullable final String value) {
+        validateQueryParam(key);
         final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         list.add(value);
         markDirty();
@@ -141,10 +142,14 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return this;
     }
 
-    public boolean contains(final String key, final String value) {
+    boolean contains(final String key) {
+        return params.get(key) != null;
+    }
+
+    public boolean contains(final String key, @Nullable final String value) {
         final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
-            if (value.equals(values.next())) {
+            if (Objects.equals(value, values.next())) {
                 return true;
             }
         }
@@ -159,10 +164,10 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return false;
     }
 
-    public boolean remove(final String key, final String value) {
+    public boolean remove(final String key, @Nullable final String value) {
         final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
-            if (value.equals(values.next())) {
+            if (Objects.equals(value, values.next())) {
                 values.remove();
                 markDirty();
                 return true;
@@ -204,12 +209,9 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return params.computeIfAbsent(key, k -> new ArrayList<>(DEFAULT_LIST_SIZE));
     }
 
-    private void validateQueryParam(final String key, final String value) {
+    private static void validateQueryParam(@Nullable final String key) {
         if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("Null or empty query parameter names are not allowed.");
-        }
-        if (value == null) {
-            throw new IllegalArgumentException("Null query parameter values are not allowed.");
         }
     }
 

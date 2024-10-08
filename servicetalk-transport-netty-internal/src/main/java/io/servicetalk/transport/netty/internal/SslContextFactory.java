@@ -85,7 +85,7 @@ public final class SslContextFactory {
 
         MethodHandle endpointIdentificationAlgorithm;
         try {
-            // Find a new method that exists only in Netty starting from 4.2.0.Final:
+            // Find a new method that exists only in Netty starting from 4.1.112.Final:
             endpointIdentificationAlgorithm = MethodHandles.publicLookup().findVirtual(SslContextBuilder.class,
                     "endpointIdentificationAlgorithm", methodType(SslContextBuilder.class, String.class));
             // Verify the method is working as expected:
@@ -93,7 +93,7 @@ public final class SslContextFactory {
                     SslContextBuilder.forClient(), "HTTPS");
         } catch (Throwable cause) {
             LOGGER.debug("SslContextBuilder#endpointIdentificationAlgorithm(String) is available only " +
-                            "starting from Netty 4.2.0.Final. Detected Netty version: {}",
+                            "starting from Netty 4.1.112.Final. Detected Netty version: {}",
                     SslContextBuilder.class.getPackage().getImplementationVersion(), cause);
             endpointIdentificationAlgorithm = null;
         }
@@ -115,18 +115,16 @@ public final class SslContextFactory {
         }
     }
 
-    private static SslContextBuilder setEndpointIdentificationAlgorithm(@Nullable final MethodHandle methodHandle,
-                                                                        final SslContextBuilder builderInstance,
-                                                                        @Nullable final String algorithm) {
+    private static void setEndpointIdentificationAlgorithm(@Nullable final MethodHandle methodHandle,
+                                                           final SslContextBuilder builderInstance,
+                                                           @Nullable final String algorithm) {
         if (methodHandle == null) {
-            return builderInstance;
+            return;
         }
         try {
-            // invokeExact requires return type cast to match the type signature
-            return (SslContextBuilder) methodHandle.invokeExact(builderInstance, algorithm == null ? "" : algorithm);
+            methodHandle.invoke(builderInstance, algorithm == null ? "" : algorithm);
         } catch (Throwable t) {
             throwException(t);
-            return builderInstance;
         }
     }
 

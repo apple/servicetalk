@@ -74,6 +74,11 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public SecurityHandshakeObserver onSecurityHandshake(final SslConfig sslConfig) {
+            return NoopSecurityHandshakeObserver.INSTANCE;
+        }
+
+        @Override
         public DataObserver connectionEstablished(final ConnectionInfo info) {
             return NoopDataObserver.INSTANCE;
         }

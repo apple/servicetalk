@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
@@ -94,7 +95,8 @@ class SecurityHandshakeObserverTest {
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "clientSecurityHandshakeObserver");
         when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
-        when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
+        when(clientConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
+                .thenReturn(clientSecurityHandshakeObserver);
         when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(NoopDataObserver.INSTANCE);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
@@ -107,7 +109,8 @@ class SecurityHandshakeObserverTest {
         serverConnectionObserver = mock(ConnectionObserver.class, "serverConnectionObserver");
         serverSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "serverSecurityHandshakeObserver");
         when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
-        when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
+        when(serverConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
+                .thenReturn(serverSecurityHandshakeObserver);
         when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(NoopDataObserver.INSTANCE);
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
@@ -177,7 +180,7 @@ class SecurityHandshakeObserverTest {
             assertThat(client.request(client.get(SVC_ECHO)).status(), is(OK));
         }
 
-        verify(serverConnectionObserver, never()).onSecurityHandshake();
+        verify(serverConnectionObserver, never()).onSecurityHandshake(any(SslConfig.class));
         verifyNoMoreInteractions(serverSecurityHandshakeObserver);
     }
 
@@ -221,7 +224,7 @@ class SecurityHandshakeObserverTest {
             HttpProtocol expectedProtocol, boolean failHandshake) {
         order.verify(transportObserver).onNewConnection(any(), any());
         order.verify(connectionObserver).onTransportHandshakeComplete(any());
-        order.verify(connectionObserver).onSecurityHandshake();
+        order.verify(connectionObserver).onSecurityHandshake(any(SslConfig.class));
         if (failHandshake) {
             ArgumentCaptor<Throwable> exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
             order.verify(securityHandshakeObserver).handshakeFailed(exceptionCaptor.capture());

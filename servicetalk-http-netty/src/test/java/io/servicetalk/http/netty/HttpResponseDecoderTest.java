@@ -44,6 +44,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -238,42 +239,11 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void emptyReasonPhrase() {
-        testReasonPhrase("");
-    }
-
-    @Test
-    void emptyReasonPhraseWith3Ws() {
-        testReasonPhrase("   ");
-    }
-
-    @Test
-    void reasonPhraseWithLeadingWs() {
-        testReasonPhrase("   No Content");
-    }
-
-    @Test
-    void reasonPhraseWithTrailingWs() {
-        testReasonPhrase("No Content   ");
-    }
-
-    @Test
-    void reasonPhraseWithLeadingAndTrailingWs() {
-        testReasonPhrase("   No Content   ");
-    }
-
-    @Test
-    void reasonPhraseWithHtab() {
-        testReasonPhrase("No\tContent");
-    }
-
-    @Test
-    void reasonPhraseWithObsText() {
-        testReasonPhrase("Ñó Cóñtêñt");
-    }
-
-    private void testReasonPhrase(String reasonPhrase) {
+    @ParameterizedTest(name = "{displayName} [{index}] reasonPhrase={0}")
+    @ValueSource(strings = {
+            "", "   ", "   No Content", "No Content   ", "   No Content   ", "No\tContent", "Ñó Cóñtêñt"
+    })
+    void testReasonPhrase(final String reasonPhrase) {
         writeMsg("HTTP/1.1 204 " + reasonPhrase + "\r\n" + "\r\n");
         assertResponseLine(HTTP_1_1, HttpResponseStatus.of(204, reasonPhrase));
         assertEmptyTrailers(channel);

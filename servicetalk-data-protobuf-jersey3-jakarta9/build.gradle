@@ -87,20 +87,11 @@ def actualJaxRsVersion = "${jaxRsVersionEE9}"
 
 // Dependencies must remain consistent between servicetalk-data-protobuf-jerseyX modules
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  api platform("org.glassfish.jersey:jersey-bom:${actualJerseyVersion}")
-  api "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion"
-  api "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion"
-  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
-  api "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
-  api "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion"
-  testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
-
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-
-  api "jakarta.ws.rs:jakarta.ws.rs-api" // MediaType, Feature
+  api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion" // MediaType, Feature
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
+  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -112,10 +103,10 @@ dependencies {
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-netty")
   implementation "com.google.protobuf:protobuf-java"
-  implementation "com.google.code.findbugs:jsr305"
   implementation "org.glassfish.jersey.core:jersey-server"
-  implementation "org.slf4j:slf4j-api"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
@@ -126,7 +117,6 @@ dependencies {
   testImplementation project(":servicetalk-transport-netty-internal")
   // BaseJerseyRouterTestSuite assumes JSON serialization is supported.
   testImplementation project(":servicetalk-data-jackson-jersey3-jakarta9")
-
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.junit.platform:junit-platform-suite-api:$junitPlatformVersion"

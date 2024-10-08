@@ -273,7 +273,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest query(@Nullable String query);
 
     @Override
-    BlockingStreamingHttpRequest addQueryParameter(String key, String value);
+    BlockingStreamingHttpRequest addQueryParameter(String key, @Nullable String value);
 
     @Override
     BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values);
@@ -282,7 +282,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest addQueryParameters(String key, String... values);
 
     @Override
-    BlockingStreamingHttpRequest setQueryParameter(String key, String value);
+    BlockingStreamingHttpRequest setQueryParameter(String key, @Nullable String value);
 
     @Override
     BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values);

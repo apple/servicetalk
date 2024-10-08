@@ -71,32 +71,18 @@ tasks.processTestResources.dependsOn(copySourcesForJersey3)
 tasks.compileTestJava.dependsOn(copySourcesForJersey3)
 
 def actualJerseyVersion = "${jersey3VersionEE9}"
-def actualJavaxActivationVersion = "${javaxActivationVersionEE9}"
-def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE9}"
-def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE9}"
-def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE9}"
 def actualJaxRsVersion = "${jaxRsVersionEE9}"
 
 // Dependencies must remain consistent between servicetalk-http-security-jerseyX modules
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  api platform("org.glassfish.jersey:jersey-bom:${actualJerseyVersion}")
-  api "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion"
-  api "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion"
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
-  api "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
-  api "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion"
-  testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
 
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-
-  api "jakarta.ws.rs:jakarta.ws.rs-api"
-
+  implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation "com.google.code.findbugs:jsr305"
   implementation "org.glassfish.jersey.core:jersey-common"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-data-jackson-jersey3-jakarta9")
@@ -111,6 +97,5 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-
   testRuntimeOnly project(":servicetalk-test-resources")
 }

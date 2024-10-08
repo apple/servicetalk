@@ -96,8 +96,15 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public SecurityHandshakeObserver onSecurityHandshake() {
             return safeReport(observer::onSecurityHandshake, observer, "security handshake",
+                    CatchAllSecurityHandshakeObserver::new, NoopSecurityHandshakeObserver.INSTANCE);
+        }
+
+        @Override
+        public SecurityHandshakeObserver onSecurityHandshake(final SslConfig sslConfig) {
+            return safeReport(() -> observer.onSecurityHandshake(sslConfig), observer, "security handshake",
                     CatchAllSecurityHandshakeObserver::new, NoopSecurityHandshakeObserver.INSTANCE);
         }
 

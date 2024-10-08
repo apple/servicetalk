@@ -286,7 +286,8 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @return {@code true} if {@code key} exists.
      */
     default boolean hasQueryParameter(final String key) {
-        return queryParameter(key) != null;
+        // FIXME: 0.43 - remove default, force implementations to implement.
+        return queryParametersKeys().contains(key);
     }
 
     /**
@@ -296,7 +297,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value of the query parameter to find.
      * @return {@code true} if a {@code key}, {@code value} pair exists.
      */
-    boolean hasQueryParameter(String key, String value);
+    boolean hasQueryParameter(String key, @Nullable String value);
 
     /**
      * Returns the number of query parameters.
@@ -312,7 +313,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code this}.
      */
-    HttpRequestMetaData addQueryParameter(String key, String value);
+    HttpRequestMetaData addQueryParameter(String key, @Nullable String value);
 
     /**
      * Adds new query parameters with the specified {@code key} and {@code values}. This method is semantically
@@ -355,7 +356,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code this}.
      */
-    HttpRequestMetaData setQueryParameter(String key, String value);
+    HttpRequestMetaData setQueryParameter(String key, @Nullable String value);
 
     /**
      * Sets new query parameters with the specified {@code key} and {@code values}. This method is equivalent to:
@@ -404,7 +405,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @param value the query parameter value.
      * @return {@code true} if at least one entry has been removed.
      */
-    boolean removeQueryParameters(String key, String value);
+    boolean removeQueryParameters(String key, @Nullable String value);
 
     /**
      * Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request

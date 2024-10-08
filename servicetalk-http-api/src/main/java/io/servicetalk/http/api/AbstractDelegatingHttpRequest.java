@@ -63,7 +63,7 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
-    public boolean hasQueryParameter(final String key, final String value) {
+    public boolean hasQueryParameter(final String key, @Nullable final String value) {
         return original.hasQueryParameter(key, value);
     }
 
@@ -78,7 +78,7 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
-    public boolean removeQueryParameters(final String key, final String value) {
+    public boolean removeQueryParameters(final String key, @Nullable final String value) {
         return original.removeQueryParameters(key, value);
     }
 

@@ -17,11 +17,6 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation platform(project(":servicetalk-dependencies"))
-
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-http-api")
@@ -40,11 +35,11 @@ dependencies {
   implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-codec-http"
   implementation "io.netty:netty-codec-http2"
-  implementation "org.slf4j:slf4j-api"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -61,9 +56,7 @@ dependencies {
   testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-oio-api-internal")
   testImplementation "io.netty:netty-transport-native-unix-common"
-  testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring"
-  testRuntimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", classifier:"linux-x86_64")
-  testRuntimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", classifier:"linux-aarch_64")
+  testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
@@ -74,8 +67,8 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
-  testFixturesImplementation "com.google.code.findbugs:jsr305"
-  testFixturesImplementation "org.slf4j:slf4j-api"
+  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

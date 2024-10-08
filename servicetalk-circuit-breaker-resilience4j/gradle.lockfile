@@ -1,0 +1,10 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
+io.github.resilience4j:resilience4j-circuitbreaker:1.7.1=compileClasspath,runtimeClasspath
+io.github.resilience4j:resilience4j-core:1.7.1=compileClasspath,runtimeClasspath
+io.vavr:vavr-match:0.10.2=compileClasspath,runtimeClasspath
+io.vavr:vavr:0.10.2=compileClasspath,runtimeClasspath
+org.slf4j:slf4j-api:1.7.30=runtimeClasspath
+empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor

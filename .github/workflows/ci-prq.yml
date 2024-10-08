@@ -24,6 +24,8 @@ jobs:
         run: chmod +x gradlew
       - name: Documentation Linter
         run: bash scripts/check-source-root.sh
+      - name: Gradle lockfiles validation
+        run: bash scripts/check-lockfiles.sh
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build with Gradle

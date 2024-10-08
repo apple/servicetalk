@@ -19,7 +19,7 @@ import io.servicetalk.client.api.ScoreSupplier;
 
 import java.util.concurrent.locks.StampedLock;
 
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 import static java.lang.Math.ceil;
 import static java.lang.Math.exp;
 import static java.lang.Math.log;
@@ -58,8 +58,8 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
 
     DefaultRequestTracker(final long halfLifeNanos, final int cancelPenalty, final int errorPenalty,
                           final int concurrentRequestPenalty) {
-        ensurePositive(halfLifeNanos, "halfLifeNanos");
-        this.invTau = Math.pow((halfLifeNanos / log(2)), -1);
+        ensureNonNegative(halfLifeNanos, "halfLifeNanos");
+        this.invTau = halfLifeNanos == 0 ? Double.MAX_VALUE : Math.pow((halfLifeNanos / log(2)), -1);
         this.cancelPenalty = cancelPenalty;
         this.errorPenalty = errorPenalty;
         this.concurrentRequestPenalty = concurrentRequestPenalty;

@@ -53,6 +53,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -64,6 +65,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
@@ -137,8 +139,15 @@ class SingleRequestOrResponseApiTest {
         try (BlockingTesterClient client = newBlockingClient()) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class,
                     () -> client.testBiDiStream(requestItems).forEach(response -> { /* noop */ }));
-            assertThat(e.status().code(), is(INVALID_ARGUMENT));
-            assertThat(e.status().description(), equalTo(expectedMsg));
+            // Note that the ideal solution would be to always receive the `INVALID_ARGUMENT` result, but our current
+            // synchronous implementation makes that challenging to do and the refactor necessary to make it work is not
+            // currently worth it.  While less optimal, the CANCELLED result is also an _acceptable_ result because what
+            // we really want is for the server to not process the flow.
+            // See the notes in the GH issue #2399 for more details.
+            if (e.status().code() != CANCELLED) {
+                assertThat(e.status().code(), is(oneOf(INVALID_ARGUMENT)));
+                assertThat(e.status().description(), equalTo(expectedMsg));
+            }
         }
     }
 

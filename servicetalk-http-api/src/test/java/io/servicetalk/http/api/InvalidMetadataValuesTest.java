@@ -109,13 +109,6 @@ class InvalidMetadataValuesTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: source = {1}")
     @MethodSource("data")
-    void nullQPValueToAdd(final HttpMetaData metaData, @SuppressWarnings("unused") String testName) {
-        HttpRequestMetaData requestMeta = assumeRequestMeta(metaData);
-        assertThrows(IllegalArgumentException.class, () -> requestMeta.addQueryParameter("foo", null));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: source = {1}")
-    @MethodSource("data")
     void nullQPNameToSet(final HttpMetaData metaData, @SuppressWarnings("unused") String testName) {
         HttpRequestMetaData requestMeta = assumeRequestMeta(metaData);
         assertThrows(IllegalArgumentException.class, () -> requestMeta.setQueryParameter(null, ""));
@@ -126,13 +119,6 @@ class InvalidMetadataValuesTest {
     void emptyQPNameToSet(final HttpMetaData metaData, @SuppressWarnings("unused") String testName) {
         HttpRequestMetaData requestMeta = assumeRequestMeta(metaData);
         assertThrows(IllegalArgumentException.class, () -> requestMeta.setQueryParameter("", "foo"));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: source = {1}")
-    @MethodSource("data")
-    void nullQPValueToSet(final HttpMetaData metaData, @SuppressWarnings("unused") String testName) {
-        HttpRequestMetaData requestMeta = assumeRequestMeta(metaData);
-        assertThrows(IllegalArgumentException.class, () -> requestMeta.setQueryParameter("foo", null));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: source = {1}")

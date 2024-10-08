@@ -84,7 +84,6 @@ public abstract class AbstractTcpServerTest {
         client = createClient();
     }
 
-    // Visible for overriding.
     private TcpClient createClient() {
         return new TcpClient(getTcpClientConfig(), getClientTransportObserver());
     }

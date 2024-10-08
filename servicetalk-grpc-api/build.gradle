@@ -17,9 +17,6 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-http-api")
   api project(":servicetalk-router-api")
@@ -27,6 +24,7 @@ dependencies {
     exclude group: "com.google.protobuf"
   }
 
+  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-encoding-api-internal")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -37,10 +35,10 @@ dependencies {
   implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-oio-api-internal")
   implementation project(":servicetalk-serializer-utils")
-  implementation "com.google.code.findbugs:jsr305"
   implementation "com.google.protobuf:protobuf-java"
-  implementation "org.slf4j:slf4j-api"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,8 @@ import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
@@ -651,12 +654,58 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    void testNullQueryParamValue() {
+        createFixture("/foo?bar");
+        assertEquals("/foo?bar", fixture.requestTarget());
+        assertEquals("bar", fixture.rawQuery());
+
+        // Test single add & remove.
+        fixture.addQueryParameters("baz", (String) null);
+        assertTrue(fixture.hasQueryParameter("baz"));
+        assertTrue(fixture.hasQueryParameter("baz", null));
+        assertThat(fixture.queryParameters("baz"), contains((String) null));
+
+        assertEquals("bar&baz", fixture.rawQuery());
+        assertEquals("bar&baz", fixture.query());
+        assertThat(fixture.queryParameters(), contains(new SimpleEntry<>("bar", null), new SimpleEntry<>("baz", null)));
+
+        assertTrue(fixture.removeQueryParameters("baz"));
+        assertFalse(fixture.hasQueryParameter("baz"));
+        assertThat(fixture.queryParameters("baz"), emptyIterable());
+
+        // Test that set will clear out existing values and replace with null
+        fixture.addQueryParameters("zzz", "one", null, "three");
+        assertThat(fixture.queryParameters("zzz"), contains("one", null, "three"));
+
+        assertEquals("bar&zzz=one&zzz&zzz=three", fixture.rawQuery());
+        assertEquals("bar&zzz=one&zzz&zzz=three", fixture.query());
+        assertThat(fixture.queryParameters(), contains(new SimpleEntry<>("bar", null),
+                new SimpleEntry<>("zzz", "one"), new SimpleEntry<>("zzz", null), new SimpleEntry<>("zzz", "three")));
+
+        fixture.setQueryParameters("zzz", (String) null);
+        assertNull(fixture.queryParameter("zzz"));
+        assertThat(fixture.queryParameters("zzz"), contains((String) null));
+        assertTrue(fixture.hasQueryParameter("zzz"));
+        assertEquals("bar&zzz", fixture.rawQuery());
+        assertEquals("bar&zzz", fixture.query());
+        assertThat(fixture.queryParameters(), contains(new SimpleEntry<>("bar", null), new SimpleEntry<>("zzz", null)));
+
+        assertTrue(fixture.removeQueryParameters("zzz", null));
+
+        // Reset the query parameter to test null vs empty string.
+        fixture.rawQuery("foo&foo=&foo=value");
+        assertThat(fixture.queryParameters("foo"), contains(null, "", "value"));
+    }
+
+    @Test
     void testOneEmptyQueryParam() {
         createFixture("/foo?bar");
         assertEquals("/foo?bar", fixture.requestTarget());
         assertEquals("bar", fixture.rawQuery());
         assertNull(fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(singletonList("bar"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
@@ -682,8 +731,11 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(requestTarget, fixture.requestTarget());
         assertEquals(rawQuery, fixture.rawQuery());
         assertEquals(v1, fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertEquals(v2, fixture.queryParameter("baz"));
+        assertTrue(fixture.hasQueryParameter("baz"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(asList("bar", "baz"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
@@ -716,9 +768,13 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(requestTarget, fixture.requestTarget());
         assertEquals(rawQuery, fixture.rawQuery());
         assertEquals(v1, fixture.queryParameter("bar"));
+        assertTrue(fixture.hasQueryParameter("bar"));
         assertEquals(v2, fixture.queryParameter("baz"));
+        assertTrue(fixture.hasQueryParameter("baz"));
         assertEquals(v3, fixture.queryParameter("zap"));
+        assertTrue(fixture.hasQueryParameter("zap"));
         assertNull(fixture.queryParameter("nothing"));
+        assertFalse(fixture.hasQueryParameter("nothing"));
 
         assertEquals(asList("bar", "baz", "zap"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();

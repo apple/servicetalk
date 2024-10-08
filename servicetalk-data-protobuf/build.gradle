@@ -26,9 +26,7 @@ apply plugin: "com.google.protobuf"
 ideaModule.dependsOn "generateTestProto"
 
 dependencies {
-  api platform(project(":servicetalk-dependencies"))
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-
+  api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-serializer-api")
@@ -39,8 +37,8 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-serialization-api")
   implementation project(":servicetalk-serializer-utils")
-  implementation "com.google.code.findbugs:jsr305"
 
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
