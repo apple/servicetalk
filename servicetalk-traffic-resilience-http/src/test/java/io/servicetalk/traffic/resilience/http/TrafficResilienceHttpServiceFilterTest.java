@@ -57,6 +57,7 @@ import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIME
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -73,6 +74,9 @@ import static org.mockito.Mockito.when;
 class TrafficResilienceHttpServiceFilterTest {
 
     private static final boolean IS_LINUX = "linux".equals(normalizedOs());
+
+    private static final boolean CI = parseBoolean(System.getenv("CI"));
+
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
@@ -168,7 +172,7 @@ class TrafficResilienceHttpServiceFilterTest {
 
         final StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .protocols(protocol.config)
-                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(2))
+                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
                 .buildStreaming();
 
         // First request -> Pending 1
