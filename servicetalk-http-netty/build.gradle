@@ -70,7 +70,6 @@ dependencies {
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-  testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 
 // We need testng for the reactive-streams-tck
