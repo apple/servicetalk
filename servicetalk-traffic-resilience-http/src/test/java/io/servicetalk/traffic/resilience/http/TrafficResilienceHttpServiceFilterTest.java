@@ -49,6 +49,7 @@ import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -57,7 +58,6 @@ import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIME
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -74,8 +74,6 @@ import static org.mockito.Mockito.when;
 class TrafficResilienceHttpServiceFilterTest {
 
     private static final boolean IS_LINUX = "linux".equals(normalizedOs());
-
-    private static final boolean CI = parseBoolean(System.getenv("CI"));
 
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
@@ -172,7 +170,7 @@ class TrafficResilienceHttpServiceFilterTest {
 
         final StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .protocols(protocol.config)
-                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
+                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 8 : 2))
                 .buildStreaming();
 
         // First request -> Pending 1
