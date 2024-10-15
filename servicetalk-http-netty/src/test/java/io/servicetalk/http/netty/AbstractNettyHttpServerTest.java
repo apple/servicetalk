@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.TestTimeoutConstants;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -83,7 +84,6 @@ import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
-import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -235,7 +235,7 @@ abstract class AbstractNettyHttpServerTest {
     }
 
     void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
-        assumeFalse(parseBoolean(System.getenv("CI")) &&
+        assumeFalse(TestTimeoutConstants.CI &&
                         this.clientExecutorSupplier == clientExecutorSupplier &&
                         this.serverExecutorSupplier == serverExecutorSupplier,
                    "Ignored flaky test");
