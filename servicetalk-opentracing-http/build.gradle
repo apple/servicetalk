@@ -27,6 +27,7 @@ dependencies {
   implementation project(":servicetalk-opentracing-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -45,6 +46,5 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
-  testRuntimeOnly enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }
