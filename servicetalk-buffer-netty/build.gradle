@@ -23,6 +23,7 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-utils-internal")
+  implementation "io.netty:netty-common"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
