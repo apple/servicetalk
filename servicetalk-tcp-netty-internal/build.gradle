@@ -42,10 +42,12 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
+  testFixturesImplementation platform("io.netty:netty-bom:$nettyVersion")
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  testFixturesImplementation "io.netty:netty-transport"
   testFixturesImplementation "io.netty:netty-transport-native-epoll"
   testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")

@@ -23,5 +23,4 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-netty-internal")
-  implementation "io.netty:netty-common"
 }
