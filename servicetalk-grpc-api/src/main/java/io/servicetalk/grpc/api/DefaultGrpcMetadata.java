@@ -15,8 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMaps;
 
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -81,7 +81,7 @@ class DefaultGrpcMetadata implements GrpcMetadata {
         @Override
         public ContextMap get() {
             if (context == null) {
-                context = new DefaultContextMap();
+                context = ContextMaps.newDefaultMap();
             }
             return context;
         }

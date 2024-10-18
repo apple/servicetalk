@@ -19,8 +19,8 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMaps;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -76,7 +76,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                                        @Nullable ContextMap context,
                                        @Nullable final TransportObserver observer) {
             return Single.defer(() -> {
-                final ContextMap contextMap = context != null ? context : new DefaultContextMap();
+                final ContextMap contextMap = context != null ? context : ContextMaps.newDefaultMap();
                 logUnexpectedAddress(contextMap.put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, connectAddress),
                         connectAddress, LOGGER);
                 // The rest of the logic was moved to ProxyConnectLBHttpConnectionFactory

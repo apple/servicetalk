@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMaps;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nonnull;
@@ -84,7 +84,7 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Override
     public final ContextMap context() {
         if (context == null) {
-            context = new DefaultContextMap();
+            context = ContextMaps.newDefaultMap();
         }
         return context;
     }
