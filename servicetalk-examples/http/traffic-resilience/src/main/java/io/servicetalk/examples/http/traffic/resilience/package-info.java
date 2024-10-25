@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Example for {@link io.servicetalk.http.api.HttpLifecycleObserver}.
- */
 @ElementsAreNonnullByDefault
 package io.servicetalk.examples.http.traffic.resilience;
 

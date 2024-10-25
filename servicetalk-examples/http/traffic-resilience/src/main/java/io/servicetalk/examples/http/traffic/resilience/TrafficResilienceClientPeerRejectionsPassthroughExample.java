@@ -16,9 +16,9 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
+import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
-import io.servicetalk.http.netty.HttpClients;
 
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;

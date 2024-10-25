@@ -16,10 +16,10 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy;
-import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
+import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy;
+import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 
 import static io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy.DEFAULT_CAPACITY_REJECTION_PREDICATE;
 import static io.servicetalk.buffer.api.CharSequences.parseLong;

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+apply plugin: "java"
+apply from: "../../gradle/idea.gradle"
 
 dependencies {
   implementation project(":servicetalk-annotations")

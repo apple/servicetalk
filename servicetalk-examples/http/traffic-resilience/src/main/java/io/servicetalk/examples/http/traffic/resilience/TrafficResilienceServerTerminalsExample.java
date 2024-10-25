@@ -16,9 +16,9 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
 import java.util.concurrent.RejectedExecutionException;
 
