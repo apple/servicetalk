@@ -15,7 +15,7 @@
 #
 
 name: servicetalk-traffic-resilience-http
-title: Traffic Resilience 
+title: Traffic Resilience
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc
