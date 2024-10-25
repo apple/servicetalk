@@ -1,0 +1,324 @@
+= Traffic Resiliency Features
+:toc:
+:toclevels: 4
+:imagesdir: resources
+:sourcedir: ../java
+
+== Capacity Limiters [[_capacity_limiters]]
+
+A link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java[Capacity Limiter]
+provides an abstraction to limit the amount of concurrent operations. Each operation, is granted a
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java#L107[Ticket]
+if capacity allows it, and the Ticket in-turn is informed of the result of the operation (completed successfully,
+failed, ...). This abstraction allows ServiceTalk to offer solutions like the ones below.
+
+=== Fixed [[_fixed]]
+
+In the most basic form of a `CapacityLimiter` is fixed concurrency limiter. This solution, offers a fixed concurrency
+rate for requests. Concurrency in this context, can be imagined as the average number of in-flight requests
+in the system. To translate this to an RPS figure, if we had a limit of `10` and requests spend an average of `50ms`
+to complete, then the RPS would be equal to `200` (concurrency = 10 / avg service time = 0.05). Builder available link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java#L80[here].
+
+=== AIMD
+
+A broadly used concept of the algorithm theme we mentioned is called
+link:https://en.wikipedia.org/wiki/Additive_increase/multiplicative_decrease[AIMD],
+which is short for Additive Increase, Multiplicative Decrease. This algorithm, has an "additive" limit increase step
+(e.g. +1) every time a request starts and completes successfully. In the event of a request that doesn't finish
+successfully (e.g. timed-out or error) then the limit is decreased by a certain factor.
+So as long as you have successful requests, then you have a virtual limit that increases infinitely,
+and decreases more aggressively when failures occur. All these options are configurable during build time of the
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java#L101[AIMD limiter].
+
+=== Gradient [[_gradient]]
+
+A more advanced Capacity Limiter we offer is called
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java#L126[Gradient].
+
+Gradient is influenced by prior art done on networking libraries & frameworks like
+link:https://github.com/envoyproxy/envoy[Envoy] and https://github.com/Netflix[Netflix].
+The concept is based on delay gradient based congestion control algorithms like
+link:https://dl.ifip.org/db/conf/networking/networking2011-2/HayesA11.pdf[CDG] and
+link:https://dl.acm.org/doi/10.1145/2829988.2787510[Timely].
+The algorithm as offered by ServiceTalk, tracks Round Trip Times (passively) as the requests keep flowing through the
+application. We monitor these times in two buckets, one as a long-exposed average that tracks the historic trend of the
+round RTT, and another one as a short-exposed average that tracks more recent trends. These two averages can then,
+periodically, get compared and the difference of them can be translated into an action (increase / decrease) of the
+limit. On top of the RTT "feedback", the algorithm also utilizes a "request drop" feedback,
+and/or custom user feedback. The former, is identified when requests are timed-out, which instructs the algorithm to
+backoff it's limit by a certain ratio (similar to AIMD). We will cover more advanced configuration in the following
+section when we discuss applying these limiters in action.
+
+This solution is heavily tunable for power users, but we provide a few
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java[configuration profiles]
+by default, that attempt to please a couple of different expectations (e.g. favouring throughput or latency).
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/GradientExample.java[Gradient example]
+
+[quote]
+----
+All limiters we discussed so far, have their use cases, and the contract is public allowing for more power users to
+implement their own logic and still benefit of the surrounding ServiceTalk interaction with the limiters.
+----
+
+== Observability
+
+Adaptive and dynamic solutions are notoriously hard to reason about. How do you trust their decision? Are the rejections
+that observed false-positives? What would have happened if we didn't reject?
+
+These questions are hard to answer. The best answer is "we don't know". The goal of ServiceTalk's features is to prevent
+potential situations that can degrade the application's performance and experience.
+The actual decision of these algorithms MAY NOT be always 100% accurate but at the same time it SHOULD NOT cause
+alarming noise.There is no easy way to offer visibility to "What would have happened if we didn't..."
+but what we can do is show the behavior that triggered the throttling to kick-in.
+
+One way to do so is by observing the "queue" depth over time. This would translate as monitoring the active requests in
+ServiceTalk over time. A healthy application should fluctuate this number in a responsive way.
+In a not healthy scenario, requests that start taking longer to complete, will create noticeable spikes in this metric
+(service rate significantly slower than arrival rate); this condition if left unattended, it has the potential
+to degrade the experience or even exhaust a service.
+
+The Capacity Limiters we discussed have observer APIs for users to plug-in their telemetry solutions.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/GradientObservabilityExample.java[Gradient observability example]
+
+== Filters
+
+Like most of the features ServiceTalk offers, we use filters to plug the limiters to the request/response flows,
+we do the same for Capacity Limiters. On top of managing capacity limiters, these filters have additional
+functionalities as will see below.
+
+=== Server Side
+
+On the server side we have the
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-traffic-resilience-http/src/main/java/io/servicetalk/traffic/resilience/http/TrafficResilienceHttpServiceFilter.java#L177[TrafficResilienceHttpServiceFilter.Builder]
+that is the entry point for creating a TrafficResilienceHttpServiceFilter as seen in the example below.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerExample.java[Server example]
+
+==== Defaults
+
+With this plain configuration, we plugged the `Gradient` capacity limiter, to manage capacity for the service endpoint
+we are building. The limiter, will react to RTT time changes (as we explained above), by evaluating all the requests
+that go through this filter.
+
+IMPORTANT: It's worth your attention to how this filter is appended to the service. For this filter we don't use the
+`appendServiceFilter` API but rather the `appendNonOffloadingServiceFilter`. The latter enforces this filter to be
+evaluated within the I/O, introducing capacity control as early as possible in the flow. Ordering of this filter plays
+significant role.
+
+
+==== Classification
+
+We discussed how to set up the Traffic Resilience filter, using default configurations of the Gradient capacity limiter.
+We also discussed what is the basic contract of the Capacity Limiter API, but we skipped some concepts on purpose
+because it didn't make sense to discuss them
+out of context. One of these concepts is the `Classification` of a request.
+
+The classification of a request, is a simple API that allows users of ServiceTalk assign a different weight
+to a request.
+
+[source, java]
+----
+int weight();
+----
+
+What that means is that requests with a specific weight assigned, will have slightly different treatment when they are
+evaluated for capacity purposes.
+To understand this better, you can imagine the following example. If a capacity limiter, has a limit set to 10
+concurrent requests (fixed or dynamic), then
+a request with a weight of 10 will only be allocated 10% of that limit, meaning that only 1 concurrent request will be
+allowed with that weight classification. In contrast, a request with a weight of 90, will be allocated 90% of that
+limit. This feature, helps with prioritization of requests, according to importance, even though the actual ordering of
+the requests isn't considered in this offering.
+
+To use this feature, we need to provide a mechanism to classify incoming requests before they are evaluated by the
+capacity limiter. In the following example, we classify requests that target to a health endpoint with a weight of 20,
+while everything else with the max value of 100.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerClassificationExample.java[Classification example]
+
+==== Partitioning
+
+The Capacity Limiters we discussed in the APIs so far offered a universal approach on protecting a server against
+overload degradation.
+The solutions we covered in the Capacity Limiters chapter, rely on either time based feedback (see RTTs) or loss based
+feedback (see Rejections/Cancellations).
+
+Time (or duration) is a fundamental concept in our core offerings, and can have different origins.
+Treating them all equally may not result in the best possible experience in some occasions.
+ServiceTalk in the defaults takes some liberties of assuming a fair distribution of RTTs among all flows in a server,
+and any extremes (e.g. severe tail latencies) ideally need to be prevented (see. <<_gradient>>).
+
+There are however use-cases that have quite different RTT characteristics. Imagine a WRITE API (i.e., HTTP POST/PUT)
+that takes multiple seconds to complete, where
+on the same service a READ API (i.e., HTTP GET) takes a few millis to complete by relying on caches.
+These two APIs guarded by a universal <<_capacity_limiters, Capacity Limiter>> can result in poor dynamic limits and
+false positives (rejected requests that don't present an overload risk for the server).
+
+To support this use case, the Traffic Resilience filter allows for partitioning schemes.
+Below an example that has a different limiter for different HTTP methods.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerPartitionExample.java[Partitioning example]
+
+==== Quotas
+
+Another interesting use-case that these APIs support is a way to manage quotas. By default,
+the <<_fixed, Fixed Limiter>> can
+act as a quota controller, by allowing N ammount of concurrent requests for certain customer / API etc.
+but with a custom implementation
+a ServiceTalk user could define an alternative solution that applies a quota based on incoming `content-length`
+universally or per client.
+
+A way to support this but at the same time be overload protected by a <<_capacity_limiters, Capacity Limiter>>,
+is to use the `composite` APIs to form a complex `Capacity Limiter`.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerQuotasExample.java[Quota example]
+
+Ordering of the limiters passed to the `composite` factory matters. We generally want the root limiter to be evaluated
+first and make sure there is no overload before we evaluate individual quotas.
+
+==== Rejections
+
+Let's now focus on what happens when a request gets rejected through a Traffic Resilience filter.
+By default rejections from a capacity limiter through the Traffic Resilience filter will result in "canned"
+responses of:
+
+[source, java]
+----
+HttpResponseStatus(429, "Too Many Requests")
+----
+
+This behavior can be customized by providing a different
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-traffic-resilience-http/src/main/java/io/servicetalk/traffic/resilience/http/ServiceRejectionPolicy.java[ServiceRejectionPolicy]
+
+==== Yield Server Socket
+
+So far, we discussed rejecting requests to meet capacity limits, but when the system is stressed, accepting new connections
+can make things even worse. A client-side load-balancer for example, could decide that because existing connections are busy, more connections are needed,
+which can make matters worse pretty fast; consider also that new connections usually entail expensive handshakes (e.g. TLS)
+
+For the purposes of capacity, a control mechanism needs to be applied as early as possible in the application flow.
+The ideal spot for a Netty based networking application would be inside Netty itself, before every interaction with a
+socket.
+
+In ServiceTalk we chose to allow this controller to take place a bit later. This offers us access to the `HttpMetadata`
+of a request which allows for these additional features we covered above to be supported at a small cost of processing
+the first part of an incoming request.
+Along with the features it helps us build, it provides API familiarity being yet another filter.
+
+The Traffic Resilience filter provides a way for capacity rejections to yield the server socket from accepting
+new connections. That means that when the limiter in use, starts rejecting requests, then the server socket will also
+not accept new connections, without that affecting existing connections.
+
+Default behavior is set to not use this feature out of the box, due to the way users are allowed to specify limiters per partition.
+
+WARNING: This feature should only be enabled in a root limiter.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerStopAcceptingExample.java[Stop accepting connections example]
+
+==== Customizing Limiter Feedback
+
+All examples we have seen so far, rely on defaults to provide feedback to the capacity limiter in use.
+Feedback is the mechanism an acquired `Ticket` can use to hint the limiter about various conditions.
+
+Here are some expected behaviors:
+
+- When a request completes successfully we call
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java#L123[Ticket#completed]
+to let the limiter know that this operation was successful. Limiters that are interested in duration of operations
+like <<_gradient>> will use this callback to track the end-time.
+- When a request was cancelled (e.g. an timeout occurred), we call
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java#L135[Ticket#dropped]
+which tells limiters that an operation took way longer to complete than the user anticipated,
+and usually that's a good indicator that limits need to adapt.
+
+As a user, you could also hint the limiter of certain conditions. For example, imagine that you have an internal
+Executor Service in your service, that starts throwing `RejectedExecutionException` when it can not accept any more
+tasks.
+You know that this is an indication that your Executor is taking longer to complete tasks and the rate of incoming
+tasks is greater than that. You can use the Traffic Resilience filter to react on this exceptions by hinting to the
+limiter that the request was `dropped`.
+
+In the example below, we demonstrate this case, by translating the `RejectedExecutionException` to a `dropped` signal,
+and all other errors, are using the `ignored` signal to tell the limiter to not take these flows in-to account.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerTerminalsExample.java[Manipulating terminal signals example]
+
+=== Client Side
+
+The client side has its own link:https://github.com/apple/servicetalk/blob/main/servicetalk-traffic-resilience-http/src/main/java/io/servicetalk/traffic/resilience/http/TrafficResilienceHttpClientFilter.java#L236[filter]
+for Traffic Resilience. The client side filter has the same capabilities that the service one offers
+(we will skip them in this section), with some worth-mentioning alternations.
+
+==== Peer Capacity Rejections
+
+Feedback for limiters is crucial, and in some cases it can pro-actively benefit the limiter by hinting on a situation
+before the limiter comes to figure it itself adaptively. Cases like these are when the remote (a.k.a., peer) returns
+indicative of capacity issues responses. If for example, the remote starts responding with `Too Many Requests` status
+code then we should hint the limiter about it and let it adapt its limits on our side (the client).
+
+To do so, the client filter offers APIs that allow the ServiceTalk user to define what a "Rejection" looks like for
+their upstream dependency. In most cases that would be:
+
+- 429 Too Many Requests
+- 503 Service Unavailable
+- 502 Bad Gateway
+
+and these are our defaults, but you can modify this `Predicate` according to your upstream behavior.
+
+* link*:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsExample.java[Peer rejection signals example]
+
+The above example, will evaluate the remote rejection, and the request will result in a `RequestRejectedException`.
+If you want to still evaluate the remote rejection, but allow the original response from the upstream to be returned
+to the caller then see the example below.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsPassthroughExample.java[Peer rejections that preserve the original response example]
+
+==== Retrying
+
+Rejected requests (both locally or remotely) are good candidates for a retry. We typically want to retry a few times to
+avail for better chances, local rejections (requests that didn't touch the wire yet), will automatically be retried by
+the link:https://github.com/apple/servicetalk/blob/main/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/RetryingHttpRequesterFilter.java[RetryingHttpRequesterFilter].
+Remote rejection on the other hand require some additional coordination to avail retries.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsRetryExample.java[With retries example]
+
+NOTE: It's a good practise to introduce metrics in your application to get visibility on retries.
+
+IMPORTANT: Retrying is both beneficial and dangerous at the same time. Applications that are experiencing overloads
+may degrade faster due to a retry storm. You should aim to keep the retry attempts low.
+
+This topic has good potential for improvements. An optimal behavior would be to adaptively learn from the frequency
+of rejections and retries, and stop retrying when things are not looking like a retry will be beneficial.
+
+=== Circuit Breakers
+
+Finally, yet importantly, the Traffic Resilience filter offers support for
+link:https://martinfowler.com/bliki/CircuitBreaker.html[Circuit Breakers].
+
+ServiceTalks' API for a breaker is available
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-circuit-breaker-api/src/main/java/io/servicetalk/circuit/breaker/api/CircuitBreaker.java[here].
+It offers basic concepts to propagate a request's terminal state to the breaker, along with utilities to alter the
+breakers state manually.
+link:https://resilience4j.readme.io/docs/circuitbreaker[Resilience4j] is the most popular solution out there,
+in regard to circuit breakers in Java, so our
+link:https://github.com/apple/servicetalk/blob/main/servicetalk-circuit-breaker-resilience4j/src/main/java/io/servicetalk/circuit/breaker/resilience4j/Resilience4jAdapters.java[defaults]
+rely on it.
+
+Similarly to the limiters, breakers can be applied with *any* partitioning scheme (per API, per client, per user etc).
+The benefit of having a breaker in your application along with a limiter, is that a breaker (depending on configuration)
+can "open" the circuit for a certain flow (User / Path / Deployment) when things go wrong on this flow
+(e.g. slow calls, errors), resulting in this flow yielding operations.
+That will have a positive influence towards the capacity subsystem, muting the problematic portion
+will leave capacity uninfluenced.
+
+* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientBreakersExample.java[Circuit breakers example]
+
+== Architecture
+
+We covered the API elements of the resiliency features, now let's see how everything comes together from a request's
+flow perspective within ServiceTalk.
+In the figure below, we highlight which components the Traffic Resilience filter introduces.
+
+image::arch.svg[]

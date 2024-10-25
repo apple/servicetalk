@@ -298,6 +298,11 @@ Async `Hello World` example that demonstrates how retry can be requested for a s
 * link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryUrlClient.java[RetryUrlClient.java] -
 Async `Hello World` example that demonstrates how retry can be requested for a multi-address client.
 
+[#TrafficResiliency]
+= Traffic Resiliency
+
+Some examples that use the traffic resiliency features.
+
 
 [#HTTP2]
 == HTTP/2

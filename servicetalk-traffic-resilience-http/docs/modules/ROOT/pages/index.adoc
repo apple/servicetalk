@@ -1,0 +1,184 @@
+= Traffic Resiliency Concepts
+:toc:
+:toclevels: 4
+:imagesdir: resources
+
+> The ability to maintain an acceptable level of service in the face of faults and challenges to normal operation.
+
+== Motivation
+
+Services today are highly interconnected graphs of processes that communicate, typically via network protocols such as
+TCP and application protocols like HTTP or gRPC. Each service typically processes requests or streams data to accomplish
+business needs, and has finite resources (memory, cpu cycles, disk space, ..). If these resources are exhausted the
+service behavior will be degraded, return erroneous results, and potentially crash. To make things more interesting,
+any of the depended on services (i.e. upstreams) can have similar limitation, that in turn could affect local behavior.
+Ideally the service continues to process as many requests as possible, and leverages techniques to avoid crossing
+the resource consumption threshold resulting in degraded behavior. We call these techniques *traffic resilience*
+features.
+
+For Traffic resilience in ServiceTalk we can focus on two areas. The "flow" level, where we will talk how reactive
+stream concepts can be utilized to control the demand; and the "application" level, where application context is often
+required, which can leverage tooling provided by ServiceTalk described below.
+
+== Flow Level
+
+Each request accepted by a service requires some amount of resources to generate a response. A request may require some
+amount of CPU and memory to serialize from bytes on the wire into Objects your application understands.
+The following sections will highlight common areas that introduce resource consumption, and describe what tooling
+ServiceTalk provides to apply backpressure.
+
+=== Synchronous Control Flow
+
+Traditionally java I/O streaming APIs are synchronous, meaning the caller thread is blocked until the operation
+“completes”. For example writing to a `java.net.Socket` is done via an
+link:https://docs.oracle.com/javase/8/docs/api/java/net/Socket.html#getOutputStream--[OutputStream],
+and reading is via an link:https://docs.oracle.com/javase/8/docs/api/java/net/Socket.html#getInputStream--[InputStream]:
+
+[source, java]
+----
+Socket socket = ...;
+socket.getInputStream().read(/*byte[]*/);
+// Current thread is blocked until some data is read.
+
+socket.getOutputStream().write(/*byte[]*/)
+// Current thread is blocked until the data is written.
+----
+
+In this model your application is limited in how much data will be read/written based upon the size of the `byte[]`,
+and how many threads your application creates. ServiceTalk’s blocking APIs are also subject to the same constraints.
+
+=== Asynchronous Control Flow
+
+ServiceTalk also supports asynchronous control flow which changes the backpressure landscape. With asynchronous control
+flow the current thread is not blocked while waiting for I/O to complete, and may therefore consume more resources.
+Let's consider the impacts of this in a sample “echo” `StreamingHttpService` :
+
+[source, java]
+----
+new StreamingHttpService() {
+    @Override
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                final StreamingHttpRequest request,
+                                                final StreamingHttpResponseFactory responseFactory) {
+        return succeeded(responseFactory.ok().payloadBody(request.payloadBody()));
+    }
+}
+----
+
+This services reads the request payload and writes it back the caller. Note that in this case the thread calling the
+handle method never blocks, and the streaming reads/writes will happen in the background. What happens in the
+pathological case where the client only writes and never reads, will the service run out of memory?
+Thankfully it will not. ServiceTalk follows ReactiveStreams standards for its asynchronous primitives
+link:https://apple.github.io/servicetalk//servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html[asynchronous-primitives]
+(`Publisher`, `Single`, `Completable`), and backpressure is built in.
+
+==== Backpressure
+
+ReactiveStreams introduces a level of indirection where the consumer “requests” data, and the producer cannot generate
+more data than has been requested. *ServiceTalk maps this concept on to sockets such that the consumer is the writer
+to the socket, and data is only requested as long as the socket is writable. This means when the network applies
+backpressure (TCP, HTTP/2, ...) that is propagated seamlessly through the application via ServiceTalk’s asynchronous
+primitives!* This is a powerful abstraction which also applies transitively. If your application experiences
+backpressure while writing it will stop the producer of data which is often reading from a socket, and that will
+apply backpressure upstream over the network. Since the asynchronous primitives are used consistently between client and
+server, the same concepts also apply to the client side.
+
+Streaming does not make sense for all use cases. For example if you need the entire request/response payload in memory
+in order to serialize the data, then APIs which aggregate the entire payload in memory are more appropriate.
+However, that doesn't mean you are off the hook when it comes to backpressure, and the next sections will elaborate.
+
+== Application Level
+
+=== The Problem
+
+We have covered how backpressure is applied on an individual request/response basis, however services typically don’t
+process just a single request. Each new requests accepted by the service requires more resources, and this means we
+need to limit the amount of concurrent requests.
+
+Traditionally java I/O interfaces are synchronous and therefore require a dedicated thread to process a new requests.
+Backpressure is commonly applied by limiting the number of threads or backlog queues in the
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html[ExecutorService] /
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html[ForkJoinPool].
+
+Executing CPU intensive of blocking code on an EventLoop thread can have negative performance impacts and by default ServiceTalk
+offloads to another thread pool for safety. For more details here, and how to opt-out, see link:https://apple.github.io/servicetalk//servicetalk/SNAPSHOT/blocking-safe-by-default.html[blocking safe by default].
+Consider now limiting these executors; do you limit the former or the
+latter? How do you deal with processing rate discrepancies of the two? If the Executor provided by the application, faces degradation,
+how do you signal the event loop thread to slow down and apply backpressure to the client(s)?
+
+Things are not as trivial in practice when it comes to "applying limits", and here are a few more reasons:
+
+- Executors configured in this context don't always map 1:1 with requests that go through the service. In other words,
+an executor commonly has other responsibilities outside just handling requests
+(see. link:https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/ListenableAsyncCloseable.java#L27[on-close notifications]).
+Also, ServiceTalk makes every effort to deliver the fredre6re54, so if the provided Executor rejects a signal
+(due to limiting) then ServiceTalk will fall back to delivering the signal on the current thread (e.g. I/O / EventLoop)
+* Using separate Executors for different types of tasks is also no tenable, effectively you allow for yet one more source
+of capacity related issues in your solution.
+- Limits are dynamic. +
+Arrival rate at fixed point in time is subject to variable hardware, software, upstream/downstream, etc
+For instance, accepting 10 requests per second, without considering the service rate.
+That means that we guard a service at a particular rate
+under "healthy" service rate conditions, but when that service rate is affected by things like garbage collection,
+maintaining that exact same rate limit doesn't help, e.g., 10 RPS when a request takes 100ms to complete is not the same
+with 10 RPS when a requests takes 5sec to complete.
+- Limits maybe non-uniform. +
+* How does one come up with a limit that represents a good factor that the platform can maintain throughout its
+lifecycle? Services are ever-changing, what was a good limit yesterday may not apply today, because of a new change that
+introduced `X` amount of delay on a path. To make matters worse, we depend on deployment environments which also change
+over time, as well as upstream services that have the same problems of their own.
+* Applications may also apply different limits for different routes, and even more complex conditionals that cannot be easily expressed by a global queue value.
+e.g., SLAs per customer and/or different prioritization semantics.
+
+=== Concepts
+
+In the diagram below we try to illustrate how connections/requests flow through a ServiceTalk service, as received by a client, and utilize an external dependency (upstream).
+We highlight various placements in the flow where important things happen e.g., accepting connections, offloading and/or various queues involved in the flow; in an effort to help you visualize the problem and our solutions.
+
+image::data-flow.svg[]
+You can open the diagram in a separate window/tab to see it in more detail.
+
+==== Adaptive Concurrency (a.k.a. Throttling)
+
+In ServiceTalk, we try to work around the problems of rate-limiting, by offering adaptive concurrency, a way to dynamically deduce the
+system's capability to handle requests at any point in time. Our goal *is not* to find the best possible rate a service
+can handle, but rather gracefully degrade service based upon available resources instead of catastrophically fail.
+This is a fundamental problem that every system has to deal with, so ServiceTalk's thinking is that of
+offering a way to mitigate these problems without the developer having to worry about configuring it.
+
+The concepts we described so far, are very similar to concepts of link:https://en.wikipedia.org/wiki/Queueing_theory[Queuing Theory].
+A goal in queuing theory is to balance arrival rate with service rate. If arrival rate is higher than service rate than
+queues will build up and eventually exceed resources. However, arrival rate exceeding service rate for limited periods
+of time can be essential to achieving high throughput and minimizing unnecessary retransmissions.
+So, the question still remains; how do we identify a queue that builds up uncontrollably?
+Thankfully similar concepts have been around in different forms,
+see. link:https://en.wikipedia.org/wiki/TCP_congestion_control[Congestion Control] or
+link:https://en.wikipedia.org/wiki/Active_queue_management[Active Queue Management] algorithms for networking.
+
+ServiceTalk offers a solution (called link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java[CapacityLimiter]) that mimics these solutions within the context of an application, and apply the concepts both
+on clients and services.
+
+Specifics on that in the next page where talk about the link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java[CapacityLimiters] algorithms.
+
+==== Circuit Breakers
+
+Adaptive concurrency is trying to address the application as a whole, (even though, as you will discover in the next page there
+are ways for more fine-grained control), all flows are evaluated and every misbehavior will be considered.
+Other constructs under the same domain, can be used to offer more fine-grained control of various "partitions" in the applications service calls.
+
+link:https://martinfowler.com/bliki/CircuitBreaker.html[Circuit Breakers] are such a construct. Circuit breakers allow users to define what
+characteristics can trigger the circuit to open (stopping flows for that flow), and what conditions will restore the circuit to each original condition.
+By using Circuit Breakers, bad behavior can be isolated (e.g., bad user, new feature etc), and this will help reduce the noise toward the adaptive throttling mechanism
+while still preventing erroneous calls to the peer.
+
+In ServiceTalk we offer integration with link:https://resilience4j.readme.io/docs/circuitbreaker[Resilience4j's Circuit Breakers].
+
+==== Retries
+
+Last but not least, another fundamental feature for resiliency is the ability to retry failures. Failures due to capacity, or connectivity
+could be temporary, thus the service call may need another chance to complete successfully. When peers provide more information during failures
+e.g. link:https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After[Retry After] then the client should respect that period before issuing more requests.
+
+'''
+
+In the xref:traffic-resilience-features.adoc[Features page], we will try to cover the solutions & implementations, ServiceTalk brings on the table on these areas.
