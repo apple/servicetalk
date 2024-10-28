@@ -29,7 +29,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -44,10 +43,10 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
+import io.servicetalk.utils.internal.ThrowableUtils;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -57,7 +56,6 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
@@ -215,8 +213,17 @@ public final class RetryingHttpRequesterFilter
             }
 
             Completable applyRetryCallbacks(final Completable completable, final int retryCount, final Throwable t) {
-                return retryCallbacks == null ? completable :
-                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t));
+                Completable result = (retryCallbacks == null ? completable :
+                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t)));
+                if (returnFailedResponses && t instanceof HttpResponseException &&
+                        ((HttpResponseException) t).metaData() instanceof StreamingHttpResponse) {
+                    // If we succeed, we need to drain the response body before we continue. If we fail we want to
+                    // surface the original exception and don't worry about draining since it will be returned to
+                    // the user.
+                    result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
+                            .concat(drain((StreamingHttpResponse) ((HttpResponseException) t).metaData()));
+                }
+                return result;
             }
         }
 
@@ -263,12 +270,16 @@ public final class RetryingHttpRequesterFilter
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
-                    return (exception != null ?
-                            // Drain response payload body before discarding it:
-                            resp.payloadBody().ignoreElements().onErrorComplete()
-                                    .concat(Single.<StreamingHttpResponse>failed(exception)) :
-                            Single.succeeded(resp))
-                            .shareContextOnSubscribe();
+                    Single<StreamingHttpResponse> response;
+                    if (exception == null) {
+                        response = Single.succeeded(resp);
+                    } else {
+                        response = Single.failed(exception);
+                        if (!returnFailedResponses) {
+                            response = drain(resp).concat(response);
+                        }
+                    }
+                    return response.shareContextOnSubscribe();
                 });
             }
 
@@ -279,8 +290,8 @@ public final class RetryingHttpRequesterFilter
             if (returnFailedResponses) {
                 single = single.onErrorResume(HttpResponseException.class, t -> {
                     HttpResponseMetaData metaData = t.metaData();
-                    return Single.succeeded(StreamingHttpResponses.newResponse(metaData.status(), metaData.version(),
-                            metaData.headers(), DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE));
+                    return (metaData instanceof StreamingHttpResponse ?
+                            Single.succeeded((StreamingHttpResponse) metaData) : Single.failed(t));
                 });
             }
             return single;
@@ -1075,5 +1086,9 @@ public final class RetryingHttpRequesterFilter
             return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
                     returnFailedResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }
+    }
+
+    private static Completable drain(StreamingHttpResponse response) {
+        return response.payloadBody().ignoreElements().onErrorComplete();
     }
 }
