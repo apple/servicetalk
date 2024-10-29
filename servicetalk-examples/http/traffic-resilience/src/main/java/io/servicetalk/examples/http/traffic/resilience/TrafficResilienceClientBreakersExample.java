@@ -18,6 +18,7 @@ package io.servicetalk.examples.http.traffic.resilience;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.circuit.breaker.resilience4j.Resilience4jAdapters;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 
@@ -40,8 +41,10 @@ public class TrafficResilienceClientBreakersExample {
                         })
                         .build();
 
-        HttpClients.forSingleAddress("localhost", 8080)
+        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .appendClientFilter(resilienceFilter)
-                .build();
+                .build()) {
+            // use client
+        }
     }
 }

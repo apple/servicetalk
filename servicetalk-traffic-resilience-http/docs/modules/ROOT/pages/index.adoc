@@ -25,7 +25,7 @@ required, which can leverage tooling provided by ServiceTalk described below.
 Each request accepted by a service requires some amount of resources to generate a response. A request may require some
 amount of CPU and memory to serialize from bytes on the wire into Objects your application understands.
 The following sections will highlight common areas that introduce resource consumption, and describe what tooling
-ServiceTalk provides to apply backpressure.
+ServiceTalk provides to apply <<_backpressure, backpressure>>.
 
 === Synchronous Control Flow
 
@@ -72,10 +72,10 @@ Thankfully it will not. ServiceTalk follows ReactiveStreams standards for its as
 link:https://apple.github.io/servicetalk//servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html[asynchronous-primitives]
 (`Publisher`, `Single`, `Completable`), and backpressure is built in.
 
-==== Backpressure
+==== Backpressure [[_backpressure]]
 
-ReactiveStreams introduces a level of indirection where the consumer “requests” data, and the producer cannot generate
-more data than has been requested. *ServiceTalk maps this concept on to sockets such that the consumer is the writer
+ReactiveStreams introduces a level of indirection where the subscriber “requests” data, and the producer cannot generate
+more data than has been requested. *ServiceTalk maps this concept on to sockets such that the subscriber is the writer
 to the socket, and data is only requested as long as the socket is writable. This means when the network applies
 backpressure (TCP, HTTP/2, ...) that is propagated seamlessly through the application via ServiceTalk’s asynchronous
 primitives!* This is a powerful abstraction which also applies transitively. If your application experiences
@@ -111,7 +111,7 @@ Things are not as trivial in practice when it comes to "applying limits", and he
 - Executors configured in this context don't always map 1:1 with requests that go through the service. In other words,
 an executor commonly has other responsibilities outside just handling requests
 (see. link:https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/ListenableAsyncCloseable.java#L27[on-close notifications]).
-Also, ServiceTalk makes every effort to deliver the fredre6re54, so if the provided Executor rejects a signal
+Also, ServiceTalk makes every effort to deliver the signal, so if the provided Executor rejects a signal
 (due to limiting) then ServiceTalk will fall back to delivering the signal on the current thread (e.g. I/O / EventLoop)
 * Using separate Executors for different types of tasks is also no tenable, effectively you allow for yet one more source
 of capacity related issues in your solution.
@@ -155,7 +155,7 @@ Thankfully similar concepts have been around in different forms,
 see. link:https://en.wikipedia.org/wiki/TCP_congestion_control[Congestion Control] or
 link:https://en.wikipedia.org/wiki/Active_queue_management[Active Queue Management] algorithms for networking.
 
-ServiceTalk offers a solution (called link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java[CapacityLimiter]) that mimics these solutions within the context of an application, and apply the concepts both
+ServiceTalk offers a solution (called link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiter.java[CapacityLimiter]) that mimics these solutions within the context of an application, and applies the concepts both
 on clients and services.
 
 Specifics on that in the next page where talk about the link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java[CapacityLimiters] algorithms.
@@ -167,7 +167,7 @@ are ways for more fine-grained control), all flows are evaluated and every misbe
 Other constructs under the same domain, can be used to offer more fine-grained control of various "partitions" in the applications service calls.
 
 link:https://martinfowler.com/bliki/CircuitBreaker.html[Circuit Breakers] are such a construct. Circuit breakers allow users to define what
-characteristics can trigger the circuit to open (stopping flows for that flow), and what conditions will restore the circuit to each original condition.
+characteristics can trigger the circuit to open (stopping requests for that flow), and what conditions will restore the circuit to each original condition.
 By using Circuit Breakers, bad behavior can be isolated (e.g., bad user, new feature etc), and this will help reduce the noise toward the adaptive throttling mechanism
 while still preventing erroneous calls to the peer.
 

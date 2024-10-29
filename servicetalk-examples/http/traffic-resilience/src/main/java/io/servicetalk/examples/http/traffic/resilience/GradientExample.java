@@ -21,7 +21,8 @@ import io.servicetalk.capacity.limiter.api.CapacityLimiters;
 public class GradientExample {
 
     public static void main(String[] args) {
-        // Initializing a Gradient limiter with configuration profile that favours higher throughput.
+        // Initializing a Gradient limiter with configuration profile that favors lower latency.
+        // See the `.dynamicGradientOptimizeForThroughput()` variant to optimize for higher throughput.
         @SuppressWarnings("unused")
         final CapacityLimiter limiter = CapacityLimiters.dynamicGradientOptimizeForLatency()
                 .build();
