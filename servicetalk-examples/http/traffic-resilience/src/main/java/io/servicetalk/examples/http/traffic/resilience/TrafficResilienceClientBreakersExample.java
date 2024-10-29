@@ -23,7 +23,7 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 
 public class TrafficResilienceClientBreakersExample {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpClientFilter resilienceFilter =
                 new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.dynamicGradient().build())
                         .circuitBreakerPartitions(() -> {
