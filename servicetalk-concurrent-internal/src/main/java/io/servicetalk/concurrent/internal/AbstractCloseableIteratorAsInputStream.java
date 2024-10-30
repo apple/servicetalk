@@ -91,7 +91,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
     protected abstract boolean isClosed();
 
     @Override
-    public final int read(final byte[] b, int off, int len) throws IOException {
+    public int read(final byte[] b, int off, int len) throws IOException {
         checkAlreadyClosed();
         requireNonNull(b);
         if (off < 0 || len < 0 || len > b.length - off) {
@@ -145,7 +145,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
     }
 
     @Override
-    public final int read() throws IOException {
+    public int read() throws IOException {
         checkAlreadyClosed();
         if (hasLeftOver()) {
             return leftOverReadSingleByte() & 0xff;
@@ -164,7 +164,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
         }
     }
 
-    private void checkAlreadyClosed() throws IOException {
+    protected void checkAlreadyClosed() throws IOException {
         if (isClosed()) {
             throw new IOException("Stream is already closed.");
         }
