@@ -35,5 +35,11 @@ include::{page-version}@servicetalk-http-router-jersey:ROOT:partial$nav-versione
 * xref:{page-version}@servicetalk-grpc-api::index.adoc[gRPC]
 * xref:{page-version}@servicetalk-loadbalancer::index.adoc[Load Balancing]
 * xref:{page-version}@servicetalk-client-api::service-discovery.adoc[Service Discovery]
+* Traffic Resiliency
++
+--
+include::{page-version}@servicetalk-traffic-resilience-http:ROOT:partial$nav-versioned.adoc[]
+--
++
 * xref:{page-version}@servicetalk::javadoc/index.adoc[Javadoc]
 * xref:{page-version}@servicetalk::contributing.adoc[Contributing]
