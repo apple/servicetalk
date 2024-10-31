@@ -217,11 +217,15 @@ public final class RetryingHttpRequesterFilter
                         completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t)));
                 if (returnFailedResponses && t instanceof HttpResponseException &&
                         ((HttpResponseException) t).metaData() instanceof StreamingHttpResponse) {
+                    StreamingHttpResponse response = (StreamingHttpResponse) ((HttpResponseException) t).metaData();
                     // If we succeed, we need to drain the response body before we continue. If we fail we want to
                     // surface the original exception and don't worry about draining since it will be returned to
                     // the user.
                     result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
-                            .concat(drain((StreamingHttpResponse) ((HttpResponseException) t).metaData()));
+                            // If we get cancelled we also need to drain the message body as there is no guarantee
+                            // we'll ever receive a completion event, error or success.
+                            .beforeCancel(() -> drain(response).subscribe())
+                            .concat(drain(response));
                 }
                 return result;
             }
