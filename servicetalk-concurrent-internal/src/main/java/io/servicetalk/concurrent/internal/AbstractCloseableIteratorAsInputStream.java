@@ -119,7 +119,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
             if (len == 0) {
                 return initialLen;
             }
-            if (!hasNext(iterator)) {
+            if (!hasNext()) {
                 final int bytesRead = initialLen - len;
                 return bytesRead == 0 ? -1 : bytesRead;
             }
@@ -151,7 +151,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
             return leftOverReadSingleByte() & 0xff;
         }
         for (;;) {
-            if (!hasNext(iterator)) {
+            if (!hasNext()) {
                 return -1;
             }
             nextLeftOver(iterator);
@@ -170,7 +170,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
         }
     }
 
-    protected boolean hasNext(final CloseableIterator<T> iterator) {
+    protected boolean hasNext() {
         return iterator.hasNext();
     }
 }
