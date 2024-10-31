@@ -73,6 +73,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:serialization:json",
         "servicetalk-examples:http:serialization:protobuf",
         "servicetalk-examples:http:service-composition",
+        "servicetalk-examples:http:traffic-resilience",
         "servicetalk-examples:http:uds",
         "servicetalk-examples:http:compression",
         "servicetalk-examples:http:debugging",
@@ -157,6 +158,7 @@ project(":servicetalk-examples:http:serialization:bytes").name = "servicetalk-ex
 project(":servicetalk-examples:http:serialization:json").name = "servicetalk-examples-http-serialization-json"
 project(":servicetalk-examples:http:serialization:protobuf").name = "servicetalk-examples-http-serialization-protobuf"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
+project(":servicetalk-examples:http:traffic-resilience").name = "servicetalk-examples-http-traffic-resilience"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"
 project(":servicetalk-examples:http:redirects").name = "servicetalk-examples-http-redirects"

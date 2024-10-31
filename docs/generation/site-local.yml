@@ -54,6 +54,9 @@ content:
     - url: ../../
       branches: HEAD
       start_path: servicetalk-client-api/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-traffic-resilience-http/docs
 asciidoc:
   attributes:
     experimental: ''
