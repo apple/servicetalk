@@ -94,9 +94,9 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
                                                        circuitBreakerPartitionsSupplier,
                                                final ServiceRejectionPolicy onServiceRejectionPolicy,
                                                final TrafficResiliencyObserver observer,
-                                               final boolean dryRunMode) {
+                                               final boolean dryRun) {
         super(capacityPartitionsSupplier, rejectNotMatched, classifier, __ -> false, __ -> false,
-                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer, dryRunMode);
+                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer, dryRun);
         this.serviceRejectionPolicy = onServiceRejectionPolicy;
     }
 
@@ -192,7 +192,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
             }
         };
         private TrafficResiliencyObserver observer = NoOpTrafficResiliencyObserver.INSTANCE;
-        private boolean dryRunMode;
+        private boolean dryRun;
 
         /**
          * A {@link TrafficResilienceHttpServiceFilter} with no partitioning schemes.
@@ -383,11 +383,11 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
          * Use the resilience filter in dry-run mode.
          * In dry-run mode the capacity limiter will track requests and log their results but request which would
          * have been rejected will instead pass through to the underlying client.
-         * @param dryRunMode whether to use the resilience filter in dry-run mode.
+         * @param dryRun whether to use the resilience filter in dry-run mode.
          * @return {@code this}
          */
-        public Builder dryRunMode(final boolean dryRunMode) {
-            this.dryRunMode = dryRunMode;
+        public Builder dryRun(final boolean dryRun) {
+            this.dryRun = dryRun;
             return this;
         }
 
@@ -401,7 +401,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
             return new TrafficResilienceHttpServiceFilter(capacityPartitionsSupplier, rejectNotMatched,
                     classifier, onCompletionTicketTerminal, onCancellationTicketTerminal,
                     onErrorTicketTerminal, circuitBreakerPartitionsSupplier, onServiceRejectionPolicy, observer,
-                    dryRunMode);
+                    dryRun);
         }
     }
 

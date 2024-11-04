@@ -182,7 +182,7 @@ class TrafficResilienceHttpServiceFilterTest {
         TrafficResilienceHttpServiceFilter filter =
                 new TrafficResilienceHttpServiceFilter.Builder(() -> limiter)
                         .observer(observer)
-                        .dryRunMode(true)
+                        .dryRun(true)
                         .build();
 
         StreamingHttpResponse response = StreamingHttpResponses.newResponse(HttpResponseStatus.OK,
@@ -223,7 +223,7 @@ class TrafficResilienceHttpServiceFilterTest {
         TrafficResilienceHttpServiceFilter filter = new TrafficResilienceHttpServiceFilter
                 .Builder(() -> limiter)
                 .rejectionPolicy(serviceRejectionPolicy)
-                .dryRunMode(dryRun)
+                .dryRun(dryRun)
                 .build();
 
         final HttpServerContext serverContext = forAddress(localAddress(0))

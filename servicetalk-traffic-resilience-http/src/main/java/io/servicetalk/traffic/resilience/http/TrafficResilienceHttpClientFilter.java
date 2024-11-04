@@ -145,10 +145,10 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
                                                       focreOpenCircuitOnPeerCircuitRejectionsDelayProvider,
                                               @Nullable final Executor circuitBreakerResetExecutor,
                                               final TrafficResiliencyObserver observer,
-                                              final boolean dryRunMode) {
+                                              final boolean dryRun) {
         super(capacityPartitionsSupplier, rejectWhenNotMatchedCapacityPartition, classifier,
                 clientPeerRejectionPolicy.predicate(), breakerRejectionPredicate, onCompletion, onCancellation,
-                onError, circuitBreakerPartitionsSupplier, observer, dryRunMode);
+                onError, circuitBreakerPartitionsSupplier, observer, dryRun);
         this.clientPeerRejectionPolicy = clientPeerRejectionPolicy;
         this.forceOpenCircuitOnPeerCircuitRejections = forceOpenCircuitOnPeerCircuitRejections;
         this.focreOpenCircuitOnPeerCircuitRejectionsDelayProvider =
@@ -257,7 +257,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
         @Nullable
         private Executor circuitBreakerResetExecutor;
         private TrafficResiliencyObserver observer = NoOpTrafficResiliencyObserver.INSTANCE;
-        private boolean dryRunMode;
+        private boolean dryRun;
 
         /**
          * A {@link TrafficResilienceHttpClientFilter} with no partitioning schemes.
@@ -532,11 +532,11 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
          * Use the resilience filter in dry-run mode.
          * In dry-run mode the capacity limiter will track requests and log their results but request which would
          * have been rejected will instead pass through to the underlying client.
-         * @param dryRunMode whether to use the resilience filter in dry-run mode.
+         * @param dryRun whether to use the resilience filter in dry-run mode.
          * @return {@code this}
          */
-        public Builder dryRunMode(final boolean dryRunMode) {
-            this.dryRunMode = dryRunMode;
+        public Builder dryRun(final boolean dryRun) {
+            this.dryRun = dryRun;
             return this;
         }
 
@@ -554,7 +554,7 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
                     peerUnavailableRejectionPredicate, onCompletionTicketTerminal, onCancellationTicketTerminal,
                     onErrorTicketTerminal, forceOpenCircuitOnPeerCircuitRejections,
                     focreOpenCircuitOnPeerCircuitRejectionsDelayProvider, circuitBreakerResetExecutor, observer,
-                    dryRunMode);
+                    dryRun);
         }
     }
 }

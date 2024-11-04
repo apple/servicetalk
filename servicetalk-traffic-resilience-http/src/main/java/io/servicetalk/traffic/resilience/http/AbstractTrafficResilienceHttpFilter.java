@@ -88,7 +88,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     private final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier;
 
     private final TrafficResiliencyObserver observer;
-    private final boolean dryRunMode;
+    private final boolean dryRun;
 
     AbstractTrafficResilienceHttpFilter(
             final Supplier<Function<HttpRequestMetaData, CapacityLimiter>> capacityPartitionsSupplier,
@@ -101,7 +101,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final BiConsumer<Ticket, Throwable> onErrorTicketTerminal,
             final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier,
             final TrafficResiliencyObserver observer,
-            final boolean dryRunMode
+            final boolean dryRun
             ) {
         this.capacityPartitionsSupplier = requireNonNull(capacityPartitionsSupplier, "capacityPartitionsSupplier");
         this.rejectWhenNotMatchedCapacityPartition = rejectWhenNotMatchedCapacityPartition;
@@ -115,7 +115,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         this.circuitBreakerPartitionsSupplier = requireNonNull(circuitBreakerPartitionsSupplier,
                 "circuitBreakerPartitionsSupplier");
         this.observer = requireNonNull(observer, "observer");
-        this.dryRunMode = dryRunMode;
+        this.dryRun = dryRun;
     }
 
     @Override
@@ -204,7 +204,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             @Nullable ServerListenContext serverListenContext,
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory) {
-        return dryRunMode ? handlePassthrough(delegate, request) :
+        return dryRun ? handlePassthrough(delegate, request) :
                 handleLocalCapacityRejection(serverListenContext, request, responseFactory);
     }
 
@@ -218,7 +218,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory,
             CircuitBreaker breaker) {
-        return dryRunMode ? handlePassthrough(delegate, request) :
+        return dryRun ? handlePassthrough(delegate, request) :
                 handleLocalBreakerRejection(request, responseFactory, breaker);
     }
 
@@ -247,7 +247,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Function<HttpResponseMetaData, Duration> delayProvider, final StreamingHttpRequest request,
             final Ticket ticket, final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
             final long startTimeNs) {
-        return dryRunMode ? dryRunHandleAllow(
+        return dryRun ? dryRunHandleAllow(
                 delayProvider, ticket, ticketObserver, breaker, startTimeNs, delegate.apply(request)) :
                 handleAllow(delegate, delayProvider, request, ticket, ticketObserver, breaker, startTimeNs);
     }
