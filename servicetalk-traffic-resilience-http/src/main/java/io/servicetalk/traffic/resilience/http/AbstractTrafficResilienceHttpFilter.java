@@ -248,7 +248,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Ticket ticket, final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
             final long startTimeNs) {
         return dryRun ? dryRunHandleAllow(
-                delayProvider, ticket, ticketObserver, breaker, startTimeNs, delegate.apply(request)) :
+                delegate, delayProvider, request, ticket, ticketObserver, breaker, startTimeNs) :
                 handleAllow(delegate, delayProvider, request, ticket, ticketObserver, breaker, startTimeNs);
     }
 
@@ -282,76 +282,101 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
-                .liftSync(beforeFinally(ticket, ticketObserver, breaker, startTimeNs));
+                .liftSync(new BeforeFinallyHttpOperator(
+                        new SignalConsumer(this, ticket, ticketObserver, breaker, startTimeNs)));
     }
 
     private Single<StreamingHttpResponse> dryRunHandleAllow(
-            final Function<HttpResponseMetaData, Duration> delayProvider, final Ticket ticket,
-            final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker, final long startTimeNs,
-            final Single<StreamingHttpResponse> responseSingle) {
-        // The map is issuing an exception that will be propagated to the downstream BeforeFinallyHttpOperator
-        // in order to invoke the appropriate callbacks to release resources.
-        // If the BeforeFinallyHttpOperator comes earlier, the Single will succeed and only downstream will
-        // see the exception, preventing callbacks to release permits; which results in the limiter eventually
-        // throttling ALL future requests.
-        // Before returning an error, we have to drain the response payload body to properly release resources
-        // and avoid leaking a connection, except for the PassthroughRequestDroppedException case.
-        return responseSingle.onErrorMap(throwable -> {
-            onError(throwable, breaker, startTimeNs, ticket);
-            ticketObserver.onError(throwable);
-            return throwable;
-        }).flatMap(resp -> {
-            if (breaker != null && breakerRejectionPredicate.test(resp)) {
-                Exception rejection = peerBreakerRejection(resp, breaker, delayProvider);
-                onError(rejection, breaker, startTimeNs, ticket);
-                ticketObserver.onError(rejection);
-                return Single.succeeded(resp).shareContextOnSubscribe();
-            }
-            if (capacityRejectionPredicate.test(resp)) {
-                final RuntimeException rejection = peerRejection(resp);
-                onError(rejection, breaker, startTimeNs, ticket);
-                ticketObserver.onError(rejection);
-                return Single.succeeded(resp).shareContextOnSubscribe();
-            }
-            return Single.succeeded(resp).shareContextOnSubscribe()
-                    .liftSync(beforeFinally(ticket, ticketObserver, breaker, startTimeNs));
-        });
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            final Function<HttpResponseMetaData, Duration> delayProvider, final StreamingHttpRequest request,
+            final Ticket ticket,
+            final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker, final long startTimeNs) {
+        SignalConsumer signalConsumer = new SignalConsumer(
+                this, ticket, ticketObserver, breaker, startTimeNs);
+        return delegate.apply(request)
+                // This logic has the same general structure as the `handleAllow` case, but there is a twist: we want
+                // to always return the successful single even when we fail the predicates. Because we use a latch in
+                // SignalConsumer it's safe to signal those conditions eagerly in the `.flatMap` operation and let the
+                // request proceed as usual and any following signals (such as from body processing) will be ignored.
+                .flatMap(resp -> {
+                    if (breaker != null && breakerRejectionPredicate.test(resp)) {
+                        Exception rejection = peerBreakerRejection(resp, breaker, delayProvider);
+                        signalConsumer.onError(rejection);
+                    } else if (capacityRejectionPredicate.test(resp)) {
+                        final RuntimeException rejection = peerRejection(resp);
+                        signalConsumer.onError(rejection);
+                    }
+                    return Single.succeeded(resp).shareContextOnSubscribe();
+                })
+                .liftSync(new BeforeFinallyHttpOperator(signalConsumer));
     }
 
-    private BeforeFinallyHttpOperator beforeFinally(
-            final Ticket ticket, final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
-            final long startTimeNs) {
-        return new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
-            @Override
-            public void onComplete() {
-                try {
-                    if (breaker != null) {
-                        breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
-                    }
-                } finally {
-                    onSuccessTicketTerminal.accept(ticket);
-                    ticketObserver.onComplete();
-                }
-            }
+    private static final class SignalConsumer implements TerminalSignalConsumer {
 
-            @Override
-            public void onError(final Throwable throwable) {
-                AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
-                ticketObserver.onError(throwable);
-            }
+        private static final AtomicIntegerFieldUpdater<SignalConsumer> SIGNALLED_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(SignalConsumer.class, "signalled");
 
-            @Override
-            public void cancel() {
-                try {
-                    if (breaker != null) {
-                        breaker.ignorePermit();
-                    }
-                } finally {
-                    onCancellationTicketTerminal.accept(ticket);
-                    ticketObserver.onCancel();
-                }
+        private final AbstractTrafficResilienceHttpFilter parent;
+        private final Ticket ticket;
+        private final TicketObserver ticketObserver;
+        @Nullable
+        private final CircuitBreaker breaker;
+        private final long startTimeNs;
+
+        private volatile int signalled;
+
+        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, final Ticket ticket,
+                              final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
+                              final long startTimeNs) {
+            this.parent = parent;
+            this.ticket = ticket;
+            this.ticketObserver = ticketObserver;
+            this.breaker = breaker;
+            this.startTimeNs = startTimeNs;
+        }
+
+        @Override
+        public void onComplete() {
+            if (!once()) {
+                return;
             }
-        }, true);
+            try {
+                if (breaker != null) {
+                    breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
+                }
+            } finally {
+                parent.onSuccessTicketTerminal.accept(ticket);
+                ticketObserver.onComplete();
+            }
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            if (!once()) {
+                return;
+            }
+            parent.onError(throwable, breaker, startTimeNs, ticket);
+            ticketObserver.onError(throwable);
+        }
+
+        @Override
+        public void cancel() {
+            if (!once()) {
+                return;
+            }
+            try {
+                if (breaker != null) {
+                    breaker.ignorePermit();
+                }
+            } finally {
+                parent.onCancellationTicketTerminal.accept(ticket);
+                ticketObserver.onCancel();
+            }
+        }
+
+        private boolean once() {
+            return SIGNALLED_UPDATER.compareAndSet(this, 0, 1);
+        }
     }
 
     private void onError(final Throwable throwable, @Nullable final CircuitBreaker breaker,

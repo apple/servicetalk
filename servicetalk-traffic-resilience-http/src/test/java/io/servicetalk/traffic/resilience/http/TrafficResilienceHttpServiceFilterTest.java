@@ -203,7 +203,7 @@ class TrafficResilienceHttpServiceFilterTest {
         assertThat(rejectedCount.get(), equalTo(1));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0},protocol={1}")
     @CsvSource({"true, h1", "true, h2", "false, h1", "false, h2"})
     void testStopAcceptingConnections(final boolean dryRun, final String protocol) throws Exception {
         final HttpProtocolConfig protocolConfig;

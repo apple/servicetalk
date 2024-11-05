@@ -65,7 +65,7 @@ class TrafficResilienceHttpClientFilterTest {
 
     private static final StreamingHttpRequest REQUEST = REQ_RES_FACTORY.newRequest(HttpRequestMethod.GET, "");
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
     void verifyPeerRetryableRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
@@ -93,7 +93,7 @@ class TrafficResilienceHttpClientFilterTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
     void verifyPeerRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
@@ -127,7 +127,7 @@ class TrafficResilienceHttpClientFilterTest {
         assertThat(payloadDrained.get(), is(true));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
     void verifyPeerRejectionPassthrough(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
@@ -150,7 +150,7 @@ class TrafficResilienceHttpClientFilterTest {
         assertThat(response.payloadBody().toString(UTF_8), is(equalTo("content")));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
     @ValueSource(booleans = {false, true})
     void releaseCapacityIfDelegateThrows(boolean dryRun) {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
