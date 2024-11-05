@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
@@ -245,6 +246,19 @@ class CloseableIteratorBufferAsInputStreamTest {
             assertThat(stream.read(data, midWayPoint, len), is(len));
 
             assertThat(data, is(realStringData.getBytes(US_ASCII)));
+        }
+    }
+
+    @Test
+    void emptyBufferFollowedByData() throws IOException {
+        Buffer src = DEFAULT_RO_ALLOCATOR.fromAscii("1234");
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(
+                from(asList(EMPTY_BUFFER, src.duplicate())).iterator())) {
+            byte[] data = new byte[4];
+            int read = stream.read(data, 0, 4);
+            assertThat("Unexpected number of bytes read.", read, is(4));
+            assertThat("Unexpected bytes read.", bytesToBuffer(data, read), equalTo(src));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
         }
     }
 

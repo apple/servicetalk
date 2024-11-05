@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.AbstractCloseableIteratorAsInputStream
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
@@ -29,7 +30,8 @@ import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLO
  * Conversion from a {@link CloseableIterator} of {@link Buffer}s to a {@link InputStream}.
  */
 public final class CloseableIteratorBufferAsInputStream extends AbstractCloseableIteratorAsInputStream<Buffer> {
-    private static final Buffer CLOSED = DEFAULT_RO_ALLOCATOR.fromAscii("");
+    // Use `wrap` instead of `fromAscii("")` to avoid getting a reference to EmptyBuffer constant
+    private static final Buffer CLOSED = DEFAULT_RO_ALLOCATOR.wrap(ByteBuffer.allocate(0).asReadOnlyBuffer());
     @Nullable
     private Buffer leftover;
 
