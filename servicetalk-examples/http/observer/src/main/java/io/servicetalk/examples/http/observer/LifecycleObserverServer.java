@@ -35,9 +35,9 @@ public final class LifecycleObserverServer {
                 // including all filters and exception mappers.
                 .lifecycleObserver(observer)
                 // 2. Configuring it as a filter allows users to change the ordering of the observer compare to other
-                // filters or make it conditional. It might be helpful in a few scenarios, when the tracking scope
-                // should be limited or when logging should include tracing/MDC context set by other preceding filters.
-                // See javadoc of HttpLifecycleObserverServiceFilter for more details.
+                // filters or make it conditional. This might be helpful in a few scenarios such as when the tracking
+                // scope should be limited or when logging should include tracing/MDC context set by other preceding
+                // filters. See javadoc of HttpLifecycleObserverServiceFilter for more details.
                 // 2.a. At any position compare to other filters before offloading:
                 // .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(observer))
                 // 2.b. At any position compare to other filters after offloading:
