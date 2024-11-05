@@ -33,14 +33,19 @@ public final class LifecycleObserverServer {
         GrpcLifecycleObserver observer =
                 GrpcLifecycleObservers.logging("servicetalk-examples-grpc-observer-logger", TRACE);
         GrpcServers.forPort(8080)
-                // Option 1: apply an observer for entire server to capture processing by all filters:
+                // There are a few ways how to configure an observer depending on the desired scope of its visibility.
+                // 1. Configuring it at the builder gives maximum visibility and captures entire request-response state,
+                // including all filters and exception mappers.
                 .lifecycleObserver(observer)
-                // Option 2: apply an observer using a filter to move it later in a filter chain (before/after tracing
-                // info is available or retry/timeout/authentication/exception-mapping filters applied), or to apply it
-                // conditionally:
+                // 2. Configuring it as a filter allows users to change the ordering of the observer compare to other
+                // filters or make it conditional. It might be helpful in a few scenarios, when the tracking scope
+                // should be limited or when logging should include tracing/MDC context set by other preceding filters.
+                // See javadoc of GrpcLifecycleObserverServiceFilter for more details.
                 // .initializeHttp(builder -> builder
-                        // .appendNonOffloadingServiceFilter(tracingFilter)
-                        // .appendNonOffloadingServiceFilter(new GrpcLifecycleObserverServiceFilter(observer)))
+                        // 2.a. At any position compare to other filters before offloading:
+                        // .appendNonOffloadingServiceFilter(new GrpcLifecycleObserverServiceFilter(observer))
+                        // 2.b. At any position compare to other filters after offloading:
+                        // .appendServiceFilter(new GrpcLifecycleObserverServiceFilter(observer)))
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()))
                 .awaitShutdown();
