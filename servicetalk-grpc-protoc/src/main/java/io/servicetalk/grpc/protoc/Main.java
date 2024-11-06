@@ -171,7 +171,7 @@ public final class Main {
         }
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
         final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
-        final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "true"));
+        final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "false"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
                 .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
