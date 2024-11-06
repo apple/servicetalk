@@ -91,6 +91,28 @@ public final class Main {
      * }</pre>
      */
     private static final String PRINT_JAVA_DOCS_OPTION = "javaDocs";
+    /**
+     * Supports an option to disable generating calls to deprecated libraries.
+     * <p>
+     * Gradle:
+     * <pre>
+     * task.plugins {
+     *   servicetalk_grpc {
+     *     option 'skipDeprecated=true'
+     *   }
+     * }
+     * </pre>
+     * <p>
+     * Maven:
+     * <pre>{@code
+     * <protocPlugin>
+     *   <args>
+     *     <arg>skipDeprecated=true</arg>
+     *   </args>
+     * </protocPlugin>
+     * }</pre>
+     */
+    private static final String SKIP_DEPRECATED_CODE = "skipDeprecated";
     private Main() {
         // no instances
     }
@@ -149,6 +171,7 @@ public final class Main {
         }
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
         final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
+        final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "true"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
                 .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
@@ -161,7 +184,8 @@ public final class Main {
 
         for (FileDescriptor f : fileDescriptors) {
             if (filesToGenerate.contains(f.protoFileName())) {
-                final Generator generator = new Generator(f, messageTypesMap, printJavaDocs, f.sourceCodeInfo());
+                final Generator generator = new Generator(
+                        f, messageTypesMap, printJavaDocs, skipDeprecated, f.sourceCodeInfo());
                 List<ServiceDescriptorProto> serviceDescriptorProtoList = f.protoServices();
                 for (int i = 0; i < serviceDescriptorProtoList.size(); ++i) {
                     ServiceDescriptorProto serviceDescriptor = serviceDescriptorProtoList.get(i);
