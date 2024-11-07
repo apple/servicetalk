@@ -28,7 +28,6 @@ import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.validateKeepAlivePolicy;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
@@ -42,10 +41,6 @@ import static java.util.Objects.requireNonNull;
 public final class H2ProtocolConfigBuilder {
     private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
     /**
-     * 1mb default window size.
-     */
-    private static final int INITIAL_FLOW_CONTROL_WINDOW = 1_048_576;
-    /**
      * Netty currently doubles the connection window by default so a single stream doesn't exhaust all flow control
      * bytes.
      */
@@ -54,10 +49,7 @@ public final class H2ProtocolConfigBuilder {
      * Default allocation quantum to use for the remote flow controller.
      */
     private static final int DEFAULT_FLOW_CONTROL_QUANTUM = 1024 * 16;
-    private Http2Settings h2Settings = new Http2SettingsBuilder()
-            .initialWindowSize(INITIAL_FLOW_CONTROL_WINDOW)
-            .maxHeaderListSize(DEFAULT_HEADER_LIST_SIZE)
-            .build();
+    private Http2Settings h2Settings = new Http2SettingsBuilder().build();
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable

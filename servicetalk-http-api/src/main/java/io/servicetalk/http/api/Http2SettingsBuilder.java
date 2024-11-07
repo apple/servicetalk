@@ -30,6 +30,7 @@ public final class Http2SettingsBuilder {
     private static final long MAX_UNSIGNED_INT = 0xffffffffL;
     private static final int MAX_FRAME_SIZE_LOWER_BOUND = 0x4000;
     private static final int MAX_FRAME_SIZE_UPPER_BOUND = 0xffffff;
+
     /**
      * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
      */
@@ -57,6 +58,18 @@ public final class Http2SettingsBuilder {
      *     SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      */
     private static final char MAX_HEADER_LIST_SIZE = 0x6;
+
+    /**
+     * 1mb default {@link #INITIAL_WINDOW_SIZE}.
+     */
+    private static final int DEFAULT_INITIAL_WINDOW_SIZE = 1_048_576;
+    /**
+     * The initial value of {@link #MAX_HEADER_LIST_SIZE} is
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">unlimited</a>.
+     * However, in practice we don't want to allow our peers to use unlimited memory by default.
+     */
+    private static final long DEFAULT_MAX_HEADER_LIST_SIZE = 8192;
+
     private final Map<Character, Long> settings;
 
     /**
@@ -64,6 +77,8 @@ public final class Http2SettingsBuilder {
      */
     public Http2SettingsBuilder() {
         settings = new HashMap<>(6);
+        initialWindowSize(DEFAULT_INITIAL_WINDOW_SIZE);
+        maxHeaderListSize(DEFAULT_MAX_HEADER_LIST_SIZE);
     }
 
     /**
