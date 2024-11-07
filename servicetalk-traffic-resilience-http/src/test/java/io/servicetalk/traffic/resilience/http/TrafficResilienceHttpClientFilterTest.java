@@ -33,7 +33,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.ExecutionException;
@@ -64,31 +65,42 @@ class TrafficResilienceHttpClientFilterTest {
 
     private static final StreamingHttpRequest REQUEST = REQ_RES_FACTORY.newRequest(HttpRequestMethod.GET, "");
 
-    @Test
-    void verifyPeerRetryableRejection() {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void verifyPeerRetryableRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
-                        () -> CapacityLimiters.fixedCapacity(1).build()).build();
+                        () -> CapacityLimiters.fixedCapacity(1).build())
+                        .dryRun(dryRun)
+                        .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
         when(client.request(any())).thenReturn(Single.succeeded(REQ_RES_FACTORY.newResponse(BAD_GATEWAY)));
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
-        assertThrows(DelayedRetryRequestDroppedException.class, () -> {
-            try {
-                clientWithFilter.request(REQUEST).toFuture().get();
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
-        });
+        if (dryRun) {
+            StreamingHttpResponse response = clientWithFilter.request(REQUEST).toFuture().get();
+            response.messageBody().ignoreElements().toFuture().get();
+            assertThat(response.status(), equalTo(BAD_GATEWAY));
+        } else {
+            assertThrows(DelayedRetryRequestDroppedException.class, () -> {
+                try {
+                    clientWithFilter.request(REQUEST).toFuture().get();
+                } catch (ExecutionException e) {
+                    throw e.getCause();
+                }
+            });
+        }
     }
 
-    @Test
-    void verifyPeerRejection() {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void verifyPeerRejection(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
                         () -> CapacityLimiters.fixedCapacity(1).build())
                         .rejectionPolicy(ofRejection(resp -> BAD_GATEWAY.equals(resp.status())))
+                        .dryRun(dryRun)
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
@@ -99,22 +111,30 @@ class TrafficResilienceHttpClientFilterTest {
                         .map(DEFAULT_ALLOCATOR::wrap).whenOnComplete(() -> payloadDrained.set(true)))));
 
         final StreamingHttpClientFilter clientWithFilter = trafficResilienceHttpClientFilter.create(client);
-        assertThrows(RequestDroppedException.class, () -> {
-            try {
-                clientWithFilter.request(REQUEST).toFuture().get();
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
-        });
+        if (dryRun) {
+            StreamingHttpResponse response = clientWithFilter.request(REQUEST).toFuture().get();
+            assertThat(response.status(), equalTo(BAD_GATEWAY));
+            response.messageBody().ignoreElements().toFuture().get();
+        } else {
+            assertThrows(RequestDroppedException.class, () -> {
+                try {
+                    clientWithFilter.request(REQUEST).toFuture().get();
+                } catch (ExecutionException e) {
+                    throw e.getCause();
+                }
+            });
+        }
         assertThat(payloadDrained.get(), is(true));
     }
 
-    @Test
-    void verifyPeerRejectionPassthrough() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void verifyPeerRejectionPassthrough(boolean dryRun) throws Exception {
         final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                 new TrafficResilienceHttpClientFilter.Builder(
                         () -> CapacityLimiters.fixedCapacity(1).build())
                         .rejectionPolicy(ofPassthrough(resp -> BAD_GATEWAY.equals(resp.status())))
+                        .dryRun(dryRun)
                         .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
@@ -130,14 +150,17 @@ class TrafficResilienceHttpClientFilterTest {
         assertThat(response.payloadBody().toString(UTF_8), is(equalTo("content")));
     }
 
-    @Test
-    void releaseCapacityIfDelegateThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0}")
+    @ValueSource(booleans = {false, true})
+    void releaseCapacityIfDelegateThrows(boolean dryRun) {
         CapacityLimiter limiter = mock(CapacityLimiter.class);
         Ticket ticket = mock(Ticket.class);
         when(limiter.tryAcquire(any(), any())).thenReturn(ticket);
 
         TrafficResilienceHttpClientFilter filter =
-                new TrafficResilienceHttpClientFilter.Builder(() -> limiter).build();
+                new TrafficResilienceHttpClientFilter.Builder(() -> limiter)
+                        .dryRun(dryRun)
+                        .build();
 
         FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
         when(client.request(any())).thenThrow(DELIBERATE_EXCEPTION);

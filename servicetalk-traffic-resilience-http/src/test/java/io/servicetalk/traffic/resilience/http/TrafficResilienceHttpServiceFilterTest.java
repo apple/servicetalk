@@ -15,23 +15,30 @@
  */
 package io.servicetalk.traffic.resilience.http;
 
+import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
+import io.servicetalk.capacity.limiter.api.Classification;
 import io.servicetalk.client.api.ConnectTimeoutException;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
@@ -39,7 +46,7 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -49,10 +56,12 @@ import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -60,6 +69,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -139,19 +149,71 @@ class TrafficResilienceHttpServiceFilterTest {
         verifyNoMoreInteractions(limiter, ticket);
     }
 
-    enum Protocol {
-        H1(h1Default()),
-        H2(h2Default());
+    @Test
+    void dryRunWillContinueToSendRequestsToDelegate() {
+        CapacityLimiter limiter = mock(CapacityLimiter.class);
+        when(limiter.tryAcquire(any(), any())).thenReturn(null);
 
-        private final HttpProtocolConfig config;
-        Protocol(HttpProtocolConfig config) {
-            this.config = config;
-        }
+        AtomicInteger rejectedCount = new AtomicInteger();
+        TrafficResiliencyObserver observer = new TrafficResiliencyObserver() {
+            @Override
+            public void onRejectedUnmatchedPartition(StreamingHttpRequest request) {
+                // noop
+            }
+
+            @Override
+            public void onRejectedLimit(StreamingHttpRequest request, String capacityLimiter, ContextMap meta,
+                                        Classification classification) {
+                rejectedCount.incrementAndGet();
+            }
+
+            @Override
+            public void onRejectedOpenCircuit(StreamingHttpRequest request, String circuitBreaker, ContextMap meta,
+                                              Classification classification) {
+                // noop
+            }
+
+            @Override
+            public TicketObserver onAllowedThrough(StreamingHttpRequest request, CapacityLimiter.LimiterState state) {
+                return NO_OP_TICKET_OBSERVER;
+            }
+        };
+
+        TrafficResilienceHttpServiceFilter filter =
+                new TrafficResilienceHttpServiceFilter.Builder(() -> limiter)
+                        .observer(observer)
+                        .dryRun(true)
+                        .build();
+
+        StreamingHttpResponse response = StreamingHttpResponses.newResponse(HttpResponseStatus.OK,
+                HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders(), BufferAllocators.DEFAULT_ALLOCATOR,
+                DefaultHttpHeadersFactory.INSTANCE);
+        StreamingHttpServiceFilter service = mock(StreamingHttpServiceFilter.class);
+        when(service.handle(any(), any(), any())).thenReturn(Single.succeeded(response));
+
+        StreamingHttpServiceFilter serviceWithFilter = filter.create(service);
+        StepVerifiers.create(serviceWithFilter.handle(mock(HttpServiceContext.class), mock(StreamingHttpRequest.class),
+                        mock(StreamingHttpResponseFactory.class)))
+                .expectSuccess()
+                .verify();
+        verify(limiter).tryAcquire(any(), any());
+        verify(limiter).name(); // called when going through the rejection pathway.
+        verifyNoMoreInteractions(limiter);
+
+        assertThat(rejectedCount.get(), equalTo(1));
     }
 
-    @ParameterizedTest
-    @EnumSource(Protocol.class)
-    void testStopAcceptingConnections(final Protocol protocol) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] dryRun={0},protocol={1}")
+    @CsvSource({"true, h1", "true, h2", "false, h1", "false, h2"})
+    void testStopAcceptingConnections(final boolean dryRun, final String protocol) throws Exception {
+        final HttpProtocolConfig protocolConfig;
+        if ("h1".equalsIgnoreCase(protocol)) {
+            protocolConfig = h1Default();
+        } else if ("h2".equalsIgnoreCase(protocol)) {
+            protocolConfig = h2Default();
+        } else {
+            throw new IllegalStateException("Unexpected protocol argument: " + protocol);
+        }
         final CapacityLimiter limiter = fixedCapacity(1).build();
         final ServiceRejectionPolicy serviceRejectionPolicy = new ServiceRejectionPolicy.Builder()
                 .onLimitStopAcceptingConnections(true)
@@ -161,17 +223,18 @@ class TrafficResilienceHttpServiceFilterTest {
         TrafficResilienceHttpServiceFilter filter = new TrafficResilienceHttpServiceFilter
                 .Builder(() -> limiter)
                 .rejectionPolicy(serviceRejectionPolicy)
+                .dryRun(dryRun)
                 .build();
 
         final HttpServerContext serverContext = forAddress(localAddress(0))
-                .protocols(protocol.config)
+                .protocols(protocolConfig)
                 .listenSocketOption(SO_BACKLOG, TCP_BACKLOG)
                 .appendNonOffloadingServiceFilter(filter)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok().payloadBody(Publisher.never())));
 
         final StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(protocol.config)
+                .protocols(protocolConfig)
                 .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
                 .buildStreaming();
 
@@ -196,12 +259,17 @@ class TrafficResilienceHttpServiceFilterTest {
         assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
                 .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
 
-        // Any attempt to create a connection now, should time out
-        try {
-            client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
-            fail("Expected a connection timeout");
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+        // Any attempt to create a connection now, should time out if we're not in dry mode.
+        if (dryRun) {
+            client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
+                    .releaseAsync().toFuture().get();
+        } else {
+            try {
+                client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
+                fail("Expected a connection timeout");
+            } catch (ExecutionException e) {
+                assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+            }
         }
     }
 }
