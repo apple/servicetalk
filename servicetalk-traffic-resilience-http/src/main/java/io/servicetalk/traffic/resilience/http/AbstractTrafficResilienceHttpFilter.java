@@ -283,7 +283,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
                 .liftSync(new BeforeFinallyHttpOperator(
-                        new SignalConsumer(this, ticket, ticketObserver, breaker, startTimeNs)));
+                        new SignalConsumer(this, ticket, ticketObserver, breaker, startTimeNs), true));
     }
 
     private Single<StreamingHttpResponse> dryRunHandleAllow(
@@ -308,7 +308,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return resp;
                 })
-                .liftSync(new BeforeFinallyHttpOperator(signalConsumer));
+                .liftSync(new BeforeFinallyHttpOperator(signalConsumer, true));
     }
 
     private static final class SignalConsumer implements TerminalSignalConsumer {
