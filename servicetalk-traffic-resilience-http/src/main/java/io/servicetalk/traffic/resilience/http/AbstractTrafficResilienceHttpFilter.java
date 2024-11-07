@@ -140,7 +140,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         return __ -> Duration.ZERO;
     }
 
-    protected final Single<StreamingHttpResponse> applyCapacityControl(
+    final Single<StreamingHttpResponse> applyCapacityControl(
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions,
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions,
             final Function<HttpRequestMetaData, Classification> classifier,
@@ -298,7 +298,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                 // to always return the successful single even when we fail the predicates. Because we use a latch in
                 // SignalConsumer it's safe to signal those conditions eagerly in the `.flatMap` operation and let the
                 // request proceed as usual and any following signals (such as from body processing) will be ignored.
-                .flatMap(resp -> {
+                .map(resp -> {
                     if (breaker != null && breakerRejectionPredicate.test(resp)) {
                         Exception rejection = peerBreakerRejection(resp, breaker, delayProvider);
                         signalConsumer.onError(rejection);
@@ -306,7 +306,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                         final RuntimeException rejection = peerRejection(resp);
                         signalConsumer.onError(rejection);
                     }
-                    return Single.succeeded(resp).shareContextOnSubscribe();
+                    return resp;
                 })
                 .liftSync(new BeforeFinallyHttpOperator(signalConsumer));
     }
