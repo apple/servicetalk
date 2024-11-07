@@ -238,7 +238,7 @@ public class HelloWorldJaxRsResource {
     @GET
     @Path("file-hello")
     @Produces(TEXT_PLAIN)
-    public Publisher<Buffer> multipartHello(@Context final ConnectionContext ctx) {
+    public Publisher<Buffer> fileHello(@Context final ConnectionContext ctx) {
         final InputStream responseStream = HelloWorldJaxRsResource.class.getClassLoader()
                 .getResourceAsStream("response_payload.txt");
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
