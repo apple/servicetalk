@@ -25,14 +25,14 @@ dependencies {
   // Needed for the generated classes
   api project(":servicetalk-data-protobuf")
 
-  compileOnly "com.squareup:javapoet:$javaPoetVersion"
+  compileOnly "com.palantir.javapoet:javapoet:$javaPoetVersion"
 
   implementation project(":servicetalk-annotations")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
-  testImplementation "com.squareup:javapoet:$javaPoetVersion"
+  testImplementation "com.palantir.javapoet:javapoet:$javaPoetVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

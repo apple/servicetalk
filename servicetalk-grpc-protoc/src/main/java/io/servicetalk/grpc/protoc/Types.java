@@ -15,12 +15,12 @@
  */
 package io.servicetalk.grpc.protoc;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.WildcardTypeName;
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.ParameterizedTypeName;
+import com.palantir.javapoet.TypeName;
+import com.palantir.javapoet.WildcardTypeName;
 
-import static com.squareup.javapoet.ClassName.bestGuess;
+import static com.palantir.javapoet.ClassName.bestGuess;
 
 final class Types {
     private static final String basePkg = "io.servicetalk";

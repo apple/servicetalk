@@ -15,7 +15,7 @@
  */
 package io.servicetalk.grpc.protoc;
 
-import com.squareup.javapoet.TypeSpec;
+import com.palantir.javapoet.TypeSpec;
 
 final class ServiceClassBuilder {
     final TypeSpec.Builder builder;

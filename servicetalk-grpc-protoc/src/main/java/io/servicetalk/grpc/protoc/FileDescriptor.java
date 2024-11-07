@@ -24,9 +24,9 @@ import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse.File;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.TypeSpec;
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.JavaFile;
+import com.palantir.javapoet.TypeSpec;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import static com.squareup.javapoet.MethodSpec.constructorBuilder;
+import static com.palantir.javapoet.MethodSpec.constructorBuilder;
 import static io.servicetalk.grpc.protoc.StringUtils.isNotNullNorEmpty;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
 import static javax.lang.model.element.Modifier.FINAL;
@@ -225,7 +225,7 @@ final class FileDescriptor implements GenerationContext {
             final TypeSpec serviceType = builder.build();
             ServiceDescriptorProto serviceDescriptorProto = protoForServiceBuilder.get(builder);
             final File.Builder fileBuilder = File.newBuilder();
-            fileBuilder.setName(calculateFileName(packageName, serviceType.name));
+            fileBuilder.setName(calculateFileName(packageName, serviceType.name()));
 
             final JavaFile javaFile = JavaFile.builder(packageName, serviceType)
                     .indent("    ")

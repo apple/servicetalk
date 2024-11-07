@@ -18,7 +18,7 @@ package io.servicetalk.grpc.protoc;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
-import com.squareup.javapoet.ClassName;
+import com.palantir.javapoet.ClassName;
 
 import java.io.IOException;
 import java.io.PrintWriter;
