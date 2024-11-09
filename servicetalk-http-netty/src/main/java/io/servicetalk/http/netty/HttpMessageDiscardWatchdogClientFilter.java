@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                                                 final StreamingHttpRequest request) {
                     return delegate
                             .request(request)
-                            .onErrorResume(cause -> {
+                            .whenOnError(cause -> {
                                 final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
                                 if (maybePublisher != null && maybePublisher.getAndSet(null) != null) {
                                     // No-one subscribed to the message (or there is none), so if there is a message
@@ -117,7 +117,6 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                             "in a user-defined filter. Response payload (message) body must " +
                                             "be fully consumed before discarding.", cause);
                                 }
-                                return Single.<StreamingHttpResponse>failed(cause).shareContextOnSubscribe();
                             });
                 }
             };
