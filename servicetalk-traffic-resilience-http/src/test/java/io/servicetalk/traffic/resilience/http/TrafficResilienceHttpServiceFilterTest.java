@@ -56,17 +56,16 @@ import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.traffic.resilience.http.NoOpTrafficResiliencyObserver.NO_OP_TICKET_OBSERVER;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,8 +84,6 @@ class TrafficResilienceHttpServiceFilterTest {
 
     private static final boolean IS_LINUX = "linux".equals(normalizedOs());
 
-    private static final boolean CI = parseBoolean(System.getenv("CI"));
-
     // There is an off-by-one behavior difference between macOS & Linux.
     // Linux has a greater-than check
     // (see. https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/include/net/sock.h#L941)
@@ -104,8 +101,8 @@ class TrafficResilienceHttpServiceFilterTest {
         final AtomicInteger consumption = new AtomicInteger();
         // Expect two state changes
         final CountDownLatch latch = new CountDownLatch(2);
-        try (ServerContext serverContext = HttpServers.forPort(0).listenAndAwait((ctx, request, responseFactory) ->
-                succeeded(responseFactory.serviceUnavailable()))) {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.serviceUnavailable())) {
             final TrafficResilienceHttpClientFilter trafficResilienceHttpClientFilter =
                     new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.fixedCapacity(1)
                             .stateObserver((capacity, consumed) -> {
@@ -226,7 +223,7 @@ class TrafficResilienceHttpServiceFilterTest {
                 .dryRun(dryRun)
                 .build();
 
-        final HttpServerContext serverContext = forAddress(localAddress(0))
+        final HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfig)
                 .listenSocketOption(SO_BACKLOG, TCP_BACKLOG)
                 .appendNonOffloadingServiceFilter(filter)
