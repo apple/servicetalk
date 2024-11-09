@@ -44,6 +44,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
@@ -184,14 +185,19 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     LOGGER.trace("Executing redirect to '{}' for request '{}'", location, request);
                 }
 
+                // Consume any payload of the redirect response
+                final Single<StreamingHttpResponse> nextResponse = response.messageBody().ignoreElements()
+                        .concat(redirectSingle.requester.request(newRequest));
+                final RedirectSubscriber redirectSubscriber = new RedirectSubscriber(target, redirectSingle, newRequest,
+                        redirectCount + 1, sequentialCancellable);
                 terminalDelivered = true;   // Mark as "delivered" because we do not own `target` from this point
-                toSource(response.messageBody().ignoreElements()    // Consume any payload of the redirect response
-                        .concat(redirectSingle.requester.request(newRequest)))
-                        .subscribe(new RedirectSubscriber(target, redirectSingle, newRequest, redirectCount + 1,
-                                sequentialCancellable));
+                toSource(nextResponse).subscribe(redirectSubscriber);
             } catch (Throwable cause) {
                 if (!terminalDelivered) {
-                    safeOnError(target, cause);
+                    // Drain response payload body before propagating the cause
+                    sequentialCancellable.nextCancellable(response.messageBody().ignoreElements()
+                            .whenOnError(suppressed -> safeOnError(target, addSuppressed(cause, suppressed)))
+                            .subscribe(() -> safeOnError(target, cause)));
                 } else {
                     LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", target, cause);
                 }
