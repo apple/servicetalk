@@ -107,7 +107,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                                                 final StreamingHttpRequest request) {
                     return delegate
                             .request(request)
-                            .whenOnError(cause -> {
+                            .beforeOnError(cause -> {
                                 final AtomicReference<?> maybePublisher = request.context().get(MESSAGE_PUBLISHER_KEY);
                                 if (maybePublisher != null && maybePublisher.getAndSet(null) != null) {
                                     // No-one subscribed to the message (or there is none), so if there is a message
