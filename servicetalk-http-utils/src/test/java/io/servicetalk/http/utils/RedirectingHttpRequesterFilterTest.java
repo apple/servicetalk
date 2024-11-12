@@ -16,10 +16,12 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -52,6 +54,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -217,7 +220,7 @@ class RedirectingHttpRequesterFilterTest {
         StreamingHttpRequest request = client.newRequest(CONNECT, "servicetalk.io")
                 .setHeader(HOST, "servicetalk.io");
         verifyDoesNotRedirect(client, request, SEE_OTHER);
-        verifyRedirectResponsePayloadsDrained(false);
+        verifyRedirectResponsePayloadsDrained(false, false);
     }
 
     @Test
@@ -383,7 +386,7 @@ class RedirectingHttpRequesterFilterTest {
             verifyRedirected(client, request, false, true);
         } else {
             verifyDoesNotRedirect(client, request, MOVED_PERMANENTLY);
-            verifyRedirectResponsePayloadsDrained(false);
+            verifyRedirectResponsePayloadsDrained(false, false);
         }
     }
 
@@ -401,7 +404,7 @@ class RedirectingHttpRequesterFilterTest {
             verifyRedirected(client, request, false, true);
         } else {
             verifyDoesNotRedirect(client, request, MOVED_PERMANENTLY);
-            verifyRedirectResponsePayloadsDrained(false);
+            verifyRedirectResponsePayloadsDrained(false, false);
         }
     }
 
@@ -419,7 +422,7 @@ class RedirectingHttpRequesterFilterTest {
             verifyRedirected(client, request, false, true);
         } else {
             verifyDoesNotRedirect(client, request, MOVED_PERMANENTLY);
-            verifyRedirectResponsePayloadsDrained(false);
+            verifyRedirectResponsePayloadsDrained(false, false);
         }
     }
 
@@ -468,7 +471,7 @@ class RedirectingHttpRequesterFilterTest {
         StreamingHttpRequest redirectedRequest = verifyResponse(client, request, OK, -1, 2, GET);
         assertThat("Request didn't change", request, not(sameInstance(redirectedRequest)));
         verifyHeadersAndMessageBodyRedirected(redirectedRequest);
-        verifyRedirectResponsePayloadsDrained(true);
+        verifyRedirectResponsePayloadsDrained(true, false);
         assertThat("LocationMapper was not invoked", locationMapperInvoked.get(), is(true));
     }
 
@@ -497,7 +500,7 @@ class RedirectingHttpRequesterFilterTest {
         StreamingHttpRequest redirectedRequest = verifyResponse(client, request, OK, -1, 2, GET);
         assertThat("Request didn't change", request, not(sameInstance(redirectedRequest)));
         verifyHeadersAndMessageBodyRedirected(redirectedRequest);
-        verifyRedirectResponsePayloadsDrained(true);
+        verifyRedirectResponsePayloadsDrained(true, false);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] manyHeaders={0}")
@@ -544,7 +547,7 @@ class RedirectingHttpRequesterFilterTest {
         assertThat("Unexpected payload body", redirectedRequest.payloadBody().collect(StringBuilder::new,
                 (sb, chunk) -> sb.append(chunk.toString(US_ASCII)))
                 .toFuture().get().toString(), contentEqualTo(REQUEST_PAYLOAD));
-        verifyRedirectResponsePayloadsDrained(true);
+        verifyRedirectResponsePayloadsDrained(true, false);
     }
 
     @Test
@@ -580,43 +583,61 @@ class RedirectingHttpRequesterFilterTest {
         verifyRedirected(client, newRequest(client, GET), true, true);
     }
 
-    @Test
-    void redirectRequestTransformerThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] cancel={0}")
+    @ValueSource(booleans = {false, true})
+    void redirectRequestTransformerThrows(boolean cancel) {
+        AtomicReference<Cancellable> cancellable = new AtomicReference<>();
         when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectRequestTransformer((relative, original, response, redirect) -> {
+                    if (cancel) {
+                        cancellable.get().cancel();
+                    }
                     throw DELIBERATE_EXCEPTION;
                 }).build());
 
         ExecutionException e = assertThrows(ExecutionException.class,
-                () -> client.request(newRequest(client, GET)).toFuture().get());
+                () -> client.request(newRequest(client, GET)).whenOnSubscribe(cancellable::set).toFuture().get());
         assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+        verifyRedirectResponsePayloadsDrained(true, cancel);
     }
 
-    @Test
-    void redirectPredicateThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] cancel={0}")
+    @ValueSource(booleans = {false, true})
+    void redirectPredicateThrows(boolean cancel) {
+        AtomicReference<Cancellable> cancellable = new AtomicReference<>();
         when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectPredicate((relative, count, request, response) -> {
+                    if (cancel) {
+                        cancellable.get().cancel();
+                    }
                     throw DELIBERATE_EXCEPTION;
                 }).build());
 
         ExecutionException e = assertThrows(ExecutionException.class,
-                () -> client.request(newRequest(client, GET)).toFuture().get());
+                () -> client.request(newRequest(client, GET)).whenOnSubscribe(cancellable::set).toFuture().get());
         assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+        verifyRedirectResponsePayloadsDrained(true, cancel);
     }
 
-    @Test
-    void locationMapperThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] cancel={0}")
+    @ValueSource(booleans = {false, true})
+    void locationMapperThrows(boolean cancel) {
+        AtomicReference<Cancellable> cancellable = new AtomicReference<>();
         when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .locationMapper((request, response) -> {
+                    if (cancel) {
+                        cancellable.get().cancel();
+                    }
                     throw DELIBERATE_EXCEPTION;
                 }).build());
 
         ExecutionException e = assertThrows(ExecutionException.class,
-                () -> client.request(newRequest(client, GET)).toFuture().get());
+                () -> client.request(newRequest(client, GET)).whenOnSubscribe(cancellable::set).toFuture().get());
         assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+        verifyRedirectResponsePayloadsDrained(true, cancel);
     }
 
     @Test
@@ -688,16 +709,24 @@ class RedirectingHttpRequesterFilterTest {
             assertThat("Unexpected request-target of redirected request",
                     redirectedRequest.requestTarget(), startsWith("/"));
         }
-        verifyRedirectResponsePayloadsDrained(true);
+        verifyRedirectResponsePayloadsDrained(true, false);
         return redirectedRequest;
     }
 
-    private void verifyRedirectResponsePayloadsDrained(boolean drained) {
+    private void verifyRedirectResponsePayloadsDrained(boolean drained, boolean cancelled) {
         int n = 0;
         for (TestPublisher<Buffer> payload : redirectResponsePayloads) {
-            assertThat("Redirect response payload (/location-" + ++n +
-                            (drained ? ") was not drained" : ") was unexpectedly drained"),
+            assertThat("Redirect (/location-" + ++n + ") response payload was " +
+                            (drained ? "not" : "unexpectedly") + " drained",
                     payload.isSubscribed(), is(drained));
+
+            if (drained) {
+                TestSubscription subscription = new TestSubscription();
+                payload.onSubscribe(subscription);
+                assertThat("Redirect (/location-" + ++n + ") response payload subscription was " +
+                                (cancelled ? "not" : "unexpectedly") + " cancelled",
+                        subscription.isCancelled(), is(cancelled));
+            }
         }
     }
 

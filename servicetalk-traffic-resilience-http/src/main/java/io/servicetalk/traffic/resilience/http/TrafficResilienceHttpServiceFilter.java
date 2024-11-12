@@ -93,9 +93,10 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
                                                final Supplier<Function<HttpRequestMetaData, CircuitBreaker>>
                                                        circuitBreakerPartitionsSupplier,
                                                final ServiceRejectionPolicy onServiceRejectionPolicy,
-                                               final TrafficResiliencyObserver observer) {
+                                               final TrafficResiliencyObserver observer,
+                                               final boolean dryRun) {
         super(capacityPartitionsSupplier, rejectNotMatched, classifier, __ -> false, __ -> false,
-                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer);
+                onCompletion, onCancellation, onError, circuitBreakerPartitionsSupplier, observer, dryRun);
         this.serviceRejectionPolicy = onServiceRejectionPolicy;
     }
 
@@ -191,6 +192,7 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
             }
         };
         private TrafficResiliencyObserver observer = NoOpTrafficResiliencyObserver.INSTANCE;
+        private boolean dryRun;
 
         /**
          * A {@link TrafficResilienceHttpServiceFilter} with no partitioning schemes.
@@ -378,6 +380,18 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
         }
 
         /**
+         * Use the resilience filter in dry-run mode.
+         * In dry-run mode the capacity limiter will track requests and log their results but request which would
+         * have been rejected will instead pass through to the underlying client.
+         * @param dryRun whether to use the resilience filter in dry-run mode.
+         * @return {@code this}
+         */
+        public Builder dryRun(final boolean dryRun) {
+            this.dryRun = dryRun;
+            return this;
+        }
+
+        /**
          * Invoke to build an instance of {@link TrafficResilienceHttpServiceFilter} filter to be used inside the
          * {@link HttpServerBuilder}.
          * @return An instance of {@link TrafficResilienceHttpServiceFilter} with the characteristics
@@ -386,7 +400,8 @@ public final class TrafficResilienceHttpServiceFilter extends AbstractTrafficRes
         public TrafficResilienceHttpServiceFilter build() {
             return new TrafficResilienceHttpServiceFilter(capacityPartitionsSupplier, rejectNotMatched,
                     classifier, onCompletionTicketTerminal, onCancellationTicketTerminal,
-                    onErrorTicketTerminal, circuitBreakerPartitionsSupplier, onServiceRejectionPolicy, observer);
+                    onErrorTicketTerminal, circuitBreakerPartitionsSupplier, onServiceRejectionPolicy, observer,
+                    dryRun);
         }
     }
 

@@ -135,6 +135,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
+            // Detect leaks that can be caused by unexpected exceptions
+            urlClient = HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER.create(urlClient);
+
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
             return new FilterableClientToClient(urlClient, executionContext);
         } catch (final Throwable t) {

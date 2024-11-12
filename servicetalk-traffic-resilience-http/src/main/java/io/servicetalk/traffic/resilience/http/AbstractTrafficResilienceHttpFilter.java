@@ -88,6 +88,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
     private final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier;
 
     private final TrafficResiliencyObserver observer;
+    private final boolean dryRun;
 
     AbstractTrafficResilienceHttpFilter(
             final Supplier<Function<HttpRequestMetaData, CapacityLimiter>> capacityPartitionsSupplier,
@@ -99,7 +100,9 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Consumer<Ticket> onCancellationTicketTerminal,
             final BiConsumer<Ticket, Throwable> onErrorTicketTerminal,
             final Supplier<Function<HttpRequestMetaData, CircuitBreaker>> circuitBreakerPartitionsSupplier,
-            final TrafficResiliencyObserver observer) {
+            final TrafficResiliencyObserver observer,
+            final boolean dryRun
+            ) {
         this.capacityPartitionsSupplier = requireNonNull(capacityPartitionsSupplier, "capacityPartitionsSupplier");
         this.rejectWhenNotMatchedCapacityPartition = rejectWhenNotMatchedCapacityPartition;
         this.capacityRejectionPredicate = requireNonNull(capacityRejectionPredicate, "capacityRejectionPredicate");
@@ -112,6 +115,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         this.circuitBreakerPartitionsSupplier = requireNonNull(circuitBreakerPartitionsSupplier,
                 "circuitBreakerPartitionsSupplier");
         this.observer = requireNonNull(observer, "observer");
+        this.dryRun = dryRun;
     }
 
     @Override
@@ -136,7 +140,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         return __ -> Duration.ZERO;
     }
 
-    Single<StreamingHttpResponse> applyCapacityControl(
+    final Single<StreamingHttpResponse> applyCapacityControl(
             final Function<HttpRequestMetaData, CapacityLimiter> capacityPartitions,
             final Function<HttpRequestMetaData, CircuitBreaker> circuitBreakerPartitions,
             final Function<HttpRequestMetaData, Classification> classifier,
@@ -151,7 +155,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             if (partition == null) {
                 observer.onRejectedUnmatchedPartition(request);
                 return rejectWhenNotMatchedCapacityPartition ?
-                        handleLocalCapacityRejection(null, request, responseFactory)
+                        doHandleLocalCapacityRejection(delegate, null, request, responseFactory)
                                 .shareContextOnSubscribe() :
                         handlePassthrough(delegate, request)
                                 .shareContextOnSubscribe();
@@ -166,7 +170,7 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
 
             if (ticket == null) {
                 observer.onRejectedLimit(request, partition.name(), meta, classification);
-                return handleLocalCapacityRejection(serverListenContext, request, responseFactory)
+                return doHandleLocalCapacityRejection(delegate, serverListenContext, request, responseFactory)
                         .shareContextOnSubscribe();
             }
             final CircuitBreaker breaker = circuitBreakerPartitions.apply(request);
@@ -174,14 +178,15 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                 observer.onRejectedOpenCircuit(request, breaker.name(), meta, classification);
                 // Ignore the acquired ticket if breaker was open.
                 ticket.ignored();
-                return handleLocalBreakerRejection(request, responseFactory, breaker).shareContextOnSubscribe();
+                return doHandleLocalBreakerRejection(delegate, request, responseFactory, breaker)
+                        .shareContextOnSubscribe();
             }
 
             // Ticket lifetime must be completed at all points now, try/catch to ensure if anything throws (e.g.
             // reactive flow isn't followed) we still complete ticket lifetime.
             try {
                 final TicketObserver ticketObserver = observer.onAllowedThrough(request, ticket.state());
-                return handleAllow(delegate, delayProvider, request, wrapTicket(serverListenContext, ticket),
+                return doHandleAllow(delegate, delayProvider, request, wrapTicket(serverListenContext, ticket),
                         ticketObserver, breaker, startTime).shareContextOnSubscribe();
             } catch (Throwable cause) {
                 onError(cause, breaker, startTime, ticket);
@@ -194,10 +199,28 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
         return ticket;
     }
 
+    private Single<StreamingHttpResponse> doHandleLocalCapacityRejection(
+            Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            @Nullable ServerListenContext serverListenContext,
+            StreamingHttpRequest request,
+            @Nullable StreamingHttpResponseFactory responseFactory) {
+        return dryRun ? handlePassthrough(delegate, request) :
+                handleLocalCapacityRejection(serverListenContext, request, responseFactory);
+    }
+
     abstract Single<StreamingHttpResponse> handleLocalCapacityRejection(
             @Nullable ServerListenContext serverListenContext,
             StreamingHttpRequest request,
             @Nullable StreamingHttpResponseFactory responseFactory);
+
+    private Single<StreamingHttpResponse> doHandleLocalBreakerRejection(
+            Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            StreamingHttpRequest request,
+            @Nullable StreamingHttpResponseFactory responseFactory,
+            CircuitBreaker breaker) {
+        return dryRun ? handlePassthrough(delegate, request) :
+                handleLocalBreakerRejection(request, responseFactory, breaker);
+    }
 
     abstract Single<StreamingHttpResponse> handleLocalBreakerRejection(
             StreamingHttpRequest request,
@@ -217,6 +240,16 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
             final StreamingHttpRequest request) {
         return delegate.apply(request);
+    }
+
+    private Single<StreamingHttpResponse> doHandleAllow(
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            final Function<HttpResponseMetaData, Duration> delayProvider, final StreamingHttpRequest request,
+            final Ticket ticket, final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
+            final long startTimeNs) {
+        return dryRun ? dryRunHandleAllow(
+                delegate, delayProvider, request, ticket, ticketObserver, breaker, startTimeNs) :
+                handleAllow(delegate, delayProvider, request, ticket, ticketObserver, breaker, startTimeNs);
     }
 
     private Single<StreamingHttpResponse> handleAllow(
@@ -249,37 +282,101 @@ abstract class AbstractTrafficResilienceHttpFilter implements HttpExecutionStrat
                     }
                     return Single.succeeded(resp).shareContextOnSubscribe();
                 })
-                .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
-                    @Override
-                    public void onComplete() {
-                        try {
-                            if (breaker != null) {
-                                breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
-                            }
-                        } finally {
-                            onSuccessTicketTerminal.accept(ticket);
-                            ticketObserver.onComplete();
-                        }
-                    }
+                .liftSync(new BeforeFinallyHttpOperator(
+                        new SignalConsumer(this, ticket, ticketObserver, breaker, startTimeNs), true));
+    }
 
-                    @Override
-                    public void onError(final Throwable throwable) {
-                        AbstractTrafficResilienceHttpFilter.this.onError(throwable, breaker, startTimeNs, ticket);
-                        ticketObserver.onError(throwable);
+    private Single<StreamingHttpResponse> dryRunHandleAllow(
+            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegate,
+            final Function<HttpResponseMetaData, Duration> delayProvider, final StreamingHttpRequest request,
+            final Ticket ticket,
+            final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker, final long startTimeNs) {
+        SignalConsumer signalConsumer = new SignalConsumer(
+                this, ticket, ticketObserver, breaker, startTimeNs);
+        return delegate.apply(request)
+                // This logic has the same general structure as the `handleAllow` case, but there is a twist: we want
+                // to always return the successful single even when we fail the predicates. Because we use a latch in
+                // SignalConsumer it's safe to signal those conditions eagerly in the `.flatMap` operation and let the
+                // request proceed as usual and any following signals (such as from body processing) will be ignored.
+                .map(resp -> {
+                    if (breaker != null && breakerRejectionPredicate.test(resp)) {
+                        Exception rejection = peerBreakerRejection(resp, breaker, delayProvider);
+                        signalConsumer.onError(rejection);
+                    } else if (capacityRejectionPredicate.test(resp)) {
+                        final RuntimeException rejection = peerRejection(resp);
+                        signalConsumer.onError(rejection);
                     }
+                    return resp;
+                })
+                .liftSync(new BeforeFinallyHttpOperator(signalConsumer, true));
+    }
 
-                    @Override
-                    public void cancel() {
-                        try {
-                            if (breaker != null) {
-                                breaker.ignorePermit();
-                            }
-                        } finally {
-                            onCancellationTicketTerminal.accept(ticket);
-                            ticketObserver.onCancel();
-                        }
-                    }
-                }, true));
+    private static final class SignalConsumer implements TerminalSignalConsumer {
+
+        private static final AtomicIntegerFieldUpdater<SignalConsumer> SIGNALLED_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(SignalConsumer.class, "signalled");
+
+        private final AbstractTrafficResilienceHttpFilter parent;
+        private final Ticket ticket;
+        private final TicketObserver ticketObserver;
+        @Nullable
+        private final CircuitBreaker breaker;
+        private final long startTimeNs;
+
+        private volatile int signalled;
+
+        SignalConsumer(final AbstractTrafficResilienceHttpFilter parent, final Ticket ticket,
+                              final TicketObserver ticketObserver, @Nullable final CircuitBreaker breaker,
+                              final long startTimeNs) {
+            this.parent = parent;
+            this.ticket = ticket;
+            this.ticketObserver = ticketObserver;
+            this.breaker = breaker;
+            this.startTimeNs = startTimeNs;
+        }
+
+        @Override
+        public void onComplete() {
+            if (!once()) {
+                return;
+            }
+            try {
+                if (breaker != null) {
+                    breaker.onSuccess(nanoTime() - startTimeNs, NANOSECONDS);
+                }
+            } finally {
+                parent.onSuccessTicketTerminal.accept(ticket);
+                ticketObserver.onComplete();
+            }
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            if (!once()) {
+                return;
+            }
+            parent.onError(throwable, breaker, startTimeNs, ticket);
+            ticketObserver.onError(throwable);
+        }
+
+        @Override
+        public void cancel() {
+            if (!once()) {
+                return;
+            }
+            try {
+                if (breaker != null) {
+                    breaker.ignorePermit();
+                }
+            } finally {
+                parent.onCancellationTicketTerminal.accept(ticket);
+                ticketObserver.onCancel();
+            }
+        }
+
+        private boolean once() {
+            return SIGNALLED_UPDATER.compareAndSet(this, 0, 1);
+        }
     }
 
     private void onError(final Throwable throwable, @Nullable final CircuitBreaker breaker,
