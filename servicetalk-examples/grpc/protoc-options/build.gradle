@@ -74,6 +74,7 @@ protobuf {
           outputSubDir = "java"
           // Option to append a suffix to type names to avoid naming collisions with other code generation.
           option 'typeNameSuffix=St'
+          option 'skipDeprecated=true'
         }
       }
     }
