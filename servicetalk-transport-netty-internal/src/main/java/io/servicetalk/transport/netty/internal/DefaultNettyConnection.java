@@ -937,7 +937,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             } else if (evt == CloseHandler.OutboundDataEndEvent.INSTANCE) {
                 connection.channelOutboundListener.channelOutboundClosed();
             } else if (evt == AbortWritesEvent.INSTANCE) {
-                connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                connection.channelOutboundListener.listenerDiscard(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(AbortWritesEvent)"));
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
