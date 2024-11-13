@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -132,7 +133,7 @@ final class ConnectionCloseHeaderHandlingTest {
                     HttpServers.forAddress(localAddress(0)))
                     .ioExecutor(serverCtx.ioExecutor())
                     .executor(serverCtx.executor())
-                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                         @Override
                         public Completable accept(final ConnectionContext context) {
@@ -216,7 +217,17 @@ final class ConnectionCloseHeaderHandlingTest {
         @AfterEach
         void tearDown() throws Exception {
             try {
-                newCompositeCloseable().appendAll(connection, client, serverContext).close();
+                CompositeCloseable closeable = newCompositeCloseable();
+                if (connection != null) {
+                    closeable.append(connection);
+                }
+                if (client != null) {
+                    closeable.append(client);
+                }
+                if (serverContext != null) {
+                    closeable.append(serverContext);
+                }
+                closeable.close();
             } finally {
                 if (proxyTunnel != null) {
                     safeClose(proxyTunnel);
@@ -392,7 +403,9 @@ final class ConnectionCloseHeaderHandlingTest {
             String content = "request_content";
             connection.request(connection.get("/second")
                     .addHeader(CONTENT_LENGTH, valueOf(content.length()))
-                    .payloadBody(from(content).concat(never()), RAW_STRING_SERIALIZER))
+                    // Write only part of the intended payload body to simulate incomplete request:
+                    .payloadBody(from(content.substring(0, content.length() / 2)).concat(never()),
+                            RAW_STRING_SERIALIZER))
                     .whenOnError(secondRequestError::set)
                     .whenFinally(secondResponseReceived::countDown)
                     .subscribe(second -> { });
