@@ -147,34 +147,39 @@ loadScripts(document, 'script');</script>
 <div class="block">When a peer rejects a <a href="../../../http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> due to an open-circuit (see.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forceOpenCircuitOnPeerCircuitRejections(java.util.function.Supplier,io.servicetalk.concurrent.api.Executor)" class="member-name-link">forceOpenCircuitOnPeerCircuitRejections</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="../../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&gt;&gt;&nbsp;delayProvider,
- <a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#dryRun(boolean)" class="member-name-link">dryRun</a><wbr>(boolean&nbsp;dryRun)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Use the resilience filter in dry-run mode.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forceOpenCircuitOnPeerCircuitRejections(java.util.function.Supplier,io.servicetalk.concurrent.api.Executor)" class="member-name-link">forceOpenCircuitOnPeerCircuitRejections</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="../../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&gt;&gt;&nbsp;delayProvider,
+ <a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">When a peer rejects a <a href="../../../http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> due to an open-circuit (see.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#observer(io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver)" class="member-name-link">observer</a><wbr>(<a href="TrafficResiliencyObserver.html" title="interface in io.servicetalk.traffic.resilience.http">TrafficResiliencyObserver</a>&nbsp;observer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#observer(io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver)" class="member-name-link">observer</a><wbr>(<a href="TrafficResiliencyObserver.html" title="interface in io.servicetalk.traffic.resilience.http">TrafficResiliencyObserver</a>&nbsp;observer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Provide an observer to track interactions of the filter and requests.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onCancelTicketTerminal(java.util.function.Consumer)" class="member-name-link">onCancelTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>&gt;&nbsp;onCancellation)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onCancelTicketTerminal(java.util.function.Consumer)" class="member-name-link">onCancelTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>&gt;&nbsp;onCancellation)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block"><a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>Ticket</code></a> terminal callback override upon cancellation of the request operation.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorTicketTerminal(java.util.function.BiConsumer)" class="member-name-link">onErrorTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiConsumer.html" title="class or interface in java.util.function" class="external-link">BiConsumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorTicketTerminal(java.util.function.BiConsumer)" class="member-name-link">onErrorTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiConsumer.html" title="class or interface in java.util.function" class="external-link">BiConsumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block"><a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>Ticket</code></a> terminal callback override upon erroneous completion of the request operation.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerUnavailableRejectionPredicate(java.util.function.Predicate)" class="member-name-link">peerUnavailableRejectionPredicate</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="../../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>&gt;&nbsp;rejectionPredicate)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#peerUnavailableRejectionPredicate(java.util.function.Predicate)" class="member-name-link">peerUnavailableRejectionPredicate</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="../../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>&gt;&nbsp;rejectionPredicate)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Peers can reject requests due to service unavailability.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#rejectionPolicy(io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy)" class="member-name-link">rejectionPolicy</a><wbr>(<a href="ClientPeerRejectionPolicy.html" title="class in io.servicetalk.traffic.resilience.http">ClientPeerRejectionPolicy</a>&nbsp;policy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#rejectionPolicy(io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy)" class="member-name-link">rejectionPolicy</a><wbr>(<a href="ClientPeerRejectionPolicy.html" title="class in io.servicetalk.traffic.resilience.http">ClientPeerRejectionPolicy</a>&nbsp;policy)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Peers can reject and exception due to capacity reasons based on their own principals and implementation
  details.</div>
 </div>
@@ -489,6 +494,21 @@ loadScripts(document, 'script');</script>
 <dd><code>observer</code> - an observer to track interactions of the filter and requests.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="dryRun(boolean)">
+<h3>dryRun</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="TrafficResilienceHttpClientFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpClientFilter.Builder</a></span>&nbsp;<span class="element-name">dryRun</span><wbr><span class="parameters">(boolean&nbsp;dryRun)</span></div>
+<div class="block">Use the resilience filter in dry-run mode.
+ In dry-run mode the capacity limiter will track requests and log their results but request which would
+ have been rejected will instead pass through to the underlying client.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>dryRun</code> - whether to use the resilience filter in dry-run mode.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>

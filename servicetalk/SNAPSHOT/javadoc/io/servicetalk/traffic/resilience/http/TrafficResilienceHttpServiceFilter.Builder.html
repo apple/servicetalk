@@ -142,23 +142,28 @@ loadScripts(document, 'script');</script>
  <a href="../../../http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#observer(io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver)" class="member-name-link">observer</a><wbr>(<a href="TrafficResiliencyObserver.html" title="interface in io.servicetalk.traffic.resilience.http">TrafficResiliencyObserver</a>&nbsp;observer)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#dryRun(boolean)" class="member-name-link">dryRun</a><wbr>(boolean&nbsp;dryRun)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Use the resilience filter in dry-run mode.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#observer(io.servicetalk.traffic.resilience.http.TrafficResiliencyObserver)" class="member-name-link">observer</a><wbr>(<a href="TrafficResiliencyObserver.html" title="interface in io.servicetalk.traffic.resilience.http">TrafficResiliencyObserver</a>&nbsp;observer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Provide an observer to track interactions of the filter and requests.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onCancelTicketTerminal(java.util.function.Consumer)" class="member-name-link">onCancelTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>&gt;&nbsp;onCancellation)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onCancelTicketTerminal(java.util.function.Consumer)" class="member-name-link">onCancelTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>&gt;&nbsp;onCancellation)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block"><a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>Ticket</code></a> terminal callback override upon cancellation of the operation.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorTicketTerminal(java.util.function.BiConsumer)" class="member-name-link">onErrorTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiConsumer.html" title="class or interface in java.util.function" class="external-link">BiConsumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorTicketTerminal(java.util.function.BiConsumer)" class="member-name-link">onErrorTicketTerminal</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiConsumer.html" title="class or interface in java.util.function" class="external-link">BiConsumer</a>&lt;<a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api">CapacityLimiter.Ticket</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block"><a href="../../../capacity/limiter/api/CapacityLimiter.Ticket.html" title="interface in io.servicetalk.capacity.limiter.api"><code>Ticket</code></a> terminal callback override upon erroneous completion of the operation.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#rejectionPolicy(io.servicetalk.traffic.resilience.http.ServiceRejectionPolicy)" class="member-name-link">rejectionPolicy</a><wbr>(<a href="ServiceRejectionPolicy.html" title="class in io.servicetalk.traffic.resilience.http">ServiceRejectionPolicy</a>&nbsp;policy)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#rejectionPolicy(io.servicetalk.traffic.resilience.http.ServiceRejectionPolicy)" class="member-name-link">rejectionPolicy</a><wbr>(<a href="ServiceRejectionPolicy.html" title="class in io.servicetalk.traffic.resilience.http">ServiceRejectionPolicy</a>&nbsp;policy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Defines the <a href="ServiceRejectionPolicy.html" title="class in io.servicetalk.traffic.resilience.http"><code>ServiceRejectionPolicy</code></a> which in turn defines the behavior of the service when a
  rejection occurs due to <a href="../../../capacity/limiter/api/CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>capacity</code></a> or <a href="../../../circuit/breaker/api/CircuitBreaker.html" title="interface in io.servicetalk.circuit.breaker.api"><code>breaker</code></a>.</div>
 </div>
@@ -385,6 +390,21 @@ loadScripts(document, 'script');</script>
 <dd><code>observer</code> - an observer to track interactions of the filter and requests.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="dryRun(boolean)">
+<h3>dryRun</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="TrafficResilienceHttpServiceFilter.Builder.html" title="class in io.servicetalk.traffic.resilience.http">TrafficResilienceHttpServiceFilter.Builder</a></span>&nbsp;<span class="element-name">dryRun</span><wbr><span class="parameters">(boolean&nbsp;dryRun)</span></div>
+<div class="block">Use the resilience filter in dry-run mode.
+ In dry-run mode the capacity limiter will track requests and log their results but request which would
+ have been rejected will instead pass through to the underlying client.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>dryRun</code> - whether to use the resilience filter in dry-run mode.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>
