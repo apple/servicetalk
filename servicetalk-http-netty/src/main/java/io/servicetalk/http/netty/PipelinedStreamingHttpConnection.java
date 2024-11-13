@@ -46,8 +46,8 @@ final class PipelinedStreamingHttpConnection
             return Publisher.defer(() -> {
                 final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return connection.write(requestStream, connection::defaultFlushStrategy,
-                        WriteDemandEstimators::newDefaultEstimator).afterFinally(resetFlushStrategy::cancel);
+                return connection.write(requestStream.afterFinally(resetFlushStrategy::cancel),
+                        connection::defaultFlushStrategy, WriteDemandEstimators::newDefaultEstimator);
             });
         }
     }
