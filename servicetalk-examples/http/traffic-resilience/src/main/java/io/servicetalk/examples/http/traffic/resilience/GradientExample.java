@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.traffic.resilience;
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
 
-public class GradientExample {
+public final class GradientExample {
 
     public static void main(String[] args) {
         // Initializing a Gradient limiter with configuration profile that favors lower latency.

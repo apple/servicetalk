@@ -22,7 +22,7 @@ import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter
 
 import java.util.concurrent.RejectedExecutionException;
 
-public class TrafficResilienceServerTerminalsExample {
+public final class TrafficResilienceServerTerminalsExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =

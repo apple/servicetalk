@@ -28,7 +28,7 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 
-public class TrafficResilienceClientPeerRejectionsRetryExample {
+public final class TrafficResilienceClientPeerRejectionsRetryExample {
     public static void main(String[] args) {
         final TrafficResilienceHttpClientFilter resilienceFilter =
                 new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.dynamicGradient().build())
