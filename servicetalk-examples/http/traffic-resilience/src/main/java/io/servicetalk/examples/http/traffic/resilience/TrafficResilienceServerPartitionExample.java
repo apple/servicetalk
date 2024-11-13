@@ -23,7 +23,7 @@ import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter
 
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 
-public class TrafficResilienceServerPartitionExample {
+public final class TrafficResilienceServerPartitionExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =

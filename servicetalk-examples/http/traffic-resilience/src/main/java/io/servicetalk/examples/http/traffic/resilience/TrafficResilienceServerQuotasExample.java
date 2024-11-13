@@ -25,7 +25,7 @@ import static io.servicetalk.capacity.limiter.api.CapacityLimiters.composite;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static java.util.Arrays.asList;
 
-public class TrafficResilienceServerQuotasExample {
+public final class TrafficResilienceServerQuotasExample {
     static final CharSequence CUSTOMER = "x-customer";
     static final CharSequence CUSTOMER_X = "X";
 

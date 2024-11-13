@@ -21,7 +21,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.ServiceRejectionPolicy;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
-public class TrafficResilienceServerStopAcceptingExample {
+public final class TrafficResilienceServerStopAcceptingExample {
 
     public static void main(String[] args) throws Exception {
         final ServiceRejectionPolicy rejectionPolicy = new ServiceRejectionPolicy.Builder()

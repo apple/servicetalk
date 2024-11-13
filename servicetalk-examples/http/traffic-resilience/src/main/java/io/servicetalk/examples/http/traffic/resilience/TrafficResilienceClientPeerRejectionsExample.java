@@ -24,7 +24,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 
-public class TrafficResilienceClientPeerRejectionsExample {
+public final class TrafficResilienceClientPeerRejectionsExample {
     public static void main(String[] args) {
         final TrafficResilienceHttpClientFilter resilienceFilter =
                 new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.dynamicGradient().build())

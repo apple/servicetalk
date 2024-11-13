@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
-public class TrafficResilienceServerClassificationExample {
+public final class TrafficResilienceServerClassificationExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =
