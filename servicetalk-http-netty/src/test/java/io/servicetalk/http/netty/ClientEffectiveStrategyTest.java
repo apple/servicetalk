@@ -56,19 +56,21 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.platform.commons.logging.Logger;
+import org.junit.platform.commons.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -101,6 +103,8 @@ import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEffectiveStrategyTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -228,7 +232,6 @@ class ClientEffectiveStrategyTest {
         return arguments.stream();
     }
 
-    @Disabled // Disabled due to continued flakiness. See issue #2245 for more details.
     @ParameterizedTest(name = "Type={0} builder={1} filter={2} LB={3} CF={4}")
     @MethodSource("casesSupplier")
     void clientStrategy(final BuilderType builderType,
@@ -330,7 +333,7 @@ class ClientEffectiveStrategyTest {
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 String responseBody = getResponse(clientApi, client, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
-                invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
+                invokingThreadsRecorder.flakyVerifyOffloads(clientApi, client.executionContext().executionStrategy(),
                         responseBody);
 
                 // Execute request one more time to make sure we cover all paths:
@@ -339,7 +342,7 @@ class ClientEffectiveStrategyTest {
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 responseBody = getResponse(clientApi, client, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
-                invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
+                invokingThreadsRecorder.flakyVerifyOffloads(clientApi, client.executionContext().executionStrategy(),
                         responseBody);
             }
         }
@@ -562,6 +565,31 @@ class ClientEffectiveStrategyTest {
                 }
                 return ioThread ? "eventLoop" : (appThread ? "application" : "offloaded");
             });
+        }
+
+        void flakyVerifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
+            // For flaky tests we see unexpected offloading at the Send stage. This is messing with CI so this
+            // particular test case is skipped for now.
+            // See https://github.com/apple/servicetalk/issues/2245
+            Throwable firstFlakyException = null;
+            Iterator<Throwable> it = errors.iterator();
+            while (it.hasNext()) {
+                Throwable t = it.next();
+                // Example message:
+                // Suppressed: java.lang.AssertionError: Expected IoThread or ForkJoinPool-1-worker-1
+                //  at Send, but was running on an offloading executor thread: client-executor-7-5.
+                //  clientStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY, expectedStrategy=OFFLOAD_NONE_STRATEGY,
+                //  requestStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY"
+                if (clientApi == ClientApi.BLOCKING_AGGREGATED && t.getMessage().contains(
+                        "but was running on an offloading executor thread")) {
+                    firstFlakyException = firstFlakyException == null ? t : firstFlakyException;
+                    it.remove();
+                }
+            }
+            if (firstFlakyException != null) {
+                LOGGER.warn(firstFlakyException, () -> "Flaky throwable detected. Ignoring until test can be fixed.");
+            }
+            verifyOffloads(clientApi, clientStrategy, apiStrategy);
         }
 
         public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
