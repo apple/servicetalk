@@ -348,10 +348,13 @@ public final class GradientCapacityLimiterBuilder {
          * <p>
          * The rate of reporting to the observer is based on the rate of change to this
          * {@link CapacityLimiter} and the {@link #limitUpdateInterval(Duration) sampling interval}.
-         * @param longRtt The exponential moving average stat of request response times.
-         * @param shortRtt The sampled response time that triggered the limit change.
+         * @param longRtt The exponential moving average stat of request response times. A negative value means
+         *                response times were not used in the calculation.
+         * @param shortRtt The sampled response time that triggered the limit change. A negative value means
+         *          *                response times were not used in the calculation.
          * @param gradient The response time gradient (delta) between the long exposed stat (see. longRtt)
-         * and the sampled response time (see. shortRtt).
+         * and the sampled response time (see. shortRtt). A negative value means the gradient was not used in the
+         * calculation.
          * @param oldLimit The previous limit of the limiter.
          * @param newLimit The current limit of the limiter.
          */

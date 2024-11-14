@@ -149,7 +149,7 @@ final class GradientCapacityLimiter implements CapacityLimiter {
     /**
      * Needs to be called while holding the lock.
      */
-    private int updateLimit(final long timestampNs, final double shortLatencyMillis, final double longLatencyMillis) {
+    private double updateLimit(final long timestampNs, final double shortLatencyMillis, final double longLatencyMillis) {
         assert lock.isHeldByCurrentThread();
         if (isNaN(longLatencyMillis) || isNaN(shortLatencyMillis) || shortLatencyMillis == 0) {
             return -1;
@@ -169,47 +169,57 @@ final class GradientCapacityLimiter implements CapacityLimiter {
         }
 
         final double headroom = gradient >= 1 ? this.headroom.apply(gradient, limit) : 0;
-        final double oldLimit = limit;
-        final int newLimit = (int) (limit = min(max, max(min, (gradient * limit) + headroom)));
-        observer.onLimitChange(longLatencyMillis, shortLatencyMillis, gradient, oldLimit, newLimit);
-        return newLimit;
+        limit = min(max, max(min, (gradient * limit) + headroom));
+        return gradient;
     }
 
     private int onSuccess(final long durationNs) {
         final long nowNs = timeSource.getAsLong();
         final long rttMillis = NANOSECONDS.toMillis(durationNs);
-        int newPending;
-        int limit;
+        final double longLatencyMillis;
+        final double shortLatencyMillis;
+        final int newPending;
+        final double oldLimit;
+        final double newLimit;
+        double gradient = 0.0;
         lock.lock();
         try {
-            limit = (int) this.limit;
-            final double longLatencyMillis = longLatency.observe(nowNs, rttMillis);
-            final double shortLatencyMillis = shortLatency.observe(nowNs, rttMillis);
+            oldLimit = this.limit;
+            longLatencyMillis = longLatency.observe(nowNs, rttMillis);
+            shortLatencyMillis = shortLatency.observe(nowNs, rttMillis);
 
             newPending = --pending;
             if ((nowNs - lastSamplingNs) >= limitUpdateIntervalNs) {
-                limit = updateLimit(nowNs, shortLatencyMillis, longLatencyMillis);
+                gradient = updateLimit(nowNs, shortLatencyMillis, longLatencyMillis);
             }
+            newLimit = limit;
         } finally {
             lock.unlock();
         }
-
+        if (oldLimit != newLimit) {
+            observer.onLimitChange(longLatencyMillis, shortLatencyMillis, gradient, oldLimit, newLimit);
+        }
         observer.onActiveRequestsDecr();
-        return limit - newPending;
+        return (int) (newLimit - newPending);
     }
 
     private int onDrop() {
         int newPending;
-        double newLimit;
-
+        final double oldLimit;
+        final double newLimit;
         lock.lock();
         try {
+            oldLimit = limit;
             newLimit = limit = max(min, limit * (limit >= max ? backoffRatioOnLimit : backoffRatioOnLoss));
             newPending = --pending;
         } finally {
             lock.unlock();
         }
 
+        if (oldLimit != newLimit) {
+            // latencies and gradient were not involved in the calculations
+            observer.onLimitChange(0.0 /*longLatencyMillis*/, 0.0 /*shortLatencyMillis*/, -1.0 /*gradient*/, oldLimit, newLimit);
+        }
         observer.onActiveRequestsDecr();
         return (int) (newLimit - newPending);
     }
