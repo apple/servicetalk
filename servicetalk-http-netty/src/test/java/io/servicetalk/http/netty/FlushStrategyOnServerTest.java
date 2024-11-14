@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,20 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.DefaultHttpExecutionContext;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerContext;
-import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
-import io.servicetalk.tcp.netty.internal.TcpServerBinder;
-import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.tcp.netty.internal.TcpServerConfig;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
+import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,8 +37,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -52,17 +46,11 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
-import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
-import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class FlushStrategyOnServerTest {
 
@@ -79,8 +67,6 @@ class FlushStrategyOnServerTest {
     private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
     private OutboundWriteEventsInterceptor interceptor;
-    private HttpHeadersFactory headersFactory;
-
     private ServerContext serverContext;
     private BlockingHttpClient client;
 
@@ -94,9 +80,8 @@ class FlushStrategyOnServerTest {
         }
     }
 
-    private void setUp(final Param param) {
+    private void setUp(final Param param) throws Exception {
         this.interceptor = new OutboundWriteEventsInterceptor();
-        this.headersFactory = DefaultHttpHeadersFactory.INSTANCE;
 
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok();
@@ -109,38 +94,23 @@ class FlushStrategyOnServerTest {
             return succeeded(resp);
         };
 
-        final DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(
-                SERVER_CTX.bufferAllocator(), SERVER_CTX.ioExecutor(), SERVER_CTX.executor(), param.executionStrategy);
-
-        final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
-        final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
-
-        try {
-            serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly,
-                    httpExecutionContext, null,
-                    (channel, observer) -> {
-                        channel.config().setAutoRead(true);
-                        return initChannel(channel, httpExecutionContext, config,
-                                new TcpServerChannelInitializer(tcpReadOnly, observer, httpExecutionContext)
-                                        .andThen(channel1 -> channel1.pipeline().addLast(interceptor)), service,
-                                true, observer);
-                    },
-                    connection -> connection.process(true), null, null)
-                    .map(delegate -> new NettyHttpServerContext(delegate, service, httpExecutionContext))
-                    .toFuture().get();
-        } catch (Exception e) {
-            fail(e);
-        }
-
+        serverContext = BuilderUtils.newServerBuilder(SERVER_CTX)
+                .executionStrategy(param.executionStrategy)
+                .transportObserver(interceptor)
+                .listenStreamingAndAwait(service);
         client = newClientBuilder(serverContext, CLIENT_CTX).buildBlocking();
     }
 
     @AfterEach
     void tearDown() throws Exception {
         try {
-            client.close();
+            if (client != null) {
+                client.close();
+            }
         } finally {
-            serverContext.close();
+            if (serverContext != null) {
+                serverContext.close();
+            }
         }
     }
 
@@ -257,12 +227,20 @@ class FlushStrategyOnServerTest {
     }
 
     private void assertFlushOnEnd() throws Exception {
+        assertFlushOnEnd(interceptor);
+    }
+
+    static void assertFlushOnEnd(OutboundWriteEventsInterceptor interceptor) throws Exception {
         // aggregated response: headers, single (or empty) payload, and empty buffer instead of trailers
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), greaterThan(0));
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
     }
 
     private void assertFlushOnEach() throws Exception {
+        assertFlushOnEach(interceptor);
+    }
+
+    static void assertFlushOnEach(OutboundWriteEventsInterceptor interceptor) throws Exception {
         // headers
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(1));
         // one chunk; chunk header payload and CRLF
@@ -279,22 +257,19 @@ class FlushStrategyOnServerTest {
     }
 
     private void sendARequest(boolean useAggregatedResp, boolean useEmptyRespBody) throws Exception {
-        HttpHeaders headers = headersFactory.newHeaders();
-        headers.set(TRANSFER_ENCODING, CHUNKED);
+        HttpRequest request = client.get("/")
+                .setHeader(TRANSFER_ENCODING, CHUNKED)
+                .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello"));
         if (useAggregatedResp) {
-            headers.set(USE_AGGREGATED_RESP, "true");
+            request.setHeader(USE_AGGREGATED_RESP, "true");
         }
         if (useEmptyRespBody) {
-            headers.set(USE_EMPTY_RESP_BODY, "true");
+            request.setHeader(USE_EMPTY_RESP_BODY, "true");
         }
-
-        StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1, headers, DEFAULT_ALLOCATOR,
-                from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()), false,
-                headersFactory);
-        client.request(req.toRequest().toFuture().get());
+        client.request(request);
     }
 
-    static class OutboundWriteEventsInterceptor extends ChannelOutboundHandlerAdapter {
+    static class OutboundWriteEventsInterceptor implements TransportObserver, ConnectionObserver {
 
         private static final Object MSG = new Object();
         private static final Object FLUSH = new Object();
@@ -302,15 +277,13 @@ class FlushStrategyOnServerTest {
         private final BlockingQueue<Object> writeEvents = new LinkedBlockingDeque<>();
 
         @Override
-        public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
+        public void onDataWrite(int size) {
             writeEvents.add(MSG);
-            ctx.write(msg, promise);
         }
 
         @Override
-        public void flush(final ChannelHandlerContext ctx) {
+        public void onFlush() {
             writeEvents.add(FLUSH);
-            ctx.flush();
         }
 
         int takeWritesTillFlush() throws Exception {
@@ -327,6 +300,45 @@ class FlushStrategyOnServerTest {
 
         int pendingEvents() {
             return writeEvents.size();
+        }
+
+        @Override
+        public ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress) {
+            return this;
+        }
+
+        @Override
+        public void onDataRead(int size) {
+        }
+
+        @Override
+        public DataObserver connectionEstablished(final ConnectionInfo info) {
+            return NoopTransportObserver.NoopDataObserver.INSTANCE;
+        }
+
+        @Override
+        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
+            return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+        }
+
+        @Override
+        public void connectionClosed(final Throwable error) {
+        }
+
+        @Override
+        public void connectionClosed() {
+        }
+    }
+
+    private static final class NoFlushStrategy implements FlushStrategy {
+        @Override
+        public WriteEventsListener apply(final FlushSender sender) {
+            return new NoopWriteEventsListener() { /* noop */ };
+        }
+
+        @Override
+        public boolean shouldFlushOnUnwritable() {
+            return false;
         }
     }
 }
