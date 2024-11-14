@@ -77,13 +77,12 @@ class GradientCapacityLimiterTest {
     void capacityCanDepleteToTheMinLimit() {
         for (;;) {
             CapacityLimiter.Ticket ticket = capacityLimiter.tryAcquire(DEFAULT, null);
-            currentTime += Duration.ofMillis(50).toNanos();
+            currentTime += Duration.ofMillis(10).toNanos();
             int capacity = ticket.failed(SAD_EXCEPTION);
             if (capacity == DEFAULT_MIN_LIMIT) {
                 break;
             }
         }
-
     }
 
     @Test
