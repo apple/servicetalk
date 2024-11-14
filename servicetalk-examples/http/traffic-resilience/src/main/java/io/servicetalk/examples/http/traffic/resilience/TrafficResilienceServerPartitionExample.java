@@ -23,6 +23,9 @@ import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter
 
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 
+/**
+ * A server that uses two separate capacity limiters, selected based on request metadata.
+ */
 public final class TrafficResilienceServerPartitionExample {
 
     public static void main(String[] args) throws Exception {
@@ -33,8 +36,9 @@ public final class TrafficResilienceServerPartitionExample {
                     return meta -> meta.method() == POST ? setLimiter : getLimiter;
                 }, true).build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()))
+                .awaitShutdown();
     }
 }

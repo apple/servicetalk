@@ -22,6 +22,9 @@ import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter
 
 import java.util.concurrent.RejectedExecutionException;
 
+/**
+ * An example that demonstrates custom handling of tickets on error conditions.
+ */
 public final class TrafficResilienceServerTerminalsExample {
 
     public static void main(String[] args) throws Exception {
@@ -36,8 +39,9 @@ public final class TrafficResilienceServerTerminalsExample {
                         })
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()))
+                .awaitShutdown();
     }
 }

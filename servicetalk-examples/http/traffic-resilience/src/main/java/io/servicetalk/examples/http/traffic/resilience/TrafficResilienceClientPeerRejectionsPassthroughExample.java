@@ -24,6 +24,10 @@ import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 
+/**
+ * A client which configures which responses will affect the capacity limiter but still pass through to the underlying
+ * client.
+ */
 public final class TrafficResilienceClientPeerRejectionsPassthroughExample {
     public static void main(String[] args) {
         final TrafficResilienceHttpClientFilter resilienceFilter =

@@ -28,6 +28,9 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 
+/**
+ * A client which configures the resilience filters to signal an appropriate delay to the retry filter.
+ */
 public final class TrafficResilienceClientPeerRejectionsRetryExample {
     public static void main(String[] args) {
         final TrafficResilienceHttpClientFilter resilienceFilter =
