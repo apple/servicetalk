@@ -18,6 +18,7 @@ package io.servicetalk.grpc.protoc;
 import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.DescriptorProtos.SourceCodeInfo;
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -380,19 +381,29 @@ final class Generator {
                 .addMethod(methodBuilder(methodDescriptor)
                         .addModifiers(PUBLIC, STATIC)
                         .returns(methodDescriptorType)
-                        .addStatement("return $L", methodDescFieldName).build())
-                .addMethod(newRpcMethodSpec(inClass, outClass, javaMethodName, methodProto.getClientStreaming(),
-                        methodProto.getServerStreaming(),
-                        isAsync ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
-                        printJavaDocs, (__, b) -> {
-                            b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
-                            if (printJavaDocs) {
-                                extractJavaDocComments(state, methodIndex, b);
-                                b.addJavadoc(JAVADOC_PARAM + ctx +
-                                        " context associated with this service and request." + lineSeparator());
-                            }
-                            return b;
-                        }));
+                        .addStatement("return $L", methodDescFieldName).build());
+
+        final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, javaMethodName,
+                methodProto.getClientStreaming(), methodProto.getServerStreaming(),
+                isAsync ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
+                printJavaDocs, (__, b) -> {
+                    b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                    if (printJavaDocs) {
+                        extractJavaDocComments(state, methodIndex, b);
+                        b.addJavadoc(JAVADOC_PARAM + ctx +
+                                " context associated with this service and request." + lineSeparator());
+                    }
+                    return b;
+                });
+
+        final boolean isDeprecated = methodSpec.annotations.contains(AnnotationSpec.builder(Deprecated.class).build());
+        if (!skipDeprecated) {
+            interfaceSpecBuilder.addMethod(methodSpec);
+        } else {
+            if (!isDeprecated) {
+                interfaceSpecBuilder.addMethod(methodSpec);
+            }
+        }
 
         if (!skipDeprecated) {
             final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, PATH)
@@ -408,13 +419,17 @@ final class Generator {
                     methodProto.getClientStreaming(), methodProto.getServerStreaming(),
                     EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE), printJavaDocs,
                     (__, b) -> {
-                        b.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
-                        if (printJavaDocs) {
-                            extractJavaDocComments(state, methodIndex, b);
-                            b.addJavadoc(JAVADOC_PARAM + ctx +
-                                    " context associated with this service and request." + lineSeparator());
+                        if (isDeprecated && skipDeprecated) {
+                            b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                        } else {
+                            b.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, b);
+                                b.addJavadoc(JAVADOC_PARAM + ctx +
+                                        " context associated with this service and request." + lineSeparator());
+                            }
+                            b.addStatement("$L($L, $L, $L.sendMetaData())", javaMethodName, ctx, request, response);
                         }
-                        b.addStatement("$L($L, $L, $L.sendMetaData())", javaMethodName, ctx, request, response);
                         return b;
                     }));
         }
@@ -1610,30 +1625,35 @@ final class Generator {
                         : blocking ? BlockingRoute : Route);
     }
 
-    private static CodeBlock routeDefinition(final RpcInterface rpcInterface, final String routeName,
+    private CodeBlock routeDefinition(final RpcInterface rpcInterface, final String routeName,
                                              final ClassName inClass, final ClassName outClass) {
         final ClassName routeInterfaceClass = routeInterfaceClass(rpcInterface.methodProto, rpcInterface.blocking);
         final TypeName routeType = ParameterizedTypeName.get(routeInterfaceClass, inClass, outClass);
         if (rpcInterface.blocking && rpcInterface.methodProto.getServerStreaming()) {
+            final TypeSpec.Builder anonymousClassBuilder = anonymousClassBuilder("");
+
+            if (!skipDeprecated) {
+                anonymousClassBuilder.addMethod(methodBuilder(handle)
+                        .addAnnotation(Override.class)
+                        .addAnnotation(Deprecated.class)
+                        .addModifiers(PUBLIC)
+                        .addException(Exception.class)
+                        .addParameter(GrpcServiceContext, ctx)
+                        .addParameter(rpcInterface.methodProto.getClientStreaming() ?
+                                        ParameterizedTypeName.get(BlockingIterable, inClass) :
+                                        inClass,
+                                request)
+                        .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
+                                responseWriter)
+                        .addStatement("$L.$L($L, $L, $L)",
+                                rpc, routeName, ctx, request, responseWriter)
+                        .build());
+            }
+
             return CodeBlock.builder()
                     .addStatement("final $T $N = $L",
-                            routeType, route, anonymousClassBuilder("")
+                            routeType, route, anonymousClassBuilder
                                     .addSuperinterface(routeType)
-                                    .addMethod(methodBuilder(handle)
-                                            .addAnnotation(Override.class)
-                                            .addAnnotation(Deprecated.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addParameter(GrpcServiceContext, ctx)
-                                            .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                                            ParameterizedTypeName.get(BlockingIterable, inClass) :
-                                                            inClass,
-                                                    request)
-                                            .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
-                                                    responseWriter)
-                                            .addStatement("$L.$L($L, $L, $L)",
-                                                    rpc, routeName, ctx, request, responseWriter)
-                                            .build())
                                     .addMethod(methodBuilder(handle)
                                             .addAnnotation(Override.class)
                                             .addModifiers(PUBLIC)
