@@ -18,10 +18,13 @@ package io.servicetalk.examples.http.traffic.resilience;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
 import io.servicetalk.circuit.breaker.api.CircuitBreaker;
 import io.servicetalk.circuit.breaker.resilience4j.Resilience4jAdapters;
-import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
 
+/**
+ * An example demonstrating the selection of the appropriate circuit breaker based on request metadata.
+ */
 public final class TrafficResilienceClientBreakersExample {
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpClientFilter resilienceFilter =
@@ -29,22 +32,26 @@ public final class TrafficResilienceClientBreakersExample {
                         .circuitBreakerPartitions(() -> {
                             final CircuitBreaker breakerForPathA = Resilience4jAdapters.fromCircuitBreaker(
                                     io.github.resilience4j.circuitbreaker.CircuitBreaker.ofDefaults("example-a"));
-                            final CircuitBreaker breakerForPathB = Resilience4jAdapters.fromCircuitBreaker(
+                            final CircuitBreaker breakerForNonAPaths = Resilience4jAdapters.fromCircuitBreaker(
                                     io.github.resilience4j.circuitbreaker.CircuitBreaker.ofDefaults("example-b"));
 
                             return requestMetaData -> {
                                 if ("/A".equals(requestMetaData.requestTarget())) {
                                     return breakerForPathA;
                                 }
-                                return breakerForPathB;
+                                return breakerForNonAPaths;
                             };
                         })
                         .build();
 
-        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .appendClientFilter(resilienceFilter)
-                .build()) {
-            // use client
+                .build()
+                .asBlockingClient()) {
+            // Will use breakerForPathA
+            client.request(client.get("/A"));
+            // Will use breakerForNonAPaths
+            client.request(client.get("/other"));
         }
     }
 }

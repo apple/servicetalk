@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.dynamicGradientOptimizeForThroughput;
 
+/**
+ * An example that demonstrates using the observer pattern to instrument the gradient capacity limiter.
+ */
 public final class GradientObservabilityExample {
 
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})

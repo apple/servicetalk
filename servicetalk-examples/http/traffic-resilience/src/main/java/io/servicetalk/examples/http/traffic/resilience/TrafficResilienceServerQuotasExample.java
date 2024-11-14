@@ -17,7 +17,6 @@ package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiter;
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
@@ -25,6 +24,9 @@ import static io.servicetalk.capacity.limiter.api.CapacityLimiters.composite;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static java.util.Arrays.asList;
 
+/**
+ * A server that uses fixed capacity limiters based on the customer identity, as determined by the request metadata.
+ */
 public final class TrafficResilienceServerQuotasExample {
     static final CharSequence CUSTOMER = "x-customer";
     static final CharSequence CUSTOMER_X = "X";
@@ -39,8 +41,9 @@ public final class TrafficResilienceServerQuotasExample {
                 }, true)
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())
+                .awaitShutdown();
     }
 }
