@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.traffic.resilience.http.ClientPeerRejectionPolicy;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpClientFilter;
@@ -29,7 +30,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
  * client.
  */
 public final class TrafficResilienceClientPeerRejectionsPassthroughExample {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpClientFilter resilienceFilter =
                 new TrafficResilienceHttpClientFilter.Builder(() -> CapacityLimiters.dynamicGradient().build())
                         .rejectionPolicy(ClientPeerRejectionPolicy.ofPassthrough(metaData ->
@@ -38,8 +39,11 @@ public final class TrafficResilienceClientPeerRejectionsPassthroughExample {
                                 metaData.status().code() == SERVICE_UNAVAILABLE.code()))
                         .build();
 
-        HttpClients.forSingleAddress("localhost", 8080)
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .appendClientFilter(resilienceFilter)
-                .build();
+                .build()
+                .asBlockingClient()) {
+            client.request(client.get("/foo"));
+        }
     }
 }

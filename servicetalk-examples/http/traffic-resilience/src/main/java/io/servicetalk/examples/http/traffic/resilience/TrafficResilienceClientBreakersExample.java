@@ -46,7 +46,8 @@ public final class TrafficResilienceClientBreakersExample {
 
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .appendClientFilter(resilienceFilter)
-                .build().asBlockingClient()) {
+                .build()
+                .asBlockingClient()) {
             // Will use breakerForPathA
             client.request(client.get("/A"));
             // Will use breakerForNonAPaths
