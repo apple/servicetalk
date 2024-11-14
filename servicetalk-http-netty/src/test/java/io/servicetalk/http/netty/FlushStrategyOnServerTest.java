@@ -26,9 +26,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -66,8 +64,10 @@ class FlushStrategyOnServerTest {
     private static final String USE_AGGREGATED_RESP = "aggregated-resp";
     private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
-    private OutboundWriteEventsInterceptor interceptor;
+    private final OutboundWriteEventsInterceptor interceptor = new OutboundWriteEventsInterceptor();
+    @Nullable
     private ServerContext serverContext;
+    @Nullable
     private BlockingHttpClient client;
 
     private enum Param {
@@ -81,8 +81,6 @@ class FlushStrategyOnServerTest {
     }
 
     private void setUp(final Param param) throws Exception {
-        this.interceptor = new OutboundWriteEventsInterceptor();
-
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok();
             if (request.headers().get(USE_EMPTY_RESP_BODY) == null) {
@@ -257,6 +255,7 @@ class FlushStrategyOnServerTest {
     }
 
     private void sendARequest(boolean useAggregatedResp, boolean useEmptyRespBody) throws Exception {
+        assert client != null;
         HttpRequest request = client.get("/")
                 .setHeader(TRANSFER_ENCODING, CHUNKED)
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello"));
@@ -327,18 +326,6 @@ class FlushStrategyOnServerTest {
 
         @Override
         public void connectionClosed() {
-        }
-    }
-
-    private static final class NoFlushStrategy implements FlushStrategy {
-        @Override
-        public WriteEventsListener apply(final FlushSender sender) {
-            return new NoopWriteEventsListener() { /* noop */ };
-        }
-
-        @Override
-        public boolean shouldFlushOnUnwritable() {
-            return false;
         }
     }
 }

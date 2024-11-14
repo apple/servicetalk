@@ -88,13 +88,13 @@ class FlushStrategyOnClientTest {
         }
     }
 
-    private StreamingHttpRequest newRequest(StreamingHttpConnection connection, String path) {
+    private static StreamingHttpRequest newRequest(StreamingHttpConnection connection, String path) {
         BufferAllocator alloc = connection.executionContext().bufferAllocator();
         return connection.post(path)
                 .payloadBody(Publisher.from(alloc.fromAscii("foo"), alloc.fromAscii("bar")));
     }
 
-    private void assertResponse(Future<StreamingHttpResponse> responseFuture) throws Exception {
+    private static void assertResponse(Future<StreamingHttpResponse> responseFuture) throws Exception {
         StreamingHttpResponse response = responseFuture.get();
         assertThat(response.status(), is(OK));
         Buffer payload = response.toResponse().toFuture().get().payloadBody();
