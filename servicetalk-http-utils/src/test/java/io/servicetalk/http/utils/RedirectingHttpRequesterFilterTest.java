@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -50,6 +51,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +65,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -126,12 +129,13 @@ class RedirectingHttpRequesterFilterTest {
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
+    private static final ContextMap.Key<String> UUID_KEY = newKey("UUID_KEY", String.class);
 
     private final StreamingHttpRequester httpClient = mock(StreamingHttpRequester.class);
     private final Queue<TestPublisher<Buffer>> redirectResponsePayloads = new LinkedBlockingDeque<>();
 
     private static StreamingHttpRequest newRequest(StreamingHttpRequestFactory reqFactory, HttpRequestMethod method) {
-        return reqFactory.newRequest(method, "/path")
+        StreamingHttpRequest request = reqFactory.newRequest(method, "/path")
                 .setHeader(HOST, "servicetalk.io")
                 .setHeader(CUSTOM_HEADER, CUSTOM_VALUE)
                 .setHeader(TRANSFER_ENCODING, CHUNKED)
@@ -143,6 +147,8 @@ class RedirectingHttpRequesterFilterTest {
                         return trailers;
                     }
                 });
+        request.context().put(UUID_KEY, UUID.randomUUID().toString());
+        return request;
     }
 
     private static Single<StreamingHttpResponse> okResponse() {
@@ -781,6 +787,8 @@ class RedirectingHttpRequesterFilterTest {
         if (expectedMethod != null) {
             assertThat("Unexpected request method", redirectedRequest.method(), is(expectedMethod));
         }
+        assertThat("Request context not preserved after redirect",
+                redirectedRequest.context().get(UUID_KEY), is(sameInstance(request.context().get(UUID_KEY))));
         return redirectedRequest;
     }
 }

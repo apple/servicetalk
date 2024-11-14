@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -41,7 +40,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
@@ -282,10 +280,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             }
             // nothing to do if non-relative redirects are not allowed
 
-            final HttpExecutionStrategy strategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-            if (strategy != null) {
-                redirectRequest.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            }
+            // Carry forward the full context:
+            redirectRequest.context(request.context());
 
             return redirectRequest;
         }
