@@ -62,6 +62,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
@@ -102,6 +103,8 @@ import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEffectiveStrategyTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -577,14 +580,14 @@ class ClientEffectiveStrategyTest {
                 //  at Send, but was running on an offloading executor thread: client-executor-7-5.
                 //  clientStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY, expectedStrategy=OFFLOAD_NONE_STRATEGY,
                 //  requestStrategy=DEFAULT_HTTP_EXECUTION_STRATEGY"
-                if (t.getMessage().contains("at Send, but was running on an offloading executor thread")) {
+                if (clientApi == ClientApi.BLOCKING_AGGREGATED && t.getMessage().contains(
+                        "but was running on an offloading executor thread")) {
                     firstFlakyException = firstFlakyException == null ? t : firstFlakyException;
                     it.remove();
                 }
             }
             if (firstFlakyException != null) {
-                LoggerFactory.getLogger(ClientEffectiveStrategyTest.class)
-                        .warn(firstFlakyException, () -> "Flaky throwable detected. Ignoring until test can be fixed.");
+                LOGGER.warn(firstFlakyException, () -> "Flaky throwable detected. Ignoring until test can be fixed.");
             }
             verifyOffloads(clientApi, clientStrategy, apiStrategy);
         }
