@@ -250,14 +250,17 @@ final class Generator {
     private final ServiceCommentsMap serviceCommentsMap;
     private final boolean printJavaDocs;
     private final boolean skipDeprecated;
+    private final boolean defaultServiceMethods;
 
     Generator(final GenerationContext context, final Map<String, ClassName> messageTypesMap,
-              final boolean printJavaDocs, final boolean skipDeprecated, SourceCodeInfo sourceCodeInfo) {
+              final boolean printJavaDocs, final boolean skipDeprecated, final boolean defaultServiceMethods,
+              SourceCodeInfo sourceCodeInfo) {
         this.context = context;
         this.messageTypesMap = messageTypesMap;
         this.serviceCommentsMap = printJavaDocs ? new DefaultServiceCommentsMap(sourceCodeInfo) : NOOP_MAP;
         this.printJavaDocs = printJavaDocs;
         this.skipDeprecated = skipDeprecated;
+        this.defaultServiceMethods = defaultServiceMethods;
     }
 
     /**
@@ -1638,6 +1641,33 @@ final class Generator {
                 .returns(GrpcMethodDescriptorCollection)
                 .addStatement("return $L", blocking ? BLOCKING_METHOD_DESCRIPTORS : ASYNC_METHOD_DESCRIPTORS)
                 .build());
+
+        // generate default service methods
+        if (defaultServiceMethods) {
+            for (int i = 0; i < state.serviceProto.getMethodList().size(); i++) {
+                final MethodDescriptorProto methodProto = state.serviceProto.getMethodList().get(i);
+                final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
+                final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
+                final String methodName = sanitizeIdentifier(methodProto.getName(), true);
+                final int methodIndex = i;
+                interfaceSpecBuilder.addMethod(newRpcMethodSpec(inClass, outClass, methodName,
+                        methodProto.getClientStreaming(),
+                        methodProto.getServerStreaming(),
+                        !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
+                        printJavaDocs, (__, c) -> {
+                            c.addModifiers(DEFAULT)
+                                    .addParameter(GrpcServiceContext, ctx)
+                                    .addStatement("throw new UnsupportedOperationException(\"Method " + methodName +
+                                            " is unimplemented\")");
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, c);
+                                c.addJavadoc(JAVADOC_PARAM + ctx +
+                                        " context associated with this service and request." + lineSeparator());
+                            }
+                            return c;
+                        }));
+            }
+        }
 
         return interfaceSpecBuilder.build();
     }

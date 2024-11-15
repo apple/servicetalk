@@ -76,6 +76,7 @@ protobuf {
           option 'typeNameSuffix=St'
           // Option to tell the compiler to exclude all Deprecated fields, types, and methods from the output
           option 'skipDeprecated=true'
+          option 'defaultServiceMethods=true'
         }
       }
     }
