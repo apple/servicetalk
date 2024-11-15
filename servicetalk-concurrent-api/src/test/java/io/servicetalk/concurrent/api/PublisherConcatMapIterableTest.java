@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -38,6 +40,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -46,8 +49,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.Function.identity;
+import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -420,6 +425,20 @@ class PublisherConcatMapIterableTest {
         subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two", "three"));
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void concurrencyEmitsInOrder() throws Exception {
+        try (BlockingIterator<Integer> iterable = fromIterable(() -> range(0, 10_000).iterator())
+                .publishOn(Executors.global())
+                .flatMapConcatIterable(Collections::singletonList)
+                .toIterable()
+                .iterator()) {
+            int expected = 0;
+            while (iterable.hasNext()) {
+                assertThat(iterable.next(), equalTo(expected++));
+            }
+        }
     }
 
     private void verifyTermination(boolean success) {

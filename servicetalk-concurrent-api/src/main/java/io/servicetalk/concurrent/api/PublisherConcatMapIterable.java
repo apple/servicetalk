@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -57,6 +58,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapIterableSubscriber> emittingUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapIterableSubscriber.class, "emitting");
+        @SuppressWarnings("rawtypes")
+        private static final AtomicReferenceFieldUpdater<FlatMapIterableSubscriber, Iterator> iterUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(FlatMapIterableSubscriber.class, Iterator.class, "iterator");
         private final Function<? super T, ? extends Iterable<? extends U>> mapper;
         private final Subscriber<? super U> target;
         @Nullable
@@ -74,7 +78,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
          * <p>
          * Visibility and thread safety provided by {@link #emitting}.
          */
-        private Iterator<? extends U> currentIterator = emptyIterator();
+        private volatile Iterator<? extends U> iterator = emptyIterator();
         @SuppressWarnings("unused")
         private volatile long requestN;
         @SuppressWarnings("unused")
@@ -98,8 +102,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         public void onNext(T u) {
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
-            currentIterator = requireNonNull(mapper.apply(u).iterator(),
-                    () -> "Iterator from mapper " + mapper + " is null");
+            // Safe to assign because we only ever have demand outstanding of 1, so we never
+            // should concurrently access nextIterator or have multiple iterators being valid at any given time.
+            iterator = requireNonNull(mapper.apply(u).iterator(), () -> "Iterator from mapper " + mapper + " is null");
             tryDrainIterator(ErrorHandlingStrategyInDrain.Throw);
         }
 
@@ -151,8 +156,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         private void doCancel() {
             assert sourceSubscription != null;
-            final Iterator<? extends U> currentIterator = this.currentIterator;
-            this.currentIterator = EmptyIterator.instance();
+            @SuppressWarnings("unchecked")
+            final Iterator<? extends U> currentIterator =
+                    (Iterator<? extends U>) iterUpdater.getAndSet(this, EmptyIterator.instance());
             try {
                 tryClose(currentIterator);
             } finally {
@@ -181,13 +187,14 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                 if (!tryAcquireLock(emittingUpdater, this)) {
                     break;
                 }
+                Iterator<? extends U> currIter = iterator;
                 long currRequestN = this.requestN;
                 final long initialRequestN = currRequestN;
                 try {
                     try {
-                        while ((hasNext = currentIterator.hasNext()) && currRequestN > 0) {
+                        while ((hasNext = currIter.hasNext()) && currRequestN > 0) {
                             --currRequestN;
-                            target.onNext(currentIterator.next());
+                            target.onNext(currIter.next());
                         }
                     } catch (Throwable cause) {
                         switch (errorHandlingStrategyInDrain) {
@@ -199,16 +206,16 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                             case Propagate:
                                 terminated = true;
                                 safeOnError(target, cause);
-                                tryClose(currentIterator);
+                                tryClose(currIter);
                                 return; // hard return to avoid potential for duplicate terminal events
                             case Throw:
                                 // since we only request 1 at a time we maybe holding requestN demand, in this case we
                                 // discard the current iterator and request 1 more from upstream (if there is demand).
                                 hasNext = false;
                                 thrown = true;
-                                final Iterator<? extends U> currentIterator = this.currentIterator;
-                                this.currentIterator = EmptyIterator.instance();
-                                tryClose(currentIterator);
+                                iterUpdater.compareAndSet(this, currIter, EmptyIterator.instance());
+                                tryClose(currIter);
+                                currIter = EmptyIterator.instance();
                                 // let the exception propagate so the upstream source can do the cleanup.
                                 throw cause;
                             default:
@@ -235,15 +242,16 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                     doCancel();
                                 }
                             } else if (terminalNotification == null && !hasNext && currRequestN > 0 &&
-                                    (currentIterator != EmptyIterator.instance() || thrown)) {
-                                // We only request 1 at a time, and therefore we don't have any outstanding demand, so
-                                // we will not be getting an onNext call, so we write to the currentIterator variable
-                                // here before we unlock emitting so visibility to other threads should be taken care of
-                                // by the write to emitting below (and later read).
-                                currentIterator = EmptyIterator.instance();
-                                if (sourceSubscription != null) {
-                                    sourceSubscription.request(1);
-                                }
+                                    (currIter != EmptyIterator.instance() || thrown) &&
+                                    // We only request 1 at a time, and therefore we don't have outstanding demand.
+                                    // We will not be getting an onNext call concurrently, but the onNext(..) call may
+                                    // be on a different thread outside the emitting lock. For this reason we do a CAS
+                                    // to ensure the currIter read at the beginning of the outer loop is still the
+                                    // current iterator. If the CAS fails the outer loop will re-read iterator and try
+                                    // to emit if items are present and demand allows it.
+                                    iterUpdater.compareAndSet(this, currIter, EmptyIterator.instance())) {
+                                assert sourceSubscription != null;
+                                sourceSubscription.request(1);
                             }
                         } finally {
                             // The lock must be released after we interact with the subscription for thread safety
