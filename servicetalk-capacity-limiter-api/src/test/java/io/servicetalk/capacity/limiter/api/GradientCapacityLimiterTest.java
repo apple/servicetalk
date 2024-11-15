@@ -114,12 +114,12 @@ class GradientCapacityLimiterTest {
         ticket.failed(SAD_EXCEPTION);
 
         // ticket failure will not use gradient
-        verify(observer).onLimitChange(eq(0.0), eq(0.0), eq(-1.0), eq(100.0), eq(50.0));
+        verify(observer).onLimitChange(eq(-1.0), eq(-1.0), eq(-1.0), eq(100.0), eq(50.0));
 
         ticket = capacityLimiter.tryAcquire(DEFAULT, null);
         currentTime += Duration.ofMillis(50).toNanos();
         // Ticket success should adjust observation upward.
         ticket.completed();
-        verify(observer).onLimitChange(not(eq(0.0)), not(eq(0.0)), not(eq(-1.0)), anyDouble(), anyDouble());
+        verify(observer).onLimitChange(not(eq(-1.0)), not(eq(-1.0)), not(eq(-1.0)), anyDouble(), anyDouble());
     }
 }

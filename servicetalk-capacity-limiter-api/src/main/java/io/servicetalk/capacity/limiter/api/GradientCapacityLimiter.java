@@ -218,7 +218,8 @@ final class GradientCapacityLimiter implements CapacityLimiter {
 
         if (oldLimit != newLimit) {
             // latencies and gradient were not involved in the calculations
-            observer.onLimitChange(0.0 /*longLatencyMillis*/, 0.0 /*shortLatencyMillis*/, -1.0 /*gradient*/, oldLimit, newLimit);
+            observer.onLimitChange(
+                    -1.0 /*longLatencyMillis*/, -1.0 /*shortLatencyMillis*/, -1.0 /*gradient*/, oldLimit, newLimit);
         }
         observer.onActiveRequestsDecr();
         return (int) (newLimit - newPending);

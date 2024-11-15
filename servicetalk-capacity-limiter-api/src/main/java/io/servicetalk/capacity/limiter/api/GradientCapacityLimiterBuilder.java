@@ -329,6 +329,9 @@ public final class GradientCapacityLimiterBuilder {
 
     /**
      * A state observer for Gradient {@link CapacityLimiter} to monitor internal state changes.
+     *
+     * Note: callbacks are not guaranteed to be executed sequentially or in exactly the same order that state changes
+     * occurred.
      */
     public interface Observer {
 
