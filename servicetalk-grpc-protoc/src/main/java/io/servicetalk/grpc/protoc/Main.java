@@ -92,7 +92,7 @@ public final class Main {
      */
     private static final String PRINT_JAVA_DOCS_OPTION = "javaDocs";
     /**
-     * Supports an option to disable generating calls to deprecated libraries.
+     * Supports an option to disable generating deprecated API.
      * <p>
      * Gradle:
      * <pre>
