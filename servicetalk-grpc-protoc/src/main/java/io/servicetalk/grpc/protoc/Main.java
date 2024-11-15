@@ -111,6 +111,10 @@ public final class Main {
      *   </args>
      * </protocPlugin>
      * }</pre>
+     * <p>
+     * This option can be useful for users who have their javac configured to treat usage of deprecated code as error.
+     * However, it will certainly cause breaking API changes when users upgrade ServiceTalk version and re-generate code
+     * from protos.
      */
     private static final String SKIP_DEPRECATED_CODE = "skipDeprecated";
     private Main() {
