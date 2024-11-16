@@ -694,14 +694,11 @@ final class Generator {
                             .build());
         });
 
-        serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
+        final MethodSpec.Builder addServiceBuilder = methodBuilder(addService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.serviceClass, service, FINAL)
-                .addStatement("$T.requireNonNull($L)", Objects, service)
-                .addStatement("$L($L)", registerRoutes, service)
-                .addStatement("return this")
-                .build());
+                .addStatement("$T.requireNonNull($L)", Objects, service);
 
         if (!skipDeprecated) {
             serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
@@ -740,9 +737,12 @@ final class Generator {
                     if (!skipDeprecated) {
                         registerRoutesMethodSpecBuilder.addStatement("$L($L)", n, service);
                     }
+                    addServiceBuilder.addStatement("$L($L)", n, service);
                     addBlockingServiceMethodSpecBuilder.addStatement("$L$L($L)", n, Blocking, service);
                 });
 
+        addServiceBuilder.addStatement("return this");
+        serviceBuilderSpecBuilder.addMethod(addServiceBuilder.build());
         addBlockingServiceMethodSpecBuilder.addStatement("return this");
 
         final TypeSpec.Builder serviceBuilder = serviceBuilderSpecBuilder
@@ -1049,17 +1049,13 @@ final class Generator {
             } else {
                 clientSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                         printJavaDocs, (methodName, b) -> {
-                            b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
+                            b.addModifiers(ABSTRACT).addParameter(GrpcClientMetadata, metadata);
                             if (printJavaDocs) {
                                 extractJavaDocComments(state, methodIndex, b);
                                 b.addJavadoc(JAVADOC_PARAM + metadata +
                                         " the metadata associated with this client call." + lineSeparator());
                             }
-                            return b.addStatement("return $T.failed(new UnsupportedOperationException(\"" +
-                                    "This method is not implemented by \" + getClass() + \". Consider migrating " +
-                                    "to an alternative method or implement this method if it's required " +
-                                    "temporarily.\"))", clientMetaData.methodProto.getServerStreaming() ?
-                                    Publisher : Single);
+                            return b;
                         }));
             }
 
@@ -1115,17 +1111,13 @@ final class Generator {
                 blockingClientSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto,
                         EnumSet.of(BLOCKING, INTERFACE, CLIENT),
                         printJavaDocs, (methodName, b) -> {
-                            b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
+                            b.addModifiers(ABSTRACT).addParameter(GrpcClientMetadata, metadata);
                             if (printJavaDocs) {
                                 extractJavaDocComments(state, methodIndex, b);
                                 b.addJavadoc(JAVADOC_PARAM + metadata +
                                         " the metadata associated with this client call." + lineSeparator());
                             }
-                            return b.addStatement("throw new UnsupportedOperationException(\"" +
-                                    "This method is not implemented by \" + getClass() + \". " +
-                                    "Consider migrating " +
-                                    "to an alternative method or implement this method if it's required " +
-                                    "temporarily.\")");
+                            return b;
                         }
                 ));
             }
@@ -1152,25 +1144,39 @@ final class Generator {
         final ClassName defaultBlockingClientClass = clientFactoryClass.nestedClass(Default +
                 state.blockingClientClass.simpleName());
 
+        final MethodSpec.Builder newClientMethodBuilder = methodBuilder("newClient")
+                .addModifiers(PROTECTED)
+                .addAnnotation(Override.class)
+                .returns(state.clientClass)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            newClientMethodBuilder.addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
+                    supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            newClientMethodBuilder.addStatement("return new $T($L, $L())", defaultClientClass, factory,
+                    bufferDecoderGroup);
+        }
+
+        final MethodSpec.Builder newBlockingClientMethodBuilder = methodBuilder("newBlockingClient")
+                .addModifiers(PROTECTED)
+                .addAnnotation(Override.class)
+                .returns(state.blockingClientClass)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            newBlockingClientMethodBuilder.addStatement("return new $T($L, $L(), $L())", defaultBlockingClientClass,
+                    factory, supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            newBlockingClientMethodBuilder.addStatement("return new $T($L, $L())", defaultBlockingClientClass,
+                    factory, bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)
                 .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass))
-                .addMethod(methodBuilder("newClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
-                                supportedMessageCodings, bufferDecoderGroup)
-                        .build())
-                .addMethod(methodBuilder("newBlockingClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L(), $L())", defaultBlockingClientClass, factory,
-                                supportedMessageCodings, bufferDecoderGroup)
-                        .build())
+                .addMethod(newClientMethodBuilder.build())
+                .addMethod(newBlockingClientMethodBuilder.build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
                 .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass));
 
@@ -1366,32 +1372,46 @@ final class Generator {
 
     private TypeSpec newDefaultBlockingClientClassSpec(final State state, final ClassName defaultClientClass,
                                                        final ClassName defaultBlockingClientClass) {
+        final MethodSpec.Builder asClientMethodBuilder = methodBuilder("asClient")
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(state.clientClass);
+
+        // TODO: Cache client
+        if (!skipDeprecated) {
+            asClientMethodBuilder.addStatement("return new $T($L, $L, $L)", defaultClientClass, factory,
+                    supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            asClientMethodBuilder.addStatement("return new $T($L, $L)", defaultClientClass, factory,
+                    bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder typeSpecBuilder = classBuilder(defaultBlockingClientClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(state.blockingClientClass)
                 .addField(GrpcClientCallFactory, factory, PRIVATE, FINAL)
-                .addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL)
                 .addField(BufferDecoderGroup, bufferDecoderGroup, PRIVATE, FINAL)
-                .addMethod(methodBuilder("asClient")
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T($L, $L, $L)", defaultClientClass, factory, supportedMessageCodings,
-                                bufferDecoderGroup)
-                        .build())
+                .addMethod(asClientMethodBuilder.build())
                 .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
                         factory));
 
+        if (!skipDeprecated) {
+            typeSpecBuilder.addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL);
+        }
+
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
-                .addParameter(GrpcClientCallFactory, factory, FINAL)
-                .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                .addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            constructorBuilder.addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                    .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings);
+        }
+
+        constructorBuilder.addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
                 .addStatement("this.$N = $N", factory, factory)
-                .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings)
                 .addStatement("this.$N = $N", bufferDecoderGroup, bufferDecoderGroup);
 
         addClientFieldsAndMethods(state, typeSpecBuilder, constructorBuilder, true);
@@ -1402,20 +1422,26 @@ final class Generator {
 
     private TypeSpec newDefaultClientClassSpec(final State state, final ClassName defaultClientClass,
                                                final ClassName defaultBlockingClientClass) {
+        final MethodSpec.Builder asClientMethodBuilder = methodBuilder(asBlockingClient)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(state.blockingClientClass);
+
+        if (!skipDeprecated) {
+            // TODO: Cache client
+            asClientMethodBuilder.addStatement("return new $T($L, $L, $L)", defaultBlockingClientClass,
+                    factory, supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            asClientMethodBuilder.addStatement("return new $T($L, $L)", defaultBlockingClientClass,
+                    factory, bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder typeSpecBuilder = classBuilder(defaultClientClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(state.clientClass)
                 .addField(GrpcClientCallFactory, factory, PRIVATE, FINAL)
-                .addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL)
                 .addField(BufferDecoderGroup, bufferDecoderGroup, PRIVATE, FINAL)
-                .addMethod(methodBuilder(asBlockingClient)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T($L, $L, $L)", defaultBlockingClientClass,
-                                factory, supportedMessageCodings, bufferDecoderGroup)
-                        .build())
+                .addMethod(asClientMethodBuilder.build())
                 .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(onClosing, factory))
@@ -1425,13 +1451,22 @@ final class Generator {
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
                         factory));
 
+        if (!skipDeprecated) {
+            typeSpecBuilder.addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL);
+        }
+
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
-                .addParameter(GrpcClientCallFactory, factory, FINAL)
-                .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                .addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            constructorBuilder
+                    .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                    .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings);
+        }
+
+        constructorBuilder.addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
                 .addStatement("this.$N = $N", factory, factory)
-                .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings)
                 .addStatement("this.$N = $N", bufferDecoderGroup, bufferDecoderGroup);
 
         addClientFieldsAndMethods(state, typeSpecBuilder, constructorBuilder, false);
@@ -1632,23 +1667,28 @@ final class Generator {
         if (rpcInterface.blocking && rpcInterface.methodProto.getServerStreaming()) {
             final TypeSpec.Builder anonymousClassBuilder = anonymousClassBuilder("");
 
+            final MethodSpec.Builder handleMethodSpecBuilder = methodBuilder(handle)
+                    .addAnnotation(Override.class)
+                    .addAnnotation(Deprecated.class)
+                    .addModifiers(PUBLIC)
+                    .addException(Exception.class)
+                    .addParameter(GrpcServiceContext, ctx)
+                    .addParameter(rpcInterface.methodProto.getClientStreaming() ?
+                                    ParameterizedTypeName.get(BlockingIterable, inClass) :
+                                    inClass,
+                            request)
+                    .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
+                            responseWriter);
+
             if (!skipDeprecated) {
-                anonymousClassBuilder.addMethod(methodBuilder(handle)
-                        .addAnnotation(Override.class)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addException(Exception.class)
-                        .addParameter(GrpcServiceContext, ctx)
-                        .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                        ParameterizedTypeName.get(BlockingIterable, inClass) :
-                                        inClass,
-                                request)
-                        .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
-                                responseWriter)
-                        .addStatement("$L.$L($L, $L, $L)",
-                                rpc, routeName, ctx, request, responseWriter)
-                        .build());
+                handleMethodSpecBuilder.addStatement("$L.$L($L, $L, $L)",
+                        rpc, routeName, ctx, request, responseWriter);
+            } else {
+                handleMethodSpecBuilder.addStatement("new UnsupportedOperationException(\"" +
+                        "This method is deprecated and should not be called by generated code. \")");
             }
+
+            anonymousClassBuilder.addMethod(handleMethodSpecBuilder.build());
 
             return CodeBlock.builder()
                     .addStatement("final $T $N = $L",

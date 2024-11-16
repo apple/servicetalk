@@ -1333,10 +1333,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * will be used.
          */
         @Deprecated
-        default void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - add default impl
-                    GrpcPayloadWriter<Resp> responseWriter) throws Exception {
-            throw new UnsupportedOperationException("This method is not used starting from version 0.42.0");
-        }
+        void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - add default impl
+                    GrpcPayloadWriter<Resp> responseWriter) throws Exception;
 
         /**
          * Handles the passed {@link Req}.
@@ -1347,8 +1345,10 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
          * @throws Exception If an exception occurs during request processing.
          */
-        void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,
-                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception;
+        default void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - remove default impl
+                            BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+            handle(ctx, request, response.sendMetaData());
+        }
 
         @Override
         default void close() throws Exception {
@@ -1489,10 +1489,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * implementation will be used.
          */
         @Deprecated // FIXME: 0.43 - add default impl
-        default void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter)
-                throws Exception {
-            throw new UnsupportedOperationException("This method is not used starting from version 0.42.0");
-        }
+        void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter)
+                throws Exception;
 
         /**
          * Handles the passed {@link Req}.
@@ -1503,8 +1501,10 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
          * @throws Exception If an exception occurs during request processing.
          */
-        void handle(GrpcServiceContext ctx, Req request,  // FIXME: 0.43 - remove default impl
-                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception;
+        default void handle(GrpcServiceContext ctx, Req request,  // FIXME: 0.43 - remove default impl
+                            BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+            handle(ctx, request, response.sendMetaData());
+        }
 
         @Override
         default void close() throws Exception {
