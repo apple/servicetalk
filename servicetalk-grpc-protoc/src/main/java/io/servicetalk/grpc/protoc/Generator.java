@@ -1684,8 +1684,8 @@ final class Generator {
                 handleMethodSpecBuilder.addStatement("$L.$L($L, $L, $L)",
                         rpc, routeName, ctx, request, responseWriter);
             } else {
-                handleMethodSpecBuilder.addStatement("new UnsupportedOperationException(\"" +
-                        "This method is deprecated and should not be called by generated code. \")");
+                handleMethodSpecBuilder.addStatement("throw new UnsupportedOperationException(\"" +
+                        "This method is deprecated and should not be called by router or any generated code.\")");
             }
 
             anonymousClassBuilder.addMethod(handleMethodSpecBuilder.build());
