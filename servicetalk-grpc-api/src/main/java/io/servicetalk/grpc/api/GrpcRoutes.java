@@ -1346,7 +1346,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * @throws Exception If an exception occurs during request processing.
          */
         default void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - remove default impl
-                            BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
             handle(ctx, request, response.sendMetaData());
         }
 
@@ -1489,8 +1489,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * implementation will be used.
          */
         @Deprecated // FIXME: 0.43 - add default impl
-        void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter)
-                throws Exception;
+        void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter) throws Exception;
 
         /**
          * Handles the passed {@link Req}.
@@ -1502,7 +1501,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * @throws Exception If an exception occurs during request processing.
          */
         default void handle(GrpcServiceContext ctx, Req request,  // FIXME: 0.43 - remove default impl
-                            BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
             handle(ctx, request, response.sendMetaData());
         }
 
