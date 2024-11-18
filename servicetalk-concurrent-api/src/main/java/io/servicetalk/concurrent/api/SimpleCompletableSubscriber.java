@@ -40,13 +40,14 @@ final class SimpleCompletableSubscriber extends SequentialCancellable implements
     }
 
     SimpleCompletableSubscriber(final Runnable onComplete) {
-        this(onComplete, null);
+        this.onComplete = requireNonNull(onComplete);
+        this.errorConsumer = null;
     }
 
     SimpleCompletableSubscriber(final Runnable onComplete,
-                                @Nullable final Consumer<? super Throwable> errorConsumer) {
+                                final Consumer<? super Throwable> errorConsumer) {
         this.onComplete = requireNonNull(onComplete);
-        this.errorConsumer = errorConsumer;
+        this.errorConsumer = requireNonNull(errorConsumer);
     }
 
     @Override

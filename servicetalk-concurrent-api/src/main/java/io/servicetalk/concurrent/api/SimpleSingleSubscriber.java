@@ -36,13 +36,14 @@ final class SimpleSingleSubscriber<T> extends SequentialCancellable implements S
     private final Consumer<? super Throwable> errorConsumer;
 
     SimpleSingleSubscriber(final Consumer<? super T> resultConsumer) {
-        this(resultConsumer, null);
+        this.resultConsumer = requireNonNull(resultConsumer);
+        this.errorConsumer = null;
     }
 
     SimpleSingleSubscriber(final Consumer<? super T> resultConsumer,
-                           @Nullable final Consumer<? super Throwable> errorConsumer) {
+                           final Consumer<? super Throwable> errorConsumer) {
         this.resultConsumer = requireNonNull(resultConsumer);
-        this.errorConsumer = errorConsumer;
+        this.errorConsumer = requireNonNull(errorConsumer);
     }
 
     @Override
