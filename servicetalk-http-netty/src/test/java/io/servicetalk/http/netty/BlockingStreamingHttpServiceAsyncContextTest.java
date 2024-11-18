@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ServerContext;
 
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.lang.Thread.currentThread;
@@ -79,8 +80,8 @@ class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAs
                 request.payloadBody().forEach(__ -> { });
 
                 if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
-                    // verify that we actually are offloaded
-                    response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
+                    // verify that we are not offloaded
+                    response.status(BAD_GATEWAY).sendMetaData().close();
                     return;
                 }
 

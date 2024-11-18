@@ -54,7 +54,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
         // this ExecutionStrategy to understand if we need to offload more than we already offloaded:
         final HttpExecutionStrategy additionalOffloads = ctx.executionContext().executionStrategy().missing(strategy);
 
-        Executor useExecutor = null != executor ? executor : ctx.executionContext().executor();
+        final Executor useExecutor = executor != null ? executor : ctx.executionContext().executor();
 
         // The service should see this ExecutionStrategy and Executor inside the ExecutionContext:
         final HttpServiceContext wrappedCtx =
@@ -136,12 +136,12 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
                 new StreamingHttpService() {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                StreamingHttpRequest request,
+                                                                final StreamingHttpRequest request,
                                                                 final StreamingHttpResponseFactory responseFactory) {
-                        Executor useExecutor = null != executor ? executor : ctx.executionContext().executor();
+                        final Executor useExecutor = executor != null ? executor : ctx.executionContext().executor();
 
                         // The service should see this ExecutionStrategy and Executor inside the ExecutionContext:
-                        HttpServiceContext wrappedCtx =
+                        final HttpServiceContext wrappedCtx =
                                 new ExecutionContextOverridingServiceContext(ctx, strategy, useExecutor);
 
                         return service.handle(wrappedCtx, request, responseFactory);

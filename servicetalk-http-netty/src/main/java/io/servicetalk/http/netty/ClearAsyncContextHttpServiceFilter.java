@@ -32,8 +32,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
  */
 final class ClearAsyncContextHttpServiceFilter implements StreamingHttpServiceFilterFactory {
 
-    static final ClearAsyncContextHttpServiceFilter CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER =
-            new ClearAsyncContextHttpServiceFilter();
+    static final ClearAsyncContextHttpServiceFilter INSTANCE = new ClearAsyncContextHttpServiceFilter();
 
     private ClearAsyncContextHttpServiceFilter() {
         // singleton

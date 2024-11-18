@@ -30,25 +30,23 @@ import java.util.function.BooleanSupplier;
 final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
 
     private final HttpExecutionStrategy strategy;
-    private final StreamingHttpServiceFilterFactory offloaded;
     private final BooleanSupplier shouldOffload;
 
     /**
+     * Creates a new instance.
+     *
      * @param strategy Execution strategy for the offloaded filters
-     * @param offloaded Filters to be offloaded
      * @param shouldOffload returns true if offloading is appropriate for the current execution context.
      */
-    OffloadingFilter(HttpExecutionStrategy strategy, StreamingHttpServiceFilterFactory offloaded,
-                     BooleanSupplier shouldOffload) {
+    OffloadingFilter(final HttpExecutionStrategy strategy, final BooleanSupplier shouldOffload) {
         this.strategy = strategy;
-        this.offloaded = offloaded;
         this.shouldOffload = shouldOffload;
     }
 
     @Override
-    public StreamingHttpServiceFilter create(StreamingHttpService service) {
+    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         StreamingHttpService offloadedService = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                strategy, null, shouldOffload, offloaded.create(service));
+                strategy, null, shouldOffload, service);
         return new StreamingHttpServiceFilter(offloadedService);
     }
 
