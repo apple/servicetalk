@@ -25,8 +25,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.Test;
-
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -34,51 +32,11 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static java.lang.Thread.currentThread;
 
-class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
-
-    @Test
-    void newRequestsGetFreshContextImmediate() throws Exception {
-        newRequestsGetFreshContext(true);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesOffloadedAsyncService() throws Exception {
-        contextPreservedOverFilterBoundaries(false, false, true);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesOffloadedAsyncFilterAsyncService() throws Exception {
-        contextPreservedOverFilterBoundaries(false, true, true);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
-        contextPreservedOverFilterBoundaries(true, false, false);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffloadAsyncService() throws Exception {
-        contextPreservedOverFilterBoundaries(true, false, true);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffloadAsyncFilter() throws Exception {
-        contextPreservedOverFilterBoundaries(true, true, false);
-    }
-
-    @Test
-    void contextPreservedOverFilterBoundariesNoOffloadAsyncFilterAsyncService() throws Exception {
-        contextPreservedOverFilterBoundaries(true, true, true);
-    }
-
-    @Test
-    void connectionAcceptorContextDoesNotLeakImmediate() throws Exception {
-        connectionAcceptorContextDoesNotLeak(true);
-    }
+class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
-                                                     boolean useImmediate) throws Exception {
+                                                               boolean useImmediate) throws Exception {
         if (useImmediate) {
             serverBuilder.executionStrategy(offloadNone());
         }
@@ -105,8 +63,8 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
     }
 
     @Override
-    protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
-                                    boolean useImmediate, boolean asyncService) throws Exception {
+    protected ServerContext serverWithService(HttpServerBuilder serverBuilder, boolean useImmediate,
+                                              boolean asyncService) throws Exception {
         if (useImmediate) {
             serverBuilder.executionStrategy(offloadNone());
         }
@@ -133,7 +91,7 @@ class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncConte
                         .concat(defer(() -> {
                             if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                                 // verify that if we expect to be offloaded, that we actually are
-                                return succeeded(factory.internalServerError());
+                                return succeeded(factory.badGateway());
                             }
                             CharSequence requestId2 = AsyncContext.get(K1);
                             if (requestId2 == requestId && requestId2 != null) {
