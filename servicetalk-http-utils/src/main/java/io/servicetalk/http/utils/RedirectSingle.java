@@ -194,8 +194,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 if (!terminalDelivered) {
                     // Drain response payload body before propagating the cause
                     sequentialCancellable.nextCancellable(response.messageBody().ignoreElements()
-                            .whenOnError(suppressed -> safeOnError(target, addSuppressed(cause, suppressed)))
-                            .subscribe(() -> safeOnError(target, cause)));
+                            .subscribe(() -> safeOnError(target, cause),
+                                    suppressed -> safeOnError(target, addSuppressed(cause, suppressed))));
                 } else {
                     LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", target, cause);
                 }
