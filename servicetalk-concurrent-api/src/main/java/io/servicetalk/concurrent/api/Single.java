@@ -1879,16 +1879,30 @@ public abstract class Single<T> {
     }
 
     /**
-     * Subscribe to this {@link Single}, emits the result to the passed {@link Consumer} and log any
-     * {@link Subscriber#onError(Throwable)}.
+     * Subscribe to this {@link Single}, emit the result to the passed {@link Consumer} and log any
+     * {@link Subscriber#onError(Throwable)} at debug level.
      *
-     * @param resultConsumer {@link Consumer} to accept the result of this {@link Single}.
-     *
+     * @param resultConsumer {@link Consumer} to accept the result of this {@link Single} if it succeeds.
      * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
      */
     public final Cancellable subscribe(Consumer<? super T> resultConsumer) {
         SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
+        subscribeInternal(subscriber);
+        return subscriber;
+    }
+
+    /**
+     * Subscribe to this {@link Single}, emit the result or error to one of the passed {@link Consumer}s.
+     *
+     * @param resultConsumer {@link Consumer} to accept the result of this {@link Single} if it succeeds.
+     * @param errorConsumer {@link Consumer} to accept the error of this {@link Single} if it fails.
+     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
+     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
+     */
+    public final Cancellable subscribe(Consumer<? super T> resultConsumer,
+                                       Consumer<? super Throwable> errorConsumer) {
+        SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer, errorConsumer);
         subscribeInternal(subscriber);
         return subscriber;
     }
