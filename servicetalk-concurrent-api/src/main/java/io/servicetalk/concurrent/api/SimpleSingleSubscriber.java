@@ -32,9 +32,17 @@ final class SimpleSingleSubscriber<T> extends SequentialCancellable implements S
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSingleSubscriber.class);
 
     private final Consumer<? super T> resultConsumer;
+    @Nullable
+    private final Consumer<? super Throwable> errorConsumer;
 
-    SimpleSingleSubscriber(Consumer<? super T> resultConsumer) {
+    SimpleSingleSubscriber(final Consumer<? super T> resultConsumer) {
+        this(resultConsumer, null);
+    }
+
+    SimpleSingleSubscriber(final Consumer<? super T> resultConsumer,
+                           @Nullable final Consumer<? super Throwable> errorConsumer) {
         this.resultConsumer = requireNonNull(resultConsumer);
+        this.errorConsumer = errorConsumer;
     }
 
     @Override
@@ -44,11 +52,19 @@ final class SimpleSingleSubscriber<T> extends SequentialCancellable implements S
 
     @Override
     public void onSuccess(@Nullable T result) {
-        resultConsumer.accept(result);
+        try {
+            resultConsumer.accept(result);
+        } catch (Throwable t) {
+            LOGGER.debug("Received exception from the result consumer {}.", resultConsumer, t);
+        }
     }
 
     @Override
     public void onError(Throwable t) {
-        LOGGER.debug("Received exception from the source.", t);
+        if (errorConsumer != null) {
+            errorConsumer.accept(t);
+        } else {
+            LOGGER.debug("Received exception from the source.", t);
+        }
     }
 }
