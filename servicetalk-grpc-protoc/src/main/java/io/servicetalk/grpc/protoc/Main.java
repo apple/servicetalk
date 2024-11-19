@@ -197,6 +197,8 @@ public final class Main {
         }
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
         final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
+        final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "false"));
+        final boolean defaultServiceMethods = parseBoolean(optionsMap.getOrDefault(DEFAULT_SERVICE_METHODS, "false"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
                 .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
@@ -209,7 +211,8 @@ public final class Main {
 
         for (FileDescriptor f : fileDescriptors) {
             if (filesToGenerate.contains(f.protoFileName())) {
-                final Generator generator = new Generator(f, messageTypesMap, printJavaDocs, f.sourceCodeInfo());
+                final Generator generator = new Generator(f, messageTypesMap, printJavaDocs, skipDeprecated,
+                        defaultServiceMethods, f.sourceCodeInfo());
                 List<ServiceDescriptorProto> serviceDescriptorProtoList = f.protoServices();
                 for (int i = 0; i < serviceDescriptorProtoList.size(); ++i) {
                     ServiceDescriptorProto serviceDescriptor = serviceDescriptorProtoList.get(i);
