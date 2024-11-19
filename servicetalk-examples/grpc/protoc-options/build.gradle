@@ -76,6 +76,8 @@ protobuf {
           option 'typeNameSuffix=St'
           // Option to tell the compiler to exclude all Deprecated fields, types, and methods from the output
           option 'skipDeprecated=true'
+          // Option to generate default throwing service definitions on the service interfaces. This will allow
+          // teams to evolve their codebases and not break dependent libraries.
           option 'defaultServiceMethods=true'
         }
       }

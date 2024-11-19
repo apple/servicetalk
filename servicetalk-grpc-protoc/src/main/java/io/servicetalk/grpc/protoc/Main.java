@@ -198,6 +198,7 @@ public final class Main {
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
         final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
         final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "false"));
+        // FIXME: 0.43 - consider changing default value to true
         final boolean defaultServiceMethods = parseBoolean(optionsMap.getOrDefault(DEFAULT_SERVICE_METHODS, "false"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()

@@ -49,6 +49,7 @@ import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.INTERFACE;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.SERVER_RESPONSE;
 import static io.servicetalk.grpc.protoc.NoopServiceCommentsMap.NOOP_MAP;
 import static io.servicetalk.grpc.protoc.StringUtils.escapeJavaDoc;
+import static io.servicetalk.grpc.protoc.StringUtils.isNullOrEmpty;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
 import static io.servicetalk.grpc.protoc.Types.AllGrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.Arrays;
@@ -90,6 +91,8 @@ import static io.servicetalk.grpc.protoc.Types.GrpcSerializationProvider;
 import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
+import static io.servicetalk.grpc.protoc.Types.GrpcStatus;
+import static io.servicetalk.grpc.protoc.Types.GrpcStatusCode;
 import static io.servicetalk.grpc.protoc.Types.GrpcStatusException;
 import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
 import static io.servicetalk.grpc.protoc.Types.Identity;
@@ -1644,21 +1647,31 @@ final class Generator {
 
         // generate default service methods
         if (defaultServiceMethods) {
-            for (int i = 0; i < state.serviceProto.getMethodList().size(); i++) {
-                final MethodDescriptorProto methodProto = state.serviceProto.getMethodList().get(i);
+            final List<MethodDescriptorProto> methodList = state.serviceProto.getMethodList();
+            for (int i = 0; i < methodList.size(); i++) {
+                final MethodDescriptorProto methodProto = methodList.get(i);
                 final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
                 final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
                 final String methodName = sanitizeIdentifier(methodProto.getName(), true);
+                final String serviceName = isNullOrEmpty(state.serviceProto.getName()) ?
+                        "" : state.serviceProto.getName();
+                final String fullMethodName = serviceName + "/" + methodName;
                 final int methodIndex = i;
                 interfaceSpecBuilder.addMethod(newRpcMethodSpec(inClass, outClass, methodName,
                         methodProto.getClientStreaming(),
                         methodProto.getServerStreaming(),
                         !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
                         printJavaDocs, (__, c) -> {
-                            c.addModifiers(DEFAULT)
-                                    .addParameter(GrpcServiceContext, ctx)
-                                    .addStatement("throw new UnsupportedOperationException(\"Method " + methodName +
-                                            " is unimplemented\")");
+                            final String errorMessage = "\"Method " + fullMethodName + " is unimplemented\"";
+                            c.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            if (!blocking) {
+                                final ClassName returnType = methodProto.getServerStreaming() ? Publisher : Single;
+                                c.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))", returnType,
+                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                            } else {
+                                c.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                            }
                             if (printJavaDocs) {
                                 extractJavaDocComments(state, methodIndex, c);
                                 c.addJavadoc(JAVADOC_PARAM + ctx +
