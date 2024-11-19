@@ -70,7 +70,7 @@ content:
       start_path: servicetalk-client-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: main
-      tags: [0.42.51]
+      tags: []
       start_path: servicetalk-traffic-resilience-http/docs
 asciidoc:
   attributes:
