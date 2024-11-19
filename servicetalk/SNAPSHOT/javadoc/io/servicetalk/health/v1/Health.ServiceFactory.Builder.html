@@ -331,7 +331,7 @@ loadScripts(document, 'script');</script>
 <div class="block"><span class="descfrm-type-label">Description copied from class:&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)">GrpcRoutes</a></code></span></div>
 <div class="block">Create a new <a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a> from the passed <a href="../../grpc/api/GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.AllGrpcRoutes</code></a>.</div>
 <dl class="notes">
-<dt>Specified by:</dt>
+<dt>Overrides:</dt>
 <dd><code><a href="../../grpc/api/GrpcRoutes.html#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)">newServiceFromRoutes</a></code>&nbsp;in class&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a>&lt;<a href="Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>routes</code> - <a href="../../grpc/api/GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.AllGrpcRoutes</code></a> for which a <a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a> has to be created.</dd>
@@ -393,12 +393,6 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="addService(io.servicetalk.health.v1.Health.HealthService)">
-<h3>addService</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></span>&nbsp;<span class="element-name">addService</span><wbr><span class="parameters">(<a href="Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a>&nbsp;service)</span></div>
-</section>
-</li>
-<li>
 <section class="detail" id="addService(io.servicetalk.health.v1.Health.BlockingHealthService)">
 <h3>addService</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
@@ -416,6 +410,12 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="addService(io.servicetalk.health.v1.Health.HealthService)">
+<h3>addService</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></span>&nbsp;<span class="element-name">addService</span><wbr><span class="parameters">(<a href="Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a>&nbsp;service)</span></div>
+</section>
+</li>
+<li>
 <section class="detail" id="addBlockingService(io.servicetalk.health.v1.Health.BlockingHealthService)">
 <h3>addBlockingService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></span>&nbsp;<span class="element-name">addBlockingService</span><wbr><span class="parameters">(<a href="Health.BlockingHealthService.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthService</a>&nbsp;service)</span></div>
@@ -430,7 +430,7 @@ loadScripts(document, 'script');</script>
 <div class="block"><span class="descfrm-type-label">Description copied from class:&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html#registerRoutes(Service)">GrpcRoutes</a></code></span></div>
 <div class="block">Register all routes contained in the passed <a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a>.</div>
 <dl class="notes">
-<dt>Specified by:</dt>
+<dt>Overrides:</dt>
 <dd><code><a href="../../grpc/api/GrpcRoutes.html#registerRoutes(Service)">registerRoutes</a></code>&nbsp;in class&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a>&lt;<a href="Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>service</code> - <a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a> for which routes have to be registered.</dd>

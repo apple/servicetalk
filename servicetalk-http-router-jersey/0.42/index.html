@@ -228,6 +228,9 @@
     <a class="nav-link" href="../../servicetalk-client-api/0.42/service-discovery.html">Service Discovery</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <span class="nav-text">Traffic Resiliency</span>
+  </li>
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="../../servicetalk/0.42/javadoc/index.html">Javadoc</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -1759,7 +1762,7 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 It is currently not possible to disable offloading if any JAX-RS resource uses <code>@Suspended AsyncResponse</code>,
 <code>CompletionStage</code> responses or Server-Sent Events. A workaround for this consists in using the Predicate router
 to selectively offload such resources, as shown in this
-<a href="https://github.com/apple/servicetalk/blob/0.42.50/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.51/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
 </td>
 </tr>
 </table>

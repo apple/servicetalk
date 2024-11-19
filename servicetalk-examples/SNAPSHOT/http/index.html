@@ -1655,9 +1655,62 @@ Async <code>Hello World</code> example that demonstrates how retry can be reques
 </div>
 </div>
 </div>
-<h1 id="TrafficResiliency" class="sect0"><a class="anchor" href="#TrafficResiliency"></a><a class="link" href="#TrafficResiliency">Traffic Resiliency</a></h1>
+<div class="sect1">
+<h2 id="TrafficResiliency"><a class="anchor" href="#TrafficResiliency"></a><a class="link" href="#TrafficResiliency">Traffic Resiliency</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Some examples that use the traffic resiliency features.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/GradientObservabilityExample.java">GradientObservabilityExample</a> -
+An example that demonstrates using the observer pattern to instrument the gradient capacity limiter.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientBreakersExample.java">TrafficResilienceClientBreakersExample</a> -
+A client that uses request metadata to select the correct circuit breaker.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsExample.java">TrafficResilienceClientPeerRejectionsExample</a> -
+A client which configures what constitutes a rejection based on response status code.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsPassthroughExample.java">TrafficResilienceClientPeerRejectionsPassthroughExample</a> -
+A client which configures which responses will affect the capacity limiter but still pass through to the underlying
+client.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsRetryExample.java">TrafficResilienceClientPeerRejectionsRetryExample</a> -
+A client which configures the resilience filters to signal an appropriate delay to the retry filter.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerClassificationExample.java">TrafficResilienceServerClassificationExample</a> -
+A server that specifies the importance of requests based on the request metadata.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerExample.java">TrafficResilienceServerExample</a> -
+A server that uses the dynamic gradient capacity limiter.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerPartitionExample.java">TrafficResilienceServerPartitionExample</a> -
+A server that uses two separate capacity limiters, selected based on request metadata.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerQuotasExample.java">TrafficResilienceServerQuotasExample</a> -
+A server that uses fixed capacity limiters based on the customer identity, as determined by the request metadata.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerStopAcceptingExample.java">TrafficResilienceServerStopAcceptingExample</a> -
+A server that stops accepting new connections when it reaches its rejection threshold.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerTerminalsExample.java">TrafficResilienceServerTerminalsExample</a> -
+An example that demonstrates custom handling of tickets on error conditions.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="sect1">
 <h2 id="HTTP2"><a class="anchor" href="#HTTP2"></a><a class="link" href="#HTTP2">HTTP/2</a></h2>

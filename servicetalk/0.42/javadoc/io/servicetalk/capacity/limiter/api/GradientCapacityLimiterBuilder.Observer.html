@@ -78,7 +78,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public static interface </span><span class="element-name type-name-label">GradientCapacityLimiterBuilder.Observer</span></div>
-<div class="block">A state observer for Gradient <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> to monitor internal state changes.</div>
+<div class="block">A state observer for Gradient <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> to monitor internal state changes.
+
+ Note: callbacks are not guaranteed to be executed sequentially or in exactly the same order that state changes
+ occurred.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -156,10 +159,13 @@ loadScripts(document, 'script');</script>
  <a href="CapacityLimiter.html" title="interface in io.servicetalk.capacity.limiter.api"><code>CapacityLimiter</code></a> and the <a href="GradientCapacityLimiterBuilder.html#limitUpdateInterval(java.time.Duration)"><code>sampling interval</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>longRtt</code> - The exponential moving average stat of request response times.</dd>
-<dd><code>shortRtt</code> - The sampled response time that triggered the limit change.</dd>
+<dd><code>longRtt</code> - The exponential moving average stat of request response times. A negative value means
+                response times were not used in the calculation.</dd>
+<dd><code>shortRtt</code> - The sampled response time that triggered the limit change. A negative value means
+          *                response times were not used in the calculation.</dd>
 <dd><code>gradient</code> - The response time gradient (delta) between the long exposed stat (see. longRtt)
- and the sampled response time (see. shortRtt).</dd>
+ and the sampled response time (see. shortRtt). A negative value means the gradient was not used in the
+ calculation.</dd>
 <dd><code>oldLimit</code> - The previous limit of the limiter.</dd>
 <dd><code>newLimit</code> - The current limit of the limiter.</dd>
 </dl>

@@ -21451,10 +21451,19 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Subscribe to this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> and log any <a href="io/servicetalk/concurrent/CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Completable.html#subscribe(java.lang.Runnable,java.util.function.Consumer)" class="member-name-link">subscribe(Runnable, Consumer&lt;? super Throwable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
+<dd>
+<div class="block">Subscribe to this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, invoke passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> when this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminates
+ successfully or emit an error to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> when it fails.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Single.html#subscribe(java.util.function.Consumer)" class="member-name-link">subscribe(Consumer&lt;? super T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
 <dd>
-<div class="block">Subscribe to this <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, emits the result to the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> and log any
- <a href="io/servicetalk/concurrent/SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</div>
+<div class="block">Subscribe to this <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, emit the result to the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> and log any
+ <a href="io/servicetalk/concurrent/SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a> at debug level.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#subscribe(java.util.function.Consumer,java.util.function.Consumer)" class="member-name-link">subscribe(Consumer&lt;? super T&gt;, Consumer&lt;? super Throwable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Subscribe to this <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>, emit the result or error to one of the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a>s.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#subscribeInternal(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">subscribeInternal(CompletableSource.Subscriber)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
