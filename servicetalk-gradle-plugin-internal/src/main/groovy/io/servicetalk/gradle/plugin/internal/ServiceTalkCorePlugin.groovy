@@ -90,7 +90,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         source = fileTree(".") {
           includes = ["gradle/**", "*.gradle", "*.properties", "scripts/**", "buildSrc/**", "docs/**"]
           excludes = ["**/gradle/wrapper/**", "**/build/**", "**/.gradle/**", "**/gradlew*", "**/.cache/**",
-                      "**/*.svg", "**/.out/**", "**/node_modules/**", "**/*.png", "**/*.zip"]
+                      "**/*.svg", "**/.out/**", "**/node_modules/**", "**/*.png", "**/*.ico", "**/*.zip", "**/servicetalk-docs-gen.ipr"]
         }
       }
 
