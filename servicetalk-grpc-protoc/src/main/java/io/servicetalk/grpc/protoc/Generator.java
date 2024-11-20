@@ -49,7 +49,6 @@ import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.INTERFACE;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.SERVER_RESPONSE;
 import static io.servicetalk.grpc.protoc.NoopServiceCommentsMap.NOOP_MAP;
 import static io.servicetalk.grpc.protoc.StringUtils.escapeJavaDoc;
-import static io.servicetalk.grpc.protoc.StringUtils.isNullOrEmpty;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
 import static io.servicetalk.grpc.protoc.Types.AllGrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.Arrays;
@@ -175,6 +174,7 @@ import static io.servicetalk.grpc.protoc.Words.timeout;
 import static java.lang.System.lineSeparator;
 import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
@@ -1647,38 +1647,47 @@ final class Generator {
 
         // generate default service methods
         if (defaultServiceMethods) {
-            final List<MethodDescriptorProto> methodList = state.serviceProto.getMethodList();
-            for (int i = 0; i < methodList.size(); i++) {
+            final List<MethodDescriptorProto> methodList = state.serviceRpcInterfaces.stream()
+                    .filter(intf -> intf.blocking == blocking)
+                    .map(intf -> intf.methodProto)
+                    .collect(toList());
+            for (int i = 0; i < methodList.size(); ++i) {
                 final MethodDescriptorProto methodProto = methodList.get(i);
                 final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
                 final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
                 final String methodName = sanitizeIdentifier(methodProto.getName(), true);
-                final String serviceName = isNullOrEmpty(state.serviceProto.getName()) ?
-                        "" : state.serviceProto.getName();
-                final String fullMethodName = serviceName + "/" + methodName;
+                final String methodPath = context.methodPath(state.serviceProto, methodProto).substring(1);
                 final int methodIndex = i;
-                interfaceSpecBuilder.addMethod(newRpcMethodSpec(inClass, outClass, methodName,
+                final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, methodName,
                         methodProto.getClientStreaming(),
                         methodProto.getServerStreaming(),
                         !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
-                        printJavaDocs, (__, c) -> {
-                            final String errorMessage = "\"Method " + fullMethodName + " is unimplemented\"";
-                            c.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                        printJavaDocs, (__, spec) -> {
+                            final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
+                            spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            spec.addAnnotation(Override.class);
                             if (!blocking) {
                                 final ClassName returnType = methodProto.getServerStreaming() ? Publisher : Single;
-                                c.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))", returnType,
-                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                                spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
+                                        returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
                             } else {
-                                c.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
                                         GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
                             }
                             if (printJavaDocs) {
-                                extractJavaDocComments(state, methodIndex, c);
-                                c.addJavadoc(JAVADOC_PARAM + ctx +
+                                extractJavaDocComments(state, methodIndex, spec);
+                                spec.addJavadoc(JAVADOC_PARAM + ctx +
                                         " context associated with this service and request." + lineSeparator());
                             }
-                            return c;
-                        }));
+                            return spec;
+                        });
+
+                final boolean isDeprecated = methodSpec.annotations.contains(
+                        AnnotationSpec.builder(Deprecated.class).build());
+
+                if (!isDeprecated || !skipDeprecated) {
+                    interfaceSpecBuilder.addMethod(methodSpec);
+                }
             }
         }
 

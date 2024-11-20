@@ -110,6 +110,8 @@ protobuf {
         grpc {}
         servicetalk_grpc {
           outputSubDir = "java"
+          // this will eventually become the default behavior
+          option "defaultServiceMethods=true"
         }
       }
     }

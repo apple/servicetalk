@@ -128,6 +128,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -607,6 +608,50 @@ class ProtocolCompatibilityTest {
                                     INTERNAL.value() : UNKNOWN.value()));
                 }
             }
+        }
+    }
+
+    @Test
+    void grpcJavaToServiceTalkUnimplementedService() throws Exception {
+        try (TestServerContext server = serviceTalkServerBlocking(ErrorMode.STATUS, false, null, null);
+             CompatClient client = grpcJavaClient(server.listenAddress(), null, false, null)) {
+            final Single<CompatResponse> response =
+                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
+        }
+    }
+
+    @Test
+    void grpcJavaToGrpcJavaUnimplementedService() throws Exception {
+        try (TestServerContext server = grpcJavaServer(ErrorMode.NONE, false, null, null);
+             CompatClient client = grpcJavaClient(server.listenAddress(), null, false, null)) {
+            final Single<CompatResponse> response =
+                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
+        }
+    }
+
+    @Test
+    void serviceTalkToGrpcJavaUnimplementedService() throws Exception {
+        try (TestServerContext server = grpcJavaServer(ErrorMode.NONE, false, null, null);
+             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            final Single<CompatResponse> response =
+                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
+        }
+    }
+
+    @Test
+    void serviceTalkToServiceTalkUnimplementedService() throws Exception {
+        try (TestServerContext server = serviceTalkServerBlocking(ErrorMode.NONE, false, null, null);
+             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            final Single<CompatResponse> response =
+                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
         }
     }
 
@@ -1494,6 +1539,27 @@ class ProtocolCompatibilityTest {
             public Publisher<CompatResponse> serverStreamingCall(final GrpcClientMetadata metadata,
                                                                  final CompatRequest request) {
                 return serverStreamingCall(request);
+            }
+
+            @Override
+            public Single<CompatResponse> unimplementedServerCall(final CompatRequest request) {
+                final Processor<CompatResponse, CompatResponse> processor =
+                        newSingleProcessor();
+                finalStub.unimplementedServerCall(request, adaptResponse(processor));
+                return fromSource(processor);
+            }
+
+            @Override
+            public Single<CompatResponse> unimplementedServerCall(final GrpcClientMetadata metadata,
+                                                                  final CompatRequest request) {
+                return unimplementedServerCall(request);
+            }
+
+            @Deprecated
+            @Override
+            public Single<CompatResponse> unimplementedServerCall(final Compat.UnimplementedServerCallMetadata metadata,
+                                                                  final CompatRequest request) {
+                return unimplementedServerCall(request);
             }
 
             @Override

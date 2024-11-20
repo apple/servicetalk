@@ -62,4 +62,5 @@ service Compat {
     rpc clientStreamingCall (stream RequestContainer.CompatRequest) returns (ResponseContainer.CompatResponse) {}
     rpc serverStreamingCall (RequestContainer.CompatRequest) returns (stream ResponseContainer.CompatResponse) {}
     rpc bidirectionalStreamingCall (stream RequestContainer.CompatRequest) returns (stream ResponseContainer.CompatResponse) {}
+    rpc unimplementedServerCall (RequestContainer.CompatRequest) returns (ResponseContainer.CompatResponse) {}
 }

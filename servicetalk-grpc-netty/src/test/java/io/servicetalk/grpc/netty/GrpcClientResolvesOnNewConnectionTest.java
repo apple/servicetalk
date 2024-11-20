@@ -19,7 +19,9 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServerContext;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.transport.api.HostAndPort;
 
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
@@ -52,8 +54,13 @@ class GrpcClientResolvesOnNewConnectionTest {
         String greetingPrefix = "Hello ";
         String name = "foo";
         try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait((GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
+                .listenAndAwait(new GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return succeeded(HelloReply.newBuilder()
+                                .setMessage(greetingPrefix + request.getName()).build());
+                    }
+                });
              // Use "localhost" to demonstrate that the address will be resolved.
              BlockingGreeterClient client = GrpcClients.forAddress("localhost",
                              serverHostAndPort(serverContext).port(), ON_NEW_CONNECTION)
@@ -69,8 +76,13 @@ class GrpcClientResolvesOnNewConnectionTest {
         String greetingPrefix = "Hello ";
         String name = "foo";
         try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait((GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()))) {
+                .listenAndAwait(new GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return succeeded(HelloReply.newBuilder()
+                                .setMessage(greetingPrefix + request.getName()).build());
+                    }
+                })) {
             // Use "localhost" to demonstrate that the address will be resolved.
             HostAndPort hostAndPort = HostAndPort.of("localhost", serverHostAndPort(serverContext).port());
             @SuppressWarnings("unchecked")
