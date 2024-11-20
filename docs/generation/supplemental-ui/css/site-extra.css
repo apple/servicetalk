@@ -13,3 +13,12 @@ code {
 .navigation-container {
     width: 13rem;
 }
+
+header .navbar .navbar-item a {
+    display: flex;
+}
+
+header .navbar .navbar-logo {
+    margin-right: 12px;
+    width: 28px;
+}
