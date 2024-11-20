@@ -56,7 +56,7 @@ cat "$file" | while IFS='' read line; do
         if ( echo "$line" | grep -q "[[ ]${majorminor}.\d" ); then
             # If major.minor was already in this line, update the patch version
             echo "$line" |
-              sed "s/^      tags: \[\(.*[[ ]\)$majorminor\.[^,]*\(.*\)\]$/      tags: [\1$newversion\2]/" \
+              sed "s/^      tags: \[\(.*[[ ]\)*$majorminor\.[^,]*\(.*\)\]$/      tags: [\1$newversion\2]/" \
               >> "$file.tmp"
         elif ( echo "$line" | grep -q "^      tags: \[[ ]*\]$" ); then
             # If tags is empty
