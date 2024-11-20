@@ -21,6 +21,10 @@
 <suppressions>
   <suppress checks="LineLength"
     files="docs[\\/]modules[\\/]ROOT[\\/]assets[\\/]images[\\/].+\.svg"/>
+  <suppress checks="LineLength"
+    files="docs[\\/]generation[\\/]supplemental-ui[\\/].+\.ico"/>
+  <suppress checks="LineLength"
+    files="docs[\\/]generation[\\/]supplemental-ui[\\/]img[\\/].+\.src"/>
   <!-- mapOnError supports re-throwing a Throwable from onError(Throwable) -->
   <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]ScanWithMapper.java"/>
   <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]ScanMapper.java"/>
