@@ -22,3 +22,7 @@ header .navbar .navbar-logo {
     margin-right: 12px;
     width: 28px;
 }
+
+.footer p {
+    color: #fff;
+}
