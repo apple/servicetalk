@@ -17,6 +17,7 @@
 
 SCRIPT=$(basename "${BASH_SOURCE:-stidn}")
 
+# nvm change
 if [ $# -lt 1 ] || [ $# -gt 4 ]; then
   echo "# Usage"
   echo "#    ${SCRIPT} <old_version> (<new_version> (<group_id> (<build_dir>)))"
