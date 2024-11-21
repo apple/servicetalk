@@ -161,6 +161,7 @@ final class DefaultDnsClient implements DnsClient {
                      final boolean nxInvalidation,
                      final boolean tcpFallbackOnTimeout,
                      final String datagramChannelStrategy) {
+        // nvm java change
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
