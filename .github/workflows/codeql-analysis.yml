@@ -2,9 +2,23 @@ name: CodeQL
 on:
   push:
     branches: [ main, '0.41', '0.42' ]
+    paths-ignore:
+      - 'docs/**'
+      - 'scripts/**'
+      - '.git.commit.template'
+      - '.gitignore'
+      - '**.adoc'
+      - '**.txt'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main, '0.41' ]
+    paths-ignore:
+      - 'docs/**'
+      - 'scripts/**'
+      - '.git.commit.template'
+      - '.gitignore'
+      - '**.adoc'
+      - '**.txt'
   schedule:
     - cron: '0 13 * * 1'
 

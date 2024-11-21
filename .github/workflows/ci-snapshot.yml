@@ -5,6 +5,15 @@ on:
     tags-ignore:
       - "[0-9]+.[0-9]+.[0-9]+"
       - "[0-9]+.[0-9]+.[0-9]+.[0-9]+"
+    paths-ignore:
+      - 'docs/**'
+      - 'scripts/**'
+      - '.git.commit.template'
+      - '.gitignore'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '**.adoc'
+      - '*.txt'
 jobs:
   build:
     name: Snapshot JDK ${{ matrix.java }}
