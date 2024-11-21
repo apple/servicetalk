@@ -12,7 +12,7 @@
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[HTTP/2]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Mutual-TLS[Mutual TLS]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Observer[Observer]
-** xref:{page-version}@servicetalk-examples::http/index.adoc#DefaultLoadBalancer[DefaultLoadBalancer]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#LoadBalancer[LoadBalancer]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#OpenTracing[OpenTracing]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Redirects[Redirects]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Retries[Retries]

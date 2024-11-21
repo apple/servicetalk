@@ -13,33 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.defaultloadbalancer;
+package io.servicetalk.examples.http.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpClients;
-import io.servicetalk.loadbalancer.LoadBalancingPolicies;
 import io.servicetalk.loadbalancer.LoadBalancers;
+import io.servicetalk.loadbalancer.LoadBalancingPolicies;
 import io.servicetalk.loadbalancer.OutlierDetectorConfig;
-import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static java.time.Duration.ofSeconds;
 
-public final class DefaultLoadBalancerClient {
+/**
+ * A client that configures custom settings for its LoadBalancer.
+ */
+public final class CustomLoadBalancerClient {
 
     public static void main(String[] args) throws Exception {
-        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress("localhost", 8080)
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(
-                        loadBalancer("localhost-defaultloadbalancer")));
-        try (BlockingHttpClient client = builder.buildBlocking()) {
+                        loadBalancer("my-custom-loadbalancer")))
+                .buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
             System.out.println(response.payloadBody(textSerializerUtf8()));
@@ -48,10 +48,9 @@ public final class DefaultLoadBalancerClient {
 
     private static LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> loadBalancer(
             String id) {
-        return LoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
-                builder(id)
+        return LoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>builder(id)
                 .loadBalancingPolicy(
-                        // DefaultLoadBalancer supports multiple patterns for selecting hosts including
+                        // LoadBalancerBuilder supports multiple patterns for selecting hosts including
                         // - Round robin: linear iteration through the host list, skipping unhealthy hosts, per request.
                         // - Power of two choices (P2C): randomly select two hosts and take the best based on score.
                         // Both policies consider outlier detection (see below) but only P2C can bias traffic toward

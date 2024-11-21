@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.defaultloadbalancer;
+package io.servicetalk.examples.http.loadbalancer;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

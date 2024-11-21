@@ -78,7 +78,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:compression",
         "servicetalk-examples:http:debugging",
         "servicetalk-examples:http:timeout",
-        "servicetalk-examples:http:defaultloadbalancer",
+        "servicetalk-examples:http:loadbalancer",
         "servicetalk-examples:http:files",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
@@ -150,6 +150,7 @@ project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-ht
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"
 project(":servicetalk-examples:http:timeout").name = "servicetalk-examples-http-timeout"
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
+project(":servicetalk-examples:http:loadbalancer").name = "servicetalk-examples-http-loadbalancer"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
 project(":servicetalk-examples:http:opentracing").name = "servicetalk-examples-http-opentracing"
 project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
