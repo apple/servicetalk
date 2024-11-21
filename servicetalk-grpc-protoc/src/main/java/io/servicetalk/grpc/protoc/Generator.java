@@ -1647,12 +1647,12 @@ final class Generator {
 
         // generate default service methods
         if (defaultServiceMethods) {
-            final List<MethodDescriptorProto> methodList = state.serviceRpcInterfaces.stream()
+            final List<RpcInterface> interfaces = state.serviceRpcInterfaces.stream()
                     .filter(intf -> intf.blocking == blocking)
-                    .map(intf -> intf.methodProto)
                     .collect(toList());
-            for (int i = 0; i < methodList.size(); ++i) {
-                final MethodDescriptorProto methodProto = methodList.get(i);
+            for (int i = 0; i < interfaces.size(); ++i) {
+                final RpcInterface rpcInterface = interfaces.get(i);
+                final MethodDescriptorProto methodProto = rpcInterface.methodProto;
                 final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
                 final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
                 final String methodName = sanitizeIdentifier(methodProto.getName(), true);
@@ -1661,7 +1661,7 @@ final class Generator {
                 final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, methodName,
                         methodProto.getClientStreaming(),
                         methodProto.getServerStreaming(),
-                        !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
+                        !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE),
                         printJavaDocs, (__, spec) -> {
                             final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
                             spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
@@ -1671,8 +1671,13 @@ final class Generator {
                                 spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
                                         returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
                             } else {
-                                spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
-                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                                if (!skipDeprecated && methodProto.getServerStreaming()) {
+                                    spec.addStatement("$T.super.$L(ctx, request, response)",
+                                            rpcInterface.className, methodName);
+                                } else {
+                                    spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                            GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                                }
                             }
                             if (printJavaDocs) {
                                 extractJavaDocComments(state, methodIndex, spec);
