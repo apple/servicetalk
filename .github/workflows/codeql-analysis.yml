@@ -31,14 +31,6 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          extraction-options: >
-            {
-              "exclude": [
-                "**/*.ico",
-                "**/*.png",
-                "**/servicetalk-docs-gen.ipr"
-              ]
-            }
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Assemble Gradle project
