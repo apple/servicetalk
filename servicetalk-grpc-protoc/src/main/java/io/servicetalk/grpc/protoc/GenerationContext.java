@@ -57,4 +57,13 @@ interface GenerationContext {
      * method.
      */
     String methodPath(ServiceDescriptorProto serviceProto, MethodDescriptorProto methodProto);
+
+    /**
+     * Get the <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC H2 path</a> for a method.
+     * @param serviceProto protobuf descriptor for the service.
+     * @param methodName name of the method.
+     * @return the <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC H2 path</a> for a
+     * method.
+     */
+    String methodPath(ServiceDescriptorProto serviceProto, String methodName);
 }
