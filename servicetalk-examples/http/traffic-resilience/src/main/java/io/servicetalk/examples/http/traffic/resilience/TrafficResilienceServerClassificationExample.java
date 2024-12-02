@@ -16,11 +16,13 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
-public class TrafficResilienceServerClassificationExample {
+/**
+ * A server that specifies the importance of requests based on the request metadata.
+ */
+public final class TrafficResilienceServerClassificationExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =
@@ -28,8 +30,9 @@ public class TrafficResilienceServerClassificationExample {
                         .classifier(() -> (meta) -> "/health".equals(meta.requestTarget()) ? () -> 20 : () -> 100)
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())
+                .awaitShutdown();
     }
 }

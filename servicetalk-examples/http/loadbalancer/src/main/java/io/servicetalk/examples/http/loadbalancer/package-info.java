@@ -13,18 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.traffic.resilience;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.loadbalancer;
 
-import io.servicetalk.capacity.limiter.api.CapacityLimiter;
-import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-
-public class GradientExample {
-
-    public static void main(String[] args) {
-        // Initializing a Gradient limiter with configuration profile that favors lower latency.
-        // See the `.dynamicGradientOptimizeForThroughput()` variant to optimize for higher throughput.
-        @SuppressWarnings("unused")
-        final CapacityLimiter limiter = CapacityLimiters.dynamicGradientOptimizeForLatency()
-                .build();
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

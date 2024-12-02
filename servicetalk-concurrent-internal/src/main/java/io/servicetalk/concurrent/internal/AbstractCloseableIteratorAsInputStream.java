@@ -111,7 +111,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
                     len -= toRead;
                 } else { // toRead == len, i.e. we filled the buffer.
                     leftOverCheckReset();
-                    return initialLen - (len - toRead);
+                    return initialLen;
                 }
             }
             // Avoid fetching a new element if we have no more space to read to. This prevents serializing and
@@ -120,8 +120,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
                 return initialLen;
             }
             if (!iterator.hasNext()) {
-                final int bytesRead = initialLen - len;
-                return bytesRead == 0 ? -1 : bytesRead;
+                return initialLen == len ? -1 : (initialLen - len);
             }
             nextLeftOver(iterator);
         }

@@ -138,7 +138,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * In case you have a use-case, let us know.
      */
     @Deprecated
-    protected abstract void registerRoutes(Service service);    // FIXME: 0.43 - remove deprecated method
+    protected void registerRoutes(Service service) {    // FIXME: 0.43 - remove deprecated method
+        throw new UnsupportedOperationException("This method is not used starting from version 0.42.0");
+    }
 
     /**
      * Create a new {@link Service} from the passed {@link AllGrpcRoutes}.
@@ -150,7 +152,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * In case you have a use-case, let us know.
      */
     @Deprecated
-    protected abstract Service newServiceFromRoutes(AllGrpcRoutes routes);  // FIXME: 0.43 - remove deprecated method
+    protected Service newServiceFromRoutes(AllGrpcRoutes routes) {  // FIXME: 0.43 - remove deprecated method
+        throw new UnsupportedOperationException("This method is not used starting from version 0.42.0");
+    }
 
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
         final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];

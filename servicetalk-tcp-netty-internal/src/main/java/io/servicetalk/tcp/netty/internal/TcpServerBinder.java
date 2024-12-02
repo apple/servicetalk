@@ -170,14 +170,10 @@ public final class TcpServerBinder {
                 connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext, config,
                         earlyConnectionAcceptor, lateConnectionAcceptor, connectionAcceptor);
 
-                connectionSingle.beforeOnError(cause -> {
-                    // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Failed to create a connection for remote address {}", channel.remoteAddress(),
-                                cause);
-                    }
+                connectionSingle.subscribe(connectionConsumer, cause -> {
+                    LOGGER.debug("{} Failed to create a connection", channel, cause);
                     close(channel, cause);
-                }).subscribe(connectionConsumer);
+                });
             }
         });
 

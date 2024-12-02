@@ -16,13 +16,15 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
 import java.util.concurrent.RejectedExecutionException;
 
-public class TrafficResilienceServerTerminalsExample {
+/**
+ * An example that demonstrates custom handling of tickets on error conditions.
+ */
+public final class TrafficResilienceServerTerminalsExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =
@@ -36,8 +38,9 @@ public class TrafficResilienceServerTerminalsExample {
                         })
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())
+                .awaitShutdown();
     }
 }

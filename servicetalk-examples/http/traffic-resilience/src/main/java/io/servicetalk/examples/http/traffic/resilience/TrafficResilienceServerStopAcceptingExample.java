@@ -16,12 +16,14 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.ServiceRejectionPolicy;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
-public class TrafficResilienceServerStopAcceptingExample {
+/**
+ * A server that stops accepting new connections when it reaches its rejection threshold.
+ */
+public final class TrafficResilienceServerStopAcceptingExample {
 
     public static void main(String[] args) throws Exception {
         final ServiceRejectionPolicy rejectionPolicy = new ServiceRejectionPolicy.Builder()
@@ -33,8 +35,9 @@ public class TrafficResilienceServerStopAcceptingExample {
                         .rejectionPolicy(rejectionPolicy)
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())
+                .awaitShutdown();
     }
 }

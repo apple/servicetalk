@@ -1,0 +1,4 @@
+== ServiceTalk LoadBalancer Example
+
+A simple hello-world style application that uses a client that configures custom settings for its LoadBalancer and
+xDS style outlier detection.

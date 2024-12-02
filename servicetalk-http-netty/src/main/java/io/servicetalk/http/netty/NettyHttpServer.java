@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -386,13 +386,14 @@ final class NettyHttpServer {
                                 // the final response, which may trigger continuation for the next request in pipeline.
                                 responseSent.set(true);
                             }
-                            Cancellable c = null;
+                            Cancellable resetFlushStrategy = null;
                             final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
                             if (flushStrategy != null) {
-                                c = updateFlushStrategy((prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                                resetFlushStrategy = updateFlushStrategy(
+                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
                             }
                             Publisher<Object> pub = handleResponse(protocol(), requestMethod, response);
-                            return (c == null ? pub : pub.beforeFinally(c::cancel))
+                            return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
                         }));

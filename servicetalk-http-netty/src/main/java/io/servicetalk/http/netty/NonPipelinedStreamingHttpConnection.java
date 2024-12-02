@@ -43,8 +43,8 @@ final class NonPipelinedStreamingHttpConnection
             return Publisher.defer(() -> {
                 final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return connection.write(requestStream).mergeDelayError(connection.read())
-                        .afterFinally(resetFlushStrategy::cancel);
+                return connection.write(requestStream.beforeFinally(resetFlushStrategy::cancel))
+                        .mergeDelayError(connection.read());
             });
         }
     }

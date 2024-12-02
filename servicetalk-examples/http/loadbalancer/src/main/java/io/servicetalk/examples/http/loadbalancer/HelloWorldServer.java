@@ -13,7 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.defaultloadbalancer;
+package io.servicetalk.examples.http.loadbalancer;
 
-import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+import io.servicetalk.http.netty.HttpServers;
+
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+
+public final class HelloWorldServer {
+
+    public static void main(String[] args) throws Exception {
+        HttpServers.forPort(8080)
+                .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()))
+                .awaitShutdown();
+    }
+}

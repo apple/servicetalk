@@ -18,6 +18,7 @@ package io.servicetalk.grpc.protoc;
 import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.DescriptorProtos.SourceCodeInfo;
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -248,13 +249,15 @@ final class Generator {
     private final Map<String, ClassName> messageTypesMap;
     private final ServiceCommentsMap serviceCommentsMap;
     private final boolean printJavaDocs;
+    private final boolean skipDeprecated;
 
     Generator(final GenerationContext context, final Map<String, ClassName> messageTypesMap,
-              final boolean printJavaDocs, SourceCodeInfo sourceCodeInfo) {
+              final boolean printJavaDocs, final boolean skipDeprecated, SourceCodeInfo sourceCodeInfo) {
         this.context = context;
         this.messageTypesMap = messageTypesMap;
         this.serviceCommentsMap = printJavaDocs ? new DefaultServiceCommentsMap(sourceCodeInfo) : NOOP_MAP;
         this.printJavaDocs = printJavaDocs;
+        this.skipDeprecated = skipDeprecated;
     }
 
     /**
@@ -278,6 +281,7 @@ final class Generator {
         addServiceFactory(state, container.builder);
 
         addClientMetadata(state, container.builder);
+
         addClientInterfaces(state, container.builder);
         addClientFactory(state, container.builder);
         // this empty class is a placeholder and get replaced with insertion point comment
@@ -288,8 +292,8 @@ final class Generator {
 
     private String serviceFQN(FileDescriptor f, ServiceDescriptorProto serviceDescriptorProto) {
         return f.getProtoPackageName() != null ?
-            f.getProtoPackageName() + "." + serviceDescriptorProto.getName() :
-            serviceDescriptorProto.getName();
+                f.getProtoPackageName() + "." + serviceDescriptorProto.getName() :
+                serviceDescriptorProto.getName();
     }
 
     private TypeSpec.Builder addSerializationProviderInit(final State state,
@@ -315,22 +319,23 @@ final class Generator {
                 .addStatement("return $L.build()", builder)
                 .build();
 
-        serviceClassBuilder
-                .addMethod(methodBuilder(initSerializationProvider)
-                        .addModifiers(PRIVATE, STATIC)
-                        .returns(GrpcSerializationProvider)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addCode(staticInitBlockBuilder.build())
-                        .build()
-                );
-
-        serviceClassBuilder.addMethod(methodBuilder(isSupportedMessageCodingsEmpty)
-                        .addModifiers(PRIVATE, STATIC)
-                        .returns(BOOLEAN)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("return $L.isEmpty() || ($L.size() == 1 && $T.identity().equals($L.get(0)))",
-                                supportedMessageCodings, supportedMessageCodings, Identity, supportedMessageCodings)
-                        .build());
+        if (!skipDeprecated) {
+            serviceClassBuilder
+                    .addMethod(methodBuilder(initSerializationProvider)
+                            .addModifiers(PRIVATE, STATIC)
+                            .returns(GrpcSerializationProvider)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addCode(staticInitBlockBuilder.build())
+                            .build()
+                    )
+                    .addMethod(methodBuilder(isSupportedMessageCodingsEmpty)
+                            .addModifiers(PRIVATE, STATIC)
+                            .returns(BOOLEAN)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("return $L.isEmpty() || ($L.size() == 1 && $T.identity().equals($L.get(0)))",
+                                    supportedMessageCodings, supportedMessageCodings, Identity, supportedMessageCodings)
+                            .build());
+        }
 
         return serviceClassBuilder;
     }
@@ -369,45 +374,62 @@ final class Generator {
                 methodProto.getClientStreaming(), methodProto.getServerStreaming(), methodHttpPath,
                 methodDescriptorType, methodDescFieldName, isAsync));
 
-        final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, PATH)
-                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L}." + lineSeparator(), methodDescriptor)
-                .addAnnotation(Deprecated.class)
-                .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
-                .initializer("$S", context.methodPath(state.serviceProto, methodProto));
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addAnnotation(FunctionalInterface.class)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(isAsync ? GrpcService : BlockingGrpcService)
-                .addField(pathSpecBuilder.build())
                 .addMethod(methodBuilder(methodDescriptor)
                         .addModifiers(PUBLIC, STATIC)
                         .returns(methodDescriptorType)
-                        .addStatement("return $L", methodDescFieldName).build())
-                .addMethod(newRpcMethodSpec(inClass, outClass, javaMethodName, methodProto.getClientStreaming(),
-                        methodProto.getServerStreaming(),
-                        isAsync ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
-                        printJavaDocs, (__, b) -> {
-                            b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
-                            if (printJavaDocs) {
-                                extractJavaDocComments(state, methodIndex, b);
-                                b.addJavadoc(JAVADOC_PARAM + ctx +
-                                        " context associated with this service and request." + lineSeparator());
-                            }
-                            return b;
-                        }));
+                        .addStatement("return $L", methodDescFieldName).build());
+
+        final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, javaMethodName,
+                methodProto.getClientStreaming(), methodProto.getServerStreaming(),
+                isAsync ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING),
+                printJavaDocs, (__, b) -> {
+                    b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                    if (printJavaDocs) {
+                        extractJavaDocComments(state, methodIndex, b);
+                        b.addJavadoc(JAVADOC_PARAM + ctx +
+                                " context associated with this service and request." + lineSeparator());
+                    }
+                    return b;
+                });
+
+        final boolean isDeprecated = methodSpec.annotations.contains(AnnotationSpec.builder(Deprecated.class).build());
+        if (!skipDeprecated) {
+            interfaceSpecBuilder.addMethod(methodSpec);
+        } else {
+            if (!isDeprecated) {
+                interfaceSpecBuilder.addMethod(methodSpec);
+            }
+        }
+
+        if (!skipDeprecated) {
+            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, PATH)
+                    .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L}." + lineSeparator(), methodDescriptor)
+                    .addAnnotation(Deprecated.class)
+                    .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
+                    .initializer("$S", context.methodPath(state.serviceProto, methodProto));
+            interfaceSpecBuilder.addField(pathSpecBuilder.build());
+        }
 
         if (!isAsync && methodProto.getServerStreaming()) {
             interfaceSpecBuilder.addMethod(newRpcMethodSpec(inClass, outClass, javaMethodName,
                     methodProto.getClientStreaming(), methodProto.getServerStreaming(),
                     EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE), printJavaDocs,
                     (__, b) -> {
-                        b.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
-                        if (printJavaDocs) {
-                            extractJavaDocComments(state, methodIndex, b);
-                            b.addJavadoc(JAVADOC_PARAM + ctx +
-                                    " context associated with this service and request." + lineSeparator());
+                        if (isDeprecated && skipDeprecated) {
+                            b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                        } else {
+                            b.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, b);
+                                b.addJavadoc(JAVADOC_PARAM + ctx +
+                                        " context associated with this service and request." + lineSeparator());
+                            }
+                            b.addStatement("$L($L, $L, $L.sendMetaData())", javaMethodName, ctx, request, response);
                         }
-                        b.addStatement("$L($L, $L, $L.sendMetaData())", javaMethodName, ctx, request, response);
                         return b;
                     }));
         }
@@ -437,7 +459,7 @@ final class Generator {
 
         serviceClassBuilder
                 .addField(setInitializerList(FieldSpec.builder(GrpcMethodDescriptorCollection, ASYNC_METHOD_DESCRIPTORS)
-                .addModifiers(PRIVATE, STATIC, FINAL), asyncMethodDescriptors)
+                        .addModifiers(PRIVATE, STATIC, FINAL), asyncMethodDescriptors)
                         .build())
                 .addField(setInitializerList(FieldSpec.builder(GrpcMethodDescriptorCollection,
                                 BLOCKING_METHOD_DESCRIPTORS)
@@ -497,8 +519,6 @@ final class Generator {
         // TODO: Warn for path override and Validate all paths are defined.
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
                 .addModifiers(PUBLIC, STATIC, FINAL)
-                .addField(FieldSpec.builder(GrpcSupportedCodings, supportedMessageCodings)
-                        .addModifiers(PRIVATE, FINAL).build())
                 .addField(FieldSpec.builder(BufferDecoderGroup, bufferDecoderGroup)
                         .addModifiers(PRIVATE)
                         .initializer("$T.INSTANCE", EmptyBufferDecoderGroup).build())
@@ -506,57 +526,6 @@ final class Generator {
                         .addModifiers(PRIVATE)
                         .initializer("$T.emptyList()", Collections).build())
                 .superclass(ParameterizedTypeName.get(GrpcRoutes, state.serviceClass))
-                .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
-                        state.serviceClass))
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addModifiers(PUBLIC)
-                        .addStatement("this($T.emptyList())", Collections)
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)} and {@link #$L($T)}." + lineSeparator(),
-                                bufferDecoderGroup, BufferDecoderGroup, bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("this.$L = $L", supportedMessageCodings, supportedMessageCodings)
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_DEPRECATED + "use {@link #$L($T)} on the Builder instead." +
-                                lineSeparator(), routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("this($L, $T.emptyList())", strategyFactory, Collections)
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                        lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED +
-                                    "Use {@link #$L($T)}, {@link #$L($T)}, and {@link #$L($T)}." + lineSeparator(),
-                                Builder, RouteExecutionStrategyFactory, bufferDecoderGroup, BufferDecoderGroup,
-                                bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("super($L)", strategyFactory)
-                        .addStatement("this.$L = $L", supportedMessageCodings, supportedMessageCodings)
-                        .build())
                 .addMethod(methodBuilder(bufferDecoderGroup)
                         .addModifiers(PUBLIC)
                         .addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
@@ -581,15 +550,73 @@ final class Generator {
                         .addModifiers(PUBLIC)
                         .returns(state.serviceFactoryClass)
                         .addStatement("return new $T(this)", state.serviceFactoryClass)
-                        .build())
-                .addMethod(methodBuilder("newServiceFromRoutes")    // FIXME: 0.43 - remove deprecated method
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .addAnnotation(Deprecated.class)
-                        .returns(serviceFromRoutesClass)
-                        .addParameter(AllGrpcRoutes, routes, FINAL)
-                        .addStatement("return new $T($L)", serviceFromRoutesClass, routes)
                         .build());
+
+        if (!skipDeprecated) {
+            serviceBuilderSpecBuilder.addField(FieldSpec.builder(GrpcSupportedCodings, supportedMessageCodings)
+                            .addModifiers(PRIVATE, FINAL).build())
+                    .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
+                            state.serviceClass))
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addModifiers(PUBLIC)
+                            .addStatement("this($T.emptyList())", Collections)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)} and {@link #$L($T)}." +
+                                            lineSeparator(),
+                                    bufferDecoderGroup, BufferDecoderGroup, bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("this.$L = $L", supportedMessageCodings, supportedMessageCodings)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_DEPRECATED + "use {@link #$L($T)} on the Builder instead." +
+                                    lineSeparator(), routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addStatement("this($L, $T.emptyList())", strategyFactory, Collections)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                            "Use {@link #$L($T)}, {@link #$L($T)}, and {@link #$L($T)}." +
+                                            lineSeparator(),
+                                    Builder, RouteExecutionStrategyFactory, bufferDecoderGroup, BufferDecoderGroup,
+                                    bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("super($L)", strategyFactory)
+                            .addStatement("this.$L = $L", supportedMessageCodings, supportedMessageCodings)
+                            .build())
+                    .addMethod(methodBuilder("newServiceFromRoutes")
+                            .addModifiers(PROTECTED)
+                            .addAnnotation(Override.class)
+                            .addAnnotation(Deprecated.class)
+                            .returns(serviceFromRoutesClass)
+                            .addParameter(AllGrpcRoutes, routes, FINAL)
+                            .addStatement("return new $T($L)", serviceFromRoutesClass, routes)
+                            .build());
+        }
 
         state.serviceRpcInterfaces.forEach(rpcInterface -> {
             final ClassName inClass = messageTypesMap.get(rpcInterface.methodProto.getInputType());
@@ -598,34 +625,53 @@ final class Generator {
             final String methodName = routeName + (rpcInterface.blocking ? Blocking : "");
             final String addRouteMethodName = addRouteMethodName(rpcInterface.methodProto, rpcInterface.blocking);
 
-            CodeBlock addRouteCode = CodeBlock.builder()
-                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass))
-                    .beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
-                    .addStatement("$L($L.getClass(), $T.$L(), $L, $L, $L)",
-                            addRouteMethodName, rpc,
-                            rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
-                            route)
-                    .nextControlFlow("else")
-                    .addStatement("$L($T.$L, $L.getClass(), $T.$L().$L(), $L, $T.class, $T.class, $L($L))",
-                            addRouteMethodName, rpcInterface.className, PATH, rpc,
-                            rpcInterface.className, methodDescriptor, javaMethodName,
-                            route,
-                            inClass, outClass, initSerializationProvider, supportedMessageCodings)
-                    .endControlFlow().build();
+            CodeBlock.Builder addRouteCodeBuilder = CodeBlock.builder()
+                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass));
 
-            CodeBlock addRouteExecCode = CodeBlock.builder()
-                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass))
-                    .beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
-                    .addStatement("$L($L, $T.$L(), $L, $L, $L)",
-                            addRouteMethodName, strategy,
-                            rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
-                            route)
-                    .nextControlFlow("else")
-                    .addStatement("$L($T.$L, $L, $L, $T.class, $T.class, $L($L))",
-                            addRouteMethodName, rpcInterface.className, PATH, strategy,
-                            route,
-                            inClass, outClass, initSerializationProvider, supportedMessageCodings)
-                    .endControlFlow().build();
+            if (!skipDeprecated) {
+                addRouteCodeBuilder.beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
+                        .addStatement("$L($L.getClass(), $T.$L(), $L, $L, $L)",
+                                addRouteMethodName, rpc,
+                                rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
+                                route).nextControlFlow("else")
+                        .addStatement("$L($T.$L, $L.getClass(), $T.$L().$L(), $L, $T.class, $T.class, $L($L))",
+                                addRouteMethodName, rpcInterface.className, PATH, rpc,
+                                rpcInterface.className, methodDescriptor, javaMethodName,
+                                route,
+                                inClass, outClass, initSerializationProvider, supportedMessageCodings)
+                        .endControlFlow();
+            } else {
+                addRouteCodeBuilder.addStatement("$L($L.getClass(), $T.$L(), $L, $L, $L)",
+                        addRouteMethodName, rpc,
+                        rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
+                        route);
+            }
+
+            CodeBlock addRouteCode = addRouteCodeBuilder.build();
+
+            CodeBlock.Builder addRouteExecCodeBuilder = CodeBlock.builder()
+                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass));
+
+            if (!skipDeprecated) {
+                addRouteExecCodeBuilder.beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
+                        .addStatement("$L($L, $T.$L(), $L, $L, $L)",
+                                addRouteMethodName, strategy,
+                                rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
+                                route)
+                        .nextControlFlow("else")
+                        .addStatement("$L($T.$L, $L, $L, $T.class, $T.class, $L($L))",
+                                addRouteMethodName, rpcInterface.className, PATH, strategy,
+                                route,
+                                inClass, outClass, initSerializationProvider, supportedMessageCodings)
+                        .endControlFlow();
+            } else {
+                addRouteExecCodeBuilder.addStatement("$L($L, $T.$L(), $L, $L, $L)",
+                        addRouteMethodName, strategy,
+                        rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
+                        route);
+            }
+
+            CodeBlock addRouteExecCode = addRouteExecCodeBuilder.build();
 
             serviceBuilderSpecBuilder
                     .addMethod(methodBuilder(methodName)
@@ -648,36 +694,37 @@ final class Generator {
                             .build());
         });
 
-        serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
+        final MethodSpec.Builder addServiceBuilder = methodBuilder(addService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.serviceClass, service, FINAL)
-                .addStatement("$T.requireNonNull($L)", Objects, service)
-                .addStatement("$L($L)", registerRoutes, service)
-                .addStatement("return this")
-                .build());
+                .addStatement("$T.requireNonNull($L)", Objects, service);
 
-        serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
-                .addModifiers(PUBLIC)
-                .addAnnotation(Deprecated.class)
-                .addJavadoc("Adds a {@link $T} implementation." + lineSeparator(), state.blockingServiceClass)
-                .addJavadoc(lineSeparator())
-                .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
-                        state.blockingServiceClass)
-                .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
-                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($L)}." + lineSeparator(),
-                        // force canonicalName to work around JDK8 erroneous javadoc `warning - Tag @link: can't find`
-                        addBlockingService, state.blockingServiceClass.canonicalName())
-                .returns(builderClass)
-                .addParameter(state.blockingServiceClass, service, FINAL)
-                .addStatement("return $L($L)", addBlockingService, service)
-                .build());
+        if (!skipDeprecated) {
+            serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(Deprecated.class)
+                    .addJavadoc("Adds a {@link $T} implementation." + lineSeparator(), state.blockingServiceClass)
+                    .addJavadoc(lineSeparator())
+                    .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
+                            state.blockingServiceClass)
+                    .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
+                    .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($L)}." + lineSeparator(),
+                            // force canonicalName to work around JDK8 erroneous javadoc
+                            // `warning - Tag @link: can't find`
+                            addBlockingService, state.blockingServiceClass.canonicalName())
+                    .returns(builderClass)
+                    .addParameter(state.blockingServiceClass, service, FINAL)
+                    .addStatement("return $L($L)", addBlockingService, service)
+                    .build());
+        }
 
         final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addBlockingService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL)
                 .addStatement("$T.requireNonNull($L)", Objects, service);
+
         final MethodSpec.Builder registerRoutesMethodSpecBuilder = methodBuilder(registerRoutes)
                 .addModifiers(PROTECTED)
                 .addAnnotation(Override.class)
@@ -687,16 +734,25 @@ final class Generator {
         state.serviceProto.getMethodList().stream()
                 .map(Generator::routeName)
                 .forEach(n -> {
-                    registerRoutesMethodSpecBuilder.addStatement("$L($L)", n, service);
+                    if (!skipDeprecated) {
+                        registerRoutesMethodSpecBuilder.addStatement("$L($L)", n, service);
+                    }
+                    addServiceBuilder.addStatement("$L($L)", n, service);
                     addBlockingServiceMethodSpecBuilder.addStatement("$L$L($L)", n, Blocking, service);
                 });
 
+        addServiceBuilder.addStatement("return this");
+        serviceBuilderSpecBuilder.addMethod(addServiceBuilder.build());
         addBlockingServiceMethodSpecBuilder.addStatement("return this");
 
-        final TypeSpec serviceBuilderType = serviceBuilderSpecBuilder
-                .addMethod(addBlockingServiceMethodSpecBuilder.build())
-                .addMethod(registerRoutesMethodSpecBuilder.build())
-                .build();
+        final TypeSpec.Builder serviceBuilder = serviceBuilderSpecBuilder
+                .addMethod(addBlockingServiceMethodSpecBuilder.build());
+
+        if (!skipDeprecated) {
+            serviceBuilder.addMethod(registerRoutesMethodSpecBuilder.build());
+        }
+
+        final TypeSpec serviceBuilderType = serviceBuilder.build();
 
         final TypeSpec.Builder serviceFactoryClassSpecBuilder = classBuilder(state.serviceFactoryClass)
                 .addModifiers(PUBLIC, STATIC, FINAL)
@@ -718,126 +774,10 @@ final class Generator {
                         .addJavadoc(lineSeparator())
                         .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
                                 lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED +
-                                    "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
-                                Builder, bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.serviceClass, service, FINAL)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
-                                serviceFactoryBuilderInitChain(state.serviceProto, false))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
-                                "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder, Builder,
-                                routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.serviceClass, service, FINAL)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
-                                serviceFactoryBuilderInitChain(state.serviceProto, false))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED +
-                                "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
-                                BufferDecoderGroup, Builder, bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.serviceClass, service, FINAL)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
-                                supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, false))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addStatement("this(new $T().$L)", builderClass,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED +
-                                "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
-                                Builder, bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.blockingServiceClass, service, FINAL)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
-                                serviceFactoryBuilderInitChain(state.serviceProto, true))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
-                                        "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder, Builder,
-                                routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.blockingServiceClass, service, FINAL)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
-                                serviceFactoryBuilderInitChain(state.serviceProto, true))
-                        .build())
-                .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
-                        .addJavadoc(lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
-                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
-                                lineSeparator(), RouteExecutionStrategy)
-                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
-                                lineSeparator())
-                        .addJavadoc(JAVADOC_DEPRECATED +
-                                "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
-                                BufferDecoderGroup, Builder, bufferEncoders, Types.List)
-                        .addAnnotation(Deprecated.class)
-                        .addModifiers(PUBLIC)
-                        .addParameter(state.blockingServiceClass, service, FINAL)
-                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
-                                supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 // and the private constructor they all call
                 .addMethod(constructorBuilder()
@@ -846,6 +786,130 @@ final class Generator {
                         .addStatement("super($L)", builder)
                         .build())
                 .addType(serviceBuilderType);
+
+        if (!skipDeprecated) {
+            serviceFactoryClassSpecBuilder.addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                            "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." +
+                                            lineSeparator(),
+                                    Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
+                                    Builder, bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.serviceClass, service, FINAL)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
+                                    serviceFactoryBuilderInitChain(state.serviceProto, false))
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
+                                            "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder,
+                                    Builder, routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.serviceClass, service, FINAL)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
+                                    serviceFactoryBuilderInitChain(state.serviceProto, false))
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                            "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." +
+                                            lineSeparator(),
+                                    Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
+                                    BufferDecoderGroup, Builder, bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.serviceClass, service, FINAL)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
+                                    supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto,
+                                            false))
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                            "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." +
+                                            lineSeparator(),
+                                    Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
+                                    Builder, bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.blockingServiceClass, service, FINAL)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
+                                    serviceFactoryBuilderInitChain(state.serviceProto, true))
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
+                                            "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder,
+                                    Builder, routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.blockingServiceClass, service, FINAL)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
+                                    serviceFactoryBuilderInitChain(state.serviceProto, true))
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                            .addJavadoc(lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                    " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                    lineSeparator(), RouteExecutionStrategy)
+                            .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                    lineSeparator())
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                            "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." +
+                                            lineSeparator(),
+                                    Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
+                                    BufferDecoderGroup, Builder, bufferEncoders, Types.List)
+                            .addAnnotation(Deprecated.class)
+                            .addModifiers(PUBLIC)
+                            .addParameter(state.blockingServiceClass, service, FINAL)
+                            .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                            .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                            .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
+                                    supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, true))
+                            .build());
+        }
 
         serviceClassBuilder.addType(serviceFactoryClassSpecBuilder.build());
 
@@ -859,64 +923,66 @@ final class Generator {
                     Metadata);
 
             final ClassName metaDataClassName = ClassName.bestGuess(name);
-            final TypeSpec classSpec = classBuilder(name)
-                    .addJavadoc(JAVADOC_DEPRECATED + "This class will be removed in the future in favor of direct " +
-                            "usage of {@link $T}. Deprecation of {@link $T#path()} renders this type unnecessary."
-                                    + lineSeparator(), GrpcClientMetadata, GrpcClientMetadata)
-                    .addAnnotation(Deprecated.class)
-                    .addModifiers(PUBLIC, STATIC, FINAL)
-                    .superclass(DefaultGrpcClientMetadata)
-                    .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
-                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $T}." + lineSeparator(),
-                                    DefaultGrpcClientMetadata)
-                            .addAnnotation(Deprecated.class)
-                            .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
-                            .initializer("new $T()", metaDataClassName)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PRIVATE)
-                            .addParameter(GrpcClientMetadata, metadata, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, metadata)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PRIVATE)
-                            .addStatement("super($T.$L)", rpcInterface.className, PATH)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
-                            .addParameter(ContentCodec, requestEncoding, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, requestEncoding)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
-                            .addParameter(GrpcExecutionStrategy, strategy, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, strategy)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
-                            .addParameter(Duration.class, timeout, FINAL)
-                            .addStatement("super($T.$L, $L)",
-                                    rpcInterface.className, PATH, timeout)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
-                            .addParameter(GrpcExecutionStrategy, strategy, FINAL)
-                            .addParameter(ContentCodec, requestEncoding, FINAL)
-                            .addStatement("super($T.$L, $L, $L)", rpcInterface.className, PATH,
-                                    strategy, requestEncoding)
-                            .build())
-                    .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
-                            .addParameter(GrpcExecutionStrategy, strategy, FINAL)
-                            .addParameter(ContentCodec, requestEncoding, FINAL)
-                            .addParameter(Duration.class, timeout, FINAL)
-                            .addStatement("super($T.$L, $L, $L, $L)", rpcInterface.className, PATH,
-                                    strategy, requestEncoding, timeout)
-                            .build())
-                    .build();
+            if (!skipDeprecated) {
+                final TypeSpec.Builder classSpecBuilder = classBuilder(name)
+                        .addJavadoc(JAVADOC_DEPRECATED + "This class will be removed in the future in favor of direct "
+                                +
+                                "usage of {@link $T}. Deprecation of {@link $T#path()} renders this type unnecessary."
+                                + lineSeparator(), GrpcClientMetadata, GrpcClientMetadata)
+                        .addAnnotation(Deprecated.class)
+                        .addModifiers(PUBLIC, STATIC, FINAL)
+                        .superclass(DefaultGrpcClientMetadata)
+                        .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
+                                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $T}." + lineSeparator(),
+                                        DefaultGrpcClientMetadata)
+                                .addAnnotation(Deprecated.class)
+                                .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
+                                .initializer("new $T()", metaDataClassName)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PRIVATE)
+                                .addParameter(GrpcClientMetadata, metadata, FINAL)
+                                .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, metadata)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PRIVATE)
+                                .addStatement("super($T.$L)", rpcInterface.className, PATH)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PUBLIC)
+                                .addParameter(GrpcExecutionStrategy, strategy, FINAL)
+                                .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, strategy)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PUBLIC)
+                                .addParameter(Duration.class, timeout, FINAL)
+                                .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, timeout)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PUBLIC)
+                                .addParameter(ContentCodec, requestEncoding, FINAL)
+                                .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, requestEncoding)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PUBLIC)
+                                .addParameter(GrpcExecutionStrategy, strategy, FINAL)
+                                .addParameter(ContentCodec, requestEncoding, FINAL)
+                                .addStatement("super($T.$L, $L, $L)", rpcInterface.className, PATH,
+                                        strategy, requestEncoding)
+                                .build())
+                        .addMethod(constructorBuilder()
+                                .addModifiers(PUBLIC)
+                                .addParameter(GrpcExecutionStrategy, strategy, FINAL)
+                                .addParameter(ContentCodec, requestEncoding, FINAL)
+                                .addParameter(Duration.class, timeout, FINAL)
+                                .addStatement("super($T.$L, $L, $L, $L)", rpcInterface.className, PATH,
+                                        strategy, requestEncoding, timeout)
+                                .build());
+                TypeSpec classSpec = classSpecBuilder.build();
+                serviceClassBuilder.addType(classSpec);
+            }
 
             state.clientMetaDatas.add(new ClientMetaData(methodProto, metaDataClassName));
-            serviceClassBuilder.addType(classSpec);
         });
 
         return serviceClassBuilder;
@@ -942,37 +1008,56 @@ final class Generator {
                                     extractJavaDocComments(state, methodIndex, b);
                                 }
                                 return b;
-                            }))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            printJavaDocs, (methodName, b) -> {
-                                ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
-                                b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class);
-                                if (printJavaDocs) {
-                                    extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
-                                            methodName, GrpcClientMetadata,
-                                            clientMetaData.methodProto.getClientStreaming() ? Publisher : inClass)
-                                    .addJavadoc(JAVADOC_PARAM + metadata +
-                                            " the metadata associated with this client call." + lineSeparator());
-                                }
-                                return b.addStatement("return $T.failed(new UnsupportedOperationException(\"" +
-                                        "This method is not implemented by \" + getClass() + \". Consider migrating " +
-                                        "to an alternative method or implement this method if it's required " +
-                                        "temporarily.\"))", clientMetaData.methodProto.getServerStreaming() ?
-                                        Publisher : Single);
-                            }))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            printJavaDocs, (methodName, b) -> {
-                                b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
-                                if (printJavaDocs) {
-                                    extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
-                                            " the metadata associated with this client call." + lineSeparator());
-                                }
-                                return b.addStatement("return $L(new $T($L), $L)", methodName, clientMetaData.className,
-                                        metadata, request);
                             }));
+
+            if (!skipDeprecated) {
+                clientSpecBuilder
+                        .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
+                                printJavaDocs, (methodName, b) -> {
+                                    b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
+                                    if (printJavaDocs) {
+                                        extractJavaDocComments(state, methodIndex, b);
+                                        b.addJavadoc(JAVADOC_PARAM + metadata +
+                                                " the metadata associated with this client call." + lineSeparator());
+                                    }
+                                    return b.addStatement("return $L(new $T($L), $L)", methodName,
+                                            clientMetaData.className, metadata, request);
+                                }))
+                        .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
+                                printJavaDocs, (methodName, b) -> {
+                                    ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
+                                    b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
+                                            .addAnnotation(Deprecated.class);
+                                    if (printJavaDocs) {
+                                        extractJavaDocComments(state, methodIndex, b);
+                                        b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                                        methodName, GrpcClientMetadata,
+                                                        clientMetaData.methodProto.getClientStreaming() ?
+                                                                Publisher : inClass)
+                                                .addJavadoc(JAVADOC_PARAM + metadata +
+                                                        " the metadata associated with this client call." +
+                                                        lineSeparator());
+                                    }
+                                    return b.addStatement("return $T.failed(new UnsupportedOperationException(\"" +
+                                            "This method is not implemented by \" + getClass() + \". " +
+                                            "Consider migrating " +
+                                            "Consider migrating " +
+                                            "to an alternative method or implement this method if it's required " +
+                                            "temporarily.\"))", clientMetaData.methodProto.getServerStreaming() ?
+                                            Publisher : Single);
+                                }));
+            } else {
+                clientSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
+                        printJavaDocs, (methodName, b) -> {
+                            b.addModifiers(ABSTRACT).addParameter(GrpcClientMetadata, metadata);
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, b);
+                                b.addJavadoc(JAVADOC_PARAM + metadata +
+                                        " the metadata associated with this client call." + lineSeparator());
+                            }
+                            return b;
+                        }));
+            }
 
             blockingClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
@@ -982,35 +1067,60 @@ final class Generator {
                                     extractJavaDocComments(state, methodIndex, b);
                                 }
                                 return b;
-                            }))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            printJavaDocs, (methodName, b) -> {
-                                ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
-                                b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class);
-                                if (printJavaDocs) {
-                                    extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
-                                            methodName, GrpcClientMetadata,
-                                            clientMetaData.methodProto.getClientStreaming() ? Types.Iterable : inClass)
-                                    .addJavadoc(JAVADOC_PARAM + metadata +
-                                            " the metadata associated with this client call." + lineSeparator());
-                                }
-                                return b.addStatement("throw new UnsupportedOperationException(\"This method is not " +
-                                        "implemented by \" + getClass() + \". Consider migrating to an alternative " +
-                                        "method or implement this method if it's required temporarily.\")");
-                            }))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            printJavaDocs, (methodName, b) -> {
-                                b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
-                                if (printJavaDocs) {
-                                    extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
-                                            " the metadata associated with this client call." + lineSeparator());
-                                }
-                                return b.addStatement("return $L(new $T($L), $L)", methodName, clientMetaData.className,
-                                        metadata, request);
                             }));
+
+            if (!skipDeprecated) {
+                blockingClientSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto,
+                                EnumSet.of(BLOCKING, INTERFACE, CLIENT),
+                                printJavaDocs, (methodName, b) -> {
+                                    ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
+                                    b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
+                                            .addAnnotation(Deprecated.class);
+                                    if (printJavaDocs) {
+                                        extractJavaDocComments(state, methodIndex, b);
+                                        b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                                        methodName, GrpcClientMetadata,
+                                                        clientMetaData.methodProto.getClientStreaming() ?
+                                                                Types.Iterable :
+                                                                inClass)
+                                                .addJavadoc(JAVADOC_PARAM + metadata +
+                                                        " the metadata associated with this client call." +
+                                                        lineSeparator());
+                                    }
+                                    return b.addStatement("throw new UnsupportedOperationException(\"" +
+                                            "This method is not " +
+                                            "implemented by \" + getClass() + \". Consider " +
+                                            "migrating to an alternative " +
+                                            "method or implement this method if it's required temporarily.\")");
+                                }
+                        ))
+                        .addMethod(newRpcMethodSpec(clientMetaData.methodProto,
+                                EnumSet.of(BLOCKING, INTERFACE, CLIENT),
+                                printJavaDocs, (methodName, b) -> {
+                                    b.addModifiers(DEFAULT).addParameter(GrpcClientMetadata, metadata);
+                                    if (printJavaDocs) {
+                                        extractJavaDocComments(state, methodIndex, b);
+                                        b.addJavadoc(JAVADOC_PARAM + metadata +
+                                                " the metadata associated with this client call." + lineSeparator());
+                                    }
+                                    return b.addStatement("return $L(new $T($L), $L)", methodName,
+                                            clientMetaData.className, metadata, request);
+                                }
+                        ));
+            } else {
+                blockingClientSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto,
+                        EnumSet.of(BLOCKING, INTERFACE, CLIENT),
+                        printJavaDocs, (methodName, b) -> {
+                            b.addModifiers(ABSTRACT).addParameter(GrpcClientMetadata, metadata);
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, b);
+                                b.addJavadoc(JAVADOC_PARAM + metadata +
+                                        " the metadata associated with this client call." + lineSeparator());
+                            }
+                            return b;
+                        }
+                ));
+            }
         }
 
         final ClassName clientToBlockingClientClass = state.clientClass.peerClass(state.clientClass.simpleName() + To
@@ -1034,25 +1144,39 @@ final class Generator {
         final ClassName defaultBlockingClientClass = clientFactoryClass.nestedClass(Default +
                 state.blockingClientClass.simpleName());
 
+        final MethodSpec.Builder newClientMethodBuilder = methodBuilder("newClient")
+                .addModifiers(PROTECTED)
+                .addAnnotation(Override.class)
+                .returns(state.clientClass)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            newClientMethodBuilder.addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
+                    supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            newClientMethodBuilder.addStatement("return new $T($L, $L())", defaultClientClass, factory,
+                    bufferDecoderGroup);
+        }
+
+        final MethodSpec.Builder newBlockingClientMethodBuilder = methodBuilder("newBlockingClient")
+                .addModifiers(PROTECTED)
+                .addAnnotation(Override.class)
+                .returns(state.blockingClientClass)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            newBlockingClientMethodBuilder.addStatement("return new $T($L, $L(), $L())", defaultBlockingClientClass,
+                    factory, supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            newBlockingClientMethodBuilder.addStatement("return new $T($L, $L())", defaultBlockingClientClass,
+                    factory, bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)
                 .superclass(ParameterizedTypeName.get(GrpcClientFactory, state.clientClass, state.blockingClientClass))
-                .addMethod(methodBuilder("newClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L(), $L())", defaultClientClass, factory,
-                                supportedMessageCodings, bufferDecoderGroup)
-                        .build())
-                .addMethod(methodBuilder("newBlockingClient")
-                        .addModifiers(PROTECTED)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L(), $L())", defaultBlockingClientClass, factory,
-                                supportedMessageCodings, bufferDecoderGroup)
-                        .build())
+                .addMethod(newClientMethodBuilder.build())
+                .addMethod(newBlockingClientMethodBuilder.build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
                 .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass));
 
@@ -1085,8 +1209,8 @@ final class Generator {
             serviceFromRoutesSpecBuilder.addField(ParameterizedTypeName.get(routeInterfaceClass(methodProto),
                     inClass, outClass), routeName, PRIVATE, FINAL);
 
-            serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.$L)", routeName, routes,
-                    routeFactoryMethodName(methodProto), rpc.className, PATH);
+            serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.methodDescriptor().httpPath())",
+                    routeName, routes, routeFactoryMethodName(methodProto), rpc.className);
 
             serviceFromRoutesSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class), false,
                     (name, builder) ->
@@ -1116,7 +1240,7 @@ final class Generator {
                 methodBuilderCustomizer);
     }
 
-    private static MethodSpec newRpcMethodSpec(
+    private MethodSpec newRpcMethodSpec(
             final ClassName inClass, final ClassName outClass, final String methodName,
             final boolean clientStreaming, final boolean serverStreaming,
             final EnumSet<NewRpcMethodFlag> flags, final boolean printJavaDocs,
@@ -1139,7 +1263,8 @@ final class Generator {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(BlockingIterable, inClass), request, mods);
                     if (printJavaDocs) {
                         methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
-                            " used to read the stream of type {@link $T} from the client." + lineSeparator(), inClass);
+                                " used to read the stream of type {@link $T} from the client." + lineSeparator(),
+                                inClass);
                     }
                 }
             } else {
@@ -1227,9 +1352,9 @@ final class Generator {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Publisher, outClass));
                 if (printJavaDocs) {
                     methodSpecBuilder.addJavadoc(JAVADOC_RETURN + (flags.contains(CLIENT) ?
-                                    "used to read a stream of type {@link $T} from the server." :
-                                    "used to write a stream of type {@link $T} to the client.")
-                                    + lineSeparator(), outClass);
+                            "used to read a stream of type {@link $T} from the server." :
+                            "used to write a stream of type {@link $T} to the client.")
+                            + lineSeparator(), outClass);
                 }
             } else {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Single, outClass));
@@ -1247,32 +1372,46 @@ final class Generator {
 
     private TypeSpec newDefaultBlockingClientClassSpec(final State state, final ClassName defaultClientClass,
                                                        final ClassName defaultBlockingClientClass) {
+        final MethodSpec.Builder asClientMethodBuilder = methodBuilder("asClient")
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(state.clientClass);
+
+        // TODO: Cache client
+        if (!skipDeprecated) {
+            asClientMethodBuilder.addStatement("return new $T($L, $L, $L)", defaultClientClass, factory,
+                    supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            asClientMethodBuilder.addStatement("return new $T($L, $L)", defaultClientClass, factory,
+                    bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder typeSpecBuilder = classBuilder(defaultBlockingClientClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(state.blockingClientClass)
                 .addField(GrpcClientCallFactory, factory, PRIVATE, FINAL)
-                .addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL)
                 .addField(BufferDecoderGroup, bufferDecoderGroup, PRIVATE, FINAL)
-                .addMethod(methodBuilder("asClient")
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.clientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T($L, $L, $L)", defaultClientClass, factory, supportedMessageCodings,
-                                bufferDecoderGroup)
-                        .build())
+                .addMethod(asClientMethodBuilder.build())
                 .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
                         factory));
 
+        if (!skipDeprecated) {
+            typeSpecBuilder.addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL);
+        }
+
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
-                .addParameter(GrpcClientCallFactory, factory, FINAL)
-                .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                .addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            constructorBuilder.addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                    .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings);
+        }
+
+        constructorBuilder.addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
                 .addStatement("this.$N = $N", factory, factory)
-                .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings)
                 .addStatement("this.$N = $N", bufferDecoderGroup, bufferDecoderGroup);
 
         addClientFieldsAndMethods(state, typeSpecBuilder, constructorBuilder, true);
@@ -1283,20 +1422,26 @@ final class Generator {
 
     private TypeSpec newDefaultClientClassSpec(final State state, final ClassName defaultClientClass,
                                                final ClassName defaultBlockingClientClass) {
+        final MethodSpec.Builder asClientMethodBuilder = methodBuilder(asBlockingClient)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(state.blockingClientClass);
+
+        if (!skipDeprecated) {
+            // TODO: Cache client
+            asClientMethodBuilder.addStatement("return new $T($L, $L, $L)", defaultBlockingClientClass,
+                    factory, supportedMessageCodings, bufferDecoderGroup);
+        } else {
+            asClientMethodBuilder.addStatement("return new $T($L, $L)", defaultBlockingClientClass,
+                    factory, bufferDecoderGroup);
+        }
+
         final TypeSpec.Builder typeSpecBuilder = classBuilder(defaultClientClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(state.clientClass)
                 .addField(GrpcClientCallFactory, factory, PRIVATE, FINAL)
-                .addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL)
                 .addField(BufferDecoderGroup, bufferDecoderGroup, PRIVATE, FINAL)
-                .addMethod(methodBuilder(asBlockingClient)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .returns(state.blockingClientClass)
-                        // TODO: Cache client
-                        .addStatement("return new $T($L, $L, $L)", defaultBlockingClientClass,
-                                factory, supportedMessageCodings, bufferDecoderGroup)
-                        .build())
+                .addMethod(asClientMethodBuilder.build())
                 .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(onClosing, factory))
@@ -1306,13 +1451,22 @@ final class Generator {
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
                         factory));
 
+        if (!skipDeprecated) {
+            typeSpecBuilder.addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL);
+        }
+
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
-                .addParameter(GrpcClientCallFactory, factory, FINAL)
-                .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                .addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
+                .addParameter(GrpcClientCallFactory, factory, FINAL);
+
+        if (!skipDeprecated) {
+            constructorBuilder
+                    .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
+                    .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings);
+        }
+
+        constructorBuilder.addParameter(BufferDecoderGroup, bufferDecoderGroup, FINAL)
                 .addStatement("this.$N = $N", factory, factory)
-                .addStatement("this.$N = $N", supportedMessageCodings, supportedMessageCodings)
                 .addStatement("this.$N = $N", bufferDecoderGroup, bufferDecoderGroup);
 
         addClientFieldsAndMethods(state, typeSpecBuilder, constructorBuilder, false);
@@ -1344,35 +1498,51 @@ final class Generator {
                     .addField(ParameterizedTypeName.get(clientCallClass(clientMetaData.methodProto, blocking),
                             inClass, outClass), callFieldName, PRIVATE, FINAL)
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
-                            (n, b) -> b.addAnnotation(Override.class)
-                                    .addStatement("return $L($L.isEmpty() ? new $T() : new $T(), $L)", n,
-                                            supportedMessageCodings, DefaultGrpcClientMetadata,
-                                            clientMetaData.className, request)))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
-                            (__, b) -> b.addAnnotation(Deprecated.class)
-                                    .addAnnotation(Override.class)
-                                    .addParameter(clientMetaData.className, metadata, FINAL)
-                                    .addStatement("$T.requireNonNull($L)", Objects, metadata)
-                                    .addStatement("$T.requireNonNull($L)", Objects, request)
-                                    .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (__, b) -> b.addAnnotation(Override.class)
                                     .addParameter(GrpcClientMetadata, metadata, FINAL)
                                     .addStatement("$T.requireNonNull($L)", Objects, metadata)
                                     .addStatement("$T.requireNonNull($L)", Objects, request)
                                     .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)));
 
-            constructorBuilder
-                    .addCode(CodeBlock.builder()
-                            .beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
-                            .addStatement("$L = $N.$L($T.$L(), $L)", callFieldName, factory,
-                                    newCallMethodName(clientMetaData.methodProto, blocking), rpcInterface.className,
-                                    methodDescriptor, bufferDecoderGroup)
-                            .nextControlFlow("else")
-                            .addStatement("$L = $N.$L($L($L), $T.class, $T.class)", callFieldName, factory,
-                                    newCallMethodName(clientMetaData.methodProto, blocking), initSerializationProvider,
-                                    supportedMessageCodings, inClass, outClass)
-                            .endControlFlow().build());
+            if (!skipDeprecated) {
+                typeSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
+                        (__, b) -> b.addAnnotation(Deprecated.class)
+                                .addAnnotation(Override.class)
+                                .addParameter(clientMetaData.className, metadata, FINAL)
+                                .addStatement("$T.requireNonNull($L)", Objects, metadata)
+                                .addStatement("$T.requireNonNull($L)", Objects, request)
+                                .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)))
+                        .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
+                                (n, b) -> b.addAnnotation(Override.class)
+                                            .addStatement("return $L($L.isEmpty() ? new $T() : new $T(), $L)", n,
+                                                    supportedMessageCodings, DefaultGrpcClientMetadata,
+                                                    clientMetaData.className, request)));
+            } else {
+                typeSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
+                        (n, b) -> b.addAnnotation(Override.class)
+                                        .addStatement("return $L(new $T(), $L)",
+                                                n, DefaultGrpcClientMetadata, request)));
+            }
+
+            CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
+
+            if (!skipDeprecated) {
+                constructorCodeBuilder.beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
+                        .addStatement("$L = $N.$L($T.$L(), $L)", callFieldName, factory,
+                                newCallMethodName(clientMetaData.methodProto, blocking), rpcInterface.className,
+                                methodDescriptor, bufferDecoderGroup)
+                        .nextControlFlow("else")
+                        .addStatement("$L = $N.$L($L($L), $T.class, $T.class)", callFieldName, factory,
+                                newCallMethodName(clientMetaData.methodProto, blocking), initSerializationProvider,
+                                supportedMessageCodings, inClass, outClass)
+                        .endControlFlow();
+            } else {
+                constructorCodeBuilder.addStatement("$L = $N.$L($T.$L(), $L)", callFieldName, factory,
+                        newCallMethodName(clientMetaData.methodProto, blocking), rpcInterface.className,
+                        methodDescriptor, bufferDecoderGroup);
+            }
+
+            constructorBuilder.addCode(constructorCodeBuilder.build());
         }
     }
 
@@ -1407,16 +1577,20 @@ final class Generator {
                                     .addStatement("return $L.$L($L)$L", client, n, requestExpression,
                                             responseConversionExpression)))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
-                            (n, b) -> b.addAnnotation(Deprecated.class)
-                                    .addAnnotation(Override.class)
-                                    .addParameter(clientMetaData.className, metadata, FINAL)
-                                    .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
-                                            responseConversionExpression)))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addParameter(GrpcClientMetadata, metadata, FINAL)
                                     .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
                                             responseConversionExpression)));
+
+            if (!skipDeprecated) {
+                typeSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT),
+                        false,
+                        (n, b) -> b.addAnnotation(Deprecated.class)
+                                .addAnnotation(Override.class)
+                                .addParameter(clientMetaData.className, metadata, FINAL)
+                                .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
+                                        responseConversionExpression)));
+            }
         });
 
         return typeSpecBuilder.build();
@@ -1486,36 +1660,48 @@ final class Generator {
                         : blocking ? BlockingRoute : Route);
     }
 
-    private static CodeBlock routeDefinition(final RpcInterface rpcInterface, final String routeName,
+    private CodeBlock routeDefinition(final RpcInterface rpcInterface, final String routeName,
                                              final ClassName inClass, final ClassName outClass) {
         final ClassName routeInterfaceClass = routeInterfaceClass(rpcInterface.methodProto, rpcInterface.blocking);
         final TypeName routeType = ParameterizedTypeName.get(routeInterfaceClass, inClass, outClass);
         if (rpcInterface.blocking && rpcInterface.methodProto.getServerStreaming()) {
+            final TypeSpec.Builder anonymousClassBuilder = anonymousClassBuilder("");
+
+            final MethodSpec.Builder handleMethodSpecBuilder = methodBuilder(handle)
+                    .addAnnotation(Override.class)
+                    .addAnnotation(Deprecated.class)
+                    .addModifiers(PUBLIC)
+                    .addException(Exception.class)
+                    .addParameter(GrpcServiceContext, ctx)
+                    .addParameter(rpcInterface.methodProto.getClientStreaming() ?
+                                    ParameterizedTypeName.get(BlockingIterable, inClass) :
+                                    inClass,
+                            request)
+                    .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
+                            responseWriter);
+
+            if (!skipDeprecated) {
+                handleMethodSpecBuilder.addStatement("$L.$L($L, $L, $L)",
+                        rpc, routeName, ctx, request, responseWriter);
+            } else {
+                handleMethodSpecBuilder.addStatement("throw new UnsupportedOperationException(\"" +
+                        "This method is deprecated and should not be called by router or any generated code.\")");
+            }
+
+            anonymousClassBuilder.addMethod(handleMethodSpecBuilder.build());
+
             return CodeBlock.builder()
                     .addStatement("final $T $N = $L",
-                            routeType, route, anonymousClassBuilder("")
+                            routeType, route, anonymousClassBuilder
                                     .addSuperinterface(routeType)
                                     .addMethod(methodBuilder(handle)
                                             .addAnnotation(Override.class)
-                                            .addAnnotation(Deprecated.class)
                                             .addModifiers(PUBLIC)
                                             .addException(Exception.class)
                                             .addParameter(GrpcServiceContext, ctx)
                                             .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                                    ParameterizedTypeName.get(BlockingIterable, inClass) : inClass,
-                                                    request)
-                                            .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
-                                                    responseWriter)
-                                            .addStatement("$L.$L($L, $L, $L)",
-                                                    rpc, routeName, ctx, request, responseWriter)
-                                            .build())
-                                    .addMethod(methodBuilder(handle)
-                                            .addAnnotation(Override.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addParameter(GrpcServiceContext, ctx)
-                                            .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                                    ParameterizedTypeName.get(BlockingIterable, inClass) : inClass,
+                                                            ParameterizedTypeName.get(BlockingIterable, inClass) :
+                                                            inClass,
                                                     request)
                                             .addParameter(ParameterizedTypeName.get(BlockingStreamingGrpcServerResponse,
                                                     outClass), response)

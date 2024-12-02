@@ -27,10 +27,21 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  */
 public final class LifecycleObserverServer {
     public static void main(String[] args) throws Exception {
+        HttpLifecycleObserver observer = HttpLifecycleObservers.logging(
+                "servicetalk-examples-http-observer-logger", TRACE);
         HttpServers.forPort(8080)
-                .lifecycleObserver(HttpLifecycleObservers.logging("servicetalk-examples-http-observer-logger", TRACE))
-                // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
-                // streaming API see helloworld examples.
+                // There are a few ways how to configure an observer depending on the desired scope of its visibility.
+                // 1. Configuring it at the builder gives maximum visibility and captures entire request-response state,
+                // including all filters and exception mappers.
+                .lifecycleObserver(observer)
+                // 2. Configuring it as a filter allows users to change the ordering of the observer compare to other
+                // filters or make it conditional. This might be helpful in a few scenarios such as when the tracking
+                // scope should be limited or when logging should include tracing/MDC context set by other preceding
+                // filters. See javadoc of HttpLifecycleObserverServiceFilter for more details.
+                // 2.a. At any position compare to other filters before offloading:
+                // .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(observer))
+                // 2.b. At any position compare to other filters after offloading:
+                // .appendServiceFilter(new HttpLifecycleObserverServiceFilter(observer))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                         .payloadBody("Hello LifecycleObserver!", textSerializerUtf8()))
                 .awaitShutdown();

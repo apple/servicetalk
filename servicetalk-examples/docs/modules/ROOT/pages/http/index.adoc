@@ -234,17 +234,19 @@ on via a client filter on the client builder.
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java[HttpLifecycleObserver]
 on via a client filter on the client builder.
 
-[#DefaultLoadBalancer]
-== DefaultLoadBalancer
-This example demonstrates how to use the experimental link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/DefaultLoadBalancer.java[DefaultLoadBalancer]:
+[#LoadBalancer]
+== LoadBalancer
+This example demonstrates how to use and configure the experimental link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/LoadBalancers.java[LoadBalancers]:
 
-- by setting the load balancer to DefaultLoadBalancer for a HTTP client
-- configuring xDS failure detection for that client using default settings
+- by using link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/LoadBalancerBuilder.java[LoadBalancerBuilder] to customize its setting:
+  * configuring a different link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/LoadBalancingPolicy.java[LoadBalancingPolicy]
+  * configuring xDS failure detection using link:{source-root}/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/OutlierDetectorConfig.java[OutlierDetectorConfig]
+- by using link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.java[DefaultHttpLoadBalancerFactory] to adapt a LoadBalancer to HTTP and configure it via client builder
 
 Using the following classes:
 
-- link:{source-root}/servicetalk-examples/http/defaultloadbalancer/src/main/java/io/servicetalk/examples/http/defaultloadbalancer/DefaultLoadBalancerClient.java[DefaultLoadBalancerClient] - A client that uses the DefaultLoadBalancer.
-- link:{source-root}/servicetalk-examples/http/defaultloadbalancer/src/main/java/io/servicetalk/examples/http/defaultloadbalancer/HelloWorldServer.java[HelloWorldServer] - A simple server implementation.
+- link:{source-root}/servicetalk-examples/http/loadbalancer/src/main/java/io/servicetalk/examples/http/loadbalancer/CustomLoadBalancerClient.java[CustomLoadBalancerClient] - A client that configures custom settings for its LoadBalancer.
+- link:{source-root}/servicetalk-examples/http/loadbalancer/src/main/java/io/servicetalk/examples/http/loadbalancer/HelloWorldServer.java[HelloWorldServer] - A simple server implementation.
 
 NOTE: DefaultLoadBalancer is currently considered experimental and therefore the API is subject to change.
 
@@ -299,10 +301,33 @@ Async `Hello World` example that demonstrates how retry can be requested for a s
 Async `Hello World` example that demonstrates how retry can be requested for a multi-address client.
 
 [#TrafficResiliency]
-= Traffic Resiliency
+== Traffic Resiliency
 
 Some examples that use the traffic resiliency features.
 
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/GradientObservabilityExample.java[GradientObservabilityExample] -
+An example that demonstrates using the observer pattern to instrument the gradient capacity limiter.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientBreakersExample.java[TrafficResilienceClientBreakersExample] -
+A client that uses request metadata to select the correct circuit breaker.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsExample.java[TrafficResilienceClientPeerRejectionsExample] -
+A client which configures what constitutes a rejection based on response status code.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsPassthroughExample.java[TrafficResilienceClientPeerRejectionsPassthroughExample] -
+A client which configures which responses will affect the capacity limiter but still pass through to the underlying
+client.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceClientPeerRejectionsRetryExample.java[TrafficResilienceClientPeerRejectionsRetryExample] -
+A client which configures the resilience filters to signal an appropriate delay to the retry filter.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerClassificationExample.java[TrafficResilienceServerClassificationExample] -
+A server that specifies the importance of requests based on the request metadata.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerExample.java[TrafficResilienceServerExample] -
+A server that uses the dynamic gradient capacity limiter.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerPartitionExample.java[TrafficResilienceServerPartitionExample] -
+A server that uses two separate capacity limiters, selected based on request metadata.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerQuotasExample.java[TrafficResilienceServerQuotasExample] -
+A server that uses fixed capacity limiters based on the customer identity, as determined by the request metadata.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerStopAcceptingExample.java[TrafficResilienceServerStopAcceptingExample] -
+A server that stops accepting new connections when it reaches its rejection threshold.
+- link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/TrafficResilienceServerTerminalsExample.java[TrafficResilienceServerTerminalsExample] -
+An example that demonstrates custom handling of tickets on error conditions.
 
 [#HTTP2]
 == HTTP/2

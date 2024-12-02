@@ -1,4 +1,0 @@
-== ServiceTalk DefaultLoadBalancer Example
-
-A simple hello-world style application that uses a client configured with the DefaultLoadBalancer and xDS style outlier
-detection.

@@ -16,19 +16,22 @@
 package io.servicetalk.examples.http.traffic.resilience;
 
 import io.servicetalk.capacity.limiter.api.CapacityLimiters;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.traffic.resilience.http.TrafficResilienceHttpServiceFilter;
 
-public class TrafficResilienceServerExample {
+/**
+ * A server that uses the dynamic gradient capacity limiter.
+ */
+public final class TrafficResilienceServerExample {
 
     public static void main(String[] args) throws Exception {
         final TrafficResilienceHttpServiceFilter resilienceFilter =
                 new TrafficResilienceHttpServiceFilter.Builder(() -> CapacityLimiters.dynamicGradient().build())
                         .build();
 
-        HttpServers.forPort(0)
+        HttpServers.forPort(8080)
                 .appendNonOffloadingServiceFilter(resilienceFilter)
-                .listenAndAwait((ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())
+                .awaitShutdown();
     }
 }

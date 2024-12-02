@@ -121,7 +121,7 @@ class FlushStrategyOverrideTest {
         c.cancel(); // revert to flush on each.
 
         // No more custom strategies.
-        Collection<Object> secondReqChunks = conn.request(conn.get(""))
+        Collection<Object> secondReqChunks = conn.request(conn.get("/"))
                 .flatMapPublisher(StreamingHttpResponse::messageBody).toFuture().get();
         clientStrategy.verifyNoMoreInteractions();
         service.getLastUsedStrategy();

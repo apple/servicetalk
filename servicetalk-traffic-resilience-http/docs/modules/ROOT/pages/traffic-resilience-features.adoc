@@ -61,8 +61,6 @@ This solution is heavily tunable for power users, but we provide a few
 link:https://github.com/apple/servicetalk/blob/main/servicetalk-capacity-limiter-api/src/main/java/io/servicetalk/capacity/limiter/api/CapacityLimiters.java[configuration profiles]
 by default, that attempt to please a couple of different expectations (e.g. favouring throughput or latency).
 
-* link:{source-root}/servicetalk-examples/http/traffic-resilience/src/main/java/io/servicetalk/examples/http/traffic/resilience/GradientExample.java[Gradient example]
-
 [quote]
 ----
 All limiters we discussed so far, have their use cases, and the contract is public allowing for more power users to
