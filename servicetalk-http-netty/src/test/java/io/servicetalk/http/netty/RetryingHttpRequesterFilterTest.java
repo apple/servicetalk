@@ -261,10 +261,9 @@ class RetryingHttpRequesterFilterTest {
         final String retryMessage = "Retryable header";
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
-                        .returnFailedResponses(returnFailedResponses)
                         .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
-                                    new HttpResponseException(retryMessage, metaData) : null)
+                                    new HttpResponseException(retryMessage, metaData) : null, returnFailedResponses)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so

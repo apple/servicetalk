@@ -48,6 +48,9 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.utils.internal.ThrowableUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,6 +93,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RetryingHttpRequesterFilter.class);
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
             new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
@@ -215,17 +220,25 @@ public final class RetryingHttpRequesterFilter
             Completable applyRetryCallbacks(final Completable completable, final int retryCount, final Throwable t) {
                 Completable result = (retryCallbacks == null ? completable :
                         completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t)));
-                if (returnFailedResponses && t instanceof HttpResponseException &&
-                        ((HttpResponseException) t).metaData() instanceof StreamingHttpResponse) {
-                    StreamingHttpResponse response = (StreamingHttpResponse) ((HttpResponseException) t).metaData();
-                    // If we succeed, we need to drain the response body before we continue. If we fail we want to
-                    // surface the original exception and don't worry about draining since it will be returned to
-                    // the user.
-                    result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
-                            // If we get cancelled we also need to drain the message body as there is no guarantee
-                            // we'll ever receive a completion event, error or success.
-                            .beforeCancel(() -> drain(response).subscribe())
-                            .concat(drain(response));
+                if (returnFailedResponses) {
+                    if (t instanceof HttpResponseException &&
+                            ((HttpResponseException) t).metaData() instanceof StreamingHttpResponse) {
+                        StreamingHttpResponse response = (StreamingHttpResponse) ((HttpResponseException) t).metaData();
+                        // If we succeed, we need to drain the response body before we continue. If we fail we want to
+                        // surface the original exception and don't worry about draining since it will be returned to
+                        // the user.
+                        result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
+                                // If we get cancelled we also need to drain the message body as there is no guarantee
+                                // we'll ever receive a completion event, error or success.
+                                .beforeCancel(() -> drain(response).subscribe())
+                                .concat(drain(response));
+                    } else if (LOGGER.isDebugEnabled()) {
+                        Class<?> exceptionClass = t.getClass();
+                        Class<?> metadataClass = t instanceof HttpResponseException ?
+                                ((HttpResponseException) t).metaData().getClass() : null;
+                        LOGGER.debug("Couldn't unpack response due to unexpected dynamic types. " +
+                                        "Exception class: {}, metadataClass: {}", exceptionClass, metadataClass);
+                    }
                 }
                 return result;
             }
@@ -774,11 +787,6 @@ public final class RetryingHttpRequesterFilter
         @Nullable
         private RetryCallbacks onRequestRetry;
 
-        public Builder returnFailedResponses(final boolean returnFailedResponses) {
-            this.returnFailedResponses = returnFailedResponses;
-            return this;
-        }
-
         /**
          * By default, automatic retries wait for the associated {@link LoadBalancer} to be
          * {@link LoadBalancerReadyEvent ready} before triggering a retry for requests. This behavior may add latency to
@@ -835,6 +843,23 @@ public final class RetryingHttpRequesterFilter
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {
+            return responseMapper(mapper, false);
+        }
+
+        /**
+         * Selectively map a {@link HttpResponseMetaData response} to an {@link HttpResponseException} that can match a
+         * retry behaviour through {@link #retryResponses(BiFunction)}.
+         *
+         * @param mapper a {@link Function} that maps a {@link HttpResponseMetaData} to an
+         * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data. The
+         * mapper should return {@code null} if no retry is needed or if it cannot be determined that a retry is needed.
+         * @param returnFailedResponses whether to unwrap the response defined by the {@link HttpResponseException}
+         * meta-data in the case that the response is not retried.
+         * @return {@code this}
+         */
+        public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper,
+                                      boolean returnFailedResponses) {
+            this.returnFailedResponses = returnFailedResponses;
             this.responseMapper = requireNonNull(mapper);
             return this;
         }
