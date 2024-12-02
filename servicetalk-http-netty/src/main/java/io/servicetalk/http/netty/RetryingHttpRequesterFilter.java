@@ -95,6 +95,7 @@ public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RetryingHttpRequesterFilter.class);
+
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
             new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
@@ -233,11 +234,14 @@ public final class RetryingHttpRequesterFilter
                                 .beforeCancel(() -> drain(response).subscribe())
                                 .concat(drain(response));
                     } else if (LOGGER.isDebugEnabled()) {
-                        Class<?> exceptionClass = t.getClass();
-                        Class<?> metadataClass = t instanceof HttpResponseException ?
-                                ((HttpResponseException) t).metaData().getClass() : null;
-                        LOGGER.debug("Couldn't unpack response due to unexpected dynamic types. " +
-                                        "Exception class: {}, metadataClass: {}", exceptionClass, metadataClass);
+                        if (!(t instanceof HttpResponseException)) {
+                            LOGGER.debug("Couldn't unpack response due to unexpected dynamic types. Required " +
+                                    "exception of type HttpResponseException, found {}", t.getClass());
+                        } else {
+                            LOGGER.debug("Couldn't unpack response due to unexpected dynamic types. Required " +
+                                    "meta-data of type StreamingHttpResponse, found {}",
+                                    ((HttpResponseException) t).metaData().getClass());
+                        }
                     }
                 }
                 return result;
