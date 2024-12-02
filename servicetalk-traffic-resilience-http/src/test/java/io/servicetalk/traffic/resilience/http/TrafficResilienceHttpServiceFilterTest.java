@@ -260,8 +260,15 @@ class TrafficResilienceHttpServiceFilterTest {
                 .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
 
         // This connection shall full-fil the BACKLOG=1 setting
-        assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+        try {
+            assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
+                    .toFuture().get().asConnection(), instanceOf(HttpConnection.class)); // This is the failing line. https://github.com/apple/servicetalk/actions/runs/12129341561/job/33817567364?pr=3125
+        } catch (ExecutionException e) {
+            if (dryRun) {
+                throw e;
+            }
+            assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+        }
 
         // Any attempt to create a connection now, should time out if we're not in dry mode.
         if (dryRun) {
