@@ -44,7 +44,6 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -199,12 +198,6 @@ class TrafficResilienceHttpServiceFilterTest {
         verifyNoMoreInteractions(limiter);
 
         assertThat(rejectedCount.get(), equalTo(1));
-    }
-
-    @Test
-    @RepeatedTest(100)
-    void repro() throws Exception {
-        testStopAcceptingConnections(false, "h1");
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] dryRun={0},protocol={1}")
