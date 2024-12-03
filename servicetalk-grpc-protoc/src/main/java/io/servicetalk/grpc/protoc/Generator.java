@@ -226,13 +226,10 @@ final class Generator {
         final ClassName clientClass;
         final ClassName blockingClientClass;
 
-        final ServiceClassBuilder container;
-
         private State(ServiceDescriptorProto serviceProto, GenerationContext context, String outerClassName,
-                      int serviceIndex, ServiceClassBuilder container) {
+                      int serviceIndex) {
             this.serviceProto = serviceProto;
             this.serviceIndex = serviceIndex;
-            this.container = container;
 
             final String sanitizedProtoName = sanitizeIdentifier(serviceProto.getName(), false);
 
@@ -278,14 +275,14 @@ final class Generator {
      */
     TypeSpec.Builder generate(FileDescriptor f, final ServiceDescriptorProto serviceProto, final int serviceIndex) {
         final ServiceClassBuilder container = context.newServiceClassBuilder(serviceProto);
-        final State state = new State(serviceProto, context, container.className, serviceIndex, container);
+        final State state = new State(serviceProto, context, container.className, serviceIndex);
         if (printJavaDocs) {
             container.builder.addJavadoc("Class for $L Service", serviceProto.getName());
         }
 
         addSerializationProviderInit(state, container.builder);
 
-        addServiceRpservicetalk-grpc-protoc/src/main/java/io/servicetalk/grpc/protoc/Generator.javacInterfaces(state, container.builder);
+        addServiceRpcInterfaces(state, container.builder);
         addServiceInterfaces(state, container.builder);
         addServiceFactory(state, container.builder);
 
@@ -1653,38 +1650,48 @@ final class Generator {
             final List<RpcInterface> interfaces = state.serviceRpcInterfaces.stream()
                     .filter(intf -> intf.blocking == blocking)
                     .collect(toList());
-            for (final RpcInterface rpcInterface : interfaces) {
-                final TypeSpec interfaceTypeSpec = state.container.builder.typeSpecs.stream()
-                        .filter(ts -> ts.name.equals(rpcInterface.className.simpleName()))
-                        .findFirst().orElseThrow(IllegalStateException::new);
+            for (int i = 0; i < interfaces.size(); ++i) {
+                final RpcInterface rpcInterface = interfaces.get(i);
+                final MethodDescriptorProto methodProto = rpcInterface.methodProto;
+                final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
+                final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
+                final String methodName = sanitizeIdentifier(methodProto.getName(), true);
+                final String methodPath = context.methodPath(state.serviceProto, methodProto).substring(1);
+                final int methodIndex = i;
+                final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, methodName,
+                        methodProto.getClientStreaming(),
+                        methodProto.getServerStreaming(),
+                        !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE),
+                        printJavaDocs, (__, spec) -> {
+                            final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
+                            spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            spec.addAnnotation(Override.class);
+                            if (!blocking) {
+                                final ClassName returnType = methodProto.getServerStreaming() ? Publisher : Single;
+                                spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
+                                        returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                            } else {
+                                if (!skipDeprecated && methodProto.getServerStreaming()) {
+                                    spec.addStatement("$T.super.$L(ctx, request, response)",
+                                            rpcInterface.className, methodName);
+                                } else {
+                                    spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                            GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                                }
+                            }
+                            if (printJavaDocs) {
+                                extractJavaDocComments(state, methodIndex, spec);
+                                spec.addJavadoc(JAVADOC_PARAM + ctx +
+                                        " context associated with this service and request." + lineSeparator());
+                            }
+                            return spec;
+                        });
 
-                for (final MethodSpec methodSpec : interfaceTypeSpec.methodSpecs) {
-                    final boolean isDeprecated = methodSpec.annotations.contains(
-                            AnnotationSpec.builder(Deprecated.class).build());
+                final boolean isDeprecated = methodSpec.annotations.contains(
+                        AnnotationSpec.builder(Deprecated.class).build());
 
-                    if (skipDeprecated && isDeprecated) {
-                        continue;
-                    }
-
-                    if (methodSpec.hasModifier(ABSTRACT)) {
-                        final MethodSpec.Builder spec = methodSpec.toBuilder();
-                        final String methodPath = context.methodPath(state.serviceProto, methodSpec.name);
-                        final String errorMessage = "\"Method " + methodPath.substring(1) +
-                                " is unimplemented\"";
-                        spec.modifiers.remove(ABSTRACT);
-                        spec.addModifiers(DEFAULT).addAnnotation(Override.class);
-                        if (!blocking) {
-                            final ClassName returnType = (methodSpec.returnType.toString().contains("Publisher")) ?
-                                    Publisher : Single;
-                            spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
-                                    returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode,
-                                    errorMessage);
-                        } else {
-                            spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
-                                    GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
-                        }
-                        interfaceSpecBuilder.addMethod(spec.build());
-                    }
+                if (!isDeprecated || !skipDeprecated) {
+                    interfaceSpecBuilder.addMethod(methodSpec);
                 }
             }
         }

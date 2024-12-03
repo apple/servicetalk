@@ -189,16 +189,11 @@ final class FileDescriptor implements GenerationContext {
 
     @Override
     public String methodPath(final ServiceDescriptorProto serviceProto, final MethodDescriptorProto methodProto) {
-        return methodPath(serviceProto, methodProto.getName());
-    }
-
-    @Override
-    public String methodPath(final ServiceDescriptorProto serviceProto, final String methodName) {
         final StringBuilder sb = new StringBuilder(128).append('/');
         if (isNotNullNorEmpty(protoPackageName)) {
             sb.append(protoPackageName).append('.');
         }
-        sb.append(serviceProto.getName()).append('/').append(methodName);
+        sb.append(serviceProto.getName()).append('/').append(methodProto.getName());
         return sb.toString();
     }
 
