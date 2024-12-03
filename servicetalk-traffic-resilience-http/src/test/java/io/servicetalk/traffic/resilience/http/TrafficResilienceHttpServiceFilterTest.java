@@ -231,61 +231,62 @@ class TrafficResilienceHttpServiceFilterTest {
                 .dryRun(dryRun)
                 .build();
 
-        final HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfig)
                 .listenSocketOption(SO_BACKLOG, TCP_BACKLOG)
                 .appendNonOffloadingServiceFilter(filter)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok().payloadBody(Publisher.never())));
+                        succeeded(responseFactory.ok().payloadBody(Publisher.never())))) {
 
-        final StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(protocolConfig)
-                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
-                .buildStreaming();
+            try (StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .protocols(protocolConfig)
+                    .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
+                    .buildStreaming()) {
 
-        // First request -> Pending 1
-        final StreamingHttpRequest meta1 = client.newRequest(HttpRequestMethod.GET, "/");
-        client.reserveConnection(meta1)
-                .flatMap(it -> it.request(meta1))
-                .concat(Completable.defer(() -> {
-                    // First request, has a "never" pub as a body, we don't attempt to consume it.
-                    // Concat second request -> out of capacity -> server yielded
-                    final StreamingHttpRequest meta2 = client.newRequest(HttpRequestMethod.GET, "/");
-                    return client.reserveConnection(meta2).flatMap(it -> it.request(meta2)).ignoreElement();
-                }))
-                .toFuture()
-                .get();
+                // First request -> Pending 1
+                final StreamingHttpRequest meta1 = client.newRequest(HttpRequestMethod.GET, "/");
+                client.reserveConnection(meta1)
+                        .flatMap(it -> it.request(meta1))
+                        .concat(Completable.defer(() -> {
+                            // First request, has a "never" pub as a body, we don't attempt to consume it.
+                            // Concat second request -> out of capacity -> server yielded
+                            final StreamingHttpRequest meta2 = client.newRequest(HttpRequestMethod.GET, "/");
+                            return client.reserveConnection(meta2).flatMap(it -> it.request(meta2)).ignoreElement();
+                        }))
+                        .toFuture()
+                        .get();
 
-        // Netty will evaluate the "yielding" (i.e., auto-read) on this attempt, so this connection will go through.
-        assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+                // Netty will evaluate the "yielding" (i.e., auto-read) on this attempt, so this connection will go
+                // through.
+                assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
+                        .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
 
-        // This connection shall full-fil the BACKLOG=1 setting
-        try {
-            System.out.println("Attempting to get another connection");
-            assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                    // This is the failing line.
-                    // https://github.com/apple/servicetalk/actions/runs/12129341561/job/33817567364?pr=3125
-                    // This now fails to resolve.
-                    .toFuture().get(CI ? 10 : 2, SECONDS).asConnection(), instanceOf(HttpConnection.class));
-        } catch (ExecutionException e) {
-            if (dryRun) {
-                throw e;
-            }
-            assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
-        }
+                // This connection shall full-fil the BACKLOG=1 setting
+                try {
+                    assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
+                            // This is the failing line.
+                            // https://github.com/apple/servicetalk/actions/runs/12129341561/job/33817567364?pr=3125
+                            // This now fails to resolve.
+                            .toFuture().get(CI ? 10 : 2, SECONDS).asConnection(), instanceOf(HttpConnection.class));
+                } catch (ExecutionException e) {
+                    if (dryRun) {
+                        throw e;
+                    }
+                    assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                }
 
-        System.out.println("Now we need to fail the connection.");
-        // Any attempt to create a connection now, should time out if we're not in dry mode.
-        if (dryRun) {
-            client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
-                    .releaseAsync().toFuture().get();
-        } else {
-            try {
-                client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
-                fail("Expected a connection timeout");
-            } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                // Any attempt to create a connection now, should time out if we're not in dry mode.
+                if (dryRun) {
+                    client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
+                            .releaseAsync().toFuture().get();
+                } else {
+                    try {
+                        client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
+                        fail("Expected a connection timeout");
+                    } catch (ExecutionException e) {
+                        assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                    }
+                }
             }
         }
     }
