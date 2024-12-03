@@ -559,7 +559,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                         final boolean forceNewConnectionAndReserve) {
         final HostSelector<ResolvedAddress, C> currentHostSelector = hostSelector;
-        LOGGER.info("Selecting connection.");
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
             if (exn instanceof NoActiveHostException) {

@@ -255,33 +255,27 @@ class TrafficResilienceHttpServiceFilterTest {
                         .toFuture()
                         .get();
 
-                // Netty will evaluate the "yielding" (i.e., auto-read) on this attempt, so this connection will go
-                // through.
-                assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                        .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
-
-                // This connection shall full-fil the BACKLOG=1 setting
-                try {
-                    assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                            .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
-                } catch (ExecutionException e) {
+                // We expect up to a couple connections to succeed due to the intrinsic race between disabling accepts
+                // and new connect requests, as well as to account for kernel connect backlog. However, we do expect it
+                // to fail after a fairly short number of iterations.
+                for (int i = 0; i < 5; i++) {
                     if (dryRun) {
-                        throw e;
+                        client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
+                                .releaseAsync().toFuture().get();
+                    } else {
+                        try {
+                            assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
+                                    .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+                        } catch (ExecutionException e) {
+                            assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                            // We saw the connection rejection so we succeeded.
+                            return;
+                        }
                     }
-                    assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
                 }
 
-                // Any attempt to create a connection now, should time out if we're not in dry mode.
-                if (dryRun) {
-                    client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
-                            .releaseAsync().toFuture().get();
-                } else {
-                    try {
-                        client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
-                        fail("Expected a connection timeout");
-                    } catch (ExecutionException e) {
-                        assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
-                    }
+                if (!dryRun) {
+                    fail("Connection was never rejected.");
                 }
             }
         }
