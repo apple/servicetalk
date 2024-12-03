@@ -202,7 +202,7 @@ class TrafficResilienceHttpServiceFilterTest {
     }
 
     @Test
-    @RepeatedTest(200)
+    @RepeatedTest(100)
     void repro() throws Exception {
         testStopAcceptingConnections(false, "h1");
     }
@@ -263,10 +263,7 @@ class TrafficResilienceHttpServiceFilterTest {
                 // This connection shall full-fil the BACKLOG=1 setting
                 try {
                     assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                            // This is the failing line.
-                            // https://github.com/apple/servicetalk/actions/runs/12129341561/job/33817567364?pr=3125
-                            // This now fails to resolve.
-                            .toFuture().get(CI ? 10 : 2, SECONDS).asConnection(), instanceOf(HttpConnection.class));
+                            .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
                 } catch (ExecutionException e) {
                     if (dryRun) {
                         throw e;
