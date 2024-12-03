@@ -285,7 +285,7 @@ final class Generator {
 
         addSerializationProviderInit(state, container.builder);
 
-        addServiceRpcInterfaces(state, container.builder);
+        addServiceRpservicetalk-grpc-protoc/src/main/java/io/servicetalk/grpc/protoc/Generator.javacInterfaces(state, container.builder);
         addServiceInterfaces(state, container.builder);
         addServiceFactory(state, container.builder);
 
