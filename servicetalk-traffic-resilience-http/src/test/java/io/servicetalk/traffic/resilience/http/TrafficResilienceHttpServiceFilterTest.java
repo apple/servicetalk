@@ -51,6 +51,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
@@ -261,10 +262,11 @@ class TrafficResilienceHttpServiceFilterTest {
 
         // This connection shall full-fil the BACKLOG=1 setting
         try {
+            System.out.println("Attempting to get another connection");
             assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
                     // This is the failing line.
                     // https://github.com/apple/servicetalk/actions/runs/12129341561/job/33817567364?pr=3125
-                    .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+                    .toFuture().get(CI ? 4 : 2, SECONDS).asConnection(), instanceOf(HttpConnection.class));
         } catch (ExecutionException e) {
             if (dryRun) {
                 throw e;
@@ -272,6 +274,7 @@ class TrafficResilienceHttpServiceFilterTest {
             assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
         }
 
+        System.out.println("Now we need to fail the connection.");
         // Any attempt to create a connection now, should time out if we're not in dry mode.
         if (dryRun) {
             client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
