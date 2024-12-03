@@ -102,11 +102,11 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
     LoadBalancerBuilder<ResolvedAddress, C> outlierDetectorConfig(OutlierDetectorConfig outlierDetectorConfig);
 
     /**
-     * Set the {@link ConnectionPoolStrategy} to use with this load balancer.
-     * @param connectionPoolConfig the factory of connection pooling strategies to use.
+     * Set the {@link ConnectionPoolPolicy} to use with this load balancer.
+     * @param connectionPoolPolicy the factory of connection pooling strategies to use.
      * @return {@code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(ConnectionPoolConfig connectionPoolConfig);
+    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(ConnectionPoolPolicy connectionPoolPolicy);
 
     /**
      * Set the background {@link Executor} to use for determining time and scheduling background tasks such

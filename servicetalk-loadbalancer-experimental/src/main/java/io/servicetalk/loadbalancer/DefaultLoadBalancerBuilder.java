@@ -78,10 +78,10 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolConfig(
-            ConnectionPoolConfig connectionPoolConfig) {
-        this.connectionPoolStrategyFactory = convertPoolStrategy(requireNonNull(connectionPoolConfig,
-                "connectionPoolConfig"));
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(
+            ConnectionPoolPolicy connectionPoolPolicy) {
+        this.connectionPoolStrategyFactory = convertPoolStrategy(requireNonNull(connectionPoolPolicy,
+                "connectionPoolPolicy"));
         return this;
     }
 
@@ -197,17 +197,17 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> convertPoolStrategy(
-            ConnectionPoolConfig connectionPoolStrategyConfig) {
-        if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.P2CStrategy) {
-            ConnectionPoolConfig.P2CStrategy strategy = (ConnectionPoolConfig.P2CStrategy) connectionPoolStrategyConfig;
+            ConnectionPoolPolicy connectionPoolStrategyConfig) {
+        if (connectionPoolStrategyConfig instanceof ConnectionPoolPolicy.P2CStrategy) {
+            ConnectionPoolPolicy.P2CStrategy strategy = (ConnectionPoolPolicy.P2CStrategy) connectionPoolStrategyConfig;
             return P2CConnectionPoolStrategy.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
-        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.CorePoolStrategy) {
-            ConnectionPoolConfig.CorePoolStrategy strategy =
-                    (ConnectionPoolConfig.CorePoolStrategy) connectionPoolStrategyConfig;
+        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolPolicy.CorePoolStrategy) {
+            ConnectionPoolPolicy.CorePoolStrategy strategy =
+                    (ConnectionPoolPolicy.CorePoolStrategy) connectionPoolStrategyConfig;
             return CorePoolConnectionPoolStrategy.factory(strategy.corePoolSize, strategy.forceCorePool);
-        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolConfig.LinearSearchStrategy) {
-            ConnectionPoolConfig.LinearSearchStrategy strategy =
-                    (ConnectionPoolConfig.LinearSearchStrategy) connectionPoolStrategyConfig;
+        } else if (connectionPoolStrategyConfig instanceof ConnectionPoolPolicy.LinearSearchStrategy) {
+            ConnectionPoolPolicy.LinearSearchStrategy strategy =
+                    (ConnectionPoolPolicy.LinearSearchStrategy) connectionPoolStrategyConfig;
             return LinearSearchConnectionPoolStrategy.factory(strategy.linearSearchSpace);
         } else {
             throw new IllegalStateException("Unexpected ConnectionPoolConfig: " +
@@ -222,6 +222,6 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C>
     defaultConnectionPoolStrategyFactory() {
-        return convertPoolStrategy(ConnectionPoolConfig.linearSearch());
+        return convertPoolStrategy(ConnectionPoolPolicy.linearSearch());
     }
 }
