@@ -1650,49 +1650,33 @@ final class Generator {
             final List<RpcInterface> interfaces = state.serviceRpcInterfaces.stream()
                     .filter(intf -> intf.blocking == blocking)
                     .collect(toList());
-            for (int i = 0; i < interfaces.size(); ++i) {
-                final RpcInterface rpcInterface = interfaces.get(i);
+            for (final RpcInterface rpcInterface : interfaces) {
                 final MethodDescriptorProto methodProto = rpcInterface.methodProto;
                 final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
                 final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
                 final String methodName = sanitizeIdentifier(methodProto.getName(), true);
                 final String methodPath = context.methodPath(state.serviceProto, methodProto).substring(1);
-                final int methodIndex = i;
                 final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, methodName,
                         methodProto.getClientStreaming(),
                         methodProto.getServerStreaming(),
-                        !blocking ? EnumSet.of(INTERFACE) : EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE),
-                        printJavaDocs, (__, spec) -> {
-                            final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
-                            spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                        !blocking ? EnumSet.of(INTERFACE) : (skipDeprecated ?
+                                EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE) : EnumSet.of(INTERFACE, BLOCKING)),
+                        false, (__, spec) -> {
                             spec.addAnnotation(Override.class);
+                            spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
                             if (!blocking) {
                                 final ClassName returnType = methodProto.getServerStreaming() ? Publisher : Single;
                                 spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
                                         returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
                             } else {
-                                if (!skipDeprecated && methodProto.getServerStreaming()) {
-                                    spec.addStatement("$T.super.$L(ctx, request, response)",
-                                            rpcInterface.className, methodName);
-                                } else {
-                                    spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
-                                            GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
-                                }
-                            }
-                            if (printJavaDocs) {
-                                extractJavaDocComments(state, methodIndex, spec);
-                                spec.addJavadoc(JAVADOC_PARAM + ctx +
-                                        " context associated with this service and request." + lineSeparator());
+                                spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
                             }
                             return spec;
                         });
 
-                final boolean isDeprecated = methodSpec.annotations.contains(
-                        AnnotationSpec.builder(Deprecated.class).build());
-
-                if (!isDeprecated || !skipDeprecated) {
-                    interfaceSpecBuilder.addMethod(methodSpec);
-                }
+                interfaceSpecBuilder.addMethod(methodSpec);
             }
         }
 
