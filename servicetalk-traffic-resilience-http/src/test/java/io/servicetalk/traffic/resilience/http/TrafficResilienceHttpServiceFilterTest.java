@@ -202,7 +202,7 @@ class TrafficResilienceHttpServiceFilterTest {
     }
 
     @Test
-    @RepeatedTest(100)
+    @RepeatedTest(200)
     void repro() throws Exception {
         testStopAcceptingConnections(false, "h1");
     }
