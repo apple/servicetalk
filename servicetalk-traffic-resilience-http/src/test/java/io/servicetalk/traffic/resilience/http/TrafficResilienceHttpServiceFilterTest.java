@@ -56,7 +56,6 @@ import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -232,7 +231,7 @@ class TrafficResilienceHttpServiceFilterTest {
 
             try (StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                     .protocols(protocolConfig)
-                    .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
+                    .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(2))
                     .buildStreaming()) {
 
                 // First request -> Pending 1
@@ -240,7 +239,7 @@ class TrafficResilienceHttpServiceFilterTest {
                 client.reserveConnection(meta1)
                         .flatMap(it -> it.request(meta1))
                         .concat(Completable.defer(() -> {
-                            // First request, has a "never" pub as a body, we don't attempt to consume it.
+                            // The response has a "never" pub as a body and we don't attempt to consume it.
                             // Concat second request -> out of capacity -> server yielded
                             final StreamingHttpRequest meta2 = client.newRequest(HttpRequestMethod.GET, "/");
                             return client.reserveConnection(meta2).flatMap(it -> it.request(meta2)).ignoreElement();
@@ -251,7 +250,7 @@ class TrafficResilienceHttpServiceFilterTest {
                 // We expect up to a couple connections to succeed due to the intrinsic race between disabling accepts
                 // and new connect requests, as well as to account for kernel connect backlog. However, we do expect it
                 // to fail after a fairly short number of iterations.
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < 3; i++) {
                     if (dryRun) {
                         client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
                                 .releaseAsync().toFuture().get();
