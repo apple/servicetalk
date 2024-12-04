@@ -77,7 +77,9 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
      */
     @Nullable
     final ContextMap context0() {
-        return context;
+        // Just one way to fix it, I think. Probably not the best way.
+        //return context;
+        return context();
     }
 
     @Nonnull

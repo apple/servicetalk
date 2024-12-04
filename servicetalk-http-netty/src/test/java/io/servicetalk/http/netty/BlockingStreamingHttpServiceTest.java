@@ -19,7 +19,10 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.BlockingIterables;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
@@ -31,11 +34,21 @@ import io.servicetalk.http.api.HttpMessageBodyIterator;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -45,6 +58,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -55,8 +71,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -74,11 +88,23 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class BlockingStreamingHttpServiceTest {
 
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";
     private static final String HELLO_WORLD_LENGTH = String.valueOf(HELLO_WORLD.length());
 
+    @Nullable
     private ServerContext serverContext;
+
+    @Nullable
     private BlockingStreamingHttpClient client;
 
     @AfterEach
@@ -94,10 +120,14 @@ class BlockingStreamingHttpServiceTest {
         }
     }
 
-    private BlockingStreamingHttpClient context(BlockingStreamingHttpService handler) throws Exception {
-        serverContext = HttpServers.forAddress(localAddress(0)).listenBlockingStreamingAndAwait(handler);
+    private BlockingStreamingHttpClient context(BlockingStreamingHttpService handler, final StreamingHttpServiceFilterFactory... serviceFilters) throws Exception {
+        final HttpServerBuilder serverBuilder = BuilderUtils.newServerBuilder(SERVER_CTX);
+        for (StreamingHttpServiceFilterFactory serviceFilter : serviceFilters) {
+            serverBuilder.appendServiceFilter(serviceFilter);
+        }
+        serverContext = serverBuilder.listenBlockingStreamingAndAwait(handler);
 
-        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlockingStreaming();
+        client = BuilderUtils.newClientBuilder(serverContext, CLIENT_CTX).buildBlockingStreaming();
         return client;
     }
 
@@ -443,6 +473,35 @@ class BlockingStreamingHttpServiceTest {
         final BlockingIterator<Buffer> iterator = response.payloadBody().iterator();
 
         assertThrows(TimeoutException.class, () -> iterator.hasNext(1, SECONDS));
+    }
+
+    @Test
+    void canSetResponseContextAfterMetaDataWritten() throws Exception {
+        final ContextMap.Key<String> contextKey = ContextMap.Key.newKey("test", String.class);
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> payload = response.sendMetaData();
+            response.context().put(contextKey, "set");
+            System.err.println("Written CTX: " + response.context());
+            payload.close();
+        }, service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return delegate()
+                        .handle(ctx, request, responseFactory)
+                        .map(response -> response.transformMessageBody(publisher ->
+                                publisher.afterFinally(() -> System.err.println("Read CTX: " + response.context()))));
+            }
+        });
+
+        // without fix:
+        // Written CTX: DefaultContextMap@56c0f84c:{ContextMap.Key{name='test', type=String}@4e1f81a3=set}
+        // Read CTX: DefaultContextMap@53414b9:{}
+        // --> different context, not shared.
+
+        BlockingStreamingHttpResponse response = client.request(client.get("/"));
+        assertResponse(response);
     }
 
     private static void assertResponse(BlockingStreamingHttpResponse response) {
