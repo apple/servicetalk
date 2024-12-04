@@ -20,19 +20,19 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 /**
  * Configuration of the strategy for selecting connections from a pool to the same endpoint.
  */
-public abstract class ConnectionPoolConfig {
+public abstract class ConnectionPoolPolicy {
 
     static final int DEFAULT_MAX_EFFORT = 5;
     static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
 
-    private ConnectionPoolConfig() {
+    private ConnectionPoolPolicy() {
         // only instances are in this class.
     }
 
     /**
      * A connection selection strategy that prioritizes a configurable "core" pool.
      * <p>
-     * This {@link ConnectionPoolStrategy} attempts to emulate the pooling behavior often seen in thread pools.
+     * This {@link ConnectionPoolPolicy} attempts to emulate the pooling behavior often seen in thread pools.
      * Specifically it allows for the configuration of a "core pool" size which are intended to be long-lived.
      * Iteration starts in the core pool at a random position and then iterates through the entire core pool before
      * moving to an overflow pool. Because iteration of this core pool starts at a random position the core connections
@@ -46,42 +46,42 @@ public abstract class ConnectionPoolConfig {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @return the configured {@link ConnectionPoolConfig}.
+     * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static ConnectionPoolConfig corePool(final int corePoolSize, final boolean forceCorePool) {
+    public static ConnectionPoolPolicy corePool(final int corePoolSize, final boolean forceCorePool) {
         return new CorePoolStrategy(corePoolSize, forceCorePool);
     }
 
     /**
      * A connection selection strategy that prioritizes connection reuse.
      * <p>
-     * This {@link ConnectionPoolStrategy} attempts to minimize the number of connections by attempting to direct
+     * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
-     * @return the configured {@link ConnectionPoolConfig}.
+     * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static ConnectionPoolConfig linearSearch() {
+    public static ConnectionPoolPolicy linearSearch() {
         return linearSearch(DEFAULT_LINEAR_SEARCH_SPACE);
     }
 
     /**
      * A connection selection strategy that prioritizes connection reuse.
      * <p>
-     * This {@link ConnectionPoolStrategy} attempts to minimize the number of connections by attempting to direct
+     * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
      * @param linearSearchSpace the space to search linearly before resorting to random selection for remaining
      *                          connections.
-     * @return the configured {@link ConnectionPoolConfig}.
+     * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static ConnectionPoolConfig linearSearch(int linearSearchSpace) {
+    public static ConnectionPoolPolicy linearSearch(int linearSearchSpace) {
         return new LinearSearchStrategy(linearSearchSpace);
     }
 
     /**
-     * A {@link ConnectionPoolStrategy} that attempts to discern between the health of individual connections.
+     * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * - Randomly select two connections from the 'core pool' (pick-two).
@@ -92,14 +92,14 @@ public abstract class ConnectionPoolConfig {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @return the configured {@link ConnectionPoolConfig}.
+     * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static ConnectionPoolConfig p2c(int corePoolSize, boolean forceCorePool) {
+    public static ConnectionPoolPolicy p2c(int corePoolSize, boolean forceCorePool) {
         return p2c(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
     }
 
     /**
-     * A {@link ConnectionPoolStrategy} that attempts to discern between the health of individual connections.
+     * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * - Randomly select two connections from the 'core pool' (pick-two).
@@ -111,14 +111,14 @@ public abstract class ConnectionPoolConfig {
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
-     * @return the configured {@link ConnectionPoolConfig}.
+     * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static ConnectionPoolConfig p2c(int maxEffort, int corePoolSize, boolean forceCorePool) {
+    public static ConnectionPoolPolicy p2c(int maxEffort, int corePoolSize, boolean forceCorePool) {
         return new P2CStrategy(maxEffort, corePoolSize, forceCorePool);
     }
 
     // instance types
-    static final class CorePoolStrategy extends ConnectionPoolConfig {
+    static final class CorePoolStrategy extends ConnectionPoolPolicy {
         final int corePoolSize;
         final boolean forceCorePool;
 
@@ -128,7 +128,7 @@ public abstract class ConnectionPoolConfig {
         }
     }
 
-    static final class P2CStrategy extends ConnectionPoolConfig {
+    static final class P2CStrategy extends ConnectionPoolPolicy {
         final int maxEffort;
         final int corePoolSize;
         final boolean forceCorePool;
@@ -140,7 +140,7 @@ public abstract class ConnectionPoolConfig {
         }
     }
 
-    static final class LinearSearchStrategy extends ConnectionPoolConfig {
+    static final class LinearSearchStrategy extends ConnectionPoolPolicy {
         final int linearSearchSpace;
 
         LinearSearchStrategy(int linearSearchSpace) {

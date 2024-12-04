@@ -41,7 +41,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.loadbalancer.ConnectionPoolConfig.DEFAULT_LINEAR_SEARCH_SPACE;
+import static io.servicetalk.loadbalancer.ConnectionPoolPolicy.DEFAULT_LINEAR_SEARCH_SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;

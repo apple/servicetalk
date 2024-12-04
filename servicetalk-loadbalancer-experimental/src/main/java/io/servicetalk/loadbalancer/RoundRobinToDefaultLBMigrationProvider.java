@@ -138,7 +138,7 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
             }
             return builder.outlierDetectorConfig(outlierDetectorConfig)
                     .loadBalancingPolicy(loadBalancingPolicy)
-                    .connectionPoolConfig(ConnectionPoolConfig.linearSearch(linearSearchSpace))
+                    .connectionPoolPolicy(ConnectionPoolPolicy.linearSearch(linearSearchSpace))
                     .build();
         }
     }
