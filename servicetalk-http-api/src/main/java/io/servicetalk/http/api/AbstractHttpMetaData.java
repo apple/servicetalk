@@ -82,7 +82,7 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
 
     @Nonnull
     @Override
-    public final ContextMap context() {
+    public ContextMap context() {
         if (context == null) {
             context = new DefaultContextMap();
         }

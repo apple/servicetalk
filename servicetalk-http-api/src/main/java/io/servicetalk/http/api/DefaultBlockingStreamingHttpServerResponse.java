@@ -17,11 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.internal.ReadOnlyContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -132,8 +135,19 @@ final class DefaultBlockingStreamingHttpServerResponse extends DefaultHttpRespon
         return this;
     }
 
+    @Nonnull
+    @Override
+    public ContextMap context() {
+        final ContextMap ctx = super.context();
+        return isSent() ? new ReadOnlyContextMap(ctx) : ctx;
+    }
+
+    private boolean isSent() {
+        return metaSent != 0;
+    }
+
     private void checkSent() {
-        if (metaSent != 0) {
+        if (isSent()) {
             throwMetaAlreadySent();
         }
     }
