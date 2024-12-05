@@ -248,8 +248,8 @@ class TrafficResilienceHttpServiceFilterTest {
                         .get();
 
                 // We expect up to a couple connections to succeed due to the intrinsic race between disabling accepts
-                // and new connect requests, as well as to account for kernel connect backlog. However, we do expect it
-                // to fail after a fairly short number of iterations.
+                // and new connect requests, as well as to account for kernel connect backlog (effectively 1 for all
+                // OS's). That means we can have up to two connects succeed, but expect it to fail by the 3rd attempt.
                 for (int i = 0; i < 3; i++) {
                     if (dryRun) {
                         client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
