@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
  * A richer {@link ServiceDiscovererEvent} that can carry weight and priority information.
  * @param <ResolvedAddress> the type of the resolved address.
  */
-public final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscovererEvent<ResolvedAddress> {
+final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscovererEvent<ResolvedAddress> {
 
     private final ResolvedAddress address;
     private final Status status;

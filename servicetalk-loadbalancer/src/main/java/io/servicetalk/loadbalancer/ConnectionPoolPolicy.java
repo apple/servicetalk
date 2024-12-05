@@ -20,6 +20,7 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 /**
  * Configuration of the strategy for selecting connections from a pool to the same endpoint.
  */
+// TODO: this may not be valuable to surface right now.
 public abstract class ConnectionPoolPolicy {
 
     static final int DEFAULT_MAX_EFFORT = 5;
