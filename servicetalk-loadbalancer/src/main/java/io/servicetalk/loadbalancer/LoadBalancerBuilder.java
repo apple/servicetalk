@@ -78,6 +78,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param randomSubsetSize the maximum number of healthy hosts to establish connections to
      * @return {@code this}
      */
+    // TODO: should we cut this from the initial API?
     LoadBalancerBuilder<ResolvedAddress, C> randomSubsetSize(int randomSubsetSize);
 
     /**

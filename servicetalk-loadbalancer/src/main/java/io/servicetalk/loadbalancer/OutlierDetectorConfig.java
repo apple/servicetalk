@@ -69,18 +69,21 @@ public final class OutlierDetectorConfig {
     private final int failurePercentageRequestVolume;
     private final Duration maxEjectionTime;
 
-    private OutlierDetectorConfig(final Duration ewmaHalfLife, final int ewmaCancellationPenalty, final int ewmaErrorPenalty,
-                          final int concurrentRequestPenalty, final boolean cancellationIsError, int failedConnectionsThreshold,
+    private OutlierDetectorConfig(final Duration ewmaHalfLife, final int ewmaCancellationPenalty,
+                          final int ewmaErrorPenalty, final int concurrentRequestPenalty,
+                          final boolean cancellationIsError, int failedConnectionsThreshold,
                           final Duration failureDetectorIntervalJitter,
-                          final Duration serviceDiscoveryResubscribeInterval, final Duration serviceDiscoveryResubscribeJitter,
+                          final Duration serviceDiscoveryResubscribeInterval,
+                          final Duration serviceDiscoveryResubscribeJitter,
                           // true xDS settings
-                          final int consecutive5xx, final Duration failureDetectorInterval, final Duration baseEjectionTime,
-                          final int maxEjectionPercentage, final int enforcingConsecutive5xx,
-                          final int enforcingSuccessRate, final int successRateMinimumHosts,
-                          final int successRateRequestVolume, final int successRateStdevFactor,
-                          final int failurePercentageThreshold, final int enforcingFailurePercentage,
-                          final int failurePercentageMinimumHosts, final int failurePercentageRequestVolume,
-                          final Duration maxEjectionTime, final Duration ejectionTimeJitter) {
+                          final int consecutive5xx, final Duration failureDetectorInterval,
+                          final Duration baseEjectionTime, final int maxEjectionPercentage,
+                          final int enforcingConsecutive5xx, final int enforcingSuccessRate,
+                          final int successRateMinimumHosts, final int successRateRequestVolume,
+                          final int successRateStdevFactor, final int failurePercentageThreshold,
+                          final int enforcingFailurePercentage, final int failurePercentageMinimumHosts,
+                          final int failurePercentageRequestVolume, final Duration maxEjectionTime,
+                                  final Duration ejectionTimeJitter) {
         this.ewmaHalfLife = requireNonNull(ewmaHalfLife, "ewmaHalfLife");
         this.ewmaCancellationPenalty = ensureNonNegative(ewmaCancellationPenalty, "ewmaCancellationPenalty");
         this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
@@ -569,8 +572,8 @@ public final class OutlierDetectorConfig {
          * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
          * consecutively fails to open connections in the amount greater or equal to the specified value,
          * the host will be marked as unhealthy and connection establishment will take place in the background
-         * repeatedly on the {@link #failureDetectorInterval()} (with jitter {@link #failureDetectorIntervalJitter()}) until a connection is
-         * established. During that time, the host will not take part in load balancing selection.
+         * repeatedly on the {@link #failureDetectorInterval()} (with jitter {@link #failureDetectorIntervalJitter()})
+         * until a connection is established. During that time, the host will not take part in load balancing selection.
          * <p>
          * Use a negative value of the argument to disable health checking.
          *

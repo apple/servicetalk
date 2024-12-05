@@ -33,7 +33,7 @@ final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscov
     private final double weight;
     private final int priority;
 
-    public RichServiceDiscovererEvent(ResolvedAddress address, Status status, double weight, int priority) {
+    RichServiceDiscovererEvent(ResolvedAddress address, Status status, double weight, int priority) {
         if (weight < 0d) {
             throw new IllegalArgumentException("Illegal weight: " + weight);
         }

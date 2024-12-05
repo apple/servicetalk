@@ -36,7 +36,7 @@ dependencies {
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-loadbalancer-experimental")
+  implementation project(":servicetalk-loadbalancer")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.protobuf:protobuf-java"
 
