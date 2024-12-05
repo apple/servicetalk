@@ -64,6 +64,7 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
     default void forEach(Consumer<? super T> action, LongSupplier timeoutSupplier, TimeUnit unit)
             throws TimeoutException {
         requireNonNull(action);
+        // TODO: should we here try/catch with close explicitly now?
         BlockingIterator<T> iterator = iterator();
         while (iterator.hasNext(timeoutSupplier.getAsLong(), unit)) {
             action.accept(iterator.next(timeoutSupplier.getAsLong(), unit));
@@ -96,6 +97,8 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      */
     default void forEach(Consumer<? super T> action, long timeout, TimeUnit unit) throws TimeoutException {
         requireNonNull(action);
+        // TODO: should we here try/catch with close explicitly now?
+
         BlockingIterator<T> iterator = iterator();
         long remainingTimeoutNanos = unit.toNanos(timeout);
         long timeStampANanos = nanoTime();
