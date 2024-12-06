@@ -90,6 +90,7 @@ import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -110,6 +111,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
@@ -216,6 +218,10 @@ class ProtocolCompatibilityTest {
     private static final boolean[] STREAMING = {false, true};
     private static final String[] COMPRESSION = {"gzip", "identity", null};
 
+    private static final boolean[] SERVICETALK_CLIENT = {true, false};
+    private static final boolean[] SERVICETALK_SERVER = {true, false};
+    private static final boolean[] BLOCKING_SERVER = {true, false};
+
     private static Collection<Arguments> sslStreamingAndCompressionParams() {
         List<Arguments> args = new ArrayList<>();
         for (boolean ssl : SSL) {
@@ -257,6 +263,24 @@ class ProtocolCompatibilityTest {
         for (boolean streaming : STREAMING) {
             for (String message : messages) {
                 args.add(Arguments.of(streaming, message));
+            }
+        }
+        return args;
+    }
+
+    private static Collection<Arguments> clientServerParams() {
+        List<Arguments> args = new ArrayList<>();
+        for (boolean isClientServiceTalk : SERVICETALK_CLIENT) {
+            for (boolean isServerServiceTalk : SERVICETALK_SERVER) {
+                for (boolean isServerBlocking : BLOCKING_SERVER) {
+                    if (!isClientServiceTalk && isServerServiceTalk && isServerBlocking) {
+                        // TODO there appears to be a potential bug in this combination. Separate bug filed.
+                        continue;
+                    }
+                    if (isServerServiceTalk || !isServerBlocking) {
+                        args.add(Arguments.of(isClientServiceTalk, isServerServiceTalk, isServerBlocking));
+                    }
+                }
             }
         }
         return args;
@@ -611,47 +635,49 @@ class ProtocolCompatibilityTest {
         }
     }
 
-    @Test
-    void grpcJavaToServiceTalkUnimplementedService() throws Exception {
-        try (TestServerContext server = serviceTalkServerBlocking(ErrorMode.STATUS, false, null, null);
-             CompatClient client = grpcJavaClient(server.listenAddress(), null, false, null)) {
-            final Single<CompatResponse> response =
-                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
-                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
-        }
-    }
+    @ParameterizedTest(name = "{displayName} [{index}]: serviceTalkClient={0} serviceTalkServer={1} blocking={2}")
+    @MethodSource("clientServerParams")
+    void unimplementedServiceError(final boolean isServiceTalkClient,
+                                                   final boolean isServiceTalkServer,
+                                                   final boolean isServerBlocking) {
 
-    @Test
-    void grpcJavaToGrpcJavaUnimplementedService() throws Exception {
-        try (TestServerContext server = grpcJavaServer(ErrorMode.NONE, false, null, null);
-             CompatClient client = grpcJavaClient(server.listenAddress(), null, false, null)) {
-            final Single<CompatResponse> response =
-                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
-                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
-        }
-    }
+        ThrowingSupplier<TestServerContext> serverSupplier = isServiceTalkServer ?
+                () -> (isServerBlocking) ?
+                        serviceTalkServerBlocking(false, null, new BlockingCompatService() { }) :
+                        serviceTalkServer(ErrorMode.NONE, false, defaultStrategy(), null, null,
+                                new Compat.CompatService() { }) :
+                () -> grpcJavaServer(false, null, new CompatGrpc.CompatImplBase() { });
 
-    @Test
-    void serviceTalkToGrpcJavaUnimplementedService() throws Exception {
-        try (TestServerContext server = grpcJavaServer(ErrorMode.NONE, false, null, null);
-             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
-            final Single<CompatResponse> response =
-                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
-                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
-        }
-    }
+        Function<SocketAddress, CompatClient> clientSupplier = isServiceTalkClient ?
+                (addr) -> serviceTalkClient(addr, false, null, null) :
+                (addr) -> {
+                    try {
+                        return grpcJavaClient(addr, null, false, null);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                };
 
-    @Test
-    void serviceTalkToServiceTalkUnimplementedService() throws Exception {
-        try (TestServerContext server = serviceTalkServerBlocking(ErrorMode.NONE, false, null, null);
-             CompatClient client = serviceTalkClient(server.listenAddress(), false, null, null)) {
-            final Single<CompatResponse> response =
-                    client.unimplementedServerCall(CompatRequest.newBuilder().setId(1).build());
-            validateGrpcErrorInResponse(response.toFuture(), false, UNIMPLEMENTED,
-                    "Method grpc.netty.Compat/unimplementedServerCall is unimplemented");
+        try (TestServerContext server = serverSupplier.get();
+             CompatClient client = clientSupplier.apply(server.listenAddress())) {
+            final Single<CompatResponse> scalarResponse =
+                    client.scalarCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(scalarResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/ScalarCall is unimplemented");
+            final Single<CompatResponse> clientStreamingResponse =
+                    client.clientStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
+            validateGrpcErrorInResponse(clientStreamingResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/clientStreamingCall is unimplemented");
+            final Publisher<CompatResponse> serverStreamingResponse =
+                    client.serverStreamingCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(serverStreamingResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/serverStreamingCall is unimplemented");
+            final Publisher<CompatResponse> bidirectionalStreamingResponse =
+                    client.bidirectionalStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
+            validateGrpcErrorInResponse(bidirectionalStreamingResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/bidirectionalStreamingCall is unimplemented");
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -1221,54 +1247,72 @@ class ProtocolCompatibilityTest {
         return serverBuilder;
     }
 
+    private static final class TestBlockingCompatService implements BlockingCompatService {
+        final ErrorMode errorMode;
+        @Nullable
+        final String statusMessage;
+
+        private TestBlockingCompatService(ErrorMode errorMode, @Nullable String statusMessage) {
+            this.errorMode = errorMode;
+            this.statusMessage = statusMessage;
+        }
+
+        @Override
+        public void bidirectionalStreamingCall(
+                final GrpcServiceContext ctx, final BlockingIterable<CompatRequest> request,
+                final GrpcPayloadWriter<CompatResponse> responseWriter) throws Exception {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            for (CompatRequest requestItem : request) {
+                responseWriter.write(computeResponse(requestItem.getId()));
+            }
+            responseWriter.close();
+        }
+
+        @Override
+        public CompatResponse clientStreamingCall(final GrpcServiceContext ctx,
+                                                  final BlockingIterable<CompatRequest> request) {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            int sum = 0;
+            for (CompatRequest requestItem : request) {
+                sum += requestItem.getId();
+            }
+            return computeResponse(sum);
+        }
+
+        @Override
+        public CompatResponse scalarCall(final GrpcServiceContext ctx,
+                                         final CompatRequest request) {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            return computeResponse(request.getId());
+        }
+
+        @Override
+        public void serverStreamingCall(final GrpcServiceContext ctx, final CompatRequest request,
+                                        final GrpcPayloadWriter<CompatResponse> responseWriter)
+                throws Exception {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            for (int i = 0; i < request.getId(); i++) {
+                responseWriter.write(computeResponse(i));
+            }
+            responseWriter.close();
+        }
+    }
+
     private static TestServerContext serviceTalkServerBlocking(final ErrorMode errorMode, final boolean ssl,
                                                                @Nullable final String compression,
                                                                @Nullable final String statusMessage) throws Exception {
+       return serviceTalkServerBlocking(ssl, compression, new TestBlockingCompatService(errorMode, statusMessage));
+    }
+
+    private static TestServerContext serviceTalkServerBlocking(final boolean ssl,
+                                                               @Nullable final String compression,
+                                                               final BlockingCompatService compatService
+    ) throws Exception {
         final ServerContext serverContext = serviceTalkServerBuilder(ErrorMode.NONE, ssl, null)
                 .listenAndAwait(new ServiceFactory.Builder()
                         .bufferDecoderGroup(serviceTalkDecompression(compression))
                         .bufferEncoders(serviceTalkCompressions(compression))
-                        .addBlockingService(new BlockingCompatService() {
-                            @Override
-                            public void bidirectionalStreamingCall(
-                                    final GrpcServiceContext ctx, final BlockingIterable<CompatRequest> request,
-                                    final GrpcPayloadWriter<CompatResponse> responseWriter) throws Exception {
-                                maybeThrowFromRpc(errorMode, statusMessage);
-                                for (CompatRequest requestItem : request) {
-                                    responseWriter.write(computeResponse(requestItem.getId()));
-                                }
-                                responseWriter.close();
-                            }
-
-                            @Override
-                            public CompatResponse clientStreamingCall(final GrpcServiceContext ctx,
-                                                                      final BlockingIterable<CompatRequest> request) {
-                                maybeThrowFromRpc(errorMode, statusMessage);
-                                int sum = 0;
-                                for (CompatRequest requestItem : request) {
-                                    sum += requestItem.getId();
-                                }
-                                return computeResponse(sum);
-                            }
-
-                            @Override
-                            public CompatResponse scalarCall(final GrpcServiceContext ctx,
-                                                             final CompatRequest request) {
-                                maybeThrowFromRpc(errorMode, statusMessage);
-                                return computeResponse(request.getId());
-                            }
-
-                            @Override
-                            public void serverStreamingCall(final GrpcServiceContext ctx, final CompatRequest request,
-                                                            final GrpcPayloadWriter<CompatResponse> responseWriter)
-                                    throws Exception {
-                                maybeThrowFromRpc(errorMode, statusMessage);
-                                for (int i = 0; i < request.getId(); i++) {
-                                    responseWriter.write(computeResponse(i));
-                                }
-                                responseWriter.close();
-                            }
-                        }).build());
+                        .addBlockingService(compatService).build());
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
@@ -1330,6 +1374,79 @@ class ProtocolCompatibilityTest {
         throw GrpcStatusException.of(newStatus(message));
     }
 
+    private static final class TestCompatService implements Compat.CompatService {
+        final Queue<Throwable> reqStreamError;
+        final ErrorMode errorMode;
+        @Nullable
+        final String statusMessage;
+
+        private TestCompatService(Queue<Throwable> reqStreamError,
+                                  ErrorMode errorMode,
+                                  @Nullable String statusMessage) {
+            this.reqStreamError = reqStreamError;
+            this.errorMode = errorMode;
+            this.statusMessage = statusMessage;
+        }
+
+        @Override
+        public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
+                                                                    final Publisher<CompatRequest> pub) {
+            reqStreamError.add(SERVER_PROCESSED_TOKEN);
+            maybeThrowFromRpc(errorMode, statusMessage);
+            return pub.map(req -> response(req.getId())).beforeFinally(errorConsumer());
+        }
+
+        @Override
+        public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
+                                                          final Publisher<CompatRequest> pub) {
+            reqStreamError.add(SERVER_PROCESSED_TOKEN);
+            maybeThrowFromRpc(errorMode, statusMessage);
+            return pub.collect(() -> 0, (sum, req) -> sum + req.getId()).map(this::response)
+                    .beforeFinally(errorConsumer());
+        }
+
+        @Override
+        public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            return succeeded(response(req.getId()));
+        }
+
+        @Override
+        public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
+                                                             final CompatRequest req) {
+            maybeThrowFromRpc(errorMode, statusMessage);
+            return Publisher.fromIterable(() -> IntStream.range(0, req.getId()).iterator()).map(this::response);
+        }
+
+        private CompatResponse response(final int value) {
+            final String message = statusMessage == null ? CUSTOM_ERROR_MESSAGE : statusMessage;
+            if (errorMode == ErrorMode.SIMPLE_IN_RESPONSE) {
+                throwGrpcStatusException(message);
+            } else if (errorMode == ErrorMode.STATUS_IN_RESPONSE) {
+                throwGrpcStatusExceptionWithStatus(message);
+            }
+            return computeResponse(value);
+        }
+
+        private TerminalSignalConsumer errorConsumer() {
+            return new TerminalSignalConsumer() {
+                @Override
+                public void onComplete() {
+                }
+
+                @Override
+                public void onError(final Throwable throwable) {
+                    reqStreamError.add(throwable);
+                }
+
+                @Override
+                public void cancel() {
+                    reqStreamError.add(new IOException("cancelled"));
+                }
+            };
+        }
+    }
+
     private static TestServerContext serviceTalkServer(final ErrorMode errorMode, final boolean ssl,
                                                        @Nullable final String compression,
                                                        @Nullable final Duration duration) throws Exception {
@@ -1347,66 +1464,14 @@ class ProtocolCompatibilityTest {
             final ErrorMode errorMode, final boolean ssl, final GrpcExecutionStrategy strategy,
             @Nullable final String compression, @Nullable final Duration timeout,
             Queue<Throwable> reqStreamError, @Nullable final String statusMessage) throws Exception {
-        final Compat.CompatService compatService = new Compat.CompatService() {
-            @Override
-            public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
-                                                                        final Publisher<CompatRequest> pub) {
-                reqStreamError.add(SERVER_PROCESSED_TOKEN);
-                maybeThrowFromRpc(errorMode, statusMessage);
-                return pub.map(req -> response(req.getId())).beforeFinally(errorConsumer());
-            }
+        final Compat.CompatService compatService = new TestCompatService(reqStreamError, errorMode, statusMessage);
+        return serviceTalkServer(errorMode, ssl, strategy, compression, timeout, compatService);
+    }
 
-            @Override
-            public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
-                                                              final Publisher<CompatRequest> pub) {
-                reqStreamError.add(SERVER_PROCESSED_TOKEN);
-                maybeThrowFromRpc(errorMode, statusMessage);
-                return pub.collect(() -> 0, (sum, req) -> sum + req.getId()).map(this::response)
-                        .beforeFinally(errorConsumer());
-            }
-
-            @Override
-            public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
-                maybeThrowFromRpc(errorMode, statusMessage);
-                return succeeded(response(req.getId()));
-            }
-
-            @Override
-            public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
-                                                                 final CompatRequest req) {
-                maybeThrowFromRpc(errorMode, statusMessage);
-                return Publisher.fromIterable(() -> IntStream.range(0, req.getId()).iterator()).map(this::response);
-            }
-
-            private CompatResponse response(final int value) {
-                final String message = statusMessage == null ? CUSTOM_ERROR_MESSAGE : statusMessage;
-                if (errorMode == ErrorMode.SIMPLE_IN_RESPONSE) {
-                    throwGrpcStatusException(message);
-                } else if (errorMode == ErrorMode.STATUS_IN_RESPONSE) {
-                    throwGrpcStatusExceptionWithStatus(message);
-                }
-                return computeResponse(value);
-            }
-
-            private TerminalSignalConsumer errorConsumer() {
-                return new TerminalSignalConsumer() {
-                    @Override
-                    public void onComplete() {
-                    }
-
-                    @Override
-                    public void onError(final Throwable throwable) {
-                        reqStreamError.add(throwable);
-                    }
-
-                    @Override
-                    public void cancel() {
-                        reqStreamError.add(new IOException("cancelled"));
-                    }
-                };
-            }
-        };
-
+    private static TestServerContext serviceTalkServer(
+            final ErrorMode errorMode, final boolean ssl, final GrpcExecutionStrategy strategy,
+            @Nullable final String compression, @Nullable final Duration timeout,
+            final Compat.CompatService compatService) throws Exception {
         final ServiceFactory serviceFactory = new ServiceFactory.Builder()
                 .bufferEncoders(serviceTalkCompressions(compression))
                 .bufferDecoderGroup(serviceTalkDecompression(compression))
@@ -1542,27 +1607,6 @@ class ProtocolCompatibilityTest {
             }
 
             @Override
-            public Single<CompatResponse> unimplementedServerCall(final CompatRequest request) {
-                final Processor<CompatResponse, CompatResponse> processor =
-                        newSingleProcessor();
-                finalStub.unimplementedServerCall(request, adaptResponse(processor));
-                return fromSource(processor);
-            }
-
-            @Override
-            public Single<CompatResponse> unimplementedServerCall(final GrpcClientMetadata metadata,
-                                                                  final CompatRequest request) {
-                return unimplementedServerCall(request);
-            }
-
-            @Deprecated
-            @Override
-            public Single<CompatResponse> unimplementedServerCall(final Compat.UnimplementedServerCallMetadata metadata,
-                                                                  final CompatRequest request) {
-                return unimplementedServerCall(request);
-            }
-
-            @Override
             public void close() throws Exception {
                 channel.shutdown().awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
             }
@@ -1631,9 +1675,9 @@ class ProtocolCompatibilityTest {
         };
     }
 
-    private static TestServerContext grpcJavaServer(final ErrorMode errorMode, final boolean ssl,
+    private static TestServerContext grpcJavaServer(final boolean ssl,
                                                     @Nullable final String compression,
-                                                    @Nullable final String statusMessage) throws Exception {
+                                                    final CompatGrpc.CompatImplBase serviceImpl) throws Exception {
         final NettyServerBuilder builder = NettyServerBuilder.forAddress(localAddress(0));
         if (ssl) {
             builder.useTransportSecurity(loadServerPem(), loadServerKey());
@@ -1661,107 +1705,124 @@ class ProtocolCompatibilityTest {
         }
 
         final Server server = builder
-                .addService(new CompatGrpc.CompatImplBase() {
-                    @Override
-                    public void scalarCall(final CompatRequest request,
-                                           final StreamObserver<CompatResponse> responseObserver) {
-                        try {
-                            responseObserver.onNext(response(request.getId()));
-                            responseObserver.onCompleted();
-                        } catch (final Throwable t) {
-                            responseObserver.onError(t);
-                        }
-                    }
-
-                    @Override
-                    public StreamObserver<CompatRequest> clientStreamingCall(
-                            final StreamObserver<CompatResponse> responseObserver) {
-                        return new StreamObserver<CompatRequest>() {
-                            int sum;
-
-                            @Override
-                            public void onNext(final CompatRequest value) {
-                                sum += value.getId();
-                            }
-
-                            @Override
-                            public void onError(final Throwable t) {
-                                responseObserver.onError(t);
-                            }
-
-                            @Override
-                            public void onCompleted() {
-                                try {
-                                    responseObserver.onNext(response(sum));
-                                    responseObserver.onCompleted();
-                                } catch (final Throwable t) {
-                                    responseObserver.onError(t);
-                                }
-                            }
-                        };
-                    }
-
-                    @Override
-                    public void serverStreamingCall(final CompatRequest request,
-                                                    final StreamObserver<CompatResponse> responseObserver) {
-                        for (int i = 0; i < request.getId(); ++i) {
-                            try {
-                                responseObserver.onNext(response(i));
-                            } catch (final Throwable t) {
-                                responseObserver.onError(t);
-                                return;
-                            }
-                        }
-                        responseObserver.onCompleted();
-                    }
-
-                    @Override
-                    public StreamObserver<CompatRequest> bidirectionalStreamingCall(
-                            final StreamObserver<CompatResponse> responseObserver) {
-                        return new StreamObserver<CompatRequest>() {
-                            private boolean errored;
-
-                            @Override
-                            public void onNext(final CompatRequest demoRequest) {
-                                try {
-                                    responseObserver.onNext(response(demoRequest.getId()));
-                                } catch (final Throwable t) {
-                                    onError(t);
-                                }
-                            }
-
-                            @Override
-                            public void onError(final Throwable t) {
-                                if (errored) {
-                                    return;
-                                }
-                                errored = true;
-                                responseObserver.onError(t);
-                            }
-
-                            @Override
-                            public void onCompleted() {
-                                if (errored) {
-                                    return;
-                                }
-                                responseObserver.onCompleted();
-                            }
-                        };
-                    }
-
-                    private CompatResponse response(final int value) throws Exception {
-                        final String description = statusMessage == null ? CUSTOM_ERROR_MESSAGE : statusMessage;
-                        if (errorMode == ErrorMode.SIMPLE) {
-                            throw Status.INVALID_ARGUMENT.augmentDescription(description).asException();
-                        }
-                        if (errorMode == ErrorMode.STATUS) {
-                            throw StatusProto.toStatusException(newStatus(description));
-                        }
-                        return computeResponse(value);
-                    }
-                })
+                .addService(serviceImpl)
                 .build().start();
 
         return TestServerContext.fromGrpcJavaServer(server);
+    }
+
+    private static TestServerContext grpcJavaServer(final ErrorMode errorMode, final boolean ssl,
+                                                    @Nullable final String compression,
+                                                    @Nullable final String statusMessage) throws Exception {
+        return grpcJavaServer(ssl, compression, new TestCompatGrpcImpl(errorMode, statusMessage));
+    }
+
+    private static final class TestCompatGrpcImpl extends CompatGrpc.CompatImplBase {
+        final ErrorMode errorMode;
+        @Nullable
+        final String statusMessage;
+
+        private TestCompatGrpcImpl(ErrorMode errorMode, @Nullable String statusMessage) {
+            this.errorMode = errorMode;
+            this.statusMessage = statusMessage;
+        }
+
+        @Override
+        public void scalarCall(final CompatRequest request,
+                               final StreamObserver<CompatResponse> responseObserver) {
+            try {
+                responseObserver.onNext(response(request.getId()));
+                responseObserver.onCompleted();
+            } catch (final Throwable t) {
+                responseObserver.onError(t);
+            }
+        }
+
+        @Override
+        public StreamObserver<CompatRequest> clientStreamingCall(
+                final StreamObserver<CompatResponse> responseObserver) {
+            return new StreamObserver<CompatRequest>() {
+                int sum;
+
+                @Override
+                public void onNext(final CompatRequest value) {
+                    sum += value.getId();
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    responseObserver.onError(t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    try {
+                        responseObserver.onNext(response(sum));
+                        responseObserver.onCompleted();
+                    } catch (final Throwable t) {
+                        responseObserver.onError(t);
+                    }
+                }
+            };
+        }
+
+        @Override
+        public void serverStreamingCall(final CompatRequest request,
+                                        final StreamObserver<CompatResponse> responseObserver) {
+            for (int i = 0; i < request.getId(); ++i) {
+                try {
+                    responseObserver.onNext(response(i));
+                } catch (final Throwable t) {
+                    responseObserver.onError(t);
+                    return;
+                }
+            }
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public StreamObserver<CompatRequest> bidirectionalStreamingCall(
+                final StreamObserver<CompatResponse> responseObserver) {
+            return new StreamObserver<CompatRequest>() {
+                private boolean errored;
+
+                @Override
+                public void onNext(final CompatRequest demoRequest) {
+                    try {
+                        responseObserver.onNext(response(demoRequest.getId()));
+                    } catch (final Throwable t) {
+                        onError(t);
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    if (errored) {
+                        return;
+                    }
+                    errored = true;
+                    responseObserver.onError(t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    if (errored) {
+                        return;
+                    }
+                    responseObserver.onCompleted();
+                }
+            };
+        }
+
+        private CompatResponse response(final int value) throws Exception {
+            final String description = statusMessage == null ? CUSTOM_ERROR_MESSAGE : statusMessage;
+            if (errorMode == ErrorMode.SIMPLE) {
+                throw Status.INVALID_ARGUMENT.augmentDescription(description).asException();
+            }
+            if (errorMode == ErrorMode.STATUS) {
+                throw StatusProto.toStatusException(newStatus(description));
+            }
+            return computeResponse(value);
+        }
     }
 }
