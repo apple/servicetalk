@@ -80,10 +80,10 @@ class DefaultHostTest {
         }
     }
 
-    private void buildHost(@Nullable HealthIndicator healthIndicator) {
+    private void buildHost(@Nullable HealthIndicator<String, TestLoadBalancedConnection> healthIndicator) {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
                 LinearSearchConnectionSelector.<TestLoadBalancedConnection>factory(DEFAULT_LINEAR_SEARCH_SPACE)
-                        .buildStrategy("resource"),
+                        .buildConnectionSelector("resource"),
                 connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
     }
 
@@ -206,7 +206,7 @@ class DefaultHostTest {
 
     @Test
     void healthIndicatorInfluencesHealthStatus() {
-        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        HealthIndicator<String, TestLoadBalancedConnection> healthIndicator = mock(HealthIndicator.class);
         when(healthIndicator.isHealthy()).thenReturn(true);
         buildHost(healthIndicator);
         assertThat(host.isHealthy(), is(true));
@@ -216,7 +216,7 @@ class DefaultHostTest {
 
     @Test
     void forwardsHealthIndicatorScore() {
-        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        HealthIndicator<String, TestLoadBalancedConnection> healthIndicator = mock(HealthIndicator.class);
         when(healthIndicator.score()).thenReturn(10);
         buildHost(healthIndicator);
         assertThat(host.score(), is(10));
@@ -226,7 +226,7 @@ class DefaultHostTest {
     @Test
     void connectFailuresAreForwardedToHealthIndicator() {
         connectionFactory = new TestConnectionFactory(address -> failed(DELIBERATE_EXCEPTION));
-        HealthIndicator healthIndicator = mock(HealthIndicator.class);
+        HealthIndicator<String, TestLoadBalancedConnection> healthIndicator = mock(HealthIndicator.class);
         buildHost(healthIndicator);
         Throwable underlying = assertThrows(ExecutionException.class, () ->
                 host.newConnection(cxn -> true, false, null).toFuture().get()).getCause();

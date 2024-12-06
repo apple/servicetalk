@@ -32,11 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
-class P2CConnectionPoolSelectorTest {
+class P2CConnectionSelectorTest {
 
     private static ConnectionSelector<TestLoadBalancedConnection> strategy() {
-        return P2CConnectionPoolSelector.<TestLoadBalancedConnection>factory(5, 5, false)
-                .buildStrategy("resource");
+        return P2CConnectionSelector.<TestLoadBalancedConnection>factory(5, 5, false)
+                .buildConnectionSelector("resource");
     }
 
     @Test

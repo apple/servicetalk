@@ -41,17 +41,17 @@ import static java.util.Objects.requireNonNull;
  *   through the remaining connections searching for an acceptable connection.
  * @param <C> the type of the load balanced connection.
  */
-final class P2CConnectionPoolSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
+final class P2CConnectionSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolSelector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionSelector.class);
 
     private final String lbDescription;
     private final int maxEffort;
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    private P2CConnectionPoolSelector(final String lbDescription, final int maxEffort, final int corePoolSize,
-                                      final boolean forceCorePool) {
+    private P2CConnectionSelector(final String lbDescription, final int maxEffort, final int corePoolSize,
+                                  final boolean forceCorePool) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.maxEffort = ensureNonNegative(maxEffort, "maxEffort");
         this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
@@ -159,8 +159,8 @@ final class P2CConnectionPoolSelector<C extends LoadBalancedConnection> implemen
         }
 
         @Override
-        public ConnectionSelector<C> buildStrategy(String lbDescription) {
-            return new P2CConnectionPoolSelector<>(lbDescription, maxEffort, corePoolSize, forceCorePool);
+        public ConnectionSelector<C> buildConnectionSelector(String lbDescription) {
+            return new P2CConnectionSelector<>(lbDescription, maxEffort, corePoolSize, forceCorePool);
         }
 
         @Override

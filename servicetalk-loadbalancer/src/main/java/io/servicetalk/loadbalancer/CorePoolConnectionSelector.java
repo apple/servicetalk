@@ -100,7 +100,7 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
         }
 
         @Override
-        public ConnectionSelector<C> buildStrategy(String lbDescription) {
+        public ConnectionSelector<C> buildConnectionSelector(String lbDescription) {
             return new CorePoolConnectionSelector<>(corePoolSize, forceCorePool);
         }
 

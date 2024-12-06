@@ -158,7 +158,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
         this.connectionSelector = requireNonNull(connectionSelectorFactory,
-                "connectionSelectorFactory").buildStrategy(lbDescription);
+                "connectionSelectorFactory").buildConnectionSelector(lbDescription);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.

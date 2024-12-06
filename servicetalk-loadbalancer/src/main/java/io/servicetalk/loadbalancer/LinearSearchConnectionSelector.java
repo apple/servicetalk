@@ -104,7 +104,7 @@ final class LinearSearchConnectionSelector<C extends LoadBalancedConnection> imp
         }
 
         @Override
-        public ConnectionSelector<C> buildStrategy(String lbDescription) {
+        public ConnectionSelector<C> buildConnectionSelector(String lbDescription) {
             return new LinearSearchConnectionSelector<>(linearSearchSpace);
         }
 

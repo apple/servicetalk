@@ -36,7 +36,7 @@ class CorePoolConnectionSelectorTest {
 
     private ConnectionSelector<TestLoadBalancedConnection> strategy(int corePoolSize, boolean forceCorePool) {
         return CorePoolConnectionSelector.<TestLoadBalancedConnection>factory(corePoolSize, forceCorePool)
-                .buildStrategy("resource");
+                .buildConnectionSelector("resource");
     }
 
     @Test

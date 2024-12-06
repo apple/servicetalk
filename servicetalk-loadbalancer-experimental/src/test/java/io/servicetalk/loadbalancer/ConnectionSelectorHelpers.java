@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ConnectionSelectorHelpers {
+final class ConnectionSelectorHelpers {
 
     private ConnectionSelectorHelpers() {
         // no instances

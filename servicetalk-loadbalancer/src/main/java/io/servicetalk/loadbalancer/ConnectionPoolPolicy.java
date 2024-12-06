@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
- * Configuration of the strategy for selecting connections from a pool to the same endpoint.
+ * Configuration of the policy for selecting connections from a pool to the same endpoint.
  */
 public abstract class ConnectionPoolPolicy {
 
@@ -38,7 +38,7 @@ public abstract class ConnectionPoolPolicy {
     }
 
     /**
-     * A connection selection strategy that prioritizes a configurable "core" pool.
+     * A connection selection policy that prioritizes a configurable "core" pool.
      * <p>
      * This {@link ConnectionPoolPolicy} attempts to emulate the pooling behavior often seen in thread pools.
      * Specifically it allows for the configuration of a "core pool" size which are intended to be long-lived.
@@ -61,7 +61,7 @@ public abstract class ConnectionPoolPolicy {
     }
 
     /**
-     * A connection selection strategy that prioritizes connection reuse.
+     * A connection selection policy that prioritizes connection reuse.
      * <p>
      * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
@@ -74,7 +74,7 @@ public abstract class ConnectionPoolPolicy {
     }
 
     /**
-     * A connection selection strategy that prioritizes connection reuse.
+     * A connection selection policy that prioritizes connection reuse.
      * <p>
      * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
@@ -85,12 +85,12 @@ public abstract class ConnectionPoolPolicy {
      * @return the configured {@link ConnectionPoolPolicy}.
      */
     public static ConnectionPoolPolicy linearSearch(int linearSearchSpace) {
-        return new LinearSearchStrategy(linearSearchSpace);
+        return new LinearSearchPolicy(linearSearchSpace);
     }
 
     /**
      * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
-     * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
+     * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * - Randomly select two connections from the 'core pool' (pick-two).
      *   - Try to select the 'best' of the two connections.
@@ -108,7 +108,7 @@ public abstract class ConnectionPoolPolicy {
 
     /**
      * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
-     * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
+     * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * - Randomly select two connections from the 'core pool' (pick-two).
      *   - Try to select the 'best' of the two connections.
@@ -122,7 +122,7 @@ public abstract class ConnectionPoolPolicy {
      * @return the configured {@link ConnectionPoolPolicy}.
      */
     public static ConnectionPoolPolicy p2c(int maxEffort, int corePoolSize, boolean forceCorePool) {
-        return new P2CStrategy(maxEffort, corePoolSize, forceCorePool);
+        return new P2CPolicy(maxEffort, corePoolSize, forceCorePool);
     }
 
     // instance types
@@ -136,22 +136,22 @@ public abstract class ConnectionPoolPolicy {
         }
     }
 
-    static final class P2CStrategy extends ConnectionPoolPolicy {
+    static final class P2CPolicy extends ConnectionPoolPolicy {
         final int maxEffort;
         final int corePoolSize;
         final boolean forceCorePool;
 
-        P2CStrategy(final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
+        P2CPolicy(final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
             this.maxEffort = ensurePositive(maxEffort, "maxEffort");
             this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
             this.forceCorePool = forceCorePool;
         }
     }
 
-    static final class LinearSearchStrategy extends ConnectionPoolPolicy {
+    static final class LinearSearchPolicy extends ConnectionPoolPolicy {
         final int linearSearchSpace;
 
-        LinearSearchStrategy(int linearSearchSpace) {
+        LinearSearchPolicy(int linearSearchSpace) {
             this.linearSearchSpace = ensurePositive(linearSearchSpace, "linearSearchSpace");
         }
     }

@@ -198,16 +198,16 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     private static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> convertPoolPolicy(
             ConnectionPoolPolicy connectionPoolPolicy) {
-        if (connectionPoolPolicy instanceof ConnectionPoolPolicy.P2CStrategy) {
-            ConnectionPoolPolicy.P2CStrategy strategy = (ConnectionPoolPolicy.P2CStrategy) connectionPoolPolicy;
-            return P2CConnectionPoolSelector.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
+        if (connectionPoolPolicy instanceof ConnectionPoolPolicy.P2CPolicy) {
+            ConnectionPoolPolicy.P2CPolicy strategy = (ConnectionPoolPolicy.P2CPolicy) connectionPoolPolicy;
+            return P2CConnectionSelector.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
         } else if (connectionPoolPolicy instanceof ConnectionPoolPolicy.CorePoolPolicy) {
             ConnectionPoolPolicy.CorePoolPolicy strategy =
                     (ConnectionPoolPolicy.CorePoolPolicy) connectionPoolPolicy;
             return CorePoolConnectionSelector.factory(strategy.corePoolSize, strategy.forceCorePool);
-        } else if (connectionPoolPolicy instanceof ConnectionPoolPolicy.LinearSearchStrategy) {
-            ConnectionPoolPolicy.LinearSearchStrategy strategy =
-                    (ConnectionPoolPolicy.LinearSearchStrategy) connectionPoolPolicy;
+        } else if (connectionPoolPolicy instanceof ConnectionPoolPolicy.LinearSearchPolicy) {
+            ConnectionPoolPolicy.LinearSearchPolicy strategy =
+                    (ConnectionPoolPolicy.LinearSearchPolicy) connectionPoolPolicy;
             return LinearSearchConnectionSelector.factory(strategy.linearSearchSpace);
         } else {
             throw new IllegalStateException("Unexpected ConnectionPoolConfig: " +

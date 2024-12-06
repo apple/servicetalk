@@ -22,10 +22,9 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
- * A strategy for selecting connections at the {@link Host} level connection pool.
+ * An abstraction for selecting connections at the {@link Host} level connection pool.
  * @param <C> the concrete type of the connection.
  */
-// TODO: rename to ConnectonPoolSelector?
 interface ConnectionSelector<C extends LoadBalancedConnection> {
 
     /**
@@ -39,7 +38,7 @@ interface ConnectionSelector<C extends LoadBalancedConnection> {
 
     /**
      * The factory of {@link ConnectionSelector} instances.
-     * @param <C> the least specific connection type necessary for properly implementing the strategy.
+     * @param <C> the least specific connection type necessary for properly implementing the selector.
      * @see ConnectionSelector for available strategies.
      */
 
@@ -50,6 +49,6 @@ interface ConnectionSelector<C extends LoadBalancedConnection> {
          * @param lbDescription description of the resource, used for logging purposes.
          * @return an instance of the {@link ConnectionSelector} to use with a {@link Host}.
          */
-        ConnectionSelector<C> buildStrategy(String lbDescription);
+        ConnectionSelector<C> buildConnectionSelector(String lbDescription);
     }
 }

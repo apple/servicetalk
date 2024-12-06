@@ -29,7 +29,7 @@ class LinearSearchConnectionSelectorTest {
 
     ConnectionSelector<TestLoadBalancedConnection> strategy(int linearSearchSpace) {
         return LinearSearchConnectionSelector.<TestLoadBalancedConnection>factory(linearSearchSpace)
-                .buildStrategy("resource");
+                .buildConnectionSelector("resource");
     }
 
     @Test
