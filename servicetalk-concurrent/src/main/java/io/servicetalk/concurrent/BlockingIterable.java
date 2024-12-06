@@ -40,6 +40,19 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
     @Override
     BlockingIterator<T> iterator();
 
+    @Override
+    default void forEach(final Consumer<? super T> action) {
+        try (BlockingIterator<T> iterator = iterator()) {
+            while (iterator.hasNext()) {
+                action.accept(iterator.next());
+            }
+        } catch (RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     /**
      * Mimics the behavior of {@link #forEach(Consumer)} but uses the {@code timeoutSupplier} to determine the timeout
      * value for interactions with the {@link BlockingIterator}.
@@ -64,10 +77,14 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
     default void forEach(Consumer<? super T> action, LongSupplier timeoutSupplier, TimeUnit unit)
             throws TimeoutException {
         requireNonNull(action);
-        // TODO: should we here try/catch with close explicitly now?
-        BlockingIterator<T> iterator = iterator();
-        while (iterator.hasNext(timeoutSupplier.getAsLong(), unit)) {
-            action.accept(iterator.next(timeoutSupplier.getAsLong(), unit));
+        try (BlockingIterator<T> iterator = iterator()) {
+            while (iterator.hasNext(timeoutSupplier.getAsLong(), unit)) {
+                action.accept(iterator.next(timeoutSupplier.getAsLong(), unit));
+            }
+        } catch (TimeoutException | RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -97,20 +114,24 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      */
     default void forEach(Consumer<? super T> action, long timeout, TimeUnit unit) throws TimeoutException {
         requireNonNull(action);
-        // TODO: should we here try/catch with close explicitly now?
+        try (BlockingIterator<T> iterator = iterator()) {
+            long remainingTimeoutNanos = unit.toNanos(timeout);
+            long timeStampANanos = nanoTime();
+            while (iterator.hasNext(remainingTimeoutNanos, NANOSECONDS)) {
+                final long timeStampBNanos = nanoTime();
+                remainingTimeoutNanos -= timeStampBNanos - timeStampANanos;
+                // We do not check for timeout expiry here and instead let hasNext(), next() determine what a timeout
+                // of <= 0 means. It may be that those methods decide to throw a TimeoutException or provide a
+                // fallback value.
+                action.accept(iterator.next(remainingTimeoutNanos, NANOSECONDS));
 
-        BlockingIterator<T> iterator = iterator();
-        long remainingTimeoutNanos = unit.toNanos(timeout);
-        long timeStampANanos = nanoTime();
-        while (iterator.hasNext(remainingTimeoutNanos, NANOSECONDS)) {
-            final long timeStampBNanos = nanoTime();
-            remainingTimeoutNanos -= timeStampBNanos - timeStampANanos;
-            // We do not check for timeout expiry here and instead let hasNext(), next() determine what a timeout of
-            // <= 0 means. It may be that those methods decide to throw a TimeoutException or provide a fallback value.
-            action.accept(iterator.next(remainingTimeoutNanos, NANOSECONDS));
-
-            timeStampANanos = nanoTime();
-            remainingTimeoutNanos -= timeStampANanos - timeStampBNanos;
+                timeStampANanos = nanoTime();
+                remainingTimeoutNanos -= timeStampANanos - timeStampBNanos;
+            }
+        } catch (TimeoutException | RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 
