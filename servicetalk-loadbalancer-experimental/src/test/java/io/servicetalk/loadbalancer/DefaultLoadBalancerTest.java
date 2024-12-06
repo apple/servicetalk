@@ -317,7 +317,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 hostPriorityStrategyFactory,
                 loadBalancingPolicy,
                 subsetSize,
-                LinearSearchConnectionPoolStrategy.factory(DEFAULT_LINEAR_SEARCH_SPACE),
+                LinearSearchConnectionSelector.factory(DEFAULT_LINEAR_SEARCH_SPACE),
                 connectionFactory,
                 NoopLoadBalancerObserver.factory(),
                 null,

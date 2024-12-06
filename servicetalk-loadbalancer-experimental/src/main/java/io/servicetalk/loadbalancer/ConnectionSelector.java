@@ -22,10 +22,10 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
- * A strategy for selecting connections at the {@link Host} level connection pool.
+ * An abstraction for selecting connections at the {@link Host} level connection pool.
  * @param <C> the concrete type of the connection.
  */
-interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
+interface ConnectionSelector<C extends LoadBalancedConnection> {
 
     /**
      * Select a connection from the ordered list of connections.
@@ -37,18 +37,18 @@ interface ConnectionPoolStrategy<C extends LoadBalancedConnection> {
     C select(List<C> connections, Predicate<C> selector);
 
     /**
-     * The factory of {@link ConnectionPoolStrategy} instances.
-     * @param <C> the least specific connection type necessary for properly implementing the strategy.
-     * @see ConnectionPoolStrategy for available strategies.
+     * The factory of {@link ConnectionSelector} instances.
+     * @param <C> the least specific connection type necessary for properly implementing the selector.
+     * @see ConnectionSelector for available strategies.
      */
 
-    interface ConnectionPoolStrategyFactory<C extends LoadBalancedConnection> {
+    interface ConnectionSelectorFactory<C extends LoadBalancedConnection> {
 
         /**
-         * Provide an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
+         * Provide an instance of the {@link ConnectionSelector} to use with a {@link Host}.
          * @param lbDescription description of the resource, used for logging purposes.
-         * @return an instance of the {@link ConnectionPoolStrategy} to use with a {@link Host}.
+         * @return an instance of the {@link ConnectionSelector} to use with a {@link Host}.
          */
-        ConnectionPoolStrategy<C> buildStrategy(String lbDescription);
+        ConnectionSelector<C> buildConnectionSelector(String lbDescription);
     }
 }

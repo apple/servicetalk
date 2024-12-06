@@ -21,15 +21,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static io.servicetalk.loadbalancer.ConnectionPoolStrategyHelpers.makeConnections;
+import static io.servicetalk.loadbalancer.ConnectionSelectorHelpers.makeConnections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class LinearSearchConnectionPoolStrategyTest {
+class LinearSearchConnectionSelectorTest {
 
-    ConnectionPoolStrategy<TestLoadBalancedConnection> strategy(int linearSearchSpace) {
-        return LinearSearchConnectionPoolStrategy.<TestLoadBalancedConnection>factory(linearSearchSpace)
-                .buildStrategy("resource");
+    ConnectionSelector<TestLoadBalancedConnection> strategy(int linearSearchSpace) {
+        return LinearSearchConnectionSelector.<TestLoadBalancedConnection>factory(linearSearchSpace)
+                .buildConnectionSelector("resource");
     }
 
     @Test
@@ -37,7 +37,7 @@ class LinearSearchConnectionPoolStrategyTest {
         // Ensure we can successfully select hosts for most sized pools
         for (int i = 1; i < 10; i++) {
             List<TestLoadBalancedConnection> connections = makeConnections(i);
-            ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(5);
+            ConnectionSelector<TestLoadBalancedConnection> strategy = strategy(5);
             assertEquals(connections.get(0), strategy.select(connections, c -> true));
         }
     }
@@ -45,7 +45,7 @@ class LinearSearchConnectionPoolStrategyTest {
     @Test
     void picksHostsLinearlyUpToLinearSearchSpace() {
         List<TestLoadBalancedConnection> connections = makeConnections(10);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(10);
+        ConnectionSelector<TestLoadBalancedConnection> strategy = strategy(10);
         Set<TestLoadBalancedConnection> selected = new HashSet<>();
         for (int i = 0; i < 10; i++) {
             TestLoadBalancedConnection cxn = strategy.select(connections, c -> !selected.contains(c));
@@ -57,7 +57,7 @@ class LinearSearchConnectionPoolStrategyTest {
     @Test
     void canRandomlySearchAfterLinearSpace() {
         List<TestLoadBalancedConnection> connections = makeConnections(5);
-        ConnectionPoolStrategy<TestLoadBalancedConnection> strategy = strategy(1);
+        ConnectionSelector<TestLoadBalancedConnection> strategy = strategy(1);
         for (int i = 0; i < 100; i++) {
             assertNotNull(strategy.select(connections, c -> c != connections.get(0)));
         }
