@@ -31,7 +31,7 @@ import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link ConnectionPoolStrategy} that attempts to discern between the health of individual connections.
+ * A {@link ConnectionSelector} that attempts to discern between the health of individual connections.
  * If individual connections have health data the P2C strategy can be used to bias traffic toward the best
  * connections. This has the following algorithm:
  * - Randomly select two connections from the 'core pool' (pick-two).
@@ -41,17 +41,17 @@ import static java.util.Objects.requireNonNull;
  *   through the remaining connections searching for an acceptable connection.
  * @param <C> the type of the load balanced connection.
  */
-final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
+final class P2CConnectionPoolSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolStrategy.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(P2CConnectionPoolSelector.class);
 
     private final String lbDescription;
     private final int maxEffort;
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    private P2CConnectionPoolStrategy(final String lbDescription, final int maxEffort, final int corePoolSize,
-                              final boolean forceCorePool) {
+    private P2CConnectionPoolSelector(final String lbDescription, final int maxEffort, final int corePoolSize,
+                                      final boolean forceCorePool) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.maxEffort = ensureNonNegative(maxEffort, "maxEffort");
         this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
@@ -139,19 +139,19 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
+    static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> factory(
             final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
-        return new P2CConnectionPoolStrategyFactory<>(maxEffort, corePoolSize, forceCorePool);
+        return new P2CConnectionSelectorFactory<>(maxEffort, corePoolSize, forceCorePool);
     }
 
-    private static final class P2CConnectionPoolStrategyFactory<C extends LoadBalancedConnection>
-            implements ConnectionPoolStrategyFactory<C> {
+    private static final class P2CConnectionSelectorFactory<C extends LoadBalancedConnection>
+            implements ConnectionSelectorFactory<C> {
 
         private final int maxEffort;
         private final int corePoolSize;
         private final boolean forceCorePool;
 
-        P2CConnectionPoolStrategyFactory(
+        P2CConnectionSelectorFactory(
                 final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
             this.maxEffort = ensurePositive(maxEffort, " maxEffort");
             this.corePoolSize = ensureNonNegative(corePoolSize, "corePoolSize");
@@ -159,13 +159,13 @@ final class P2CConnectionPoolStrategy<C extends LoadBalancedConnection> implemen
         }
 
         @Override
-        public ConnectionPoolStrategy<C> buildStrategy(String lbDescription) {
-            return new P2CConnectionPoolStrategy<>(lbDescription, maxEffort, corePoolSize, forceCorePool);
+        public ConnectionSelector<C> buildStrategy(String lbDescription) {
+            return new P2CConnectionPoolSelector<>(lbDescription, maxEffort, corePoolSize, forceCorePool);
         }
 
         @Override
         public String toString() {
-            return "P2CConnectionPoolStrategyFactory{" +
+            return P2CConnectionSelectorFactory.class.getSimpleName() + "{" +
                     "maxEffort=" + maxEffort +
                     ", corePoolSize=" + corePoolSize +
                     ", forceCorePool=" + forceCorePool +

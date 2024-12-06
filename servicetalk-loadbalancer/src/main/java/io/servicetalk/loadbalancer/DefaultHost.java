@@ -85,7 +85,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private final Addr address;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
-    private final ConnectionPoolStrategy<C> connectionPoolStrategy;
+    private final ConnectionSelector<C> connectionSelector;
     @Nullable
     private final HealthIndicator<Addr, C> healthIndicator;
     private final LoadBalancerObserver.HostObserver hostObserver;
@@ -94,14 +94,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     private volatile ConnState connState = new ConnState(emptyList(), State.ACTIVE, 0, null);
 
     DefaultHost(final String lbDescription, final Addr address,
-                final ConnectionPoolStrategy<C> connectionPoolStrategy,
+                final ConnectionSelector<C> connectionSelector,
                 final ConnectionFactory<Addr, ? extends C> connectionFactory,
                 final HostObserver hostObserver, @Nullable final HealthCheckConfig healthCheckConfig,
                 @Nullable final HealthIndicator<Addr, C> healthIndicator) {
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
         this.address = requireNonNull(address, "address");
         this.healthIndicator = healthIndicator;
-        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategy, "connectionPoolStrategy");
+        this.connectionSelector = requireNonNull(connectionSelector, "connectionSelector");
         requireNonNull(connectionFactory, "connectionFactory");
         this.connectionFactory = healthIndicator == null ? connectionFactory :
                 new InstrumentedConnectionFactory<>(connectionFactory, healthIndicator);
@@ -181,7 +181,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Nullable
     public C pickConnection(Predicate<C> selector, @Nullable final ContextMap context) {
         final List<C> connections = connState.connections;
-        return connectionPoolStrategy.select(connections, selector);
+        return connectionSelector.select(connections, selector);
     }
 
     @Override

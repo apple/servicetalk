@@ -28,14 +28,14 @@ import static java.lang.Math.min;
 /**
  * A connection selection strategy that prioritizes connection reuse.
  * <p>
- * This {@link ConnectionPoolStrategy} attempts to minimize the number of connections by attempting to direct
+ * This {@link ConnectionSelector} attempts to minimize the number of connections by attempting to direct
  * traffic to connections in the order they were created in linear order up until a configured quantity. After
  * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
  * to the existing connections will let tailing connections be removed due to idleness.
  *
  * @param <C> the concrete type of the {@link LoadBalancedConnection}.
  */
-final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection> implements ConnectionPoolStrategy<C> {
+final class LinearSearchConnectionSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
 
     /**
      * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
@@ -56,7 +56,7 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
 
     private final int linearSearchSpace;
 
-    private LinearSearchConnectionPoolStrategy(final int linearSearchSpace) {
+    private LinearSearchConnectionSelector(final int linearSearchSpace) {
         this.linearSearchSpace = ensureNonNegative(linearSearchSpace, "linearSearchSpace");
     }
 
@@ -90,27 +90,27 @@ final class LinearSearchConnectionPoolStrategy<C extends LoadBalancedConnection>
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(final int linearSearchSpace) {
-        return new LinearSearchConnectionPoolStrategyFactory<>(linearSearchSpace);
+    static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> factory(final int linearSearchSpace) {
+        return new LinearSearchConnectionSelectorFactory<>(linearSearchSpace);
     }
 
-    private static final class LinearSearchConnectionPoolStrategyFactory<C extends LoadBalancedConnection>
-            implements ConnectionPoolStrategyFactory<C> {
+    private static final class LinearSearchConnectionSelectorFactory<C extends LoadBalancedConnection>
+            implements ConnectionSelectorFactory<C> {
 
         private final int linearSearchSpace;
 
-        LinearSearchConnectionPoolStrategyFactory(final int linearSearchSpace) {
+        LinearSearchConnectionSelectorFactory(final int linearSearchSpace) {
             this.linearSearchSpace = ensureNonNegative(linearSearchSpace, "linearSearchSpace");
         }
 
         @Override
-        public ConnectionPoolStrategy<C> buildStrategy(String lbDescription) {
-            return new LinearSearchConnectionPoolStrategy<>(linearSearchSpace);
+        public ConnectionSelector<C> buildStrategy(String lbDescription) {
+            return new LinearSearchConnectionSelector<>(linearSearchSpace);
         }
 
         @Override
         public String toString() {
-            return "LinearSearchConnectionPoolStrategyFactory{" +
+            return LinearSearchConnectionSelectorFactory.class.getSimpleName() + "{" +
                     "linearSearchSpace=" + linearSearchSpace +
                     '}';
         }

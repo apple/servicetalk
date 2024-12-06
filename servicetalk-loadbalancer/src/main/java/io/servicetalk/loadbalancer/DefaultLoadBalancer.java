@@ -109,7 +109,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
-    private final ConnectionPoolStrategy<C> connectionPoolStrategy;
+    private final ConnectionSelector<C> connectionSelector;
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final int randomSubsetSize;
     @Nullable
@@ -130,7 +130,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
      * @param randomSubsetSize the maximum number of health hosts to use when load balancing.
-     * @param connectionPoolStrategyFactory factory of the connection pool strategy to use with this load balancer.
+     * @param connectionSelectorFactory factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
      *                                    load balancer.
@@ -146,7 +146,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
             final int randomSubsetSize,
-            final ConnectionPoolStrategy.ConnectionPoolStrategyFactory<C> connectionPoolStrategyFactory,
+            final ConnectionSelector.ConnectionSelectorFactory<C> connectionSelectorFactory,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
@@ -157,8 +157,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
-        this.connectionPoolStrategy = requireNonNull(connectionPoolStrategyFactory,
-                "connectionPoolStrategyFactory").buildStrategy(lbDescription);
+        this.connectionSelector = requireNonNull(connectionSelectorFactory,
+                "connectionSelectorFactory").buildStrategy(lbDescription);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
@@ -427,7 +427,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final HealthCheckConfig hostHealthCheckConfig =
                     healthCheckConfig == null || healthCheckConfig.failedThreshold < 0 ? null : healthCheckConfig;
             final PrioritizedHostImpl<ResolvedAddress, C> host = new PrioritizedHostImpl<>(
-                    new DefaultHost<>(lbDescription, addr, connectionPoolStrategy,
+                    new DefaultHost<>(lbDescription, addr, connectionSelector,
                     connectionFactory, hostObserver, hostHealthCheckConfig, indicator),
                     eventWeight(event), eventPriority(event));
             if (indicator != null) {

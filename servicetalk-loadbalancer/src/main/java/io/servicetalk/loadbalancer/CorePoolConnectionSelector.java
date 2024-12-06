@@ -28,7 +28,7 @@ import static java.lang.Math.min;
 /**
  * A connection selection strategy that prioritizes a configurable "core" pool.
  * <p>
- * This {@link ConnectionPoolStrategy} attempts to emulate the pooling behavior often seen in thread pools.
+ * This {@link ConnectionSelector} attempts to emulate the pooling behavior often seen in thread pools.
  * Specifically it allows for the configuration of a "core pool" size which are intended to be long-lived.
  * Iteration starts in the core pool at a random position and then iterates through the entire core pool before
  * moving to an overflow pool. Because iteration of this core pool starts at a random position the core connections
@@ -40,13 +40,13 @@ import static java.lang.Math.min;
  *
  * @param <C> the concrete type of the {@link LoadBalancedConnection}.
  */
-final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
-        implements ConnectionPoolStrategy<C> {
+final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
+        implements ConnectionSelector<C> {
 
     private final int corePoolSize;
     private final boolean forceCorePool;
 
-    private CorePoolConnectionPoolStrategy(final int corePoolSize, final boolean forceCorePool) {
+    private CorePoolConnectionSelector(final int corePoolSize, final boolean forceCorePool) {
         this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
         this.forceCorePool = forceCorePool;
     }
@@ -83,30 +83,30 @@ final class CorePoolConnectionPoolStrategy<C extends LoadBalancedConnection>
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionPoolStrategyFactory<C> factory(
+    static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> factory(
             int corePoolSize, boolean forceCorePool) {
-        return new CorePoolConnectionPoolStrategyFactory<>(corePoolSize, forceCorePool);
+        return new CorePoolConnectionSelectorFactory<>(corePoolSize, forceCorePool);
     }
 
-    private static final class CorePoolConnectionPoolStrategyFactory<C extends LoadBalancedConnection>
-            implements ConnectionPoolStrategyFactory<C> {
+    private static final class CorePoolConnectionSelectorFactory<C extends LoadBalancedConnection>
+            implements ConnectionSelectorFactory<C> {
 
         private final int corePoolSize;
         private final boolean forceCorePool;
 
-        CorePoolConnectionPoolStrategyFactory(int corePoolSize, boolean forceCorePool) {
+        CorePoolConnectionSelectorFactory(int corePoolSize, boolean forceCorePool) {
             this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
             this.forceCorePool = forceCorePool;
         }
 
         @Override
-        public ConnectionPoolStrategy<C> buildStrategy(String lbDescription) {
-            return new CorePoolConnectionPoolStrategy<>(corePoolSize, forceCorePool);
+        public ConnectionSelector<C> buildStrategy(String lbDescription) {
+            return new CorePoolConnectionSelector<>(corePoolSize, forceCorePool);
         }
 
         @Override
         public String toString() {
-            return "CorePoolConnectionPoolStrategyFactory{" +
+            return CorePoolConnectionSelectorFactory.class.getSimpleName() + "{" +
                     "corePoolSize=" + corePoolSize +
                     ", forceCorePool=" + forceCorePool +
                     '}';

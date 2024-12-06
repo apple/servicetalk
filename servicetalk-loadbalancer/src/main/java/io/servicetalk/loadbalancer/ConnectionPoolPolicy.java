@@ -20,7 +20,6 @@ import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 /**
  * Configuration of the strategy for selecting connections from a pool to the same endpoint.
  */
-// TODO: this may not be valuable to surface right now.
 public abstract class ConnectionPoolPolicy {
 
     static final int DEFAULT_MAX_EFFORT = 5;
@@ -28,6 +27,14 @@ public abstract class ConnectionPoolPolicy {
 
     private ConnectionPoolPolicy() {
         // only instances are in this class.
+    }
+
+    /**
+     * Get the recommended default {@link ConnectionPoolPolicy}.
+     * @return the recommended default {@link ConnectionPoolPolicy}.
+     */
+    public static ConnectionPoolPolicy defaultPolicy() {
+        return linearSearch();
     }
 
     /**
@@ -50,7 +57,7 @@ public abstract class ConnectionPoolPolicy {
      * @return the configured {@link ConnectionPoolPolicy}.
      */
     public static ConnectionPoolPolicy corePool(final int corePoolSize, final boolean forceCorePool) {
-        return new CorePoolStrategy(corePoolSize, forceCorePool);
+        return new CorePoolPolicy(corePoolSize, forceCorePool);
     }
 
     /**
@@ -119,11 +126,11 @@ public abstract class ConnectionPoolPolicy {
     }
 
     // instance types
-    static final class CorePoolStrategy extends ConnectionPoolPolicy {
+    static final class CorePoolPolicy extends ConnectionPoolPolicy {
         final int corePoolSize;
         final boolean forceCorePool;
 
-        CorePoolStrategy(final int corePoolSize, final boolean forceCorePool) {
+        CorePoolPolicy(final int corePoolSize, final boolean forceCorePool) {
             this.corePoolSize = ensurePositive(corePoolSize, "corePoolSize");
             this.forceCorePool = forceCorePool;
         }
