@@ -214,18 +214,13 @@ class ProtocolCompatibilityTest {
         STATUS_IN_RESPONSE
     }
 
-    private static final boolean[] SSL = {false, true};
-    private static final boolean[] STREAMING = {false, true};
+    private static final boolean[] TRUE_FALSE = {true, false};
     private static final String[] COMPRESSION = {"gzip", "identity", null};
-
-    private static final boolean[] SERVICETALK_CLIENT = {true, false};
-    private static final boolean[] SERVICETALK_SERVER = {true, false};
-    private static final boolean[] BLOCKING_SERVER = {true, false};
 
     private static Collection<Arguments> sslStreamingAndCompressionParams() {
         List<Arguments> args = new ArrayList<>();
-        for (boolean ssl : SSL) {
-            for (boolean streaming : STREAMING) {
+        for (boolean ssl : TRUE_FALSE) {
+            for (boolean streaming : TRUE_FALSE) {
                 for (String compression : COMPRESSION) {
                     args.add(Arguments.of(ssl, streaming, compression));
                 }
@@ -236,8 +231,8 @@ class ProtocolCompatibilityTest {
 
     private static Collection<Arguments> sslAndStreamingParams() {
         List<Arguments> args = new ArrayList<>();
-        for (boolean ssl : SSL) {
-            for (boolean streaming : STREAMING) {
+        for (boolean ssl : TRUE_FALSE) {
+            for (boolean streaming : TRUE_FALSE) {
                     args.add(Arguments.of(ssl, streaming));
                 }
         }
@@ -246,7 +241,7 @@ class ProtocolCompatibilityTest {
 
     private static Collection<Arguments> sslAndCompressionParams() {
         List<Arguments> args = new ArrayList<>();
-        for (boolean ssl : SSL) {
+        for (boolean ssl : TRUE_FALSE) {
             for (String compression : COMPRESSION) {
                 args.add(Arguments.of(ssl, compression));
             }
@@ -260,7 +255,7 @@ class ProtocolCompatibilityTest {
         };
 
         List<Arguments> args = new ArrayList<>();
-        for (boolean streaming : STREAMING) {
+        for (boolean streaming : TRUE_FALSE) {
             for (String message : messages) {
                 args.add(Arguments.of(streaming, message));
             }
@@ -270,9 +265,9 @@ class ProtocolCompatibilityTest {
 
     private static Collection<Arguments> clientServerParams() {
         List<Arguments> args = new ArrayList<>();
-        for (boolean isClientServiceTalk : SERVICETALK_CLIENT) {
-            for (boolean isServerServiceTalk : SERVICETALK_SERVER) {
-                for (boolean isServerBlocking : BLOCKING_SERVER) {
+        for (boolean isClientServiceTalk : TRUE_FALSE) {
+            for (boolean isServerServiceTalk : TRUE_FALSE) {
+                for (boolean isServerBlocking : TRUE_FALSE) {
                     if (!isClientServiceTalk && isServerServiceTalk && isServerBlocking) {
                         // TODO there appears to be a potential bug in this combination. Separate bug filed.
                         continue;
@@ -638,19 +633,19 @@ class ProtocolCompatibilityTest {
     @ParameterizedTest(name = "{displayName} [{index}]: serviceTalkClient={0} serviceTalkServer={1} blocking={2}")
     @MethodSource("clientServerParams")
     void unimplementedServiceError(final boolean isServiceTalkClient,
-                                                   final boolean isServiceTalkServer,
-                                                   final boolean isServerBlocking) {
+                                   final boolean isServiceTalkServer,
+                                   final boolean isServerBlocking) throws Throwable {
 
         ThrowingSupplier<TestServerContext> serverSupplier = isServiceTalkServer ?
-                () -> (isServerBlocking) ?
+                () -> isServerBlocking ?
                         serviceTalkServerBlocking(false, null, new BlockingCompatService() { }) :
                         serviceTalkServer(ErrorMode.NONE, false, defaultStrategy(), null, null,
                                 new Compat.CompatService() { }) :
                 () -> grpcJavaServer(false, null, new CompatGrpc.CompatImplBase() { });
 
         Function<SocketAddress, CompatClient> clientSupplier = isServiceTalkClient ?
-                (addr) -> serviceTalkClient(addr, false, null, null) :
-                (addr) -> {
+                addr -> serviceTalkClient(addr, false, null, null) :
+                addr -> {
                     try {
                         return grpcJavaClient(addr, null, false, null);
                     } catch (Exception e) {
@@ -676,8 +671,6 @@ class ProtocolCompatibilityTest {
                     client.bidirectionalStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
             validateGrpcErrorInResponse(bidirectionalStreamingResponse.toFuture(), false, UNIMPLEMENTED,
                     "Method grpc.netty.Compat/bidirectionalStreamingCall is unimplemented");
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
         }
     }
 

@@ -15,12 +15,12 @@
  */
 package io.servicetalk.examples.grpc.protocoptions;
 
-import io.grpc.examples.helloworld.HelloRequest;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
 import io.grpc.examples.helloworld.GreeterSt.BlockingGreeterService;
 import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 
 public final class BlockingProtocOptionsServer {
     public static void main(String[] args) throws Exception {
