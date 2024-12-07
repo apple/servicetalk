@@ -47,7 +47,7 @@ class RandomSubsetterTest {
         when(hosts.get(0).isHealthy()).thenReturn(false);
         List<PrioritizedHost> results = new RandomSubsetter(5).subset(hosts);
         long healthyCount = results.stream().filter(PrioritizedHost::isHealthy).count();
-        assertThat(healthyCount, equalTo(5l));
+        assertThat(healthyCount, equalTo(5L));
     }
 
     @Test
@@ -59,7 +59,7 @@ class RandomSubsetterTest {
         when(hosts.get(0).isHealthy()).thenReturn(false);
         List<PrioritizedHost> results = new RandomSubsetter(5).subset(hosts);
         long healthyCount = results.stream().filter(PrioritizedHost::isHealthy).count();
-        assertThat(healthyCount, equalTo(0l));
+        assertThat(healthyCount, equalTo(0L));
         assertThat(hosts, equalTo(results));
     }
 
