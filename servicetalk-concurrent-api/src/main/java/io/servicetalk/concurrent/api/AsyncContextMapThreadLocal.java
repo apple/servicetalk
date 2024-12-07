@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
+import io.servicetalk.context.api.ContextMaps;
 
 import static java.lang.ThreadLocal.withInitial;
 
@@ -24,7 +25,7 @@ final class AsyncContextMapThreadLocal {
     static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL = withInitial(AsyncContextMapThreadLocal::newContextMap);
 
     private static ContextMap newContextMap() {
-        return new CopyOnWriteContextMap();
+        return ContextMaps.newCopyOnWriteMap();
     }
 
     ContextMap get() {
