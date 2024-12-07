@@ -111,3 +111,34 @@ And with Maven:
   </args>
 </protocPlugin>
 ----
+
+==== `defaultServiceMethods=<true|false> (default: false)`
+Generates default service interface methods to ensure implementations will continue to compile as the API is evolved.
+
+If you are using the
+link:https://github.com/google/protobuf-gradle-plugin#configure-what-to-generate[protobuf-gradle-plugin] this is how you
+can specify an option:
+
+[source,gradle]
+----
+task.plugins {
+  servicetalk_grpc {
+    option 'defaultServiceMethods=true'
+  }
+}
+----
+
+And with Maven:
+
+And with Maven:
+
+[source, xml]
+----
+<protocPlugin>
+  <id>servicetalk-grpc-protoc</id>
+  <!-- more params -->
+  <args>
+    <arg>defaultServiceMethods=true</arg>
+  </args>
+</protocPlugin>
+----

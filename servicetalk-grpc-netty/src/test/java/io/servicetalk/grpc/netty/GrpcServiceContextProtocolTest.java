@@ -103,21 +103,21 @@ class GrpcServiceContextProtocolTest {
         }
     }
 
-    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @ParameterizedTest(name = "httpVersion={0} streamingService={1}")
     @MethodSource("params")
     void testAggregated(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         setUp(httpProtocol, streamingService);
         assertResponse(client.test(newRequest()));
     }
 
-    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @ParameterizedTest(name = "httpVersion={0} streamingService={1}")
     @MethodSource("params")
     void testRequestStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         setUp(httpProtocol, streamingService);
         assertResponse(client.testRequestStream(Arrays.asList(newRequest(), newRequest())));
     }
 
-    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @ParameterizedTest(name = "httpVersion={0} streamingService={1}")
     @MethodSource("params")
     void testBiDiStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         setUp(httpProtocol, streamingService);
@@ -127,7 +127,7 @@ class GrpcServiceContextProtocolTest {
         }
     }
 
-    @ParameterizedTest(name = "httpVersion={0) streamingService={0)")
+    @ParameterizedTest(name = "httpVersion={0} streamingService={1}")
     @MethodSource("params")
     void testResponseStream(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         setUp(httpProtocol, streamingService);

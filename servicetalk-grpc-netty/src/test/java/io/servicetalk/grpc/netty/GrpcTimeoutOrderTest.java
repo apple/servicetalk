@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -87,8 +88,12 @@ final class GrpcTimeoutOrderTest {
                         builder.appendServiceFilter(NEVER_SERVER_FILTER);
                     }
                 })
-                .listenAndAwait((GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build()));
+                .listenAndAwait(new GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
+                    }
+                });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .defaultTimeout(clientAppliesTimeout ? DEFAULT_TIMEOUT : null, clientAppliesTimeout)
                      .buildBlocking(new Greeter.ClientFactory())) {
@@ -102,8 +107,11 @@ final class GrpcTimeoutOrderTest {
     void clientFilterNeverRespondsAppliesDeadline(boolean builderEnableTimeout) throws Exception {
         try (ServerContext serverContext = forAddress(localAddress(0))
                 .defaultTimeout(null, false)
-                .listenAndAwait((GreeterService) (ctx, request) -> {
-                    throw new IllegalStateException("client using never filter, server shouldn't read response");
+                .listenAndAwait(new GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        throw new IllegalStateException("client using never filter, server shouldn't read response");
+                    }
                 });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .defaultTimeout(DEFAULT_TIMEOUT, builderEnableTimeout)
