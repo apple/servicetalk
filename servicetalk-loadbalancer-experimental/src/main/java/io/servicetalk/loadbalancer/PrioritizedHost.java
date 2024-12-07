@@ -21,6 +21,12 @@ package io.servicetalk.loadbalancer;
 interface PrioritizedHost {
 
     /**
+     * A random seed given to a host on it's initial creation.
+     * @return a random seed given to a host on it's initial creation.
+     */
+    long randomSeed();
+
+    /**
      * The current priority of the host.
      * @return the current priority of the host.
      */

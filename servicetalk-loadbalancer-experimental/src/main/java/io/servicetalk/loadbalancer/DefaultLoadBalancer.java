@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +66,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
-import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.util.Collections.emptyList;
@@ -110,8 +108,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionSelector<C> connectionSelector;
+    private final Subsetter subsetter;
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
-    private final int randomSubsetSize;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
     private final HostPriorityStrategy priorityStrategy;
@@ -129,7 +127,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
-     * @param randomSubsetSize the maximum number of health hosts to use when load balancing.
+     * @param subsetter a subset builder.
      * @param connectionSelectorFactory factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
@@ -145,7 +143,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-            final int randomSubsetSize,
+            final Subsetter subsetter,
             final ConnectionSelector.ConnectionSelectorFactory<C> connectionSelectorFactory,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
@@ -163,7 +161,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
-        this.randomSubsetSize = ensurePositive(randomSubsetSize, "randomSubsetSize");
+        this.subsetter = requireNonNull(subsetter, "subsetter");
         this.loadBalancerObserver = requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
                 .newObserver(lbDescription);
         this.healthCheckConfig = healthCheckConfig;
@@ -514,36 +512,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             host.loadBalancingWeight(host.serviceDiscoveryWeight());
         }
         nextHosts = priorityStrategy.prioritize(nextHosts);
-        nextHosts = makeSubset(nextHosts);
+        nextHosts = subsetter.subset(nextHosts);
         this.hostSelector = hostSelector.rebuildWithHosts(nextHosts);
         loadBalancerObserver.onHostSetChanged(Collections.unmodifiableList(nextHosts));
-    }
-
-    private List<PrioritizedHostImpl<ResolvedAddress, C>> makeSubset(
-            final List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts) {
-        if (nextHosts.size() <= randomSubsetSize) {
-            return nextHosts;
-        }
-
-        // We need to sort, and then return the list with the subsetSize number of healthy elements.
-        List<PrioritizedHostImpl<ResolvedAddress, C>> result = new ArrayList<>(nextHosts);
-        result.sort(Comparator.comparingLong(a -> a.randomSeed));
-
-        // We don't want to consider the unhealthy elements to be a part of our subset, so we're going to grow it
-        // to account for un-health endpoints. However, we need to know how many that is.
-        for (int i = 0, healthyCount = 0; i < result.size(); i++) {
-            if (result.get(i).isHealthy()) {
-                ++healthyCount;
-                if (healthyCount == randomSubsetSize) {
-                    // Trim elements after i to form the subset.
-                    while (result.size() > i + 1) {
-                        result.remove(result.size() - 1);
-                    }
-                    break;
-                }
-            }
-        }
-        return result;
     }
 
     @Override
@@ -698,6 +669,11 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             this.priority = ensureNonNegative(priority, "priority");
             this.serviceDiscoveryWeight = serviceDiscoveryWeight;
             this.loadBalancingWeight = serviceDiscoveryWeight;
+        }
+
+        @Override
+        public long randomSeed() {
+            return randomSeed;
         }
 
         Host<ResolvedAddress, C> delegate() {

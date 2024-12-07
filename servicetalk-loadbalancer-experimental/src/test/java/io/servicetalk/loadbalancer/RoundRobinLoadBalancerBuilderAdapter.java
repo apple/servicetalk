@@ -37,11 +37,6 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> randomSubsetSize(int randomSubsetSize) {
-        throw new UnsupportedOperationException("Cannot set subset size for old round robin");
-    }
-
-    @Override
     public LoadBalancerBuilder<String, TestLoadBalancedConnection> loadBalancerObserver(
             @Nullable LoadBalancerObserverFactory loadBalancerObserverFactory) {
         throw new UnsupportedOperationException("Cannot set a load balancer observer for old round robin");

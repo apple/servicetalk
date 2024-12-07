@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
@@ -280,6 +281,7 @@ class DefaultHostPriorityStrategyTest {
     private static class TestPrioritizedHost implements PrioritizedHost {
 
         private final String address;
+        private final long randomSeed = ThreadLocalRandom.current().nextLong();
 
         private boolean isHealthy = true;
         private int priority;
@@ -291,6 +293,11 @@ class DefaultHostPriorityStrategyTest {
 
         String address() {
             return address;
+        }
+
+        @Override
+        public long randomSeed() {
+            return randomSeed;
         }
 
         @Override
