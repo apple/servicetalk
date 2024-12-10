@@ -18,10 +18,13 @@ package io.servicetalk.loadbalancer;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,13 +34,14 @@ class RandomSubsetterTest {
     void desiredSubsetLargerThanHostList() {
         List<PrioritizedHost> hosts = hosts(10);
         List<PrioritizedHost> results = new RandomSubsetter(Integer.MAX_VALUE).subset(hosts);
-        assertThat(results, equalTo(hosts));
+        assertThat(results, sameInstance(hosts));
     }
 
     @Test
     void desiredSubsetSmallerThanHostList() {
         List<PrioritizedHost> hosts = hosts(10);
-        List<PrioritizedHost> results = new RandomSubsetter(5).subset(hosts);
+        Set<PrioritizedHost> results = subsetSet(5, hosts);
+        // We turn it to a hash-set to ensure each element is unique.
         assertThat(results.size(), equalTo(5));
     }
 
@@ -45,7 +49,7 @@ class RandomSubsetterTest {
     void enoughHealthEndpoints() {
         List<PrioritizedHost> hosts = hosts(10);
         when(hosts.get(0).isHealthy()).thenReturn(false);
-        List<PrioritizedHost> results = new RandomSubsetter(5).subset(hosts);
+        Set<PrioritizedHost> results = subsetSet(5, hosts);
         long healthyCount = results.stream().filter(PrioritizedHost::isHealthy).count();
         assertThat(healthyCount, equalTo(5L));
     }
@@ -56,11 +60,18 @@ class RandomSubsetterTest {
         for (PrioritizedHost host : hosts) {
             when(host.isHealthy()).thenReturn(false);
         }
-        when(hosts.get(0).isHealthy()).thenReturn(false);
-        List<PrioritizedHost> results = new RandomSubsetter(5).subset(hosts);
+        List<PrioritizedHost> results = subset(5, hosts);
         long healthyCount = results.stream().filter(PrioritizedHost::isHealthy).count();
         assertThat(healthyCount, equalTo(0L));
         assertThat(hosts, equalTo(results));
+    }
+
+    private static Set<PrioritizedHost> subsetSet(int randomSubsetSize, List<PrioritizedHost> hosts) {
+        return new HashSet<>(subset(randomSubsetSize, hosts));
+    }
+
+    private static List<PrioritizedHost> subset(int randomSubsetSize, List<PrioritizedHost> hosts) {
+        return new RandomSubsetter(randomSubsetSize).subset(hosts);
     }
 
     private static List<PrioritizedHost> hosts(int count) {
