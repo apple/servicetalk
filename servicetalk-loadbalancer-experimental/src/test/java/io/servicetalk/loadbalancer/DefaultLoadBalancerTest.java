@@ -57,7 +57,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             LoadBalancingPolicies.p2c().build();
 
-    private int subsetSize = Integer.MAX_VALUE;
+    private Subsetter subsetter = new RandomSubsetter(Integer.MAX_VALUE);
 
     private Function<String, HostPriorityStrategy> hostPriorityStrategyFactory = DefaultHostPriorityStrategy::new;
 
@@ -236,7 +236,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     @ValueSource(ints = {1, 2, Integer.MAX_VALUE})
     void subsetting(final int subsetSize) throws Exception {
         serviceDiscoveryPublisher.onComplete();
-        this.subsetSize = subsetSize;
+        this.subsetter = new RandomSubsetter(subsetSize);
         // rr so we can test that each endpoint gets used deterministically.
         this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
         lb = newTestLoadBalancer();
@@ -252,7 +252,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         serviceDiscoveryPublisher.onComplete();
         final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
         outlierDetectorFactory = factory;
-        this.subsetSize = 2;
+        this.subsetter = new RandomSubsetter(2);
         // rr so we can test that each endpoint gets used deterministically.
         this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
         lb = newTestLoadBalancer();
@@ -316,7 +316,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 serviceDiscoveryPublisher,
                 hostPriorityStrategyFactory,
                 loadBalancingPolicy,
-                subsetSize,
+                subsetter,
                 LinearSearchConnectionSelector.factory(DEFAULT_LINEAR_SEARCH_SPACE),
                 connectionFactory,
                 NoopLoadBalancerObserver.factory(),
@@ -458,25 +458,25 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             return new TestSelector(hosts);
         }
 
-        private class TestSelector<C extends TestLoadBalancedConnection> implements HostSelector<String, C> {
+        private class TestSelector implements HostSelector<String, TestLoadBalancedConnection> {
 
-            private final List<? extends Host<String, C>> hosts;
+            private final List<? extends Host<String, TestLoadBalancedConnection>> hosts;
 
-            TestSelector(final List<? extends Host<String, C>> hosts) {
+            TestSelector(final List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
                 this.hosts = hosts;
             }
 
             @Override
-            public Single<C> selectConnection(
-                    Predicate<C> selector, @Nullable ContextMap context,
+            public Single<TestLoadBalancedConnection> selectConnection(
+                    Predicate<TestLoadBalancedConnection> selector, @Nullable ContextMap context,
                     boolean forceNewConnectionAndReserve) {
                 return hosts.isEmpty() ? failed(new IllegalStateException("shouldn't be empty"))
                         : hosts.get(0).newConnection(selector, false, context);
             }
 
             @Override
-            public HostSelector<String, C> rebuildWithHosts(
-                    List<? extends Host<String, C>> hosts) {
+            public HostSelector<String, TestLoadBalancedConnection> rebuildWithHosts(
+                    List<? extends Host<String, TestLoadBalancedConnection>> hosts) {
                 rebuilds++;
                 return new TestSelector(hosts);
             }
