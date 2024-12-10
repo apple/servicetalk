@@ -58,7 +58,8 @@ final class SelectorTestHelpers {
         return results;
     }
 
-    private static Host mockHost(String addr, TestLoadBalancedConnection connection) {
+    private static Host<String, TestLoadBalancedConnection> mockHost(
+            String addr, TestLoadBalancedConnection connection) {
         Host<String, TestLoadBalancedConnection> host = mock(Host.class);
         when(host.address()).thenReturn(addr);
         when(host.isHealthy()).thenReturn(true);
