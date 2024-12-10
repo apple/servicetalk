@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -61,8 +63,13 @@ class GrpcUdsTest {
         String name = "foo";
         try (ServerContext serverContext = forAddress(newSocketAddress())
                 .initializeHttp(builder -> builder.ioExecutor(ioExecutor))
-                .listenAndAwait((GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
+                .listenAndAwait(new GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return succeeded(HelloReply.newBuilder()
+                                .setMessage(greetingPrefix + request.getName()).build());
+                    }
+                });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .buildBlocking(new ClientFactory())) {
             HelloRequest request = HelloRequest.newBuilder().setName(name).build();

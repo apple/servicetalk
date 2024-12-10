@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcClientMetadata;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -87,8 +88,12 @@ class GrpcProxyTunnelTest {
                 .initializeHttp(httpBuilder -> httpBuilder
                         .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                                 DefaultTestCerts::loadServerKey).build()))
-                .listenAndAwait((Greeter.BlockingGreeterService) (ctx, request) ->
-                        HelloReply.newBuilder().setMessage(GREETING_PREFIX + request.getName()).build());
+                .listenAndAwait(new Greeter.BlockingGreeterService() {
+                    @Override
+                    public HelloReply sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return HelloReply.newBuilder().setMessage(GREETING_PREFIX + request.getName()).build();
+                    }
+                });
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .initializeHttp(httpBuilder -> httpBuilder.proxyConfig(forAddress(proxyAddress))
                         .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)

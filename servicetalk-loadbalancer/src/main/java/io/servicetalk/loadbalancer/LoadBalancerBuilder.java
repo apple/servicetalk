@@ -71,17 +71,6 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
             LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy);
 
     /**
-     * Set the random host subset size for the load balancer.
-     * This is valuable for limiting the number of outgoing connections when calling services that have
-     * a very high replica count. It does so by selecting the specified number of hosts randomly from the total host
-     * set and routing traffic only to these hosts.
-     * @param randomSubsetSize the maximum number of healthy hosts to establish connections to
-     * @return {@code this}
-     */
-    // TODO: should we cut this from the initial API?
-    LoadBalancerBuilder<ResolvedAddress, C> randomSubsetSize(int randomSubsetSize);
-
-    /**
      * Set the {@link LoadBalancerObserverFactory} to use with this load balancer.
      * @param loadBalancerObserverFactory the {@link LoadBalancerObserverFactory} to use, or {@code null} to not use an
      *                                    observer.

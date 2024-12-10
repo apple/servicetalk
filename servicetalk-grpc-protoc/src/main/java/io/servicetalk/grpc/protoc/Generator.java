@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,8 @@ import static io.servicetalk.grpc.protoc.Types.GrpcSerializationProvider;
 import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
+import static io.servicetalk.grpc.protoc.Types.GrpcStatus;
+import static io.servicetalk.grpc.protoc.Types.GrpcStatusCode;
 import static io.servicetalk.grpc.protoc.Types.GrpcStatusException;
 import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
 import static io.servicetalk.grpc.protoc.Types.Identity;
@@ -172,6 +174,7 @@ import static io.servicetalk.grpc.protoc.Words.timeout;
 import static java.lang.System.lineSeparator;
 import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
@@ -250,14 +253,17 @@ final class Generator {
     private final ServiceCommentsMap serviceCommentsMap;
     private final boolean printJavaDocs;
     private final boolean skipDeprecated;
+    private final boolean defaultServiceMethods;
 
     Generator(final GenerationContext context, final Map<String, ClassName> messageTypesMap,
-              final boolean printJavaDocs, final boolean skipDeprecated, SourceCodeInfo sourceCodeInfo) {
+              final boolean printJavaDocs, final boolean skipDeprecated, final boolean defaultServiceMethods,
+              SourceCodeInfo sourceCodeInfo) {
         this.context = context;
         this.messageTypesMap = messageTypesMap;
         this.serviceCommentsMap = printJavaDocs ? new DefaultServiceCommentsMap(sourceCodeInfo) : NOOP_MAP;
         this.printJavaDocs = printJavaDocs;
         this.skipDeprecated = skipDeprecated;
+        this.defaultServiceMethods = defaultServiceMethods;
     }
 
     /**
@@ -1638,6 +1644,41 @@ final class Generator {
                 .returns(GrpcMethodDescriptorCollection)
                 .addStatement("return $L", blocking ? BLOCKING_METHOD_DESCRIPTORS : ASYNC_METHOD_DESCRIPTORS)
                 .build());
+
+        // generate default service methods
+        if (defaultServiceMethods) {
+            final List<RpcInterface> interfaces = state.serviceRpcInterfaces.stream()
+                    .filter(intf -> intf.blocking == blocking)
+                    .collect(toList());
+            for (final RpcInterface rpcInterface : interfaces) {
+                final MethodDescriptorProto methodProto = rpcInterface.methodProto;
+                final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
+                final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
+                final String methodName = sanitizeIdentifier(methodProto.getName(), true);
+                final String methodPath = context.methodPath(state.serviceProto, methodProto).substring(1);
+                final MethodSpec methodSpec = newRpcMethodSpec(inClass, outClass, methodName,
+                        methodProto.getClientStreaming(),
+                        methodProto.getServerStreaming(),
+                        !blocking ? EnumSet.of(INTERFACE) : (skipDeprecated ?
+                                EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE) : EnumSet.of(INTERFACE, BLOCKING)),
+                        false, (__, spec) -> {
+                            spec.addAnnotation(Override.class);
+                            spec.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
+                            final String errorMessage = "\"Method " + methodPath + " is unimplemented\"";
+                            if (!blocking) {
+                                final ClassName returnType = methodProto.getServerStreaming() ? Publisher : Single;
+                                spec.addStatement("return $T.failed(new $T(new $T($T.UNIMPLEMENTED, $L)))",
+                                        returnType, GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                            } else {
+                                spec.addStatement("throw new $T(new $T($T.UNIMPLEMENTED, $L))",
+                                        GrpcStatusException, GrpcStatus, GrpcStatusCode, errorMessage);
+                            }
+                            return spec;
+                        });
+
+                interfaceSpecBuilder.addMethod(methodSpec);
+            }
+        }
 
         return interfaceSpecBuilder.build();
     }
