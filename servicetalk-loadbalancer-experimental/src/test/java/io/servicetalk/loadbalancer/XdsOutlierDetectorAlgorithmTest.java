@@ -80,8 +80,10 @@ class XdsOutlierDetectorAlgorithmTest {
     void cancellation() {
         config = withAllEnforcing().maxEjectionPercentage(100).build();
         outlierDetector = buildOutlierDetector();
-        HealthIndicator indicator1 = outlierDetector.newHealthIndicator("address-1", observer());
-        HealthIndicator indicator2 = outlierDetector.newHealthIndicator("address-2", observer());
+        HealthIndicator<String, TestLoadBalancedConnection> indicator1 =
+                outlierDetector.newHealthIndicator("address-1", observer());
+        HealthIndicator<String, TestLoadBalancedConnection> indicator2 =
+                outlierDetector.newHealthIndicator("address-2", observer());
         eject(indicator1);
         eject(indicator2);
         assertFalse(indicator1.isHealthy());
@@ -110,7 +112,8 @@ class XdsOutlierDetectorAlgorithmTest {
                 .build();
         outlierDetector = buildOutlierDetector();
 
-        HealthIndicator indicator1 = outlierDetector.newHealthIndicator("address-1", observer());
+        HealthIndicator<String, TestLoadBalancedConnection> indicator1 =
+                outlierDetector.newHealthIndicator("address-1", observer());
         eject(indicator1);
         assertFalse(indicator1.isHealthy());
         testExecutor.advanceTimeBy(config.baseEjectionTime().toNanos(), TimeUnit.NANOSECONDS);
@@ -133,12 +136,12 @@ class XdsOutlierDetectorAlgorithmTest {
     private void testEjectPercentage(int maxEjectPercentage) {
         config = withAllEnforcing().maxEjectionPercentage(maxEjectPercentage).build();
         outlierDetector = buildOutlierDetector();
-        List<HealthIndicator> healthIndicators = new ArrayList<>(4);
+        List<HealthIndicator<String, TestLoadBalancedConnection>> healthIndicators = new ArrayList<>(4);
         for (int i = 0; i < 4; i++) {
             healthIndicators.add(outlierDetector.newHealthIndicator("address-" + i, observer()));
         }
 
-        for (HealthIndicator indicator : healthIndicators) {
+        for (HealthIndicator<String, TestLoadBalancedConnection> indicator : healthIndicators) {
             eject(indicator);
         }
 
@@ -147,7 +150,7 @@ class XdsOutlierDetectorAlgorithmTest {
                 .filter(indicator -> !indicator.isHealthy()).collect(Collectors.toList()), hasSize(expectedFailed));
     }
 
-    private void eject(HealthIndicator indicator) {
+    private void eject(HealthIndicator<String, TestLoadBalancedConnection> indicator) {
         for (int i = 0; i < config.consecutive5xx(); i++) {
             if (!indicator.isHealthy()) {
                 break;
