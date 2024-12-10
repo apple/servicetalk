@@ -139,13 +139,13 @@ final class P2CConnectionSelector<C extends LoadBalancedConnection> implements C
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> factory(
+    static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> factory(
             final int maxEffort, final int corePoolSize, final boolean forceCorePool) {
         return new P2CConnectionSelectorFactory<>(maxEffort, corePoolSize, forceCorePool);
     }
 
     private static final class P2CConnectionSelectorFactory<C extends LoadBalancedConnection>
-            implements ConnectionSelectorFactory<C> {
+            extends ConnectionPoolPolicy<C> {
 
         private final int maxEffort;
         private final int corePoolSize;

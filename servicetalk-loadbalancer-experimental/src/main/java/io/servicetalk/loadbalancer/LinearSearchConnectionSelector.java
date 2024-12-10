@@ -90,12 +90,12 @@ final class LinearSearchConnectionSelector<C extends LoadBalancedConnection> imp
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> factory(final int linearSearchSpace) {
+    static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> factory(final int linearSearchSpace) {
         return new LinearSearchConnectionSelectorFactory<>(linearSearchSpace);
     }
 
     private static final class LinearSearchConnectionSelectorFactory<C extends LoadBalancedConnection>
-            implements ConnectionSelectorFactory<C> {
+            extends ConnectionPoolPolicy<C> {
 
         private final int linearSearchSpace;
 
