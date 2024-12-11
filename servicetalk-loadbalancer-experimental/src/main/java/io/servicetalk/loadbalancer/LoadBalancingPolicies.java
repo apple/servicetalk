@@ -28,6 +28,8 @@ public final class LoadBalancingPolicies {
 
     /**
      * Get the recommended default {@link LoadBalancingPolicy}.
+     * @param <ResolvedAddress> the type of the resolved address.
+     * @param <C> the type of the {@link LoadBalancedConnection}
      * @return the recommended default {@link LoadBalancingPolicy}.
      */
     public static <ResolvedAddress, C extends LoadBalancedConnection>
