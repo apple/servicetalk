@@ -26,6 +26,15 @@ public final class ConnectionPoolPolicies {
     }
 
     /**
+     * Get the recommended default {@link ConnectionPoolPolicy}.
+     * @param <C> the concrete type of the {@link LoadBalancedConnection}
+     * @return the recommended default {@link ConnectionPoolPolicy}.
+     */
+    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> defaultPolicy() {
+        return linearSearch();
+    }
+
+    /**
      * A connection selection policy that prioritizes a configurable "core" pool.
      * <p>
      * This {@link ConnectionPoolPolicy} attempts to emulate the pooling behavior often seen in thread pools.
@@ -44,8 +53,8 @@ public final class ConnectionPoolPolicies {
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    corePool(final int corePoolSize, final boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection>
+    ConnectionPoolPolicy<C> corePool(final int corePoolSize, final boolean forceCorePool) {
         return CorePoolConnectionSelector.factory(corePoolSize, forceCorePool);
     }
 
@@ -94,8 +103,8 @@ public final class ConnectionPoolPolicies {
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    p2c(int corePoolSize, boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection>
+    ConnectionPoolPolicy<C> p2c(int corePoolSize, boolean forceCorePool) {
         return p2c(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
     }
 

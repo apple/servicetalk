@@ -39,8 +39,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
-    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
-    private ConnectionPoolPolicy<C> connectionPoolPolicy = defaultConnectionSelectorFactory();
+    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = LoadBalancingPolicies.defaultPolicy();
+    private ConnectionPoolPolicy<C> connectionPoolPolicy = ConnectionPoolPolicies.defaultPolicy();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
@@ -180,15 +180,5 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor getExecutor() {
         return backgroundExecutor ==
                 null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : backgroundExecutor;
-    }
-
-    private static <ResolvedAddress, C extends LoadBalancedConnection>
-    LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
-        return LoadBalancingPolicies.roundRobin().build();
-    }
-
-    private static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    defaultConnectionSelectorFactory() {
-        return ConnectionPoolPolicies.linearSearch();
     }
 }
