@@ -35,20 +35,4 @@ interface ConnectionSelector<C extends LoadBalancedConnection> {
      */
     @Nullable
     C select(List<C> connections, Predicate<C> selector);
-
-    /**
-     * The factory of {@link ConnectionSelector} instances.
-     * @param <C> the least specific connection type necessary for properly implementing the selector.
-     * @see ConnectionSelector for available strategies.
-     */
-
-    interface ConnectionSelectorFactory<C extends LoadBalancedConnection> {
-
-        /**
-         * Provide an instance of the {@link ConnectionSelector} to use with a {@link Host}.
-         * @param lbDescription description of the resource, used for logging purposes.
-         * @return an instance of the {@link ConnectionSelector} to use with a {@link Host}.
-         */
-        ConnectionSelector<C> buildConnectionSelector(String lbDescription);
-    }
 }

@@ -96,7 +96,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @param connectionPoolPolicy the factory of connection pooling strategies to use.
      * @return {@code this}
      */
-    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(ConnectionPoolPolicy connectionPoolPolicy);
+    LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(ConnectionPoolPolicy<C> connectionPoolPolicy);
 
     /**
      * Set the background {@link Executor} to use for determining time and scheduling background tasks such

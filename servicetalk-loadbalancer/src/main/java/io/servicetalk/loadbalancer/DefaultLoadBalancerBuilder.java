@@ -22,7 +22,6 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.loadbalancer.ConnectionSelector.ConnectionSelectorFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.Collection;
@@ -35,13 +34,13 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         implements LoadBalancerBuilder<ResolvedAddress, C> {
 
     private final String id;
-    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
 
     @Nullable
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
-    private ConnectionSelectorFactory<C> connectionSelectorFactory = defaultConnectionSelectorFactory();
+    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
+    private ConnectionPoolPolicy<C> connectionPoolPolicy = ConnectionPoolPolicies.defaultPolicy();;
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
@@ -71,9 +70,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(
-            ConnectionPoolPolicy connectionPoolPolicy) {
-        this.connectionSelectorFactory = convertPoolPolicy(requireNonNull(connectionPoolPolicy,
-                "connectionPoolPolicy"));
+            ConnectionPoolPolicy<C> connectionPoolPolicy) {
+        this.connectionPoolPolicy = requireNonNull(connectionPoolPolicy, "connectionPoolPolicy");
         return this;
     }
 
@@ -86,7 +84,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, loadBalancerObserverFactory,
-                connectionSelectorFactory, outlierDetectorConfig, getExecutor());
+                connectionPoolPolicy, outlierDetectorConfig, getExecutor());
     }
 
     static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -94,23 +92,22 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
+        private final ConnectionPoolPolicy<C> connectionPoolPolicy;
+        private final OutlierDetectorConfig outlierDetectorConfig;
         @Nullable
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
-        private final ConnectionSelectorFactory<C> connectionSelectorFactory;
-        private final OutlierDetectorConfig outlierDetectorConfig;
         private final Executor executor;
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    @Nullable final LoadBalancerObserverFactory loadBalancerObserverFactory,
-                                   final ConnectionSelectorFactory<C> connectionSelectorFactory,
+                                   final ConnectionPoolPolicy<C> connectionPoolPolicy,
                                    final OutlierDetectorConfig outlierDetectorConfig,
                                    final Executor executor) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserverFactory = loadBalancerObserverFactory;
             this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
-            this.connectionSelectorFactory = requireNonNull(
-                    connectionSelectorFactory, "connectionSelectorFactory");
+            this.connectionPoolPolicy = requireNonNull(connectionPoolPolicy, "connectionPoolPolicy");
             this.executor = requireNonNull(executor, "executor");
         }
 
@@ -157,7 +154,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             }
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     DefaultHostPriorityStrategy::new, loadBalancingPolicy, new RandomSubsetter(Integer.MAX_VALUE),
-                    connectionSelectorFactory, connectionFactory,
+                    connectionPoolPolicy, connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
 
@@ -172,9 +169,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             return "DefaultLoadBalancerFactory{" +
                     "id='" + id + '\'' +
                     ", loadBalancingPolicy=" + loadBalancingPolicy +
-                    ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +
-                    ", connectionSelectorFactory=" + connectionSelectorFactory +
+                    ", connectionPoolPolicy=" + connectionPoolPolicy +
                     ", outlierDetectorConfig=" + outlierDetectorConfig +
+                    ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +
                     ", executor=" + executor +
                     '}';
         }
@@ -185,32 +182,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                 null ? RoundRobinLoadBalancerFactory.SharedExecutor.getInstance() : backgroundExecutor;
     }
 
-    private static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C> convertPoolPolicy(
-            ConnectionPoolPolicy connectionPoolPolicy) {
-        if (connectionPoolPolicy instanceof ConnectionPoolPolicy.P2CPolicy) {
-            ConnectionPoolPolicy.P2CPolicy strategy = (ConnectionPoolPolicy.P2CPolicy) connectionPoolPolicy;
-            return P2CConnectionSelector.factory(strategy.maxEffort, strategy.corePoolSize, strategy.forceCorePool);
-        } else if (connectionPoolPolicy instanceof ConnectionPoolPolicy.CorePoolPolicy) {
-            ConnectionPoolPolicy.CorePoolPolicy strategy =
-                    (ConnectionPoolPolicy.CorePoolPolicy) connectionPoolPolicy;
-            return CorePoolConnectionSelector.factory(strategy.corePoolSize, strategy.forceCorePool);
-        } else if (connectionPoolPolicy instanceof ConnectionPoolPolicy.LinearSearchPolicy) {
-            ConnectionPoolPolicy.LinearSearchPolicy strategy =
-                    (ConnectionPoolPolicy.LinearSearchPolicy) connectionPoolPolicy;
-            return LinearSearchConnectionSelector.factory(strategy.linearSearchSpace);
-        } else {
-            throw new IllegalStateException("Unexpected ConnectionPoolConfig: " +
-                    connectionPoolPolicy.getClass().getName());
-        }
-    }
-
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
         return LoadBalancingPolicies.roundRobin().build();
-    }
-
-    private static <C extends LoadBalancedConnection> ConnectionSelectorFactory<C>
-    defaultConnectionSelectorFactory() {
-        return convertPoolPolicy(ConnectionPoolPolicy.defaultPolicy());
     }
 }
