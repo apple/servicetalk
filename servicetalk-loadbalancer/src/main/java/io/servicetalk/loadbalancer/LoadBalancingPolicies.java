@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
+
 /**
  * A collections of factories for constructing a {@link LoadBalancingPolicy}.
  */
@@ -22,6 +24,15 @@ public final class LoadBalancingPolicies {
 
     private LoadBalancingPolicies() {
         // no instances.
+    }
+
+    /**
+     * Get the recommended default {@link LoadBalancingPolicy}.
+     * @return the recommended default {@link LoadBalancingPolicy}.
+     */
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancingPolicy<ResolvedAddress, C> defaultPolicy() {
+        return LoadBalancingPolicies.roundRobin().build();
     }
 
     /**
