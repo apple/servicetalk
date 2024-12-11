@@ -39,8 +39,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
-    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = LoadBalancingPolicies.defaultPolicy();
-    private ConnectionPoolPolicy<C> connectionPoolPolicy = ConnectionPoolPolicies.defaultPolicy();;
+    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
+    private ConnectionPoolPolicy<C> connectionPoolPolicy = ConnectionPoolPolicies.linearSearch();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`

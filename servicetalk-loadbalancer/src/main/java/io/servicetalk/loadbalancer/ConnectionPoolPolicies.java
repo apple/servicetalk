@@ -26,15 +26,6 @@ public final class ConnectionPoolPolicies {
     }
 
     /**
-     * Get the recommended default {@link ConnectionPoolPolicy}.
-     * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the recommended default {@link ConnectionPoolPolicy}.
-     */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> defaultPolicy() {
-        return linearSearch();
-    }
-
-    /**
      * A connection selection policy that prioritizes a configurable "core" pool.
      * <p>
      * This {@link ConnectionPoolPolicy} attempts to emulate the pooling behavior often seen in thread pools.
