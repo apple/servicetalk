@@ -55,6 +55,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
+    static final String ROUND_ROBIN_USER_DEFAULT_LOAD_BALANCER =
+            "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
+
     private final String id;
     private final int linearSearchSpace;
     @Nullable
@@ -74,8 +77,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig);
+        return useDefaultLoadBalancer() ?
+                buildDefaultLoadBalancerFactory(targetResource, eventPublisher, connectionFactory) :
+                new RoundRobinLoadBalancer<>(
+                        id, targetResource, eventPublisher, connectionFactory, linearSearchSpace, healthCheckConfig);
     }
 
     @Override
@@ -83,8 +88,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig);
+        // for now, we forward to the deprecated method since it can support both
+        return newLoadBalancer(targetResource, eventPublisher, connectionFactory);
     }
 
     @Override
@@ -100,6 +105,59 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                 ", linearSearchSpace=" + linearSearchSpace +
                 ", healthCheckConfig=" + healthCheckConfig +
                 '}';
+    }
+
+    private <T extends C> LoadBalancer<T> buildDefaultLoadBalancerFactory(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        int healthCheckFailedConnectionsThreshold;
+        Duration healthCheckInterval;
+        Duration healthCheckJitter;
+        Duration healthCheckResubscribeInterval;
+        Duration healthCheckResubscribeJitter;
+        Executor backgroundExecutor;
+        if (healthCheckConfig == null) {
+            healthCheckFailedConnectionsThreshold = -1;
+            healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+            healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
+            healthCheckResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+            healthCheckResubscribeJitter = DEFAULT_HEALTH_CHECK_JITTER;
+            backgroundExecutor = null;
+        } else {
+            healthCheckFailedConnectionsThreshold = healthCheckConfig.failedThreshold;
+            healthCheckInterval = healthCheckConfig.healthCheckInterval;
+            healthCheckJitter = healthCheckConfig.jitter;
+            healthCheckResubscribeInterval = healthCheckConfig.resubscribeInterval;
+            healthCheckResubscribeJitter = healthCheckConfig.healthCheckResubscribeJitter;
+            backgroundExecutor = healthCheckConfig.executor;
+        }
+
+        OutlierDetectorConfig outlierDetectorConfig = new OutlierDetectorConfig.Builder()
+                .ewmaHalfLife(Duration.ZERO)
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(0)
+                .enforcingConsecutive5xx(0)
+                .failedConnectionsThreshold(healthCheckFailedConnectionsThreshold)
+                .failureDetectorInterval(healthCheckInterval, healthCheckJitter)
+                .serviceDiscoveryResubscribeInterval(healthCheckResubscribeInterval, healthCheckResubscribeJitter)
+                .build();
+
+        LoadBalancingPolicy<ResolvedAddress, T> loadBalancingPolicy =
+                LoadBalancingPolicies.roundRobin()
+                        .failOpen(false)
+                        .ignoreWeights(true)
+                        .build();
+
+        LoadBalancerBuilder<ResolvedAddress, T> builder = LoadBalancers.builder(id);
+        if (backgroundExecutor != null) {
+            builder = builder.backgroundExecutor(backgroundExecutor);
+        }
+        return builder.outlierDetectorConfig(outlierDetectorConfig)
+                .loadBalancingPolicy(loadBalancingPolicy)
+                .connectionPoolPolicy(ConnectionPoolPolicies.linearSearch(linearSearchSpace))
+                .build()
+                .newLoadBalancer(eventPublisher, connectionFactory, targetResource);
     }
 
     /**
@@ -226,5 +284,11 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         static Executor getInstance() {
             return INSTANCE;
         }
+    }
+
+    private static boolean useDefaultLoadBalancer() {
+        // Enabled by default.
+        String propValue = System.getProperty(ROUND_ROBIN_USER_DEFAULT_LOAD_BALANCER);
+        return propValue == null || Boolean.parseBoolean(propValue);
     }
 }
