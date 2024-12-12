@@ -118,7 +118,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         for (Host<?, ?> host : hosts) {
             double hostWeight = host.weight();
             maxWeight = Math.max(maxWeight, hostWeight);
-            allEqualWeights = allEqualWeights && approxEqual(hosts.get(0).weight(), hostWeight);
+            allEqualWeights = allEqualWeights && BaseHostSelector.approxEqual(hosts.get(0).weight(), hostWeight);
         }
 
         if (allEqualWeights) {
