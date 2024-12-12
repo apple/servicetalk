@@ -21,6 +21,5 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-loadbalancer")
-  implementation project(":servicetalk-loadbalancer-experimental")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
