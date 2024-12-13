@@ -23,7 +23,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
 
 /**
- * A builder for immutable {@link P2CLoadBalancingPolicy} instances.
+ * A builder for {@link P2CLoadBalancingPolicy} instances.
+ *
  * @see LoadBalancingPolicies#p2c()
  */
 public final class P2CLoadBalancingPolicyBuilder {
@@ -39,12 +40,12 @@ public final class P2CLoadBalancingPolicyBuilder {
     private Random random;
 
     P2CLoadBalancingPolicyBuilder() {
-    // package private
+        // package private
     }
 
     /**
-     * Set the maximum number of attempts that P2C will attempt to select a pair with at least one
-     * healthy host.
+     * Set the maximum number of attempts that P2C will attempt to select a pair with at least one healthy host.
+     * <p>
      * Defaults to {@value DEFAULT_MAX_EFFORT}.
      *
      * @param maxEffort the maximum number of attempts.
@@ -57,9 +58,10 @@ public final class P2CLoadBalancingPolicyBuilder {
 
     /**
      * Set whether the selector should fail-open in the event no healthy hosts are found.
+     * <p>
      * When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
-     * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
-     * session.
+     * to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy session.
+     * <p>
      * Defaults to {@value DEFAULT_FAIL_OPEN_POLICY}.
      *
      * @param failOpen if true, will attempt  to select or establish a connection from an arbitrary host even if it
@@ -73,9 +75,11 @@ public final class P2CLoadBalancingPolicyBuilder {
 
     /**
      * Set whether the host selector should ignore {@link Host}s weight.
+     * <p>
      * Host weight influences the probability it will be selected to serve a request. The host weight can come
      * from many sources including known host capacity, priority groups, and others, so ignoring weight
      * information can lead to other features not working properly and should be used with care.
+     * <p>
      * Defaults to {@value DEFAULT_IGNORE_WEIGHTS}.
      *
      * @param ignoreWeights whether the host selector should ignore host weight information.
@@ -87,13 +91,13 @@ public final class P2CLoadBalancingPolicyBuilder {
     }
 
     // For testing purposes only.
-    P2CLoadBalancingPolicyBuilder random(Random random) {
+    P2CLoadBalancingPolicyBuilder random(final Random random) {
         this.random = random;
         return this;
     }
 
     /**
-     * Construct an immutable {@link P2CLoadBalancingPolicy}.
+     * Construct the {@link P2CLoadBalancingPolicy}.
      *
      * @param <ResolvedAddress> the type of the resolved address.
      * @param <C>               the refined type of the {@link LoadBalancedConnection}.

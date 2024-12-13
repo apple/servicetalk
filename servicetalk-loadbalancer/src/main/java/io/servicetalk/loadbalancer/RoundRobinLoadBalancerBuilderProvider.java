@@ -18,7 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
- * Provider for {@link RoundRobinLoadBalancerBuilder}.
+ * Provider for {@link RoundRobinLoadBalancerBuilder} that can be registered using {@link java.util.ServiceLoader}.
  */
 public interface RoundRobinLoadBalancerBuilderProvider {
 

@@ -17,6 +17,9 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
+/**
+ * A factory to create different {@link ConnectionPoolPolicy} variants.
+ */
 public final class ConnectionPoolPolicies {
     private static final int DEFAULT_MAX_EFFORT = 5;
     private static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
@@ -38,14 +41,15 @@ public final class ConnectionPoolPolicies {
      * If the core pool cannot satisfy the load traffic can spill over to extra connections which are selected in-order.
      * This has the property of minimizing traffic to the latest elements added outside the core pool size, thus let
      * them idle out of the pool once they're no longer necessary.
+     *
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    corePool(final int corePoolSize, final boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> corePool(final int corePoolSize,
+                                                                                      final boolean forceCorePool) {
         return CorePoolConnectionSelector.factory(corePoolSize, forceCorePool);
     }
 
@@ -56,6 +60,7 @@ public final class ConnectionPoolPolicies {
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
+     *
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
@@ -70,12 +75,13 @@ public final class ConnectionPoolPolicies {
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
+     *
      * @param linearSearchSpace the space to search linearly before resorting to random selection for remaining
      *                          connections.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> linearSearch(int linearSearchSpace) {
+    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> linearSearch(final int linearSearchSpace) {
         return LinearSearchConnectionSelector.factory(linearSearchSpace);
     }
 
@@ -83,19 +89,25 @@ public final class ConnectionPoolPolicies {
      * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
-     * - Randomly select two connections from the 'core pool' (pick-two).
-     *   - Try to select the 'best' of the two connections.
-     *   - If we fail to select the best connection, try the other connection.
-     * - If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear iteration
-     *   through the remaining connections searching for an acceptable connection.
+     * <ol>
+     *     <li>Randomly select two connections from the 'core pool' (pick-two).
+     *         <ol>
+     *             <li>Try to select the 'best' of the two connections.</li>
+     *             <li>If we fail to select the best connection, try the other connection.</li>
+     *         </ol>
+     *     </li>
+     *     <li>If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear
+     *     iteration through the remaining connections searching for an acceptable connection.</li>
+     * </ol>
+     *
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    p2c(int corePoolSize, boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> p2c(final int corePoolSize,
+                                                                                 final boolean forceCorePool) {
         return p2c(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
     }
 
@@ -103,11 +115,17 @@ public final class ConnectionPoolPolicies {
      * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
-     * - Randomly select two connections from the 'core pool' (pick-two).
-     *   - Try to select the 'best' of the two connections.
-     *   - If we fail to select the best connection, try the other connection.
-     * - If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear iteration
-     *   through the remaining connections searching for an acceptable connection.
+     * <ol>
+     *     <li>Randomly select two connections from the 'core pool' (pick-two).
+     *         <ol>
+     *             <li>Try to select the 'best' of the two connections.</li>
+     *             <li>If we fail to select the best connection, try the other connection.</li>
+     *         </ol>
+     *     </li>
+     *     <li>If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear
+     *     iteration through the remaining connections searching for an acceptable connection.</li>
+     * </ol>
+     *
      * @param maxEffort the maximum number of attempts to pick a healthy connection from the core pool.
      * @param corePoolSize the size of the core pool.
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
@@ -115,8 +133,9 @@ public final class ConnectionPoolPolicies {
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
      * @return the configured {@link ConnectionPoolPolicy}.
      */
-    public static <C extends LoadBalancedConnection>
-    ConnectionPoolPolicy<C> p2c(int maxEffort, int corePoolSize, boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> p2c(final int maxEffort,
+                                                                                 final int corePoolSize,
+                                                                                 final boolean forceCorePool) {
         return P2CConnectionSelector.factory(maxEffort, corePoolSize, forceCorePool);
     }
 }

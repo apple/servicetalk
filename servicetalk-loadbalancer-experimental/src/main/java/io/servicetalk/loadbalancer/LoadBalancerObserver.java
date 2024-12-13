@@ -34,11 +34,6 @@ public interface LoadBalancerObserver {
     HostObserver hostObserver(Object resolvedAddress);
 
     /**
-     * Callback for when connection selection fails due to no hosts being available.
-     */
-    void onNoHostsAvailable();
-
-    /**
      * Callback for monitoring the changes due to a service discovery update.
      * @param events the collection of {@link ServiceDiscovererEvent}s received by the load balancer.
      * @param oldHostSetSize the size of the previous host set.
@@ -46,13 +41,6 @@ public interface LoadBalancerObserver {
      */
     void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
                                  int oldHostSetSize, int newHostSetSize);
-
-    /**
-     * Callback for when connection selection fails due to all hosts being inactive.
-     * @param hostSetSize the size of the current host set.
-     * @param exception an exception with more details about the failure.
-     */
-    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
 
     /**
      * Callback for when the set of hosts used by the load balancer has changed. This set may not
@@ -63,6 +51,18 @@ public interface LoadBalancerObserver {
      */
     default void onHostSetChanged(Collection<? extends Host> newHosts) {
     }
+
+    /**
+     * Callback for when connection selection fails due to no hosts being available.
+     */
+    void onNoHostsAvailable();
+
+    /**
+     * Callback for when connection selection fails due to all hosts being inactive.
+     * @param hostSetSize the size of the current host set.
+     * @param exception an exception with more details about the failure.
+     */
+    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
 
     /**
      * An observer for {@link io.servicetalk.loadbalancer.Host} events.

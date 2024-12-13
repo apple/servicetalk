@@ -47,7 +47,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     private final Random random;
 
     P2CLoadBalancingPolicy(final boolean ignoreWeights, final int maxEffort,
-                                   final boolean failOpen, @Nullable final Random random) {
+                           final boolean failOpen, @Nullable final Random random) {
         this.ignoreWeights = ignoreWeights;
         this.maxEffort = maxEffort;
         this.failOpen = failOpen;
@@ -55,8 +55,8 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    HostSelector<ResolvedAddress, C> buildSelector(
-            List<Host<ResolvedAddress, C>> hosts, String lbDescription) {
+    HostSelector<ResolvedAddress, C> buildSelector(final List<Host<ResolvedAddress, C>> hosts,
+                                                   final String lbDescription) {
         return new P2CSelector<>(hosts, lbDescription, ignoreWeights, maxEffort, failOpen, random);
     }
 

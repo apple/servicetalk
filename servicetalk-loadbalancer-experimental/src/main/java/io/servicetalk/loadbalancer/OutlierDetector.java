@@ -29,9 +29,11 @@ interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> ext
 
     /**
      * Construct a new {@link HealthIndicator}.
-     * @note The most common use case will be to use the indicator to track a newly constructed {@link Host} but
+     * <p>
+     * The most common use case will be to use the indicator to track a newly constructed {@link Host} but
      * it's possible that a currently live host may have its indicator replaced due to load balancing configuration
      * changes, so it's not safe to assume that the host that will use this tracker is exactly new.
+     *
      * @param address the resolved address of the destination.
      * @return new {@link HealthIndicator}.
      */
@@ -40,9 +42,12 @@ interface OutlierDetector<ResolvedAddress, C extends LoadBalancedConnection> ext
 
     /**
      * Stream of events that signal that the health status has changed for one or more of the hosts observed by the
-     * {@link OutlierDetector}. The events signal scenarios where hosts have transitioned from healthy to unhealthy and
-     * vise versa. The {@link OutlierDetector} may choose to send these events at regular intervals or immediately when
-     * a host has been detected unhealthy.
+     * {@link OutlierDetector}.
+     * <p>
+     * The events signal scenarios where hosts have transitioned from healthy to unhealthy and vise versa.
+     * The {@link OutlierDetector} may choose to send these events at regular intervals or immediately when a host has
+     * been detected unhealthy.
+     *
      * @return a {@link Publisher} that represents the stream of health status changes.
      */
     Publisher<Void> healthStatusChanged();

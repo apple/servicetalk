@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.utils.internal.DurationUtils;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
@@ -113,8 +114,10 @@ public final class OutlierDetectorConfig {
 
     /**
      * The Exponentially Weighted Moving Average (EWMA) half-life.
+     * <p>
      * In the context of an exponentially weighted moving average, the half-life means the time during which
      * historical data has the same weight as a new sample.
+     *
      * @return the Exponentially Weighted Moving Average (EWMA) half-life.
      */
     public Duration ewmaHalfLife() {
@@ -123,7 +126,9 @@ public final class OutlierDetectorConfig {
 
     /**
      * The penalty factor for local cancellation of requests.
+     * <p>
      * The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the EWMA.
+     *
      * @return the penalty factor for local cancellation of requests.
      */
     public int ewmaCancellationPenalty() {
@@ -132,6 +137,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * Determines whether a cancellation is considered to be an error.
+     *
      * @return whether a cancellation is considered to be an error.
      */
     public boolean cancellationIsError() {
@@ -140,7 +146,9 @@ public final class OutlierDetectorConfig {
 
     /**
      * The penalty factor for requests that were classified as an error.
+     * <p>
      * The latency of the failed request is multiplied by the provided penalty before incorporating it into the EWMA.
+     *
      * @return the penalty factor for requests that were classified as an error.
      */
     public int ewmaErrorPenalty() {
@@ -149,8 +157,10 @@ public final class OutlierDetectorConfig {
 
     /**
      * The penalty factory to apply to concurrent requests.
+     * <p>
      * The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
      * concurrent load the traffic distribution will be smoother for algorithms that consider load metrics.
+     *
      * @return the penalty factory to use for concurrent load.
      */
     public int concurrentRequestPenalty() {
@@ -159,6 +169,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The threshold for consecutive connection failures to a host.
+     *
      * @return the threshold for consecutive connection failures to a host.
      * @see Builder#failedConnectionsThreshold(int)
      */
@@ -168,6 +179,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The jitter used along with the configured interval to determine duration between outlier detector checks.
+     *
      * @return the jitter used along with the configured interval to determine duration between outlier detector checks.
      * @see #failureDetectorInterval()
      * @see Builder#failureDetectorInterval(Duration, Duration)
@@ -178,6 +190,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The interval between service discovery resubscribes.
+     *
      * @return the interval between service discovery resubscribes.
      * @see #serviceDiscoveryResubscribeJitter()
      * @see Builder#serviceDiscoveryResubscribeInterval(Duration, Duration)
@@ -188,6 +201,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The jitter to use along with the service discovery resubscribe interval.
+     *
      * @return the jitter to use along with the service discovery resubscribe interval.
      * @see #serviceDiscoveryResubscribeInterval()
      * @see Builder#serviceDiscoveryResubscribeInterval(Duration, Duration)
@@ -198,6 +212,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The number of consecutive failures before the attempt to suspect the host.
+     *
      * @return the number of consecutive failures before the attempt to suspect the host.
      */
     public int consecutive5xx() {
@@ -206,9 +221,11 @@ public final class OutlierDetectorConfig {
 
     /**
      * The interval on which to run failure detectors.
+     * <p>
      * Failure percentage and success rate outlier detectors perform periodic scans to detect outliers. Active
      * revival mechanisms such as the layer-4 connectivity detector also use this interval to perform their periodic
      * health check to see if a host can be considered revived.
+     *
      * @return the interval on which to run failure percentage and success rate failure detectors.
      */
     public Duration failureDetectorInterval() {
@@ -217,8 +234,10 @@ public final class OutlierDetectorConfig {
 
     /**
      * The base ejection time.
+     * <p>
      * The base ejection time is multiplied by the number of consecutive times the host has been ejected to get the
      * total ejection time, capped by the {@link #maxEjectionTime()}.
+     *
      * @return the base ejection time.
      * @see #ejectionTimeJitter()
      */
@@ -228,6 +247,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The maximum percentage of hosts that can be ejected due to outlier detection.
+     *
      * @return the maximum percentage of hosts that can be ejected due to outlier detection.
      */
     public int maxEjectionPercentage() {
@@ -237,6 +257,7 @@ public final class OutlierDetectorConfig {
     /**
      * The probability in percentage that a host will be marked as unhealthy when a host reaches the
      * {@link #consecutive5xx()} threshold.
+     *
      * @return the probability with which the host should be marked as unhealthy.
      */
     public int enforcingConsecutive5xx() {
@@ -246,6 +267,7 @@ public final class OutlierDetectorConfig {
     /**
      * The probability in percentage that a host will be marked as unhealthy when a host exceeds the success rate
      * outlier detectors threshold.
+     *
      * @return the probability with which the host should be marked as unhealthy.
      */
     public int enforcingSuccessRate() {
@@ -254,6 +276,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The minimum number of hosts required to perform the success rate outlier detector analysis.
+     *
      * @return the minimum number of hosts required to perform the success rate outlier detector analysis.
      */
     public int successRateMinimumHosts() {
@@ -263,6 +286,7 @@ public final class OutlierDetectorConfig {
     /**
      * The minimum number of requests in an outlier detector interval required to include it in the success rate
      * outlier detector analysis.
+     *
      * @return the minimum number of request required.
      */
     public int successRateRequestVolume() {
@@ -272,6 +296,7 @@ public final class OutlierDetectorConfig {
     /**
      * The value divided by 1000 and then multiplied against the success rate standard deviation which sets the
      * threshold for ejection in the success rate outlier detector.
+     *
      * @return the stdev factor divided by 1000 used to determine the statistical outliers.
      */
     public int successRateStdevFactor() {
@@ -280,6 +305,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The failure threshold in percentage for ejecting a host.
+     *
      * @return the failure threshold in percentage for ejecting a host.
      */
     public int failurePercentageThreshold() {
@@ -289,6 +315,7 @@ public final class OutlierDetectorConfig {
     /**
      * The probability in percentage that a host will be marked as unhealthy when a host exceeds the failure percentage
      * outlier detectors threshold.
+     *
      * @return the probability with which the host should be marked as unhealthy.
      */
     public int enforcingFailurePercentage() {
@@ -297,6 +324,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The minimum number of hosts required to perform the failure percentage outlier detector analysis.
+     *
      * @return the minimum number of hosts required to perform the failure percentage outlier detector analysis.
      */
     public int failurePercentageMinimumHosts() {
@@ -306,6 +334,7 @@ public final class OutlierDetectorConfig {
     /**
      * The minimum number of requests in an outlier detector interval required to include it in the failure percentage
      * outlier detector analysis.
+     *
      * @return the minimum number of request required.
      */
     public int failurePercentageRequestVolume() {
@@ -314,6 +343,7 @@ public final class OutlierDetectorConfig {
 
     /**
      * The maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
+     *
      * @return the maximum amount of time a host can be ejected.
      */
     public Duration maxEjectionTime() {
@@ -322,8 +352,10 @@ public final class OutlierDetectorConfig {
 
     /**
      * The amount of jitter to add to the ejection time.
+     * <p>
      * An additional amount of 'jitter' is added to the ejection time to prevent connection storms if multiple hosts
      * are ejected at the time.
+     *
      * @return the amount of jitter to add to the ejection time.
      * @see #baseEjectionTime()
      */
@@ -365,13 +397,12 @@ public final class OutlierDetectorConfig {
      */
     public static final class Builder {
 
-        static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
+        // Default xDS outlier detector settings.
         static final int DEFAULT_CANCEL_PENALTY = 5;
         static final int DEFAULT_ERROR_PENALTY = 10;
         static final int DEFAULT_CONCURRENT_REQUEST_PENALTY = 1;
-        private boolean cancellationIsError = true;
 
-        // Default xDS outlier detector settings.
+        private static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
         private static final int DEFAULT_CONSECUTIVE_5XX = 5;
         private static final Duration DEFAULT_FAILURE_DETECTOR_INTERVAL = ofSeconds(10);
         private static final Duration DEFAULT_BASE_EJECTION_TIME = ofSeconds(30);
@@ -391,6 +422,7 @@ public final class OutlierDetectorConfig {
         private Duration ewmaHalfLife = DEFAULT_EWMA_HALF_LIFE;
         private int ewmaCancellationPenalty = DEFAULT_CANCEL_PENALTY;
         private int ewmaErrorPenalty = DEFAULT_ERROR_PENALTY;
+        private boolean cancellationIsError = true;
         private int concurrentRequestPenalty = DEFAULT_CONCURRENT_REQUEST_PENALTY;
         private int failedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
         private Duration intervalJitter = DEFAULT_HEALTH_CHECK_JITTER;
@@ -458,6 +490,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Build the OutlierDetectorConfig.
+         *
          * @return the OutlierDetectorConfig.
          */
         public OutlierDetectorConfig build() {
@@ -476,24 +509,28 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the Exponentially Weighted Moving Average (EWMA) half-life.
+         * <p>
          * In the context of an exponentially weighted moving average, the half-life means the time during which
          * historical data has the same weight as a new sample.
+         * <p>
          * Defaults to 10 seconds.
+         *
          * @param ewmaHalfLife the half-life for latency data.
          * @return {@code this}
          */
         public Builder ewmaHalfLife(final Duration ewmaHalfLife) {
-            requireNonNull(ewmaHalfLife, "ewmaHalfLife");
-            ensureNonNegative(ewmaHalfLife.toNanos(), "ewmaHalfLife");
-            this.ewmaHalfLife = ewmaHalfLife;
+            this.ewmaHalfLife = DurationUtils.ensureNonNegative(ewmaHalfLife, "ewmaHalfLife");
             return this;
         }
 
         /**
          * Set the penalty factor for local cancellation of requests.
+         * <p>
          * The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the
          * EWMA.
+         * <p>
          * Defaults to {@value DEFAULT_CANCEL_PENALTY}.
+         *
          * @param ewmaCancellationPenalty the penalty factor for local cancellation of requests.
          * @return {@code this}
          */
@@ -504,12 +541,15 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the penalty factor for requests that were classified as an error.
+         * <p>
          * The latency of the failed request is multiplied by the provided penalty before incorporating it into the
          * EWMA.
+         * <p>
          * Defaults to {@value DEFAULT_ERROR_PENALTY}.
-         * See {@link OutlierDetectorConfig#ewmaErrorPenalty()}.
+         *
          * @param ewmaErrorPenalty the penalty factor for requests that were classified as an error.
          * @return {@code this}
+         * @see OutlierDetectorConfig#ewmaErrorPenalty()
          */
         public Builder ewmaErrorPenalty(final int ewmaErrorPenalty) {
             this.ewmaErrorPenalty = ensureNonNegative(ewmaErrorPenalty, "ewmaErrorPenalty");
@@ -518,6 +558,7 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set whether a cancellation is considered to be an error by the outlier detector.
+         *
          * @param cancellationIsError whether a cancellation is considered to be an error by the outlier detector.
          * @return {@code this}
          */
@@ -528,12 +569,15 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the penalty factory to apply to concurrent requests.
+         * <p>
          * The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
          * concurrent load the traffic distribution will be more fair for algorithms that consider load metrics.
          * Larger penalties will favor a more even request distribution while lower penalties will bias traffic toward
          * endpoints with better performance. A value of 0 disables the penalty, 1 is an intermediate value, and larger
          * values such as 10 or more will strongly favor fairness over performance.
+         * <p>
          * Defaults to {@value DEFAULT_CONCURRENT_REQUEST_PENALTY}.
+         *
          * @param ewmaConcurrentRequestPenalty the penalty factory to apply for concurrent load.
          * @return {@code this}
          */
@@ -558,7 +602,7 @@ public final class OutlierDetectorConfig {
          * @param jitter the amount of jitter to apply to each re-subscribe {@code interval}.
          * @return {@code this}.
          */
-        public Builder serviceDiscoveryResubscribeInterval(Duration interval, Duration jitter) {
+        public Builder serviceDiscoveryResubscribeInterval(final Duration interval, final Duration jitter) {
             validateHealthCheckIntervals(interval, jitter);
             this.serviceDiscoveryResubscribeInterval = interval;
             this.serviceDiscoveryResubscribeJitter = jitter;
@@ -566,11 +610,13 @@ public final class OutlierDetectorConfig {
         }
 
         /**
-         * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
-         * consecutively fails to open connections in the amount greater or equal to the specified value,
-         * the host will be marked as unhealthy and connection establishment will take place in the background
-         * repeatedly on the {@link #failureDetectorInterval()} (with jitter {@link #failureDetectorIntervalJitter()}) until a connection is
-         * established. During that time, the host will not take part in load balancing selection.
+         * Configure a threshold for consecutive connection failures to a host.
+         * <p>
+         * When the {@link LoadBalancer} consecutively fails to open connections in the amount greater or equal to the
+         * specified value, the host will be marked as unhealthy and connection establishment will take place in the
+         * background repeatedly on the {@link #failureDetectorInterval()} (with jitter
+         * {@link #failureDetectorIntervalJitter()}) until a connection is established. During that time, the host will
+         * not take part in load balancing selection.
          * <p>
          * Use a negative value of the argument to disable health checking.
          *
@@ -582,14 +628,16 @@ public final class OutlierDetectorConfig {
         public Builder failedConnectionsThreshold(int failedConnectionsThreshold) {
             this.failedConnectionsThreshold = failedConnectionsThreshold;
             if (failedConnectionsThreshold == 0) {
-                throw new IllegalArgumentException("Not valid value: 0");
+                throw new IllegalArgumentException("Not valid value: 0 (expected: positive or negative)");
             }
             return this;
         }
 
         /**
          * Set the threshold for consecutive failures before a host is ejected.
+         * <p>
          * Defaults to {@value DEFAULT_CONSECUTIVE_5XX}.
+         *
          * @param consecutive5xx the threshold for consecutive failures before a host is ejected.
          * @return {@code this}
          */
@@ -601,22 +649,28 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the failure detector interval on which the outlier detector will perform periodic tasks.
+         * <p>
          * These tasks can include detection of outlier or the active revival checks.
+         * <p>
          * This method will also use either the default jitter or the provided interval, whichever is smaller.
+         * <p>
          * Defaults to 10 second interval with 3 second jitter.
+         *
          * @param interval the interval on which to run failure percentage and success rate failure detectors.
          * @return {@code this}
          */
         public Builder failureDetectorInterval(final Duration interval) {
-            this.failureDetectorInterval = requireNonNull(interval, "interval");
             return failureDetectorInterval(interval, interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ?
                     interval.dividedBy(2) : DEFAULT_HEALTH_CHECK_JITTER);
         }
 
         /**
          * Set the interval on which to run failure percentage and success rate failure detectors.
+         * <p>
          * These tasks can include detection of outlier or the active revival checks.
+         * <p>
          * Defaults to 10 second interval with 3 second jitter.
+         *
          * @param interval the interval on which to run failure percentage and success rate failure detectors.
          * @param jitter the jitter of the time interval. The next interval will have a duration of
          *               [interval - jitter, interval + jitter].
@@ -624,42 +678,45 @@ public final class OutlierDetectorConfig {
          */
         public Builder failureDetectorInterval(final Duration interval, final Duration jitter) {
             validateHealthCheckIntervals(interval, jitter);
-            this.failureDetectorInterval = requireNonNull(interval, "interval");
+            this.failureDetectorInterval = interval;
             this.intervalJitter = jitter;
             return this;
         }
 
         /**
          * Set the base ejection time.
+         * <p>
          * Defaults to 30 seconds.
+         *
          * @param baseEjectionTime the base ejection time.
          * @return {@code this}.
          * @see #ejectionTimeJitter(Duration)
          */
         public Builder baseEjectionTime(final Duration baseEjectionTime) {
-            this.baseEjectionTime = requireNonNull(baseEjectionTime, "baseEjectionTime");
-            ensurePositive(baseEjectionTime.toNanos(), "baseEjectionTime");
+            this.baseEjectionTime = DurationUtils.ensurePositive(baseEjectionTime, "baseEjectionTime");
             return this;
         }
 
         /**
          * Set the ejection time jitter.
+         * <p>
          * Defaults to 3 seconds.
+         *
          * @param ejectionTimeJitter the jitter to add to the calculated ejection time.
          * @return {@code this}.
          * @see #baseEjectionTime(Duration)
          */
         public Builder ejectionTimeJitter(final Duration ejectionTimeJitter) {
-            ensureNonNegative(requireNonNull(ejectionTimeJitter, "ejectionTimeJitter").toNanos(),
-                    "ejectionTimeJitter");
-            this.ejectionTimeJitter = ejectionTimeJitter;
+            this.ejectionTimeJitter = DurationUtils.ensureNonNegative(ejectionTimeJitter, "ejectionTimeJitter");
             return this;
         }
 
         /**
          * Set the maximum percentage of hosts that can be ejected due to outlier detection.
+         * <p>
          * Defaults to {@value DEFAULT_MAX_EJECTION_PERCENTAGE} percent but at least one host will be allowed to be
          * ejected regardless of value.
+         *
          * @param maxEjectionPercentage the maximum percentage of hosts that can be ejected due to outlier detection.
          * @return {@code this}.
          */
@@ -672,7 +729,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host reaches the
          * {@link #consecutive5xx()} threshold.
+         * <p>
          * Defaults to {@value DEFAULT_ENFORCING_CONSECUTIVE_5XX} percent.
+         *
          * @param enforcingConsecutive5xx the probability the host will be marked as unhealthy.
          * @return {@code this}.
          */
@@ -685,7 +744,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
          * rate outlier detectors threshold.
+         * <p>
          * Defaults to {@value DEFAULT_ENFORCING_SUCCESS_RATE} percent.
+         *
          * @param enforcingSuccessRate the probability the host will be marked as unhealthy.
          * @return {@code this}.
          */
@@ -698,6 +759,7 @@ public final class OutlierDetectorConfig {
         /**
          * Set the minimum number of hosts required to perform the success rate outlier detector analysis.
          * Defaults to {@value DEFAULT_SUCCESS_RATE_MINIMUM_HOSTS}.
+         *
          * @param successRateMinimumHosts the minimum number of hosts required to perform the success rate outlier
          *                                detector analysis.
          * @return {@code this}.
@@ -711,7 +773,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the minimum number of requests in an outlier detector interval required to include it in the success rate
          * outlier detector analysis.
+         * <p>
          * Defaults to {@value DEFAULT_SUCCESS_RATE_REQUEST_VOLUME}.
+         *
          * @param successRateRequestVolume the minimum number of requests in an outlier detector interval required to
          *                                 include it in the success rate outlier detector analysis.
          * @return {@code this}.
@@ -725,7 +789,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the value divided by 1000 and then multiplied against the success rate standard deviation which sets the
          * threshold for ejection in the success rate outlier detector.
+         * <p>
          * Defaults to {@value DEFAULT_SUCCESS_RATE_STDEV_FACTOR}.
+         *
          * @param successRateStdevFactor the value divided by 1000 and then multiplied against the success rate standard
          *                               deviation which sets the threshold for ejection in the success rate outlier
          *                               detector.
@@ -739,7 +805,9 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the failure threshold in percentage for ejecting a host.
+         * <p>
          * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_THRESHOLD} percent.
+         *
          * @param failurePercentageThreshold the failure threshold in percentage for ejecting a host.
          * @return {@code this}.
          */
@@ -752,7 +820,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
          * percentage outlier detectors threshold.
+         * <p>
          * Defaults to {@value DEFAULT_ENFORCING_FAILURE_PERCENTAGE} percent.
+         *
          * @param enforcingFailurePercentage the probability in percentage that a host will be marked as unhealthy when
          *                                   percentage outlier detectors threshold.
          * @return {@code this}.
@@ -765,7 +835,9 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the minimum number of hosts required to perform the failure percentage outlier detector analysis.
+         * <p>
          * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_MINIMUM_HOSTS}.
+         *
          * @param failurePercentageMinimumHosts the minimum number of hosts required to perform the failure percentage
          *                                      outlier detector analysis.
          * @return {@code this}.
@@ -779,7 +851,9 @@ public final class OutlierDetectorConfig {
         /**
          * Set the minimum number of requests in an outlier detector interval required to include it in the failure
          * percentage outlier detector analysis.
+         * <p>
          * Defaults to {@value DEFAULT_FAILURE_PERCENTAGE_REQUEST_VOLUME}.
+         *
          * @param failurePercentageRequestVolume the minimum number of requests in an outlier detector interval required
          *                                       to include it in the failure percentage outlier detector analysis.
          * @return {@code this}.
@@ -792,14 +866,15 @@ public final class OutlierDetectorConfig {
 
         /**
          * Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
+         * <p>
          * Defaults to a max ejection time of 300 seconds and 0 seconds jitter.
+         *
          * @param maxEjectionTime the maximum amount of time a host can be ejected regardless of the number of
          *                        consecutive ejections.
          * @return {@code this}.
          */
         public Builder maxEjectionTime(final Duration maxEjectionTime) {
-            ensureNonNegative(requireNonNull(maxEjectionTime, "maxEjectionTime").toNanos(), "maxEjectionTime");
-            this.maxEjectionTime = maxEjectionTime;
+            this.maxEjectionTime = DurationUtils.ensureNonNegative(maxEjectionTime, "maxEjectionTime");
             return this;
         }
     }

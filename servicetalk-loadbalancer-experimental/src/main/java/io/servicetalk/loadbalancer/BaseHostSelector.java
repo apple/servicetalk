@@ -40,11 +40,11 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     protected abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
-                                         boolean forceNewConnectionAndReserve);
+                                                   boolean forceNewConnectionAndReserve);
 
     @Override
     public final Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
-                                      boolean forceNewConnectionAndReserve) {
+                                            boolean forceNewConnectionAndReserve) {
         return hosts.isEmpty() ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
     }
 

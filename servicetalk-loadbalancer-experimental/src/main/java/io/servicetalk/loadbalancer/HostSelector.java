@@ -42,7 +42,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
      * Select or establish a new connection from an existing Host.
-     *
+     * <p>
      * This method will be called concurrently with other selectConnection calls and
      * hostSetChanged calls and must be thread safe under those conditions.
      */
