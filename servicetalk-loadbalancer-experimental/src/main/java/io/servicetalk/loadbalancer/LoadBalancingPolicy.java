@@ -39,7 +39,7 @@ public abstract class LoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
      * The name of the load balancing policy.
      * @return the name of the load balancing policy
      */
-    public abstract String name();
+    abstract String name();
 
     @Override
     public abstract String toString();

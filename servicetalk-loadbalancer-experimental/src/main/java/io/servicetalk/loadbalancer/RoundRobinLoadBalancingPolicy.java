@@ -47,7 +47,7 @@ final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalance
     }
 
     @Override
-    public String name() {
+    String name() {
         return "RoundRobin";
     }
 
