@@ -397,12 +397,14 @@ public final class OutlierDetectorConfig {
      */
     public static final class Builder {
 
-        // Default xDS outlier detector settings.
+        // ServiceTalk specific settings.
+        static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
         static final int DEFAULT_CANCEL_PENALTY = 5;
         static final int DEFAULT_ERROR_PENALTY = 10;
         static final int DEFAULT_CONCURRENT_REQUEST_PENALTY = 1;
+        private boolean cancellationIsError = true;
 
-        private static final Duration DEFAULT_EWMA_HALF_LIFE = Duration.ofSeconds(10);
+        // Default xDS outlier detector settings.
         private static final int DEFAULT_CONSECUTIVE_5XX = 5;
         private static final Duration DEFAULT_FAILURE_DETECTOR_INTERVAL = ofSeconds(10);
         private static final Duration DEFAULT_BASE_EJECTION_TIME = ofSeconds(30);
@@ -422,7 +424,6 @@ public final class OutlierDetectorConfig {
         private Duration ewmaHalfLife = DEFAULT_EWMA_HALF_LIFE;
         private int ewmaCancellationPenalty = DEFAULT_CANCEL_PENALTY;
         private int ewmaErrorPenalty = DEFAULT_ERROR_PENALTY;
-        private boolean cancellationIsError = true;
         private int concurrentRequestPenalty = DEFAULT_CONCURRENT_REQUEST_PENALTY;
         private int failedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
         private Duration intervalJitter = DEFAULT_HEALTH_CHECK_JITTER;

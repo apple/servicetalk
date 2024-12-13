@@ -22,8 +22,9 @@ import io.servicetalk.context.api.ContextMap;
  * <p>
  * The usage of the RequestTracker is intended to follow the simple workflow:
  * <ul>
- *     <li>At initiation of an action for which a request is must call {@link RequestTracker#beforeRequestStart()} and
- *     save the timestamp much like would be done when using a stamped lock.</li>
+ *     <li>At initiation of an action that will be tracked the caller must call
+ *     {@link RequestTracker#beforeRequestStart()} and save the timestamp much like would be done when using a stamped
+ *     lock.</li>
  *     <li>Once the request event is complete only one of the {@link RequestTracker#onRequestSuccess(long)} or
  *     {@link RequestTracker#onRequestError(long, ErrorClass)} methods must be called and called exactly once</li>
  * </ul>
