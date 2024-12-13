@@ -69,7 +69,7 @@ abstract class DefaultRequestTracker implements RequestTracker, ScoreSupplier {
      * The current time in nanoseconds.
      * @return the current time in nanoseconds.
      */
-    protected abstract long currentTimeNanos();
+    abstract long currentTimeNanos();
 
     @Override
     public final long beforeRequestStart() {

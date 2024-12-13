@@ -57,7 +57,7 @@ final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscov
      * The relative weight this endpoint should be given for load balancing decisions.
      * @return the relative weight this endpoint should be given for load balancing decisions.
      */
-    public double loadBalancingWeight() {
+    double loadBalancingWeight() {
         return weight;
     }
 
@@ -65,7 +65,7 @@ final class RichServiceDiscovererEvent<ResolvedAddress> implements ServiceDiscov
      * Priority group this endpoint belongs to.
      * @return the priority group this endpoint belongs to.
      */
-    public int priority() {
+    int priority() {
         return priority;
     }
 

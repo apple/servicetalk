@@ -57,7 +57,7 @@ final class SequentialExecutor implements Executor {
         this.exceptionHandler = requireNonNull(exceptionHandler, "exceptionHandler");
     }
 
-    public boolean isCurrentThreadDraining() {
+    boolean isCurrentThreadDraining() {
         // Even though `currentDrainingThread` is not a volatile field this is thread safe:
         // the only way that `currentDrainingThread` will ever equal this thread, even if
         // we get a stale value, is if _this_ thread set it.

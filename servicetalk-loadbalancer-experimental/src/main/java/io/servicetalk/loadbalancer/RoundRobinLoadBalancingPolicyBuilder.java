@@ -75,8 +75,7 @@ public final class RoundRobinLoadBalancingPolicyBuilder {
      * @param <C>               the refined type of the {@link LoadBalancedConnection}.
      * @return the concrete {@link RoundRobinLoadBalancingPolicy}.
      */
-    public <ResolvedAddress, C extends LoadBalancedConnection> LoadBalancingPolicy<ResolvedAddress, C>
-    build() {
+    public <ResolvedAddress, C extends LoadBalancedConnection> LoadBalancingPolicy<ResolvedAddress, C> build() {
         return new RoundRobinLoadBalancingPolicy<>(failOpen, ignoreWeights);
     }
 }

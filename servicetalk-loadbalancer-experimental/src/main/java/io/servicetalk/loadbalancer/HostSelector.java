@@ -72,6 +72,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
      * The size of the host candidate pool for this host selector.
+     * <p>
      * Note that this is primarily for observability purposes.
      * @return the size of the host candidate pool for this host selector.
      */

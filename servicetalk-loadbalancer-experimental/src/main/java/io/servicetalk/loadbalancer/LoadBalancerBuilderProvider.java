@@ -20,6 +20,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 /**
  * Provider for {@link LoadBalancerBuilder} that can be registered using {@link java.util.ServiceLoader}.
  */
+@FunctionalInterface
 public interface LoadBalancerBuilderProvider {
 
     /**

@@ -66,8 +66,8 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     @Override
-    protected Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
-                                          boolean forceNewConnectionAndReserve) {
+    Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
+                                final boolean forceNewConnectionAndReserve) {
         final int size = hostSetSize();
         switch (size) {
             case 0:
