@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.loadbalancer.LoadBalancerObserver;
 
@@ -43,20 +44,10 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoHostsAvailable() {
-        LOGGER.debug("{}- onNoHostsAvailable()", lbDescription);
-    }
-
-    @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events, int oldHostSetSize,
                                         int newHostSetSize) {
         LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, oldHostSetSize: {}, newHostSetSize: {})",
                 lbDescription, events, oldHostSetSize, newHostSetSize);
-    }
-
-    @Override
-    public void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception) {
-        LOGGER.debug("{}- No active hosts available. Host set size: {}.", lbDescription, hostSetSize, exception);
     }
 
     @Override
@@ -71,6 +62,16 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
             LOGGER.debug("{}- onHostSetChanged(host set size: {}, healthy: {}). New hosts: {}", lbDescription,
                     newHosts.size(), healthyCount, newHosts);
         }
+    }
+
+    @Override
+    public void onNoAvailableHostException(final NoAvailableHostException exception) {
+        LOGGER.debug("{}- onNoAvailableHostException()", lbDescription, exception);
+    }
+
+    @Override
+    public void onNoActiveHostException(int hostSetSize, NoActiveHostException exception) {
+        LOGGER.debug("{}- onNoActiveHostException(hostSetSize: {})", lbDescription, hostSetSize, exception);
     }
 
     private final class HostObserverImpl implements HostObserver {

@@ -541,10 +541,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         subscribeToEvents(true);
                     }
                 }
-                loadBalancerObserver.onNoActiveHostsAvailable(
+                loadBalancerObserver.onNoActiveHostException(
                         currentHostSelector.hostSetSize(), (NoActiveHostException) exn);
             } else if (exn instanceof NoAvailableHostException) {
-                loadBalancerObserver.onNoHostsAvailable();
+                loadBalancerObserver.onNoAvailableHostException((NoAvailableHostException) exn);
             }
         });
     }
