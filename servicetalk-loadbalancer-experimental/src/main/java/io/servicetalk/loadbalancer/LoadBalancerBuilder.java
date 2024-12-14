@@ -64,6 +64,7 @@ import javax.annotation.Nullable;
 public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
     /**
      * Set the {@code loadBalancingPolicy} to use with this load balancer.
+     *
      * @param loadBalancingPolicy the {@code loadBalancingPolicy} to use
      * @return {@code this}
      */
@@ -72,6 +73,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
 
     /**
      * Set the {@link LoadBalancerObserverFactory} to use with this load balancer.
+     *
      * @param loadBalancerObserverFactory the {@link LoadBalancerObserverFactory} to use, or {@code null} to not use an
      *                                    observer.
      * @return {code this}
@@ -81,9 +83,11 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
 
     /**
      * Set the {@link OutlierDetectorConfig} to use with this load balancer.
+     * <p>
      * The outlier detection system works in conjunction with the load balancing policy to attempt to avoid hosts
      * that have been determined to be unhealthy or slow. The details of the selection process are determined by the
      * {@link LoadBalancingPolicy} while the health status is determined by the outlier detection configuration.
+     *
      * @param outlierDetectorConfig the {@link OutlierDetectorConfig} to use, or {@code null} to use the default
      *                              outlier detection.
      * @return {code this}
@@ -93,6 +97,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
 
     /**
      * Set the {@link ConnectionPoolPolicy} to use with this load balancer.
+     *
      * @param connectionPoolPolicy the factory of connection pooling strategies to use.
      * @return {@code this}
      */

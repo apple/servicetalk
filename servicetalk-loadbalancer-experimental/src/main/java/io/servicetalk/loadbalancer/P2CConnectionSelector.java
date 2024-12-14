@@ -39,6 +39,7 @@ import static java.util.Objects.requireNonNull;
  *   - If we fail to select the best connection, try the other connection.
  * - If both connections fail, repeat the pick-two operation for up to maxEffort attempts, begin linear iteration
  *   through the remaining connections searching for an acceptable connection.
+ *
  * @param <C> the type of the load balanced connection.
  */
 final class P2CConnectionSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {

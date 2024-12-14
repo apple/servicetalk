@@ -16,7 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 /**
- * A collections of factories for constructing a {@link LoadBalancingPolicy}.
+ * A factory to create different {@link LoadBalancingPolicy} variants.
  */
 public final class LoadBalancingPolicies {
 
@@ -26,9 +26,11 @@ public final class LoadBalancingPolicies {
 
     /**
      * Builder for the round-robin {@link LoadBalancingPolicy}.
+     * <p>
      * Round-robin load balancing is a strategy that maximizes fairness of the request distribution. This comes at the
      * cost of being unable to bias toward better performing hosts and can only leverage the course grained
      * healthy/unhealthy status of a host.
+     *
      * @return a builder for the round-robin {@link LoadBalancingPolicy}.
      */
     public static RoundRobinLoadBalancingPolicyBuilder roundRobin() {
@@ -37,9 +39,11 @@ public final class LoadBalancingPolicies {
 
     /**
      * Builder for the power of two choices (P2C) {@link LoadBalancingPolicy}.
+     * <p>
      * Power of Two Choices (P2C) leverages both course grained healthy/unhealthy status of a host plus additional
      * fine-grained scoring to prioritize hosts that are both healthy and better performing. See the
      * {@link P2CLoadBalancingPolicy} for more details.
+     *
      * @return a builder for the power of two choices (P2C) {@link LoadBalancingPolicy}.
      */
     public static P2CLoadBalancingPolicyBuilder p2c() {

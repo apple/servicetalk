@@ -89,4 +89,9 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         return delegate.build();
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
+    }
 }

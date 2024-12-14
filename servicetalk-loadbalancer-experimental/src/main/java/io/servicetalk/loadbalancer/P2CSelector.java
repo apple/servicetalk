@@ -49,9 +49,9 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     private final int maxEffort;
     private final boolean failOpen;
 
-    P2CSelector(List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription,
-                       final boolean ignoreWeights, final int maxEffort, final boolean failOpen,
-                       @Nullable final Random random) {
+    P2CSelector(final List<? extends Host<ResolvedAddress, C>> hosts, final String lbDescription,
+                final boolean ignoreWeights, final int maxEffort, final boolean failOpen,
+                @Nullable final Random random) {
         super(hosts, lbDescription);
         this.ignoreWeights = ignoreWeights;
         this.entrySelector = ignoreWeights ? new EqualWeightEntrySelector(hosts.size()) : buildAliasTable(hosts);
@@ -66,8 +66,8 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     }
 
     @Override
-    protected Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
-                                          boolean forceNewConnectionAndReserve) {
+    Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
+                                final boolean forceNewConnectionAndReserve) {
         final int size = hostSetSize();
         switch (size) {
             case 0:
