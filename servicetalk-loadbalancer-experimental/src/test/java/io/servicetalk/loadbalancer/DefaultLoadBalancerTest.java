@@ -442,7 +442,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         int rebuilds;
 
         @Override
-        public String name() {
+        String name() {
             return "TestPolicy";
         }
 

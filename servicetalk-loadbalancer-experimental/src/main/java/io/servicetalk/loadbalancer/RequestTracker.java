@@ -67,31 +67,21 @@ public interface RequestTracker {
         /**
          * Failures caused locally, these would be things that failed due to an exception locally.
          */
-        LOCAL_ORIGIN_REQUEST_FAILED(true),
+        LOCAL_ORIGIN_REQUEST_FAILED,
 
         /**
          * Failures related to locally enforced timeouts waiting for responses from the peer.
          */
-        EXT_ORIGIN_TIMEOUT(false),
+        EXT_ORIGIN_TIMEOUT,
 
         /**
          * Failures returned from the remote peer. This will be things like 5xx responses.
          */
-        EXT_ORIGIN_REQUEST_FAILED(false),
+        EXT_ORIGIN_REQUEST_FAILED,
 
         /**
          * Failure due to cancellation.
          */
-        CANCELLED(true);
-
-        private final boolean isLocal;
-
-        ErrorClass(boolean isLocal) {
-            this.isLocal = isLocal;
-        }
-
-        public boolean isLocal() {
-            return isLocal;
-        }
+        CANCELLED
     }
 }

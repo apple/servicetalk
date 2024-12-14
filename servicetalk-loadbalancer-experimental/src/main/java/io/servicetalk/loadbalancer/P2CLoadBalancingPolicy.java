@@ -61,7 +61,7 @@ final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public String name() {
+    String name() {
         return "P2C";
     }
 
