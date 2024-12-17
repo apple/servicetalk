@@ -456,10 +456,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public String toString() {
         final ConnState connState = this.connState;
-        return "Host{" +
+        String stateString = connState.isUnhealthy() ? State.UNHEALTHY + "(" + connState.healthCheck + ")" :
+                connState.state.toString();
+        return "DefaultHost{" +
                 "lbDescription=" + lbDescription +
                 ", address=" + address +
-                ", state=" + connState.state +
+                ", state=" + stateString +
+                ", healthIndicator=" + healthIndicator +
                 ", #connections=" + connState.connections.size() +
                 '}';
     }
@@ -514,7 +517,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
         @Override
         public String toString() {
-            return "UNHEALTHY(" + lastError + ')';
+            return "HealthCheck(" + lastError + ')';
         }
     }
 

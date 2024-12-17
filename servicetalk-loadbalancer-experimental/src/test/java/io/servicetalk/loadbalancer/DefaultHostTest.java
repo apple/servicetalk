@@ -35,6 +35,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -182,6 +183,9 @@ class DefaultHostTest {
             assertThrows(ExecutionException.class,
                     () -> host.newConnection(any(), false, null).toFuture().get());
         }
+        assertThat(host.toString(), containsString("UNHEALTHY"));
+        assertThat(host.toString(), containsString("DeliberateException"));
+
         verify(mockHostObserver, times(1)).onHostMarkedUnhealthy(UNHEALTHY_HOST_EXCEPTION);
         assertThat(host.isHealthy(), is(false));
         assertThat(host.canMakeNewConnections(), is(true));
