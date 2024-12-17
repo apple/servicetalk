@@ -68,8 +68,8 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoActiveHostException(int hostsCount, NoActiveHostException exception) {
-        LOGGER.debug("{}- onNoActiveHostException(hostSetSize: {})", lbDescription, hostsCount, exception);
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception) {
+        LOGGER.debug("{}- onNoActiveHostException(hosts: {})", lbDescription, hosts, exception);
     }
 
     private final class HostObserverImpl implements HostObserver {

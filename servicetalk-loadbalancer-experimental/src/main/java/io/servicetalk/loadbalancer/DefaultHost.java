@@ -117,6 +117,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
+    public double loadBalancingWeight() {
+        return 1;
+    }
+
+    @Override
     public boolean markActiveIfNotClosed() {
         final ConnState oldState = connStateUpdater.getAndUpdate(this, oldConnState -> {
             if (oldConnState.state == State.EXPIRED) {

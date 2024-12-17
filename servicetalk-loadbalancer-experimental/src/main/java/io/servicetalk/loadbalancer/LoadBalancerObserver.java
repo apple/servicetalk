@@ -58,10 +58,10 @@ public interface LoadBalancerObserver {
 
     /**
      * Callback for when connection selection fails due to all hosts being inactive.
-     * @param hostsCount the size of the current host set where all hosts are inactive.
+     * @param hosts the set of hosts that is eligible for selection.
      * @param exception an exception with more details about the failure.
      */
-    void onNoActiveHostException(int hostsCount, NoActiveHostException exception);
+    void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception);
 
     /**
      * An observer for {@link io.servicetalk.loadbalancer.Host} events.

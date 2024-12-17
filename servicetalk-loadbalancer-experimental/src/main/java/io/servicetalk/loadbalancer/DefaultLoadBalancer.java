@@ -98,7 +98,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     private volatile HostSelector<ResolvedAddress, C> hostSelector;
     // reads and writes are protected by `sequentialExecutor`.
     private List<PrioritizedHostImpl<ResolvedAddress, C>> usedHosts = emptyList();
-    private List<PrioritizedHostImpl<ResolvedAddress, C>> prioritizedHosts = usedHosts;
     // reads and writes are protected by `sequentialExecutor`.
     private boolean isClosed;
 
@@ -502,7 +501,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     // must be called from within the SequentialExecutor
     private void sequentialUpdateUsedHosts(List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts,
                                            boolean hostSetChanged) {
-        final List<PrioritizedHostImpl<ResolvedAddress, C>> oldPrioritizedHosts = this.prioritizedHosts;
+        HostSelector<ResolvedAddress, C> oldHostSelector = hostSelector;
+        HostSelector<ResolvedAddress, C> newHostSelector;
         if (hostSetChanged) {
             this.usedHosts = nextHosts;
             // We need to reset the load balancing weights before we run the host set through the rest
@@ -510,13 +510,16 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             for (PrioritizedHostImpl<?, ?> host : nextHosts) {
                 host.loadBalancingWeight(host.serviceDiscoveryWeight());
             }
-            this.prioritizedHosts = priorityStrategy.prioritize(nextHosts);
-            this.prioritizedHosts = subsetter.subset(prioritizedHosts);
-            this.hostSelector = hostSelector.rebuildWithHosts(prioritizedHosts);
+            nextHosts = priorityStrategy.prioritize(nextHosts);
+            nextHosts = subsetter.subset(nextHosts);
+            this.hostSelector = newHostSelector = hostSelector.rebuildWithHosts(nextHosts);
+        } else {
+            newHostSelector = oldHostSelector;
         }
-        loadBalancerObserver.onHostsUpdate(Collections.unmodifiableList(oldPrioritizedHosts),
-                Collections.unmodifiableList(prioritizedHosts));
-        LOGGER.debug("{}: Using addresses (size={}): {}.", this, prioritizedHosts.size(), prioritizedHosts);
+        final Collection<? extends Host<ResolvedAddress, C>> newHosts = newHostSelector.hosts();
+        loadBalancerObserver.onHostsUpdate(Collections.unmodifiableCollection(oldHostSelector.hosts()),
+                Collections.unmodifiableCollection(newHosts));
+        LOGGER.debug("{}: Using addresses (size={}): {}.", this, newHosts.size(), newHosts);
     }
 
     @Override
@@ -543,8 +546,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         subscribeToEvents(true);
                     }
                 }
-                loadBalancerObserver.onNoActiveHostException(
-                        currentHostSelector.hostSetSize(), (NoActiveHostException) exn);
+                loadBalancerObserver.onNoActiveHostException(currentHostSelector.hosts(), (NoActiveHostException) exn);
             } else if (exn instanceof NoAvailableHostException) {
                 loadBalancerObserver.onNoAvailableHostException((NoAvailableHostException) exn);
             }
@@ -630,8 +632,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public int hostSetSize() {
-            return 0;
+        public List<? extends Host<ResolvedAddress, C>> hosts() {
+            return emptyList();
         }
     }
 

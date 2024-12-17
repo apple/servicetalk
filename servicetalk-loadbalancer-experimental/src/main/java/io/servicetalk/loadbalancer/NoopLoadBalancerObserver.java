@@ -52,7 +52,7 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoActiveHostException(int hostsCount, NoActiveHostException exn) {
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exn) {
         // noop
     }
 

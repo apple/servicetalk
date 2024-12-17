@@ -486,8 +486,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             }
 
             @Override
-            public int hostSetSize() {
-                return hosts.size();
+            public List<? extends Host<String, TestLoadBalancedConnection>> hosts() {
+                return hosts;
             }
         }
     }

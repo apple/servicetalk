@@ -68,7 +68,7 @@ final class P2CSelector<ResolvedAddress, C extends LoadBalancedConnection>
     @Override
     Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                 final boolean forceNewConnectionAndReserve) {
-        final int size = hostSetSize();
+        final int size = hosts().size();
         switch (size) {
             case 0:
                 // We shouldn't get called if the load balancer doesn't have any hosts.
