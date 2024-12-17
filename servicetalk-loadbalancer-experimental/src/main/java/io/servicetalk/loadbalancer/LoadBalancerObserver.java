@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
@@ -49,20 +50,20 @@ public interface LoadBalancerObserver {
      * algorithm may use.
      * @param newHosts the new set of hosts used by the selection algorithm.
      */
-    default void onHostSetChanged(Collection<? extends Host> newHosts) {
-    }
+    void onHostSetChanged(Collection<? extends Host> newHosts);
 
     /**
      * Callback for when connection selection fails due to no hosts being available.
+     * @param exception an exception with more details about the failure.
      */
-    void onNoHostsAvailable();
+    void onNoAvailableHostException(NoAvailableHostException exception);
 
     /**
      * Callback for when connection selection fails due to all hosts being inactive.
-     * @param hostSetSize the size of the current host set.
+     * @param hostSetSize the size of the current host set where all hosts are inactive.
      * @param exception an exception with more details about the failure.
      */
-    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
+    void onNoActiveHostException(int hostSetSize, NoActiveHostException exception);
 
     /**
      * An observer for {@link io.servicetalk.loadbalancer.Host} events.
