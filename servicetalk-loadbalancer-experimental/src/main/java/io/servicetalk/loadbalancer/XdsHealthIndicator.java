@@ -257,6 +257,16 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         sequentialExecutor.execute(this::sequentialCancel);
     }
 
+    @Override
+    public String toString() {
+        return "XdsHealthIndicator{" +
+                ", consecutive5xx=" + consecutive5xx.get() +
+                ", successes=" + successes.get() +
+                ", failures=" + failures.get() +
+                ", evictedUntilNanos=" + evictedUntilNanos +
+                '}';
+    }
+
     void sequentialCancel() {
         assert sequentialExecutor.isCurrentThreadDraining();
         if (cancelled) {
