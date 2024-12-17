@@ -45,7 +45,7 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
-        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {})", lbDescription, events);
+        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, size {})", lbDescription, events, events.size());
     }
 
     @Override
@@ -57,8 +57,9 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
                     healthyCount++;
                 }
             }
-            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), new healthy count: {}",
-                    lbDescription, oldHosts, newHosts, healthyCount);
+            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), old hosts size: {}, new hosts size: {}, " +
+                            "new healthy count: {}",
+                    lbDescription, oldHosts, newHosts, oldHosts.size(), newHosts.size(), healthyCount);
         }
     }
 
