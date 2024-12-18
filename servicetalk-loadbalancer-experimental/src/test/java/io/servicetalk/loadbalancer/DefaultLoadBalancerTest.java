@@ -486,7 +486,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             }
 
             @Override
-            public List<? extends Host<String, TestLoadBalancedConnection>> hosts() {
+            public Collection<? extends LoadBalancerObserver.Host> hosts() {
                 return hosts;
             }
         }

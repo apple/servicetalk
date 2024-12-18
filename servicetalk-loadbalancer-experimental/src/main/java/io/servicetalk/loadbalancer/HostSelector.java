@@ -78,5 +78,5 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
      * due to various filtering mechanisms.
      * @return the set of hosts this selector will pick from.
      */
-    Collection<? extends Host<ResolvedAddress, C>> hosts();
+    Collection<? extends LoadBalancerObserver.Host> hosts();
 }

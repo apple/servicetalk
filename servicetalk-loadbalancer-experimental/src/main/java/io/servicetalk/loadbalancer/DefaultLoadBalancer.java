@@ -516,7 +516,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         } else {
             newHostSelector = oldHostSelector;
         }
-        final Collection<? extends Host<ResolvedAddress, C>> newHosts = newHostSelector.hosts();
+        final Collection<? extends LoadBalancerObserver.Host> newHosts = newHostSelector.hosts();
         loadBalancerObserver.onHostsUpdate(Collections.unmodifiableCollection(oldHostSelector.hosts()),
                 Collections.unmodifiableCollection(newHosts));
         LOGGER.debug("{}: Using addresses (size={}): {}.", this, newHosts.size(), newHosts);
@@ -632,7 +632,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public List<? extends Host<ResolvedAddress, C>> hosts() {
+        public Collection<? extends LoadBalancerObserver.Host> hosts() {
             return emptyList();
         }
     }

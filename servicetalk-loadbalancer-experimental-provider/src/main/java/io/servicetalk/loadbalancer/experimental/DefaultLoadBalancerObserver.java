@@ -45,7 +45,7 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
-        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, size {})", lbDescription, events, events.size());
+        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, count {})", lbDescription, events, events.size());
     }
 
     @Override
@@ -57,7 +57,7 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
                     healthyCount++;
                 }
             }
-            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), old hosts size: {}, new hosts size: {}, " +
+            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), old host count: {}, new host count: {}, " +
                             "new healthy count: {}",
                     lbDescription, oldHosts, newHosts, oldHosts.size(), newHosts.size(), healthyCount);
         }
@@ -70,7 +70,8 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception) {
-        LOGGER.debug("{}- onNoActiveHostException(hosts: {})", lbDescription, hosts, exception);
+        LOGGER.debug("{}- onNoActiveHostException(hosts: {}, host count: {})", lbDescription, hosts, hosts.size(),
+                exception);
     }
 
     private final class HostObserverImpl implements HostObserver {
