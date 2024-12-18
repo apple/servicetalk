@@ -56,9 +56,9 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
         // noop
     }
 
-    private static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
+    static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
 
-        private static final HostObserver INSTANCE = new NoopHostObserver();
+        static final HostObserver INSTANCE = new NoopHostObserver();
 
         private NoopHostObserver() {
         }
