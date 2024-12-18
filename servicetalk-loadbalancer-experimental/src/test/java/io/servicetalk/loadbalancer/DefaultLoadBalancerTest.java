@@ -314,7 +314,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 "test-service",
                 serviceDiscoveryPublisher,
                 hostPriorityStrategyFactory,
-                loadBalancingPolicy,
+                (AbstractLoadBalancingPolicy<String, TestLoadBalancedConnection>) loadBalancingPolicy,
                 subsetter,
                 ConnectionPoolPolicies.linearSearch(),
                 connectionFactory,
@@ -437,7 +437,8 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         }
     }
 
-    private static class TestLoadBalancerPolicy extends LoadBalancingPolicy<String, TestLoadBalancedConnection> {
+    private static class TestLoadBalancerPolicy
+            extends AbstractLoadBalancingPolicy<String, TestLoadBalancedConnection> {
 
         int rebuilds;
 

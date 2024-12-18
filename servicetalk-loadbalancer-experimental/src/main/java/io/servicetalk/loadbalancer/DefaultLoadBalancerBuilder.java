@@ -39,7 +39,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private Executor backgroundExecutor;
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
-    private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
+    private AbstractLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy =
+            checkCast(defaultLoadBalancingPolicy());
     private ConnectionPoolPolicy<C> connectionPoolPolicy = defaultConnectionSelectorFactory();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
@@ -51,7 +52,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> loadBalancingPolicy(
             LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy) {
-        this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
+        this.loadBalancingPolicy = checkCast(requireNonNull(loadBalancingPolicy, "loadBalancingPolicy"));
         return this;
     }
 
@@ -91,14 +92,15 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             implements LoadBalancerFactory<ResolvedAddress, C> {
 
         private final String id;
-        private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
+        private final AbstractLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final ConnectionPoolPolicy<C> connectionPoolPolicy;
         private final OutlierDetectorConfig outlierDetectorConfig;
         @Nullable
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
         private final Executor executor;
 
-        DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
+        DefaultLoadBalancerFactory(final String id,
+                                   final AbstractLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    @Nullable final LoadBalancerObserverFactory loadBalancerObserverFactory,
                                    final ConnectionPoolPolicy<C> connectionPoolPolicy,
                                    final OutlierDetectorConfig outlierDetectorConfig,
@@ -185,6 +187,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     LoadBalancingPolicy<ResolvedAddress, C> defaultLoadBalancingPolicy() {
         return LoadBalancingPolicies.roundRobin().build();
+    }
+
+    private AbstractLoadBalancingPolicy<ResolvedAddress, C> checkCast(LoadBalancingPolicy<ResolvedAddress, C> policy) {
+        if (policy instanceof AbstractLoadBalancingPolicy) {
+            return (AbstractLoadBalancingPolicy<ResolvedAddress, C>) policy;
+        }
+        throw new IllegalArgumentException(
+                "LoadBalancingPolicy must be in instance of AbstractLoadBalancingPolicy. Found: " + policy.getClass());
     }
 
     private static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>

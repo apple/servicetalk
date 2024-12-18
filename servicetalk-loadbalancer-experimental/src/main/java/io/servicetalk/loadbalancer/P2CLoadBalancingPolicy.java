@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  *    Choices in Randomized Load Balancing</a>
  */
 final class P2CLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        extends LoadBalancingPolicy<ResolvedAddress, C> {
+        extends AbstractLoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean ignoreWeights;
     private final int maxEffort;

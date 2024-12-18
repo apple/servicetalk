@@ -30,7 +30,7 @@ import java.util.List;
  * @param <C> the type of the load balanced connection
  */
 final class RoundRobinLoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection>
-        extends LoadBalancingPolicy<ResolvedAddress, C> {
+        extends AbstractLoadBalancingPolicy<ResolvedAddress, C> {
 
     private final boolean failOpen;
     private final boolean ignoreWeights;

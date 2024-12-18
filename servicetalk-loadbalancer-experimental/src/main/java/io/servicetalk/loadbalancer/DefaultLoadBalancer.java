@@ -142,7 +142,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
-            final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
+            final AbstractLoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
             final Subsetter subsetter,
             final ConnectionPoolPolicy<C> connectionPoolPolicy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,

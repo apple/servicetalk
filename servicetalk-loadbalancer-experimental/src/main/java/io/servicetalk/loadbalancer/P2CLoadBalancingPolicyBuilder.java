@@ -31,7 +31,7 @@ public final class P2CLoadBalancingPolicyBuilder {
 
     private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
     private static final int DEFAULT_MAX_EFFORT = 5;
-    private static final boolean DEFAULT_FAIL_OPEN_POLICY = LoadBalancingPolicy.DEFAULT_FAIL_OPEN_POLICY;
+    private static final boolean DEFAULT_FAIL_OPEN_POLICY = AbstractLoadBalancingPolicy.DEFAULT_FAIL_OPEN_POLICY;
 
     private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;
     private int maxEffort = DEFAULT_MAX_EFFORT;

@@ -25,7 +25,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 public final class RoundRobinLoadBalancingPolicyBuilder {
 
     private static final boolean DEFAULT_IGNORE_WEIGHTS = false;
-    private static final boolean DEFAULT_FAIL_OPEN_POLICY = LoadBalancingPolicy.DEFAULT_FAIL_OPEN_POLICY;
+    private static final boolean DEFAULT_FAIL_OPEN_POLICY = AbstractLoadBalancingPolicy.DEFAULT_FAIL_OPEN_POLICY;
 
     private boolean failOpen = DEFAULT_FAIL_OPEN_POLICY;
     private boolean ignoreWeights = DEFAULT_IGNORE_WEIGHTS;

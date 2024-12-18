@@ -17,40 +17,10 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 
-import java.util.List;
-
 /**
  * Definition of the selector mechanism used for load balancing.
  * @param <ResolvedAddress> the type of the resolved address
  * @param <C> the type of the load balanced connection
  */
-public abstract class LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
-
-    /**
-     * The default fail-open policy to use for {@link HostSelector} implementations.
-     */
-    static final boolean DEFAULT_FAIL_OPEN_POLICY = false;
-
-    LoadBalancingPolicy() {
-        // package private constructor to control proliferation.
-    }
-
-    /**
-     * The name of the load balancing policy.
-     * @return the name of the load balancing policy
-     */
-    abstract String name();
-
-    @Override
-    public abstract String toString();
-
-    /**
-     * Construct a {@link HostSelector}.
-     * @param hosts          the set of {@link Host}s to select from.
-     * @param lbDescription a description of the associated {@link io.servicetalk.client.api.LoadBalancer},
-     *                      useful for debugging purposes.
-     * @return a {@link HostSelector}
-     */
-    abstract HostSelector<ResolvedAddress, C> buildSelector(
-            List<Host<ResolvedAddress, C>> hosts, String lbDescription);
+public interface LoadBalancingPolicy<ResolvedAddress, C extends LoadBalancedConnection> {
 }
