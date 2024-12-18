@@ -185,10 +185,10 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
             public <T extends PrioritizedHost> List<T> prioritize(List<T> hosts) {
                 assert hosts.size() == 1;
                 T host = hosts.get(0);
-                value.set(host.loadBalancingWeight());
+                value.set(host.weight());
                 // We want to adjust the weight here so that if the `loadBalancingWeight()` fails to be
                 // reset then the test will fail.
-                host.loadBalancingWeight(0.5 * host.loadBalancingWeight());
+                host.weight(0.5 * host.weight());
                 return hosts;
             }
         };
@@ -201,7 +201,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         List<? extends DefaultLoadBalancer.PrioritizedHostImpl<?, ?>> curentHosts = refinedLb.hosts();
         assertThat(curentHosts, hasSize(1));
         assertThat(curentHosts.get(0).priority(), equalTo(0));
-        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(0.5));
+        assertThat(curentHosts.get(0).weight(), equalTo(0.5));
         assertThat(value.getAndSet(null), equalTo(1.0));
 
         // send a new event with a different priority group. This should trigger another build.
@@ -209,7 +209,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         curentHosts = refinedLb.hosts();
         assertThat(curentHosts, hasSize(1));
         assertThat(curentHosts.get(0).priority(), equalTo(1));
-        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(0.5));
+        assertThat(curentHosts.get(0).weight(), equalTo(0.5));
         assertThat(value.getAndSet(null), equalTo(1.0));
 
         // send a new event with a different weight. This should trigger yet another build.
@@ -217,7 +217,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         curentHosts = refinedLb.hosts();
         assertThat(curentHosts, hasSize(1));
         assertThat(curentHosts.get(0).priority(), equalTo(1));
-        assertThat(curentHosts.get(0).loadBalancingWeight(), equalTo(1.0));
+        assertThat(curentHosts.get(0).weight(), equalTo(1.0));
         assertThat(value.getAndSet(null), equalTo(2.0));
     }
 

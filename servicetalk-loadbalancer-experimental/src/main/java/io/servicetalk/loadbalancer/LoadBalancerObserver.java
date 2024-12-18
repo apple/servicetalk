@@ -125,6 +125,6 @@ public interface LoadBalancerObserver {
          * The weight of the host, relative to the weights of associated hosts as used for load balancing.
          * @return the relative weight of the host.
          */
-        double loadBalancingWeight();
+        double weight();
     }
 }

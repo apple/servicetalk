@@ -133,14 +133,14 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
                 // instead to all receive an equal portion of the groups weight.
                 double weight = ((double) groupProbability) / hosts.size();
                 for (H host : hosts) {
-                    host.loadBalancingWeight(weight);
+                    host.weight(weight);
                     results.add(host);
                 }
             } else {
                 double scalingFactor = groupProbability / groupTotalWeight;
                 for (H host : hosts) {
-                    double hostWeight = host.loadBalancingWeight() * scalingFactor;
-                    host.loadBalancingWeight(hostWeight);
+                    double hostWeight = host.weight() * scalingFactor;
+                    host.weight(hostWeight);
                     if (hostWeight > 0) {
                         results.add(host);
                     }
@@ -152,7 +152,7 @@ final class DefaultHostPriorityStrategy implements HostPriorityStrategy {
     private static double totalWeight(Iterable<? extends PrioritizedHost> hosts) {
         double sum = 0;
         for (PrioritizedHost host : hosts) {
-            sum += host.loadBalancingWeight();
+            sum += host.weight();
         }
         return sum;
     }
