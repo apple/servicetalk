@@ -44,14 +44,12 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events, int oldHostSetSize,
-                                        int newHostSetSize) {
-        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, oldHostSetSize: {}, newHostSetSize: {})",
-                lbDescription, events, oldHostSetSize, newHostSetSize);
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
+        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, count {})", lbDescription, events, events.size());
     }
 
     @Override
-    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+    public void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts) {
         if (LOGGER.isDebugEnabled()) {
             int healthyCount = 0;
             for (Host host : newHosts) {
@@ -59,8 +57,9 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
                     healthyCount++;
                 }
             }
-            LOGGER.debug("{}- onHostSetChanged(host set size: {}, healthy: {}). New hosts: {}", lbDescription,
-                    newHosts.size(), healthyCount, newHosts);
+            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), old host count: {}, new host count: {}, " +
+                            "new healthy count: {}",
+                    lbDescription, oldHosts, newHosts, oldHosts.size(), newHosts.size(), healthyCount);
         }
     }
 
@@ -70,8 +69,9 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoActiveHostException(int hostSetSize, NoActiveHostException exception) {
-        LOGGER.debug("{}- onNoActiveHostException(hostSetSize: {})", lbDescription, hostSetSize, exception);
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception) {
+        LOGGER.debug("{}- onNoActiveHostException(hosts: {}, host count: {})", lbDescription, hosts, hosts.size(),
+                exception);
     }
 
     private final class HostObserverImpl implements HostObserver {

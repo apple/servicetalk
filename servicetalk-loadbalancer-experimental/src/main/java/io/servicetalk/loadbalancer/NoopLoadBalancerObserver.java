@@ -37,13 +37,12 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
-                                        int oldHostSetSize, int newHostSetSize) {
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
         // noop
     }
 
     @Override
-    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+    public void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts) {
         // noop
     }
 
@@ -53,7 +52,7 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoActiveHostException(int hostSetSize, NoActiveHostException exn) {
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exn) {
         // noop
     }
 
