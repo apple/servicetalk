@@ -18,20 +18,20 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
- * A factory to create different {@link ConnectionPoolPolicy} variants.
+ * A factory to create different {@link ConnectionSelectorPolicy} variants.
  */
-public final class ConnectionPoolPolicies {
+public final class ConnectionSelectorPolicies {
     private static final int DEFAULT_MAX_EFFORT = 5;
     private static final int DEFAULT_LINEAR_SEARCH_SPACE = 16;
 
-    private ConnectionPoolPolicies() {
+    private ConnectionSelectorPolicies() {
         // no instances
     }
 
     /**
      * A connection selection policy that prioritizes a configurable "core" pool.
      * <p>
-     * This {@link ConnectionPoolPolicy} attempts to emulate the pooling behavior often seen in thread pools.
+     * This {@link ConnectionSelectorPolicy} attempts to emulate the pooling behavior often seen in thread pools.
      * Specifically it allows for the configuration of a "core pool" size which are intended to be long-lived.
      * Iteration starts in the core pool at a random position and then iterates through the entire core pool before
      * moving to an overflow pool. Because iteration of this core pool starts at a random position the core connections
@@ -46,32 +46,32 @@ public final class ConnectionPoolPolicies {
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the configured {@link ConnectionPoolPolicy}.
+     * @return the configured {@link ConnectionSelectorPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> corePool(final int corePoolSize,
-                                                                                      final boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionSelectorPolicy<C> corePool(final int corePoolSize,
+                                                                                          final boolean forceCorePool) {
         return CorePoolConnectionSelector.factory(corePoolSize, forceCorePool);
     }
 
     /**
      * A connection selection policy that prioritizes connection reuse.
      * <p>
-     * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
+     * This {@link ConnectionSelectorPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
      *
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the configured {@link ConnectionPoolPolicy}.
+     * @return the configured {@link ConnectionSelectorPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> linearSearch() {
+    public static <C extends LoadBalancedConnection> ConnectionSelectorPolicy<C> linearSearch() {
         return linearSearch(DEFAULT_LINEAR_SEARCH_SPACE);
     }
 
     /**
      * A connection selection policy that prioritizes connection reuse.
      * <p>
-     * This {@link ConnectionPoolPolicy} attempts to minimize the number of connections by attempting to direct
+     * This {@link ConnectionSelectorPolicy} attempts to minimize the number of connections by attempting to direct
      * traffic to connections in the order they were created in linear order up until a configured quantity. After
      * this linear pool is exhausted the remaining connections will be selected from at random. Prioritizing traffic
      * to the existing connections will let tailing connections be removed due to idleness.
@@ -79,14 +79,15 @@ public final class ConnectionPoolPolicies {
      * @param linearSearchSpace the space to search linearly before resorting to random selection for remaining
      *                          connections.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the configured {@link ConnectionPoolPolicy}.
+     * @return the configured {@link ConnectionSelectorPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> linearSearch(final int linearSearchSpace) {
+    public static <C extends LoadBalancedConnection>
+    ConnectionSelectorPolicy<C> linearSearch(final int linearSearchSpace) {
         return LinearSearchConnectionSelector.factory(linearSearchSpace);
     }
 
     /**
-     * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
+     * A {@link ConnectionSelectorPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * <ol>
@@ -104,15 +105,15 @@ public final class ConnectionPoolPolicies {
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the configured {@link ConnectionPoolPolicy}.
+     * @return the configured {@link ConnectionSelectorPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> p2c(final int corePoolSize,
-                                                                                 final boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionSelectorPolicy<C> p2c(final int corePoolSize,
+                                                                                     final boolean forceCorePool) {
         return p2c(DEFAULT_MAX_EFFORT, corePoolSize, forceCorePool);
     }
 
     /**
-     * A {@link ConnectionPoolPolicy} that attempts to discern between the health of individual connections.
+     * A {@link ConnectionSelectorPolicy} that attempts to discern between the health of individual connections.
      * If individual connections have health data the P2C policy can be used to bias traffic toward the best
      * connections. This has the following algorithm:
      * <ol>
@@ -131,11 +132,11 @@ public final class ConnectionPoolPolicies {
      * @param forceCorePool whether to avoid selecting connections from the core pool until it has reached the
      *                      configured core pool size.
      * @param <C> the concrete type of the {@link LoadBalancedConnection}
-     * @return the configured {@link ConnectionPoolPolicy}.
+     * @return the configured {@link ConnectionSelectorPolicy}.
      */
-    public static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> p2c(final int maxEffort,
-                                                                                 final int corePoolSize,
-                                                                                 final boolean forceCorePool) {
+    public static <C extends LoadBalancedConnection> ConnectionSelectorPolicy<C> p2c(final int maxEffort,
+                                                                                     final int corePoolSize,
+                                                                                     final boolean forceCorePool) {
         return P2CConnectionSelector.factory(maxEffort, corePoolSize, forceCorePool);
     }
 }

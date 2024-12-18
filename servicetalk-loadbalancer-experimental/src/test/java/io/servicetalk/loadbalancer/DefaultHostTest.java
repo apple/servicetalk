@@ -82,7 +82,7 @@ class DefaultHostTest {
 
     private void buildHost(@Nullable HealthIndicator<String, TestLoadBalancedConnection> healthIndicator) {
         host = new DefaultHost<>("lbDescription", DEFAULT_ADDRESS,
-                ConnectionPoolPolicies.<TestLoadBalancedConnection>linearSearch()
+                ConnectionSelectorPolicies.<TestLoadBalancedConnection>linearSearch()
                         .buildConnectionSelector("resource"),
                 connectionFactory, mockHostObserver, healthCheckConfig, healthIndicator);
     }

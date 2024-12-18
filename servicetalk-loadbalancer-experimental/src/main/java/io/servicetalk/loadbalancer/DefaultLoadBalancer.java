@@ -128,7 +128,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
      * @param subsetter a subset builder.
-     * @param connectionPoolPolicy factory of the connection pool strategy to use with this load balancer.
+     * @param connectionSelectorPolicy factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
      *                                    load balancer.
@@ -144,7 +144,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
             final Subsetter subsetter,
-            final ConnectionPoolPolicy<C> connectionPoolPolicy,
+            final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
@@ -155,8 +155,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
-        this.connectionSelector = requireNonNull(connectionPoolPolicy,
-                "connectionPoolPolicy").buildConnectionSelector(lbDescription);
+        this.connectionSelector = requireNonNull(connectionSelectorPolicy,
+                "connectionSelectorPolicy").buildConnectionSelector(lbDescription);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
