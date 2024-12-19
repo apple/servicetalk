@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.loadbalancer;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-
-tasks.named("javadoc").configure {
-    enabled = false
-}
-
-dependencies {
+// FIXME: 0.43: TL;DR: Remove this module. This package existed to support the DefaultLoadBalancer development which
+//  has since been merged into the servicetalk-loadbalancer module.
+final class PlaceHolder {
+    private PlaceHolder() {
+    }
 }

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.RequestTracker;
+
 /**
  * An interface for tracking connection establishment measurements.
  * This has an intended usage similar to the {@link RequestTracker} but with a focus on connection establishment

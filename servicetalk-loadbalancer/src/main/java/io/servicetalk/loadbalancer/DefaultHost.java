@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.RequestTracker.REQUEST_TRACKER_KEY;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -52,7 +53,6 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CANCELLED;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_ERROR;
 import static io.servicetalk.loadbalancer.ConnectTracker.ErrorClass.CONNECT_TIMEOUT;
-import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
