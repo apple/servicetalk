@@ -49,22 +49,41 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
 
     @Override
     public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
-        safeReport(() -> delegate.onServiceDiscoveryEvent(events), "onServiceDiscoveryEvent");
+        try {
+            delegate.onServiceDiscoveryEvent(events);
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting an onServiceDiscoveryEvent event",
+                    delegate, unexpected);
+        }
     }
 
     @Override
     public void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts) {
-        safeReport(() -> delegate.onHostsUpdate(oldHosts, newHosts), "onHostsUpdate");
+        try {
+            delegate.onHostsUpdate(oldHosts, newHosts);
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting an onHostsUpdate event", delegate, unexpected);
+        }
     }
 
     @Override
     public void onNoAvailableHostException(NoAvailableHostException exception) {
-        safeReport(() -> delegate.onNoAvailableHostException(exception), "onNoAvailableHostException");
+        try {
+            delegate.onNoAvailableHostException(exception);
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting an onNoAvailableHostException event",
+                    delegate, unexpected);
+        }
     }
 
     @Override
     public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception) {
-        safeReport(() -> delegate.onNoActiveHostException(hosts, exception), "onNoActiveHostException");
+        try {
+            delegate.onNoActiveHostException(hosts, exception);
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting an onNoActiveHostException event",
+                    delegate, unexpected);
+        }
     }
 
     private static final class CatchAllHostObserver implements HostObserver {
@@ -77,41 +96,63 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
 
         @Override
         public void onHostMarkedExpired(int connectionCount) {
-            safeReport(() -> delegate.onHostMarkedExpired(connectionCount), "onHostMarkedExpired");
+            try {
+                delegate.onHostMarkedExpired(connectionCount);
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onHostMarkedExpired event",
+                        delegate, unexpected);
+            }
         }
 
         @Override
         public void onActiveHostRemoved(int connectionCount) {
-            safeReport(() -> delegate.onActiveHostRemoved(connectionCount), "onActiveHostRemoved");
+            try {
+                delegate.onActiveHostRemoved(connectionCount);
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onActiveHostRemoved event",
+                        delegate, unexpected);
+            }
         }
 
         @Override
         public void onExpiredHostRevived(int connectionCount) {
-            safeReport(() -> delegate.onExpiredHostRevived(connectionCount), "onExpiredHostRevived");
+            try {
+                delegate.onExpiredHostRevived(connectionCount);
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onExpiredHostRevived event",
+                        delegate, unexpected);
+            }
         }
 
         @Override
         public void onExpiredHostRemoved(int connectionCount) {
-            safeReport(() -> delegate.onExpiredHostRemoved(connectionCount), "onExpiredHostRemoved");
+            try {
+                delegate.onExpiredHostRemoved(connectionCount);
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onExpiredHostRemoved event",
+                        delegate, unexpected);
+            }
         }
 
         @Override
         public void onHostMarkedUnhealthy(@Nullable Throwable cause) {
-            safeReport(() -> delegate.onHostMarkedUnhealthy(cause), "onHostMarkedUnhealthy");
+            try {
+                delegate.onHostMarkedUnhealthy(cause);
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onHostMarkedUnhealthy event",
+                        delegate, unexpected);
+            }
         }
 
         @Override
         public void onHostRevived() {
-            safeReport(() -> delegate.onHostRevived(), "onHostRevived");
+            try {
+                delegate.onHostRevived();
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting an onHostRevived event",
+                        delegate, unexpected);
+            }
         }
-
-        private void safeReport(final Runnable runnable, final String eventName) {
-            doSafeReport(runnable, delegate, eventName);
-        }
-    }
-
-    private void safeReport(final Runnable runnable, final String eventName) {
-        doSafeReport(runnable, delegate, eventName);
     }
 
     static LoadBalancerObserver wrap(LoadBalancerObserver observer) {
@@ -123,13 +164,5 @@ final class CatchAllLoadBalancerObserver implements LoadBalancerObserver {
             return observer;
         }
         return new CatchAllLoadBalancerObserver(observer);
-    }
-
-    private static void doSafeReport(final Runnable runnable, final Object observer, final String eventName) {
-        try {
-            runnable.run();
-        } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting an {} event", observer, eventName, unexpected);
-        }
     }
 }
