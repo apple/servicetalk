@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.context.api;
 
-import io.servicetalk.concurrent.internal.ContextMapUtils;
-import io.servicetalk.context.api.ContextMap;
-
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-final class ConcurrentContextMap implements ContextMap {
+import static java.util.Objects.requireNonNull;
 
-    private final ConcurrentMap<Key<?>, Object> theMap;
+/**
+ * Default implementation of {@link ContextMap} backed by {@link HashMap}.
+ * <p>
+ * Note: it's not thread-safe!
+ */
+final class DefaultContextMap implements ContextMap {
 
-    ConcurrentContextMap() {
-        theMap = new ConcurrentHashMap<>(4); // start with a smaller table
+    private final Map<Key<?>, Object> theMap;
+
+    DefaultContextMap() {
+        theMap = new HashMap<>(4); // start with a smaller table
     }
 
-    private ConcurrentContextMap(ConcurrentContextMap rhs) {
-        theMap = new ConcurrentHashMap<>(rhs.theMap);
+    private DefaultContextMap(DefaultContextMap other) {
+        theMap = new HashMap<>(other.theMap);
     }
 
     @Override
@@ -50,63 +52,54 @@ final class ConcurrentContextMap implements ContextMap {
 
     @Override
     public boolean containsKey(final Key<?> key) {
-        return theMap.containsKey(key);
+        return theMap.containsKey(requireNonNull(key, "key"));
     }
 
     @Override
     public boolean containsValue(@Nullable final Object value) {
-        assert value != null;
         return theMap.containsValue(value);
-    }
-
-    @Override
-    public <T> boolean contains(final Key<T> key, @Nullable final T value) {
-        final T current = get(key);
-        return current != null && current.equals(value);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(final Key<T> key) {
-        return (T) theMap.get(key);
+        return (T) theMap.get(requireNonNull(key, "key"));
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
-        return (T) theMap.getOrDefault(key, defaultValue);
+        return (T) theMap.getOrDefault(requireNonNull(key, "key"), defaultValue);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
-        assert value != null;
-        return (T) theMap.put(key, value);
+        return (T) theMap.put(requireNonNull(key, "key"), value);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
-        assert value != null;
-        return (T) theMap.putIfAbsent(key, value);
+        return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction) {
-        return (T) theMap.computeIfAbsent(key, k -> computeFunction.apply((Key<T>) k));
+        return (T) theMap.computeIfAbsent(requireNonNull(key, "key"), k -> computeFunction.apply((Key<T>) k));
     }
 
     @Override
     public void putAll(final ContextMap map) {
-        if (map instanceof ConcurrentContextMap) {
-            final ConcurrentContextMap ccm = (ConcurrentContextMap) map;
-            theMap.putAll(ccm.theMap);
+        if (map instanceof DefaultContextMap) {
+            final DefaultContextMap dcm = (DefaultContextMap) map;
+            theMap.putAll(dcm.theMap);
         } else {
             ContextMap.super.putAll(map);
         }
@@ -118,20 +111,11 @@ final class ConcurrentContextMap implements ContextMap {
         theMap.putAll(map);
     }
 
+    @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T remove(final Key<T> key) {
-        return (T) theMap.remove(key);
-    }
-
-    @Override
-    public boolean removeAll(final Iterable<Key<?>> keys) {
-        boolean removed = false;
-        for (Key<?> k : keys) {
-            // Null values aren't allowed so if a non-null value is seen then the map has been modified.
-            removed |= theMap.remove(k) != null;
-        }
-        return removed;
+        return (T) theMap.remove(requireNonNull(key, "key"));
     }
 
     @Override
@@ -142,7 +126,7 @@ final class ConcurrentContextMap implements ContextMap {
     @Nullable
     @Override
     public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-        for (Entry<Key<?>, Object> entry : theMap.entrySet()) {
+        for (Map.Entry<Key<?>, Object> entry : theMap.entrySet()) {
             if (!consumer.test(entry.getKey(), entry.getValue())) {
                 return entry.getKey();
             }
@@ -152,7 +136,12 @@ final class ConcurrentContextMap implements ContextMap {
 
     @Override
     public ContextMap copy() {
-        return new ConcurrentContextMap(this);
+        return new DefaultContextMap(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return theMap.hashCode();
     }
 
     @Override
@@ -163,15 +152,10 @@ final class ConcurrentContextMap implements ContextMap {
         if (!(o instanceof ContextMap)) {
             return false;
         }
-        if (o instanceof ConcurrentContextMap) {
-            return theMap.equals(((ConcurrentContextMap) o).theMap);
+        if (o instanceof DefaultContextMap) {
+            return theMap.equals(((DefaultContextMap) o).theMap);
         }
         return ContextMapUtils.equals(this, (ContextMap) o);
-    }
-
-    @Override
-    public int hashCode() {
-        return theMap.hashCode();
     }
 
     @Override
