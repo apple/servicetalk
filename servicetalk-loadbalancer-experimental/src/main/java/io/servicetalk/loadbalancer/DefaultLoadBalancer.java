@@ -162,8 +162,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
         this.subsetter = requireNonNull(subsetter, "subsetter");
-        this.loadBalancerObserver = requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
-                .newObserver(lbDescription);
+        this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
+                requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
+                .newObserver(lbDescription));
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
                 LOGGER.error("{}: Uncaught exception in {}", this, this.getClass().getSimpleName(), uncaughtException));
