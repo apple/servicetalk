@@ -21,5 +21,4 @@ tasks.named("javadoc").configure {
 }
 
 dependencies {
-    implementation project(":servicetalk-annotations")
 }

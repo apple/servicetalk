@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ElementsAreNonnullByDefault
 package io.servicetalk.loadbalancer;
 
-import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+// FIXME: 0.43: TL;DR: Remove this module. This package existed to support the DefaultLoadBalancer development which
+//  has since been merged into the servicetalk-loadbalancer module.
+final class PlaceHolder {
+    private PlaceHolder() {
+    }
+}
