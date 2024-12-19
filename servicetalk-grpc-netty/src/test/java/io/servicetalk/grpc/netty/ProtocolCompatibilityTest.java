@@ -1472,9 +1472,7 @@ class ProtocolCompatibilityTest {
                 .build();
 
         final ServerContext serverContext =
-                serviceTalkServerBuilder(errorMode, ssl, timeout, b ->
-                        b.executionStrategy(strategy)
-                                .enableWireLogging("servicetalk-examples-wire-logger", LogLevel.DEBUG, () -> true))
+                serviceTalkServerBuilder(errorMode, ssl, timeout, b -> b.executionStrategy(strategy))
                         .listenAndAwait(serviceFactory);
 
         return TestServerContext.fromServiceTalkServerContext(serverContext);
