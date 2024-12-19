@@ -117,7 +117,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
-    public double loadBalancingWeight() {
+    public double weight() {
         return 1;
     }
 

@@ -42,11 +42,11 @@ interface PrioritizedHost {
      * The weight of the host to use for load balancing.
      * @return the weight of the host to use for load balancing.
      */
-    double loadBalancingWeight();
+    double weight();
 
     /**
      * Set the weight of the host to use during load balancing.
      * @param weight the weight of the host to use during load balancing.
      */
-    void loadBalancingWeight(double weight);
+    void weight(double weight);
 }

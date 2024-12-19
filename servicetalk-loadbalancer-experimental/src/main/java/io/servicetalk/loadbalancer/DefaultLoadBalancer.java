@@ -508,7 +508,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             // We need to reset the load balancing weights before we run the host set through the rest
             // of the operations that will transform and consume the load balancing weight.
             for (PrioritizedHostImpl<?, ?> host : nextHosts) {
-                host.loadBalancingWeight(host.serviceDiscoveryWeight());
+                host.weight(host.serviceDiscoveryWeight());
             }
             nextHosts = priorityStrategy.prioritize(nextHosts);
             nextHosts = subsetter.subset(nextHosts);
@@ -706,12 +706,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking hosts.
         @Override
-        public void loadBalancingWeight(final double weight) {
+        public void weight(final double weight) {
             this.loadBalancingWeight = weight;
         }
 
         @Override
-        public double loadBalancingWeight() {
+        public double weight() {
             return loadBalancingWeight;
         }
 

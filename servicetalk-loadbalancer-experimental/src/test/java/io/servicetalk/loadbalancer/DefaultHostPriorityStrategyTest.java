@@ -47,7 +47,7 @@ class DefaultHostPriorityStrategyTest {
     void noPrioritiesWithWeights() {
         List<TestPrioritizedHost> hosts = makeHosts(4);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).loadBalancingWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
         }
         List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
         assertThat(result.size(), equalTo(hosts.size()));
@@ -79,7 +79,7 @@ class DefaultHostPriorityStrategyTest {
     void twoPrioritiesWithWeights() {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).loadBalancingWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
             if (i >= 3) {
                 hosts.get(i).priority(1);
             }
@@ -99,7 +99,7 @@ class DefaultHostPriorityStrategyTest {
     void twoPrioritiesWithWeightsButSkipNumbers() {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).loadBalancingWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
             if (i >= 3) {
                 hosts.get(i).priority(2);
             }
@@ -119,7 +119,7 @@ class DefaultHostPriorityStrategyTest {
     void noHealthyNodesDoesntFilterOutElements() {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
-            hosts.get(i).loadBalancingWeight(i + 1d);
+            hosts.get(i).weight(i + 1d);
             hosts.get(i).isHealthy = false;
             if (i >= 3) {
                 hosts.get(i).priority(1);
@@ -206,10 +206,10 @@ class DefaultHostPriorityStrategyTest {
         hosts.get(0).isHealthy(false);
         for (int i = 0; i < hosts.size(); i++) {
             if (i >= 3) {
-                hosts.get(i).loadBalancingWeight(i - 3 + 1d);
+                hosts.get(i).weight(i - 3 + 1d);
                 hosts.get(i).priority(1);
             } else {
-                hosts.get(i).loadBalancingWeight(i + 1d);
+                hosts.get(i).weight(i + 1d);
             }
         }
         List<TestPrioritizedHost> result = hostPriorityStrategy.prioritize(hosts);
@@ -241,10 +241,10 @@ class DefaultHostPriorityStrategyTest {
         List<TestPrioritizedHost> hosts = makeHosts(6);
         for (int i = 0; i < hosts.size(); i++) {
             if (i >= 3) {
-                hosts.get(i).loadBalancingWeight(0);
+                hosts.get(i).weight(0);
                 hosts.get(i).priority(1);
             } else {
-                hosts.get(i).loadBalancingWeight(1);
+                hosts.get(i).weight(1);
                 hosts.get(i).isHealthy = false;
             }
         }
@@ -312,7 +312,7 @@ class DefaultHostPriorityStrategyTest {
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking endpoints.
         @Override
-        public void loadBalancingWeight(final double weight) {
+        public void weight(final double weight) {
             this.loadBalancedWeight = weight;
         }
 
@@ -330,7 +330,7 @@ class DefaultHostPriorityStrategyTest {
         }
 
         @Override
-        public double loadBalancingWeight() {
+        public double weight() {
             return loadBalancedWeight;
         }
     }
