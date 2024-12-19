@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.Cancellable;
 

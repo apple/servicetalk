@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
 

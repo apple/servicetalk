@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Processors;

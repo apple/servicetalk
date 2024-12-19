@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.concurrent.api.TestExecutor;
 
 import org.junit.jupiter.api.Test;

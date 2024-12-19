@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -26,7 +27,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
@@ -38,11 +38,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.RequestTracker.ErrorClass.EXT_ORIGIN_TIMEOUT;
+import static io.servicetalk.client.api.RequestTracker.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
+import static io.servicetalk.client.api.RequestTracker.REQUEST_TRACKER_KEY;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
-import static io.servicetalk.loadbalancer.RequestTracker.ErrorClass.EXT_ORIGIN_TIMEOUT;
-import static io.servicetalk.loadbalancer.RequestTracker.ErrorClass.LOCAL_ORIGIN_REQUEST_FAILED;
-import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
 
 final class HttpRequestTracker {
 
