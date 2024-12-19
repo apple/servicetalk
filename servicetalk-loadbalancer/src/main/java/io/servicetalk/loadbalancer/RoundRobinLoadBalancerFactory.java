@@ -51,7 +51,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @deprecated this class will be made package-private in the future, use {@link RoundRobinLoadBalancers} to create
  * {@link RoundRobinLoadBalancerBuilder}.
  */
-@Deprecated // FIXME: 0.43 - make package private
+@Deprecated // FIXME: 0.43 - remove in favor of DefaultLoadBalancer types.
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
@@ -110,7 +110,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @deprecated this class will be made package-private in the future, rely on the
      * {@link RoundRobinLoadBalancerBuilder} instead.
      */
-    @Deprecated // FIXME: 0.43 - make package private
+    @Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types.
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
             implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
         private final String id;
