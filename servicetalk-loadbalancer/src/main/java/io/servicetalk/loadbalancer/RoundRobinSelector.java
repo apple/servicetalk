@@ -71,9 +71,8 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     }
 
     @Override
-    protected Single<C> selectConnection0(
-            final Predicate<C> selector, @Nullable final ContextMap context,
-            final boolean forceNewConnectionAndReserve) {
+    Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
+                                final boolean forceNewConnectionAndReserve) {
         // try one loop over hosts and if all are expired, give up
         final int cursor = scheduler.nextHost();
         Host<ResolvedAddress, C> failOpenHost = null;
@@ -118,7 +117,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         for (Host<?, ?> host : hosts) {
             double hostWeight = host.weight();
             maxWeight = Math.max(maxWeight, hostWeight);
-            allEqualWeights = allEqualWeights && BaseHostSelector.approxEqual(hosts.get(0).weight(), hostWeight);
+            allEqualWeights = allEqualWeights && approxEqual(hosts.get(0).weight(), hostWeight);
         }
 
         if (allEqualWeights) {
@@ -141,7 +140,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     private abstract static class Scheduler {
 
         private final AtomicInteger index;
-        protected final int hostsSize;
+        final int hostsSize;
 
         Scheduler(final AtomicInteger index, final int hostsSize) {
             this.index = index;
@@ -151,7 +150,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
         // Get the index of the next host
         abstract int nextHost();
 
-        protected final long nextIndex() {
+        final long nextIndex() {
             return Integer.toUnsignedLong(index.getAndIncrement());
         }
 

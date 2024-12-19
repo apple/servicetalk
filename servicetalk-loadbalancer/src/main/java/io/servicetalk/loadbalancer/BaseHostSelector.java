@@ -39,18 +39,13 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         this.lbDescription = requireNonNull(lbDescription, "lbDescription");
     }
 
-    protected abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
+    abstract Single<C> selectConnection0(Predicate<C> selector, @Nullable ContextMap context,
                                          boolean forceNewConnectionAndReserve);
 
     @Override
     public final Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context,
-                                      boolean forceNewConnectionAndReserve) {
+                                            boolean forceNewConnectionAndReserve) {
         return hosts.isEmpty() ? noHostsFailure() : selectConnection0(selector, context, forceNewConnectionAndReserve);
-    }
-
-    @Override
-    public final int hostSetSize() {
-        return hosts.size();
     }
 
     @Override
@@ -60,15 +55,16 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
         return anyHealthy(hosts);
     }
 
-    protected final List<? extends Host<ResolvedAddress, C>> hosts() {
+    @Override
+    public final List<? extends Host<ResolvedAddress, C>> hosts() {
         return hosts;
     }
 
-    protected final String lbDescription() {
+    final String lbDescription() {
         return lbDescription;
     }
 
-    protected final Single<C> noActiveHostsFailure(List<? extends Host<ResolvedAddress, C>> usedHosts) {
+    final Single<C> noActiveHostsFailure(List<? extends Host<ResolvedAddress, C>> usedHosts) {
         return failed(Exceptions.StacklessNoActiveHostException.newInstance(
                 lbDescription() + ": Failed to pick an active host. Either all are busy, expired, or unhealthy: " +
                         usedHosts, this.getClass(), "selectConnection(...)"));
@@ -76,7 +72,7 @@ abstract class BaseHostSelector<ResolvedAddress, C extends LoadBalancedConnectio
 
     // This method assumes the host is considered healthy.
     @Nullable
-    protected final Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
+    final Single<C> selectFromHost(Host<ResolvedAddress, C> host, Predicate<C> selector,
             boolean forceNewConnectionAndReserve, @Nullable ContextMap contextMap) {
         // First see if we can get an existing connection regardless of health status.
         if (!forceNewConnectionAndReserve) {

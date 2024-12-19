@@ -79,14 +79,19 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(
-            ConnectionPoolPolicy<C> connectionPoolPolicy) {
-        delegate = delegate.connectionPoolPolicy(connectionPoolPolicy);
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionSelectorPolicy(
+            ConnectionSelectorPolicy<C> connectionSelectorPolicy) {
+        delegate = delegate.connectionSelectorPolicy(connectionSelectorPolicy);
         return this;
     }
 
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         return delegate.build();
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
     }
 }

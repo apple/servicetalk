@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ import java.util.List;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 
 /**
- * A factory to create {@link DefaultLoadBalancer DefaultLoadBalancers}.
+ * A factory to create a {@link LoadBalancer} or a {@link LoadBalancerBuilder} to customize one.
  */
 public final class LoadBalancers {
 

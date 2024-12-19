@@ -32,6 +32,10 @@ import static io.servicetalk.loadbalancer.HealthCheckConfig.DEFAULT_HEALTH_CHECK
 import static io.servicetalk.loadbalancer.HealthCheckConfig.validateHealthCheckIntervals;
 import static io.servicetalk.utils.internal.NumberUtils.ensureNonNegative;
 
+/**
+ * A {@link RoundRobinLoadBalancerBuilderProvider} to automatically migrate from {@link RoundRobinLoadBalancerBuilder}
+ * to {@link LoadBalancerBuilder} implementation with compatible runtime behavior.
+ */
 public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinLoadBalancerBuilderProvider {
 
     static final String PROPERTY_NAME = "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
@@ -138,7 +142,7 @@ public final class RoundRobinToDefaultLBMigrationProvider implements RoundRobinL
             }
             return builder.outlierDetectorConfig(outlierDetectorConfig)
                     .loadBalancingPolicy(loadBalancingPolicy)
-                    .connectionPoolPolicy(ConnectionPoolPolicies.linearSearch(linearSearchSpace))
+                    .connectionSelectorPolicy(ConnectionSelectorPolicies.linearSearch(linearSearchSpace))
                     .build();
         }
     }

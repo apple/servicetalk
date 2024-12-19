@@ -21,10 +21,13 @@ import io.servicetalk.context.api.ContextMap;
  * A tracker of latency of an action over time.
  * <p>
  * The usage of the RequestTracker is intended to follow the simple workflow:
- * - At initiation of an action for which a request is must call {@link RequestTracker#beforeRequestStart()} and save
- *   the timestamp much like would be done when using a stamped lock.
- * - Once the request event is complete only one of the {@link RequestTracker#onRequestSuccess(long)} or
- *   {@link RequestTracker#onRequestError(long, ErrorClass)} methods must be called and called exactly once.
+ * <ul>
+ *     <li>At initiation of an action that will be tracked the caller must call
+ *     {@link RequestTracker#beforeRequestStart()} and save the timestamp much like would be done when using a stamped
+ *     lock.</li>
+ *     <li>Once the request event is complete only one of the {@link RequestTracker#onRequestSuccess(long)} or
+ *     {@link RequestTracker#onRequestError(long, ErrorClass)} methods must be called and called exactly once</li>
+ * </ul>
  * In other words, every call to {@link RequestTracker#beforeRequestStart()} must be followed by exactly one call to
  * either of the completion methods {@link RequestTracker#onRequestSuccess(long)} or
  * {@link RequestTracker#onRequestError(long, ErrorClass)}. Failure to do so can cause state corruption in the
@@ -64,30 +67,21 @@ public interface RequestTracker {
         /**
          * Failures caused locally, these would be things that failed due to an exception locally.
          */
-        LOCAL_ORIGIN_REQUEST_FAILED(true),
+        LOCAL_ORIGIN_REQUEST_FAILED,
 
         /**
          * Failures related to locally enforced timeouts waiting for responses from the peer.
          */
-        EXT_ORIGIN_TIMEOUT(false),
+        EXT_ORIGIN_TIMEOUT,
 
         /**
          * Failures returned from the remote peer. This will be things like 5xx responses.
          */
-        EXT_ORIGIN_REQUEST_FAILED(false),
+        EXT_ORIGIN_REQUEST_FAILED,
 
         /**
          * Failure due to cancellation.
          */
-        CANCELLED(true);
-
-        private final boolean isLocal;
-        ErrorClass(boolean isLocal) {
-            this.isLocal = isLocal;
-        }
-
-        public boolean isLocal() {
-            return isLocal;
-        }
+        CANCELLED
     }
 }

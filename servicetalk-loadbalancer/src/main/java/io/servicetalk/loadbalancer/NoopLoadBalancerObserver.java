@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
@@ -36,29 +37,28 @@ final class NoopLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoHostsAvailable() {
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
         // noop
     }
 
     @Override
-    public void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exn) {
+    public void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts) {
         // noop
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
-                                        int oldHostSetSize, int newHostSetSize) {
+    public void onNoAvailableHostException(NoAvailableHostException exception) {
         // noop
     }
 
     @Override
-    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exn) {
         // noop
     }
 
-    private static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
+    static final class NoopHostObserver implements LoadBalancerObserver.HostObserver {
 
-        private static final HostObserver INSTANCE = new NoopHostObserver();
+        static final HostObserver INSTANCE = new NoopHostObserver();
 
         private NoopHostObserver() {
         }

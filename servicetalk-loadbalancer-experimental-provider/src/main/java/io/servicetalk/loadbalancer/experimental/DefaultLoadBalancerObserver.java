@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer.experimental;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.loadbalancer.LoadBalancerObserver;
 
@@ -43,24 +44,12 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
     }
 
     @Override
-    public void onNoHostsAvailable() {
-        LOGGER.debug("{}- onNoHostsAvailable()", lbDescription);
+    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events) {
+        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, count {})", lbDescription, events, events.size());
     }
 
     @Override
-    public void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events, int oldHostSetSize,
-                                        int newHostSetSize) {
-        LOGGER.debug("{}- onServiceDiscoveryEvent(events: {}, oldHostSetSize: {}, newHostSetSize: {})",
-                lbDescription, events, oldHostSetSize, newHostSetSize);
-    }
-
-    @Override
-    public void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception) {
-        LOGGER.debug("{}- No active hosts available. Host set size: {}.", lbDescription, hostSetSize, exception);
-    }
-
-    @Override
-    public void onHostSetChanged(Collection<? extends Host> newHosts) {
+    public void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts) {
         if (LOGGER.isDebugEnabled()) {
             int healthyCount = 0;
             for (Host host : newHosts) {
@@ -68,9 +57,21 @@ final class DefaultLoadBalancerObserver implements LoadBalancerObserver {
                     healthyCount++;
                 }
             }
-            LOGGER.debug("{}- onHostSetChanged(host set size: {}, healthy: {}). New hosts: {}", lbDescription,
-                    newHosts.size(), healthyCount, newHosts);
+            LOGGER.debug("{}- onHostsUpdate(old hosts: {}, new hosts: {}), old host count: {}, new host count: {}, " +
+                            "new healthy count: {}",
+                    lbDescription, oldHosts, newHosts, oldHosts.size(), newHosts.size(), healthyCount);
         }
+    }
+
+    @Override
+    public void onNoAvailableHostException(final NoAvailableHostException exception) {
+        LOGGER.debug("{}- onNoAvailableHostException()", lbDescription, exception);
+    }
+
+    @Override
+    public void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception) {
+        LOGGER.debug("{}- onNoActiveHostException(hosts: {}, host count: {})", lbDescription, hosts, hosts.size(),
+                exception);
     }
 
     private final class HostObserverImpl implements HostObserver {

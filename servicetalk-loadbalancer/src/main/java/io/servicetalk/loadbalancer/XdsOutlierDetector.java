@@ -151,7 +151,7 @@ final class XdsOutlierDetector<ResolvedAddress, C extends LoadBalancedConnection
         }
 
         @Override
-        protected OutlierDetectorConfig currentConfig() {
+        OutlierDetectorConfig currentConfig() {
             return kernel.config;
         }
 

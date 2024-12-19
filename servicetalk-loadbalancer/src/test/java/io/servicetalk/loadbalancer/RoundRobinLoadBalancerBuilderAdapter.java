@@ -43,8 +43,8 @@ final class RoundRobinLoadBalancerBuilderAdapter implements LoadBalancerBuilder<
     }
 
     @Override
-    public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionPoolPolicy(
-            ConnectionPoolPolicy connectionPoolPolicy) {
+    public LoadBalancerBuilder<String, TestLoadBalancedConnection> connectionSelectorPolicy(
+            ConnectionSelectorPolicy connectionSelectorPolicy) {
         throw new UnsupportedOperationException("Cannot set a connection pool strategy for old round robin");
     }
 

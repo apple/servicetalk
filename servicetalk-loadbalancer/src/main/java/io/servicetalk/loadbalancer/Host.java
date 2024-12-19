@@ -29,7 +29,8 @@ import javax.annotation.Nullable;
  * @param <ResolvedAddress> the type of resolved address.
  * @param <C> the concrete type of returned connections.
  */
-interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {
+interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier,
+        LoadBalancerObserver.Host {
     /**
      * Select an existing connection from the host.
      * @return the selected host, or null if a suitable host couldn't be found.
@@ -49,14 +50,8 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      * The address of the host
      * @return the address of the host
      */
+    @Override
     ResolvedAddress address();
-
-    /**
-     * Determine the health status of this host.
-     * @return whether the host considers itself healthy enough to serve traffic. This is best effort and does not
-     *         guarantee that the request will succeed.
-     */
-    boolean isHealthy();
 
     /**
      * Determine whether the host is in a state where it can make new connections.
@@ -78,12 +73,4 @@ interface Host<ResolvedAddress, C extends LoadBalancedConnection> extends Listen
      * @return true if the host is now in the closed state, false otherwise.
      */
     boolean markExpired();
-
-    /**
-     * The weight of the host, relative to the weights of associated hosts.
-     * @return the relative weight of the host.
-     */
-    default double weight() {
-        return 1.0;
-    }
 }

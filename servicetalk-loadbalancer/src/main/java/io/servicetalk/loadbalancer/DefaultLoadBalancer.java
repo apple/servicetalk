@@ -128,7 +128,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
      * @param subsetter a subset builder.
-     * @param connectionPoolPolicy factory of the connection pool strategy to use with this load balancer.
+     * @param connectionSelectorPolicy factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
      *                                    load balancer.
@@ -144,7 +144,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
             final Subsetter subsetter,
-            final ConnectionPoolPolicy<C> connectionPoolPolicy,
+            final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
             @Nullable final HealthCheckConfig healthCheckConfig,
@@ -155,15 +155,16 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(
                 priorityStrategyFactory, "priorityStrategyFactory").apply(lbDescription);
-        this.connectionSelector = requireNonNull(connectionPoolPolicy,
-                "connectionPoolPolicy").buildConnectionSelector(lbDescription);
+        this.connectionSelector = requireNonNull(connectionSelectorPolicy,
+                "connectionSelectorPolicy").buildConnectionSelector(lbDescription);
         this.eventPublisher = requireNonNull(eventPublisher);
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
         this.subsetter = requireNonNull(subsetter, "subsetter");
-        this.loadBalancerObserver = requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
-                .newObserver(lbDescription);
+        this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
+                requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
+                .newObserver(lbDescription));
         this.healthCheckConfig = healthCheckConfig;
         this.sequentialExecutor = new SequentialExecutor((uncaughtException) ->
                 LOGGER.error("{}: Uncaught exception in {}", this, this.getClass().getSimpleName(), uncaughtException));
@@ -174,7 +175,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
         // When we get a health-status event we should update the host set.
         this.outlierDetectorStatusChangeStream = this.outlierDetector.healthStatusChanged().forEach((ignored) ->
-            sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts)));
+            sequentialExecutor.execute(() -> sequentialUpdateUsedHosts(usedHosts, true)));
 
         // We subscribe to events as the very last step so that if we subscribe to an eager service discoverer
         // we already have all the fields initialized.
@@ -308,6 +309,10 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                 return;
             }
 
+            // Notify the observer first so that we can emit the service discovery event before we start (potentially)
+            // emitting events related to creating new hosts.
+            loadBalancerObserver.onServiceDiscoveryEvent(events);
+
             boolean sendReadyEvent = false;
             final List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts = new ArrayList<>(
                     usedHosts.size() + events.size());
@@ -380,16 +385,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     nextHosts.add(createHost(event));
                 }
             }
-
-            // Always send the event regardless of if we update the actual list.
-            loadBalancerObserver.onServiceDiscoveryEvent(events, usedHosts.size(), nextHosts.size());
-            // We've built a materially different host set so now set it for consumption and send our events.
-            if (hostSetChanged) {
-                sequentialUpdateUsedHosts(nextHosts);
-            }
-
-            LOGGER.debug("{}: now using addresses (size={}): {}.",
-                    DefaultLoadBalancer.this, nextHosts.size(), nextHosts);
+            sequentialUpdateUsedHosts(nextHosts, hostSetChanged);
             if (nextHosts.isEmpty()) {
                 eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
             } else if (sendReadyEvent) {
@@ -442,7 +438,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                                 currentHosts, host);
                         // we only need to do anything else if we actually removed the host
                         if (nextHosts.size() != currentHosts.size()) {
-                            sequentialUpdateUsedHosts(nextHosts);
+                            sequentialUpdateUsedHosts(nextHosts, true);
                             if (nextHosts.isEmpty()) {
                                 // We transitioned from non-empty to empty. That means we're not ready.
                                 eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
@@ -504,17 +500,27 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
     }
 
     // must be called from within the SequentialExecutor
-    private void sequentialUpdateUsedHosts(List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts) {
-        this.usedHosts = nextHosts;
-        // We need to reset the load balancing weights before we run the host set through the rest
-        // of the operations that will transform and consume the load balancing weight.
-        for (PrioritizedHostImpl<?, ?> host : nextHosts) {
-            host.loadBalancingWeight(host.serviceDiscoveryWeight());
+    private void sequentialUpdateUsedHosts(List<PrioritizedHostImpl<ResolvedAddress, C>> nextHosts,
+                                           boolean hostSetChanged) {
+        HostSelector<ResolvedAddress, C> oldHostSelector = hostSelector;
+        HostSelector<ResolvedAddress, C> newHostSelector;
+        if (hostSetChanged) {
+            this.usedHosts = nextHosts;
+            // We need to reset the load balancing weights before we run the host set through the rest
+            // of the operations that will transform and consume the load balancing weight.
+            for (PrioritizedHostImpl<?, ?> host : nextHosts) {
+                host.weight(host.serviceDiscoveryWeight());
+            }
+            nextHosts = priorityStrategy.prioritize(nextHosts);
+            nextHosts = subsetter.subset(nextHosts);
+            this.hostSelector = newHostSelector = hostSelector.rebuildWithHosts(nextHosts);
+        } else {
+            newHostSelector = oldHostSelector;
         }
-        nextHosts = priorityStrategy.prioritize(nextHosts);
-        nextHosts = subsetter.subset(nextHosts);
-        this.hostSelector = hostSelector.rebuildWithHosts(nextHosts);
-        loadBalancerObserver.onHostSetChanged(Collections.unmodifiableList(nextHosts));
+        final Collection<? extends LoadBalancerObserver.Host> newHosts = newHostSelector.hosts();
+        loadBalancerObserver.onHostsUpdate(Collections.unmodifiableCollection(oldHostSelector.hosts()),
+                Collections.unmodifiableCollection(newHosts));
+        LOGGER.debug("{}: Using addresses (size={}): {}.", this, newHosts.size(), newHosts);
     }
 
     @Override
@@ -541,10 +547,9 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                         subscribeToEvents(true);
                     }
                 }
-                loadBalancerObserver.onNoActiveHostsAvailable(
-                        currentHostSelector.hostSetSize(), (NoActiveHostException) exn);
+                loadBalancerObserver.onNoActiveHostException(currentHostSelector.hosts(), (NoActiveHostException) exn);
             } else if (exn instanceof NoAvailableHostException) {
-                loadBalancerObserver.onNoHostsAvailable();
+                loadBalancerObserver.onNoAvailableHostException((NoAvailableHostException) exn);
             }
         });
     }
@@ -628,8 +633,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        public int hostSetSize() {
-            return 0;
+        public Collection<? extends LoadBalancerObserver.Host> hosts() {
+            return emptyList();
         }
     }
 
@@ -702,12 +707,12 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         // Set the weight to use in load balancing. This includes derived weight information such as prioritization
         // and is what the host selectors will use when picking hosts.
         @Override
-        public void loadBalancingWeight(final double weight) {
+        public void weight(final double weight) {
             this.loadBalancingWeight = weight;
         }
 
         @Override
-        public double loadBalancingWeight() {
+        public double weight() {
             return loadBalancingWeight;
         }
 

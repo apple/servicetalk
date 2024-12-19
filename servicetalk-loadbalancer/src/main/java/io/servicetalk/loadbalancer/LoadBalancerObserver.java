@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.NoActiveHostException;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 import java.util.Collection;
@@ -34,35 +35,33 @@ public interface LoadBalancerObserver {
     HostObserver hostObserver(Object resolvedAddress);
 
     /**
-     * Callback for when connection selection fails due to no hosts being available.
-     */
-    void onNoHostsAvailable();
-
-    /**
      * Callback for monitoring the changes due to a service discovery update.
      * @param events the collection of {@link ServiceDiscovererEvent}s received by the load balancer.
-     * @param oldHostSetSize the size of the previous host set.
-     * @param newHostSetSize the new size of  the host set.
      */
-    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events,
-                                 int oldHostSetSize, int newHostSetSize);
-
-    /**
-     * Callback for when connection selection fails due to all hosts being inactive.
-     * @param hostSetSize the size of the current host set.
-     * @param exception an exception with more details about the failure.
-     */
-    void onNoActiveHostsAvailable(int hostSetSize, NoActiveHostException exception);
+    void onServiceDiscoveryEvent(Collection<? extends ServiceDiscovererEvent<?>> events);
 
     /**
      * Callback for when the set of hosts used by the load balancer has changed. This set may not
      * exactly reflect the state of the service discovery system due to filtering of zero-weight
      * hosts and forms of sub-setting and thus may only represent the hosts that the selection
      * algorithm may use.
+     * @param oldHosts the old set of hosts used by the selection algorithm.
      * @param newHosts the new set of hosts used by the selection algorithm.
      */
-    default void onHostSetChanged(Collection<? extends Host> newHosts) {
-    }
+    void onHostsUpdate(Collection<? extends Host> oldHosts, Collection<? extends Host> newHosts);
+
+    /**
+     * Callback for when connection selection fails due to no hosts being available.
+     * @param exception an exception with more details about the failure.
+     */
+    void onNoAvailableHostException(NoAvailableHostException exception);
+
+    /**
+     * Callback for when connection selection fails due to all hosts being inactive.
+     * @param hosts the set of hosts that is eligible for selection.
+     * @param exception an exception with more details about the failure.
+     */
+    void onNoActiveHostException(Collection<? extends Host> hosts, NoActiveHostException exception);
 
     /**
      * An observer for {@link io.servicetalk.loadbalancer.Host} events.
@@ -126,6 +125,6 @@ public interface LoadBalancerObserver {
          * The weight of the host, relative to the weights of associated hosts as used for load balancing.
          * @return the relative weight of the host.
          */
-        double loadBalancingWeight();
+        double weight();
     }
 }

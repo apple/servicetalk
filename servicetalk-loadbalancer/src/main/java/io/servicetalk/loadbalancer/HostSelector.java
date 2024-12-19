@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -42,7 +43,7 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
      * Select or establish a new connection from an existing Host.
-     *
+     * <p>
      * This method will be called concurrently with other selectConnection calls and
      * hostSetChanged calls and must be thread safe under those conditions.
      */
@@ -71,9 +72,11 @@ interface HostSelector<ResolvedAddress, C extends LoadBalancedConnection> {
     boolean isHealthy();
 
     /**
-     * The size of the host candidate pool for this host selector.
-     * Note that this is primarily for observability purposes.
-     * @return the size of the host candidate pool for this host selector.
+     * The set of hosts this selector will pick from.
+     * <p>
+     * Note that this may differ from the hosts advertised by the {@link io.servicetalk.client.api.ServiceDiscoverer}
+     * due to various filtering mechanisms.
+     * @return the set of hosts this selector will pick from.
      */
-    int hostSetSize();
+    Collection<? extends LoadBalancerObserver.Host> hosts();
 }

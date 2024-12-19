@@ -117,6 +117,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     }
 
     @Override
+    public double weight() {
+        return 1;
+    }
+
+    @Override
     public boolean markActiveIfNotClosed() {
         final ConnState oldState = connStateUpdater.getAndUpdate(this, oldConnState -> {
             if (oldConnState.state == State.EXPIRED) {
@@ -232,10 +237,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
                             // Just in case the connection is not closed add it to the host so we don't lose track,
                             // duplicates will be filtered out.
-                            return (addConnection(newCnx, null) ?
+                            return (addConnection(newCnx) ?
                                     failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
                         }
-                        if (addConnection(newCnx, null)) {
+                        if (addConnection(newCnx)) {
                             return succeeded(newCnx).shareContextOnSubscribe();
                         }
                         return newCnx.closeAsync().<C>concat(
@@ -317,7 +322,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         return state != State.EXPIRED && state != State.CLOSED;
     }
 
-    private boolean addConnection(final C connection, @Nullable final HealthCheck currentHealthCheck) {
+    private boolean addConnection(final C connection) {
         int addAttempt = 0;
         for (;;) {
             final ConnState previous = connStateUpdater.get(this);
@@ -336,9 +341,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 // connection or with passing a previous health-check (if SD turned it into ACTIVE state). In both
                 // cases we have to cancel the "previous" ongoing health check. See "markHealthy" for more context.
                 if (previous.isUnhealthy()) {
-                    if (currentHealthCheck == null || previous.healthCheck != currentHealthCheck) {
-                        cancelIfHealthCheck(previous);
-                    }
+                    cancelIfHealthCheck(previous);
                     // If we transitioned from unhealth to healthy we need to let the observer know.
                     hostObserver.onHostRevived();
                 }
@@ -458,10 +461,13 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     @Override
     public String toString() {
         final ConnState connState = this.connState;
-        return "Host{" +
+        String stateString = connState.isUnhealthy() ? State.UNHEALTHY + "(" + connState.healthCheck + ")" :
+                connState.state.toString();
+        return "DefaultHost{" +
                 "lbDescription=" + lbDescription +
                 ", address=" + address +
-                ", state=" + connState.state +
+                ", state=" + stateString +
+                ", healthIndicator=" + healthIndicator +
                 ", #connections=" + connState.connections.size() +
                 '}';
     }
@@ -516,7 +522,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
         @Override
         public String toString() {
-            return "UNHEALTHY(" + lastError + ')';
+            return "HealthCheck(" + lastError + ')';
         }
     }
 

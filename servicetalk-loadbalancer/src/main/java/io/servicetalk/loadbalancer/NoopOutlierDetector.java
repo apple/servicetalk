@@ -83,7 +83,7 @@ final class NoopOutlierDetector<ResolvedAddress, C extends LoadBalancedConnectio
         }
 
         @Override
-        protected long currentTimeNanos() {
+        long currentTimeNanos() {
             return executor.currentTime(TimeUnit.NANOSECONDS);
         }
 

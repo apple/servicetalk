@@ -18,8 +18,9 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
- * Provider for {@link LoadBalancerBuilder}.
+ * Provider for {@link LoadBalancerBuilder} that can be registered using {@link java.util.ServiceLoader}.
  */
+@FunctionalInterface
 public interface LoadBalancerBuilderProvider {
 
     /**
@@ -28,10 +29,9 @@ public interface LoadBalancerBuilderProvider {
      * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
      * returning it, or wrap it ({@link DelegatingLoadBalancerBuilder} may be helpful).
      *
-     * @param id a (unique) identifier used to identify the underlying {@link io.servicetalk.client.api.LoadBalancer}.
+     * @param id a (unique) identifier used to identify the underlying {@link LoadBalancerBuilder}.
      * @param builder pre-initialized {@link LoadBalancerBuilder}.
-     * @return a {@link LoadBalancerBuilder} based on the pre-initialized
-     * {@link LoadBalancerBuilder}.
+     * @return a {@link LoadBalancerBuilder} based on the pre-initialized {@link LoadBalancerBuilder}.
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      */

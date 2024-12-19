@@ -86,26 +86,26 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
      * Get the current configuration.
      * @return the current configuration.
      */
-    protected abstract OutlierDetectorConfig currentConfig();
+    abstract OutlierDetectorConfig currentConfig();
 
     /**
      * Attempt to mark the host as ejected with the parent XDS health checker.
      * @return whether this host was successfully ejected.
      */
-    protected abstract boolean tryEjectHost();
+    abstract boolean tryEjectHost();
 
     /**
      * Alert the parent {@link XdsOutlierDetector} that this host has transitions from healthy to unhealthy.
      */
-    protected abstract void hostRevived();
+    abstract void hostRevived();
 
     /**
      * Alert the parent {@link XdsOutlierDetector} that this {@link HealthIndicator} is no longer being used.
      */
-    protected abstract void doCancel();
+    abstract void doCancel();
 
     @Override
-    protected final long currentTimeNanos() {
+    final long currentTimeNanos() {
         return executor.currentTime(TimeUnit.NANOSECONDS);
     }
 
@@ -197,14 +197,14 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         }
     }
 
-    public final void forceRevival() {
+    final void forceRevival() {
         assert sequentialExecutor.isCurrentThreadDraining();
         if (!cancelled && evictedUntilNanos != null) {
             sequentialRevive();
         }
     }
 
-    public final boolean updateOutlierStatus(OutlierDetectorConfig config, boolean isOutlier) {
+    final boolean updateOutlierStatus(OutlierDetectorConfig config, boolean isOutlier) {
         assert sequentialExecutor.isCurrentThreadDraining();
         if (cancelled) {
             return false;
@@ -239,22 +239,32 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         }
     }
 
-    public final void resetCounters() {
+    final void resetCounters() {
         successes.set(0);
         failures.set(0);
     }
 
-    public final long getSuccesses() {
+    final long getSuccesses() {
         return successes.get();
     }
 
-    public final long getFailures() {
+    final long getFailures() {
         return failures.get();
     }
 
     @Override
     public final void cancel() {
         sequentialExecutor.execute(this::sequentialCancel);
+    }
+
+    @Override
+    public String toString() {
+        return "XdsHealthIndicator{" +
+                ", consecutive5xx=" + consecutive5xx.get() +
+                ", successes=" + successes.get() +
+                ", failures=" + failures.get() +
+                ", evictedUntilNanos=" + evictedUntilNanos +
+                '}';
     }
 
     void sequentialCancel() {

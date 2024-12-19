@@ -20,8 +20,7 @@ import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.Cancellable;
 
 /**
- * An abstraction used by a {@link Host} to interact with the {@link OutlierDetector} currently monitoring
- * the host.
+ * An abstraction used by a {@link Host} to interact with the {@link OutlierDetector} currently monitoring the host.
  * <p>
  * This abstraction serves as a sort of two-way channel between a host and the health check system: the
  * health check system can give the host information about it's perceived health and the host can give the
