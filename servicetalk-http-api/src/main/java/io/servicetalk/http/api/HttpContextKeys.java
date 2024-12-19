@@ -69,7 +69,7 @@ public final class HttpContextKeys {
             newKey("HTTP_FORCE_NEW_CONNECTION", Boolean.class);
 
     public static final Key<Boolean> HTTP_OPTIMIZE_ERROR_STREAM =
-            newKey("HTTP_OPTIMIZE_FLUSH", Boolean.class);
+            newKey("HTTP_OPTIMIZE_ERROR_STREAM", Boolean.class);
 
     private HttpContextKeys() {
         // No instances
