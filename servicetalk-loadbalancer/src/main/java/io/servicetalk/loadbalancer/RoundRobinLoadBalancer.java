@@ -95,6 +95,7 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
+// FIXME: 0.43 - remove deprecated class
 final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements TestableLoadBalancer<ResolvedAddress, C> {
 

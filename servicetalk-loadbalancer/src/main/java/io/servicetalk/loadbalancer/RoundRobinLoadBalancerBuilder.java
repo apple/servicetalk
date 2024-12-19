@@ -63,7 +63,10 @@ import java.util.function.Predicate;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  * @see RoundRobinLoadBalancers
+ * @deprecated use {@link LoadBalancerBuilder} interfaces instead.
  */
+// FIXME: 0.43 - remove deprecated interface
+@Deprecated
 public interface RoundRobinLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
