@@ -66,7 +66,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
         this.messageBody = messageBody;
-        payloadInfo.setEmpty(messageBody == null || messageBody == empty());
     }
 
     @SuppressWarnings("unchecked")
