@@ -21,9 +21,9 @@ import io.servicetalk.client.api.LoadBalancedConnection;
  * Configuration of the policy for selecting connections from a pool to the same endpoint.
  * @param <C> the concrete type of the {@link LoadBalancedConnection}
  */
-public abstract class ConnectionPoolPolicy<C extends LoadBalancedConnection> {
+public abstract class ConnectionSelectorPolicy<C extends LoadBalancedConnection> {
 
-    ConnectionPoolPolicy() {
+    ConnectionSelectorPolicy() {
         // package private constructor to control proliferation
     }
 

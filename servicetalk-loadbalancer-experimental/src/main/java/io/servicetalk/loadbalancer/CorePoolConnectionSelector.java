@@ -83,13 +83,13 @@ final class CorePoolConnectionSelector<C extends LoadBalancedConnection>
         return null;
     }
 
-    static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C> factory(
+    static <C extends LoadBalancedConnection> ConnectionSelectorPolicy<C> factory(
             int corePoolSize, boolean forceCorePool) {
         return new CorePoolConnectionSelectorFactory<>(corePoolSize, forceCorePool);
     }
 
     private static final class CorePoolConnectionSelectorFactory<C extends LoadBalancedConnection>
-            extends ConnectionPoolPolicy<C> {
+            extends ConnectionSelectorPolicy<C> {
 
         private final int corePoolSize;
         private final boolean forceCorePool;

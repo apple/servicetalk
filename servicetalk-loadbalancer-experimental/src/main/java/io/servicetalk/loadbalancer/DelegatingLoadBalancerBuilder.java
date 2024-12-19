@@ -79,9 +79,9 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(
-            ConnectionPoolPolicy<C> connectionPoolPolicy) {
-        delegate = delegate.connectionPoolPolicy(connectionPoolPolicy);
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionSelectorPolicy(
+            ConnectionSelectorPolicy<C> connectionSelectorPolicy) {
+        delegate = delegate.connectionSelectorPolicy(connectionSelectorPolicy);
         return this;
     }
 

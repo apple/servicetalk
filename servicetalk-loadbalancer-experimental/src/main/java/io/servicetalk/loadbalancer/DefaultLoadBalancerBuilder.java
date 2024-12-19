@@ -40,7 +40,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Nullable
     private LoadBalancerObserverFactory loadBalancerObserverFactory;
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
-    private ConnectionPoolPolicy<C> connectionPoolPolicy = defaultConnectionSelectorFactory();
+    private ConnectionSelectorPolicy<C> connectionSelectorPolicy = defaultConnectionSelectorPolicy();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
@@ -69,9 +69,9 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     }
 
     @Override
-    public LoadBalancerBuilder<ResolvedAddress, C> connectionPoolPolicy(
-            ConnectionPoolPolicy<C> connectionPoolPolicy) {
-        this.connectionPoolPolicy = requireNonNull(connectionPoolPolicy, "connectionPoolPolicy");
+    public LoadBalancerBuilder<ResolvedAddress, C> connectionSelectorPolicy(
+            ConnectionSelectorPolicy<C> connectionSelectorPolicy) {
+        this.connectionSelectorPolicy = requireNonNull(connectionSelectorPolicy, "connectionSelectorPolicy");
         return this;
     }
 
@@ -84,7 +84,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
         return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, loadBalancerObserverFactory,
-                connectionPoolPolicy, outlierDetectorConfig, getExecutor());
+                connectionSelectorPolicy, outlierDetectorConfig, getExecutor());
     }
 
     static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -92,7 +92,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         private final String id;
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
-        private final ConnectionPoolPolicy<C> connectionPoolPolicy;
+        private final ConnectionSelectorPolicy<C> connectionSelectorPolicy;
         private final OutlierDetectorConfig outlierDetectorConfig;
         @Nullable
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
@@ -100,14 +100,14 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
         DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
                                    @Nullable final LoadBalancerObserverFactory loadBalancerObserverFactory,
-                                   final ConnectionPoolPolicy<C> connectionPoolPolicy,
+                                   final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
                                    final OutlierDetectorConfig outlierDetectorConfig,
                                    final Executor executor) {
             this.id = requireNonNull(id, "id");
             this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
             this.loadBalancerObserverFactory = loadBalancerObserverFactory;
             this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
-            this.connectionPoolPolicy = requireNonNull(connectionPoolPolicy, "connectionPoolPolicy");
+            this.connectionSelectorPolicy = requireNonNull(connectionSelectorPolicy, "connectionSelectorPolicy");
             this.executor = requireNonNull(executor, "executor");
         }
 
@@ -154,7 +154,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             }
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
                     DefaultHostPriorityStrategy::new, loadBalancingPolicy, new RandomSubsetter(Integer.MAX_VALUE),
-                    connectionPoolPolicy, connectionFactory,
+                    connectionSelectorPolicy, connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
 
@@ -169,7 +169,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             return "DefaultLoadBalancerFactory{" +
                     "id='" + id + '\'' +
                     ", loadBalancingPolicy=" + loadBalancingPolicy +
-                    ", connectionPoolPolicy=" + connectionPoolPolicy +
+                    ", connectionSelectorPolicy=" + connectionSelectorPolicy +
                     ", outlierDetectorConfig=" + outlierDetectorConfig +
                     ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +
                     ", executor=" + executor +
@@ -187,8 +187,8 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         return LoadBalancingPolicies.roundRobin().build();
     }
 
-    private static <C extends LoadBalancedConnection> ConnectionPoolPolicy<C>
-    defaultConnectionSelectorFactory() {
-        return ConnectionPoolPolicies.linearSearch();
+    private static <C extends LoadBalancedConnection>
+    ConnectionSelectorPolicy<C> defaultConnectionSelectorPolicy() {
+        return ConnectionSelectorPolicies.linearSearch();
     }
 }
