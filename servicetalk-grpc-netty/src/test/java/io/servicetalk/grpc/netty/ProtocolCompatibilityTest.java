@@ -268,10 +268,6 @@ class ProtocolCompatibilityTest {
         for (boolean isClientServiceTalk : TRUE_FALSE) {
             for (boolean isServerServiceTalk : TRUE_FALSE) {
                 for (boolean isServerBlocking : TRUE_FALSE) {
-                    if (!isClientServiceTalk && isServerServiceTalk && isServerBlocking) {
-                        // TODO there appears to be a potential bug in this combination. Separate bug filed.
-                        continue;
-                    }
                     if (isServerServiceTalk || !isServerBlocking) {
                         args.add(Arguments.of(isClientServiceTalk, isServerServiceTalk, isServerBlocking));
                     }
