@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.loadbalancer.RoundRobinToDefaultLBMigrationProvider.PROPERTY_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -35,13 +34,11 @@ class RoundRobinLoadBalancerBuilderProviderTest {
     @BeforeEach
     void reset() {
         TestRoundRobinLoadBalancerBuilderProvider.reset();
-        System.setProperty(PROPERTY_NAME, Boolean.FALSE.toString());
     }
 
     @AfterEach
     void deactivate() {
         TestRoundRobinLoadBalancerBuilderProvider.activated.set(false);
-        System.setProperty(PROPERTY_NAME, Boolean.TRUE.toString());
     }
 
     @Test
