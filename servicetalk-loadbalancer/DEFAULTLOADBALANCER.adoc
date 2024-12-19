@@ -2,7 +2,7 @@
 
 == What is DefaultLoadBalancer?
 
-https://github.com/apple/servicetalk/blob/main/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/DefaultLoadBalancer.java[DefaultLoadBalancer]
+https://github.com/apple/servicetalk/blob/main/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/DefaultLoadBalancer.java[DefaultLoadBalancer]
 is a refactor of the ServiceTalk
 https://github.com/apple/servicetalk/blob/main/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
 that is intended to provide a more flexible foundation for building load balancers. It also serves as the basis for new
@@ -11,7 +11,7 @@ outlier detectors.
 
 === Relationship Between the LoadBalancer and Connections
 
-The load balancer is structured as a series of https://github.com/apple/servicetalk/blob/main/servicetalk-loadbalancer-experimental/src/main/java/io/servicetalk/loadbalancer/Host.java[Host]'s
+The load balancer is structured as a series of https://github.com/apple/servicetalk/blob/main/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/Host.java[Host]'s
 and those hosts can have many connections. The number of connections to each Host is driven by the number of connections
 required to satisfy the request load. Usage of the HTTP/2 protocol will dramatically shrink the necessary number of
 connections to each backend, often to 1, and is strongly encouraged.
