@@ -27,6 +27,8 @@ import java.io.OutputStream;
  */
 public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
 
+    // TODO: clarify in javadoc that trailers can not be modified after the writer is closed
+
     @Override
     default HttpPayloadWriter<T> addTrailer(final CharSequence name, final CharSequence value) {
         TrailersHolder.super.addTrailer(name, value);

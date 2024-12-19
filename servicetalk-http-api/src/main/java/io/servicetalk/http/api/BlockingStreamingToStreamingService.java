@@ -21,12 +21,16 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.ScanMapper;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.io.IOException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -76,7 +80,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 // still be propagated.
                 final Processor exceptionProcessor = newCompletableProcessor();
                 final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
-                        ctx.headersFactory().newTrailers());
+                        () -> ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 try {
                     final Consumer<DefaultHttpResponseMetaData> sendMeta = (metaData) -> {
@@ -102,7 +106,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             Publisher<Object> messageBody = fromSource(exceptionProcessor)
                                     .merge(payloadWriter.connect());
                             if (addTrailers) {
-                                messageBody = messageBody.concat(succeeded(payloadWriter.trailers()));
+                                messageBody = messageBody.scanWithMapper(() -> new TrailersMapper(payloadWriter));
                             }
                             messageBody = messageBody.beforeSubscription(() -> new Subscription() {
                                 @Override
@@ -169,10 +173,12 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
-        private final HttpHeaders trailers;
+        private final Supplier<HttpHeaders> trailersFactory;
+        @Nullable
+        private HttpHeaders trailers;
 
-        BufferHttpPayloadWriter(final HttpHeaders trailers) {
-            this.trailers = trailers;
+        BufferHttpPayloadWriter(final Supplier<HttpHeaders> trailersFactory) {
+            this.trailersFactory = trailersFactory;
         }
 
         @Override
@@ -197,11 +203,61 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
         @Override
         public HttpHeaders trailers() {
+            if (trailers == null) {
+                trailers = trailersFactory.get();
+            }
+            return trailers;
+        }
+
+        @Nullable
+        HttpHeaders trailers0() {
             return trailers;
         }
 
         Publisher<Buffer> connect() {
             return payloadWriter.connect();
+        }
+    }
+
+    private static final class TrailersMapper implements ScanMapper<Object, Object>, ScanMapper.MappedTerminal<Object> {
+        private final BufferHttpPayloadWriter payloadWriter;
+
+        TrailersMapper(final BufferHttpPayloadWriter payloadWriter) {
+            this.payloadWriter = payloadWriter;
+        }
+
+        @Nullable
+        @Override
+        public Object mapOnNext(@Nullable final Object next) {
+            return next;
+        }
+
+        @Nullable
+        @Override
+        public MappedTerminal<Object> mapOnError(final Throwable cause) {
+            return null;
+        }
+
+        @Override
+        public MappedTerminal<Object> mapOnComplete() {
+            return this;
+        }
+
+        @Nullable
+        @Override
+        public Object onNext() {
+            return payloadWriter.trailers0();
+        }
+
+        @Override
+        public boolean onNextValid() {
+            return payloadWriter.trailers0() != null;
+        }
+
+        @Nullable
+        @Override
+        public Throwable terminal() {
+            return null;
         }
     }
 }
