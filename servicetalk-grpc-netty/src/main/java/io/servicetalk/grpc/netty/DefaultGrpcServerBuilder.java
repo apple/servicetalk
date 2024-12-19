@@ -146,6 +146,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         final ExecutionContextInterceptorHttpServerBuilder interceptor =
                 new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
 
+        interceptor.appendServiceFilter(TrailersOptimizationFilter::new);
+
         interceptor.appendNonOffloadingServiceFilter(GrpcExceptionMapperServiceFilter.INSTANCE);
 
         directCallInitializer.initialize(interceptor);
