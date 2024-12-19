@@ -37,7 +37,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
                         @Nullable final HttpHeaders trailers) {
         super(original);
         this.payloadBody = payloadBody;
-        this.trailers = trailers;
+        this.trailers = (trailers != null && trailers.isEmpty()) ? null : trailers;
     }
 
     @Override

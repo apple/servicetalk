@@ -269,10 +269,6 @@ class ProtocolCompatibilityTest {
         for (boolean isClientServiceTalk : TRUE_FALSE) {
             for (boolean isServerServiceTalk : TRUE_FALSE) {
                 for (boolean isServerBlocking : TRUE_FALSE) {
-//                    if (!isClientServiceTalk && isServerServiceTalk && isServerBlocking) {
-//                        // TODO there appears to be a potential bug in this combination. Separate bug filed.
-//                        continue;
-//                    }
                     if (isServerServiceTalk || !isServerBlocking) {
                         args.add(Arguments.of(isClientServiceTalk, isServerServiceTalk, isServerBlocking));
                     }
@@ -656,22 +652,22 @@ class ProtocolCompatibilityTest {
 
         try (TestServerContext server = serverSupplier.get();
              CompatClient client = clientSupplier.apply(server.listenAddress())) {
-//            final Single<CompatResponse> scalarResponse =
-//                    client.scalarCall(CompatRequest.newBuilder().setId(1).build());
-//            validateGrpcErrorInResponse(scalarResponse.toFuture(), false, UNIMPLEMENTED,
-//                    "Method grpc.netty.Compat/ScalarCall is unimplemented");
+            final Single<CompatResponse> scalarResponse =
+                    client.scalarCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(scalarResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/ScalarCall is unimplemented");
             final Single<CompatResponse> clientStreamingResponse =
                     client.clientStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
             validateGrpcErrorInResponse(clientStreamingResponse.toFuture(), false, UNIMPLEMENTED,
                     "Method grpc.netty.Compat/clientStreamingCall is unimplemented");
-//            final Publisher<CompatResponse> serverStreamingResponse =
-//                    client.serverStreamingCall(CompatRequest.newBuilder().setId(1).build());
-//            validateGrpcErrorInResponse(serverStreamingResponse.toFuture(), false, UNIMPLEMENTED,
-//                    "Method grpc.netty.Compat/serverStreamingCall is unimplemented");
-//            final Publisher<CompatResponse> bidirectionalStreamingResponse =
-//                    client.bidirectionalStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
-//            validateGrpcErrorInResponse(bidirectionalStreamingResponse.toFuture(), false, UNIMPLEMENTED,
-//                    "Method grpc.netty.Compat/bidirectionalStreamingCall is unimplemented");
+            final Publisher<CompatResponse> serverStreamingResponse =
+                    client.serverStreamingCall(CompatRequest.newBuilder().setId(1).build());
+            validateGrpcErrorInResponse(serverStreamingResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/serverStreamingCall is unimplemented");
+            final Publisher<CompatResponse> bidirectionalStreamingResponse =
+                    client.bidirectionalStreamingCall(Publisher.from(CompatRequest.newBuilder().setId(1).build()));
+            validateGrpcErrorInResponse(bidirectionalStreamingResponse.toFuture(), false, UNIMPLEMENTED,
+                    "Method grpc.netty.Compat/bidirectionalStreamingCall is unimplemented");
         }
     }
 
