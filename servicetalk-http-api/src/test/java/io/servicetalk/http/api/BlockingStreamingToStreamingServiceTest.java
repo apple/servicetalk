@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -23,12 +24,13 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.oio.api.PayloadWriter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -63,8 +65,10 @@ import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -78,7 +82,8 @@ class BlockingStreamingToStreamingServiceTest {
     private static final String HELLO_WORLD = "Hello\nWorld\n";
 
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor()
+            .setClassLevel(true);
 
     @Mock
     private HttpExecutionContext mockExecutionCtx;
@@ -93,14 +98,26 @@ class BlockingStreamingToStreamingServiceTest {
         mockCtx = new TestHttpServiceContext(DefaultHttpHeadersFactory.INSTANCE, reqRespFactory, mockExecutionCtx);
     }
 
-    @Test
-    void defaultResponseStatusNoPayload() throws Exception {
-        BlockingStreamingHttpService syncService = (ctx, request, response) -> response.sendMetaData().close();
+    @ParameterizedTest(name = "{displayName} [{index}] withEmptyTrailers={0}")
+    @ValueSource(booleans = {false, true})
+    void defaultResponseStatusNoPayload(boolean withEmptyTrailers) throws Exception {
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            if (withEmptyTrailers) {
+                writer.trailers();  // accessing trailers before close should preserve trailers in message body
+            }
+            writer.close();
+            writer.trailers();  // accessing trailers after close should not modify output
+        };
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(OK, response);
         assertPayloadBody("", response, false);
-        assertEmptyTrailers(response);
+        if (withEmptyTrailers) {
+            assertEmptyTrailers(response);
+        } else {
+            assertNoTrailers(response);
+        }
     }
 
     @Test
@@ -111,7 +128,7 @@ class BlockingStreamingToStreamingServiceTest {
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(NO_CONTENT, response);
         assertPayloadBody("", response, false);
-        assertEmptyTrailers(response);
+        assertNoTrailers(response);
     }
 
     @Test
@@ -127,24 +144,34 @@ class BlockingStreamingToStreamingServiceTest {
                 .payloadBody(from("Hello\n", "World\n"), appSerializerUtf8FixLen()));
         assertMetaData(OK, response);
         assertPayloadBody("", response, true);
-        assertEmptyTrailers(response);
+        assertNoTrailers(response);
 
         assertThat(receivedPayload.toString(), is(HELLO_WORLD));
     }
 
-    @Test
-    void respondWithPayloadBody() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] withEmptyTrailers={0}")
+    @ValueSource(booleans = {false, true})
+    void respondWithPayloadBody(boolean withEmptyTrailers) throws Exception {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
-            try (PayloadWriter<Buffer> pw = response.sendMetaData()) {
-                pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello\n"));
-                pw.write(ctx.executionContext().bufferAllocator().fromAscii("World\n"));
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+            writer.write(alloc.fromAscii("Hello\n"));
+            if (withEmptyTrailers) {
+                writer.trailers();  // accessing trailers before close should preserve trailers in message body
             }
+            writer.write(alloc.fromAscii("World\n"));
+            writer.close();
+            writer.trailers();  // accessing trailers after close should not modify output
         };
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(OK, response);
         assertPayloadBody(HELLO_WORLD, response, false);
-        assertEmptyTrailers(response);
+        if (withEmptyTrailers) {
+            assertEmptyTrailers(response);
+        } else {
+            assertNoTrailers(response);
+        }
     }
 
     @Test
@@ -531,6 +558,10 @@ class BlockingStreamingToStreamingServiceTest {
                     .collect(Collectors.joining());
         }
         assertThat(payloadBody, is(expectedPayloadBody));
+    }
+
+    private static void assertNoTrailers(List<Object> response) {
+        assertThat(response, not(containsInAnyOrder(instanceOf(HttpHeaders.class))));
     }
 
     private static void assertEmptyTrailers(List<Object> response) {
