@@ -73,3 +73,6 @@ intended to support features necessary for proxyless service-to-service communic
 algorithms including Power of Two Choices (P2C) and Round-Robin as well as layer-7 outlier detection mechanisms
 including consecutive failure and outlier detection.
 
+See the xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[Default Load Balancer] documentation for
+more detail.
+
