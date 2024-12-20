@@ -245,7 +245,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     public HttpHeaders trailers() {
         if (trailers == null) {
             trailers = original.payloadHolder().headersFactory().newTrailers();
-            original.transform(this);
+            original.transform(this);   // Invoke "transform" to set PayloadInfo.mayHaveTrailers() flag
         }
         return trailers;
     }
@@ -277,6 +277,9 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         @Nullable
         final Publisher<Object> payload;
         if (trailers != null) {
+            // We can not drop empty Trailers here bcz users could do type conversion intermediately, while still
+            // referencing the original HttpHeaders object from an aggregated type and keep using it to add trailers
+            // before sending the message or converting it back to an aggregated one.
             payload = emptyPayloadBody ? from(trailers) : from(payloadBody, trailers);
         } else {
             payload = emptyPayloadBody ? null : from(payloadBody);
