@@ -29,7 +29,6 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
