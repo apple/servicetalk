@@ -185,7 +185,7 @@ sequenceDiagram
 Not all hosts are created equal! Due to different underlying hardware platforms, other tenants on the same host, or even
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can bias toward better performing hosts, but if the capacity of a backend is known it can be accounted for
-explicitly. With https://github.com/bryce-anderson/servicetalk/blob/bl_anderson/default_loadbalancer_docs/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
+explicitly. With link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
 or control-plane support we can explicitly propagate weight information to ServiceTalk's default load balancer. Adding
 weight support to the host selection process will let users leverage this data.
 

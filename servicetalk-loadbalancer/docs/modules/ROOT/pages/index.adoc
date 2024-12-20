@@ -64,7 +64,17 @@ link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/ap
 abstraction allows for various protocol-independent _LoadBalancing_ algorithms to be implemented. This section will
 discuss the various implementations offered in ServiceTalk by highlighting their characteristics.
 
-=== Round Robin
+=== Default Load Balancer
+
+link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/DefaultLoadBalancer.java[DefaultLoadBalancer]
+is the recommended load balancer. It is a modularization of the
+link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
+intended to suppport features necessary for proxyless service-to-service communication. It supports multiple selection
+algorithms including Power of Two Choices (P2C) and Round-Robin, and layer-7 outlier detection mechanisms such as
+consecutive failure and outlier detection. For more information see the
+xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[Default Load Balancer] documentation.
+
+=== Round Robin (Deprecated)
 
 link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
 is a common and simple _LoadBalancer_ implementation that is currently the default when creating _Clients_. Its
