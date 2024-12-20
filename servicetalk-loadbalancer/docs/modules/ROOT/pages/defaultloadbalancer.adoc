@@ -1,4 +1,4 @@
-= ServiceTalk Default Load Balancer
+= ServiceTalks Default Load Balancer
 
 == What is the Default Load Balancer?
 
@@ -13,6 +13,7 @@ connections to each host is driven by the number of connections  required to sat
 HTTP/2 protocol will dramatically shrink the necessary number of connections to each backend, often to 1, and is
 strongly encouraged.
 
+////
 [source,mermaid]
 ----
 flowchart LR
@@ -29,6 +30,8 @@ flowchart LR
     H2 --> C21[ConnectionN:addr-2]
 
 ----
+////
+image::flowdiagram.png[Abstraction Relationships, align="center"]
 
 === More Host Selection Algorithms
 
@@ -52,6 +55,7 @@ The P2C selection algorithm has a number of favorable properties
 * biasing away from low performing hosts
 * avoiding the order coalescing problems associated with round-robin
 
+////
 [source,mermaid]
 ----
 stateDiagram-v2
@@ -65,6 +69,8 @@ stateDiagram-v2
     evalhealth --> pickscore: both healthy
     pickscore --> [*]: select best scored host
 ----
+////
+image::p2cdiagram.png[P2C Endpoint Selection, 300, align="center"]
 
 ==== Round-Robin
 
@@ -73,6 +79,7 @@ fair algorithm assuming each request is essentially the same cost. It's downside
 due to its sequential ordering and inability to modulate traffic to hosts other than in the case of outright host
 failure.
 
+////
 [source,mermaid]
 ----
 stateDiagram-v2
@@ -83,6 +90,8 @@ stateDiagram-v2
     eval_health --> select_index: host unhealthy
     eval_health --> [*]: host healthy
 ----
+////
+image::roundrobindiagram.png[Round, 300, align="center"]
 
 == xDS Outlier Detection
 
@@ -113,6 +122,7 @@ Connection acquisition failures, request failures, and response latency are used
 unhealthy hosts and _bias_ traffic to hosts with better response times in order to adjust to the observed capacity of
 backends. The relationship is shown in the following diagram:
 
+////
 [source,mermaid]
 ----
 flowchart TD
@@ -155,6 +165,8 @@ flowchart TD
     HealthChecker <--> HealthIndicator0 & HealthIndicator1
     ServiceDiscovery --> |update host set| HostSet --> |rebuild HostSelector \nwith new host set| HostSelector
 ----
+////
+image::healthindicatordiagram.png[Health Indicator Structure, align="center"]
 
 === Connection Acquisition Workflow
 
@@ -162,6 +174,7 @@ By default, ServiceTalk attempts to minimize the connection load to each host. I
 not an existing session capable of serving a request then connection acquisition can happen on the request path. The
 session acquisition flow is roughly like this:
 
+////
 [source,mermaid]
 ----
 sequenceDiagram
@@ -177,6 +190,8 @@ sequenceDiagram
     connection-factory->>host: connection created and added to pool
     host->>requester: connection returned
 ----
+////
+image::connectionacquisitiondiagram.png[Connection Acquisition, align="center"]
 
 == Future Capabilities
 
