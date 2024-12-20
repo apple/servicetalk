@@ -48,7 +48,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
- * @deprecated this class will be made package-private in the future, use {@link RoundRobinLoadBalancers} to create
+ * @deprecated use {@link LoadBalancers} to create {@link LoadBalancerFactory} instances.
  * {@link RoundRobinLoadBalancerBuilder}.
  */
 @Deprecated // FIXME: 0.43 - remove in favor of DefaultLoadBalancer types.
@@ -107,10 +107,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
-     * @deprecated this class will be made package-private in the future, rely on the
-     * {@link RoundRobinLoadBalancerBuilder} instead.
+     * @deprecated rely on the {@link LoadBalancerBuilder} instead.
      */
-    @Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types.
+    @Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
             implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
         private final String id;
@@ -126,9 +125,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         /**
          * Creates a new instance with default settings.
          *
-         * @deprecated use {@link RoundRobinLoadBalancers#builder(String)} instead.
+         * @deprecated use {@link LoadBalancers#builder(String)} instead.
          */
-        @Deprecated // FIXME: 0.43 - remove deprecated constructor
+        @Deprecated
         public Builder() {
             this("undefined");
         }
