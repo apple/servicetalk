@@ -28,7 +28,9 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
+ * @deprecated use {@link DelegatingLoadBalancerBuilder} instead.
  */
+@Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types
 public class DelegatingRoundRobinLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConnection>
         implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
 

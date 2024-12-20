@@ -26,8 +26,10 @@ import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 
 /**
  * A factory to create {@link RoundRobinLoadBalancer RoundRobinLoadBalancers}.
+ * @deprecated use {@link LoadBalancers} instead.
  */
-public final class RoundRobinLoadBalancers {
+@Deprecated
+public final class RoundRobinLoadBalancers { // FIXME: 0.43 - remove deprecated class
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancers.class);
 
     private static final List<RoundRobinLoadBalancerBuilderProvider> PROVIDERS;
@@ -59,8 +61,10 @@ public final class RoundRobinLoadBalancers {
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      * @return a new {@link RoundRobinLoadBalancerBuilder}.
+     * @deprecated use {#{@link LoadBalancers}} constructors instead.
      */
     @SuppressWarnings("deprecation")
+    @Deprecated
     public static <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancerBuilder<ResolvedAddress, C>
     builder(final String id) {
         return applyProviders(id, new RoundRobinLoadBalancerFactory.Builder<>(id));
