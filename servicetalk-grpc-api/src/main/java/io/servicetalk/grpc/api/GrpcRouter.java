@@ -90,8 +90,8 @@ import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncodingRaw;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
+import static io.servicetalk.grpc.internal.GrpcContextKeys.TRAILERS_ONLY_RESPONSE;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_OPTIMIZE_ERROR_STREAM;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -709,7 +709,7 @@ final class GrpcRouter {
                                         methodDescriptor.httpPath(), t);
                                 HttpHeaders trailers;
                                 if (grpcResponse == null || (trailers = grpcResponse.trailers()) == null) {
-                                    response.context().put(HTTP_OPTIMIZE_ERROR_STREAM, Boolean.TRUE);
+                                    response.context().put(TRAILERS_ONLY_RESPONSE, Boolean.TRUE);
                                     setStatus(response.headers(), t, allocator);
                                     // Use HTTP response to avoid setting "OK" in trailers and allocating a serializer
                                     response.sendMetaData().close();

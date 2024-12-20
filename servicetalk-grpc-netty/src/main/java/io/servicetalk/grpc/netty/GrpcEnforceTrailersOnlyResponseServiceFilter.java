@@ -27,12 +27,13 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_OPTIMIZE_ERROR_STREAM;
+import static io.servicetalk.grpc.internal.GrpcContextKeys.TRAILERS_ONLY_RESPONSE;
 
-final class GrpcTrailersOptimizationServiceFilter implements StreamingHttpServiceFilterFactory {
-    static final GrpcTrailersOptimizationServiceFilter INSTANCE = new GrpcTrailersOptimizationServiceFilter();
+final class GrpcEnforceTrailersOnlyResponseServiceFilter implements StreamingHttpServiceFilterFactory {
+    static final GrpcEnforceTrailersOnlyResponseServiceFilter INSTANCE =
+            new GrpcEnforceTrailersOnlyResponseServiceFilter();
 
-    private GrpcTrailersOptimizationServiceFilter() {
+    private GrpcEnforceTrailersOnlyResponseServiceFilter() {
     }
 
     @Override
@@ -42,9 +43,9 @@ final class GrpcTrailersOptimizationServiceFilter implements StreamingHttpServic
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return super.handle(ctx, request, responseFactory).flatMap(response -> {
+                return delegate().handle(ctx, request, responseFactory).flatMap(response -> {
                     Single<StreamingHttpResponse> mappedResponse;
-                    if (Boolean.TRUE.equals(response.context().get(HTTP_OPTIMIZE_ERROR_STREAM))) {
+                    if (Boolean.TRUE.equals(response.context().get(TRAILERS_ONLY_RESPONSE))) {
                         mappedResponse = response.toResponse().map(HttpResponse::toStreamingResponse);
                     } else {
                         mappedResponse = Single.succeeded(response);

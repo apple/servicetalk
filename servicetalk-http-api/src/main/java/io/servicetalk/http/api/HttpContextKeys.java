@@ -68,9 +68,6 @@ public final class HttpContextKeys {
     public static final Key<Boolean> HTTP_FORCE_NEW_CONNECTION =
             newKey("HTTP_FORCE_NEW_CONNECTION", Boolean.class);
 
-    public static final Key<Boolean> HTTP_OPTIMIZE_ERROR_STREAM =
-            newKey("HTTP_OPTIMIZE_ERROR_STREAM", Boolean.class);
-
     private HttpContextKeys() {
         // No instances
     }
