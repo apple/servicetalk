@@ -41,7 +41,7 @@ choices and the flexibility to add more if necessary.
 
 ==== Power of two Choices (P2C)
 
-Power of two choices (https://ieeexplore.ieee.org/document/963420[P2C]) is an algorithm that allows load balancers to
+Power of two choices (https://doi.org/10.1109/71.963420[P2C]) is an algorithm that allows load balancers to
 bias traffic toward hosts with a better 'score' while retaining the fairness of random selection. This algorithm is
 a random selection process but with a twist: it selects two hosts at random and from those two pick the 'best' where
 best is defined by a scoring system. ServiceTalk uses an Exponentially Weighted Moving Average
