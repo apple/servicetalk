@@ -56,7 +56,6 @@ import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.capacity.limiter.api.CapacityLimiters.fixedCapacity;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -223,49 +222,53 @@ class TrafficResilienceHttpServiceFilterTest {
                 .dryRun(dryRun)
                 .build();
 
-        final HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocolConfig)
                 .listenSocketOption(SO_BACKLOG, TCP_BACKLOG)
                 .appendNonOffloadingServiceFilter(filter)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok().payloadBody(Publisher.never())));
+                        succeeded(responseFactory.ok().payloadBody(Publisher.never())))) {
 
-        final StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(protocolConfig)
-                .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(CI ? 4 : 2))
-                .buildStreaming();
+            try (StreamingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .protocols(protocolConfig)
+                    .socketOption(CONNECT_TIMEOUT, (int) SECONDS.toMillis(2))
+                    .buildStreaming()) {
 
-        // First request -> Pending 1
-        final StreamingHttpRequest meta1 = client.newRequest(HttpRequestMethod.GET, "/");
-        client.reserveConnection(meta1)
-                .flatMap(it -> it.request(meta1))
-                .concat(Completable.defer(() -> {
-                    // First request, has a "never" pub as a body, we don't attempt to consume it.
-                    // Concat second request -> out of capacity -> server yielded
-                    final StreamingHttpRequest meta2 = client.newRequest(HttpRequestMethod.GET, "/");
-                    return client.reserveConnection(meta2).flatMap(it -> it.request(meta2)).ignoreElement();
-                }))
-                .toFuture()
-                .get();
+                // First request -> Pending 1
+                final StreamingHttpRequest meta1 = client.newRequest(HttpRequestMethod.GET, "/");
+                client.reserveConnection(meta1)
+                        .flatMap(it -> it.request(meta1))
+                        .concat(Completable.defer(() -> {
+                            // The response has a "never" pub as a body and we don't attempt to consume it.
+                            // Concat second request -> out of capacity -> server yielded
+                            final StreamingHttpRequest meta2 = client.newRequest(HttpRequestMethod.GET, "/");
+                            return client.reserveConnection(meta2).flatMap(it -> it.request(meta2)).ignoreElement();
+                        }))
+                        .toFuture()
+                        .get();
 
-        // Netty will evaluate the "yielding" (i.e., auto-read) on this attempt, so this connection will go through.
-        assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+                // We expect up to a couple connections to succeed due to the intrinsic race between disabling accepts
+                // and new connect requests, as well as to account for kernel connect backlog (effectively 1 for all
+                // OS's). That means we can have up to two connects succeed, but expect it to fail by the 3rd attempt.
+                for (int i = 0; i < 3; i++) {
+                    if (dryRun) {
+                        client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
+                                .releaseAsync().toFuture().get();
+                    } else {
+                        try {
+                            assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
+                                    .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
+                        } catch (ExecutionException e) {
+                            assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                            // We saw the connection rejection so we succeeded.
+                            return;
+                        }
+                    }
+                }
 
-        // This connection shall full-fil the BACKLOG=1 setting
-        assertThat(client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/"))
-                .toFuture().get().asConnection(), instanceOf(HttpConnection.class));
-
-        // Any attempt to create a connection now, should time out if we're not in dry mode.
-        if (dryRun) {
-            client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get()
-                    .releaseAsync().toFuture().get();
-        } else {
-            try {
-                client.reserveConnection(client.newRequest(HttpRequestMethod.GET, "/")).toFuture().get();
-                fail("Expected a connection timeout");
-            } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ConnectTimeoutException.class));
+                if (!dryRun) {
+                    fail("Connection was never rejected.");
+                }
             }
         }
     }

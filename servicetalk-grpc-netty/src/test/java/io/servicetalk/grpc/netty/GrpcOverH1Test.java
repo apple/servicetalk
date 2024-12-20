@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
@@ -69,8 +71,13 @@ final class GrpcOverH1Test {
                         .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                                 DefaultTestCerts::loadServerKey).build())
                         .protocols(testMode.serverConfigs))
-                .listenAndAwait((Greeter.GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
+                .listenAndAwait(new Greeter.GreeterService() {
+                    @Override
+                    public Single<HelloReply> sayHello(GrpcServiceContext ctx, HelloRequest request) {
+                        return succeeded(HelloReply.newBuilder()
+                                .setMessage(greetingPrefix + request.getName()).build());
+                    }
+                });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .initializeHttp(builder -> builder
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)

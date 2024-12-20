@@ -48,12 +48,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
- * @deprecated this class will be made package-private in the future, use {@link RoundRobinLoadBalancers} to create
+ * @deprecated use {@link LoadBalancers} to create {@link LoadBalancerFactory} instances.
  * {@link RoundRobinLoadBalancerBuilder}.
  */
-@Deprecated // FIXME: 0.43 - make package private
+@Deprecated // FIXME: 0.43 - remove in favor of DefaultLoadBalancer types.
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
+
+    static final String ROUND_ROBIN_USER_DEFAULT_LOAD_BALANCER =
+            "io.servicetalk.loadbalancer.roundRobinUsesDefaultLoadBalancer";
 
     private final String id;
     private final int linearSearchSpace;
@@ -74,8 +77,12 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig);
+        // We have to indirect here instead of at the `Builder.build()` call because as it turns out
+        // `Builder.build()` has a return type of RoundRobinLoadBalancerFactory and is public API.
+        return useDefaultLoadBalancer() ?
+                buildDefaultLoadBalancerFactory(targetResource, eventPublisher, connectionFactory) :
+                new RoundRobinLoadBalancer<>(
+                        id, targetResource, eventPublisher, connectionFactory, linearSearchSpace, healthCheckConfig);
     }
 
     @Override
@@ -83,8 +90,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
-                linearSearchSpace, healthCheckConfig);
+        // For now, we forward to the deprecated method since it is more generic.
+        return newLoadBalancer(targetResource, eventPublisher, connectionFactory);
     }
 
     @Override
@@ -102,15 +109,67 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                 '}';
     }
 
+    private <T extends C> LoadBalancer<T> buildDefaultLoadBalancerFactory(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        final int healthCheckFailedConnectionsThreshold;
+        final Duration healthCheckInterval;
+        final Duration healthCheckJitter;
+        final Duration healthCheckResubscribeInterval;
+        final Duration healthCheckResubscribeJitter;
+        final Executor backgroundExecutor;
+        if (healthCheckConfig == null) {
+            healthCheckFailedConnectionsThreshold = -1; // disabled, the rest are fillers.
+            healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+            healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
+            healthCheckResubscribeInterval = DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
+            healthCheckResubscribeJitter = DEFAULT_HEALTH_CHECK_JITTER;
+            backgroundExecutor = null;
+        } else {
+            healthCheckFailedConnectionsThreshold = healthCheckConfig.failedThreshold;
+            healthCheckInterval = healthCheckConfig.healthCheckInterval;
+            healthCheckJitter = healthCheckConfig.jitter;
+            healthCheckResubscribeInterval = healthCheckConfig.resubscribeInterval;
+            healthCheckResubscribeJitter = healthCheckConfig.healthCheckResubscribeJitter;
+            backgroundExecutor = healthCheckConfig.executor;
+        }
+
+        OutlierDetectorConfig outlierDetectorConfig = new OutlierDetectorConfig.Builder()
+                .ewmaHalfLife(Duration.ZERO)
+                // disable the xDS outlier detectors
+                .enforcingFailurePercentage(0)
+                .enforcingSuccessRate(0)
+                .enforcingConsecutive5xx(0)
+                // set the ServiceTalk L4 connection outlier detector settings
+                .failedConnectionsThreshold(healthCheckFailedConnectionsThreshold)
+                .failureDetectorInterval(healthCheckInterval, healthCheckJitter)
+                .serviceDiscoveryResubscribeInterval(healthCheckResubscribeInterval, healthCheckResubscribeJitter)
+                .build();
+        LoadBalancingPolicy<ResolvedAddress, T> loadBalancingPolicy =
+                LoadBalancingPolicies.roundRobin()
+                        .failOpen(false)
+                        .ignoreWeights(true)
+                        .build();
+        LoadBalancerBuilder<ResolvedAddress, T> builder = LoadBalancers.builder(id);
+        if (backgroundExecutor != null) {
+            builder = builder.backgroundExecutor(backgroundExecutor);
+        }
+        return builder.outlierDetectorConfig(outlierDetectorConfig)
+                .loadBalancingPolicy(loadBalancingPolicy)
+                .connectionSelectorPolicy(ConnectionSelectorPolicies.linearSearch(linearSearchSpace))
+                .build()
+                .newLoadBalancer(eventPublisher, connectionFactory, targetResource);
+    }
+
     /**
      * Builder for {@link RoundRobinLoadBalancerFactory}.
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
-     * @deprecated this class will be made package-private in the future, rely on the
-     * {@link RoundRobinLoadBalancerBuilder} instead.
+     * @deprecated rely on the {@link LoadBalancers#builder(String)} instead.
      */
-    @Deprecated // FIXME: 0.43 - make package private
+    @Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
             implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
         private final String id;
@@ -126,9 +185,9 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         /**
          * Creates a new instance with default settings.
          *
-         * @deprecated use {@link RoundRobinLoadBalancers#builder(String)} instead.
+         * @deprecated use {@link LoadBalancers#builder(String)} instead.
          */
-        @Deprecated // FIXME: 0.43 - remove deprecated constructor
+        @Deprecated
         public Builder() {
             this("undefined");
         }
@@ -226,5 +285,11 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         static Executor getInstance() {
             return INSTANCE;
         }
+    }
+
+    private static boolean useDefaultLoadBalancer() {
+        // Enabled by default.
+        String propValue = System.getProperty(ROUND_ROBIN_USER_DEFAULT_LOAD_BALANCER);
+        return propValue == null || Boolean.parseBoolean(propValue);
     }
 }

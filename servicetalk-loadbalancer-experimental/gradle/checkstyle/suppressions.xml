@@ -21,8 +21,4 @@
 <suppressions>
     <!-- No need for package-info.java file because we reuse the package where this file already exists -->
     <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]main[\\/]java[\\/]io[\\/]servicetalk[\\/]loadbalancer.*"/>
-    <suppress id="MissedElementsAreNonnullByDefault"
-              files="io[\\/]servicetalk[\\/]loadbalancer[\\/]package-info.java"/>
-    <suppress checks="LineLength"
-              files="io[\\/]servicetalk[\\/]loadbalancer[\\/]OutlierDetectorConfig.java"/>
 </suppressions>

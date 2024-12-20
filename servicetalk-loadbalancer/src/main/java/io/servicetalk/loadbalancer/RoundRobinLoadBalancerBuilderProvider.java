@@ -18,9 +18,11 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
- * Provider for {@link RoundRobinLoadBalancerBuilder}.
+ * Provider for {@link RoundRobinLoadBalancerBuilder} that can be registered using {@link java.util.ServiceLoader}.
+ * @deprecated use the {@link LoadBalancerBuilder} implementations along with {@link LoadBalancerBuilderProvider}
  */
-public interface RoundRobinLoadBalancerBuilderProvider {
+@Deprecated
+public interface RoundRobinLoadBalancerBuilderProvider { // FIXME: 0.43 - remove deprecated interface
 
     /**
      * Returns a {@link RoundRobinLoadBalancerBuilder} based on the pre-initialized

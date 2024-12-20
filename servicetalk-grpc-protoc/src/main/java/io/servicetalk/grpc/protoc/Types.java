@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022, 2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,8 @@ final class Types {
     static final ClassName GrpcExecutionContext = ClassName.get(grpcApiPkg, "GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = ClassName.get(grpcApiPkg, "GrpcExecutionStrategy");
     static final ClassName GrpcStatusException = ClassName.get(grpcApiPkg, "GrpcStatusException");
+    static final ClassName GrpcStatus = ClassName.get(grpcApiPkg, "GrpcStatus");
+    static final ClassName GrpcStatusCode = ClassName.get(grpcApiPkg, "GrpcStatusCode");
     static final ClassName Identity = ClassName.get(encodingApiPkg, "Identity");
     static final ClassName BufferDecoderGroup = ClassName.get(encodingApiPkg, "BufferDecoderGroup");
     static final ClassName EmptyBufferDecoderGroup = ClassName.get(encodingApiPkg, "EmptyBufferDecoderGroup");

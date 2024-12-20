@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -25,7 +26,6 @@ import io.servicetalk.grpc.api.GrpcStatus;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.loadbalancer.RequestTracker;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
@@ -40,7 +40,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.loadbalancer.RequestTracker.REQUEST_TRACKER_KEY;
+import static io.servicetalk.client.api.RequestTracker.REQUEST_TRACKER_KEY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;

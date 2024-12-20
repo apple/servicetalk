@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2024 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,28 @@ public final class Main {
      * from protos.
      */
     private static final String SKIP_DEPRECATED_CODE = "skipDeprecated";
+    /**
+     * Supports an option to generate default service interface methods.
+     * <p>
+     * Gradle:
+     * <pre>
+     * task.plugins {
+     *   servicetalk_grpc {
+     *     option 'defaultServiceMethods=true'
+     *   }
+     * }
+     * </pre>
+     * <p>
+     * Maven:
+     * <pre>{@code
+     * <protocPlugin>
+     *   <args>
+     *     <arg>defaultServiceMethods=true</arg>
+     *   </args>
+     * </protocPlugin>
+     * }</pre>
+     */
+    private static final String DEFAULT_SERVICE_METHODS = "defaultServiceMethods";
     private Main() {
         // no instances
     }
@@ -176,6 +198,8 @@ public final class Main {
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
         final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
         final boolean skipDeprecated = parseBoolean(optionsMap.getOrDefault(SKIP_DEPRECATED_CODE, "false"));
+        // FIXME: 0.43 - consider changing default value to true
+        final boolean defaultServiceMethods = parseBoolean(optionsMap.getOrDefault(DEFAULT_SERVICE_METHODS, "false"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
                 .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
@@ -188,8 +212,8 @@ public final class Main {
 
         for (FileDescriptor f : fileDescriptors) {
             if (filesToGenerate.contains(f.protoFileName())) {
-                final Generator generator = new Generator(
-                        f, messageTypesMap, printJavaDocs, skipDeprecated, f.sourceCodeInfo());
+                final Generator generator = new Generator(f, messageTypesMap, printJavaDocs, skipDeprecated,
+                        defaultServiceMethods, f.sourceCodeInfo());
                 List<ServiceDescriptorProto> serviceDescriptorProtoList = f.protoServices();
                 for (int i = 0; i < serviceDescriptorProtoList.size(); ++i) {
                     ServiceDescriptorProto serviceDescriptor = serviceDescriptorProtoList.get(i);

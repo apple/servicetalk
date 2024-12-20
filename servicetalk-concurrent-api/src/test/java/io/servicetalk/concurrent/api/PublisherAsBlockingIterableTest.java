@@ -71,7 +71,7 @@ final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, () -> iterator.next()));
+        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
     }
 
     @Test
@@ -80,7 +80,7 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
-        assertSame(de, assertThrows(DeliberateException.class, () -> iterator.next()));
+        assertSame(de, assertThrows(DeliberateException.class, iterator::next));
     }
 
     @Test
@@ -93,7 +93,7 @@ final class PublisherAsBlockingIterableTest {
     void nextWithEmpty() {
         Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -109,7 +109,10 @@ final class PublisherAsBlockingIterableTest {
 
         assertThrows(TimeoutException.class, () -> iterator.hasNext(10, MILLISECONDS));
         assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
-        assertTrue(subscription.isCancelled());
+
+        assertThat(subscription.isCancelled(), is(false));
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(true));
     }
 
     @Test
@@ -124,9 +127,11 @@ final class PublisherAsBlockingIterableTest {
         assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(2));
 
         assertThrows(TimeoutException.class, () -> iterator.next(10, MILLISECONDS));
-
         assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
-        assertTrue(subscription.isCancelled());
+
+        assertThat(subscription.isCancelled(), is(false));
+        iterator.close();
+        assertThat(subscription.isCancelled(), is(true));
     }
 
     @Test
@@ -173,7 +178,7 @@ final class PublisherAsBlockingIterableTest {
         source.onNext(2);
         assertThat("Unexpected item found.", iterator.next(), is(2));
         source.onComplete();
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 
     @Test
@@ -234,7 +239,7 @@ final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         source.onError(de);
         assertThat("Item not expected but found.", iterator.hasNext(), is(true));
-        Exception e = assertThrows(DeliberateException.class, () -> iterator.next());
+        Exception e = assertThrows(DeliberateException.class, iterator::next);
         assertThat(e, is(de));
     }
 
@@ -310,7 +315,7 @@ final class PublisherAsBlockingIterableTest {
         source.onError(de);
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        Exception e = assertThrows(DeliberateException.class, () -> iterator.next());
+        Exception e = assertThrows(DeliberateException.class, iterator::next);
         assertThat(e, sameInstance(de));
     }
 
