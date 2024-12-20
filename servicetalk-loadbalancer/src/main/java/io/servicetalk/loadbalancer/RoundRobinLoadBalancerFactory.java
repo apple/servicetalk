@@ -167,7 +167,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
-     * @deprecated rely on the {@link LoadBalancerBuilder} instead.
+     * @deprecated rely on the {@link LoadBalancers#builder(String)} instead.
      */
     @Deprecated // FIXME: 0.43 - Remove in favor of the DefaultLoadBalancer types
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
