@@ -28,16 +28,12 @@ import java.io.OutputStream;
 public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
 
     /**
-     * {@inheritDoc}
-     * <p>
      * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
      */
     @Override
     HttpHeaders trailers();
 
     /**
-     * {@inheritDoc}
-     * <p>
      * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
      */
     @Override
@@ -47,8 +43,6 @@ public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
      * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
      */
     @Override
@@ -58,8 +52,6 @@ public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
      * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
      */
     @Override
@@ -69,8 +61,6 @@ public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
      * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
      */
     @Override
