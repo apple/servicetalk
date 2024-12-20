@@ -27,26 +27,52 @@ import java.io.OutputStream;
  */
 public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
 
-    // TODO: clarify in javadoc that trailers can not be modified after the writer is closed
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
+    @Override
+    HttpHeaders trailers();
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> addTrailer(final CharSequence name, final CharSequence value) {
         TrailersHolder.super.addTrailer(name, value);
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> addTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> setTrailer(final CharSequence name, final CharSequence value) {
         TrailersHolder.super.setTrailer(name, value);
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> setTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.setTrailers(trailers);
