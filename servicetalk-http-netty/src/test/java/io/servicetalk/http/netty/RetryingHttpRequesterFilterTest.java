@@ -251,7 +251,7 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: returnFailedResponses={0}")
     @ValueSource(booleans = {true, false})
     void testResponseMapper(final boolean returnFailedResponses) throws Exception {
         AtomicInteger newConnectionCreated = new AtomicInteger();

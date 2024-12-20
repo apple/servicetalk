@@ -844,6 +844,8 @@ public final class RetryingHttpRequesterFilter
          * @param mapper a {@link Function} that maps a {@link HttpResponseMetaData} to an
          * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data. The
          * mapper should return {@code null} if no retry is needed or if it cannot be determined that a retry is needed.
+         * In the case that the request cannot be retried, the {@link HttpResponseException} will be returned via the
+         * error pathway.
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {
@@ -858,11 +860,11 @@ public final class RetryingHttpRequesterFilter
          * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data. The
          * mapper should return {@code null} if no retry is needed or if it cannot be determined that a retry is needed.
          * @param returnFailedResponses whether to unwrap the response defined by the {@link HttpResponseException}
-         * meta-data in the case that the response is not retried.
+         * meta-data in the case that the request is not retried.
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper,
-                                      boolean returnFailedResponses) {
+                                      final boolean returnFailedResponses) {
             this.returnFailedResponses = returnFailedResponses;
             this.responseMapper = requireNonNull(mapper);
             return this;
