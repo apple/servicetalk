@@ -46,10 +46,10 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
             while (iterator.hasNext()) {
                 action.accept(iterator.next());
             }
-        } catch (RuntimeException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Throwable t) {
+            // we "sneaky throw" here any exception that bubbles up to be backwards compatible with the
+            // previous implementation.
+            ThrowableUtils.sneakyThrow(t);
         }
     }
 
@@ -57,8 +57,8 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * Mimics the behavior of {@link #forEach(Consumer)} but uses the {@code timeoutSupplier} to determine the timeout
      * value for interactions with the {@link BlockingIterator}.
      * <p>
-     * By default the {@code timeoutSupplier} will be used for each interaction with
-     * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However
+     * By default, the {@code timeoutSupplier} will be used for each interaction with
+     * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However,
      * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not sure if
      * an interaction with the {@link BlockingIterator} will block or not.
      * <p>
@@ -74,17 +74,17 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * @throws TimeoutException If an individual call to {@link BlockingIterator#hasNext(long, TimeUnit)} takes
      * longer than the {@code timeout} duration.
      */
-    default void forEach(Consumer<? super T> action, LongSupplier timeoutSupplier, TimeUnit unit)
+    default void forEach(final Consumer<? super T> action, final LongSupplier timeoutSupplier, final TimeUnit unit)
             throws TimeoutException {
         requireNonNull(action);
         try (BlockingIterator<T> iterator = iterator()) {
             while (iterator.hasNext(timeoutSupplier.getAsLong(), unit)) {
                 action.accept(iterator.next(timeoutSupplier.getAsLong(), unit));
             }
-        } catch (TimeoutException | RuntimeException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Throwable t) {
+            // we "sneaky throw" here any exception that bubbles up to be backwards compatible with the
+            // previous implementation.
+            ThrowableUtils.sneakyThrow(t);
         }
     }
 
@@ -96,9 +96,9 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * Note that the {@code timeout} duration is an approximation and this duration maybe
      * exceeded if data is available without blocking.
      * <p>
-     * By default the {@code timeout} will be used for each interaction with
-     * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However
-     * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not be sure if
+     * By default, the {@code timeout} will be used for each interaction with
+     * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However,
+     * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not sure if
      * an interaction with the {@link BlockingIterator} will block or not.
      * <p>
      * Note: This method can sneaky-throw an {@link InterruptedException} when a blocking operation internally does so.
@@ -112,7 +112,8 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * @throws TimeoutException If the total iteration time as determined by
      * {@link BlockingIterator#hasNext(long, TimeUnit)} takes longer than the {@code timeout} duration.
      */
-    default void forEach(Consumer<? super T> action, long timeout, TimeUnit unit) throws TimeoutException {
+    default void forEach(final Consumer<? super T> action, final long timeout, final TimeUnit unit)
+            throws TimeoutException {
         requireNonNull(action);
         try (BlockingIterator<T> iterator = iterator()) {
             long remainingTimeoutNanos = unit.toNanos(timeout);
@@ -128,10 +129,10 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
                 timeStampANanos = nanoTime();
                 remainingTimeoutNanos -= timeStampANanos - timeStampBNanos;
             }
-        } catch (TimeoutException | RuntimeException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Throwable t) {
+            // we "sneaky throw" here any exception that bubbles up to be backwards compatible with the
+            // previous implementation.
+            ThrowableUtils.sneakyThrow(t);
         }
     }
 

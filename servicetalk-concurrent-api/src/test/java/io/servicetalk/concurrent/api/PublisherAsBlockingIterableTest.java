@@ -15,16 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.internal.DeliberateIOException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -72,6 +77,16 @@ final class PublisherAsBlockingIterableTest {
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertSame(de, assertThrows(DeliberateException.class, iterator::next));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] clazz={0}")
+    @ValueSource(classes = {DeliberateException.class, DeliberateIOException.class})
+    void forEachThrowsOriginalException(final Class<Exception> clazz) throws Exception {
+        Exception ex = clazz.getDeclaredConstructor().newInstance();
+        BlockingIterable<Integer> iterator = Publisher.<Integer>failed(ex).toIterable();
+        assertSame(ex, assertThrows(clazz, () -> iterator.forEach(c -> { })));
+        assertSame(ex, assertThrows(clazz, () -> iterator.forEach(c -> { }, 1, TimeUnit.SECONDS)));
+        assertSame(ex, assertThrows(clazz, () -> iterator.forEach(c -> { }, () -> 1, TimeUnit.SECONDS)));
     }
 
     @Test
