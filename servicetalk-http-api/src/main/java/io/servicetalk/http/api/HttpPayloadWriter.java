@@ -27,24 +27,42 @@ import java.io.OutputStream;
  */
 public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
 
+    /**
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
+    @Override
+    HttpHeaders trailers();
+
+    /**
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> addTrailer(final CharSequence name, final CharSequence value) {
         TrailersHolder.super.addTrailer(name, value);
         return this;
     }
 
+    /**
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> addTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
+    /**
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> setTrailer(final CharSequence name, final CharSequence value) {
         TrailersHolder.super.setTrailer(name, value);
         return this;
     }
 
+    /**
+     * <b>Note:</b> modifying trailers after the payload writer is {@link #close() closed} is not allowed.
+     */
     @Override
     default HttpPayloadWriter<T> setTrailers(final HttpHeaders trailers) {
         TrailersHolder.super.setTrailers(trailers);

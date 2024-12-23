@@ -341,6 +341,9 @@ final class HttpDataSourceTransformations {
             if (isAlwaysEmpty(pair.payload)) {
                 payloadInfo.setEmpty(true);
             }
+            // We can not drop empty Trailers here bcz users could do type conversion intermediately multiple times,
+            // while still referencing the original HttpHeaders object from an aggregated type and keep using it to add
+            // trailers before sending the message or converting it back to an aggregated one.
             if (pair.trailers == null) {
                 payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(false);
             }
