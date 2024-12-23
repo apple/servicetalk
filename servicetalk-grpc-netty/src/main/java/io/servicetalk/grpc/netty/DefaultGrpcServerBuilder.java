@@ -145,7 +145,6 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     private ExecutionContextInterceptorHttpServerBuilder preBuild() {
         final ExecutionContextInterceptorHttpServerBuilder interceptor =
                 new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
-
         interceptor.appendNonOffloadingServiceFilter(GrpcExceptionMapperServiceFilter.INSTANCE);
 
         directCallInitializer.initialize(interceptor);
@@ -153,6 +152,8 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
             interceptor.appendNonOffloadingServiceFilter(newGrpcDeadlineServerFilterFactory(defaultTimeout));
         }
         initializer.initialize(interceptor);
+
+        interceptor.appendServiceFilter(GrpcEnforceTrailersOnlyResponseServiceFilter.INSTANCE);
 
         return interceptor;
     }
