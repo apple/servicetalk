@@ -63,8 +63,10 @@ task copySourcesForJersey3(type: Copy) {
 tasks.processResources.dependsOn(copySourcesForJersey3)
 tasks.sourcesJar.dependsOn(copySourcesForJersey3)
 tasks.compileJava.dependsOn(copySourcesForJersey3)
-tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
-  dependsOn(copySourcesForJersey3)
+if (tasks.findByName("dependencyAnalysis")) {
+  tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+    dependsOn(copySourcesForJersey3)
+  }
 }
 
 def actualJerseyVersion = "${jersey3VersionEE9}"
