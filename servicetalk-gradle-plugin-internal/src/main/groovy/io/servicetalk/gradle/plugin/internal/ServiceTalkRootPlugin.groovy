@@ -26,7 +26,6 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
     super.apply(project, false)
 
     enforceCheckstyleRoot project
-//    applyDependencyAnalysisPlugin project
     addJavadocAllTask project
     addQualityTask project
   }
@@ -35,15 +34,6 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
     project.configure(project) {
       pluginManager.apply("base")
       check.dependsOn checkstyleRoot
-    }
-  }
-
-  private static void applyDependencyAnalysisPlugin(Project project) {
-    if (!JavaVersion.current().isJava11Compatible()) {
-      return
-    }
-    project.configure(project) {
-      pluginManager.apply("com.autonomousapps.dependency-analysis")
     }
   }
 

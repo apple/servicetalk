@@ -247,9 +247,6 @@ final class ProjectUtils {
         if (tasks.findByName("spotbugs")) {
           dependsOn tasks.spotbugs
         }
-        if (tasks.findByName("dependencyAnalysis")) {
-          dependsOn tasks.dependencyAnalysis
-        }
         if (tasks.findByName("javadoc")) {  // verifies that javadoc generates without errors
           dependsOn tasks.javadoc
         }

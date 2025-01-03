@@ -48,7 +48,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     enforceCheckstyleRoot project
     applyPmdPlugin project
     applySpotBugsPlugin project
-//    applyDependencyAnalysisPlugin project
     addQualityTask project
   }
 
@@ -306,31 +305,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         description = "Run SpotBugs analysis for all source sets"
         group = "verification"
         dependsOn tasks.withType(SpotBugsTask)
-      }
-    }
-  }
-
-  private static void applyDependencyAnalysisPlugin(Project project) {
-    if (!JavaVersion.current().isJava11Compatible() || project.name == "servicetalk-gradle-plugin-internal") {
-      return
-    }
-
-    project.configure(project) {
-      pluginManager.apply("com.autonomousapps.dependency-analysis")
-
-      dependencyAnalysis {
-        issues {
-          onAny {
-            severity("warn")
-            exclude("com.google.code.findbugs:jsr305")
-          }
-        }
-      }
-
-      project.task("dependencyAnalysis") {
-        description = "Run DependencyAnalysis for all source sets"
-        group = "verification"
-        dependsOn tasks.withType(com.autonomousapps.tasks.ProjectHealthTask)
       }
     }
   }
