@@ -23,8 +23,6 @@ dependencies {
   implementation localGroovy()
   implementation "com.github.spotbugs.snom:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
   implementation "com.autonomousapps:dependency-analysis-gradle-plugin:$props.dependencyAnalysisPluginVersion"
-  if (JavaVersion.current().isJava11Compatible()) {
-  }
 }
 
 gradlePlugin {
