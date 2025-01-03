@@ -42,7 +42,32 @@ if (!repositories) {
   print("This machine already has some pre-configured repositories, will use: ${repositories*.name.join(", ")}")
 }
 
+buildscript {
+  dependencies {
+    if (JavaVersion.current().isJava11Compatible()) {
+      classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
+    }
+  }
+}
+
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
+
+if (JavaVersion.current().isJava11Compatible()) {
+  apply plugin: "com.autonomousapps.dependency-analysis"
+
+  dependencyAnalysis {
+    issues {
+      all {
+        onAny {
+          severity("warn")
+          exclude("com.google.code.findbugs:jsr305")
+        }
+      }
+    }
+  }
+
+  quality.dependsOn buildHealth
+}
 
 task validateLocalDocSite(type: Exec) {
   group 'Documentation'
@@ -56,6 +81,8 @@ subprojects {
   // mockito 5 only supports jdk11+
   if (JavaVersion.current() < JavaVersion.VERSION_11) {
     project.setProperty("mockitoCoreVersion", mockitoCorePreJdk11Version)
+  } else {
+    apply plugin: "com.autonomousapps.dependency-analysis"
   }
   // Used by ci-release.yaml to determine which modules need to be built/released with JDK11.
   task printJavaTargetCompatibility {

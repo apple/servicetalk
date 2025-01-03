@@ -48,7 +48,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     enforceCheckstyleRoot project
     applyPmdPlugin project
     applySpotBugsPlugin project
-    applyDependencyAnalysisPlugin project
+//    applyDependencyAnalysisPlugin project
     addQualityTask project
   }
 
@@ -311,7 +311,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   }
 
   private static void applyDependencyAnalysisPlugin(Project project) {
-    if (project.name == "servicetalk-gradle-plugin-internal") {
+    if (!JavaVersion.current().isJava11Compatible() || project.name == "servicetalk-gradle-plugin-internal") {
       return
     }
 
