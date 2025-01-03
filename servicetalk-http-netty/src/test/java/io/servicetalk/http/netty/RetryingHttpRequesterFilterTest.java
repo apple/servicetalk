@@ -65,6 +65,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -104,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RetryingHttpRequesterFilterTest {
 
     private static final String RETRYABLE_HEADER = "RETRYABLE";
+    private static final String RESPONSE_BODY = "ok";
 
     private final ServerContext svcCtx;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> normalClientBuilder;
@@ -119,7 +121,8 @@ class RetryingHttpRequesterFilterTest {
     RetryingHttpRequesterFilterTest() throws Exception {
         svcCtx = forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                        .addHeader(RETRYABLE_HEADER, "yes"));
+                        .addHeader(RETRYABLE_HEADER, "yes")
+                        .payloadBody(ctx.executionContext().bufferAllocator().fromAscii(RESPONSE_BODY)));
         failingConnClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
                 .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()))
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
@@ -251,9 +254,9 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: returnFailedResponses={0}")
+    @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}")
     @ValueSource(booleans = {true, false})
-    void testResponseMapper(final boolean returnFailedResponses) throws Exception {
+    void testResponseMapper(final boolean returnOriginalResponses) throws Exception {
         AtomicInteger newConnectionCreated = new AtomicInteger();
         AtomicInteger responseDrained = new AtomicInteger();
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
@@ -263,18 +266,12 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter(new Builder()
                         .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
-                                    new HttpResponseException(retryMessage, metaData) : null, returnFailedResponses)
+                                    new HttpResponseException(retryMessage, metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
-                        .retryResponses((requestMetaData, throwable) -> {
-                            if (throwable instanceof HttpResponseException &&
-                                    retryMessage.equals(throwable.getMessage())) {
-                                return ofImmediate(maxTotalRetries - 1);
-                            } else {
-                                throw new RuntimeException("Unexpected exception");
-                            }
-                        })
+                        .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1),
+                                returnOriginalResponses)
                         .onRequestRetry((count, req, t) ->
                                 assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
@@ -290,9 +287,10 @@ class RetryingHttpRequesterFilterTest {
                     };
                 })
                 .buildBlocking();
-        if (returnFailedResponses) {
+        if (returnOriginalResponses) {
             HttpResponse response = normalClient.request(normalClient.get("/"));
             assertThat(response.status(), is(HttpResponseStatus.OK));
+            assertThat(response.payloadBody().toString(StandardCharsets.US_ASCII), equalTo(RESPONSE_BODY));
         } else {
             HttpResponseException e = assertThrows(HttpResponseException.class,
                     () -> normalClient.request(normalClient.get("/")));
