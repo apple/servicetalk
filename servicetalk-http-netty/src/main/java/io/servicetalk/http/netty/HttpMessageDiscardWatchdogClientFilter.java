@@ -81,7 +81,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                         LOGGER.warn("Discovered un-drained HTTP response message body which has " +
                                 "been dropped by user code - this is a strong indication of a bug " +
                                 "in a user-defined filter. Response payload (message) body must " +
-                                "be fully consumed before retrying.");
+                                "be fully consumed before retrying. connectionInfo={}", connectionContext());
                     }
 
                     return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
@@ -115,7 +115,8 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
                                     LOGGER.warn("Discovered un-drained HTTP response message body which has " +
                                             "been dropped by user code - this is a strong indication of a bug " +
                                             "in a user-defined filter. Response payload (message) body must " +
-                                            "be fully consumed before discarding.", cause);
+                                            "be fully consumed before discarding. hostAndPort={}",
+                                            request.effectiveHostAndPort(), cause);
                                 }
                             });
                 }
