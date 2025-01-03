@@ -45,7 +45,8 @@ if (!repositories) {
 buildscript {
   dependencies {
     if (JavaVersion.current().isJava11Compatible()) {
-      classpath("com.autonomousapps:dependency-analysis-gradle-plugin:$dependencyAnalysisPluginVersion")
+      classpath("com.autonomousapps.dependency-analysis:com.autonomousapps.dependency-analysis.gradle.plugin:" +
+          "$dependencyAnalysisPluginVersion")
     }
   }
 }
