@@ -75,4 +75,3 @@ including consecutive failure and outlier detection.
 
 See the xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[default Load Balancer] documentation for
 more detail.
-
