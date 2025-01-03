@@ -1,1 +1,1 @@
-
+** xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[Default Load Balancer]
