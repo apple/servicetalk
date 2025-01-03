@@ -62,6 +62,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
@@ -69,6 +71,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -304,6 +307,86 @@ class RetryingHttpRequesterFilterTest {
                 allOf(greaterThanOrEqualTo(maxTotalRetries - 1), lessThanOrEqualTo(maxTotalRetries)));
         assertThat("Response payload body was not drained on every mapping", responseDrained.get(),
                 is(maxTotalRetries));
+        assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
+    }
+
+    private enum LambdaException {
+        RESPONSE_MAPPER,
+        RETRY_RETRYABLE_EXCEPTIONS,
+        RETRY_RESPONSES,
+        ON_REQUEST_RETRY
+    }
+
+    private static Stream<Arguments> lambdaExceptions() {
+        return Stream.of(true, false).flatMap(returnOriginalResponses ->
+                Stream.of(LambdaException.values())
+                        .map(lambda -> Arguments.of(returnOriginalResponses, lambda)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")
+    @MethodSource("lambdaExceptions")
+    void lambdaExceptions(final boolean returnOriginalResponses, final LambdaException thrower) throws Exception {
+
+        final AtomicInteger newConnectionCreated = new AtomicInteger();
+        final AtomicInteger responsesReceived = new AtomicInteger();
+        final AtomicInteger responseDrained = new AtomicInteger();
+        final AtomicInteger onRequestRetryCounter = new AtomicInteger();
+        final String retryMessage = "Retryable header";
+        normalClient = normalClientBuilder
+                .appendClientFilter(new Builder()
+                        .maxTotalRetries(4)
+                        .responseMapper(metaData -> {
+                            if (thrower == LambdaException.RESPONSE_MAPPER) {
+                                throw new RuntimeException("responseMapper");
+                            }
+                            return metaData.headers().contains(RETRYABLE_HEADER) ?
+                                    new HttpResponseException(retryMessage, metaData) : null;
+                        })
+                        // Disable request retrying
+                        .retryRetryableExceptions((requestMetaData, e) -> {
+                            if (thrower == LambdaException.RETRY_RETRYABLE_EXCEPTIONS) {
+                                throw new RuntimeException("retryRetryableExceptions");
+                            }
+                            return ofNoRetries();
+                        })
+                        // Retry only responses marked so
+                        .retryResponses((requestMetaData, throwable) -> {
+                            if (thrower == LambdaException.RETRY_RESPONSES) {
+                                throw new RuntimeException("retryResponses");
+                            }
+                            return ofImmediate(3);
+                        }, returnOriginalResponses)
+                        .onRequestRetry((count, req, t) -> {
+                            if (thrower == LambdaException.ON_REQUEST_RETRY) {
+                                throw new RuntimeException("onRequestRetryThrows");
+                            }
+                            assertThat(onRequestRetryCounter.incrementAndGet(), is(count));
+                        })
+                        .build())
+                .appendConnectionFilter(c -> {
+                    newConnectionCreated.incrementAndGet();
+                    return new StreamingHttpConnectionFilter(c) {
+                        @Override
+                        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                            return delegate().request(request)
+                                    .map(response -> {
+                                        responsesReceived.incrementAndGet();
+                                        return response.transformPayloadBody(payload -> payload
+                                                .whenFinally(responseDrained::incrementAndGet));
+                                    });
+                        }
+                    };
+                })
+                .buildBlocking();
+        // TODO: we don't really want to accept different behavior but it seems like the retry operator will swallow
+        //  exceptions that we attempt to bubble up through the retry-strategy failure channel.
+        if (returnOriginalResponses && thrower != LambdaException.RESPONSE_MAPPER) {
+            normalClient.request(normalClient.get("/"));
+        } else {
+            assertThrows(Exception.class, () -> normalClient.request(normalClient.get("/")));
+        }
+        assertThat("Response payload body was not drained on every mapping", responseDrained.get(),
+                is(responsesReceived.get()));
         assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
     }
 

@@ -203,7 +203,13 @@ public final class RetryingHttpRequesterFilter
                             sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
                 }
 
-                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                final BackOffPolicy backOffPolicy;
+                try {
+                    backOffPolicy = retryFor.apply(requestMetaData, t);
+                } catch (Throwable tt) {
+                    LOGGER.warn("Unexpected exception when computing backoff policy.", tt);
+                    return failed(ThrowableUtils.addSuppressed(t, tt));
+                }
                 if (backOffPolicy != NO_RETRIES) {
                     final int offsetCount = count - lbNotReadyCount;
                     Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
@@ -222,9 +228,8 @@ public final class RetryingHttpRequesterFilter
                 Completable result = (retryCallbacks == null ? completable :
                         completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t)));
                 if (returnOriginalResponses) {
-                    if (t instanceof HttpResponseException &&
-                            ((HttpResponseException) t).metaData() instanceof StreamingHttpResponse) {
-                        StreamingHttpResponse response = (StreamingHttpResponse) ((HttpResponseException) t).metaData();
+                    final StreamingHttpResponse response = extractStreamingResponse(t);
+                    if (response != null) {
                         // If we succeed, we need to drain the response body before we continue. If we fail we want to
                         // surface the original exception and don't worry about draining since it will be returned to
                         // the user.
@@ -233,15 +238,6 @@ public final class RetryingHttpRequesterFilter
                                 // we'll ever receive a completion event, error or success.
                                 .beforeCancel(() -> drain(response).subscribe())
                                 .concat(drain(response));
-                    } else {
-                        if (!(t instanceof HttpResponseException)) {
-                            LOGGER.debug("Couldn't unpack response due to unexpected dynamic types. Required " +
-                                    "exception of type HttpResponseException, found {}", t.getClass());
-                        } else {
-                            LOGGER.info("Couldn't unpack response due to unexpected dynamic types. Required " +
-                                    "meta-data of type StreamingHttpResponse, found {}",
-                                    ((HttpResponseException) t).metaData().getClass());
-                        }
                     }
                 }
                 return result;
@@ -290,11 +286,12 @@ public final class RetryingHttpRequesterFilter
 
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
-                    HttpResponseException exception = null;
+                    final HttpResponseException exception;
                     try {
                         exception = responseMapper.apply(resp);
                     } catch (Throwable t) {
-                        LOGGER.warn("Failed to map the response. Proceeding with original response.", t);
+                        LOGGER.warn("Failed to map the response.", t);
+                        return drain(resp).toSingle().flatMap(ignored -> Single.failed(t));
                     }
                     Single<StreamingHttpResponse> response;
                     if (exception == null) {
@@ -1115,7 +1112,7 @@ public final class RetryingHttpRequesterFilter
 
                         if (retryResponses != null && throwable instanceof HttpResponseException) {
                             final BackOffPolicy backOffPolicy =
-                                    retryResponses.apply(requestMetaData, (HttpResponseException) throwable);
+                                        retryResponses.apply(requestMetaData, (HttpResponseException) throwable);
                             if (backOffPolicy != NO_RETRIES) {
                                 return backOffPolicy;
                             }
@@ -1134,5 +1131,20 @@ public final class RetryingHttpRequesterFilter
 
     private static Completable drain(StreamingHttpResponse response) {
         return response.payloadBody().ignoreElements().onErrorComplete();
+    }
+
+    @Nullable
+    private static StreamingHttpResponse extractStreamingResponse(Throwable t) {
+        if (t instanceof HttpResponseException) {
+            HttpResponseException responseException = (HttpResponseException) t;
+            if (responseException.metaData() instanceof StreamingHttpResponse) {
+                return (StreamingHttpResponse) responseException.metaData();
+            } else {
+                LOGGER.info("Couldn't unpack response due to unexpected dynamic types. Required " +
+                                "meta-data of type StreamingHttpResponse, found {}",
+                        responseException.metaData().getClass());
+            }
+        }
+        return null;
     }
 }
