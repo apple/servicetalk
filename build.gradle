@@ -61,7 +61,7 @@ if (JavaVersion.current().isJava11Compatible()) {
     issues {
       all {
         onAny {
-          severity("warn")
+          severity("warn")  // FIXME: switch to "fail" when all issues are addressed
           exclude("com.google.code.findbugs:jsr305")
         }
       }
