@@ -62,17 +62,17 @@ link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/ap
 As mentioned earlier the _Client-Side_
 link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
 abstraction allows for various protocol-independent _LoadBalancing_ algorithms to be implemented. However, the built-in
-Default Load Balancer is a highly featured implementation that we strongly recommend and creating custom load balancing
+default Load Balancer is a highly featured implementation that we strongly recommend and creating custom load balancing
 solutions should be done as a last resort.
 
 === Default Load Balancer
 
-The ServiceTalk Default Load Balancer is the recommended load balancer. It is a modularization of the
+The ServiceTalk default Load Balancer is the recommended load balancer. It is a modularization of the
 link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
 intended to support features necessary for proxyless service-to-service communication. It supports multiple selection
 algorithms including Power of Two Choices (P2C) and Round-Robin as well as layer-7 outlier detection mechanisms
 including consecutive failure and outlier detection.
 
-See the xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[Default Load Balancer] documentation for
+See the xref:{page-version}@servicetalk-loadbalancer::defaultloadbalancer.adoc[default Load Balancer] documentation for
 more detail.
 

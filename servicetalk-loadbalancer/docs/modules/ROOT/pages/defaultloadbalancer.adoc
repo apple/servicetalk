@@ -6,9 +6,9 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= ServiceTalks Default Load Balancer
+= ServiceTalks default Load Balancer
 
-== What is the Default Load Balancer?
+== What is the default Load Balancer?
 
 The default load balancer is a refactor and generalization of the ServiceTalk Round-Robin load balancer that is intended
 to provide a more flexible foundation for building load balancers. It serves as the basis for new features that were not
