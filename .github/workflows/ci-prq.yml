@@ -37,7 +37,7 @@ jobs:
       - name: Clean Gradle project
         run: ./gradlew --parallel clean
       - name: Build with Gradle
-        run: ./gradlew --parallel quality
+        run: ./gradlew --parallel -Pdependency.analysis.print.build.health=true quality
       - name: Upload CheckStyle Results
         if: always()
         uses: actions/upload-artifact@v4
