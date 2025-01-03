@@ -68,6 +68,9 @@ tasks.sourcesJar.dependsOn(copySourcesForJersey3)
 tasks.compileJava.dependsOn(copySourcesForJersey3)
 tasks.processTestResources.dependsOn(copySourcesForJersey3)
 tasks.compileTestJava.dependsOn(copySourcesForJersey3)
+tasks.withType(com.autonomousapps.tasks.CodeSourceExploderTask) {
+  dependsOn(copySourcesForJersey3)
+}
 
 def actualJerseyVersion = "${jersey3VersionEE9}"
 def actualJaxRsVersion = "${jaxRsVersionEE9}"
