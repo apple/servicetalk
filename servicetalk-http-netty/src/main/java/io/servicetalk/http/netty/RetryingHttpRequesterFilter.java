@@ -208,7 +208,14 @@ public final class RetryingHttpRequesterFilter
                     backOffPolicy = retryFor.apply(requestMetaData, t);
                 } catch (Throwable tt) {
                     LOGGER.warn("Unexpected exception when computing backoff policy.", tt);
-                    return failed(ThrowableUtils.addSuppressed(t, tt));
+                    Completable result = failed(ThrowableUtils.addSuppressed(tt, t));
+                    if (returnOriginalResponses) {
+                        StreamingHttpResponse response = extractStreamingResponse(t);
+                        if (response != null) {
+                            result = drain(response).concat(result);
+                        }
+                    }
+                    return result;
                 }
                 if (backOffPolicy != NO_RETRIES) {
                     final int offsetCount = count - lbNotReadyCount;
