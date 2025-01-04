@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ElementsAreNonnullByDefault
+package io.servicetalk.benchmark.http;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-
-dependencies {
-  api project(":servicetalk-circuit-breaker-api")
-  api "io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion"
-
-  implementation project(":servicetalk-annotations")
-
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testImplementation "org.junit.jupiter:junit-jupiter-api"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

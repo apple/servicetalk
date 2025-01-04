@@ -29,7 +29,6 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 
   testFixturesImplementation "org.apache.logging.log4j:log4j-core"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

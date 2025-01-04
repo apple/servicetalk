@@ -78,6 +78,19 @@ afterEvaluate {
   }
 }
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testFixturesImplementation
+        onUnusedDependencies {
+          exclude("org.junit.platform:junit-platform-suite")
+        }
+      }
+    }
+  }
+}
+
 def actualJerseyVersion = "${jersey3VersionEE9}"
 def actualJavaxActivationVersion = "${javaxActivationVersionEE9}"
 def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE9}"
@@ -122,20 +135,20 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-data-jackson")
   testFixturesImplementation project(":servicetalk-http-netty")
-  testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-http-router-predicate")
   testFixturesImplementation project(":servicetalk-router-utils-internal")
   testFixturesImplementation project(":servicetalk-test-resources")
-  testFixturesImplementation project(":servicetalk-transport-netty")
   testFixturesImplementation project(":servicetalk-transport-netty-internal")
+  testFixturesImplementation "org.glassfish.jersey.core:jersey-server"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-params"
   testFixturesImplementation "org.junit.platform:junit-platform-suite:$junitPlatformVersion"
   testFixturesImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
-  testFixturesImplementation "org.glassfish.jersey.inject:jersey-hk2"
-  testFixturesImplementation "org.glassfish.jersey.media:jersey-media-sse"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+
+  testFixturesRuntimeOnly "org.glassfish.jersey.inject:jersey-hk2"
+  testFixturesRuntimeOnly "org.glassfish.jersey.media:jersey-media-sse"
 }

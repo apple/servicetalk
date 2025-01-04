@@ -37,6 +37,7 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.io.IOException;
 import java.util.Random;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -109,6 +110,7 @@ public class ConnectableBufferOutputStreamBenchmark {
     byte[] data;
     ConnectableBufferOutputStream cbos;
     Publisher<Buffer> publisher;
+    @Nullable
     Subscription subscription;
 
     @Setup(Level.Iteration)

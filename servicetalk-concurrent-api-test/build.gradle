@@ -30,5 +30,4 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

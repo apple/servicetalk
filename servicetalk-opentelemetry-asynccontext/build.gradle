@@ -27,5 +27,4 @@ dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-  testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 }
