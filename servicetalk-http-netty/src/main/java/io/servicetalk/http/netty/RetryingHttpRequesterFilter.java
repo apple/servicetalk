@@ -1148,7 +1148,7 @@ public final class RetryingHttpRequesterFilter
             if (responseException.metaData() instanceof StreamingHttpResponse) {
                 return (StreamingHttpResponse) responseException.metaData();
             } else {
-                LOGGER.info("Couldn't unpack response due to unexpected dynamic types. Required " +
+                LOGGER.warn("Couldn't unpack response due to unexpected dynamic types. Required " +
                                 "meta-data of type StreamingHttpResponse, found {}",
                         responseException.metaData().getClass());
             }
