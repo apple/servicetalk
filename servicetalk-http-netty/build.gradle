@@ -16,11 +16,15 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-dependencyAnalysis {
-  issues {
-    // False positives for testImplementation
-    onUnusedDependencies {
-      exclude("io.netty.incubator:netty-incubator-transport-native-io_uring")
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testImplementation
+        onUnusedDependencies {
+          exclude("io.netty.incubator:netty-incubator-transport-native-io_uring")
+        }
+      }
     }
   }
 }

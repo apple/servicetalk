@@ -16,12 +16,16 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-dependencyAnalysis {
-  issues {
-    // False positives for testFixturesImplementation
-    onUnusedDependencies {
-      exclude("io.netty:netty-transport-native-epoll")
-      exclude("io.netty:netty-transport-native-kqueue")
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testFixturesImplementation
+        onUnusedDependencies {
+          exclude("io.netty:netty-transport-native-epoll")
+          exclude("io.netty:netty-transport-native-kqueue")
+        }
+      }
     }
   }
 }

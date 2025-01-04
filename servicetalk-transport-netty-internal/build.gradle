@@ -18,6 +18,19 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testFixturesImplementation
+        onUnusedDependencies {
+          exclude("io.netty.incubator:netty-incubator-transport-native-io_uring")
+        }
+      }
+    }
+  }
+}
+
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
   api project(":servicetalk-buffer-netty")
@@ -67,6 +80,7 @@ dependencies {
 
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-utils-internal")
+  testFixturesImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

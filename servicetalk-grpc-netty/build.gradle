@@ -23,11 +23,15 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
-dependencyAnalysis {
-  issues {
-    // False positives for testImplementation
-    onUnusedDependencies {
-      exclude(":servicetalk-http-utils")
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testImplementation
+        onUnusedDependencies {
+          exclude(":servicetalk-http-utils")
+        }
+      }
     }
   }
 }

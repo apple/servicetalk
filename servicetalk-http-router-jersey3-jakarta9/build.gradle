@@ -78,11 +78,15 @@ afterEvaluate {
   }
 }
 
-dependencyAnalysis {
-  issues {
-    // False positives for testFixturesImplementation
-    onUnusedDependencies {
-      exclude("org.junit.platform:junit-platform-suite")
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testFixturesImplementation
+        onUnusedDependencies {
+          exclude("org.junit.platform:junit-platform-suite")
+        }
+      }
     }
   }
 }
