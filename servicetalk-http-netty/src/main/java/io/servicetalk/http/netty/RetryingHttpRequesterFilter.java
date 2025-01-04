@@ -242,7 +242,8 @@ public final class RetryingHttpRequesterFilter
                         // the user.
                         result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
                                 // If we get cancelled we also need to drain the message body as there is no guarantee
-                                // we'll ever receive a completion event, error or success.
+                                // we'll ever receive a completion event, error or success. This is okay to do since
+                                // the subscriber has signaled they're no longer interested in the response.
                                 .beforeCancel(() -> drain(response).subscribe())
                                 .concat(drain(response));
                     }
