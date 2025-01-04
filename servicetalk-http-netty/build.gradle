@@ -16,6 +16,15 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+dependencyAnalysis {
+  issues {
+    // False positives for testImplementation
+    onUnusedDependencies {
+      exclude("io.netty.incubator:netty-incubator-transport-native-io_uring")
+    }
+  }
+}
+
 dependencies {
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
@@ -59,8 +68,6 @@ dependencies {
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
-  testImplementation project(":servicetalk-oio-api-internal")
-  testImplementation "io.netty:netty-transport-native-unix-common"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

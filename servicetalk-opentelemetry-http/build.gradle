@@ -30,7 +30,6 @@ dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
-  testImplementation project(":servicetalk-opentelemetry-asynccontext")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-test-resources")
@@ -42,6 +41,7 @@ dependencies {
   testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testRuntimeOnly enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
+  testRuntimeOnly project(":servicetalk-opentelemetry-asynccontext")
   testRuntimeOnly "io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure"
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

@@ -58,7 +58,7 @@ buildscript {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
 // Unfortunately, we can not make this validation part of our servicetalk-gradle-plugin-internal because it requires
-// JDK11 while we build and package out plugin with JDK8.
+// JDK11 while we build and package our plugin with JDK8.
 if (JavaVersion.current().isJava11Compatible()) {
   apply plugin: "com.autonomousapps.dependency-analysis"
 
@@ -67,6 +67,13 @@ if (JavaVersion.current().isJava11Compatible()) {
       all {
         onAny {
           severity("warn")  // FIXME: switch to "fail" when all issues are addressed
+        }
+        onUnusedDependencies {
+          // We use it for log4j2.xml configuration
+          exclude(":servicetalk-test-resources")
+        }
+        onUsedTransitiveDependencies {
+          // We import it as api dependency via :servicetalk-annotations
           exclude("com.google.code.findbugs:jsr305")
         }
       }
