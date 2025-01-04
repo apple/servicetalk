@@ -237,9 +237,9 @@ public final class RetryingHttpRequesterFilter
                 if (returnOriginalResponses) {
                     final StreamingHttpResponse response = extractStreamingResponse(t);
                     if (response != null) {
-                        // If we succeed, we need to drain the response body before we continue. If we fail we want to
-                        // surface the original exception and don't worry about draining since it will be returned to
-                        // the user.
+                        // If we succeed, we need to drain the response body before we continue. The retry completable
+                        // fails we want to surface the original exception and don't worry about draining since the
+                        // response will be returned to the user.
                         result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
                                 // If we get cancelled we also need to drain the message body as there is no guarantee
                                 // we'll ever receive a completion event, error or success. This is okay to do since
