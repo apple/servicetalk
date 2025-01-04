@@ -62,12 +62,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -104,6 +108,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RetryingHttpRequesterFilterTest {
 
     private static final String RETRYABLE_HEADER = "RETRYABLE";
+    private static final String RESPONSE_BODY = "ok";
 
     private final ServerContext svcCtx;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> normalClientBuilder;
@@ -119,7 +124,8 @@ class RetryingHttpRequesterFilterTest {
     RetryingHttpRequesterFilterTest() throws Exception {
         svcCtx = forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                        .addHeader(RETRYABLE_HEADER, "yes"));
+                        .addHeader(RETRYABLE_HEADER, "yes")
+                        .payloadBody(ctx.executionContext().bufferAllocator().fromAscii(RESPONSE_BODY)));
         failingConnClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
                 .loadBalancerFactory(new DefaultHttpLoadBalancerFactory<>(new InspectingLoadBalancerFactory<>()))
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
@@ -251,21 +257,24 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
     }
 
-    @Test
-    void testResponseMapper() {
+    @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}")
+    @ValueSource(booleans = {true, false})
+    void testResponseMapper(final boolean returnOriginalResponses) throws Exception {
         AtomicInteger newConnectionCreated = new AtomicInteger();
         AtomicInteger responseDrained = new AtomicInteger();
         AtomicInteger onRequestRetryCounter = new AtomicInteger();
         final int maxTotalRetries = 4;
+        final String retryMessage = "Retryable header";
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
                         .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
-                                    new HttpResponseException("Retryable header", metaData) : null)
+                                    new HttpResponseException(retryMessage, metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
-                        .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1))
+                        .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1),
+                                returnOriginalResponses)
                         .onRequestRetry((count, req, t) ->
                                 assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
                         .build())
@@ -281,9 +290,15 @@ class RetryingHttpRequesterFilterTest {
                     };
                 })
                 .buildBlocking();
-        HttpResponseException e = assertThrows(HttpResponseException.class,
-                () -> normalClient.request(normalClient.get("/")));
-        assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
+        if (returnOriginalResponses) {
+            HttpResponse response = normalClient.request(normalClient.get("/"));
+            assertThat(response.status(), is(HttpResponseStatus.OK));
+            assertThat(response.payloadBody().toString(StandardCharsets.US_ASCII), equalTo(RESPONSE_BODY));
+        } else {
+            HttpResponseException e = assertThrows(HttpResponseException.class,
+                    () -> normalClient.request(normalClient.get("/")));
+            assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
+        }
         // The load balancer is allowed to be not ready one time, which is counted against total retry attempts but not
         // against actual requests being issued.
         assertThat("Unexpected calls to select.", lbSelectInvoked.get(), allOf(greaterThanOrEqualTo(maxTotalRetries),
@@ -292,6 +307,66 @@ class RetryingHttpRequesterFilterTest {
                 allOf(greaterThanOrEqualTo(maxTotalRetries - 1), lessThanOrEqualTo(maxTotalRetries)));
         assertThat("Response payload body was not drained on every mapping", responseDrained.get(),
                 is(maxTotalRetries));
+        assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
+    }
+
+    private enum ExceptionSource {
+        RESPONSE_MAPPER,
+        RETRY_RESPONSES
+    }
+
+    private static Stream<Arguments> lambdaExceptions() {
+        return Stream.of(true, false).flatMap(returnOriginalResponses ->
+                Stream.of(ExceptionSource.values())
+                        .map(lambda -> Arguments.of(returnOriginalResponses, lambda)));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")
+    @MethodSource("lambdaExceptions")
+    void lambdaExceptions(final boolean returnOriginalResponses, final ExceptionSource thrower) {
+        final AtomicInteger newConnectionCreated = new AtomicInteger();
+        final AtomicInteger requestsInitiated = new AtomicInteger();
+        final AtomicInteger responseDrained = new AtomicInteger();
+        final AtomicInteger onRequestRetryCounter = new AtomicInteger();
+        final String retryMessage = "Retryable header";
+        normalClient = normalClientBuilder
+                .appendClientFilter(new Builder()
+                        .maxTotalRetries(4)
+                        .responseMapper(metaData -> {
+                            if (thrower == ExceptionSource.RESPONSE_MAPPER) {
+                                throw new RuntimeException("responseMapper");
+                            }
+                            return metaData.headers().contains(RETRYABLE_HEADER) ?
+                                    new HttpResponseException(retryMessage, metaData) : null;
+                        })
+                        // Retry only responses marked so
+                        .retryResponses((requestMetaData, throwable) -> {
+                            if (thrower == ExceptionSource.RETRY_RESPONSES) {
+                                throw new RuntimeException("retryResponses");
+                            }
+                            return ofImmediate(3);
+                        }, returnOriginalResponses)
+                        .onRequestRetry((count, req, t) ->
+                            assertThat(onRequestRetryCounter.incrementAndGet(), is(count)))
+                        .build())
+                .appendConnectionFilter(c -> {
+                    newConnectionCreated.incrementAndGet();
+                    return new StreamingHttpConnectionFilter(c) {
+                        @Override
+                        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                            return Single.defer(() -> {
+                                requestsInitiated.incrementAndGet();
+                                return delegate().request(request)
+                                        .map(response -> response.transformPayloadBody(payload -> payload
+                                                    .whenFinally(responseDrained::incrementAndGet)));
+                            });
+                        }
+                    };
+                })
+                .buildBlocking();
+        assertThrows(Exception.class, () -> normalClient.request(normalClient.get("/")));
+        assertThat("Response payload body was not drained on every mapping", responseDrained.get(), is(1));
+        assertThat("Multiple requests initiated", requestsInitiated.get(), is(1));
         assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
     }
 
