@@ -32,7 +32,6 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation project(":servicetalk-annotations")
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

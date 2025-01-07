@@ -29,22 +29,19 @@ dependencies {
 
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
   testImplementation testFixtures(project(":servicetalk-http-netty"))
-  testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-opentracing-asynccontext")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation project(":servicetalk-opentracing-log4j2")
-  testImplementation "org.apache.logging.log4j:log4j-core"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
+  testRuntimeOnly project(":servicetalk-opentracing-log4j2")
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

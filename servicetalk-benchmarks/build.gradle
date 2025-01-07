@@ -27,6 +27,7 @@ dependencies {
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-transport-netty-internal")
@@ -34,11 +35,6 @@ dependencies {
   implementation project(":servicetalk-data-jackson")
   implementation "io.netty:netty-codec-http"
   implementation "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
-
-  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
-  testImplementation project(":servicetalk-concurrent-internal")
-  testImplementation project(":servicetalk-concurrent-api-internal")
-  testImplementation project(":servicetalk-test-resources")
 }
 
 jmh {
