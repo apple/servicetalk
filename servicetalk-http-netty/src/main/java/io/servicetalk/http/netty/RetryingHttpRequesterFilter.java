@@ -203,11 +203,22 @@ public final class RetryingHttpRequesterFilter
                             sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
                 }
 
-                final BackOffPolicy backOffPolicy;
                 try {
-                    backOffPolicy = retryFor.apply(requestMetaData, t);
+                    BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                    if (backOffPolicy != NO_RETRIES) {
+                        final int offsetCount = count - lbNotReadyCount;
+                        Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
+                        if (t instanceof DelayedRetryException) {
+                            final Duration constant = ((DelayedRetryException) t).delay();
+                            retryWhen = retryWhen.concat(executor.timer(constant));
+                        }
+
+                        return applyRetryCallbacks(retryWhen, count, t);
+                    }
                 } catch (Throwable tt) {
-                    LOGGER.warn("Unexpected exception when computing backoff policy.", tt);
+                    LOGGER.error("Unexpected exception when computing and applying backoff policy for {}({}). " +
+                            "User-defined functions should not throw.",
+                            RetryingHttpRequesterFilter.class.getName(), t.getMessage(), tt);
                     Completable result = failed(ThrowableUtils.addSuppressed(tt, t));
                     if (returnOriginalResponses) {
                         StreamingHttpResponse response = extractStreamingResponse(t);
@@ -216,16 +227,6 @@ public final class RetryingHttpRequesterFilter
                         }
                     }
                     return result;
-                }
-                if (backOffPolicy != NO_RETRIES) {
-                    final int offsetCount = count - lbNotReadyCount;
-                    Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
-                    if (t instanceof DelayedRetryException) {
-                        final Duration constant = ((DelayedRetryException) t).delay();
-                        retryWhen = retryWhen.concat(executor.timer(constant));
-                    }
-
-                    return applyRetryCallbacks(retryWhen, count, t);
                 }
 
                 return failed(t);
@@ -298,8 +299,9 @@ public final class RetryingHttpRequesterFilter
                     try {
                         exception = responseMapper.apply(resp);
                     } catch (Throwable t) {
-                        LOGGER.warn("Failed to map the response.", t);
-                        return drain(resp).toSingle().flatMap(ignored -> Single.failed(t));
+                        LOGGER.error("Unexpected exception when mapping response ({}) to an exception. User-defined " +
+                                "functions should not throw.", resp.status(), t);
+                        return drain(resp).concat(Single.failed(t));
                     }
                     Single<StreamingHttpResponse> response;
                     if (exception == null) {
