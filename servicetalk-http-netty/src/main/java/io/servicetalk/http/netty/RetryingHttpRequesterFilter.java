@@ -857,6 +857,10 @@ public final class RetryingHttpRequesterFilter
          * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data.
          * In the case that the request cannot be retried, the {@link HttpResponseException} will be returned via the
          * error pathway.
+         * <p>
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link Function} doesn't throw exceptions.</strong>
+         *
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {
@@ -869,7 +873,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link RetryableException} to a {@link BackOffPolicy}.
@@ -892,7 +897,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link IOException} to a {@link BackOffPolicy}.
@@ -930,7 +936,8 @@ public final class RetryingHttpRequesterFilter
          * To disable retries and proceed evaluating other retry functions you can return,
          * {@link BackOffPolicy#ofNoRetries()} from the passed {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetryException delayed-exception} to a {@link BackOffPolicy}.
@@ -952,7 +959,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
@@ -973,7 +981,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
@@ -991,7 +1000,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
@@ -1013,7 +1023,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper {@link BiFunction} that checks whether a given combination of
          * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried, producing a
