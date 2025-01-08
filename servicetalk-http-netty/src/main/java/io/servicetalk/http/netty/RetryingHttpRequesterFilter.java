@@ -46,6 +46,10 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
+import io.servicetalk.utils.internal.ThrowableUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -89,17 +93,21 @@ import static java.util.Objects.requireNonNull;
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RetryingHttpRequesterFilter.class);
+
     static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(true, false, false, 1, null,
+            new RetryingHttpRequesterFilter(true, false, false, false, 1, null,
                     (__, ___) -> NO_RETRIES, null);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, false, 0, null,
+            new RetryingHttpRequesterFilter(false, true, false, false, 0, null,
                     (__, ___) -> NO_RETRIES, null);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
     private final boolean mayReplayRequestPayload;
+    private final boolean returnOriginalResponses;
     private final int maxTotalRetries;
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -109,13 +117,14 @@ public final class RetryingHttpRequesterFilter
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
-            final int maxTotalRetries,
+            final boolean returnOriginalResponses, final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor,
             @Nullable final RetryCallbacks onRequestRetry) {
         this.waitForLb = waitForLb;
         this.ignoreSdErrors = ignoreSdErrors;
         this.mayReplayRequestPayload = mayReplayRequestPayload;
+        this.returnOriginalResponses = returnOriginalResponses;
         this.maxTotalRetries = maxTotalRetries;
         this.responseMapper = responseMapper;
         this.retryFor = retryFor;
@@ -194,24 +203,53 @@ public final class RetryingHttpRequesterFilter
                             sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus), count, t);
                 }
 
-                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
-                if (backOffPolicy != NO_RETRIES) {
-                    final int offsetCount = count - lbNotReadyCount;
-                    Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
-                    if (t instanceof DelayedRetryException) {
-                        final Duration constant = ((DelayedRetryException) t).delay();
-                        retryWhen = retryWhen.concat(executor.timer(constant));
-                    }
+                try {
+                    BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                    if (backOffPolicy != NO_RETRIES) {
+                        final int offsetCount = count - lbNotReadyCount;
+                        Completable retryWhen = backOffPolicy.newStrategy(executor).apply(offsetCount, t);
+                        if (t instanceof DelayedRetryException) {
+                            final Duration constant = ((DelayedRetryException) t).delay();
+                            retryWhen = retryWhen.concat(executor.timer(constant));
+                        }
 
-                    return applyRetryCallbacks(retryWhen, count, t);
+                        return applyRetryCallbacks(retryWhen, count, t);
+                    }
+                } catch (Throwable tt) {
+                    LOGGER.error("Unexpected exception when computing and applying backoff policy for {}({}). " +
+                            "User-defined functions should not throw.",
+                            RetryingHttpRequesterFilter.class.getName(), t.getMessage(), tt);
+                    Completable result = failed(ThrowableUtils.addSuppressed(tt, t));
+                    if (returnOriginalResponses) {
+                        StreamingHttpResponse response = extractStreamingResponse(t);
+                        if (response != null) {
+                            result = drain(response).concat(result);
+                        }
+                    }
+                    return result;
                 }
 
                 return failed(t);
             }
 
             Completable applyRetryCallbacks(final Completable completable, final int retryCount, final Throwable t) {
-                return retryCallbacks == null ? completable :
-                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t));
+                Completable result = (retryCallbacks == null ? completable :
+                        completable.beforeOnComplete(() -> retryCallbacks.beforeRetry(retryCount, requestMetaData, t)));
+                if (returnOriginalResponses) {
+                    final StreamingHttpResponse response = extractStreamingResponse(t);
+                    if (response != null) {
+                        // If we succeed, we need to drain the response body before we continue. The retry completable
+                        // fails we want to surface the original exception and don't worry about draining since the
+                        // response will be returned to the user.
+                        result = result.onErrorMap(backoffError -> ThrowableUtils.addSuppressed(t, backoffError))
+                                // If we get cancelled we also need to drain the message body as there is no guarantee
+                                // we'll ever receive a completion event, error or success. This is okay to do since
+                                // the subscriber has signaled they're no longer interested in the response.
+                                .beforeCancel(() -> drain(response).subscribe())
+                                .concat(drain(response));
+                    }
+                }
+                return result;
             }
         }
 
@@ -257,20 +295,39 @@ public final class RetryingHttpRequesterFilter
 
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
-                    final HttpResponseException exception = responseMapper.apply(resp);
-                    return (exception != null ?
-                            // Drain response payload body before discarding it:
-                            resp.payloadBody().ignoreElements().onErrorComplete()
-                                    .concat(Single.<StreamingHttpResponse>failed(exception)) :
-                            Single.succeeded(resp))
-                            .shareContextOnSubscribe();
+                    final HttpResponseException exception;
+                    try {
+                        exception = responseMapper.apply(resp);
+                    } catch (Throwable t) {
+                        LOGGER.error("Unexpected exception when mapping response ({}) to an exception. User-defined " +
+                                "functions should not throw.", resp.status(), t);
+                        return drain(resp).concat(Single.failed(t));
+                    }
+                    Single<StreamingHttpResponse> response;
+                    if (exception == null) {
+                        response = Single.succeeded(resp);
+                    } else {
+                        response = Single.failed(exception);
+                        if (!returnOriginalResponses) {
+                            response = drain(resp).concat(response);
+                        }
+                    }
+                    return response.shareContextOnSubscribe();
                 });
             }
 
             // 1. Metadata is shared across retries
             // 2. Publisher state is restored to original state for each retry
             // duplicatedRequest isn't used below because retryWhen must be applied outside the defer operator for (2).
-            return single.retryWhen(retryStrategy(request, executionContext(), true));
+            single = single.retryWhen(retryStrategy(request, executionContext(), true));
+            if (returnOriginalResponses) {
+                single = single.onErrorResume(HttpResponseException.class, t -> {
+                    HttpResponseMetaData metaData = t.metaData();
+                    return (metaData instanceof StreamingHttpResponse ?
+                            Single.succeeded((StreamingHttpResponse) metaData) : Single.failed(t));
+                });
+            }
+            return single;
         }
     }
 
@@ -719,6 +776,7 @@ public final class RetryingHttpRequesterFilter
 
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
+        private boolean returnOriginalResponses;
 
         private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
                 retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediateBounded();
@@ -796,8 +854,13 @@ public final class RetryingHttpRequesterFilter
          * retry behaviour through {@link #retryResponses(BiFunction)}.
          *
          * @param mapper a {@link Function} that maps a {@link HttpResponseMetaData} to an
-         * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data. The
-         * mapper should return {@code null} if no retry is needed or if it cannot be determined that a retry is needed.
+         * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data.
+         * In the case that the request cannot be retried, the {@link HttpResponseException} will be returned via the
+         * error pathway.
+         * <p>
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link Function} doesn't throw exceptions.</strong>
+         *
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {
@@ -810,7 +873,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link RetryableException} to a {@link BackOffPolicy}.
@@ -833,7 +897,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#ofNoRetries()} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link IOException} to a {@link BackOffPolicy}.
@@ -871,7 +936,8 @@ public final class RetryingHttpRequesterFilter
          * To disable retries and proceed evaluating other retry functions you can return,
          * {@link BackOffPolicy#ofNoRetries()} from the passed {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetryException delayed-exception} to a {@link BackOffPolicy}.
@@ -893,7 +959,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
@@ -914,7 +981,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
          * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
@@ -922,7 +990,30 @@ public final class RetryingHttpRequesterFilter
          */
         public Builder retryResponses(
                 final BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> mapper) {
+            return retryResponses(mapper, false);
+        }
+
+        /**
+         * The retrying-filter will evaluate {@link HttpResponseException} that resulted from the
+         * {@link #responseMapper(Function)}, and support different retry behaviour according to the
+         * {@link HttpRequestMetaData request} and the {@link HttpResponseMetaData response}.
+         * <p>
+         * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
+         * <p>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
+         *
+         * @param mapper The mapper to map the {@link HttpRequestMetaData} and the
+         * {@link DelayedRetry delayed-exception} to a {@link BackOffPolicy}.
+         * @param returnOriginalResponses whether to unwrap the response defined by the {@link HttpResponseException}
+         * meta-data in the case that the request is not retried.
+         * @return {@code this}.
+         */
+        public Builder retryResponses(
+                final BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> mapper,
+                final boolean returnOriginalResponses) {
             this.retryResponses = requireNonNull(mapper);
+            this.returnOriginalResponses = returnOriginalResponses;
             return this;
         }
 
@@ -932,7 +1023,8 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <p>
-         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't block to avoid performance impacts.</strong>
+         * <strong>It's important that this {@link BiFunction} doesn't throw exceptions.</strong>
          *
          * @param mapper {@link BiFunction} that checks whether a given combination of
          * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried, producing a
@@ -1041,7 +1133,7 @@ public final class RetryingHttpRequesterFilter
 
                         if (retryResponses != null && throwable instanceof HttpResponseException) {
                             final BackOffPolicy backOffPolicy =
-                                    retryResponses.apply(requestMetaData, (HttpResponseException) throwable);
+                                        retryResponses.apply(requestMetaData, (HttpResponseException) throwable);
                             if (backOffPolicy != NO_RETRIES) {
                                 return backOffPolicy;
                             }
@@ -1054,7 +1146,26 @@ public final class RetryingHttpRequesterFilter
                         return NO_RETRIES;
                     };
             return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
-                    maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
+                    returnOriginalResponses, maxTotalRetries, responseMapper, allPredicate, onRequestRetry);
         }
+    }
+
+    private static Completable drain(StreamingHttpResponse response) {
+        return response.payloadBody().ignoreElements().onErrorComplete();
+    }
+
+    @Nullable
+    private static StreamingHttpResponse extractStreamingResponse(Throwable t) {
+        if (t instanceof HttpResponseException) {
+            HttpResponseException responseException = (HttpResponseException) t;
+            if (responseException.metaData() instanceof StreamingHttpResponse) {
+                return (StreamingHttpResponse) responseException.metaData();
+            } else {
+                LOGGER.warn("Couldn't unpack response due to unexpected dynamic types. Required " +
+                                "meta-data of type StreamingHttpResponse, found {}",
+                        responseException.metaData().getClass());
+            }
+        }
+        return null;
     }
 }
