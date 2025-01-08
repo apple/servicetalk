@@ -44,9 +44,10 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesExtractor;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 
 import java.util.function.UnaryOperator;
+
+import static io.opentelemetry.semconv.SemanticAttributes.PEER_SERVICE;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
@@ -120,25 +121,28 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
                                    final OpenTelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.INSTANCE);
+                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
 
         clientInstrumenterBuilder
-                .addAttributesExtractor(HttpClientAttributesExtractor
-                        .builder(ServiceTalkHttpAttributesGetter.INSTANCE, ServiceTalkNetAttributesGetter.INSTANCE)
+                .addAttributesExtractor(
+                        HttpClientAttributesExtractor
+                        .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE,
+                                ServiceTalkNetAttributesGetter.CLIENT_INSTANCE)
                         .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
                         .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
                         .build())
-                .addAttributesExtractor(NetClientAttributesExtractor.create(ServiceTalkNetAttributesGetter.INSTANCE));
+                .addAttributesExtractor(NetClientAttributesExtractor.create(
+                        ServiceTalkNetAttributesGetter.CLIENT_INSTANCE));
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
         componentName = componentName.trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
-                    AttributesExtractor.constant(SemanticAttributes.PEER_SERVICE, componentName));
+                    AttributesExtractor.constant(PEER_SERVICE, componentName));
         }
         instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);

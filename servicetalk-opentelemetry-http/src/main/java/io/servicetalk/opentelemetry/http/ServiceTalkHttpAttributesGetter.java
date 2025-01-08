@@ -33,33 +33,31 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
-final class ServiceTalkHttpAttributesGetter implements
-            HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>,
-            HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+abstract class ServiceTalkHttpAttributesGetter {
 
-    static final ServiceTalkHttpAttributesGetter INSTANCE = new ServiceTalkHttpAttributesGetter();
+    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> CLIENT_INSTANCE =
+            new ClientGetter();
+
+    static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> SERVER_INSTANCE =
+            new ServerGetter();
 
     private ServiceTalkHttpAttributesGetter() {
     }
 
-    @Override
     public String getHttpRequestMethod(final HttpRequestMetaData httpRequestMetaData) {
         return httpRequestMetaData.method().name();
     }
 
-    @Override
     public List<String> getHttpRequestHeader(final HttpRequestMetaData httpRequestMetaData, final String name) {
         return getHeaderValues(httpRequestMetaData.headers(), name);
     }
 
-    @Override
     public Integer getHttpResponseStatusCode(final HttpRequestMetaData httpRequestMetaData,
                                              final HttpResponseMetaData httpResponseMetaData,
                                              @Nullable final Throwable error) {
         return httpResponseMetaData.status().code();
     }
 
-    @Override
     public List<String> getHttpResponseHeader(final HttpRequestMetaData httpRequestMetaData,
                                               final HttpResponseMetaData httpResponseMetaData,
                                               final String name) {
@@ -67,7 +65,6 @@ final class ServiceTalkHttpAttributesGetter implements
     }
 
     @Nullable
-    @Override
     public String getUrlFull(final HttpRequestMetaData request) {
         HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
         if (effectiveHostAndPort == null) {
@@ -78,18 +75,16 @@ final class ServiceTalkHttpAttributesGetter implements
         return requestScheme + "://" + hostAndPort + '/' + request.requestTarget();
     }
 
-    @Override
     public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
         final String scheme = httpRequestMetaData.scheme();
         return scheme == null ? "http" : scheme;
     }
 
-    @Override
     public String getUrlPath(final HttpRequestMetaData httpRequestMetaData) {
         return httpRequestMetaData.path();
     }
 
-    @Override
+    @Nullable
     public String getUrlQuery(final HttpRequestMetaData httpRequestMetaData) {
         return httpRequestMetaData.query();
     }
@@ -110,5 +105,24 @@ final class ServiceTalkHttpAttributesGetter implements
             result.add(iterator.next().toString());
         }
         return unmodifiableList(result);
+    }
+
+    private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
+            implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+        @Nullable
+        @Override
+        public String getServerAddress(HttpRequestMetaData metaData) {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Integer getServerPort(HttpRequestMetaData metaData) {
+            return null;
+        }
+    }
+
+    private static final class ServerGetter extends ServiceTalkHttpAttributesGetter
+            implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
     }
 }

@@ -25,22 +25,21 @@ import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributes
 
 import javax.annotation.Nullable;
 
-final class ServiceTalkNetAttributesGetter implements
-            NetClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>,
-            NetServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+abstract class ServiceTalkNetAttributesGetter {
 
-    static final ServiceTalkNetAttributesGetter INSTANCE = new ServiceTalkNetAttributesGetter();
+    static final NetClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> CLIENT_INSTANCE =
+            new ClientGetter();
+    static final NetServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> SERVER_INSTANCE =
+            new ServerGetter();
 
     private ServiceTalkNetAttributesGetter() {
     }
 
-    @Override
     public String getNetworkProtocolName(final HttpRequestMetaData request,
                                          @Nullable final HttpResponseMetaData response) {
         return "http";
     }
 
-    @Override
     public String getNetworkProtocolVersion(final HttpRequestMetaData request,
                                             @Nullable final HttpResponseMetaData response) {
         if (response == null) {
@@ -49,7 +48,6 @@ final class ServiceTalkNetAttributesGetter implements
         return response.version().fullVersion();
     }
 
-    @Override
     @Nullable
     public String getServerAddress(final HttpRequestMetaData request) {
         final HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
@@ -57,16 +55,16 @@ final class ServiceTalkNetAttributesGetter implements
     }
 
     @Nullable
-    @Override
     public Integer getServerPort(final HttpRequestMetaData request) {
         final HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
         return effectiveHostAndPort != null ? effectiveHostAndPort.port() : null;
     }
 
-    @Nullable
-    @Override
-    public String getNetworkType(final HttpRequestMetaData requestMetaData,
-                                 @Nullable final HttpResponseMetaData metaData) {
-        return NetServerAttributesGetter.super.getNetworkType(requestMetaData, metaData);
+    private static final class ClientGetter extends ServiceTalkNetAttributesGetter implements
+            NetClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+    }
+
+    private static final class ServerGetter extends ServiceTalkNetAttributesGetter implements
+            NetServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
     }
 }
