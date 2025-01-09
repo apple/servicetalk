@@ -52,7 +52,8 @@ import static java.util.Objects.requireNonNull;
  * @param <MetaData> type of meta-data in front of the stream of {@link Payload}, eg. {@link HttpResponseMetaData}
  * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
  */
-final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements PublisherToSingleOperator<Object, Data> {
+// TODO: revert: this shouldn't be public.
+public final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements PublisherToSingleOperator<Object, Data> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
 
@@ -64,7 +65,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
      * @param packer function to pack the {@link Publisher}&lt;{@link Payload}&gt; and {@link MetaData} into a
      * {@link Data}
      */
-    SpliceFlatStreamToMetaSingle(BiFunction<MetaData, Publisher<Payload>, Data> packer) {
+    public SpliceFlatStreamToMetaSingle(BiFunction<MetaData, Publisher<Payload>, Data> packer) {
         this.packer = requireNonNull(packer);
     }
 

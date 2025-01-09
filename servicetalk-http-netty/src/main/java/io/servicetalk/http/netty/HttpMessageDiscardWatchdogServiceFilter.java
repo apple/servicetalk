@@ -74,7 +74,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return delegate()
-                        .handle(ctx, request, responseFactory)
+                        .handle(ctx, request.transformMessageBody(LeakDetection::instrument), responseFactory)
                         .map(response -> {
                             // always write the buffer publisher into the request context. When a downstream subscriber
                             // arrives, mark the message as subscribed explicitly (having a message present and no
