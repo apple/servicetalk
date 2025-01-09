@@ -37,6 +37,7 @@ compileTestJava {
 }
 
 dependencies {
+    api project(":servicetalk-concurrent")
     api project(":servicetalk-concurrent-api")
 
     implementation project(":servicetalk-annotations")

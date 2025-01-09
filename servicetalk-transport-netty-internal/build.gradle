@@ -33,7 +33,9 @@ afterEvaluate {
 
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
+  api project(":servicetalk-buffer-api")
   api project(":servicetalk-buffer-netty")
+  api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-transport-api")
@@ -42,21 +44,27 @@ dependencies {
   api "io.netty:netty-handler"
   api "io.netty:netty-transport"
 
+  implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-context-api")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-codec"
   implementation "io.netty:netty-transport-native-epoll"
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
+  implementation "io.netty:netty-transport-classes-epoll"
+  implementation "io.netty:netty-transport-classes-kqueue"
   implementation "io.netty:netty-transport-native-kqueue"
   if (!project.ext.isNettySnapshot) {
     // Netty doesn't publish snapshots for macos artifacts
     runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
     runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
   }
+  implementation "io.netty:netty-transport-native-unix-common"
+  implementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   implementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   runtimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", version:"$nettyIoUringVersion", classifier:"linux-x86_64")
   runtimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", version:"$nettyIoUringVersion", classifier:"linux-aarch_64")
@@ -78,8 +86,16 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
+  testFixturesApi platform("io.netty:netty-bom:$nettyVersion")
+  testFixturesApi project(":servicetalk-buffer-api")
+  testFixturesApi project(":servicetalk-concurrent-api")
+  testFixturesApi project(":servicetalk-transport-api")
+  testFixturesApi "io.netty:netty-common"
+  testFixturesApi "io.netty:netty-transport"
+
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-utils-internal")
+  testFixturesImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"

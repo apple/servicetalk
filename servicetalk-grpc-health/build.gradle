@@ -24,15 +24,25 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
 dependencies {
-  api project(":servicetalk-grpc-api") // generated code is exposed
+  api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
+  api project(":servicetalk-grpc-api")
+  api project(":servicetalk-concurrent")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-encoding-api")
+  api project(":servicetalk-router-api")
+  api "com.google.protobuf:protobuf-java"
+
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-grpc-netty")
-  implementation project(":servicetalk-grpc-protoc")
   implementation project(":servicetalk-grpc-protobuf")
+  implementation project(":servicetalk-grpc-protoc")
+  implementation project(":servicetalk-serializer-api")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation project(":servicetalk-transport-api")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

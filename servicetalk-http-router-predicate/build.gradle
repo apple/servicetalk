@@ -18,18 +18,22 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-http-api")
+  api project(":servicetalk-transport-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-api"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-api")
   testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-concurrent")
   testImplementation project(":servicetalk-http-netty")
-  testImplementation project(":servicetalk-transport-netty")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-transport-netty")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

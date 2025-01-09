@@ -27,11 +27,18 @@ dependencies {
 
   compileOnly "com.squareup:javapoet:$javaPoetVersion"
 
+  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
+  implementation "com.google.protobuf:protobuf-java"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-concurrent")
+  testImplementation project(":servicetalk-concurrent-api")
+  testImplementation project(":servicetalk-encoding-api")
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation project(":servicetalk-router-api")
+  testImplementation project(":servicetalk-serializer-api")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 

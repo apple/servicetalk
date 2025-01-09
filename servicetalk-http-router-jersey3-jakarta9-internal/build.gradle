@@ -76,6 +76,9 @@ def actualJaxRsVersion = "${jaxRsVersionEE9}"
 
 // Dependencies must remain consistent between servicetalk-http-router-jerseyX-internal modules
 dependencies {
+  api project(":servicetalk-buffer-api")
+  api project(":servicetalk-concurrent")
+  api project(":servicetalk-concurrent-api")
   api project(":servicetalk-http-api")
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
 
@@ -84,5 +87,6 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-http-utils")
+  implementation project(":servicetalk-transport-api")
   implementation "org.glassfish.jersey.core:jersey-common"
 }

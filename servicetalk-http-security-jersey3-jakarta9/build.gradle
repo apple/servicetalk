@@ -78,22 +78,28 @@ afterEvaluate {
 }
 
 def actualJerseyVersion = "${jersey3VersionEE9}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE9}"
 def actualJaxRsVersion = "${jaxRsVersionEE9}"
 
 // Dependencies must remain consistent between servicetalk-http-security-jerseyX modules
 dependencies {
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  api project(":servicetalk-context-api")
 
   implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
+  implementation "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
   implementation "org.glassfish.jersey.core:jersey-common"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-api")
+  testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-http-router-jersey3-jakarta9")
   testImplementation project(":servicetalk-http-utils")
+  testImplementation project(":servicetalk-transport-api")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "net.javacrumbs.json-unit:json-unit-fluent:$jsonUnitVersion"

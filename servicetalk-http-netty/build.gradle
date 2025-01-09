@@ -30,15 +30,21 @@ afterEvaluate {
 }
 
 dependencies {
+  api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
-  api project(":servicetalk-logging-api")
+  api project(":servicetalk-context-api")
   api project(":servicetalk-http-api")
+  api project(":servicetalk-logging-api")
+  api project(":servicetalk-transport-api")
 
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-client-api-internal")
-  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-dns-discovery-netty")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-loadbalancer")
@@ -57,6 +63,7 @@ dependencies {
   implementation "io.netty:netty-transport"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
@@ -68,19 +75,31 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-data-jackson")
+  testImplementation project(":servicetalk-encoding-api")
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
+  testImplementation project(":servicetalk-oio-api")
+  testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
+  testImplementation "com.fasterxml.jackson.core:jackson-core"
+  testImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
+  testImplementation "org.junit.platform:junit-platform-commons:$junitPlatformVersion"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
   testImplementation "org.testng:testng:$testngVersion"
 
+  testFixturesApi project(":servicetalk-context-api")
+  testFixturesApi project(":servicetalk-http-api")
+  testFixturesApi project(":servicetalk-transport-api")
+
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-buffer-api")
+  testFixturesImplementation project(":servicetalk-concurrent")
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"

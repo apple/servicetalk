@@ -85,22 +85,22 @@ afterEvaluate {
 }
 
 def actualJerseyVersion = "${jersey3VersionEE9}"
-def actualJavaxActivationVersion = "${javaxActivationVersionEE9}"
-def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersionEE9}"
-def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersionEE9}"
-def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersionEE9}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE9}"
+def actualJavaxInjectVersion = "${javaxInjectVersionEE9}"
 def actualJaxRsVersion = "${jaxRsVersionEE9}"
-
 
 // Dependencies must remain consistent between servicetalk-data-protobuf-jerseyX modules
 dependencies {
   api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  api "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion" // Priority
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion" // MediaType, Feature
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
   implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-buffer-netty")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-data-protobuf")
@@ -108,8 +108,11 @@ dependencies {
   implementation project(":servicetalk-http-router-jersey3-jakarta9")
   implementation project(":servicetalk-http-router-jersey3-jakarta9-internal")
   implementation project(":servicetalk-http-utils")
+  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-transport-api")
   implementation project(":servicetalk-transport-netty")
   implementation "com.google.protobuf:protobuf-java"
+  implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

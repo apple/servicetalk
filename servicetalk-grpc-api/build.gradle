@@ -17,15 +17,22 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-context-api")
+  api project(":servicetalk-encoding-api")
   api project(":servicetalk-http-api")
+  api project(":servicetalk-oio-api")
   api project(":servicetalk-router-api")
+  api project(":servicetalk-serializer-api")
+  api project(":servicetalk-transport-api")
   api ("com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion") {
     exclude group: "com.google.protobuf"
   }
 
   implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-encoding-api-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")

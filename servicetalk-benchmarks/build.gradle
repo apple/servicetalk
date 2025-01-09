@@ -22,18 +22,30 @@ plugins {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-buffer-netty")
+  implementation project(":servicetalk-client-api")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-context-api")
+  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-http-netty")
-  implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-loadbalancer")
-  implementation project(":servicetalk-data-jackson")
+  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-transport-api")
+  implementation project(":servicetalk-transport-netty-internal")
+  implementation "com.fasterxml.jackson.core:jackson-core"
+  implementation "com.fasterxml.jackson.core:jackson-databind"
+  implementation "io.netty:netty-buffer"
   implementation "io.netty:netty-codec-http"
+  implementation "io.netty:netty-common"
+  implementation "io.netty:netty-transport"
   implementation "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
 }
 

@@ -17,10 +17,16 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api project(":servicetalk-client-api")
+  api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-context-api")
   api project(":servicetalk-http-api")
+  api project(":servicetalk-logging-api")
+  api project(":servicetalk-transport-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-logging-slf4j-internal")
