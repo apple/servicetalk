@@ -2,9 +2,9 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-api:1.41.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-bom:1.41.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-context:1.41.0=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-api:1.38.0=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-bom:1.38.0=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-context:1.38.0=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
 empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor
