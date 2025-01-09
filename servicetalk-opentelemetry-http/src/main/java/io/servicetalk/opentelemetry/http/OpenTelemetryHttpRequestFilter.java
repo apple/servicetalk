@@ -48,7 +48,6 @@ import io.opentelemetry.semconv.SemanticAttributes;
 
 import java.util.function.UnaryOperator;
 
-
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
