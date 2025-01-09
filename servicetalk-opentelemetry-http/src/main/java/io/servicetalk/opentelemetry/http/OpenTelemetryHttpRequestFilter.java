@@ -44,10 +44,10 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesExtractor;
+import io.opentelemetry.semconv.SemanticAttributes;
 
 import java.util.function.UnaryOperator;
 
-import static io.opentelemetry.semconv.SemanticAttributes.PEER_SERVICE;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
@@ -142,7 +142,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         componentName = componentName.trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
-                    AttributesExtractor.constant(PEER_SERVICE, componentName));
+                    AttributesExtractor.constant(SemanticAttributes.PEER_SERVICE, componentName));
         }
         instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
