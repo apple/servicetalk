@@ -119,10 +119,10 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
                                    final OpenTelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
-        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
+        SpanNameExtractor<HttpRequestMetaData> clientSpanNameExtractor =
+                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
 
         clientInstrumenterBuilder
