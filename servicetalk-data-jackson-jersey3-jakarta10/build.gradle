@@ -93,26 +93,24 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-api")
-  implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api")
-  implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-http-api")
-  implementation project(":servicetalk-http-router-jersey3-jakarta10")
   implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
-  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-serialization-api")
   implementation project(":servicetalk-serializer-api")
   implementation project(":servicetalk-transport-api")
-  implementation project(":servicetalk-transport-netty")
   implementation "com.fasterxml.jackson.core:jackson-core"
   implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  runtimeOnly project(":servicetalk-http-router-jersey3-jakarta10")
+
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-router-jersey3-jakarta10"))
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

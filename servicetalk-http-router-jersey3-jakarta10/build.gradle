@@ -116,18 +116,17 @@ dependencies {
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion" // replacement for com.sun.activation:jakarta.activation
   implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion" // replacement for org.glassfish.hk2.external:jakarta.inject
-  implementation "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion" // replacement for com.sun.xml.bind:jaxb-core
-  implementation "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  runtimeOnly "jakarta.activation:jakarta.activation-api:$actualJavaxActivationVersion" // replacement for com.sun.activation:jakarta.activation
+  runtimeOnly "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
+  runtimeOnly "org.glassfish.jaxb:jaxb-core:$actualJavaxJaxbCoreVersion" // replacement for com.sun.xml.bind:jaxb-core
   runtimeOnly "org.glassfish.jaxb:jaxb-runtime:$actualJavaxJaxbImplVersion" // replacement for com.sun.xml.bind:jaxb-impl
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

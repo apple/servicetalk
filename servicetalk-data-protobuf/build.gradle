@@ -34,8 +34,6 @@ dependencies {
   api "com.google.protobuf:protobuf-java"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-serializer-utils")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

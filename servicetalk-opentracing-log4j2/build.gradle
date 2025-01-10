@@ -28,7 +28,6 @@ dependencies {
   implementation project(":servicetalk-opentracing-internal")
   implementation project(":servicetalk-opentracing-asynccontext")
   implementation "org.apache.logging.log4j:log4j-core"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
@@ -36,4 +35,5 @@ dependencies {
   testImplementation "io.opentracing:opentracing-api:$openTracingVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

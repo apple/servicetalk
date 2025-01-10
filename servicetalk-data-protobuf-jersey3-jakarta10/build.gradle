@@ -99,22 +99,19 @@ dependencies {
   implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-api")
-  implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api")
-  implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-http-api")
-  implementation project(":servicetalk-http-router-jersey3-jakarta10")
   implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
-  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-serializer-api")
   implementation project(":servicetalk-transport-api")
-  implementation project(":servicetalk-transport-netty")
   implementation "com.google.protobuf:protobuf-java"
   implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtimeOnly project(":servicetalk-http-router-jersey3-jakarta10")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

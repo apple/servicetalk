@@ -21,5 +21,4 @@ dependencies {
   api project(":servicetalk-transport-api")
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api")
 }

@@ -3,8 +3,8 @@
 # This file is expected to be part of source control.
 com.google.api.grpc:proto-google-common-protos:2.29.0=compileClasspath,runtimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-bom:3.25.3=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-java:3.25.3=compileClasspath,runtimeClasspath
+com.google.protobuf:protobuf-bom:3.25.3=runtimeClasspath
+com.google.protobuf:protobuf-java:3.25.3=runtimeClasspath
 io.netty.incubator:netty-incubator-transport-classes-io_uring:0.0.26.Final=runtimeClasspath
 io.netty.incubator:netty-incubator-transport-native-io_uring:0.0.26.Final=runtimeClasspath
 io.netty:netty-bom:4.1.116.Final=compileClasspath,runtimeClasspath

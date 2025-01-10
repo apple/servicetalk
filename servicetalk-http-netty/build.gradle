@@ -48,10 +48,8 @@ dependencies {
   implementation project(":servicetalk-dns-discovery-netty")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-loadbalancer")
-  implementation project(":servicetalk-loadbalancer-experimental-provider")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-tcp-netty-internal")
-  implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-buffer"
@@ -62,6 +60,8 @@ dependencies {
   implementation "io.netty:netty-handler"
   implementation "io.netty:netty-transport"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtimeOnly project(":servicetalk-loadbalancer-experimental-provider")
 
   testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
@@ -78,9 +78,11 @@ dependencies {
   testImplementation project(":servicetalk-encoding-api")
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
+  testImplementation project(":servicetalk-loadbalancer-experimental-provider")
   testImplementation project(":servicetalk-oio-api")
   testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-transport-netty")
   testImplementation "com.fasterxml.jackson.core:jackson-core"
   testImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"

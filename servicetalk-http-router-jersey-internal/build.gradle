@@ -31,7 +31,6 @@ dependencies {
   implementation platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-api")
   implementation "org.glassfish.jersey.core:jersey-common"
 }
