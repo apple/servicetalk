@@ -44,7 +44,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesExtractor;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 
 import java.util.function.UnaryOperator;
 
@@ -119,19 +119,22 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
                                    final OpenTelemetryOptions opentelemetryOptions) {
         super(openTelemetry);
-        SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.INSTANCE);
+        SpanNameExtractor<HttpRequestMetaData> clientSpanNameExtractor =
+                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
 
         clientInstrumenterBuilder
-                .addAttributesExtractor(HttpClientAttributesExtractor
-                        .builder(ServiceTalkHttpAttributesGetter.INSTANCE, ServiceTalkNetAttributesGetter.INSTANCE)
+                .addAttributesExtractor(
+                        HttpClientAttributesExtractor
+                        .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE,
+                                ServiceTalkNetAttributesGetter.CLIENT_INSTANCE)
                         .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
                         .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
                         .build())
-                .addAttributesExtractor(NetClientAttributesExtractor.create(ServiceTalkNetAttributesGetter.INSTANCE));
+                .addAttributesExtractor(NetClientAttributesExtractor.create(
+                        ServiceTalkNetAttributesGetter.CLIENT_INSTANCE));
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }

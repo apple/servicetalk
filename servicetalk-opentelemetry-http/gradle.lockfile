@@ -2,16 +2,16 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:1.28.0-alpha=compileClasspath,runtimeClasspath
-io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:1.28.0=compileClasspath,runtimeClasspath
-io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:1.28.0-alpha=compileClasspath,runtimeClasspath
-io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:1.28.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-api:1.28.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-bom-alpha:1.28.0-alpha=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-bom:1.28.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-context:1.28.0=compileClasspath,runtimeClasspath
-io.opentelemetry:opentelemetry-extension-incubator:1.28.0-alpha=runtimeClasspath
-io.opentelemetry:opentelemetry-semconv:1.28.0-alpha=compileClasspath,runtimeClasspath
+io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv:1.33.3-alpha=compileClasspath,runtimeClasspath
+io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:1.33.3=compileClasspath,runtimeClasspath
+io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:1.33.3-alpha=compileClasspath,runtimeClasspath
+io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:1.33.3=compileClasspath,runtimeClasspath
+io.opentelemetry.semconv:opentelemetry-semconv:1.23.1-alpha=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-api-incubator:1.38.0-alpha=runtimeClasspath
+io.opentelemetry:opentelemetry-api:1.38.0=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-bom-alpha:1.38.0-alpha=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-bom:1.38.0=compileClasspath,runtimeClasspath
+io.opentelemetry:opentelemetry-context:1.38.0=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
 empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor
