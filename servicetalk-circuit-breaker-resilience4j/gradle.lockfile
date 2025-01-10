@@ -7,4 +7,4 @@ io.github.resilience4j:resilience4j-core:1.7.1=compileClasspath,runtimeClasspath
 io.vavr:vavr-match:0.10.2=compileClasspath,runtimeClasspath
 io.vavr:vavr:0.10.2=compileClasspath,runtimeClasspath
 org.slf4j:slf4j-api:1.7.30=runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

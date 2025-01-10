@@ -2,4 +2,4 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor

@@ -22,31 +22,31 @@ plugins {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
-  implementation platform("io.netty:netty-bom:$nettyVersion")
-  implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-api")
-  implementation project(":servicetalk-buffer-netty")
-  implementation project(":servicetalk-client-api")
-  implementation project(":servicetalk-concurrent")
-  implementation project(":servicetalk-concurrent-api")
-  implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-context-api")
-  implementation project(":servicetalk-data-jackson")
-  implementation project(":servicetalk-http-api")
-  implementation project(":servicetalk-http-netty")
-  implementation project(":servicetalk-loadbalancer")
-  implementation project(":servicetalk-serializer-api")
-  implementation project(":servicetalk-transport-api")
-  implementation project(":servicetalk-transport-netty-internal")
-  implementation "com.fasterxml.jackson.core:jackson-core"
-  implementation "com.fasterxml.jackson.core:jackson-databind"
-  implementation "io.netty:netty-buffer"
-  implementation "io.netty:netty-codec-http"
-  implementation "io.netty:netty-common"
-  implementation "io.netty:netty-transport"
-  implementation "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
+  jmhImplementation platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
+  jmhImplementation platform("io.netty:netty-bom:$nettyVersion")
+  jmhImplementation project(":servicetalk-annotations")
+  jmhImplementation project(":servicetalk-buffer-api")
+  jmhImplementation project(":servicetalk-buffer-netty")
+  jmhImplementation project(":servicetalk-client-api")
+  jmhImplementation project(":servicetalk-concurrent")
+  jmhImplementation project(":servicetalk-concurrent-api")
+  jmhImplementation project(":servicetalk-concurrent-api-internal")
+  jmhImplementation project(":servicetalk-concurrent-internal")
+  jmhImplementation project(":servicetalk-context-api")
+  jmhImplementation project(":servicetalk-data-jackson")
+  jmhImplementation project(":servicetalk-http-api")
+  jmhImplementation project(":servicetalk-http-netty")
+  jmhImplementation project(":servicetalk-loadbalancer")
+  jmhImplementation project(":servicetalk-serializer-api")
+  jmhImplementation project(":servicetalk-transport-api")
+  jmhImplementation project(":servicetalk-transport-netty-internal")
+  jmhImplementation "com.fasterxml.jackson.core:jackson-core"
+  jmhImplementation "com.fasterxml.jackson.core:jackson-databind"
+  jmhImplementation "io.netty:netty-buffer"
+  jmhImplementation "io.netty:netty-codec-http"
+  jmhImplementation "io.netty:netty-common"
+  jmhImplementation "io.netty:netty-transport"
+  jmhImplementation "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
 }
 
 jmh {

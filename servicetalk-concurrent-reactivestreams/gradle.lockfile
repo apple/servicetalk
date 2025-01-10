@@ -8,4 +8,4 @@ io.netty:netty-common:4.1.116.Final=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.reactivestreams:reactive-streams:1.0.4=compileClasspath,runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor

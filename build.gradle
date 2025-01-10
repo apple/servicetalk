@@ -124,6 +124,12 @@ subprojects {
     runtimeClasspath {
       resolutionStrategy.activateDependencyLocking()
     }
+    jmhCompileClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
+    jmhRuntimeClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
   }
 
   tasks.register("resolveAndLockAll") {
