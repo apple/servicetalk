@@ -34,6 +34,8 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
+  testFixturesApi project(":servicetalk-concurrent")
+
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-concurrent-internal")
   testFixturesImplementation project(":servicetalk-utils-internal")

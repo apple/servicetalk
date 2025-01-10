@@ -27,14 +27,20 @@ ideaModule.dependsOn "generateTestProto"
 
 dependencies {
   api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
+  api project(":servicetalk-encoding-api")
   api project(":servicetalk-grpc-api")
   api "com.google.protobuf:protobuf-java"
   api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-buffer-netty")
-  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-concurrent")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-data-protobuf")
+  implementation project(":servicetalk-http-api")
+  implementation project(":servicetalk-serialization-api")
+  implementation project(":servicetalk-serializer-api")
   implementation project(":servicetalk-serializer-utils")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

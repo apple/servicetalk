@@ -28,8 +28,10 @@ dependencies {
   api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   api platform("io.netty:netty-bom:$nettyVersion")
   api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
-  api platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+  api platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:" +
       "$opentelemetryInstrumentationVersion")
+  api platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+      "$opentelemetryInstrumentationVersion-alpha")
   api platform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
 

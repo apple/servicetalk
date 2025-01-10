@@ -18,25 +18,31 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-http-api")
+  api project(":servicetalk-transport-api")
   api "io.opentracing:opentracing-api:$openTracingVersion"
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")
   implementation project(":servicetalk-opentracing-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
   testImplementation testFixtures(project(":servicetalk-http-netty"))
+  testImplementation project(":servicetalk-concurrent")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-opentracing-asynccontext")
+  testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation "com.fasterxml.jackson.core:jackson-annotations"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

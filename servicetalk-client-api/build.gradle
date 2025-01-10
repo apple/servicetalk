@@ -18,9 +18,11 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-context-api")
   api project(":servicetalk-transport-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"

@@ -21,6 +21,7 @@ dependencies {
   api "io.github.resilience4j:resilience4j-circuitbreaker:$resilience4jVersion"
 
   implementation project(":servicetalk-annotations")
+  implementation "io.github.resilience4j:resilience4j-core:$resilience4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"

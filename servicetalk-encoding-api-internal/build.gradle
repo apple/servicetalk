@@ -17,7 +17,10 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+    api project(":servicetalk-buffer-api")
     api project(":servicetalk-encoding-api")
+    api project(":servicetalk-serializer-api")
 
     implementation project(":servicetalk-annotations")
+    implementation project(":servicetalk-concurrent-api")
 }

@@ -20,6 +20,8 @@ dependencies {
   api project(":servicetalk-http-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-client-api")
   implementation project(":servicetalk-loadbalancer")
+  implementation project(":servicetalk-transport-api")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
