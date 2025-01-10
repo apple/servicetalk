@@ -31,7 +31,8 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
-  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
+  testFixturesApi platform("org.junit:junit-bom:$junit5Version")
+  testFixturesApi "org.junit.jupiter:junit-jupiter-api"
+
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

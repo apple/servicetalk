@@ -16,6 +16,19 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // False positives for testFixturesApi
+        onIncorrectConfiguration {
+          exclude("org.reactivestreams:reactive-streams-tck")
+        }
+      }
+    }
+  }
+}
+
 dependencies {
   api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")

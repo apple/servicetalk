@@ -49,7 +49,7 @@ dependencies {
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
     api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
-    api "org.hamcrest:hamcrest:$hamcrestVersion"  // Matchers are exposed by test-resources & buffer-api
+    api "org.hamcrest:hamcrest:$hamcrestVersion"  // Matchers are exposed by test-resources & some test-fixtures
     api "org.jctools:jctools-core:$jcToolsVersion"
     api "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
