@@ -29,13 +29,13 @@ dependencies {
   api platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-serialization-api")
   api project(":servicetalk-serializer-api")
   api "com.google.protobuf:protobuf-java"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-serialization-api")
   implementation project(":servicetalk-serializer-utils")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

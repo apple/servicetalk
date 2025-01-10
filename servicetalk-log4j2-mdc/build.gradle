@@ -17,8 +17,9 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api project(":servicetalk-log4j2-mdc-utils")
+
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-log4j2-mdc-utils")
 
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
