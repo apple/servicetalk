@@ -37,6 +37,7 @@ dependencies {
   api project(":servicetalk-buffer-netty")
   api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-concurrent-api-internal")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-transport-api")
   api "io.netty:netty-buffer"
@@ -46,7 +47,6 @@ dependencies {
 
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-context-api")
   implementation project(":servicetalk-logging-slf4j-internal")

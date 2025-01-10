@@ -17,8 +17,9 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api project(":servicetalk-router-api")
+  api project(":servicetalk-transport-api")
+
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation project(":servicetalk-router-api")
-  implementation project(":servicetalk-transport-api")
 }
