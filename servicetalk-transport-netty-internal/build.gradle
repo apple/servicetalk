@@ -87,18 +87,18 @@ dependencies {
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
   testFixturesApi platform("io.netty:netty-bom:$nettyVersion")
+  testFixturesApi platform("org.junit:junit-bom:$junit5Version")
   testFixturesApi project(":servicetalk-buffer-api")
   testFixturesApi project(":servicetalk-concurrent-api")
   testFixturesApi project(":servicetalk-transport-api")
   testFixturesApi "io.netty:netty-common"
   testFixturesApi "io.netty:netty-transport"
+  testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 
-  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
