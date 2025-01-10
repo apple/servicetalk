@@ -7,4 +7,4 @@ com.google.protobuf:protobuf-bom:3.25.3=compileClasspath,runtimeClasspath
 com.google.protobuf:protobuf-java:3.25.3=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

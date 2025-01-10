@@ -10,4 +10,4 @@ org.glassfish.jersey.core:jersey-common:3.0.17=compileClasspath,runtimeClasspath
 org.glassfish.jersey:jersey-bom:3.0.17=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor

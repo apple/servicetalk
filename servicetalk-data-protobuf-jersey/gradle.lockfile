@@ -40,4 +40,4 @@ org.glassfish.jersey.core:jersey-server:2.41=compileClasspath,runtimeClasspath
 org.glassfish.jersey:jersey-bom:2.41=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf

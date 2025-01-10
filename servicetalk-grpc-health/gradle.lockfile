@@ -29,4 +29,4 @@ io.netty:netty-transport-native-unix-common:4.1.116.Final=runtimeClasspath
 io.netty:netty-transport:4.1.116.Final=runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
-empty=annotationProcessor,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,spotbugsPlugins,testAnnotationProcessor,testProtobuf

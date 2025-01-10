@@ -57,4 +57,4 @@ org.javassist:javassist:3.29.2-GA=runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.jvnet.mimepull:mimepull:1.9.15=compileClasspath,runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,protobuf,testAnnotationProcessor,testProtobuf
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,testAnnotationProcessor,testProtobuf

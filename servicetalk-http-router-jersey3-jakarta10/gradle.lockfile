@@ -24,4 +24,4 @@ org.glassfish.jersey.core:jersey-server:3.1.9=compileClasspath,runtimeClasspath
 org.glassfish.jersey:jersey-bom:3.1.9=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
