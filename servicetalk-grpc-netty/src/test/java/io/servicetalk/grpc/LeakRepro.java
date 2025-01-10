@@ -30,6 +30,7 @@ public class LeakRepro {
     static boolean leakDetected = false;
 
     static {
+        System.setProperty("io.servicetalk.http.netty.leakdetection", "strict");
         System.setProperty("io.netty.leakDetection.level", "paranoid");
         ByteBufUtil.setLeakListener((type, records) -> {
             leakDetected = true;

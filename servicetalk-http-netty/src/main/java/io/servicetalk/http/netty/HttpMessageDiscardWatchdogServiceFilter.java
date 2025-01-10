@@ -39,12 +39,16 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.netty.WatchdogLeakDetector.REQUEST_LEAK_MESSAGE;
+import static io.servicetalk.http.netty.WatchdogLeakDetector.RESPONSE_LEAK_MESSAGE;
+
 /**
  * Filter which tracks message bodies and warns if they are not discarded properly.
  */
 final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilter.class);
+
 
     /**
      * Instance of {@link HttpMessageDiscardWatchdogServiceFilter}.
@@ -69,12 +73,30 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
 
         return new StreamingHttpServiceFilter(service) {
+
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                              final StreamingHttpRequest request,
+                                                              final StreamingHttpResponseFactory responseFactory) {
+                return WatchdogLeakDetector.strictDetection() ?
+                        handleStrict(ctx, request, responseFactory) : handleSimple(ctx, request, responseFactory);
+            }
+
+            private Single<StreamingHttpResponse> handleStrict(final HttpServiceContext ctx,
+                                                               final StreamingHttpRequest request,
+                                                               final StreamingHttpResponseFactory responseFactory) {
+                return delegate()
+                        .handle(ctx, request.transformMessageBody(publisher ->
+                                WatchdogLeakDetector.instrument(publisher, REQUEST_LEAK_MESSAGE)), responseFactory)
+                        .map(response -> response.transformMessageBody(publisher ->
+                                        WatchdogLeakDetector.instrument(publisher, RESPONSE_LEAK_MESSAGE)));
+            }
+
+            private Single<StreamingHttpResponse> handleSimple(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return delegate()
-                        .handle(ctx, request.transformMessageBody(LeakDetection::instrument), responseFactory)
+                        .handle(ctx, request, responseFactory)
                         .map(response -> {
                             // always write the buffer publisher into the request context. When a downstream subscriber
                             // arrives, mark the message as subscribed explicitly (having a message present and no
@@ -86,10 +108,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                                 // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
                                 // (i.e. during a retry) and so previous message body needs to be cleaned up by the
                                 // user.
-                                LOGGER.warn("Discovered un-drained HTTP response message body which has " +
-                                        "been dropped by user code - this is a strong indication of a bug " +
-                                        "in a user-defined filter. Responses (or their message body) must " +
-                                        "be fully consumed before retrying.");
+                                LOGGER.warn(RESPONSE_LEAK_MESSAGE);
                             }
 
                             return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
@@ -173,10 +192,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                         if (maybePublisher != null && maybePublisher.get() != null) {
                             // No-one subscribed to the message (or there is none), so if there is a message
                             // tell the user to clean it up.
-                            LOGGER.warn("Discovered un-drained HTTP response message body which has " +
-                                    "been dropped by user code - this is a strong indication of a bug " +
-                                    "in a user-defined filter. Responses (or their message body) must " +
-                                    "be fully consumed before discarding.");
+                            LOGGER.warn(RESPONSE_LEAK_MESSAGE);
                         }
                     }
                 }
