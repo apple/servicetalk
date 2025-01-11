@@ -29,7 +29,8 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
   implementation "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
-  implementation "org.glassfish.jersey.core:jersey-common"
+
+  runtimeOnly "org.glassfish.jersey.core:jersey-common"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))

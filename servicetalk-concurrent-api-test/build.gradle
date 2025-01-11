@@ -22,7 +22,6 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-concurrent-test-internal")
   implementation project(":servicetalk-utils-internal")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

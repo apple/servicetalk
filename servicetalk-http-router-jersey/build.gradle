@@ -54,19 +54,18 @@ dependencies {
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.sun.activation:jakarta.activation:$actualJavaxActivationVersion"
-  implementation "com.sun.xml.bind:jaxb-core:$actualJavaxJaxbCoreVersion"
-  implementation "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
   implementation "org.glassfish.hk2.external:jakarta.inject:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  runtimeOnly "com.sun.activation:jakarta.activation:$actualJavaxActivationVersion"
+  runtimeOnly "com.sun.xml.bind:jaxb-core:$actualJavaxJaxbCoreVersion"
   runtimeOnly "com.sun.xml.bind:jaxb-impl:$actualJavaxJaxbImplVersion"
+  runtimeOnly "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"

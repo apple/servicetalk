@@ -3,10 +3,10 @@
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 jakarta.annotation:jakarta.annotation-api:2.1.1=compileClasspath,runtimeClasspath
-jakarta.inject:jakarta.inject-api:2.0.1=compileClasspath,runtimeClasspath
+jakarta.inject:jakarta.inject-api:2.0.1=runtimeClasspath
 jakarta.ws.rs:jakarta.ws.rs-api:3.1.0=compileClasspath,runtimeClasspath
-org.glassfish.hk2:osgi-resource-locator:1.0.3=compileClasspath,runtimeClasspath
-org.glassfish.jersey.core:jersey-common:3.1.9=compileClasspath,runtimeClasspath
+org.glassfish.hk2:osgi-resource-locator:1.0.3=runtimeClasspath
+org.glassfish.jersey.core:jersey-common:3.1.9=runtimeClasspath
 org.glassfish.jersey:jersey-bom:3.1.9=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath

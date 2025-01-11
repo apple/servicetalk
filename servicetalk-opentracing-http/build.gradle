@@ -26,8 +26,6 @@ dependencies {
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")
-  implementation project(":servicetalk-opentracing-internal")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
@@ -40,6 +38,7 @@ dependencies {
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-opentracing-asynccontext")
+  testImplementation project(":servicetalk-opentracing-internal")
   testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "com.fasterxml.jackson.core:jackson-annotations"
@@ -47,6 +46,7 @@ dependencies {
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testRuntimeOnly project(":servicetalk-opentracing-log4j2")
   testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"

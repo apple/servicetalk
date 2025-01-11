@@ -35,15 +35,14 @@ dependencies {
   api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-serializer-utils")
-  implementation project(":servicetalk-buffer-netty")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-buffer-api")
+  testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-serializer-api")
+  testImplementation project(":servicetalk-serializer-utils")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

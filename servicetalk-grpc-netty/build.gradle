@@ -50,7 +50,6 @@ dependencies {
 
   compileOnly project(":servicetalk-http-utils") // only for javadoc references
 
-  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-api")
   implementation project(":servicetalk-concurrent-api")
@@ -61,8 +60,8 @@ dependencies {
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
-  implementation "com.google.protobuf:protobuf-java"
 
+  testImplementation enforcedPlatform("com.google.protobuf:protobuf-bom:$protobufVersion")
   testImplementation enforcedPlatform("io.grpc:grpc-bom:$grpcVersion")
   testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
@@ -89,6 +88,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty")
   testImplementation "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
+  testImplementation "com.google.protobuf:protobuf-java"
   testImplementation "io.grpc:grpc-api"
   testImplementation("io.grpc:grpc-netty") {
     exclude group: "io.netty"

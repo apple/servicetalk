@@ -37,12 +37,8 @@ dependencies {
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api")
-  implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-serialization-api")
-  implementation project(":servicetalk-serializer-api")
-  implementation project(":servicetalk-serializer-utils")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-test-resources")

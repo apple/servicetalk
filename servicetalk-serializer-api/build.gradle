@@ -24,5 +24,4 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-oio-api-internal")
 }
