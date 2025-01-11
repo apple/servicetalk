@@ -16,19 +16,6 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-afterEvaluate {
-  if (tasks.findByName("projectHealth")) {
-    dependencyAnalysis {
-      issues {
-        // False positives for testImplementation
-        onUnusedDependencies {
-          exclude("io.netty.incubator:netty-incubator-transport-native-io_uring")
-        }
-      }
-    }
-  }
-}
-
 dependencies {
   api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
@@ -85,7 +72,6 @@ dependencies {
   testImplementation project(":servicetalk-transport-netty")
   testImplementation "com.fasterxml.jackson.core:jackson-core"
   testImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
-  testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.junit.platform:junit-platform-commons:$junitPlatformVersion"
