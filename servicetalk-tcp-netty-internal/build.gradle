@@ -16,20 +16,6 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-afterEvaluate {
-  if (tasks.findByName("projectHealth")) {
-    dependencyAnalysis {
-      issues {
-        // False positives for testFixturesImplementation
-        onUnusedDependencies {
-          exclude("io.netty:netty-transport-native-epoll")
-          exclude("io.netty:netty-transport-native-kqueue")
-        }
-      }
-    }
-  }
-}
-
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
   api project(":servicetalk-client-api")
@@ -76,8 +62,6 @@ dependencies {
   testFixturesImplementation "io.netty:netty-transport"
   testFixturesImplementation "io.netty:netty-transport-classes-epoll"
   testFixturesImplementation "io.netty:netty-transport-classes-kqueue"
-  testFixturesImplementation "io.netty:netty-transport-native-epoll"
-  testFixturesImplementation "io.netty:netty-transport-native-kqueue"
   testFixturesImplementation "io.netty:netty-transport-native-unix-common"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
