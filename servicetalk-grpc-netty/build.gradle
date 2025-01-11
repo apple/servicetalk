@@ -44,7 +44,6 @@ afterEvaluate {
 dependencies {
   api project(":servicetalk-client-api")
   api project(":servicetalk-grpc-api")
-  api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
   api project(":servicetalk-transport-api")
 
@@ -79,6 +78,7 @@ dependencies {
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
+  testImplementation project(":servicetalk-grpc-utils")
   testImplementation project(":servicetalk-http-utils")
   testImplementation project(":servicetalk-logging-api")
   testImplementation project(":servicetalk-router-api")

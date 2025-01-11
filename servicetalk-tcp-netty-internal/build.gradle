@@ -32,9 +32,7 @@ afterEvaluate {
 
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
-  api project(":servicetalk-client-api")
   api project(":servicetalk-concurrent-api")
-  api project(":servicetalk-logging-api")
   api project(":servicetalk-transport-api")
   api project(":servicetalk-transport-netty-internal")
   api "io.netty:netty-common"
@@ -42,9 +40,11 @@ dependencies {
   api "io.netty:netty-transport"
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-client-api")
   implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-logging-api")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-buffer"

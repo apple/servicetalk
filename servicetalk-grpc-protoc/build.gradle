@@ -21,9 +21,20 @@ plugins {
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        onIncorrectConfiguration {
+          exclude(":servicetalk-data-protobuf") // Needed for the generated classes
+        }
+      }
+    }
+  }
+}
+
 dependencies {
-  // Needed for the generated classes
-  api project(":servicetalk-data-protobuf")
+  api project(":servicetalk-data-protobuf") // Needed for the generated classes
 
   compileOnly "com.squareup:javapoet:$javaPoetVersion"
 

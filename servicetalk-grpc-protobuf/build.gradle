@@ -30,7 +30,6 @@ dependencies {
   api project(":servicetalk-encoding-api")
   api project(":servicetalk-grpc-api")
   api "com.google.protobuf:protobuf-java"
-  api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-api")
