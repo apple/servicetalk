@@ -18,7 +18,6 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
-  api "io.opentelemetry:opentelemetry-api"
   api "io.opentelemetry:opentelemetry-context"
 
   implementation project(":servicetalk-annotations")

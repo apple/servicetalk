@@ -21,7 +21,6 @@ ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
 dependencies {
   api platform("io.netty:netty-bom:$nettyVersion")
   api project(":servicetalk-buffer-api")
-  api project(":servicetalk-buffer-netty")
   api project(":servicetalk-concurrent")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-concurrent-api-internal")
@@ -34,6 +33,7 @@ dependencies {
 
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-context-api")
   implementation project(":servicetalk-logging-slf4j-internal")
@@ -83,6 +83,7 @@ dependencies {
   testFixturesApi "io.netty:netty-transport"
   testFixturesApi "org.junit.jupiter:junit-jupiter-api"
 
+  testFixturesImplementation project(":servicetalk-buffer-netty")
   testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "io.netty.incubator:netty-incubator-transport-classes-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
