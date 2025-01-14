@@ -87,9 +87,9 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                                                                final StreamingHttpResponseFactory responseFactory) {
                 return delegate()
                         .handle(ctx, request.transformMessageBody(publisher ->
-                                WatchdogLeakDetector.instrument(publisher, REQUEST_LEAK_MESSAGE)), responseFactory)
+                                WatchdogLeakDetector.gcLeakDetection(publisher, REQUEST_LEAK_MESSAGE)), responseFactory)
                         .map(response -> response.transformMessageBody(publisher ->
-                                        WatchdogLeakDetector.instrument(publisher, RESPONSE_LEAK_MESSAGE)));
+                                        WatchdogLeakDetector.gcLeakDetection(publisher, RESPONSE_LEAK_MESSAGE)));
             }
 
             private Single<StreamingHttpResponse> handleSimple(final HttpServiceContext ctx,

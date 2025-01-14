@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2024 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
@@ -7,16 +22,17 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 final class WatchdogLeakDetector {
 
@@ -54,15 +70,15 @@ final class WatchdogLeakDetector {
         // Singleton.
     }
 
-    static <T> Publisher<T> instrument(Publisher<T> publisher, String message) {
-        return INSTANCE.instrument0(publisher, message);
+    static <T> Publisher<T> gcLeakDetection(Publisher<T> publisher, String message) {
+        return INSTANCE.gcLeakDetection0(publisher, message);
     }
 
     static boolean strictDetection() {
         return STRICT_DETECTION;
     }
 
-    private <T> Publisher<T> instrument0(Publisher<T> publisher, String message) {
+    private <T> Publisher<T> gcLeakDetection0(Publisher<T> publisher, String message) {
         maybeCleanRefs();
         CleanupState cleanupState = new CleanupState(publisher, message);
         Publisher<T> result = publisher.liftSync(subscriber -> new InstrumentedSubscriber<>(subscriber, cleanupState));
@@ -87,8 +103,6 @@ final class WatchdogLeakDetector {
                 } while ((ref = refQueue.poll()) != null);
             });
         }
-
-
     }
 
     private static final class InstrumentedSubscriber<T> implements Subscriber<T> {
@@ -96,7 +110,7 @@ final class WatchdogLeakDetector {
         private final Subscriber<T> delegate;
         private final CleanupState cleanupToken;
 
-        public InstrumentedSubscriber(Subscriber<T> delegate, CleanupState cleanupToken) {
+        InstrumentedSubscriber(Subscriber<T> delegate, CleanupState cleanupToken) {
             this.delegate = delegate;
             this.cleanupToken = cleanupToken;
         }
@@ -134,20 +148,18 @@ final class WatchdogLeakDetector {
             cleanupToken.doComplete();
             delegate.onComplete();
         }
-
-
     }
 
     private static final class CleanupState {
 
         private static final AtomicReferenceFieldUpdater<CleanupState, Object> UPDATER =
-                AtomicReferenceFieldUpdater.newUpdater(CleanupState.class, Object.class,"state");
+                AtomicReferenceFieldUpdater.newUpdater(CleanupState.class, Object.class, "state");
         private static final String COMPLETE = "complete";
 
         private final String message;
         volatile Object state;
 
-        public CleanupState(Publisher<?> parent, String message) {
+        CleanupState(Publisher<?> parent, String message) {
             this.message = message;
             this.state = parent;
         }

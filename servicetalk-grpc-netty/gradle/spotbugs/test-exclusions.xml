@@ -19,16 +19,18 @@
   <Match>
     <Or>
       <Source name="~CompatGrpc\.java"/>
-      <Source name="~EsTesterGrpc\.java"/>
+<!--      <Source name="~EsTesterGrpc\.java"/>-->
       <Source name="~TesterGrpc\.java"/>
       <Source name="~CompatProto\.java"/>
-      <Source name="~EsProto\.java"/>
+<!--      <Source name="~EsProto\.java"/>-->
       <Source name="~TesterProto\.java"/>
       <Source name="~HelloReply\.java"/>
       <Source name="~HelloRequest\.java"/>
       <Source name="~Greeter\.java"/>
-      <Source name="~GreeterGrpc\.java"/>
       <Source name="~HelloWorldProto\.java"/>
+      <Source name="~ServiceTalkLeak\.java"/>
+      <Source name="~Leaker\.java"/>
+      <Source name="~LeakMessage\.java"/>
     </Or>
   </Match>
   <Match>

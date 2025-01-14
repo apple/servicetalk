@@ -74,9 +74,9 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
 
             private Single<StreamingHttpResponse> requestStrict(final StreamingHttpRequest request) {
                 return delegate().request(request.transformMessageBody(publisher ->
-                                WatchdogLeakDetector.instrument(publisher, REQUEST_LEAK_MESSAGE)))
+                                WatchdogLeakDetector.gcLeakDetection(publisher, REQUEST_LEAK_MESSAGE)))
                         .map(response -> response.transformMessageBody(publisher ->
-                                WatchdogLeakDetector.instrument(publisher, RESPONSE_LEAK_MESSAGE)));
+                                WatchdogLeakDetector.gcLeakDetection(publisher, RESPONSE_LEAK_MESSAGE)));
             }
 
             private Single<StreamingHttpResponse> requestSimple(final StreamingHttpRequest request) {
