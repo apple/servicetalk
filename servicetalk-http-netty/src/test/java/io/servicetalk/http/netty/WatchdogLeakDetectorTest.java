@@ -67,7 +67,6 @@ final class WatchdogLeakDetectorTest {
                                     abandon(request.messageBody());
                                     return Single.succeeded(responseFactory.ok());
                                 })) {
-
             try (HttpClient client = HttpClients.forSingleAddress("localhost",
                     ((InetSocketAddress) serverContext.listenAddress()).getPort()).protocols(config).build()) {
                 for (int i = 0; i < ITERATIONS && !leakDetected; i++) {
