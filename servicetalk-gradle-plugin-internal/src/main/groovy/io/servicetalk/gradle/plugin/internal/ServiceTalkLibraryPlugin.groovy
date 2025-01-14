@@ -233,6 +233,11 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         // Always require native libraries for running tests. This helps to make sure transport-level state machine
         // receives all expected network events from Netty.
         systemProperty "io.servicetalk.transport.netty.requireNativeLibs", "true"
+
+        // Make sure we enable netty leak detection for our tests. By default these are not visible in the logs,
+        // to see them you must at --warn to your ./gradlew test run in order to see the "showStandardStreams".
+        systemProperty "io.netty.leakDetection.level", "PARANOID"
+        systemProperty "io.netty.leakDetection.targetRecords", "25"
       }
 
       dependencies {
