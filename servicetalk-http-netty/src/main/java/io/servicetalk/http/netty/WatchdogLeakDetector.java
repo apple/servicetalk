@@ -31,6 +31,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -76,6 +77,11 @@ final class WatchdogLeakDetector {
 
     static boolean strictDetection() {
         return STRICT_DETECTION;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Class<T> generifyAtomicReference() {
+        return (Class<T>) AtomicReference.class;
     }
 
     private <T> Publisher<T> gcLeakDetection0(Publisher<T> publisher, String message) {
