@@ -101,7 +101,8 @@ final class HttpMessageDiscardWatchdogClientFilter {
         }
     }
 
-    private static final class ContextHttpMessageDiscardWatchdogClientFilter implements StreamingHttpConnectionFilterFactory {
+    private static final class ContextHttpMessageDiscardWatchdogClientFilter
+            implements StreamingHttpConnectionFilterFactory {
 
         @Override
         public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
@@ -140,27 +141,28 @@ final class HttpMessageDiscardWatchdogClientFilter {
         }
     }
 
-    private static final class GcHttpMessageDiscardWatchdogClientFilter implements StreamingHttpConnectionFilterFactory {
+    private static final class GcHttpMessageDiscardWatchdogClientFilter
+            implements StreamingHttpConnectionFilterFactory {
 
         @Override
         public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection) {
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
-                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request)  {
+                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                     return delegate().request(request.transformMessageBody(publisher ->
                                     WatchdogLeakDetector.gcLeakDetection(publisher, this::onRequestLeak)))
                             .map(response -> response.transformMessageBody(publisher ->
                                     WatchdogLeakDetector.gcLeakDetection(publisher, this::onResponseLeak)));
                 }
 
-                void onRequestLeak() {
+                private void onRequestLeak() {
                     LOGGER.warn("Discovered un-drained HTTP request message body which has " +
                             "been dropped by user code - this is a strong indication of a bug " +
                             "in a user-defined filter. The request payload (message) body must " +
                             "be fully consumed. connectionInfo={}", connectionContext());
                 }
 
-                void onResponseLeak() {
+                private void onResponseLeak() {
                     LOGGER.warn("Discovered un-drained HTTP response message body which has " +
                             "been dropped by user code - this is a strong indication of a bug " +
                             "in a user-defined filter. Response payload (message) body must " +
@@ -178,7 +180,7 @@ final class HttpMessageDiscardWatchdogClientFilter {
     private static final class NoopCleaner implements StreamingHttpClientFilterFactory {
         @Override
         public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
-            return new StreamingHttpClientFilter(client) {};
+            return new StreamingHttpClientFilter(client) { };
         }
 
         @Override

@@ -179,9 +179,11 @@ final class HttpMessageDiscardWatchdogServiceFilter {
                                                             StreamingHttpResponseFactory responseFactory) {
                     return delegate()
                             .handle(ctx, request.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, () -> LOGGER.error(REQUEST_LEAK_MESSAGE))), responseFactory)
+                                    WatchdogLeakDetector.gcLeakDetection(publisher,
+                                            () -> LOGGER.error(REQUEST_LEAK_MESSAGE))), responseFactory)
                             .map(response -> response.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, () -> LOGGER.warn(RESPONSE_LEAK_MESSAGE))));
+                                    WatchdogLeakDetector.gcLeakDetection(publisher,
+                                            () -> LOGGER.warn(RESPONSE_LEAK_MESSAGE))));
                 }
             };
         }
@@ -192,7 +194,8 @@ final class HttpMessageDiscardWatchdogServiceFilter {
         }
     }
 
-    private static final class ContextHttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
+    private static final class ContextHttpMessageDiscardWatchdogServiceFilter
+            implements StreamingHttpServiceFilterFactory {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             return HttpExecutionStrategies.offloadNone();
@@ -210,20 +213,21 @@ final class HttpMessageDiscardWatchdogServiceFilter {
                     return delegate()
                             .handle(ctx, request, responseFactory)
                             .map(response -> {
-                                // always write the buffer publisher into the request context. When a downstream subscriber
-                                // arrives, mark the message as subscribed explicitly (having a message present and no
-                                // subscription is an indicator that it must be freed later on).
+                                // always write the buffer publisher into the request context. When a downstream
+                                // subscriber arrives, mark the message as subscribed explicitly (having a message
+                                // present and no subscription is an indicator that it must be freed later on).
                                 final AtomicReference<Publisher<?>> reference = request.context()
                                         .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
                                 assert reference != null;
                                 if (reference.getAndSet(response.messageBody()) != null) {
-                                    // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
-                                    // (i.e. during a retry) and so previous message body needs to be cleaned up by the
-                                    // user.
+                                    // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed
+                                    // to (i.e. during a retry) and so previous message body needs to be cleaned up by
+                                    // the user.
                                     LOGGER.warn(RESPONSE_LEAK_MESSAGE);
                                 }
 
-                                return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
+                                return response.transformMessageBody(msgPublisher ->
+                                        msgPublisher.beforeSubscriber(() -> {
                                     reference.set(null);
                                     return NoopSubscriber.INSTANCE;
                                 }));
@@ -238,6 +242,7 @@ final class HttpMessageDiscardWatchdogServiceFilter {
         private NoopFilterFactory() {
             // singleton
         }
+
         @Override
         public StreamingHttpServiceFilter create(StreamingHttpService service) {
             return new StreamingHttpServiceFilter(service);
