@@ -23,15 +23,19 @@ dependencies {
   api project(":servicetalk-http-api")
   api project(":servicetalk-transport-api")
   api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
+  api "io.zipkin.zipkin2:zipkin:$zipkinVersion"
 
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-transport-netty-internal")
-  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-logging-slf4j-internal")
+  implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "io.netty:netty-codec"
+  implementation "io.opentracing:opentracing-api:$openTracingVersion"
+  implementation "io.netty:netty-buffer"
+  implementation "io.netty:netty-common"
   implementation "io.netty:netty-transport"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

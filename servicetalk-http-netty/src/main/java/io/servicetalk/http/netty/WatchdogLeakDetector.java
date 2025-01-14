@@ -37,18 +37,6 @@ import javax.annotation.Nullable;
 
 final class WatchdogLeakDetector {
 
-    static final String REQUEST_LEAK_MESSAGE =
-            "Discovered un-drained HTTP request message body which has " +
-                    "been dropped by user code - this is a strong indication of a bug " +
-                    "in a user-defined filter. Requests (or their message body) must " +
-                    "be fully consumed before retrying.";
-
-    static final String RESPONSE_LEAK_MESSAGE =
-            "Discovered un-drained HTTP response message body which has " +
-                    "been dropped by user code - this is a strong indication of a bug " +
-                    "in a user-defined filter. Responses (or their message body) must " +
-                    "be fully consumed before retrying.";
-
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchdogLeakDetector.class);
 
     private static final WatchdogLeakDetector INSTANCE = new WatchdogLeakDetector();
@@ -71,8 +59,8 @@ final class WatchdogLeakDetector {
         // Singleton.
     }
 
-    static <T> Publisher<T> gcLeakDetection(Publisher<T> publisher, String message) {
-        return INSTANCE.gcLeakDetection0(publisher, message);
+    static <T> Publisher<T> gcLeakDetection(Publisher<T> publisher, Runnable onLeak) {
+        return INSTANCE.gcLeakDetection0(publisher, onLeak);
     }
 
     static boolean strictDetection() {
@@ -84,9 +72,9 @@ final class WatchdogLeakDetector {
         return (Class<T>) AtomicReference.class;
     }
 
-    private <T> Publisher<T> gcLeakDetection0(Publisher<T> publisher, String message) {
+    private <T> Publisher<T> gcLeakDetection0(Publisher<T> publisher, Runnable onLeak) {
         maybeCleanRefs();
-        CleanupState cleanupState = new CleanupState(publisher, message);
+        CleanupState cleanupState = new CleanupState(publisher, onLeak);
         Publisher<T> result = publisher.liftSync(subscriber -> new InstrumentedSubscriber<>(subscriber, cleanupState));
         Reference<?> ref = new WeakReference<>(result, refQueue);
         allRefs.put(ref, cleanupState);
@@ -162,11 +150,11 @@ final class WatchdogLeakDetector {
                 AtomicReferenceFieldUpdater.newUpdater(CleanupState.class, Object.class, "state");
         private static final String COMPLETE = "complete";
 
-        private final String message;
+        private final Runnable onLeak;
         volatile Object state;
 
-        CleanupState(Publisher<?> parent, String message) {
-            this.message = message;
+        CleanupState(Publisher<?> parent, Runnable onLeak) {
+            this.onLeak = onLeak;
             this.state = parent;
         }
 
@@ -207,7 +195,7 @@ final class WatchdogLeakDetector {
 
         void check() {
             if (checkComplete()) {
-                LOGGER.warn(message);
+                onLeak.run();
             }
         }
     }

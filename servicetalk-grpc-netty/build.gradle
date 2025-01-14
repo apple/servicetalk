@@ -31,50 +31,73 @@ afterEvaluate {
         onUnusedDependencies {
           exclude(":servicetalk-http-utils")
         }
+        // This is a transitive dependency of "io.grpc:grpc-stub" and we don't want to manage it manually because
+        // it's only used by testImplementation scope.
+        onUsedTransitiveDependencies {
+          exclude("com.google.guava:guava")
+        }
       }
     }
   }
 }
 
 dependencies {
+  api project(":servicetalk-client-api")
   api project(":servicetalk-grpc-api")
-  api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
+  api project(":servicetalk-transport-api")
 
   compileOnly project(":servicetalk-http-utils") // only for javadoc references
 
-  implementation platform("com.google.protobuf:protobuf-bom:$protobufVersion")
-  implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-context-api")
+  implementation project(":servicetalk-grpc-internal")
+  implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation project(":servicetalk-concurrent-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
-  implementation "com.google.protobuf:protobuf-java"
 
+  testImplementation enforcedPlatform("com.google.protobuf:protobuf-bom:$protobufVersion")
   testImplementation enforcedPlatform("io.grpc:grpc-bom:$grpcVersion")
+  testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-http-netty"))
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-concurrent")
   testImplementation project(":servicetalk-concurrent-api-internal")
   testImplementation project(":servicetalk-concurrent-test-internal")
+  testImplementation project(":servicetalk-data-protobuf")
+  testImplementation project(":servicetalk-encoding-api")
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-grpc-protobuf")
-  testImplementation project(":servicetalk-http-utils")
-  testImplementation project(":servicetalk-data-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
+  testImplementation project(":servicetalk-grpc-utils")
+  testImplementation project(":servicetalk-http-utils")
+  testImplementation project(":servicetalk-logging-api")
+  testImplementation project(":servicetalk-router-api")
   testImplementation project(":servicetalk-router-utils-internal")
+  testImplementation project(":servicetalk-serializer-api")
+  testImplementation project(":servicetalk-serializer-utils")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty")
-  testImplementation project(":servicetalk-serializer-utils")
+  testImplementation "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
+  testImplementation "com.google.protobuf:protobuf-java"
+  testImplementation "io.grpc:grpc-api"
   testImplementation("io.grpc:grpc-netty") {
     exclude group: "io.netty"
   }
   testImplementation "io.grpc:grpc-protobuf"
   testImplementation "io.grpc:grpc-stub"
+  testImplementation "io.netty:netty-common"
+  testImplementation "io.netty:netty-handler"
+  testImplementation "io.netty:netty-transport"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

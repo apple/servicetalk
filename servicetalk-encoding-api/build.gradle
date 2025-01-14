@@ -22,8 +22,9 @@ dependencies {
     api project(":servicetalk-serializer-api")
 
     implementation project(":servicetalk-annotations")
+    implementation project(":servicetalk-concurrent")
     implementation project(":servicetalk-concurrent-internal")
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation project(":servicetalk-oio-api")
 
     testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
     testImplementation "org.junit.jupiter:junit-jupiter-params"

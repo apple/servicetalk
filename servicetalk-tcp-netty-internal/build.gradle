@@ -16,51 +16,53 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-afterEvaluate {
-  if (tasks.findByName("projectHealth")) {
-    dependencyAnalysis {
-      issues {
-        // False positives for testFixturesImplementation
-        onUnusedDependencies {
-          exclude("io.netty:netty-transport-native-epoll")
-          exclude("io.netty:netty-transport-native-kqueue")
-        }
-      }
-    }
-  }
-}
-
 dependencies {
-  api project(":servicetalk-client-api")
-  api project(":servicetalk-logging-api")
+  api platform("io.netty:netty-bom:$nettyVersion")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-transport-api")
   api project(":servicetalk-transport-netty-internal")
+  api "io.netty:netty-common"
+  api "io.netty:netty-handler"
+  api "io.netty:netty-transport"
 
-  implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-client-api")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-logging-api")
   implementation project(":servicetalk-logging-slf4j-internal")
-  implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-utils-internal")
+  implementation "io.netty:netty-buffer"
+  implementation "io.netty:netty-resolver"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-api")
+  testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
+  testFixturesApi project(":servicetalk-buffer-api")
+  testFixturesApi project(":servicetalk-transport-api")
+  testFixturesApi project(":servicetalk-transport-netty-internal")
+
   testFixturesImplementation platform("io.netty:netty-bom:$nettyVersion")
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-concurrent")
+  testFixturesImplementation project(":servicetalk-concurrent-api")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "io.netty:netty-transport"
-  testFixturesImplementation "io.netty:netty-transport-native-epoll"
-  testFixturesImplementation "io.netty:netty-transport-native-kqueue"
+  testFixturesImplementation "io.netty:netty-transport-classes-epoll"
+  testFixturesImplementation "io.netty:netty-transport-classes-kqueue"
+  testFixturesImplementation "io.netty:netty-transport-native-unix-common"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"

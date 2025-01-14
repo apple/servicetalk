@@ -66,13 +66,17 @@ if (JavaVersion.current().isJava11Compatible()) {
     issues {
       all {
         onAny {
-          severity("warn")  // FIXME: switch to "fail" when all issues are addressed
+          severity("fail")
         }
         onUnusedDependencies {
           // We use it for log4j2.xml configuration
           exclude(":servicetalk-test-resources")
         }
         onUsedTransitiveDependencies {
+          // We import it as api dependency via :servicetalk-annotations
+          exclude("com.google.code.findbugs:jsr305")
+        }
+        onIncorrectConfiguration {
           // We import it as api dependency via :servicetalk-annotations
           exclude("com.google.code.findbugs:jsr305")
         }
@@ -122,6 +126,12 @@ subprojects {
       resolutionStrategy.activateDependencyLocking()
     }
     runtimeClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
+    jmhCompileClasspath {
+      resolutionStrategy.activateDependencyLocking()
+    }
+    jmhRuntimeClasspath {
       resolutionStrategy.activateDependencyLocking()
     }
   }

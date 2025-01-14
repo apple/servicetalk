@@ -32,4 +32,4 @@ org.apache.logging.log4j:log4j-core:2.23.1=runtimeClasspath
 org.apache.logging.log4j:log4j-slf4j-impl:2.23.1=runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=runtimeClasspath
-empty=annotationProcessor,protobuf,testAnnotationProcessor,testProtobuf
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,protobuf,testAnnotationProcessor,testProtobuf

@@ -35,9 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.http.netty.WatchdogLeakDetector.REQUEST_LEAK_MESSAGE;
-import static io.servicetalk.http.netty.WatchdogLeakDetector.RESPONSE_LEAK_MESSAGE;
-
 /**
  * Filter which tracks message bodies and warns if they are not discarded properly.
  */
@@ -87,7 +84,11 @@ final class HttpMessageDiscardWatchdogClientFilter {
                                 if (maybePublisher != null && maybePublisher.getAndSet(null) != null) {
                                     // No-one subscribed to the message (or there is none), so if there is a message
                                     // tell the user to clean it up.
-                                    LOGGER.warn(RESPONSE_LEAK_MESSAGE, cause);
+                                    LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                            "been dropped by user code - this is a strong indication of a bug " +
+                                            "in a user-defined filter. Response payload (message) body must " +
+                                            "be fully consumed before discarding. hostAndPort={}",
+                                            request.effectiveHostAndPort(), cause);
                                 }
                             });
                 }
@@ -107,17 +108,6 @@ final class HttpMessageDiscardWatchdogClientFilter {
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
                 public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                    return WatchdogLeakDetector.strictDetection() ? requestStrict(request) : requestSimple(request);
-                }
-
-                private Single<StreamingHttpResponse> requestStrict(final StreamingHttpRequest request) {
-                    return delegate().request(request.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, REQUEST_LEAK_MESSAGE)))
-                            .map(response -> response.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, RESPONSE_LEAK_MESSAGE)));
-                }
-
-                private Single<StreamingHttpResponse> requestSimple(final StreamingHttpRequest request) {
                     return delegate().request(request).map(response -> {
                         // always write the buffer publisher into the request context. When a downstream subscriber
                         // arrives, mark the message as subscribed explicitly (having a message present and no
@@ -129,7 +119,10 @@ final class HttpMessageDiscardWatchdogClientFilter {
                             // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
                             // (i.e. during a retry) and so previous message body needs to be cleaned up by the
                             // user.
-                            LOGGER.warn(RESPONSE_LEAK_MESSAGE);
+                            LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                                    "been dropped by user code - this is a strong indication of a bug " +
+                                    "in a user-defined filter. Response payload (message) body must " +
+                                    "be fully consumed before retrying. connectionInfo={}", connectionContext());
                         }
 
                         return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
@@ -155,9 +148,23 @@ final class HttpMessageDiscardWatchdogClientFilter {
                 @Override
                 public Single<StreamingHttpResponse> request(final StreamingHttpRequest request)  {
                     return delegate().request(request.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, REQUEST_LEAK_MESSAGE)))
+                                    WatchdogLeakDetector.gcLeakDetection(publisher, this::onRequestLeak)))
                             .map(response -> response.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, RESPONSE_LEAK_MESSAGE)));
+                                    WatchdogLeakDetector.gcLeakDetection(publisher, this::onResponseLeak)));
+                }
+
+                void onRequestLeak() {
+                    LOGGER.warn("Discovered un-drained HTTP request message body which has " +
+                            "been dropped by user code - this is a strong indication of a bug " +
+                            "in a user-defined filter. The request payload (message) body must " +
+                            "be fully consumed. connectionInfo={}", connectionContext());
+                }
+
+                void onResponseLeak() {
+                    LOGGER.warn("Discovered un-drained HTTP response message body which has " +
+                            "been dropped by user code - this is a strong indication of a bug " +
+                            "in a user-defined filter. Response payload (message) body must " +
+                            "be fully consumed before retrying. connectionInfo={}", connectionContext());
                 }
             };
         }

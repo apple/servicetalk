@@ -18,15 +18,17 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
+  api project(":servicetalk-buffer-api")
   api project(":servicetalk-serialization-api")
   api project(":servicetalk-serializer-api")
+  api "com.fasterxml.jackson.core:jackson-core"
   api "com.fasterxml.jackson.core:jackson-databind"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-test-resources")

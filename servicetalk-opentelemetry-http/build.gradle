@@ -21,18 +21,31 @@ dependencies {
   api project(":servicetalk-http-api")
   api "io.opentelemetry:opentelemetry-api"
 
-  implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+  implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:" +
       "$opentelemetryInstrumentationVersion")
+  implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom-alpha:" +
+      "$opentelemetryInstrumentationVersion-alpha")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-http-utils")
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv")
+  implementation project(":servicetalk-transport-api")
+  implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
+  implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv"
+  implementation "io.opentelemetry.semconv:opentelemetry-semconv"
+  implementation "io.opentelemetry:opentelemetry-context"
 
+  testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
+  testImplementation project(":servicetalk-concurrent")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
+  testImplementation project(":servicetalk-serializer-api")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation "com.fasterxml.jackson.core:jackson-annotations"
+  testImplementation "com.fasterxml.jackson.core:jackson-databind"
+  testImplementation "io.opentelemetry:opentelemetry-sdk-trace"
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"

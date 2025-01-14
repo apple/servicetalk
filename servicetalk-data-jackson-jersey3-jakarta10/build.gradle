@@ -77,30 +77,40 @@ afterEvaluate {
 }
 
 def actualJerseyVersion = "${jersey3VersionEE10}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersionEE10}"
+def actualJavaxInjectVersion = "${javaxInjectVersionEE10}"
 def actualJaxRsVersion = "${jaxRsVersionEE10}"
 
 // Dependencies must remain consistent between servicetalk-data-jackson-jerseyX modules
 dependencies {
   api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
+  api platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   api project(":servicetalk-data-jackson")
+  api "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion" // Priority
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion" // MediaType, Feature
+  api "com.fasterxml.jackson.core:jackson-databind" // ObjectMapper
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-netty")
-  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-http-api")
-  implementation project(":servicetalk-http-router-jersey3-jakarta10")
   implementation project(":servicetalk-http-router-jersey3-jakarta10-internal")
-  implementation project(":servicetalk-http-utils")
-  implementation project(":servicetalk-transport-netty")
+  implementation project(":servicetalk-serialization-api")
+  implementation project(":servicetalk-serializer-api")
+  implementation project(":servicetalk-transport-api")
+  implementation "com.fasterxml.jackson.core:jackson-core"
+  implementation "jakarta.inject:jakarta.inject-api:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtimeOnly project(":servicetalk-http-router-jersey3-jakarta10")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-router-jersey3-jakarta10"))
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

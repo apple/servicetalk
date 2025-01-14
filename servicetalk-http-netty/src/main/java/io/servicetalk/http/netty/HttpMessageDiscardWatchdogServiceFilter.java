@@ -40,8 +40,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
-import static io.servicetalk.http.netty.WatchdogLeakDetector.REQUEST_LEAK_MESSAGE;
-import static io.servicetalk.http.netty.WatchdogLeakDetector.RESPONSE_LEAK_MESSAGE;
 
 /**
  * Filter which tracks message bodies and warns if they are not discarded properly.
@@ -49,6 +47,18 @@ import static io.servicetalk.http.netty.WatchdogLeakDetector.RESPONSE_LEAK_MESSA
 final class HttpMessageDiscardWatchdogServiceFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilter.class);
+
+    private static final String REQUEST_LEAK_MESSAGE =
+            "Discovered un-drained HTTP service request message body which has " +
+                    "been dropped by user code - this is a strong indication of a bug " +
+                    "in a user-defined filter. Requests (or their message body) must " +
+                    "be fully consumed before retrying.";
+
+    private static final String RESPONSE_LEAK_MESSAGE =
+            "Discovered un-drained HTTP service response message body which has " +
+                    "been dropped by user code - this is a strong indication of a bug " +
+                    "in a user-defined filter. Responses (or their message body) must " +
+                    "be fully consumed before retrying.";
 
     private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
             .newKey(HttpMessageDiscardWatchdogServiceFilter.class.getName() + ".messagePublisher",
@@ -169,9 +179,9 @@ final class HttpMessageDiscardWatchdogServiceFilter {
                                                             StreamingHttpResponseFactory responseFactory) {
                     return delegate()
                             .handle(ctx, request.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, REQUEST_LEAK_MESSAGE)), responseFactory)
+                                    WatchdogLeakDetector.gcLeakDetection(publisher, () -> LOGGER.error(REQUEST_LEAK_MESSAGE))), responseFactory)
                             .map(response -> response.transformMessageBody(publisher ->
-                                    WatchdogLeakDetector.gcLeakDetection(publisher, RESPONSE_LEAK_MESSAGE)));
+                                    WatchdogLeakDetector.gcLeakDetection(publisher, () -> LOGGER.warn(RESPONSE_LEAK_MESSAGE))));
                 }
             };
         }

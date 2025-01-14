@@ -18,23 +18,32 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api project(":servicetalk-capacity-limiter-api")
   api project(":servicetalk-circuit-breaker-api")
+  api project(":servicetalk-client-api")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-context-api")
   api project(":servicetalk-http-api")
-  api project(":servicetalk-http-utils")
+  api project(":servicetalk-transport-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-utils-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-netty"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation "io.netty:netty-common"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

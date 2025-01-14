@@ -3,7 +3,7 @@
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
 io.netty.incubator:netty-incubator-transport-classes-io_uring:0.0.26.Final=compileClasspath,runtimeClasspath
-io.netty.incubator:netty-incubator-transport-native-io_uring:0.0.26.Final=compileClasspath,runtimeClasspath
+io.netty.incubator:netty-incubator-transport-native-io_uring:0.0.26.Final=runtimeClasspath
 io.netty:netty-bom:4.1.116.Final=compileClasspath,runtimeClasspath
 io.netty:netty-buffer:4.1.116.Final=compileClasspath,runtimeClasspath
 io.netty:netty-codec:4.1.116.Final=compileClasspath,runtimeClasspath
@@ -14,10 +14,10 @@ io.netty:netty-tcnative-boringssl-static:2.0.69.Final=runtimeClasspath
 io.netty:netty-tcnative-classes:2.0.69.Final=runtimeClasspath
 io.netty:netty-transport-classes-epoll:4.1.116.Final=compileClasspath,runtimeClasspath
 io.netty:netty-transport-classes-kqueue:4.1.116.Final=compileClasspath,runtimeClasspath
-io.netty:netty-transport-native-epoll:4.1.116.Final=compileClasspath,runtimeClasspath
-io.netty:netty-transport-native-kqueue:4.1.116.Final=compileClasspath,runtimeClasspath
+io.netty:netty-transport-native-epoll:4.1.116.Final=runtimeClasspath
+io.netty:netty-transport-native-kqueue:4.1.116.Final=runtimeClasspath
 io.netty:netty-transport-native-unix-common:4.1.116.Final=compileClasspath,runtimeClasspath
 io.netty:netty-transport:4.1.116.Final=compileClasspath,runtimeClasspath
 org.jctools:jctools-core:4.0.3=runtimeClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath
-empty=annotationProcessor,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor
+empty=annotationProcessor,jmhCompileClasspath,jmhRuntimeClasspath,spotbugsPlugins,testAnnotationProcessor,testFixturesAnnotationProcessor

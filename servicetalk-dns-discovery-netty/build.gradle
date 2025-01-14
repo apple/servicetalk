@@ -18,14 +18,31 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        // These are transitive dependencies of "org.apache.directory.server:apacheds-protocol-dns" and we don't want to
+        // manage them manually because they are only used by testImplementation scope.
+        onUsedTransitiveDependencies {
+          exclude("org.apache.directory.server:apacheds-protocol-shared")
+          exclude("org.apache.mina:mina-core")
+        }
+      }
+    }
+  }
+}
+
 dependencies {
   api project(":servicetalk-client-api")
+  api project(":servicetalk-transport-api")
 
   implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-concurrent")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-transport-netty")
+  implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "io.netty:netty-buffer"
@@ -38,8 +55,8 @@ dependencies {
 
   if (!project.ext.isNettySnapshot) {
     // Netty doesn't publish snapshots for macos artifacts
-    runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
-    runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")
+    runtimeOnly (group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
+    runtimeOnly (group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")
   }
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

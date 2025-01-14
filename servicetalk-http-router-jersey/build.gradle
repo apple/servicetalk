@@ -16,24 +16,13 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-afterEvaluate {
-  if (tasks.findByName("projectHealth")) {
-    dependencyAnalysis {
-      issues {
-        // False positives for testFixturesImplementation
-        onUnusedDependencies {
-          exclude("org.junit.platform:junit-platform-suite")
-        }
-      }
-    }
-  }
-}
-
 def actualJerseyVersion = "${jerseyVersion}"
 def actualJavaxActivationVersion = "${javaxActivationVersion}"
+def actualJavaxAnnotationsApiVersion = "${javaxAnnotationsApiVersion}"
 def actualJavaxJaxbApiVersion = "${javaxJaxbApiVersion}"
 def actualJavaxJaxbCoreVersion = "${javaxJaxbCoreVersion}"
 def actualJavaxJaxbImplVersion = "${javaxJaxbImplVersion}"
+def actualJavaxInjectVersion = "${javaxInjectVersion}"
 def actualJaxRsVersion = "${jaxRsVersion}"
 
 // Dependencies must remain consistent between servicetalk-http-router-jerseyX modules
@@ -41,24 +30,29 @@ dependencies {
   api platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   api project(":servicetalk-http-api")
   api project(":servicetalk-router-api")
+  api project(":servicetalk-transport-api")
+  api "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion" // Priority
   api "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-api")
+  implementation project(":servicetalk-concurrent")
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.sun.activation:jakarta.activation:$actualJavaxActivationVersion"
-  implementation "com.sun.xml.bind:jaxb-core:$actualJavaxJaxbCoreVersion"
-  implementation "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
+  implementation "org.glassfish.hk2.external:jakarta.inject:$actualJavaxInjectVersion"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  runtimeOnly "com.sun.activation:jakarta.activation:$actualJavaxActivationVersion"
+  runtimeOnly "com.sun.xml.bind:jaxb-core:$actualJavaxJaxbCoreVersion"
   runtimeOnly "com.sun.xml.bind:jaxb-impl:$actualJavaxJaxbImplVersion"
+  runtimeOnly "jakarta.xml.bind:jakarta.xml.bind-api:$actualJavaxJaxbApiVersion"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -66,24 +60,39 @@ dependencies {
 
   testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson"
 
-  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
+  testFixturesApi platform("org.junit:junit-bom:$junit5Version")
+  testFixturesApi project(":servicetalk-buffer-api")
+  testFixturesApi project(":servicetalk-concurrent-api")
+  testFixturesApi project(":servicetalk-http-api")
+  testFixturesApi project(":servicetalk-router-api")
+  testFixturesApi project(":servicetalk-transport-api")
+  testFixturesApi "jakarta.annotation:jakarta.annotation-api:$actualJavaxAnnotationsApiVersion"
+  testFixturesApi "jakarta.ws.rs:jakarta.ws.rs-api:$actualJaxRsVersion"
+  testFixturesApi "org.glassfish.jersey.core:jersey-server"
+  testFixturesApi "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesApi "org.junit.jupiter:junit-jupiter-api"
+  testFixturesApi "org.junit.platform:junit-platform-suite-api:$junitPlatformVersion"
+
+  testFixturesImplementation platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-http-netty"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-buffer-netty")
+  testFixturesImplementation project(":servicetalk-concurrent")
+  testFixturesImplementation project(":servicetalk-context-api")
   testFixturesImplementation project(":servicetalk-data-jackson")
   testFixturesImplementation project(":servicetalk-http-netty")
   testFixturesImplementation project(":servicetalk-http-router-predicate")
   testFixturesImplementation project(":servicetalk-router-utils-internal")
   testFixturesImplementation project(":servicetalk-test-resources")
   testFixturesImplementation project(":servicetalk-transport-netty-internal")
-  testFixturesImplementation "org.glassfish.jersey.core:jersey-server"
+  testFixturesImplementation project(":servicetalk-serializer-api")
+  testFixturesImplementation "com.fasterxml.jackson.core:jackson-core"
+  testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
-  testFixturesImplementation "org.junit.jupiter:junit-jupiter-params"
-  testFixturesImplementation "org.junit.platform:junit-platform-suite:$junitPlatformVersion"
   testFixturesImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
-  testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-params"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 

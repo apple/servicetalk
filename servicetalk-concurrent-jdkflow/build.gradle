@@ -37,10 +37,10 @@ compileTestJava {
 }
 
 dependencies {
+    api project(":servicetalk-concurrent")
     api project(":servicetalk-concurrent-api")
 
     implementation project(":servicetalk-annotations")
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
     testImplementation testFixtures(project(":servicetalk-concurrent-api"))
