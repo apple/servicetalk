@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.buffer.ByteBufUtil;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.PublisherSource;
@@ -29,13 +28,14 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
+
+import io.netty.buffer.ByteBufUtil;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
 import java.net.InetSocketAddress;
+import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -110,7 +110,6 @@ final class WatchdogLeakDetectorTest {
     private static Buffer payload() {
         return BufferAllocators.DEFAULT_ALLOCATOR.fromAscii("Hello, world!");
     }
-
 
     private static void abandon(Publisher<?> messageBody) {
         SourceAdapters.toSource(messageBody).subscribe(new PublisherSource.Subscriber<Object>() {
