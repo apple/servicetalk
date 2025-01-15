@@ -54,7 +54,8 @@ if [ "$#" -ne "2" ]; then
 fi
 
 # Enforce JDK17 to get latest LTS javadoc format/features (search, etc.):
-java_version=$(./gradlew --no-daemon -version | grep 'Launcher JVM:' | awk -F\. '{gsub(/Launcher JVM:[ \t]*/,"",$1); print $1"."$2}')
+java_version=$(./gradlew --no-daemon -version | grep 'Launcher JVM:' | \
+   awk -F\. '{gsub(/Launcher JVM:[ \t]*/,"",$1); print $1"."$2}')
 if [ "$java_version" != "17.0" ]; then
   echo "Docs can be published only using Java 17, current version: $java_version"
   exit 1
