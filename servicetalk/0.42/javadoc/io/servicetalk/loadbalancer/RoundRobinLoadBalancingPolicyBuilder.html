@@ -78,7 +78,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">RoundRobinLoadBalancingPolicyBuilder</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">A builder for immutable <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
+<div class="block">A builder for <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
 <dl class="notes">
 <dt>See Also:</dt>
 <dd>
@@ -105,7 +105,7 @@ loadScripts(document, 'script');</script>
 C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;<br><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Construct the immutable <code>RoundRobinLoadBalancingPolicy</code>.</div>
+<div class="block">Construct the <code>RoundRobinLoadBalancingPolicy</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#failOpen(boolean)" class="member-name-link">failOpen</a><wbr>(boolean&nbsp;failOpen)</code></div>
@@ -139,9 +139,10 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <h3>failOpen</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></span>&nbsp;<span class="element-name">failOpen</span><wbr><span class="parameters">(boolean&nbsp;failOpen)</span></div>
 <div class="block">Set whether the selector should fail-open in the event no healthy hosts are found.
+ <p>
  When a load balancing policy is configured to fail-open and is unable to find a healthy host, it will attempt
- to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy
- session.
+ to select or establish a connection from an arbitrary host even if it is unlikely to return a healthy session.
+ <p>
  Defaults to false.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -157,9 +158,11 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <h3>ignoreWeights</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></span>&nbsp;<span class="element-name">ignoreWeights</span><wbr><span class="parameters">(boolean&nbsp;ignoreWeights)</span></div>
 <div class="block">Set whether the host selector should ignore <code>Host</code>s weight.
+ <p>
  Host weight influences the probability it will be selected to serve a request. The host weight can come
  from many sources including known host capacity, priority groups, and others, so ignoring weight
  information can lead to other features not working properly and should be used with care.
+ <p>
  Defaults to false.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -175,7 +178,7 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters-long">&lt;ResolvedAddress,<wbr>
 C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
 <span class="return-type"><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C&gt;</span>&nbsp;<span class="element-name">build</span>()</div>
-<div class="block">Construct the immutable <code>RoundRobinLoadBalancingPolicy</code>.</div>
+<div class="block">Construct the <code>RoundRobinLoadBalancingPolicy</code>.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>
 <dd><code>ResolvedAddress</code> - the type of the resolved address.</dd>

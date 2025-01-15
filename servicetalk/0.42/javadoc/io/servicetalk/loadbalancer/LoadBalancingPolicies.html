@@ -78,7 +78,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">LoadBalancingPolicies</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">A collections of factories for constructing a <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
+<div class="block">A factory to create different <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> variants.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -125,6 +125,7 @@ loadScripts(document, 'script');</script>
 <h3>roundRobin</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></span>&nbsp;<span class="element-name">roundRobin</span>()</div>
 <div class="block">Builder for the round-robin <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.
+ <p>
  Round-robin load balancing is a strategy that maximizes fairness of the request distribution. This comes at the
  cost of being unable to bias toward better performing hosts and can only leverage the course grained
  healthy/unhealthy status of a host.</div>
@@ -139,6 +140,7 @@ loadScripts(document, 'script');</script>
 <h3>p2c</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="P2CLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">P2CLoadBalancingPolicyBuilder</a></span>&nbsp;<span class="element-name">p2c</span>()</div>
 <div class="block">Builder for the power of two choices (P2C) <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.
+ <p>
  Power of Two Choices (P2C) leverages both course grained healthy/unhealthy status of a host plus additional
  fine-grained scoring to prioritize hosts that are both healthy and better performing. See the
  <code>P2CLoadBalancingPolicy</code> for more details.</div>

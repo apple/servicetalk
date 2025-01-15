@@ -102,21 +102,29 @@ extends <a href="../../oio/api/PayloadWriter.html" title="interface in io.servic
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#addTrailer(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addTrailer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#addTrailers(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">addTrailers</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailer(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setTrailer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setTrailers(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setTrailers</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#trailers()" class="member-name-link">trailers</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
 </div>
 </div>
 </div>
@@ -142,16 +150,25 @@ extends <a href="../../oio/api/PayloadWriter.html" title="interface in io.servic
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="trailers()">
+<h3>trailers</h3>
+<div class="member-signature"><span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">trailers</span>()</div>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="addTrailer(java.lang.CharSequence,java.lang.CharSequence)">
 <h3>addTrailer</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</span>&nbsp;<span class="element-name">addTrailer</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</span></div>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="addTrailers(io.servicetalk.http.api.HttpHeaders)">
 <h3>addTrailers</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</span>&nbsp;<span class="element-name">addTrailers</span><wbr><span class="parameters">(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</span></div>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
 </section>
 </li>
 <li>
@@ -159,23 +176,14 @@ extends <a href="../../oio/api/PayloadWriter.html" title="interface in io.servic
 <h3>setTrailer</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</span>&nbsp;<span class="element-name">setTrailer</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</span></div>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="setTrailers(io.servicetalk.http.api.HttpHeaders)">
 <h3>setTrailers</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="HttpPayloadWriter.html" title="type parameter in HttpPayloadWriter">T</a>&gt;</span>&nbsp;<span class="element-name">setTrailers</span><wbr><span class="parameters">(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;trailers)</span></div>
-</section>
-</li>
-<li>
-<section class="detail" id="trailers()">
-<h3>trailers</h3>
-<div class="member-signature"><span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">trailers</span>()</div>
-<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</div>
-<dl class="notes">
-<dt>Returns:</dt>
-<dd>the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.</dd>
-</dl>
+<div class="block"><b>Note:</b> modifying trailers after the payload writer is <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>closed</code></a> is not allowed.</div>
 </section>
 </li>
 </ul>

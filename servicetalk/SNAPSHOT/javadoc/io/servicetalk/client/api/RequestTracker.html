@@ -5,21 +5,21 @@
 <title>RequestTracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="declaration: package: io.servicetalk.loadbalancer, interface: RequestTracker">
+<meta name="description" content="declaration: package: io.servicetalk.client.api, interface: RequestTracker">
 <meta name="generator" content="javadoc/ClassWriterImpl">
-<link rel="stylesheet" type="text/css" href="../../../stylesheet.css" title="Style">
-<link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
-<link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
-<script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+<link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
+<link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
+<script type="text/javascript" src="../../../../script.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
 <script type="text/javascript">var evenRowColor = "even-row-color";
 var oddRowColor = "odd-row-color";
 var tableTab = "table-tab";
 var activeTableTab = "active-table-tab";
-var pathtoroot = "../../../";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -31,13 +31,13 @@ loadScripts(document, 'script');</script>
 <div class="top-nav" id="navbar-top">
 <div class="skip-nav"><a href="#skip-navbar-top" title="Skip navigation links">Skip navigation links</a></div>
 <ul id="navbar-top-firstrow" class="nav-list" title="Navigation">
-<li><a href="../../../index.html">Overview</a></li>
+<li><a href="../../../../index.html">Overview</a></li>
 <li><a href="package-summary.html">Package</a></li>
 <li class="nav-bar-cell1-rev">Class</li>
 <li><a href="package-tree.html">Tree</a></li>
-<li><a href="../../../deprecated-list.html">Deprecated</a></li>
-<li><a href="../../../index-all.html">Index</a></li>
-<li><a href="../../../help-doc.html#class">Help</a></li>
+<li><a href="../../../../deprecated-list.html">Deprecated</a></li>
+<li><a href="../../../../index-all.html">Index</a></li>
+<li><a href="../../../../help-doc.html#class">Help</a></li>
 </ul>
 </div>
 <div class="sub-nav">
@@ -68,7 +68,7 @@ loadScripts(document, 'script');</script>
 <main role="main">
 <!-- ======== START OF CLASS DATA ======== -->
 <div class="header">
-<div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">io.servicetalk.loadbalancer</a></div>
+<div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">io.servicetalk.client.api</a></div>
 <h1 title="Interface RequestTracker" class="title">Interface RequestTracker</h1>
 </div>
 <section class="class-description" id="class-description">
@@ -77,14 +77,17 @@ loadScripts(document, 'script');</script>
 <div class="block">A tracker of latency of an action over time.
  <p>
  The usage of the RequestTracker is intended to follow the simple workflow:
- - At initiation of an action for which a request is must call <a href="#beforeRequestStart()"><code>beforeRequestStart()</code></a> and save
-   the timestamp much like would be done when using a stamped lock.
- - Once the request event is complete only one of the <a href="#onRequestSuccess(long)"><code>onRequestSuccess(long)</code></a> or
-   <a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a> methods must be called and called exactly once.
+ <ul>
+     <li>At initiation of an action that will be tracked the caller must call
+     <a href="#beforeRequestStart()"><code>beforeRequestStart()</code></a> and save the timestamp much like would be done when using a stamped
+     lock.</li>
+     <li>Once the request event is complete only one of the <a href="#onRequestSuccess(long)"><code>onRequestSuccess(long)</code></a> or
+     <a href="#onRequestError(long,io.servicetalk.client.api.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a> methods must be called and called exactly once</li>
+ </ul>
  In other words, every call to <a href="#beforeRequestStart()"><code>beforeRequestStart()</code></a> must be followed by exactly one call to
  either of the completion methods <a href="#onRequestSuccess(long)"><code>onRequestSuccess(long)</code></a> or
- <a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a>. Failure to do so can cause state corruption in the
- <a href="RequestTracker.html" title="interface in io.servicetalk.loadbalancer"><code>RequestTracker</code></a> implementations which may track not just latency but also the outstanding requests.</div>
+ <a href="#onRequestError(long,io.servicetalk.client.api.RequestTracker.ErrorClass)"><code>onRequestError(long, ErrorClass)</code></a>. Failure to do so can cause state corruption in the
+ <a href="RequestTracker.html" title="interface in io.servicetalk.client.api"><code>RequestTracker</code></a> implementations which may track not just latency but also the outstanding requests.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -98,7 +101,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Interface</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static enum&nbsp;</code></div>
-<div class="col-second even-row-color"><code><a href="RequestTracker.ErrorClass.html" class="type-name-link" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a></code></div>
+<div class="col-second even-row-color"><code><a href="RequestTracker.ErrorClass.html" class="type-name-link" title="enum class in io.servicetalk.client.api">RequestTracker.ErrorClass</a></code></div>
 <div class="col-last even-row-color">
 <div class="block">Enumeration of the main failure classes.</div>
 </div>
@@ -114,7 +117,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Field</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>static final <a href="../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="RequestTracker.html" title="interface in io.servicetalk.loadbalancer">RequestTracker</a>&gt;</code></div>
+<div class="col-first even-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="RequestTracker.html" title="interface in io.servicetalk.client.api">RequestTracker</a>&gt;</code></div>
 <div class="col-second even-row-color"><code><a href="#REQUEST_TRACKER_KEY" class="member-name-link">REQUEST_TRACKER_KEY</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
@@ -137,8 +140,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Invoked before each start of the action for which latency is to be tracked.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)" class="member-name-link">onRequestError</a><wbr>(long&nbsp;beforeStartTimeNs,
- <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a>&nbsp;errorClass)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onRequestError(long,io.servicetalk.client.api.RequestTracker.ErrorClass)" class="member-name-link">onRequestError</a><wbr>(long&nbsp;beforeStartTimeNs,
+ <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.client.api">RequestTracker.ErrorClass</a>&nbsp;errorClass)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Records a failed completion of the action for which latency is to be tracked.</div>
 </div>
@@ -164,7 +167,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="REQUEST_TRACKER_KEY">
 <h3>REQUEST_TRACKER_KEY</h3>
-<div class="member-signature"><span class="modifiers">static final</span>&nbsp;<span class="return-type"><a href="../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="RequestTracker.html" title="interface in io.servicetalk.loadbalancer">RequestTracker</a>&gt;</span>&nbsp;<span class="element-name">REQUEST_TRACKER_KEY</span></div>
+<div class="member-signature"><span class="modifiers">static final</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="RequestTracker.html" title="interface in io.servicetalk.client.api">RequestTracker</a>&gt;</span>&nbsp;<span class="element-name">REQUEST_TRACKER_KEY</span></div>
 </section>
 </li>
 </ul>
@@ -198,10 +201,10 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="onRequestError(long,io.servicetalk.loadbalancer.RequestTracker.ErrorClass)">
+<section class="detail" id="onRequestError(long,io.servicetalk.client.api.RequestTracker.ErrorClass)">
 <h3>onRequestError</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onRequestError</span><wbr><span class="parameters">(long&nbsp;beforeStartTimeNs,
- <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a>&nbsp;errorClass)</span></div>
+ <a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.client.api">RequestTracker.ErrorClass</a>&nbsp;errorClass)</span></div>
 <div class="block">Records a failed completion of the action for which latency is to be tracked.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

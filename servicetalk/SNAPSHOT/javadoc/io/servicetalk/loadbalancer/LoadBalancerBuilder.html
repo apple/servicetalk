@@ -139,9 +139,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Builds the <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> configured by this builder.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)" class="member-name-link">connectionPoolConfig</a><wbr>(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)" class="member-name-link">connectionSelectorPolicy</a><wbr>(<a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;connectionSelectorPolicy)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
+<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserverFactory)" class="member-name-link">loadBalancerObserver</a><wbr>(<a href="LoadBalancerObserverFactory.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserverFactory</a>&nbsp;loadBalancerObserverFactory)</code></div>
@@ -157,11 +157,6 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)" class="member-name-link">outlierDetectorConfig</a><wbr>(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#randomSubsetSize(int)" class="member-name-link">randomSubsetSize</a><wbr>(int&nbsp;randomSubsetSize)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set the random host subset size for the load balancer.</div>
 </div>
 </div>
 </div>
@@ -191,22 +186,6 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="randomSubsetSize(int)">
-<h3>randomSubsetSize</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">randomSubsetSize</span><wbr><span class="parameters">(int&nbsp;randomSubsetSize)</span></div>
-<div class="block">Set the random host subset size for the load balancer.
- This is valuable for limiting the number of outgoing connections when calling services that have
- a very high replica count. It does so by selecting the specified number of hosts randomly from the total host
- set and routing traffic only to these hosts.</div>
-<dl class="notes">
-<dt>Parameters:</dt>
-<dd><code>randomSubsetSize</code> - the maximum number of healthy hosts to establish connections to</dd>
-<dt>Returns:</dt>
-<dd><code>this</code></dd>
-</dl>
-</section>
-</li>
-<li>
 <section class="detail" id="loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserverFactory)">
 <h3>loadBalancerObserver</h3>
 <div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">loadBalancerObserver</span><wbr><span class="parameters">(@Nullable
@@ -226,6 +205,7 @@ loadScripts(document, 'script');</script>
 <h3>outlierDetectorConfig</h3>
 <div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">outlierDetectorConfig</span><wbr><span class="parameters">(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</span></div>
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.
+ <p>
  The outlier detection system works in conjunction with the load balancing policy to attempt to avoid hosts
  that have been determined to be unhealthy or slow. The details of the selection process are determined by the
  <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> while the health status is determined by the outlier detection configuration.</div>
@@ -245,13 +225,13 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)">
-<h3>connectionPoolConfig</h3>
-<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionPoolConfig</span><wbr><span class="parameters">(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</span></div>
-<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
+<section class="detail" id="connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">
+<h3>connectionSelectorPolicy</h3>
+<div class="member-signature"><span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionSelectorPolicy</span><wbr><span class="parameters">(<a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="LoadBalancerBuilder.html" title="type parameter in LoadBalancerBuilder">C</a>&gt;&nbsp;connectionSelectorPolicy)</span></div>
+<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>connectionPoolConfig</code> - the factory of connection pooling strategies to use.</dd>
+<dd><code>connectionSelectorPolicy</code> - the factory of connection selection strategies to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

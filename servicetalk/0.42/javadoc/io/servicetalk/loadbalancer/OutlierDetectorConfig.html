@@ -264,6 +264,7 @@ loadScripts(document, 'script');</script>
 <h3>ewmaHalfLife</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">ewmaHalfLife</span>()</div>
 <div class="block">The Exponentially Weighted Moving Average (EWMA) half-life.
+ <p>
  In the context of an exponentially weighted moving average, the half-life means the time during which
  historical data has the same weight as a new sample.</div>
 <dl class="notes">
@@ -277,6 +278,7 @@ loadScripts(document, 'script');</script>
 <h3>ewmaCancellationPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">ewmaCancellationPenalty</span>()</div>
 <div class="block">The penalty factor for local cancellation of requests.
+ <p>
  The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the EWMA.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -300,6 +302,7 @@ loadScripts(document, 'script');</script>
 <h3>ewmaErrorPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">ewmaErrorPenalty</span>()</div>
 <div class="block">The penalty factor for requests that were classified as an error.
+ <p>
  The latency of the failed request is multiplied by the provided penalty before incorporating it into the EWMA.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -312,6 +315,7 @@ loadScripts(document, 'script');</script>
 <h3>concurrentRequestPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">concurrentRequestPenalty</span>()</div>
 <div class="block">The penalty factory to apply to concurrent requests.
+ <p>
  The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
  concurrent load the traffic distribution will be smoother for algorithms that consider load metrics.</div>
 <dl class="notes">
@@ -407,6 +411,7 @@ loadScripts(document, 'script');</script>
 <h3>failureDetectorInterval</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span>()</div>
 <div class="block">The interval on which to run failure detectors.
+ <p>
  Failure percentage and success rate outlier detectors perform periodic scans to detect outliers. Active
  revival mechanisms such as the layer-4 connectivity detector also use this interval to perform their periodic
  health check to see if a host can be considered revived.</div>
@@ -421,6 +426,7 @@ loadScripts(document, 'script');</script>
 <h3>baseEjectionTime</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">baseEjectionTime</span>()</div>
 <div class="block">The base ejection time.
+ <p>
  The base ejection time is multiplied by the number of consecutive times the host has been ejected to get the
  total ejection time, capped by the <a href="#maxEjectionTime()"><code>maxEjectionTime()</code></a>.</div>
 <dl class="notes">
@@ -567,6 +573,7 @@ loadScripts(document, 'script');</script>
 <h3>ejectionTimeJitter</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">ejectionTimeJitter</span>()</div>
 <div class="block">The amount of jitter to add to the ejection time.
+ <p>
  An additional amount of 'jitter' is added to the ejection time to prevent connection storms if multiple hosts
  are ejected at the time.</div>
 <dl class="notes">

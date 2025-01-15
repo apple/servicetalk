@@ -638,167 +638,169 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A <a href="io/servicetalk/transport/netty/internal/ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal"><code>ChannelInitializer</code></a> that registers a <a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> for all channels.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Configuration of the strategy for selecting connections from a pool to the same endpoint.</div>
-</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/client/api/ConnectionRejectedException.html" title="class in io.servicetalk.client.api">ConnectionRejectedException</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/client/api/ConnectionRejectedException.html" title="class in io.servicetalk.client.api">ConnectionRejectedException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
 <div class="block">Thrown when a newly created connection was rejected.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/client/api/ConnectTimeoutException.html" title="class in io.servicetalk.client.api">ConnectTimeoutException</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/ConnectionSelectorPolicies.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicies</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">A factory to create different <a href="io/servicetalk/loadbalancer/ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> variants.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="io/servicetalk/loadbalancer/ConnectionSelectorPolicy.html" title="type parameter in ConnectionSelectorPolicy">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Configuration of the policy for selecting connections from a pool to the same endpoint.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/client/api/ConnectTimeoutException.html" title="class in io.servicetalk.client.api">ConnectTimeoutException</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">
 <div class="block">Throws when a connect operations failed because of a timeout.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/client/api/ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="io/servicetalk/client/api/ConsumableEvent.html" title="type parameter in ConsumableEvent">T</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/client/api/ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="io/servicetalk/client/api/ConsumableEvent.html" title="type parameter in ConsumableEvent">T</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A container for an event that requires acknowledgement when the event is consumed via <a href="io/servicetalk/client/api/ConsumableEvent.html#eventConsumed()"><code>ConsumableEvent.eventConsumed()</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a> and <a href="io/servicetalk/encoding/api/BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/ContentCodecToBufferDecoder.html" title="class in io.servicetalk.encoding.api.internal">ContentCodecToBufferDecoder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/ContentCodecToBufferDecoder.html" title="class in io.servicetalk.encoding.api.internal">ContentCodecToBufferDecoder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/ContentCodecToBufferEncoder.html" title="class in io.servicetalk.encoding.api.internal">ContentCodecToBufferEncoder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/ContentCodecToBufferEncoder.html" title="class in io.servicetalk.encoding.api.internal">ContentCodecToBufferEncoder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentCodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpRequesterFilter</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentCodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpRequesterFilter</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/ContentEncodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpRequesterFilter</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentCodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpServiceFilter</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentCodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpServiceFilter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/netty/ContentCodings.html" title="class in io.servicetalk.encoding.netty">ContentCodings</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/netty/ContentCodings.html" title="class in io.servicetalk.encoding.netty">ContentCodings</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/netty/NettyCompression.html" title="class in io.servicetalk.encoding.netty"><code>NettyCompression</code></a> and <a href="io/servicetalk/encoding/netty/NettyBufferEncoders.html" title="class in io.servicetalk.encoding.netty"><code>NettyBufferEncoders</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentEncodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpRequesterFilter</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentEncodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpRequesterFilter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A <a href="io/servicetalk/http/api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> that adds encoding / decoding functionality for requests and responses
  respectively, as these are specified by the spec
  <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that adds encoding / decoding functionality for responses and requests respectively,
  as these are specified by the spec
  <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/netty/internal/ContextFilterSuccessful.html" title="class in io.servicetalk.transport.netty.internal">ContextFilterSuccessful</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/netty/internal/ContextFilterSuccessful.html" title="class in io.servicetalk.transport.netty.internal">ContextFilterSuccessful</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Netty pipeline event that represents the successful completion of the <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">The key-value entry map for different types of the value, defined by the <a href="io/servicetalk/context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="io/servicetalk/context/api/ContextMap.Key.html" title="type parameter in ContextMap.Key">T</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="io/servicetalk/context/api/ContextMap.Key.html" title="type parameter in ContextMap.Key">T</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A key identifies a specific object in a <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Interface for getting and setting a <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/concurrent/internal/ContextMapUtils.html" title="class in io.servicetalk.concurrent.internal">ContextMapUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/concurrent/internal/ContextMapUtils.html" title="class in io.servicetalk.concurrent.internal">ContextMapUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Shared utilities for <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/router/predicate/dsl/CookieMatcher.html" title="interface in io.servicetalk.http.router.predicate.dsl">CookieMatcher</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/router/predicate/dsl/CookieMatcher.html" title="interface in io.servicetalk.http.router.predicate.dsl">CookieMatcher</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Methods for route matching on cookies.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/netty/internal/CopyByteBufHandlerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">CopyByteBufHandlerChannelInitializer</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/netty/internal/CopyByteBufHandlerChannelInitializer.html" title="class in io.servicetalk.transport.netty.internal">CopyByteBufHandlerChannelInitializer</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Initializer to configure <code>ChannelInboundHandler</code> that will ensure no pooled <code>ByteBuf</code>s are passed to
  the user and so no leaks are produced if the user does not call <code>ReferenceCountUtil.release(Object)</code>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/internal/DeadlineUtils.html" title="class in io.servicetalk.grpc.internal">DeadlineUtils</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/internal/DeadlineUtils.html" title="class in io.servicetalk.grpc.internal">DeadlineUtils</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Constants and utilities related to
  <a href="https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines">gRPC deadlines</a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/concurrent/internal/DefaultContextMap.html" title="class in io.servicetalk.concurrent.internal">DefaultContextMap</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/concurrent/internal/DefaultContextMap.html" title="class in io.servicetalk.concurrent.internal">DefaultContextMap</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">this class will be made package-private in the future, rely on the <a href="io/servicetalk/dns/discovery/netty/DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>
  instead.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a>&lt;<a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="type parameter in DefaultExecutionContext">ES</a> extends <a href="io/servicetalk/transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a>&lt;<a href="io/servicetalk/transport/api/DefaultExecutionContext.html" title="type parameter in DefaultExecutionContext">ES</a> extends <a href="io/servicetalk/transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A default implementation of <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/client/api/DefaultGroupKey.html" title="class in io.servicetalk.client.api">DefaultGroupKey</a>&lt;<a href="io/servicetalk/client/api/DefaultGroupKey.html" title="type parameter in DefaultGroupKey">Address</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/client/api/DefaultGroupKey.html" title="class in io.servicetalk.client.api">DefaultGroupKey</a>&lt;<a href="io/servicetalk/client/api/DefaultGroupKey.html" title="type parameter in DefaultGroupKey">Address</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A default implementation of <a href="io/servicetalk/client/api/GroupKey.html" title="interface in io.servicetalk.client.api"><code>GroupKey</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation for <a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api"><code>DefaultGrpcClientMetadata</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/health/DefaultHealthService.html" title="class in io.servicetalk.grpc.health">DefaultHealthService</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/health/DefaultHealthService.html" title="class in io.servicetalk.grpc.health">DefaultHealthService</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Implementation of <a href="io/servicetalk/health/v1/Health.HealthService.html" title="interface in io.servicetalk.health.v1"><code>Health.HealthService</code></a> which targets
  <a href="https://github.com/grpc/grpc/blob/master/doc/health-checking.md">gRPC health checking</a> that provides
  accessors to set/clear status for arbitrary services.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpCookiePair.html" title="class in io.servicetalk.http.api">DefaultHttpCookiePair</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpCookiePair.html" title="class in io.servicetalk.http.api">DefaultHttpCookiePair</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/http/api/HttpCookiePair.html" title="interface in io.servicetalk.http.api"><code>HttpCookiePair</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpExecutionContext.html" title="class in io.servicetalk.http.api">DefaultHttpExecutionContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpExecutionContext.html" title="class in io.servicetalk.http.api">DefaultHttpExecutionContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/http/api/HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionContext</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api">DefaultHttpHeadersFactory</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api">DefaultHttpHeadersFactory</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/http/api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api">DefaultHttpLoadBalancerFactory</a>&lt;<a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="type parameter in DefaultHttpLoadBalancerFactory">ResolvedAddress</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api">DefaultHttpLoadBalancerFactory</a>&lt;<a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="type parameter in DefaultHttpLoadBalancerFactory">ResolvedAddress</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/http/api/HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api"><code>HttpLoadBalancerFactory</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a>&lt;<a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.html" title="type parameter in DefaultHttpLoadBalancerFactory">ResolvedAddress</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a>&lt;<a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.html" title="type parameter in DefaultHttpLoadBalancerFactory">ResolvedAddress</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">use <a href="io/servicetalk/http/api/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.api"><code>DefaultHttpLoadBalancerFactory</code></a> instead.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;<a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.Builder.html" title="type parameter in DefaultHttpLoadBalancerFactory.Builder">ResolvedAddress</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.Builder.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory.Builder</a>&lt;<a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.Builder.html" title="type parameter in DefaultHttpLoadBalancerFactory.Builder">ResolvedAddress</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A builder for creating instances of <a href="io/servicetalk/http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty"><code>DefaultHttpLoadBalancerFactory</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.html" title="class in io.servicetalk.loadbalancer.experimental">DefaultHttpLoadBalancerProvider</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.html" title="class in io.servicetalk.loadbalancer.experimental">DefaultHttpLoadBalancerProvider</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A client builder provider that supports enabling the new `DefaultLoadBalancer` in applications via property flags.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="class in io.servicetalk.loadbalancer.experimental">DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder</a>&lt;<a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="type parameter in DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder">U</a>,<wbr><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="type parameter in DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder">R</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpSetCookie.html" title="class in io.servicetalk.http.api">DefaultHttpSetCookie</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="class in io.servicetalk.loadbalancer.experimental">DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder</a>&lt;<a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="type parameter in DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder">U</a>,<wbr><a href="io/servicetalk/loadbalancer/experimental/DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder.html" title="type parameter in DefaultHttpLoadBalancerProvider.LoadBalancerIgnoringBuilder">R</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/DefaultHttpSetCookie.html" title="class in io.servicetalk.http.api">DefaultHttpSetCookie</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Default implementation of <a href="io/servicetalk/http/api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemorySpanContext.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemorySpanContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemorySpanContext.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemorySpanContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">SpanContext object used by the <a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory"><code>DefaultInMemoryTracer</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Tracer implementation that propagates spans in-memory and emits events to listeners.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.Builder.html" title="class in io.servicetalk.opentracing.inmemory">DefaultInMemoryTracer.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builders for <a href="io/servicetalk/opentracing/inmemory/DefaultInMemoryTracer.html" title="class in io.servicetalk.opentracing.inmemory"><code>DefaultInMemoryTracer</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/examples/http/defaultloadbalancer/DefaultLoadBalancerClient.html" title="class in io.servicetalk.examples.http.defaultloadbalancer">DefaultLoadBalancerClient</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Read</a>,<wbr><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;</div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Implementation of <a href="io/servicetalk/transport/netty/internal/NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> backed by a netty <code>Channel</code>.</div>
@@ -961,8 +963,8 @@ loadScripts(document, 'script');</script>
 <div class="block">A <a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>PartitionedHttpClientBuilder</code></a> that delegates all methods to another <a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>PartitionedHttpClientBuilder</code></a>.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/DelegatingRoundRobinLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingRoundRobinLoadBalancerBuilder</a>&lt;<a href="io/servicetalk/loadbalancer/DelegatingRoundRobinLoadBalancerBuilder.html" title="type parameter in DelegatingRoundRobinLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/DelegatingRoundRobinLoadBalancerBuilder.html" title="type parameter in DelegatingRoundRobinLoadBalancerBuilder">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> that delegates all methods to another <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer"><code>DelegatingLoadBalancerBuilder</code></a> instead.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/transport/api/DelegatingServerSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingServerSslConfig</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
@@ -1301,305 +1303,307 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> clients.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/internal/GrpcContextKeys.html" title="class in io.servicetalk.grpc.internal">GrpcContextKeys</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">All <a href="io/servicetalk/context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a>(s) defined for gRPC.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Filter that maps known <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> subtypes into an gRPC response with an appropriate <a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api"><code>GrpcStatusCode</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An extension of <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for <a href="https://www.grpc.io">gRPC</a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory to create different <a href="io/servicetalk/grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A builder to build an <a href="io/servicetalk/grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An execution strategy for <a href="https://www.grpc.io">gRPC</a> client and servers.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcFilters.html" title="class in io.servicetalk.grpc.api">GrpcFilters</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcFilters.html" title="class in io.servicetalk.grpc.api">GrpcFilters</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Utility filters for gRPC.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcHeaderNames.html" title="class in io.servicetalk.grpc.api">GrpcHeaderNames</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcHeaderNames.html" title="class in io.servicetalk.grpc.api">GrpcHeaderNames</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Common <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC header names</a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcHeaderValues.html" title="class in io.servicetalk.grpc.api">GrpcHeaderValues</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcHeaderValues.html" title="class in io.servicetalk.grpc.api">GrpcHeaderValues</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Common <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC header values</a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An observer interface that provides visibility into gRPC lifecycle events.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcExchangeObserver</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcExchangeObserver</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An observer interface that provides visibility into events associated with a single gRPC exchange.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcRequestObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcRequestObserver</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcRequestObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcRequestObserver</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An observer interface that provides visibility into events associated with a single gRPC request.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcResponseObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcResponseObserver</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.GrpcResponseObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcResponseObserver</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An observer interface that provides visibility into events associated with a single gRPC response.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverRequesterFilter</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverRequesterFilter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An HTTP requester filter that tracks events during gRPC request/response lifecycle.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/utils/GrpcLifecycleObservers.html" title="class in io.servicetalk.grpc.utils">GrpcLifecycleObservers</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/utils/GrpcLifecycleObservers.html" title="class in io.servicetalk.grpc.utils">GrpcLifecycleObservers</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory to create different <a href="io/servicetalk/grpc/api/GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver</code></a>s.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverServiceFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverServiceFilter</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverServiceFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverServiceFilter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An HTTP service filter that tracks events during gRPC request/response lifecycle.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Metadata for a <a href="https://www.grpc.io">gRPC</a> call.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;<a href="io/servicetalk/grpc/api/GrpcPayloadWriter.html" title="type parameter in GrpcPayloadWriter">T</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;<a href="io/servicetalk/grpc/api/GrpcPayloadWriter.html" title="type parameter in GrpcPayloadWriter">T</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A <a href="io/servicetalk/oio/api/PayloadWriter.html" title="interface in io.servicetalk.oio.api"><code>PayloadWriter</code></a> for <a href="https://www.grpc.io">gRPC</a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcProviders.html" title="class in io.servicetalk.grpc.api">GrpcProviders</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcProviders.html" title="class in io.servicetalk.grpc.api">GrpcProviders</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A holder for all gRPC-specific providers that can be registered using <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html" title="class or interface in java.util" class="external-link"><code>ServiceLoader</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api">GrpcProviders.GrpcClientBuilderProvider</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api">GrpcProviders.GrpcClientBuilderProvider</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Provider for <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcProviders.GrpcServerBuilderProvider.html" title="interface in io.servicetalk.grpc.api">GrpcProviders.GrpcServerBuilderProvider</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcProviders.GrpcServerBuilderProvider.html" title="interface in io.servicetalk.grpc.api">GrpcProviders.GrpcServerBuilderProvider</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Provider for <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServerBuilder</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a> extends <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a> extends <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A holder of <a href="https://www.grpc.io">gRPC</a> routes that constitutes a service.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">Deprecated.
 <div class="deprecation-comment">This class is not used starting from version 0.42.0 (see
  <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRequestStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Resp</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRequestStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Resp</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with request streaming.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with response streaming.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="type parameter in GrpcRoutes.BlockingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="type parameter in GrpcRoutes.BlockingRoute">Resp</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="type parameter in GrpcRoutes.BlockingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingRoute.html" title="type parameter in GrpcRoutes.BlockingRoute">Resp</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingStreamingRoute">Resp</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.BlockingStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingStreamingRoute">Resp</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with bi-directional streaming.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.RequestStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="type parameter in GrpcRoutes.RequestStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="type parameter in GrpcRoutes.RequestStreamingRoute">Resp</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.RequestStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="type parameter in GrpcRoutes.RequestStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.RequestStreamingRoute.html" title="type parameter in GrpcRoutes.RequestStreamingRoute">Resp</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with request streaming.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.ResponseStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="type parameter in GrpcRoutes.ResponseStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="type parameter in GrpcRoutes.ResponseStreamingRoute">Resp</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.ResponseStreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="type parameter in GrpcRoutes.ResponseStreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.ResponseStreamingRoute.html" title="type parameter in GrpcRoutes.ResponseStreamingRoute">Resp</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with response streaming.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.Route</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="type parameter in GrpcRoutes.Route">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="type parameter in GrpcRoutes.Route">Resp</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.Route</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="type parameter in GrpcRoutes.Route">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.Route.html" title="type parameter in GrpcRoutes.Route">Resp</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.StreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="type parameter in GrpcRoutes.StreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="type parameter in GrpcRoutes.StreamingRoute">Resp</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.StreamingRoute</a>&lt;<a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="type parameter in GrpcRoutes.StreamingRoute">Req</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcRoutes.StreamingRoute.html" title="type parameter in GrpcRoutes.StreamingRoute">Resp</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with bi-directional streaming.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">Deprecated.
 <div class="deprecation-comment">Serialization is now specified via <a href="io/servicetalk/grpc/api/MethodDescriptor.html" title="interface in io.servicetalk.grpc.api"><code>MethodDescriptor</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A builder for building a <a href="https://www.grpc.io">gRPC</a> server.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Initializes the underlying <a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> used for the transport layer.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServerContext.html" title="interface in io.servicetalk.grpc.api">GrpcServerContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Context of a gRPC server.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcServers.html" title="class in io.servicetalk.grpc.netty">GrpcServers</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/netty/GrpcServers.html" title="class in io.servicetalk.grpc.netty">GrpcServers</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> servers.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A <a href="https://www.grpc.io">gRPC</a> service.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A <a href="https://www.grpc.io">gRPC</a> service context.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceContext.GrpcProtocol.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext.GrpcProtocol</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;<a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Service</a> extends <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceContext.GrpcProtocol.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext.GrpcProtocol</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;<a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Service</a> extends <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api">GrpcService</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory for binding a <a href="https://www.grpc.io">gRPC</a> service to a server using a <a href="io/servicetalk/grpc/api/GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFactory.ServerBinder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.ServerBinder.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFactory.ServerBinder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A utility to bind an HTTP service for <a href="https://www.grpc.io">gRPC</a> with an
  appropriate programming model.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFilterFactory</a>&lt;<a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Filter</a> extends <a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFilterFactory</a>&lt;<a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Filter</a> extends <a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>,<wbr><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">Deprecated.
 <div class="deprecation-comment">gRPC Service Filters will be removed in future release of ServiceTalk.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/api/GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Class representing gRPC statuses.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Standard gRPC status codes.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/grpc/api/GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="io/servicetalk/grpc/api/GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
 <div class="block">A <a href="io/servicetalk/grpc/api/GrpcStatus.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatus</code></a> in exception form.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/grpc/internal/GrpcStatusUtils.html" title="class in io.servicetalk.grpc.internal">GrpcStatusUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Provides utilities around percent-encoding and decoding the GRPC status message.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H1ProtocolConfig</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Configuration for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> protocol.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H1ProtocolConfigBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/servicetalk/http/netty/H1ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H1ProtocolConfig</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1SpecExceptions.Builder.html" title="class in io.servicetalk.http.netty">H1SpecExceptions.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H1SpecExceptions.Builder.html" title="class in io.servicetalk.http.netty">H1SpecExceptions.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty"><code>H1SpecExceptions</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A <a href="io/servicetalk/http/api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> optimized for HTTP/2.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory to create <a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.KeepAlivePolicyBuilder.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies.KeepAlivePolicyBuilder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2KeepAlivePolicies.KeepAlivePolicyBuilder.html" title="class in io.servicetalk.http.netty">H2KeepAlivePolicies.KeepAlivePolicyBuilder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A builder of <a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Configuration for <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> protocol.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/netty/H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/netty/H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Builder for <a href="io/servicetalk/http/netty/H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html" title="class in io.servicetalk.encoding.api.internal">HeaderUtils</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html" title="class in io.servicetalk.encoding.api.internal">HeaderUtils</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Header utilities to support encoding.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.html" title="class in io.servicetalk.http.api">HeaderUtils</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.html" title="class in io.servicetalk.http.api">HeaderUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Utilities to use for <a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> implementations.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.CookiesByNameIterator.html" title="class in io.servicetalk.http.api">HeaderUtils.CookiesByNameIterator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.CookiesByNameIterator.html" title="class in io.servicetalk.http.api">HeaderUtils.CookiesByNameIterator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link"><code>Iterator</code></a> of <a href="io/servicetalk/http/api/HttpCookiePair.html" title="interface in io.servicetalk.http.api"><code>HttpCookiePair</code></a> designed to iterate across multiple values of
  <a href="io/servicetalk/http/api/HttpHeaderNames.html#COOKIE"><code>HttpHeaderNames.COOKIE</code></a> for a specific <a href="io/servicetalk/http/api/HttpCookiePair.html#name()"><code>cookie-name</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.CookiesIterator.html" title="class in io.servicetalk.http.api">HeaderUtils.CookiesIterator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/http/api/HeaderUtils.CookiesIterator.html" title="class in io.servicetalk.http.api">HeaderUtils.CookiesIterator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link"><code>Iterator</code></a> of <a href="io/servicetalk/http/api/HttpCookiePair.html" title="interface in io.servicetalk.http.api"><code>HttpCookiePair</code></a> designed to iterate across multiple values of
  <a href="io/servicetalk/http/api/HttpHeaderNames.html#COOKIE"><code>HttpHeaderNames.COOKIE</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.html" title="class in io.servicetalk.health.v1">Health</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.html" title="class in io.servicetalk.health.v1">Health</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Class for Health Service</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingCheckRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingCheckRpc</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingCheckRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingCheckRpc</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthClient</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthClient</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingHealthService.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthService</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingHealthService.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthService</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
-<div class="deprecation-comment">This class will be removed in the future in favor of direct usage of <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a>.</div>
-</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.CheckRpc.html" title="interface in io.servicetalk.health.v1">Health.CheckRpc</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ClientFactory.html" title="class in io.servicetalk.health.v1">Health.ClientFactory</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.HealthClient.html" title="interface in io.servicetalk.health.v1">Health.HealthClient</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
 <div class="deprecation-comment">This class will be removed in the future in favor of direct usage of <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.CheckRpc.html" title="interface in io.servicetalk.health.v1">Health.CheckRpc</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckRequest</code></div>
-</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckRequest.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckRequest.Builder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckRequest</code></div>
-</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/HealthCheckRequestOrBuilder.html" title="interface in io.servicetalk.health.v1">HealthCheckRequestOrBuilder</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ClientFactory.html" title="class in io.servicetalk.health.v1">Health.ClientFactory</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.HealthClient.html" title="interface in io.servicetalk.health.v1">Health.HealthClient</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckResponse</code></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="deprecation-comment">This class will be removed in the future in favor of direct usage of <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a>.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckResponse.Builder</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckRequest</code></div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckRequest.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckRequest.Builder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckRequest</code></div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/HealthCheckRequestOrBuilder.html" title="interface in io.servicetalk.health.v1">HealthCheckRequestOrBuilder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Protobuf type <code>grpc.health.v1.HealthCheckResponse</code></div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/health/v1/HealthCheckResponse.ServingStatus.html" title="enum class in io.servicetalk.health.v1">HealthCheckResponse.ServingStatus</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthCheckResponse.Builder.html" title="class in io.servicetalk.health.v1">HealthCheckResponse.Builder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Protobuf type <code>grpc.health.v1.HealthCheckResponse</code></div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/health/v1/HealthCheckResponse.ServingStatus.html" title="enum class in io.servicetalk.health.v1">HealthCheckResponse.ServingStatus</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Protobuf enum <code>grpc.health.v1.HealthCheckResponse.ServingStatus</code></div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/HealthCheckResponseOrBuilder.html" title="interface in io.servicetalk.health.v1">HealthCheckResponseOrBuilder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthProto.html" title="class in io.servicetalk.health.v1">HealthProto</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/examples/http/defaultloadbalancer/HelloWorldServer.html" title="class in io.servicetalk.examples.http.defaultloadbalancer">HelloWorldServer</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/health/v1/HealthCheckResponseOrBuilder.html" title="interface in io.servicetalk.health.v1">HealthCheckResponseOrBuilder</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/health/v1/HealthProto.html" title="class in io.servicetalk.health.v1">HealthProto</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/opentracing/internal/HexUtils.html" title="class in io.servicetalk.opentracing.internal">HexUtils</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
@@ -2109,7 +2113,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/LoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilderProvider</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
-<div class="block">Provider for <a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
+<div class="block">Provider for <a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> that can be registered using <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html" title="class or interface in java.util" class="external-link"><code>ServiceLoader</code></a>.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a>&lt;<a href="io/servicetalk/client/api/LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="io/servicetalk/client/api/LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
@@ -2138,11 +2142,11 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/LoadBalancers.html" title="class in io.servicetalk.loadbalancer">LoadBalancers</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A factory to create <code>DefaultLoadBalancers</code>.</div>
+<div class="block">A factory to create a <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> or a <a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> to customize one.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicies</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A collections of factories for constructing a <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
+<div class="block">A factory to create different <a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> variants.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;<a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="type parameter in LoadBalancingPolicy">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/LoadBalancingPolicy.html" title="type parameter in LoadBalancingPolicy">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
@@ -2338,7 +2342,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/P2CLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">P2CLoadBalancingPolicyBuilder</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A builder for immutable <code>P2CLoadBalancingPolicy</code> instances.</div>
+<div class="block">A builder for <code>P2CLoadBalancingPolicy</code> instances.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/grpc/api/ParameterDescriptor.html" title="interface in io.servicetalk.grpc.api">ParameterDescriptor</a>&lt;<a href="io/servicetalk/grpc/api/ParameterDescriptor.html" title="type parameter in ParameterDescriptor">T</a>&gt;</div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
@@ -2649,11 +2653,11 @@ loadScripts(document, 'script');</script>
 <div class="block"><a href="https://tools.ietf.org/html/rfc3986#section-2.1">Encodes</a> the
  <a href="io/servicetalk/http/api/HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a> for each incoming request.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/RequestTracker.html" title="interface in io.servicetalk.loadbalancer">RequestTracker</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/client/api/RequestTracker.html" title="interface in io.servicetalk.client.api">RequestTracker</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A tracker of latency of an action over time.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/loadbalancer/RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/servicetalk/client/api/RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.client.api">RequestTracker.ErrorClass</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Enumeration of the main failure classes.</div>
 </div>
@@ -2743,39 +2747,30 @@ loadScripts(document, 'script');</script>
 <div class="block">A set of strategies to use for retrying with <a href="io/servicetalk/concurrent/api/Publisher.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Publisher.retryWhen(BiIntFunction)</code></a>,
  <a href="io/servicetalk/concurrent/api/Single.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Single.retryWhen(BiIntFunction)</code></a>, and <a href="io/servicetalk/concurrent/api/Completable.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Completable.retryWhen(BiIntFunction)</code></a> or in general.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a>&lt;<a href="io/servicetalk/loadbalancer/RichServiceDiscovererEvent.html" title="type parameter in RichServiceDiscovererEvent">ResolvedAddress</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A richer <a href="io/servicetalk/client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> that can carry weight and priority information.</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="type parameter in RoundRobinLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="type parameter in RoundRobinLoadBalancerBuilder">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> interfaces instead.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="type parameter in RoundRobinLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="type parameter in RoundRobinLoadBalancerBuilder">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
-<div class="block">Builder for <a href="io/servicetalk/client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances which use a round-robin strategy
- for selecting connections from a pool of addresses.</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilderProvider</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">Deprecated.
+<div class="deprecation-comment">use the <a href="io/servicetalk/loadbalancer/LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> implementations along with <a href="io/servicetalk/loadbalancer/LoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilderProvider</code></a></div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilderProvider</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
-<div class="block">Provider for <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
-</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
-<div class="deprecation-comment">this class will be made package-private in the future, use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancers</code></a> to create
- <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
-</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
-<div class="deprecation-comment">this class will be made package-private in the future, rely on the
- <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> instead.</div>
+<div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/LoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancers</code></a> to create <a href="io/servicetalk/client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancers</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="deprecation-comment">rely on the <a href="io/servicetalk/loadbalancer/LoadBalancers.html#builder(java.lang.String)"><code>LoadBalancers.builder(String)</code></a> instead.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancers</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.
+<div class="deprecation-comment">use <a href="io/servicetalk/loadbalancer/LoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancers</code></a> instead.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A factory to create <code>RoundRobinLoadBalancers</code>.</div>
+<div class="block">A builder for <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
-<div class="block">A builder for immutable <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
-</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/servicetalk/loadbalancer/RoundRobinToDefaultLBMigrationProvider.html" title="class in io.servicetalk.loadbalancer">RoundRobinToDefaultLBMigrationProvider</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/servicetalk/http/router/predicate/dsl/RouteContinuation.html" title="interface in io.servicetalk.http.router.predicate.dsl">RouteContinuation</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Methods for continuing a route.</div>

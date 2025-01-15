@@ -90,7 +90,7 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a>&lt;ResolvedAddress,<wbr>C&gt;</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">this class will be made package-private in the future, use <a href="RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancers</code></a> to create
+<div class="deprecation-comment">use <a href="LoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancers</code></a> to create <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> instances.
  <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
 </div>
 <div class="block"><a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances which use a round-robin strategy
@@ -113,8 +113,7 @@ implements <a href="../client/api/LoadBalancerFactory.html" title="interface in 
 <div class="col-second even-row-color"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" class="type-name-link" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></div>
 <div class="col-last even-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">this class will be made package-private in the future, rely on the
- <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> instead.</div>
+<div class="deprecation-comment">rely on the <a href="LoadBalancers.html#builder(java.lang.String)"><code>LoadBalancers.builder(String)</code></a> instead.</div>
 </div>
 </div>
 </div>

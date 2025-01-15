@@ -177,13 +177,21 @@ loadScripts(document, 'script');</script>
  <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> and the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryRetryableExceptions(java.util.function.BiFunction)" class="member-name-link">retryRetryableExceptions</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a>,<wbr><a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryResponses(java.util.function.BiFunction,boolean)" class="member-name-link">retryResponses</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a>,<wbr><a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper,
+ boolean&nbsp;returnOriginalResponses)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The retrying-filter will evaluate for <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s in the request flow.</div>
+<div class="block">The retrying-filter will evaluate <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> that resulted from the
+ <a href="#responseMapper(java.util.function.Function)"><code>responseMapper(Function)</code></a>, and support different retry behaviour according to the
+ <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> and the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#waitForLoadBalancer(boolean)" class="member-name-link">waitForLoadBalancer</a><wbr>(boolean&nbsp;waitForLb)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryRetryableExceptions(java.util.function.BiFunction)" class="member-name-link">retryRetryableExceptions</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a>,<wbr><a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The retrying-filter will evaluate for <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s in the request flow.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#waitForLoadBalancer(boolean)" class="member-name-link">waitForLoadBalancer</a><wbr>(boolean&nbsp;waitForLb)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">By default, automatic retries wait for the associated <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be
  <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> before triggering a retry for requests.</div>
 </div>
@@ -276,8 +284,12 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> that maps a <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> to an
- <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> or returns <code>null</code> if there is no mapping for response meta-data. The
- mapper should return <code>null</code> if no retry is needed or if it cannot be determined that a retry is needed.</dd>
+ <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> or returns <code>null</code> if there is no mapping for response meta-data.
+ In the case that the request cannot be retried, the <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> will be returned via the
+ error pathway.
+ <p>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't throw exceptions.</strong></dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>
@@ -291,7 +303,8 @@ loadScripts(document, 'script');</script>
  <p>
  To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a> from the <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
@@ -315,7 +328,8 @@ loadScripts(document, 'script');</script>
  <p>
  To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a> from the <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
@@ -361,7 +375,8 @@ loadScripts(document, 'script');</script>
  To disable retries and proceed evaluating other retry functions you can return,
  <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a> from the passed <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
@@ -388,7 +403,8 @@ loadScripts(document, 'script');</script>
  <p>
  To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES"><code>RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</code></a> from the <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
@@ -408,11 +424,36 @@ loadScripts(document, 'script');</script>
  <p>
  To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES"><code>RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</code></a> from the <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
  <a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><code>delayed-exception</code></a> to a <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="retryResponses(java.util.function.BiFunction,boolean)">
+<h3>retryResponses</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></span>&nbsp;<span class="element-name">retryResponses</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a>,<wbr><a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper,
+ boolean&nbsp;returnOriginalResponses)</span></div>
+<div class="block">The retrying-filter will evaluate <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> that resulted from the
+ <a href="#responseMapper(java.util.function.Function)"><code>responseMapper(Function)</code></a>, and support different retry behaviour according to the
+ <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> and the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.
+ <p>
+ To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES"><code>RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</code></a> from the <code>mapper</code>.
+ <p>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>mapper</code> - The mapper to map the <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> and the
+ <a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><code>delayed-exception</code></a> to a <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a>.</dd>
+<dd><code>returnOriginalResponses</code> - whether to unwrap the response defined by the <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a>
+ meta-data in the case that the request is not retried.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -427,7 +468,8 @@ loadScripts(document, 'script');</script>
  <p>
  To disable retries you can return <a href="RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES"><code>RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</code></a> from the <code>mapper</code>.
  <p>
- <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link"><code>Function</code></a> doesn't block to avoid performance impacts.</strong></div>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't block to avoid performance impacts.</strong>
+ <strong>It's important that this <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> doesn't throw exceptions.</strong></div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>mapper</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> that checks whether a given combination of

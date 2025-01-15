@@ -72,9 +72,14 @@ loadScripts(document, 'script');</script>
 <h1 title="Interface LoadBalancerBuilderProvider" class="title">Interface LoadBalancerBuilderProvider</h1>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>Functional Interface:</dt>
+<dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
+</dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">LoadBalancerBuilderProvider</span></div>
-<div class="block">Provider for <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+</span><span class="modifiers">public interface </span><span class="element-name type-name-label">LoadBalancerBuilderProvider</span></div>
+<div class="block">Provider for <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> that can be registered using <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html" title="class or interface in java.util" class="external-link"><code>ServiceLoader</code></a>.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -126,11 +131,10 @@ C extends <a href="../client/api/LoadBalancedConnection.html" title="interface i
 <dd><code>ResolvedAddress</code> - The resolved address type.</dd>
 <dd><code>C</code> - The type of connection.</dd>
 <dt>Parameters:</dt>
-<dd><code>id</code> - a (unique) identifier used to identify the underlying <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</dd>
+<dd><code>id</code> - a (unique) identifier used to identify the underlying <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</dd>
 <dd><code>builder</code> - pre-initialized <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</dd>
 <dt>Returns:</dt>
-<dd>a <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> based on the pre-initialized
- <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</dd>
+<dd>a <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> based on the pre-initialized <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</dd>
 </dl>
 </section>
 </li>

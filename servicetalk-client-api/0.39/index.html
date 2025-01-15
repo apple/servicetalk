@@ -11,13 +11,17 @@
 <link rel="stylesheet" href="../../_/css/site-extra.css">
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-151504011-1"></script>
 <script>function gtag(){dataLayer.push(arguments)};window.dataLayer=window.dataLayer||[];gtag('js',new Date());gtag('config','UA-151504011-1')</script>
+    <link rel="icon" href="../../favicon.ico" type="image/x-icon">
   </head>
   <body class="article">
 <header class="header">
   <nav class="navbar">
     <div class="navbar-brand">
       <div class="navbar-item">
-        <a href="https://github.com/apple/servicetalk">ServiceTalk</a>
+        <a href="https://github.com/apple/servicetalk">
+          <img class="navbar-logo" src="../../_/img/servicetalk.png" alt="ServiceTalk logo" />
+          <span>ServiceTalk</span>
+        </a>
         <span class="separator">//</span>
         <a href="../..">Docs</a>
       </div>
@@ -745,7 +749,7 @@
       </ul>
     </li>
     <li class="component">
-      <span class="title">Load balancing</span>
+      <span class="title">Load Balancing</span>
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
@@ -987,6 +991,9 @@
         <li class="version is-latest">
           <a href="../../servicetalk-traffic-resilience-http/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../servicetalk-traffic-resilience-http/0.42/index.html">0.42</a>
+        </li>
       </ul>
     </li>
   </ul>
@@ -1038,7 +1045,10 @@
     </main>
 </div>
 <footer class="footer">
-  <p></p>
+  <p>Copyright © <span class="footer-year"></span> Apple Inc. All rights reserved.</p>
+  <script>
+    document.querySelector('.footer-year').textContent = new Date().getFullYear();
+  </script>
 </footer>
 <script src="../../_/js/site.js"></script>
 <script async src="../../_/js/vendor/highlight.js"></script>

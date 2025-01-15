@@ -130,9 +130,9 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <div class="block">Builds the <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> configured by this builder.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)" class="member-name-link">connectionPoolConfig</a><wbr>(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)" class="member-name-link">connectionSelectorPolicy</a><wbr>(<a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;&nbsp;connectionSelectorPolicy)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
+<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
@@ -154,17 +154,15 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#randomSubsetSize(int)" class="member-name-link">randomSubsetSize</a><wbr>(int&nbsp;randomSubsetSize)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the random host subset size for the load balancer.</div>
-</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
@@ -223,25 +221,6 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 </section>
 </li>
 <li>
-<section class="detail" id="randomSubsetSize(int)">
-<h3>randomSubsetSize</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">randomSubsetSize</span><wbr><span class="parameters">(int&nbsp;randomSubsetSize)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancerBuilder.html#randomSubsetSize(int)">LoadBalancerBuilder</a></code></span></div>
-<div class="block">Set the random host subset size for the load balancer.
- This is valuable for limiting the number of outgoing connections when calling services that have
- a very high replica count. It does so by selecting the specified number of hosts randomly from the total host
- set and routing traffic only to these hosts.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="LoadBalancerBuilder.html#randomSubsetSize(int)">randomSubsetSize</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
-<dt>Parameters:</dt>
-<dd><code>randomSubsetSize</code> - the maximum number of healthy hosts to establish connections to</dd>
-<dt>Returns:</dt>
-<dd><code>this</code></dd>
-</dl>
-</section>
-</li>
-<li>
 <section class="detail" id="loadBalancerObserver(io.servicetalk.loadbalancer.LoadBalancerObserverFactory)">
 <h3>loadBalancerObserver</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">loadBalancerObserver</span><wbr><span class="parameters">(@Nullable
@@ -265,6 +244,7 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">outlierDetectorConfig</span><wbr><span class="parameters">(<a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a>&nbsp;outlierDetectorConfig)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancerBuilder.html#outlierDetectorConfig(io.servicetalk.loadbalancer.OutlierDetectorConfig)">LoadBalancerBuilder</a></code></span></div>
 <div class="block">Set the <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> to use with this load balancer.
+ <p>
  The outlier detection system works in conjunction with the load balancing policy to attempt to avoid hosts
  that have been determined to be unhealthy or slow. The details of the selection process are determined by the
  <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> while the health status is determined by the outlier detection configuration.</div>
@@ -303,16 +283,16 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 </section>
 </li>
 <li>
-<section class="detail" id="connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)">
-<h3>connectionPoolConfig</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionPoolConfig</span><wbr><span class="parameters">(<a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a>&nbsp;connectionPoolConfig)</span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancerBuilder.html#connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)">LoadBalancerBuilder</a></code></span></div>
-<div class="block">Set the <code>ConnectionPoolStrategy</code> to use with this load balancer.</div>
+<section class="detail" id="connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">
+<h3>connectionSelectorPolicy</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;</span>&nbsp;<span class="element-name">connectionSelectorPolicy</span><wbr><span class="parameters">(<a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a>&gt;&nbsp;connectionSelectorPolicy)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="LoadBalancerBuilder.html#connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">LoadBalancerBuilder</a></code></span></div>
+<div class="block">Set the <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> to use with this load balancer.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code><a href="LoadBalancerBuilder.html#connectionPoolConfig(io.servicetalk.loadbalancer.ConnectionPoolConfig)">connectionPoolConfig</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
+<dd><code><a href="LoadBalancerBuilder.html#connectionSelectorPolicy(io.servicetalk.loadbalancer.ConnectionSelectorPolicy)">connectionSelectorPolicy</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
-<dd><code>connectionPoolConfig</code> - the factory of connection pooling strategies to use.</dd>
+<dd><code>connectionSelectorPolicy</code> - the factory of connection selection strategies to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>
@@ -329,6 +309,16 @@ implements <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk
 <dd><code><a href="LoadBalancerBuilder.html#build()">build</a></code>&nbsp;in interface&nbsp;<code><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;<a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">ResolvedAddress</a>,<wbr><a href="DelegatingLoadBalancerBuilder.html" title="type parameter in DelegatingLoadBalancerBuilder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Returns:</dt>
 <dd>a new instance of <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> with settings from this builder.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toString()">
+<h3>toString</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toString</span>()</div>
+<dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
 </dl>
 </section>
 </li>

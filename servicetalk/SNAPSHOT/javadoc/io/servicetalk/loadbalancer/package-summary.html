@@ -80,112 +80,99 @@ loadScripts(document, 'script');</script>
 </li>
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button></div>
 <div id="class-summary.tabpanel" role="tabpanel">
 <div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectionPoolConfig.html" title="class in io.servicetalk.loadbalancer">ConnectionPoolConfig</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectionSelectorPolicies.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicies</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Configuration of the strategy for selecting connections from a pool to the same endpoint.</div>
+<div class="block">A factory to create different <a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer"><code>ConnectionSelectorPolicy</code></a> variants.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ConnectionSelectorPolicy.html" title="class in io.servicetalk.loadbalancer">ConnectionSelectorPolicy</a>&lt;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Configuration of the policy for selecting connections from a pool to the same endpoint.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> that delegates all methods to another <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingRoundRobinLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingRoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> that delegates all methods to another <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingRoundRobinLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer">DelegatingRoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">Deprecated.
+<div class="deprecation-comment">use <a href="DelegatingLoadBalancerBuilder.html" title="class in io.servicetalk.loadbalancer"><code>DelegatingLoadBalancerBuilder</code></a> instead.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Builder for <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances based upon the configuration.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilderProvider</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
-<div class="block">Provider for <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a>.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerBuilderProvider</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">Provider for <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> that can be registered using <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html" title="class or interface in java.util" class="external-link"><code>ServiceLoader</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer that provides visibility into a <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.Host.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.Host.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.Host</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A description of a host.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserver.HostObserver.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserver.HostObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer for <code>Host</code> events.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserverFactory.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserverFactory</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerObserverFactory.html" title="interface in io.servicetalk.loadbalancer">LoadBalancerObserverFactory</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Factory of <a href="LoadBalancerObserver.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerObserver</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LoadBalancers.html" title="class in io.servicetalk.loadbalancer">LoadBalancers</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">A factory to create <code>DefaultLoadBalancers</code>.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicies</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LoadBalancers.html" title="class in io.servicetalk.loadbalancer">LoadBalancers</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A collections of factories for constructing a <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a>.</div>
+<div class="block">A factory to create a <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> or a <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> to customize one.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LoadBalancingPolicies.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicies</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">A factory to create different <a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancingPolicy</code></a> variants.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LoadBalancingPolicy.html" title="class in io.servicetalk.loadbalancer">LoadBalancingPolicy</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Definition of the selector mechanism used for load balancing.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">XDS outlier detector configuration.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A builder for <a href="OutlierDetectorConfig.html" title="class in io.servicetalk.loadbalancer"><code>OutlierDetectorConfig</code></a> instances.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="P2CLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">P2CLoadBalancingPolicyBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A builder for immutable <code>P2CLoadBalancingPolicy</code> instances.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RequestTracker.html" title="interface in io.servicetalk.loadbalancer">RequestTracker</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">A tracker of latency of an action over time.</div>
-</div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="RequestTracker.ErrorClass.html" title="enum class in io.servicetalk.loadbalancer">RequestTracker.ErrorClass</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
-<div class="block">Enumeration of the main failure classes.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RichServiceDiscovererEvent.html" title="class in io.servicetalk.loadbalancer">RichServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="P2CLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">P2CLoadBalancingPolicyBuilder</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">A richer <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> that can carry weight and priority information.</div>
+<div class="block">A builder for <code>P2CLoadBalancingPolicy</code> instances.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
-<div class="block">Builder for <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances which use a round-robin strategy
- for selecting connections from a pool of addresses.</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">use <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> interfaces instead.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RoundRobinLoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilderProvider</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">Provider for <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">use the <a href="LoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilder</code></a> implementations along with <a href="LoadBalancerBuilderProvider.html" title="interface in io.servicetalk.loadbalancer"><code>LoadBalancerBuilderProvider</code></a></div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last even-row-color class-summary class-summary-tab2">Deprecated.
-<div class="deprecation-comment">this class will be made package-private in the future, use <a href="RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancers</code></a> to create
- <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a>.</div>
+<div class="deprecation-comment">use <a href="LoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancers</code></a> to create <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> instances.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">Deprecated.
-<div class="deprecation-comment">this class will be made package-private in the future, rely on the
- <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> instead.</div>
+<div class="deprecation-comment">rely on the <a href="LoadBalancers.html#builder(java.lang.String)"><code>LoadBalancers.builder(String)</code></a> instead.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="RoundRobinLoadBalancers.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancers</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A factory to create <code>RoundRobinLoadBalancers</code>.</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">Deprecated.
+<div class="deprecation-comment">use <a href="LoadBalancers.html" title="class in io.servicetalk.loadbalancer"><code>LoadBalancers</code></a> instead.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RoundRobinLoadBalancingPolicyBuilder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancingPolicyBuilder</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">A builder for immutable <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
+<div class="block">A builder for <code>RoundRobinLoadBalancingPolicy</code> instances.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RoundRobinToDefaultLBMigrationProvider.html" title="class in io.servicetalk.loadbalancer">RoundRobinToDefaultLBMigrationProvider</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
 </div>
 </div>
 </div>

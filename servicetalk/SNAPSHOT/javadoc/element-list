@@ -27,7 +27,6 @@ io.servicetalk.dns.discovery.netty
 io.servicetalk.encoding.api
 io.servicetalk.encoding.api.internal
 io.servicetalk.encoding.netty
-io.servicetalk.examples.http.defaultloadbalancer
 io.servicetalk.grpc.api
 io.servicetalk.grpc.health
 io.servicetalk.grpc.internal

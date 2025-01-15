@@ -289,8 +289,10 @@ loadScripts(document, 'script');</script>
 <h3>ewmaHalfLife</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaHalfLife</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ewmaHalfLife)</span></div>
 <div class="block">Set the Exponentially Weighted Moving Average (EWMA) half-life.
+ <p>
  In the context of an exponentially weighted moving average, the half-life means the time during which
  historical data has the same weight as a new sample.
+ <p>
  Defaults to 10 seconds.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -305,8 +307,10 @@ loadScripts(document, 'script');</script>
 <h3>ewmaCancellationPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaCancellationPenalty</span><wbr><span class="parameters">(int&nbsp;ewmaCancellationPenalty)</span></div>
 <div class="block">Set the penalty factor for local cancellation of requests.
+ <p>
  The latency of the cancelled request is multiplied by the provided penalty before incorporating it into the
  EWMA.
+ <p>
  Defaults to 5.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -321,15 +325,22 @@ loadScripts(document, 'script');</script>
 <h3>ewmaErrorPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaErrorPenalty</span><wbr><span class="parameters">(int&nbsp;ewmaErrorPenalty)</span></div>
 <div class="block">Set the penalty factor for requests that were classified as an error.
+ <p>
  The latency of the failed request is multiplied by the provided penalty before incorporating it into the
  EWMA.
- Defaults to 10.
- See <a href="OutlierDetectorConfig.html#ewmaErrorPenalty()"><code>OutlierDetectorConfig.ewmaErrorPenalty()</code></a>.</div>
+ <p>
+ Defaults to 10.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>ewmaErrorPenalty</code> - the penalty factor for requests that were classified as an error.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="OutlierDetectorConfig.html#ewmaErrorPenalty()"><code>OutlierDetectorConfig.ewmaErrorPenalty()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
@@ -351,11 +362,13 @@ loadScripts(document, 'script');</script>
 <h3>ewmaConcurrentRequestPenalty</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ewmaConcurrentRequestPenalty</span><wbr><span class="parameters">(int&nbsp;ewmaConcurrentRequestPenalty)</span></div>
 <div class="block">Set the penalty factory to apply to concurrent requests.
+ <p>
  The EWMA penalty to apply to endpoints when there are concurrent requests. By penalizing endpoints with
  concurrent load the traffic distribution will be more fair for algorithms that consider load metrics.
  Larger penalties will favor a more even request distribution while lower penalties will bias traffic toward
  endpoints with better performance. A value of 0 disables the penalty, 1 is an intermediate value, and larger
  values such as 10 or more will strongly favor fairness over performance.
+ <p>
  Defaults to 1.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -392,11 +405,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="failedConnectionsThreshold(int)">
 <h3>failedConnectionsThreshold</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failedConnectionsThreshold</span><wbr><span class="parameters">(int&nbsp;failedConnectionsThreshold)</span></div>
-<div class="block">Configure a threshold for consecutive connection failures to a host. When the <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
- consecutively fails to open connections in the amount greater or equal to the specified value,
- the host will be marked as unhealthy and connection establishment will take place in the background
- repeatedly on the <a href="OutlierDetectorConfig.html#failureDetectorInterval()"><code>OutlierDetectorConfig.failureDetectorInterval()</code></a> (with jitter <a href="OutlierDetectorConfig.html#failureDetectorIntervalJitter()"><code>OutlierDetectorConfig.failureDetectorIntervalJitter()</code></a>) until a connection is
- established. During that time, the host will not take part in load balancing selection.
+<div class="block">Configure a threshold for consecutive connection failures to a host.
+ <p>
+ When the <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> consecutively fails to open connections in the amount greater or equal to the
+ specified value, the host will be marked as unhealthy and connection establishment will take place in the
+ background repeatedly on the <a href="OutlierDetectorConfig.html#failureDetectorInterval()"><code>OutlierDetectorConfig.failureDetectorInterval()</code></a> (with jitter
+ <a href="OutlierDetectorConfig.html#failureDetectorIntervalJitter()"><code>OutlierDetectorConfig.failureDetectorIntervalJitter()</code></a>) until a connection is established. During that time, the host will
+ not take part in load balancing selection.
  <p>
  Use a negative value of the argument to disable health checking.</div>
 <dl class="notes">
@@ -414,6 +429,7 @@ loadScripts(document, 'script');</script>
 <h3>consecutive5xx</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">consecutive5xx</span><wbr><span class="parameters">(int&nbsp;consecutive5xx)</span></div>
 <div class="block">Set the threshold for consecutive failures before a host is ejected.
+ <p>
  Defaults to 5.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -428,8 +444,11 @@ loadScripts(document, 'script');</script>
 <h3>failureDetectorInterval</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval)</span></div>
 <div class="block">Set the failure detector interval on which the outlier detector will perform periodic tasks.
+ <p>
  These tasks can include detection of outlier or the active revival checks.
+ <p>
  This method will also use either the default jitter or the provided interval, whichever is smaller.
+ <p>
  Defaults to 10 second interval with 3 second jitter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -445,7 +464,9 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failureDetectorInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
 <div class="block">Set the interval on which to run failure percentage and success rate failure detectors.
+ <p>
  These tasks can include detection of outlier or the active revival checks.
+ <p>
  Defaults to 10 second interval with 3 second jitter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -462,6 +483,7 @@ loadScripts(document, 'script');</script>
 <h3>baseEjectionTime</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">baseEjectionTime</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;baseEjectionTime)</span></div>
 <div class="block">Set the base ejection time.
+ <p>
  Defaults to 30 seconds.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -482,6 +504,7 @@ loadScripts(document, 'script');</script>
 <h3>ejectionTimeJitter</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">ejectionTimeJitter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ejectionTimeJitter)</span></div>
 <div class="block">Set the ejection time jitter.
+ <p>
  Defaults to 3 seconds.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -502,6 +525,7 @@ loadScripts(document, 'script');</script>
 <h3>maxEjectionPercentage</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">maxEjectionPercentage</span><wbr><span class="parameters">(int&nbsp;maxEjectionPercentage)</span></div>
 <div class="block">Set the maximum percentage of hosts that can be ejected due to outlier detection.
+ <p>
  Defaults to 10 percent but at least one host will be allowed to be
  ejected regardless of value.</div>
 <dl class="notes">
@@ -518,6 +542,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingConsecutive5xx</span><wbr><span class="parameters">(int&nbsp;enforcingConsecutive5xx)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host reaches the
  <a href="OutlierDetectorConfig.html#consecutive5xx()"><code>OutlierDetectorConfig.consecutive5xx()</code></a> threshold.
+ <p>
  Defaults to 100 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -533,6 +558,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingSuccessRate</span><wbr><span class="parameters">(int&nbsp;enforcingSuccessRate)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the success
  rate outlier detectors threshold.
+ <p>
  Defaults to 100 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -563,6 +589,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">successRateRequestVolume</span><wbr><span class="parameters">(int&nbsp;successRateRequestVolume)</span></div>
 <div class="block">Set the minimum number of requests in an outlier detector interval required to include it in the success rate
  outlier detector analysis.
+ <p>
  Defaults to 100.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -579,6 +606,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">successRateStdevFactor</span><wbr><span class="parameters">(int&nbsp;successRateStdevFactor)</span></div>
 <div class="block">Set the value divided by 1000 and then multiplied against the success rate standard deviation which sets the
  threshold for ejection in the success rate outlier detector.
+ <p>
  Defaults to 1900.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -595,6 +623,7 @@ loadScripts(document, 'script');</script>
 <h3>failurePercentageThreshold</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failurePercentageThreshold</span><wbr><span class="parameters">(int&nbsp;failurePercentageThreshold)</span></div>
 <div class="block">Set the failure threshold in percentage for ejecting a host.
+ <p>
  Defaults to 85 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -610,6 +639,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">enforcingFailurePercentage</span><wbr><span class="parameters">(int&nbsp;enforcingFailurePercentage)</span></div>
 <div class="block">Set the probability in percentage that a host will be marked as unhealthy when a host exceeds the failure
  percentage outlier detectors threshold.
+ <p>
  Defaults to 0 percent.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -625,6 +655,7 @@ loadScripts(document, 'script');</script>
 <h3>failurePercentageMinimumHosts</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failurePercentageMinimumHosts</span><wbr><span class="parameters">(int&nbsp;failurePercentageMinimumHosts)</span></div>
 <div class="block">Set the minimum number of hosts required to perform the failure percentage outlier detector analysis.
+ <p>
  Defaults to 5.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -641,6 +672,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">failurePercentageRequestVolume</span><wbr><span class="parameters">(int&nbsp;failurePercentageRequestVolume)</span></div>
 <div class="block">Set the minimum number of requests in an outlier detector interval required to include it in the failure
  percentage outlier detector analysis.
+ <p>
  Defaults to 50.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -656,6 +688,7 @@ loadScripts(document, 'script');</script>
 <h3>maxEjectionTime</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="OutlierDetectorConfig.Builder.html" title="class in io.servicetalk.loadbalancer">OutlierDetectorConfig.Builder</a></span>&nbsp;<span class="element-name">maxEjectionTime</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;maxEjectionTime)</span></div>
 <div class="block">Set the maximum amount of time a host can be ejected regardless of the number of consecutive ejections.
+ <p>
  Defaults to a max ejection time of 300 seconds and 0 seconds jitter.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

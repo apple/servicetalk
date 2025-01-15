@@ -124,35 +124,35 @@ extends <a href="CloseableIterable.html" title="interface in io.servicetalk.conc
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forEach(java.util.function.Consumer,long,java.util.concurrent.TimeUnit)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forEach(java.util.function.Consumer)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forEach(java.util.function.Consumer,long,java.util.concurrent.TimeUnit)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action,
  long&nbsp;timeout,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Mimics the behavior of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link"><code>Iterable.forEach(Consumer)</code></a> but applies a <code>timeout</code> duration for the overall
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Mimics the behavior of <a href="#forEach(java.util.function.Consumer)"><code>forEach(Consumer)</code></a> but applies a <code>timeout</code> duration for the overall
  completion of this method.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forEach(java.util.function.Consumer,java.util.function.LongSupplier,java.util.concurrent.TimeUnit)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#forEach(java.util.function.Consumer,java.util.function.LongSupplier,java.util.concurrent.TimeUnit)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/LongSupplier.html" title="class or interface in java.util.function" class="external-link">LongSupplier</a>&nbsp;timeoutSupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Mimics the behavior of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link"><code>Iterable.forEach(Consumer)</code></a> but uses the <code>timeoutSupplier</code> to determine the timeout
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Mimics the behavior of <a href="#forEach(java.util.function.Consumer)"><code>forEach(Consumer)</code></a> but uses the <code>timeoutSupplier</code> to determine the timeout
  value for interactions with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent">BlockingIterator</a>&lt;<a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#iterator()" class="member-name-link">iterator</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingSpliterator.html" title="interface in io.servicetalk.concurrent">BlockingSpliterator</a>&lt;<a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#spliterator()" class="member-name-link">spliterator</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent">BlockingIterator</a>&lt;<a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#iterator()" class="member-name-link">iterator</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingSpliterator.html" title="interface in io.servicetalk.concurrent">BlockingSpliterator</a>&lt;<a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#spliterator()" class="member-name-link">spliterator</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">The same behavior as <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#spliterator()" title="class or interface in java.lang" class="external-link"><code>Iterable.spliterator()</code></a>, but returns a <a href="BlockingSpliterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingSpliterator</code></a> view.</div>
 </div>
 </div>
 </div>
 </div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-java.lang.Iterable">Methods inherited from interface&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link">forEach</a></code></div>
 </section>
 </li>
 </ul>
@@ -177,17 +177,27 @@ extends <a href="CloseableIterable.html" title="interface in io.servicetalk.conc
 </section>
 </li>
 <li>
+<section class="detail" id="forEach(java.util.function.Consumer)">
+<h3>forEach</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">forEach</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action)</span></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link">forEach</a></code>&nbsp;in interface&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;</code></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="forEach(java.util.function.Consumer,java.util.function.LongSupplier,java.util.concurrent.TimeUnit)">
 <h3>forEach</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">forEach</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="BlockingIterable.html" title="type parameter in BlockingIterable">T</a>&gt;&nbsp;action,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/LongSupplier.html" title="class or interface in java.util.function" class="external-link">LongSupplier</a>&nbsp;timeoutSupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</span>
               throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link">TimeoutException</a></span></div>
-<div class="block">Mimics the behavior of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link"><code>Iterable.forEach(Consumer)</code></a> but uses the <code>timeoutSupplier</code> to determine the timeout
+<div class="block">Mimics the behavior of <a href="#forEach(java.util.function.Consumer)"><code>forEach(Consumer)</code></a> but uses the <code>timeoutSupplier</code> to determine the timeout
  value for interactions with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a>.
  <p>
- By default the <code>timeoutSupplier</code> will be used for each interaction with
- <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However
+ By default, the <code>timeoutSupplier</code> will be used for each interaction with
+ <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However,
  implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not sure if
  an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.
  <p>
@@ -215,16 +225,16 @@ extends <a href="CloseableIterable.html" title="interface in io.servicetalk.conc
  long&nbsp;timeout,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</span>
               throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link">TimeoutException</a></span></div>
-<div class="block">Mimics the behavior of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link"><code>Iterable.forEach(Consumer)</code></a> but applies a <code>timeout</code> duration for the overall
+<div class="block">Mimics the behavior of <a href="#forEach(java.util.function.Consumer)"><code>forEach(Consumer)</code></a> but applies a <code>timeout</code> duration for the overall
  completion of this method. The <code>timeout</code> is adjusted for each interaction with the
  <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> which may block.
  <p>
  Note that the <code>timeout</code> duration is an approximation and this duration maybe
  exceeded if data is available without blocking.
  <p>
- By default the <code>timeout</code> will be used for each interaction with
- <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However
- implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not be sure if
+ By default, the <code>timeout</code> will be used for each interaction with
+ <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However,
+ implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not sure if
  an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.
  <p>
  Note: This method can sneaky-throw an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/InterruptedException.html" title="class or interface in java.lang" class="external-link"><code>InterruptedException</code></a> when a blocking operation internally does so.
