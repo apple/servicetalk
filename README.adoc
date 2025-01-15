@@ -85,7 +85,7 @@ $ open servicetalk.ipr
 
 We use lock files to ensure that all changes to dependencies are intentional, and don't go unnoticed.
 
-When updating dependencies, first make the intended modifications to `gradle.properties, then run the following command to update the lock files:
+When updating dependencies, first make the intended modifications to `gradle.properties`, then run the following command to update the lock files:
 
 [source,shell]
 ----
