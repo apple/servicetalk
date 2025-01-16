@@ -53,8 +53,8 @@ if [ "$#" -ne "2" ]; then
     exit 1
 fi
 
-if ! git diff --quiet; then
-  echo "Branch is dirty. Commit or revert any changes before releasing."
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Branch has uncommitted changes. Commit or revert any changes before releasing."
   exit 1
 fi
 
