@@ -53,6 +53,11 @@ if [ "$#" -ne "2" ]; then
     exit 1
 fi
 
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Branch has uncommitted changes. Commit or revert any changes before releasing."
+  exit 1
+fi
+
 # Enforce JDK17 to get latest LTS javadoc format/features (search, etc.):
 java_version=$(./gradlew --no-daemon -version | grep 'Launcher JVM:' | \
    awk -F\. '{gsub(/Launcher JVM:[ \t]*/,"",$1); print $1"."$2}')
