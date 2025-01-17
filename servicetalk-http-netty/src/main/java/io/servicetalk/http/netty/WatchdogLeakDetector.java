@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SourceAdapters;
@@ -31,15 +32,19 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 final class WatchdogLeakDetector {
 
+    private static final AtomicIntegerFieldUpdater<WatchdogLeakDetector> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(WatchdogLeakDetector.class, "state");
+
     private static final Logger LOGGER = LoggerFactory.getLogger(WatchdogLeakDetector.class);
 
-    private static final WatchdogLeakDetector INSTANCE = new WatchdogLeakDetector();
+    private static final WatchdogLeakDetector INSTANCE = new WatchdogLeakDetector(Executors.global());
 
     private static final String PROPERTY_NAME = "io.servicetalk.http.netty.leakdetection";
 
@@ -52,11 +57,13 @@ final class WatchdogLeakDetector {
         STRICT_DETECTION = prop != null && prop.equalsIgnoreCase(STRICT_MODE);
     }
 
+    private final Executor executor;
     private final ReferenceQueue<Object> refQueue = new ReferenceQueue<>();
     private final Map<Reference<?>, CleanupState> allRefs = new ConcurrentHashMap<>();
+    private volatile int state;
 
-    private WatchdogLeakDetector() {
-        // Singleton.
+    private WatchdogLeakDetector(Executor executor) {
+        this.executor = executor;
     }
 
     static <T> Publisher<T> gcLeakDetection(Publisher<T> publisher, Runnable onLeak) {
@@ -76,25 +83,29 @@ final class WatchdogLeakDetector {
         maybeCleanRefs();
         CleanupState cleanupState = new CleanupState(publisher, onLeak);
         Publisher<T> result = publisher.liftSync(subscriber -> new InstrumentedSubscriber<>(subscriber, cleanupState));
-        Reference<?> ref = new WeakReference<>(result, refQueue);
+        Reference<?> ref = new WeakReference<>(cleanupState, refQueue);
         allRefs.put(ref, cleanupState);
         return result;
     }
 
     private void maybeCleanRefs() {
         final Reference<?> testRef = refQueue.poll();
-        if (testRef != null) {
+        if (testRef != null && STATE_UPDATER.compareAndSet(this, 0, 1)) {
             // There are references to be cleaned but don't do it on this thread.
             // TODO: what executor should we really use?
-            Executors.global().submit(() -> {
+            executor.submit(() -> {
                 Reference<?> ref = testRef;
-                do {
-                    ref.clear();
-                    CleanupState cleanupState = allRefs.remove(ref);
-                    if (cleanupState != null) {
-                        cleanupState.check();
-                    }
-                } while ((ref = refQueue.poll()) != null);
+                try {
+                    do {
+                        ref.clear();
+                        CleanupState cleanupState = allRefs.remove(ref);
+                        if (cleanupState != null) {
+                            cleanupState.check();
+                        }
+                    } while ((ref = refQueue.poll()) != null);
+                } finally {
+                    STATE_UPDATER.set(this, 0);
+                }
             });
         }
     }
@@ -112,7 +123,7 @@ final class WatchdogLeakDetector {
         @Override
         public void onSubscribe(Subscription subscription) {
             cleanupToken.subscribed(subscription);
-            delegate.onSubscribe(new Subscription() {
+            Subscription nextSubscription = new Subscription() {
                 @Override
                 public void request(long n) {
                     subscription.request(n);
@@ -123,7 +134,8 @@ final class WatchdogLeakDetector {
                     cleanupToken.doComplete();
                     subscription.cancel();
                 }
-            });
+            };
+            delegate.onSubscribe(nextSubscription);
         }
 
         @Override
