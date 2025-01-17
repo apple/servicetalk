@@ -83,7 +83,7 @@ final class WatchdogLeakDetector {
         maybeCleanRefs();
         CleanupState cleanupState = new CleanupState(publisher, onLeak);
         Publisher<T> result = publisher.liftSync(subscriber -> new InstrumentedSubscriber<>(subscriber, cleanupState));
-        Reference<?> ref = new WeakReference<>(cleanupState, refQueue);
+        Reference<?> ref = new WeakReference<>(result, refQueue);
         allRefs.put(ref, cleanupState);
         return result;
     }
