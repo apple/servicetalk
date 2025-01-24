@@ -47,6 +47,17 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public ContextMap saveContext() {
+        return context();
+    }
+
+    @Nullable
+    @Override
+    public ContextMap setContext(@Nullable ContextMap contextMap) {
+        return null;
+    }
+
+    @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                         final ContextMap context) {
         return subscriber;

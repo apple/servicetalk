@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +44,19 @@ interface AsyncContextProvider {
      * @return The current context.
      */
     ContextMap context();
+
+    /**
+     * Save existing context in preparation for an asynchronous thread jump.
+     *
+     * Note that this can do more than just package up the ServiceTalk {@link AsyncContext} and could be enhanced or
+     * wrapped to bundle up say the OTEL or grpc contexts as well.
+     * @return the saved context.
+     */
+    ContextMap saveContext();
+
+    // Set the context map for thread local usage, returning the previously existing map, if it exists.
+    @Nullable
+    ContextMap setContext(@Nullable ContextMap contextMap);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.

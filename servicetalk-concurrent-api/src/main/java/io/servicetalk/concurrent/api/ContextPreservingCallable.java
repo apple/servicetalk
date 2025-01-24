@@ -21,7 +21,6 @@ import io.servicetalk.context.api.ContextMapHolder;
 import java.util.concurrent.Callable;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCallable<V> implements Callable<V> {
@@ -29,7 +28,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     private final Callable<V> delegate;
 
     ContextPreservingCallable(Callable<V> delegate) {
-        this(delegate, INSTANCE.context());
+        this(delegate, AsyncContext.provider().saveContext());
     }
 
     ContextPreservingCallable(Callable<V> delegate, ContextMap current) {

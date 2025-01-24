@@ -438,7 +438,7 @@ public final class AsyncContext {
      */
     public static Runnable wrapRunnable(final Runnable runnable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapRunnable(runnable, provider.context());
+        return provider.wrapRunnable(runnable, provider.saveContext());
     }
 
     /**
@@ -449,7 +449,7 @@ public final class AsyncContext {
      */
     public static <V> Callable<V> wrapCallable(final Callable<V> callable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapCallable(callable, provider.context());
+        return provider.wrapCallable(callable, provider.saveContext());
     }
 
     /**
@@ -460,7 +460,7 @@ public final class AsyncContext {
      */
     public static <T> Consumer<T> wrapConsumer(final Consumer<T> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapConsumer(consumer, provider.context());
+        return provider.wrapConsumer(consumer, provider.saveContext());
     }
 
     /**
@@ -472,7 +472,7 @@ public final class AsyncContext {
      */
     public static <T, U> Function<T, U> wrapFunction(final Function<T, U> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapFunction(func, provider.context());
+        return provider.wrapFunction(func, provider.saveContext());
     }
 
     /**
@@ -484,7 +484,7 @@ public final class AsyncContext {
      */
     public static <T, U> BiConsumer<T, U> wrapBiConsume(final BiConsumer<T, U> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiConsumer(consumer, provider.context());
+        return provider.wrapBiConsumer(consumer, provider.saveContext());
     }
 
     /**
@@ -497,7 +497,7 @@ public final class AsyncContext {
      */
     public static <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiFunction(func, provider.context());
+        return provider.wrapBiFunction(func, provider.saveContext());
     }
 
     /**

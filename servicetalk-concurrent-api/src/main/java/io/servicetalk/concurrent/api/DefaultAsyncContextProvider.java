@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +31,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.naming.Context;
+
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
@@ -44,6 +49,32 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public ContextMap context() {
         return CONTEXT_LOCAL.get();
+    }
+
+    @Override
+    public ContextMap saveContext() {
+        return context();
+    }
+
+    @Nullable
+    @Override
+    public ContextMap setContext(@Nullable ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
+            asyncContextMapHolder.context(contextMap);
+            return prev;
+        } else {
+            return slowPathSetContext(contextMap);
+        }
+    }
+
+    @Nullable
+    private ContextMap slowPathSetContext(@Nullable ContextMap contextMap) {
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
+        CONTEXT_THREAD_LOCAL.set(contextMap);
+        return prev;
     }
 
     @Override

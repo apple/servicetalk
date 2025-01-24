@@ -4355,7 +4355,7 @@ Kotlin flatMapLatest</a>
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.context().copy();
+        return provider.saveContext().copy();
     }
 
     /**
