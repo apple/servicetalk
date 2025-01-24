@@ -49,19 +49,18 @@ interface AsyncContextProvider {
      * Save existing context in preparation for an asynchronous thread jump.
      *
      * Note that this can do more than just package up the ServiceTalk {@link AsyncContext} and could be enhanced or
-     * wrapped to bundle up say the OTEL or grpc contexts as well.
-     * @return the saved context.
+     * wrapped to bundle up additional contexts such as the OpenTelemetry or grpc contexts.
+     * @return the saved context state that may be restored later.
      */
     ContextMap saveContext();
 
     /**
      * Restore the previously saved {@link ContextMap} to the local state.
-     * @param contextMap the new context state.
+     * @param contextMap representing the previous state as stored by {@link AsyncContextProvider#saveContext()}.
      * @return the previous context state. The result should be identical to having called
      * {@link AsyncContextProvider#saveContext()} before the call, but it may be more efficient.
      */
-    @Nullable
-    ContextMap setContext(@Nullable ContextMap contextMap);
+    ContextMap setContext(ContextMap contextMap);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.

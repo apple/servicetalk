@@ -48,13 +48,12 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public ContextMap saveContext() {
-        return context();
+        return NoopContextMap.INSTANCE;
     }
 
-    @Nullable
     @Override
-    public ContextMap setContext(@Nullable ContextMap contextMap) {
-        return null;
+    public ContextMap setContext(ContextMap contextMap) {
+        return NoopContextMap.INSTANCE;
     }
 
     @Override

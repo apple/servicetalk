@@ -36,13 +36,10 @@ import javax.annotation.Nullable;
 import static java.lang.ThreadLocal.withInitial;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
+    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
+            withInitial(DefaultAsyncContextProvider::newContextMap);
+
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
-
-    static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL = withInitial(DefaultAsyncContextProvider::newContextMap);
-
-    private static ContextMap newContextMap() {
-        return new CopyOnWriteContextMap();
-    }
 
     private DefaultAsyncContextProvider() {
         // singleton
@@ -70,21 +67,19 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         return context();
     }
 
-    @Nullable
     @Override
-    public ContextMap setContext(@Nullable ContextMap contextMap) {
+    public ContextMap setContext(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap prev = asyncContextMapHolder.context();
             asyncContextMapHolder.context(contextMap);
-            return prev;
+            return prev == null ? newContextMap() : prev;
         } else {
             return slowPathSetContext(contextMap);
         }
     }
 
-    @Nullable
     private ContextMap slowPathSetContext(@Nullable ContextMap contextMap) {
         ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         CONTEXT_THREAD_LOCAL.set(contextMap);
@@ -308,5 +303,9 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
         return new ContextPreservingBiFunction<>(func, context);
+    }
+
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
     }
 }

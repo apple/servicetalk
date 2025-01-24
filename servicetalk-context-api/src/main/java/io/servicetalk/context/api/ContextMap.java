@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * The key-value entry map for different types of the value, defined by the {@link Key}.
  */
-public interface  ContextMap {
+public interface ContextMap {
     /**
      * A key identifies a specific object in a {@link ContextMap}.
      * <p>
