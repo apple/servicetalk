@@ -22,7 +22,7 @@
   </Appenders>
   <Loggers>
     <Logger name="io.netty" level="info"/>
-    <Root level="debug">
+    <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>

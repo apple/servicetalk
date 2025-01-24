@@ -16,6 +16,10 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+test {
+  jvmArgs "-javaagent:/Users/bryceanderson/src/opentelemetry-java-instrumentation/javaagent/build/libs/opentelemetry-javaagent-2.13.0-SNAPSHOT.jar"
+}
+
 dependencies {
   api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
   api project(":servicetalk-http-api")
@@ -46,7 +50,8 @@ dependencies {
   testImplementation "com.fasterxml.jackson.core:jackson-annotations"
   testImplementation "com.fasterxml.jackson.core:jackson-databind"
   testImplementation "io.opentelemetry:opentelemetry-sdk-trace"
-  testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
+//  testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
+  testImplementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

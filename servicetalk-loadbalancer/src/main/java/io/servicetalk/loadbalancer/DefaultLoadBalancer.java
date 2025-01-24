@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -535,6 +536,8 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                         final boolean forceNewConnectionAndReserve) {
+        System.out.println("=== " + Thread.currentThread() + ": DefaultLB: Context map: " + context);
+        System.out.println("=== " + Thread.currentThread() + ": DefaultLB: AsyncContext map: " + AsyncContext.context()); // empty
         final HostSelector<ResolvedAddress, C> currentHostSelector = hostSelector;
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
