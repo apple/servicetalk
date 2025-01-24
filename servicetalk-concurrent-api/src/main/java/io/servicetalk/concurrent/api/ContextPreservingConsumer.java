@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingConsumer<T> implements Consumer<T> {
@@ -34,28 +32,12 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
 
     @Override
     public void accept(T t) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                delegate.accept(t);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            slowPath(t);
-        }
-    }
-
-    private void slowPath(T t) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
+        AsyncContextProvider provider = AsyncContext.provider();
+        ContextMap prev = provider.setContext(saved);
         try {
-            CONTEXT_THREAD_LOCAL.set(saved);
             delegate.accept(t);
         } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
+            provider.setContext(prev);
         }
     }
 }

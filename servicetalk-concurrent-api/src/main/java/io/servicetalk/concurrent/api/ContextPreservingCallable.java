@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.concurrent.Callable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCallable<V> implements Callable<V> {
@@ -38,28 +36,12 @@ final class ContextPreservingCallable<V> implements Callable<V> {
 
     @Override
     public V call() throws Exception {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                return delegate.call();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            return slowPath();
-        }
-    }
-
-    private V slowPath() throws Exception {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
+        AsyncContextProvider provider = AsyncContext.provider();
+        ContextMap prev = provider.setContext(saved);
         try {
-            CONTEXT_THREAD_LOCAL.set(saved);
             return delegate.call();
         } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
+            provider.setContext(prev);
         }
     }
 }

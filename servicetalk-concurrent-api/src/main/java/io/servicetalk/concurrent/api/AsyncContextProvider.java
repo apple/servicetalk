@@ -54,7 +54,12 @@ interface AsyncContextProvider {
      */
     ContextMap saveContext();
 
-    // Set the context map for thread local usage, returning the previously existing map, if it exists.
+    /**
+     * Restore the previously saved {@link ContextMap} to the local state.
+     * @param contextMap the new context state.
+     * @return the previous context state. The result should be identical to having called
+     * {@link AsyncContextProvider#saveContext()} before the call, but it may be more efficient.
+     */
     @Nullable
     ContextMap setContext(@Nullable ContextMap contextMap);
 

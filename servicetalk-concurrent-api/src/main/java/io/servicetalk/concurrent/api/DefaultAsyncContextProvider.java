@@ -32,14 +32,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.naming.Context;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
+import static java.lang.ThreadLocal.withInitial;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
-    private static final AsyncContextMapThreadLocal CONTEXT_LOCAL = new AsyncContextMapThreadLocal();
+    static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL = withInitial(DefaultAsyncContextProvider::newContextMap);
+
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
+    }
 
     private DefaultAsyncContextProvider() {
         // singleton
@@ -48,7 +51,18 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Nonnull
     @Override
     public ContextMap context() {
-        return CONTEXT_LOCAL.get();
+        final Thread t = Thread.currentThread();
+        if (t instanceof ContextMapHolder) {
+            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
+            ContextMap map = contextMapHolder.context();
+            if (map == null) {
+                map = newContextMap();
+                contextMapHolder.context(map);
+            }
+            return map;
+        } else {
+            return CONTEXT_THREAD_LOCAL.get();
+        }
     }
 
     @Override
