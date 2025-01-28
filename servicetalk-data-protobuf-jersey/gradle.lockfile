@@ -2,8 +2,8 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-bom:3.25.3=compileClasspath,runtimeClasspath
-com.google.protobuf:protobuf-java:3.25.3=compileClasspath,runtimeClasspath
+com.google.protobuf:protobuf-bom:3.25.5=compileClasspath,runtimeClasspath
+com.google.protobuf:protobuf-java:3.25.5=compileClasspath,runtimeClasspath
 com.sun.activation:jakarta.activation:1.2.2=runtimeClasspath
 com.sun.xml.bind:jaxb-core:2.3.0.1=runtimeClasspath
 com.sun.xml.bind:jaxb-impl:2.3.3=runtimeClasspath
