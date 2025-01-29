@@ -34,11 +34,11 @@ final class ContextPreservingRunnable implements Runnable {
     @Override
     public void run() {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             delegate.run();
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 }

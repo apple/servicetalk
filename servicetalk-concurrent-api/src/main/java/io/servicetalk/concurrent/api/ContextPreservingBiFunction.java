@@ -33,11 +33,11 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
     @Override
     public V apply(T t, U u) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             return delegate.apply(t, u);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 }

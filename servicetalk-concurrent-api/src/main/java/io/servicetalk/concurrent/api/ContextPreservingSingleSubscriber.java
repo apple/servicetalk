@@ -40,33 +40,33 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
     @Override
     public final void onSubscribe(Cancellable cancellable) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             invokeOnSubscribe(cancellable);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onSuccess(@Nullable T result) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscriber.onSuccess(result);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscriber.onError(t);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 

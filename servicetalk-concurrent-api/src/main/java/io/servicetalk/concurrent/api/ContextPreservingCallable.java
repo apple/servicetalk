@@ -37,11 +37,11 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     @Override
     public V call() throws Exception {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             return delegate.call();
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 }

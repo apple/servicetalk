@@ -38,22 +38,22 @@ final class ContextPreservingSubscription implements Subscription {
     @Override
     public void request(long l) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscription.request(l);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public void cancel() {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscription.cancel();
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 

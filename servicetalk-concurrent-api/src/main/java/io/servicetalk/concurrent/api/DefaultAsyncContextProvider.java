@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +38,8 @@ import javax.annotation.Nullable;
 import static java.lang.ThreadLocal.withInitial;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
     private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
             withInitial(DefaultAsyncContextProvider::newContextMap);
 
@@ -68,7 +72,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public ContextMap setContext(ContextMap contextMap) {
+    public ContextMap attachContext(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
@@ -80,10 +84,35 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         }
     }
 
-    private ContextMap slowPathSetContext(@Nullable ContextMap contextMap) {
+    private static ContextMap slowPathSetContext(@Nullable ContextMap contextMap) {
         ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         CONTEXT_THREAD_LOCAL.set(contextMap);
         return prev;
+    }
+
+    @Override
+    public void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap current = asyncContextMapHolder.context();
+            if (current != expectedContext) {
+                LOGGER.warn("Fastpath Current context didn't match the expected context. current: {}, expected: {}",
+                        current, expectedContext);
+            }
+            asyncContextMapHolder.context(toRestore);
+        } else {
+            slowPathDetachContext(expectedContext, toRestore);
+        }
+    }
+
+    private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
+        ContextMap current = CONTEXT_THREAD_LOCAL.get();
+        if (current != expectedContext) {
+            LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
+                    current, expectedContext);
+        }
+        CONTEXT_THREAD_LOCAL.set(toRestore);
     }
 
     @Override

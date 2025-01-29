@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 
-import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +40,9 @@ interface AsyncContextProvider {
     /**
      * Get the current context.
      *
+     * Note that this method is for getting the {@link ContextMap} for use by the application code. For saving the
+     * current state for crossing an async boundary see the {@link AsyncContextProvider#saveContext()} method.
+     *
      * @return The current context.
      */
     ContextMap context();
@@ -56,11 +58,18 @@ interface AsyncContextProvider {
 
     /**
      * Restore the previously saved {@link ContextMap} to the local state.
-     * @param contextMap representing the previous state as stored by {@link AsyncContextProvider#saveContext()}.
-     * @return the previous context state. The result should be identical to having called
-     * {@link AsyncContextProvider#saveContext()} before the call, but it may be more efficient.
+     * @param contextMap representing the state previously saved via {@link AsyncContextProvider#saveContext()} and
+     *                   that is intended to be restored.
+     * @return a {@link ContextMap} representing the state that should be restored when detaching.
      */
-    ContextMap setContext(ContextMap contextMap);
+    ContextMap attachContext(ContextMap contextMap);
+
+    /**
+     * Detach the current context map and restore the pre-existing state.
+     * @param expectedContext the {@link ContextMap} that is expected to be present for detachment.
+     * @param toRestore the {@link ContextMap} representing the state prior to attachment.
+     */
+    void detachContext(ContextMap expectedContext, ContextMap toRestore);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.

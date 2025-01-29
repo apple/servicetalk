@@ -37,44 +37,44 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     @Override
     public final void onSubscribe(Subscription s) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             invokeOnSubscribe(s);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onNext(T t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscriber.onNext(t);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscriber.onError(t);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onComplete() {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             subscriber.onComplete();
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 

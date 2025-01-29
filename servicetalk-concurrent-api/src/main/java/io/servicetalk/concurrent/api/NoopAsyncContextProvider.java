@@ -52,8 +52,13 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public ContextMap setContext(ContextMap contextMap) {
+    public ContextMap attachContext(ContextMap contextMap) {
         return NoopContextMap.INSTANCE;
+    }
+
+    @Override
+    public void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        // noop
     }
 
     @Override

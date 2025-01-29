@@ -33,11 +33,11 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
     @Override
     public U apply(T t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.setContext(saved);
+        ContextMap prev = provider.attachContext(saved);
         try {
             return delegate.apply(t);
         } finally {
-            provider.setContext(prev);
+            provider.detachContext(saved, prev);
         }
     }
 }
