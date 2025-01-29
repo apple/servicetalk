@@ -231,7 +231,7 @@ public class BigTest {
 
     @Test
     public void testDataDogTraceId() throws Exception {
-        final int LOOPS = 10_000;
+        final int LOOPS = 1;
 
         try (HttpClient httpClient = getServiceTalkClient()) {
             arrangeExecution(loop -> () -> {

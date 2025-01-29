@@ -37,33 +37,24 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
     @Override
     public final void onSubscribe(final Cancellable cancellable) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.attachContext(saved);
-        try {
+        try (Scope ignored = provider.attachContext(saved)) {
             invokeOnSubscribe(cancellable);
-        } finally {
-            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onComplete() {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.attachContext(saved);
-        try {
+        try (Scope ignored = provider.attachContext(saved)) {
             subscriber.onComplete();
-        } finally {
-            provider.detachContext(saved, prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.attachContext(saved);
-        try {
+        try (Scope ignored = provider.attachContext(saved)) {
             subscriber.onError(t);
-        } finally {
-            provider.detachContext(saved, prev);
         }
     }
 

@@ -33,11 +33,8 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
     @Override
     public void accept(T t) {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.attachContext(saved);
-        try {
+        try (Scope ignored = provider.attachContext(saved)) {
             delegate.accept(t);
-        } finally {
-            provider.detachContext(saved, prev);
         }
     }
 }

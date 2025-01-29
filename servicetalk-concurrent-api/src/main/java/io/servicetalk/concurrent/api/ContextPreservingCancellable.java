@@ -40,11 +40,8 @@ final class ContextPreservingCancellable implements Cancellable {
     @Override
     public void cancel() {
         AsyncContextProvider provider = AsyncContext.provider();
-        ContextMap prev = provider.attachContext(saved);
-        try {
+        try (Scope ignored = provider.attachContext(saved)) {
             delegate.cancel();
-        } finally {
-            provider.detachContext(saved, prev);
         }
     }
 

@@ -42,6 +42,10 @@ import static java.util.Objects.requireNonNull;
 final class CopyOnWriteContextMap implements ContextMap {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteContextMap.class, CopyContextMap.class, "map");
+
+    private void logEvent(String operation) {
+        System.out.println(super.toString() + "-" + Thread.currentThread() + ": " + operation);
+    }
     private volatile CopyContextMap map;
 
     CopyOnWriteContextMap() {
@@ -80,6 +84,7 @@ final class CopyOnWriteContextMap implements ContextMap {
     @Nullable
     @Override
     public <T> T get(final Key<T> key) {
+        logEvent("get(" + key + ")");
         return map.get(key);
     }
 
@@ -92,6 +97,7 @@ final class CopyOnWriteContextMap implements ContextMap {
     @Nullable
     @Override
     public <T> T put(final Key<T> key, @Nullable final T value) {
+        logEvent("put(" + key + ", " + ")");
         return map.put(key, value, this, mapUpdater);
     }
 
@@ -138,6 +144,7 @@ final class CopyOnWriteContextMap implements ContextMap {
     @Nullable
     @Override
     public <T> T remove(final Key<T> key) {
+        logEvent("remove(" + key + ")");
         return map.remove(key, this, mapUpdater);
     }
 

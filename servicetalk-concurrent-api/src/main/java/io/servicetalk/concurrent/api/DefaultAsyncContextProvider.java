@@ -72,26 +72,26 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public ContextMap attachContext(ContextMap contextMap) {
+    public Scope attachContext(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap prev = asyncContextMapHolder.context();
             asyncContextMapHolder.context(contextMap);
-            return prev == null ? newContextMap() : prev;
+            return prev == null ? Scope.NOOP : () -> detachContext(contextMap, prev);
         } else {
             return slowPathSetContext(contextMap);
         }
     }
 
-    private static ContextMap slowPathSetContext(@Nullable ContextMap contextMap) {
+    private static Scope slowPathSetContext(ContextMap contextMap) {
         ContextMap prev = CONTEXT_THREAD_LOCAL.get();
         CONTEXT_THREAD_LOCAL.set(contextMap);
-        return prev;
+        return () -> detachContext(contextMap, prev);
     }
 
-    @Override
-    public void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        System.out.println("ST detachContext");
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;

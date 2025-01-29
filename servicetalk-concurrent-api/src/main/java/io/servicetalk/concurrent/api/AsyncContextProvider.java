@@ -60,16 +60,9 @@ interface AsyncContextProvider {
      * Restore the previously saved {@link ContextMap} to the local state.
      * @param contextMap representing the state previously saved via {@link AsyncContextProvider#saveContext()} and
      *                   that is intended to be restored.
-     * @return a {@link ContextMap} representing the state that should be restored when detaching.
+     * @return a {@link Scope} that must be closed at the end of the attachment.
      */
-    ContextMap attachContext(ContextMap contextMap);
-
-    /**
-     * Detach the current context map and restore the pre-existing state.
-     * @param expectedContext the {@link ContextMap} that is expected to be present for detachment.
-     * @param toRestore the {@link ContextMap} representing the state prior to attachment.
-     */
-    void detachContext(ContextMap expectedContext, ContextMap toRestore);
+    Scope attachContext(ContextMap contextMap);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.
