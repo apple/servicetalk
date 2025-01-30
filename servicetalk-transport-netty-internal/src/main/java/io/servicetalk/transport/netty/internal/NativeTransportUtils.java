@@ -45,19 +45,25 @@ final class NativeTransportUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeTransportUtils.class);
     private static final String REQUIRE_NATIVE_LIBS_NAME = "io.servicetalk.transport.netty.requireNativeLibs";
+    // FIXME: 0.43 - consider requiring native libs by default
     private static final boolean REQUIRE_NATIVE_LIBS = getBoolean(REQUIRE_NATIVE_LIBS_NAME);
     private static final String NETTY_NO_NATIVE_NAME = "io.netty.transport.noNative";
     private static final boolean NETTY_NO_NATIVE = getBoolean(NETTY_NO_NATIVE_NAME);
-
+    private static final String TRY_IO_URING_NAME = "io.servicetalk.transport.netty.tryIoUring";
+    private static final AtomicBoolean TRY_IO_URING;    // non-primitive boolean to allow overrides in tests
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
-    private static final AtomicBoolean TRY_IO_URING;
 
     static {
         final String os = PlatformDependent.normalizedOs();
         IS_LINUX = "linux".equals(os);
         IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
-        TRY_IO_URING = new AtomicBoolean(getBoolean("io.servicetalk.transport.netty.tryIoUring"));
+        TRY_IO_URING = new AtomicBoolean(getBoolean(TRY_IO_URING_NAME));
+
+        LOGGER.debug("-D{}: {}", REQUIRE_NATIVE_LIBS_NAME, REQUIRE_NATIVE_LIBS);
+        LOGGER.debug("-D{}: {}", NETTY_NO_NATIVE_NAME, NETTY_NO_NATIVE);
+        LOGGER.debug("-D{}: {}", TRY_IO_URING_NAME, TRY_IO_URING.get());
+        LOGGER.debug("Operating system: {}", os);
 
         if (IS_LINUX && !Epoll.isAvailable()) {
             reactOnUnavailability("epoll", os, Epoll.unavailabilityCause());
