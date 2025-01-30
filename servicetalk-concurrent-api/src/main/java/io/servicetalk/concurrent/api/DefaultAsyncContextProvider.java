@@ -33,7 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static java.lang.ThreadLocal.withInitial;
 
@@ -91,13 +90,12 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
-        System.out.println("ST detachContext");
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap current = asyncContextMapHolder.context();
             if (current != expectedContext) {
-                LOGGER.warn("Fastpath Current context didn't match the expected context. current: {}, expected: {}",
+                LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
                         current, expectedContext);
             }
             asyncContextMapHolder.context(toRestore);
