@@ -1730,7 +1730,7 @@ public abstract class Completable {
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.saveContext().copy(); // TODO: should we have a `saveContextCopy()` for perf reasons?
+        return provider.saveContext().copy();
     }
 
     /**
@@ -2266,12 +2266,14 @@ public abstract class Completable {
                                       AsyncContextProvider contextProvider, ContextMap contextMap) {
         requireNonNull(subscriber);
         Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        if (contextProvider.context() == contextMap) { // TODO: this shortcut will not work anymore if `saveContext()` returns a result different than `context()`. Maybe a provider.isActive(context) would work?
+        if (contextProvider.context() == contextMap) {
             // No need to wrap as we are sharing the AsyncContext
             handleSubscribe(wrapped, contextMap, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+            try(Scope unused = contextProvider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, contextProvider);
+            }
         }
     }
 

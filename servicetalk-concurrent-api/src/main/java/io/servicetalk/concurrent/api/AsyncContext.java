@@ -72,11 +72,10 @@ public final class AsyncContext {
 
     static {
         AsyncContextProvider result = DefaultAsyncContextProvider.INSTANCE;
-        for (UnaryOperator<AsyncContextProvider> wrapper : asyncProviderWrappers()) {
-            System.out.println("Wrapping with " + wrapper.getClass().getName());
+        List<UnaryOperator<AsyncContextProvider>> wrappers = asyncProviderWrappers();
+        for (UnaryOperator<AsyncContextProvider> wrapper : wrappers) {
             result = wrapper.apply(result);
         }
-        System.out.println("Default AsyncContextProvider: " + result.getClass().getName());
         DEFAULT_ENABLED_PROVIDER = result;
         provider = DEFAULT_ENABLED_PROVIDER;
     }

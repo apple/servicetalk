@@ -172,7 +172,6 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
                                                        final StreamingHttpRequest request) {
         final Context parentContext = Context.current();
-        System.out.println(OpenTelemetryHttpRequestFilter.class.getSimpleName() + ": Current context: " + parentContext + ", thread: " + Thread.currentThread());
         final Context context = instrumenter.start(parentContext, request);
 
         final Scope scope = context.makeCurrent();

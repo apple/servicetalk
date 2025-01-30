@@ -36,7 +36,7 @@ import static io.servicetalk.concurrent.PublisherSource.Subscriber;
 /**
  * Implementation that backs the {@link AsyncContext}.
  */
-public interface AsyncContextProvider {
+interface AsyncContextProvider {
     /**
      * Get the current context.
      *

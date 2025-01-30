@@ -4867,7 +4867,9 @@ Kotlin flatMapLatest</a>
             handleSubscribe(wrapped, contextMap, provider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
+            try (Scope ignored = provider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, provider);
+            }
         }
     }
 
