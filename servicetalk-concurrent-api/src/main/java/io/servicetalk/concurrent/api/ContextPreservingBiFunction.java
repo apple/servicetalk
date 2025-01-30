@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.function.BiFunction;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> {
@@ -34,28 +32,9 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
 
     @Override
     public V apply(T t, U u) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                return delegate.apply(t, u);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            return slowPath(t, u);
-        }
-    }
-
-    private V slowPath(T t, U u) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        AsyncContextProvider provider = AsyncContext.provider();
+        try (Scope ignored = provider.attachContext(saved)) {
             return delegate.apply(t, u);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

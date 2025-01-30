@@ -176,7 +176,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
                 final Subscriber<? super X> offloadedTarget = parent.timeoutExecutor == immediate() ? target :
-                        contextProvider.wrapSingleSubscriber(target, contextProvider.context());
+                        contextProvider.wrapSingleSubscriber(target, contextProvider.saveContext());
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();

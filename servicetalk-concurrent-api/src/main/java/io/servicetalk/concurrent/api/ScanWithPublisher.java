@@ -52,7 +52,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
     @Override
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.context();
+        return provider.saveContext();
     }
 
     @Override

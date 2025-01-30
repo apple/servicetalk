@@ -17,9 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingSubscription implements Subscription {
@@ -39,55 +37,17 @@ final class ContextPreservingSubscription implements Subscription {
 
     @Override
     public void request(long l) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscription.request(l);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            requestSlowPath(l);
-        }
-    }
-
-    private void requestSlowPath(long l) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        AsyncContextProvider provider = AsyncContext.provider();
+        try (Scope ignored = provider.attachContext(saved)) {
             subscription.request(l);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public void cancel() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscription.cancel();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            cancelSlowPath();
-        }
-    }
-
-    private void cancelSlowPath() {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        AsyncContextProvider provider = AsyncContext.provider();
+        try (Scope ignored = provider.attachContext(saved)) {
             subscription.cancel();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 

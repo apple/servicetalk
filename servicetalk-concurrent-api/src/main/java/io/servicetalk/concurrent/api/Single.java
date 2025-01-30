@@ -2673,7 +2673,7 @@ public abstract class Single<T> {
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.context().copy();
+        return provider.saveContext().copy();
     }
 
     /**
@@ -2711,7 +2711,9 @@ public abstract class Single<T> {
             handleSubscribe(wrapped, contextMap, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+            try (Scope ignored = contextProvider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, contextProvider);
+            }
         }
     }
 

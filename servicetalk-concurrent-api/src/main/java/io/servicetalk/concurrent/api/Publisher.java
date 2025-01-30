@@ -4355,7 +4355,7 @@ Kotlin flatMapLatest</a>
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.context().copy();
+        return provider.saveContext().copy();
     }
 
     /**
@@ -4867,7 +4867,9 @@ Kotlin flatMapLatest</a>
             handleSubscribe(wrapped, contextMap, provider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
+            try (Scope ignored = provider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, provider);
+            }
         }
     }
 

@@ -40,9 +40,29 @@ interface AsyncContextProvider {
     /**
      * Get the current context.
      *
+     * Note that this method is for getting the {@link ContextMap} for use by the application code. For saving the
+     * current state for crossing an async boundary see the {@link AsyncContextProvider#saveContext()} method.
+     *
      * @return The current context.
      */
     ContextMap context();
+
+    /**
+     * Save existing context in preparation for an asynchronous thread jump.
+     *
+     * Note that this can do more than just package up the ServiceTalk {@link AsyncContext} and could be enhanced or
+     * wrapped to bundle up additional contexts such as the OpenTelemetry or grpc contexts.
+     * @return the saved context state that may be restored later.
+     */
+    ContextMap saveContext();
+
+    /**
+     * Restore the previously saved {@link ContextMap} to the local state.
+     * @param contextMap representing the state previously saved via {@link AsyncContextProvider#saveContext()} and
+     *                   that is intended to be restored.
+     * @return a {@link Scope} that must be closed at the end of the attachment.
+     */
+    Scope attachContext(ContextMap contextMap);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.

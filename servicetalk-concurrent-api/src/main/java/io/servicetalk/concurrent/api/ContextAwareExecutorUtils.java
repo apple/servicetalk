@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
-
 final class ContextAwareExecutorUtils {
 
     private ContextAwareExecutorUtils() {
@@ -32,7 +30,7 @@ final class ContextAwareExecutorUtils {
 
     static <X> Collection<? extends Callable<X>> wrap(Collection<? extends Callable<X>> tasks) {
         List<Callable<X>> wrappedTasks = new ArrayList<>(tasks.size());
-        ContextMap contextMap = INSTANCE.context();
+        ContextMap contextMap = AsyncContext.provider().saveContext();
         for (Callable<X> task : tasks) {
             wrappedTasks.add(new ContextPreservingCallable<>(task, contextMap));
         }

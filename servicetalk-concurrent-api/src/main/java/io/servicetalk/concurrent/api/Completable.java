@@ -1730,7 +1730,7 @@ public abstract class Completable {
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.context().copy();
+        return provider.saveContext().copy();
     }
 
     /**
@@ -2271,7 +2271,9 @@ public abstract class Completable {
             handleSubscribe(wrapped, contextMap, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            contextProvider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, contextProvider), contextMap).run();
+            try (Scope unused = contextProvider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, contextProvider);
+            }
         }
     }
 

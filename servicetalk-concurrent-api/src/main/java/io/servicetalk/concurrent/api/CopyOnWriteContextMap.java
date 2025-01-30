@@ -42,6 +42,7 @@ import static java.util.Objects.requireNonNull;
 final class CopyOnWriteContextMap implements ContextMap {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteContextMap.class, CopyContextMap.class, "map");
+
     private volatile CopyContextMap map;
 
     CopyOnWriteContextMap() {
