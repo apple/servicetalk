@@ -4355,7 +4355,7 @@ Kotlin flatMapLatest</a>
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.saveContext().copy();
+        return provider.captureContext().copy();
     }
 
     /**
@@ -4365,9 +4365,19 @@ Kotlin flatMapLatest</a>
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected void subscribeInternal(Subscriber<? super T> subscriber) {
-        AsyncContextProvider contextProvider = AsyncContext.provider();
-        ContextMap contextMap = contextForSubscribe(contextProvider);
-        subscribeWithContext(subscriber, contextProvider, contextMap);
+        requireNonNull(subscriber);
+        AsyncContextProvider provider = AsyncContext.provider();
+        final ContextMap contextMap = contextForSubscribe(provider);
+        Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, contextMap);
+        if (provider.context() == contextMap) {
+            // No need to wrap as we are sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, provider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            try (Scope ignored = provider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, provider);
+            }
+        }
     }
 
     /**
@@ -4856,21 +4866,6 @@ Kotlin flatMapLatest</a>
     final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, contextMap, contextProvider);
-    }
-
-    private void subscribeWithContext(Subscriber<? super T> subscriber,
-                                      AsyncContextProvider provider, ContextMap contextMap) {
-        requireNonNull(subscriber);
-        Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, contextMap);
-        if (provider.context() == contextMap) {
-            // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, contextMap, provider);
-        } else {
-            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope ignored = provider.attachContext(contextMap)) {
-                handleSubscribe(wrapped, contextMap, provider);
-            }
-        }
     }
 
     /**

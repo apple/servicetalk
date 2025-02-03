@@ -32,8 +32,7 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
 
     @Override
     public void accept(T t, U u) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             delegate.accept(t, u);
         }
     }

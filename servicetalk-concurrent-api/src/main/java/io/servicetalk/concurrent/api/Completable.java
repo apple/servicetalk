@@ -1730,7 +1730,7 @@ public abstract class Completable {
      */
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.saveContext().copy();
+        return provider.captureContext().copy();
     }
 
     /**
@@ -1740,9 +1740,19 @@ public abstract class Completable {
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected final void subscribeInternal(Subscriber subscriber) {
+        requireNonNull(subscriber);
         AsyncContextProvider contextProvider = AsyncContext.provider();
         ContextMap contextMap = contextForSubscribe(contextProvider);
-        subscribeWithContext(subscriber, contextProvider, contextMap);
+        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
+        if (contextProvider.context() == contextMap) {
+            // No need to wrap as we are sharing the AsyncContext
+            handleSubscribe(wrapped, contextMap, contextProvider);
+        } else {
+            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
+            try (Scope unused = contextProvider.attachContext(contextMap)) {
+                handleSubscribe(wrapped, contextMap, contextProvider);
+            }
+        }
     }
 
     /**
@@ -2260,21 +2270,6 @@ public abstract class Completable {
     final void delegateSubscribe(Subscriber subscriber,
                                  ContextMap contextMap, AsyncContextProvider contextProvider) {
         handleSubscribe(subscriber, contextMap, contextProvider);
-    }
-
-    private void subscribeWithContext(Subscriber subscriber,
-                                      AsyncContextProvider contextProvider, ContextMap contextMap) {
-        requireNonNull(subscriber);
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        if (contextProvider.context() == contextMap) {
-            // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, contextMap, contextProvider);
-        } else {
-            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope unused = contextProvider.attachContext(contextMap)) {
-                handleSubscribe(wrapped, contextMap, contextProvider);
-            }
-        }
     }
 
     /**

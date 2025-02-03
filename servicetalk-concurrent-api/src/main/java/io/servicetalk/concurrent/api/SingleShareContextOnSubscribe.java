@@ -26,7 +26,7 @@ final class SingleShareContextOnSubscribe<T> extends AbstractNoHandleSubscribeSi
 
     @Override
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.saveContext();
+        return provider.captureContext();
     }
 
     @Override

@@ -172,7 +172,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
                 final Subscriber wrappedTarget = parent.timeoutExecutor == immediate() ? target :
-                        contextProvider.wrapCompletableSubscriber(target, contextProvider.saveContext());
+                        contextProvider.wrapCompletableSubscriber(target, contextProvider.captureContext());
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();

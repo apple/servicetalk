@@ -55,8 +55,6 @@ public final class AsyncContext {
     private static final int STATE_AUTO_ENABLED = 1;
     private static final int STATE_ENABLED = 2;
 
-    private static final AsyncContextProvider DEFAULT_ENABLED_PROVIDER;
-
     /**
      * Note this mechanism is racy. Currently only the {@link #disable()} method is exposed publicly and
      * {@link #STATE_DISABLED} is a terminal state. Because we favor going to the disabled state we don't have to worry
@@ -68,17 +66,7 @@ public final class AsyncContext {
      * use case for this is a "once at start up" to {@link #disable()} this mechanism completely. This is currently a
      * best effort mechanism for performance reasons, and we can re-evaluate later if more strict behavior is required.
      */
-    private static AsyncContextProvider provider;
-
-    static {
-        AsyncContextProvider result = DefaultAsyncContextProvider.INSTANCE;
-        List<UnaryOperator<AsyncContextProvider>> wrappers = asyncProviderWrappers();
-        for (UnaryOperator<AsyncContextProvider> wrapper : wrappers) {
-            result = wrapper.apply(result);
-        }
-        DEFAULT_ENABLED_PROVIDER = result;
-        provider = DEFAULT_ENABLED_PROVIDER;
-    }
+    private static AsyncContextProvider provider = DefaultAsyncContextProvider.INSTANCE;
 
     private AsyncContext() {
         // no instances
@@ -454,7 +442,7 @@ public final class AsyncContext {
      */
     public static Runnable wrapRunnable(final Runnable runnable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapRunnable(runnable, provider.saveContext());
+        return provider.wrapRunnable(runnable, provider.captureContext());
     }
 
     /**
@@ -465,7 +453,7 @@ public final class AsyncContext {
      */
     public static <V> Callable<V> wrapCallable(final Callable<V> callable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapCallable(callable, provider.saveContext());
+        return provider.wrapCallable(callable, provider.captureContext());
     }
 
     /**
@@ -476,7 +464,7 @@ public final class AsyncContext {
      */
     public static <T> Consumer<T> wrapConsumer(final Consumer<T> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapConsumer(consumer, provider.saveContext());
+        return provider.wrapConsumer(consumer, provider.captureContext());
     }
 
     /**
@@ -488,7 +476,7 @@ public final class AsyncContext {
      */
     public static <T, U> Function<T, U> wrapFunction(final Function<T, U> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapFunction(func, provider.saveContext());
+        return provider.wrapFunction(func, provider.captureContext());
     }
 
     /**
@@ -500,7 +488,7 @@ public final class AsyncContext {
      */
     public static <T, U> BiConsumer<T, U> wrapBiConsume(final BiConsumer<T, U> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiConsumer(consumer, provider.saveContext());
+        return provider.wrapBiConsumer(consumer, provider.captureContext());
     }
 
     /**
@@ -513,7 +501,7 @@ public final class AsyncContext {
      */
     public static <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiFunction(func, provider.saveContext());
+        return provider.wrapBiFunction(func, provider.captureContext());
     }
 
     /**
@@ -563,7 +551,7 @@ public final class AsyncContext {
     }
 
     private static void enable0() {
-        provider = DEFAULT_ENABLED_PROVIDER;
+        provider = DefaultAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.add(EXECUTOR_PLUGIN);
         LOGGER.debug("Enabled.");
 

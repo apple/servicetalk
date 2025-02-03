@@ -49,7 +49,7 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
     @Override
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.saveContext();
+        return provider.captureContext();
     }
 
     @Override

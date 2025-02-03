@@ -30,7 +30,7 @@ final class ContextAwareExecutorUtils {
 
     static <X> Collection<? extends Callable<X>> wrap(Collection<? extends Callable<X>> tasks) {
         List<Callable<X>> wrappedTasks = new ArrayList<>(tasks.size());
-        ContextMap contextMap = AsyncContext.provider().saveContext();
+        ContextMap contextMap = AsyncContext.provider().captureContext();
         for (Callable<X> task : tasks) {
             wrappedTasks.add(new ContextPreservingCallable<>(task, contextMap));
         }

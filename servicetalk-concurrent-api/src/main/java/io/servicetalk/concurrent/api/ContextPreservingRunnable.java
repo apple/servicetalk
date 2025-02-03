@@ -24,7 +24,7 @@ final class ContextPreservingRunnable implements Runnable {
     private final Runnable delegate;
 
     ContextPreservingRunnable(Runnable delegate) {
-        this(delegate, AsyncContext.provider().saveContext());
+        this(delegate, AsyncContext.provider().captureContext());
     }
 
     ContextPreservingRunnable(Runnable delegate, ContextMap current) {

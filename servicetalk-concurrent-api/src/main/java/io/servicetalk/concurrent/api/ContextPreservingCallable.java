@@ -26,7 +26,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     private final Callable<V> delegate;
 
     ContextPreservingCallable(Callable<V> delegate) {
-        this(delegate, AsyncContext.provider().saveContext());
+        this(delegate, AsyncContext.provider().captureContext());
     }
 
     ContextPreservingCallable(Callable<V> delegate, ContextMap current) {

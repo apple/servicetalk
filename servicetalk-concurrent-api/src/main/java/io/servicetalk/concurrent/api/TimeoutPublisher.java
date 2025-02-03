@@ -172,7 +172,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             } else {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
-                contextProvider.wrapConsumer(this::processTimeout, contextProvider.saveContext()).accept(cause);
+                contextProvider.wrapConsumer(this::processTimeout, contextProvider.captureContext()).accept(cause);
             }
         }
 

@@ -67,7 +67,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public ContextMap saveContext() {
+    public ContextMap captureContext() {
         return context();
     }
 
@@ -78,7 +78,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap prev = asyncContextMapHolder.context();
             asyncContextMapHolder.context(contextMap);
-            return prev == null ? Scope.NOOP : () -> detachContext(contextMap, prev);
+            return () -> detachContext(contextMap, prev == null ? newContextMap() : prev);
         } else {
             return slowPathSetContext(contextMap);
         }
@@ -96,7 +96,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap current = asyncContextMapHolder.context();
             if (current != expectedContext) {
-                LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
+                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
                         current, expectedContext);
             }
             asyncContextMapHolder.context(toRestore);
@@ -108,7 +108,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
         ContextMap current = CONTEXT_THREAD_LOCAL.get();
         if (current != expectedContext) {
-            LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
                     current, expectedContext);
         }
         CONTEXT_THREAD_LOCAL.set(toRestore);
