@@ -32,8 +32,7 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
 
     @Override
     public V apply(T t, U u) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             return delegate.apply(t, u);
         }
     }

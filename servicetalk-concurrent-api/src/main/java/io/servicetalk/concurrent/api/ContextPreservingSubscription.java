@@ -37,16 +37,14 @@ final class ContextPreservingSubscription implements Subscription {
 
     @Override
     public void request(long l) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             subscription.request(l);
         }
     }
 
     @Override
     public void cancel() {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             subscription.cancel();
         }
     }

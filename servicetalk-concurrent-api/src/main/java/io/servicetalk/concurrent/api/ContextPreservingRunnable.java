@@ -34,8 +34,7 @@ final class ContextPreservingRunnable implements Runnable {
 
     @Override
     public void run() {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             delegate.run();
         }
     }

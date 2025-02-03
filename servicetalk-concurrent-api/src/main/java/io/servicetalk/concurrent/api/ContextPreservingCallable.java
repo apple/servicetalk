@@ -36,8 +36,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
 
     @Override
     public V call() throws Exception {
-        AsyncContextProvider provider = AsyncContext.provider();
-        try (Scope ignored = provider.attachContext(saved)) {
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             return delegate.call();
         }
     }
