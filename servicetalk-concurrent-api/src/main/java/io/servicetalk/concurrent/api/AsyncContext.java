@@ -20,9 +20,7 @@ import io.servicetalk.context.api.ContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +31,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextExecutorPlugin.EXECUTOR_PLUGIN;
@@ -564,9 +561,5 @@ public final class AsyncContext {
         provider = NoopAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
         LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
-    }
-
-    private static List<UnaryOperator<AsyncContextProvider>> asyncProviderWrappers() {
-        return Collections.emptyList();
     }
 }
