@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+/**
+ * An interface representing the restoration of the thread-local like context that can be restored later
+ * during an async operation.
+ */
+interface CapturedContext {
 
-final class ContextPreservingSingleSubscriberAndCancellable<T> extends ContextPreservingSingleSubscriber<T> {
-    ContextPreservingSingleSubscriberAndCancellable(Subscriber<T> subscriber, CapturedContext current) {
-        super(subscriber, current);
-    }
-
-    @Override
-    void invokeOnSubscribe(Cancellable cancellable) {
-        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
-    }
+    /**
+     * Restore the thread-local like context.
+     * @return a {@link Scope} that will revert the restoration and return the thread-local like state to the state
+     * that it had before restoring this context.
+     */
+    Scope restoreContext();
 }

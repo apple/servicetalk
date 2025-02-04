@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.ScanWithPublisher.ScanMapperAdapter;
 import io.servicetalk.concurrent.api.ScanWithPublisher.ScanWithSubscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,15 +47,15 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     }
 
     @Override
-    ContextMap contextForSubscribe(AsyncContextProvider provider) {
+    CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         return provider.captureContext();
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ScanWithLifetimeSubscriber<>(subscriber, mapperSupplier.get(),
-                contextMap, contextProvider), contextMap, contextProvider);
+                capturedContext, contextProvider), capturedContext, contextProvider);
     }
 
     /**
@@ -79,8 +78,8 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
                                    final ScanLifetimeMapper<? super T, ? extends R> mapper,
-                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-            super(subscriber, mapper, contextProvider, contextMap);
+                                   final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+            super(subscriber, mapper, contextProvider, capturedContext);
             this.mapper = requireNonNull(mapper);
         }
 

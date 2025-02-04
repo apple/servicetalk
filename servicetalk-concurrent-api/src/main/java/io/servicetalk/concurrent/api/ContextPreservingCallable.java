@@ -15,28 +15,26 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCallable<V> implements Callable<V> {
-    private final ContextMap saved;
+    private final CapturedContext saved;
     private final Callable<V> delegate;
 
     ContextPreservingCallable(Callable<V> delegate) {
         this(delegate, AsyncContext.provider().captureContext());
     }
 
-    ContextPreservingCallable(Callable<V> delegate, ContextMap current) {
+    ContextPreservingCallable(Callable<V> delegate, CapturedContext current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public V call() throws Exception {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             return delegate.call();
         }
     }

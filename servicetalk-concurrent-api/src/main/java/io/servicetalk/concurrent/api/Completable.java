@@ -1728,9 +1728,9 @@ public abstract class Completable {
      * @param provider The {@link AsyncContextProvider} which is the source of the map
      * @return {@link ContextMap} for this subscribe operation.
      */
-    ContextMap contextForSubscribe(AsyncContextProvider provider) {
+    CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.captureContext().copy();
+        return provider.captureContextCopy();
     }
 
     /**
@@ -1742,15 +1742,15 @@ public abstract class Completable {
     protected final void subscribeInternal(Subscriber subscriber) {
         requireNonNull(subscriber);
         AsyncContextProvider contextProvider = AsyncContext.provider();
-        ContextMap contextMap = contextForSubscribe(contextProvider);
-        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
-        if (contextProvider.context() == contextMap) {
+        CapturedContext capturedContext = contextForSubscribe(contextProvider);
+        Subscriber wrapped = contextProvider.wrapCancellable(subscriber, capturedContext);
+        if (contextProvider.context() == capturedContext) {
             // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, contextMap, contextProvider);
+            handleSubscribe(wrapped, capturedContext, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope unused = contextProvider.attachContext(contextMap)) {
-                handleSubscribe(wrapped, contextMap, contextProvider);
+            try (Scope unused = capturedContext.restoreContext()) {
+                handleSubscribe(wrapped, capturedContext, contextProvider);
             }
         }
     }
@@ -2264,12 +2264,12 @@ public abstract class Completable {
      * source.
      *
      * @param subscriber the subscriber.
-     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber subscriber,
-                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, contextMap, contextProvider);
+                                 CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     /**
@@ -2277,12 +2277,12 @@ public abstract class Completable {
      * <p>
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      * @param subscriber the subscriber.
-     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
-    void handleSubscribe(Subscriber subscriber, ContextMap contextMap, AsyncContextProvider contextProvider) {
+    void handleSubscribe(Subscriber subscriber, CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         try {
-            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, contextMap);
+            Subscriber wrapped = contextProvider.wrapCompletableSubscriber(subscriber, capturedContext);
             handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);

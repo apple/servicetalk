@@ -18,17 +18,16 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
-    final ContextMap saved;
+    final CapturedContext saved;
     final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, ContextMap current) {
+    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, CapturedContext current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -39,21 +38,21 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Cancellable cancellable) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             invokeOnSubscribe(cancellable);
         }
     }
 
     @Override
     public final void onSuccess(@Nullable T result) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             subscriber.onSuccess(result);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             subscriber.onError(t);
         }
     }

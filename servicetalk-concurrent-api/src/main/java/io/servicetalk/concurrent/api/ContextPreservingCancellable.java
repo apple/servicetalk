@@ -16,20 +16,19 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellable implements Cancellable {
-    private final ContextMap saved;
+    private final CapturedContext saved;
     private final Cancellable delegate;
 
-    private ContextPreservingCancellable(Cancellable delegate, ContextMap current) {
+    private ContextPreservingCancellable(Cancellable delegate, CapturedContext current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
     }
 
-    static Cancellable wrap(Cancellable delegate, ContextMap current) {
+    static Cancellable wrap(Cancellable delegate, CapturedContext current) {
         // The double wrapping can be observed when folks manually create a Single/Completable and directly call the
         // onSubscribe method.
         return delegate instanceof ContextPreservingCancellable &&
@@ -39,7 +38,7 @@ final class ContextPreservingCancellable implements Cancellable {
 
     @Override
     public void cancel() {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             delegate.cancel();
         }
     }

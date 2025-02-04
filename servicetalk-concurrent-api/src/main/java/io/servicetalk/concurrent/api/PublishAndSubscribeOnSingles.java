@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BooleanSupplier;
 
@@ -36,9 +35,9 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> void deliverOnSubscribeAndOnError(SingleSource.Subscriber<? super T> subscriber,
-                                                 ContextMap contextMap,
+                                                 CapturedContext capturedContext,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
-        deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
+        deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, capturedContext), cause);
     }
 
     static <T> Single<T> publishOn(final Single<T> original,
@@ -69,7 +68,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -83,7 +82,7 @@ final class PublishAndSubscribeOnSingles {
                 return;
             }
 
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
         }
     }
 
@@ -105,7 +104,7 @@ final class PublishAndSubscribeOnSingles {
 
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -118,7 +117,7 @@ final class PublishAndSubscribeOnSingles {
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> super.handleSubscribe(
-                            upstreamSubscriber, contextMap, contextProvider));
+                            upstreamSubscriber, capturedContext, contextProvider));
                     return;
                 }
             } catch (Throwable throwable) {
@@ -129,7 +128,7 @@ final class PublishAndSubscribeOnSingles {
             }
 
             // continue non-offloaded subscribe()
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
         }
     }
 }

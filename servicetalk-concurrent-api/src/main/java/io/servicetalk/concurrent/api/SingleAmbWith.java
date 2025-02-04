@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AmbSingles.AmbSubscriber;
 import io.servicetalk.concurrent.api.AmbSingles.State;
-import io.servicetalk.context.api.ContextMap;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
@@ -33,7 +32,7 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         State<T> state = new State<>(subscriber);
         try {
             subscriber.onSubscribe(state);
@@ -46,10 +45,10 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
             AmbSubscriber<T> originalSubscriber = new AmbSubscriber<>(state);
             AmbSubscriber<T> ambWithSubscriber = new AmbSubscriber<>(state);
             state.delayedCancellable(CompositeCancellable.create(originalSubscriber, ambWithSubscriber));
-            original.delegateSubscribe(originalSubscriber, contextMap, contextProvider);
+            original.delegateSubscribe(originalSubscriber, capturedContext, contextProvider);
             ambWith.subscribeInternal(
                     // If the other Single delivers the result, we should restore the context.
-                    contextProvider.wrapSingleSubscriber(ambWithSubscriber, contextMap));
+                    contextProvider.wrapSingleSubscriber(ambWithSubscriber, capturedContext));
         } catch (Throwable t) {
             state.tryError(t);
         }

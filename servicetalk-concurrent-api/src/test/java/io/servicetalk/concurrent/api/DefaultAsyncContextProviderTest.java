@@ -505,7 +505,7 @@ class DefaultAsyncContextProviderTest {
                     Function<Void, Void> f = INSTANCE.wrapFunction(v -> {
                         collector.complete(AsyncContext.context());
                         return v;
-                    }, AsyncContext.context());
+                    }, AsyncContext.provider().captureContext());
                     executor.execute(() -> f.apply(null));
                 })
                 .verifyContext(verifier);
@@ -513,7 +513,7 @@ class DefaultAsyncContextProviderTest {
         new ContextCapturer()
                 .runAndWait(collector -> {
                     Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.context()),
-                            AsyncContext.context());
+                            AsyncContext.provider().captureContext());
                     executor.execute(() -> c.accept(null));
                 })
                 .verifyContext(verifier);
@@ -523,7 +523,7 @@ class DefaultAsyncContextProviderTest {
                     BiFunction<Void, Void, Void> bf = INSTANCE.wrapBiFunction((v1, v2) -> {
                         collector.complete(AsyncContext.context());
                         return v1;
-                    }, AsyncContext.context());
+                    }, AsyncContext.provider().captureContext());
                     executor.execute(() -> bf.apply(null, null));
                 })
                 .verifyContext(verifier);
@@ -532,7 +532,7 @@ class DefaultAsyncContextProviderTest {
                 .runAndWait(collector -> {
                     BiConsumer<Void, Void> bc = INSTANCE.wrapBiConsumer((v1, v2) -> {
                         collector.complete(AsyncContext.context());
-                    }, AsyncContext.context());
+                    }, AsyncContext.provider().captureContext());
                     executor.execute(() -> bc.accept(null, null));
                 })
                 .verifyContext(verifier);

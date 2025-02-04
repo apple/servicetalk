@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,9 +67,9 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, ContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                          AsyncContextProvider contextProvider) {
-        state.addSubscriber(subscriber, contextMap, contextProvider);
+        state.addSubscriber(subscriber, capturedContext, contextProvider);
     }
 
     private final class State implements Subscriber<T> {
@@ -79,7 +78,7 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         volatile int subscribeCount;
         private final DelayedCancellable delayedCancellable = new DelayedCancellable();
 
-        void addSubscriber(Subscriber<? super T> subscriber, ContextMap contextMap,
+        void addSubscriber(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                            AsyncContextProvider contextProvider) {
             final int sCount = subscribeCountUpdater.incrementAndGet(this);
             final ConcurrentOnSubscribeSubscriber<T> multiSubscriber =
@@ -107,7 +106,7 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                         if (sCount == minSubscribers) {
                             // This operator has special behavior where it chooses to use the AsyncContext and signal
                             // offloader from the last subscribe operation.
-                            original.delegateSubscribe(this, contextMap, contextProvider);
+                            original.delegateSubscribe(this, capturedContext, contextProvider);
                         }
                         break;
                     }

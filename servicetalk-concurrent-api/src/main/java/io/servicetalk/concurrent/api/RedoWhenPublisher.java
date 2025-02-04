@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.RedoPublisher.AbstractRedoSubscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
@@ -63,19 +62,19 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         // Current expected behavior is to capture the context on the first subscribe, save it, and re-use it on each
         // resubscribe. This allows for async context to be shared across each request retry, and follows the same
         // shared state model as the request object on the client. If copy-on-each-resubscribe is desired this could
         // be provided by an independent operator, or manually cleared/overwritten.
         original.delegateSubscribe(new RedoSubscriber<>(terminateOnNextException, new SequentialSubscription(), 0,
-                        subscriber, contextMap, contextProvider, this), contextMap, contextProvider);
+                        subscriber, capturedContext, contextProvider, this), capturedContext, contextProvider);
     }
 
     private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         private final CompletableSource.Subscriber completableSubscriber = new CompletableSource.Subscriber() {
             @Override
@@ -87,7 +86,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             public void onComplete() {
                 // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
                 // source at the top of the chain reset if necessary. We currently choose the second option.
-                redoPublisher.original.delegateSubscribe(RedoSubscriber.this, contextMap, contextProvider);
+                redoPublisher.original.delegateSubscribe(RedoSubscriber.this, capturedContext, contextProvider);
             }
 
             @Override
@@ -104,11 +103,11 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         };
 
         RedoSubscriber(boolean terminateOnNextException, SequentialSubscription subscription, int redoCount,
-                       Subscriber<? super T> subscriber, ContextMap contextMap, AsyncContextProvider contextProvider,
-                       RedoWhenPublisher<T> redoPublisher) {
+                       Subscriber<? super T> subscriber, CapturedContext capturedContext,
+                       AsyncContextProvider contextProvider, RedoWhenPublisher<T> redoPublisher) {
             super(terminateOnNextException, subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
             cancellable = new SequentialCancellable();
         }

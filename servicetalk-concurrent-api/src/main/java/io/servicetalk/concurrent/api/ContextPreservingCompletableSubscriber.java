@@ -17,15 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingCompletableSubscriber implements Subscriber {
-    final ContextMap saved;
+    final CapturedContext saved;
     final Subscriber subscriber;
 
-    ContextPreservingCompletableSubscriber(Subscriber subscriber, ContextMap current) {
+    ContextPreservingCompletableSubscriber(Subscriber subscriber, CapturedContext current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -36,21 +35,21 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
 
     @Override
     public final void onSubscribe(final Cancellable cancellable) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             invokeOnSubscribe(cancellable);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             subscriber.onComplete();
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             subscriber.onError(t);
         }
     }

@@ -15,24 +15,22 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingConsumer<T> implements Consumer<T> {
-    private final ContextMap saved;
+    private final CapturedContext saved;
     private final Consumer<T> delegate;
 
-    ContextPreservingConsumer(Consumer<T> delegate, ContextMap current) {
+    ContextPreservingConsumer(Consumer<T> delegate, CapturedContext current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public void accept(T t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = saved.restoreContext()) {
             delegate.accept(t);
         }
     }

@@ -36,7 +36,7 @@ import static io.servicetalk.concurrent.PublisherSource.Subscriber;
 /**
  * Implementation that backs the {@link AsyncContext}.
  */
-interface AsyncContextProvider {
+interface AsyncContextProvider extends ContextCaptureProvider {
     /**
      * Get the current context.
      *
@@ -48,41 +48,24 @@ interface AsyncContextProvider {
     ContextMap context();
 
     /**
-     * Capture existing context in preparation for an asynchronous thread jump.
-     *
-     * Note that this can do more than just package up the ServiceTalk {@link AsyncContext} and could be enhanced or
-     * wrapped to bundle up additional contexts such as the OpenTelemetry or grpc contexts.
-     * @return the saved context state that may be restored later.
-     */
-    ContextMap captureContext();
-
-    /**
-     * Restore the previously saved {@link ContextMap} to the local state.
-     * @param contextMap representing the state previously saved via {@link AsyncContextProvider#captureContext()} and
-     *                   that is intended to be restored.
-     * @return a {@link Scope} that must be closed at the end of the attachment.
-     */
-    Scope attachContext(ContextMap contextMap);
-
-    /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The {@link CompletableSource.Subscriber} for which to wrap the corresponding
      * {@link Cancellable}.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @return The wrapped {@link CompletableSource.Subscriber}.
      */
-    CompletableSource.Subscriber wrapCancellable(CompletableSource.Subscriber subscriber, ContextMap context);
+    CompletableSource.Subscriber wrapCancellable(CompletableSource.Subscriber subscriber, CapturedContext context);
 
     /**
      * Wrap an {@link CompletableSource.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @return The wrapped subscriber.
      */
     CompletableSource.Subscriber wrapCompletableSubscriber(CompletableSource.Subscriber subscriber,
-                                                           ContextMap context);
+                                                           CapturedContext context);
 
     /**
      * Wrap an {@link CompletableSource.Subscriber} and any {@link Cancellable}s from
@@ -90,32 +73,32 @@ interface AsyncContextProvider {
      * correctly.
      *
      * @param subscriber The subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @return The wrapped subscriber.
      */
     CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(CompletableSource.Subscriber subscriber,
-                                                                         ContextMap context);
+                                                                         CapturedContext context);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The {@link SingleSource.Subscriber} for which to wrap the corresponding
      * {@link Cancellable}.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> Type of the {@link Single}.
      * @return The wrapped {@link SingleSource.Subscriber}.
      */
-    <T> SingleSource.Subscriber<T> wrapCancellable(SingleSource.Subscriber<T> subscriber, ContextMap context);
+    <T> SingleSource.Subscriber<T> wrapCancellable(SingleSource.Subscriber<T> subscriber, CapturedContext context);
 
     /**
      * Wrap an {@link SingleSource.Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> Type of the {@link Single}.
      * @return The wrapped subscriber.
      */
-    <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber, ContextMap context);
+    <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber, CapturedContext context);
 
     /**
      * Wrap an {@link SingleSource.Subscriber} and any {@link Cancellable}s from
@@ -123,46 +106,46 @@ interface AsyncContextProvider {
      * correctly.
      *
      * @param subscriber subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> Type of the {@link Single}.
      * @return The wrapped subscriber.
      */
     <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(SingleSource.Subscriber<T> subscriber,
-                                                                      ContextMap context);
+                                                                      CapturedContext context);
 
     /**
      * Wrap an {@link Subscription} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The {@link Subscriber} for which to wrap the corresponding
      * {@link Subscription}.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @return The wrapped {@link Subscriber}.
      */
     <T> PublisherSource.Subscriber<T> wrapSubscription(PublisherSource.Subscriber<T> subscriber,
-                                                       ContextMap context);
+                                                       CapturedContext context);
 
     /**
      * Wrap an {@link Subscriber} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> the type of element signaled to the {@link Subscriber}.
      * @return The wrapped subscriber.
      */
     <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(PublisherSource.Subscriber<T> subscriber,
-                                                              ContextMap context);
+                                                              CapturedContext context);
 
     /**
      * Wrap an {@link Subscriber} and any {@link Subscription}s from {@link Subscriber#onSubscribe(Subscription)} to
      * ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param subscriber The subscriber to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> the type of element signaled to the {@link Subscriber}.
      * @return The wrapped subscriber.
      */
     <T> PublisherSource.Subscriber<T> wrapPublisherSubscriberAndSubscription(PublisherSource.Subscriber<T> subscriber,
-                                                                             ContextMap context);
+                                                                             CapturedContext context);
 
     /**
      * Wrap an {@link Executor} to ensure it is able to track {@link AsyncContext} correctly.
@@ -199,72 +182,72 @@ interface AsyncContextProvider {
      * Wrap a {@link CompletableFuture} so that {@link AsyncContext} is preserved from listener methods.
      *
      * @param future The future to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> The type of data for {@link CompletableFuture}.
      * @return the wrapped {@link CompletableFuture}.
      */
-    <T> CompletableFuture<T> wrapCompletableFuture(CompletableFuture<T> future, ContextMap context);
+    <T> CompletableFuture<T> wrapCompletableFuture(CompletableFuture<T> future, CapturedContext context);
 
     /**
      * Wrap a {@link Runnable} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param runnable The runnable to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @return The wrapped {@link Runnable}.
      */
-    Runnable wrapRunnable(Runnable runnable, ContextMap context);
+    Runnable wrapRunnable(Runnable runnable, CapturedContext context);
 
     /**
      * Wrap a {@link Callable} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param callable The callable to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <V> The type of data returned by {@code callable}.
      * @return The wrapped {@link Callable}.
      */
-    <V> Callable<V> wrapCallable(Callable<V> callable, ContextMap context);
+    <V> Callable<V> wrapCallable(Callable<V> callable, CapturedContext context);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param consumer The consumer to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> The type of data consumed by {@code consumer}.
      * @return The wrapped {@link Consumer}.
      */
-    <T> Consumer<T> wrapConsumer(Consumer<T> consumer, ContextMap context);
+    <T> Consumer<T> wrapConsumer(Consumer<T> consumer, CapturedContext context);
 
     /**
      * Wrap a {@link Function} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param func The function to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data returned by {@code func}.
      * @return The wrapped {@link Function}.
      */
-    <T, U> Function<T, U> wrapFunction(Function<T, U> func, ContextMap context);
+    <T, U> Function<T, U> wrapFunction(Function<T, U> func, CapturedContext context);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param consumer The consumer to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data consumed by {@code func}.
      * @return The wrapped {@link BiConsumer}.
      */
-    <T, U> BiConsumer<T, U> wrapBiConsumer(BiConsumer<T, U> consumer, ContextMap context);
+    <T, U> BiConsumer<T, U> wrapBiConsumer(BiConsumer<T, U> consumer, CapturedContext context);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
      *
      * @param func The function to wrap.
-     * @param context The current {@link ContextMap}.
+     * @param context The current {@link CapturedContext}.
      * @param <T> The type of data consumed by {@code func}.
      * @param <U> The type of data consumed by {@code func}.
      * @param <V> The type of data returned by {@code func}.
      * @return The wrapped {@link BiFunction}.
      */
-    <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func, ContextMap context);
+    <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func, CapturedContext context);
 }

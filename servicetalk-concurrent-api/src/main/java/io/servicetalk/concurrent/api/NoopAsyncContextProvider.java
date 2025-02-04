@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
 final class NoopAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new NoopAsyncContextProvider();
 
+    private static final CapturedContext NOOP_SAVED_CONTEXT = () -> Scope.NOOP;
+
     private NoopAsyncContextProvider() {
         // singleton
     }
@@ -47,64 +49,64 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public ContextMap captureContext() {
-        return NoopContextMap.INSTANCE;
+    public CapturedContext captureContext() {
+        return NOOP_SAVED_CONTEXT;
     }
 
     @Override
-    public Scope attachContext(ContextMap contextMap) {
-        return Scope.NOOP;
+    public CapturedContext captureContextCopy() {
+        return NOOP_SAVED_CONTEXT;
     }
 
     @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
-                                                        final ContextMap context) {
+                                                        final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
-                                                                  final ContextMap context) {
+                                                                  final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
-            final CompletableSource.Subscriber subscriber, final ContextMap context) {
+            final CompletableSource.Subscriber subscriber, final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
-                                                          final ContextMap context) {
+                                                          final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
-                                                               final ContextMap context) {
+                                                               final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
-            final SingleSource.Subscriber<T> subscriber, final ContextMap context) {
+            final SingleSource.Subscriber<T> subscriber, final CapturedContext context) {
         return subscriber;
     }
 
     @Override
-    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final ContextMap context) {
+    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final CapturedContext context) {
         return subscriber;
     }
 
     @Override
-    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final ContextMap context) {
+    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final CapturedContext context) {
         return subscriber;
     }
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
-                                                                    final ContextMap context) {
+                                                                    final CapturedContext context) {
         return subscriber;
     }
 
@@ -130,42 +132,42 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future,
-                                                          final ContextMap context) {
+                                                          final CapturedContext context) {
         return future;
     }
 
     @Override
-    public Runnable wrapRunnable(final Runnable runnable, final ContextMap context) {
+    public Runnable wrapRunnable(final Runnable runnable, final CapturedContext context) {
         return runnable;
     }
 
     @Override
-    public <V> Callable<V> wrapCallable(final Callable<V> callable, final ContextMap context) {
+    public <V> Callable<V> wrapCallable(final Callable<V> callable, final CapturedContext context) {
         return callable;
     }
 
     @Override
-    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final ContextMap context) {
+    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final CapturedContext context) {
         return consumer;
     }
 
     @Override
-    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final ContextMap context) {
+    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final CapturedContext context) {
         return func;
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final ContextMap context) {
+    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final CapturedContext context) {
         return consumer;
     }
 
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func,
-                                                        final ContextMap context) {
+                                                        final CapturedContext context) {
         return func;
     }
 
-    private static final class NoopContextMap implements ContextMap {
+    static final class NoopContextMap implements ContextMap {
         static final ContextMap INSTANCE = new NoopContextMap();
 
         private NoopContextMap() {

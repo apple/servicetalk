@@ -17,10 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 final class ContextPreservingCompletableSubscriberAndCancellable extends ContextPreservingCompletableSubscriber {
-    ContextPreservingCompletableSubscriberAndCancellable(Subscriber subscriber, ContextMap current) {
+    ContextPreservingCompletableSubscriberAndCancellable(Subscriber subscriber, CapturedContext current) {
         super(subscriber, current);
     }
 

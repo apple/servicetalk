@@ -17,10 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 final class ContextPreservingSubscriberAndSubscription<T> extends ContextPreservingSubscriber<T> {
-    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, ContextMap current) {
+    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, CapturedContext current) {
         super(subscriber, current);
     }
 

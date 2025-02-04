@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.AbstractOffloadedSingleValueSubscriber;
 import io.servicetalk.concurrent.api.TaskBasedAsyncCompletableOperator.OffloadedCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,8 +75,8 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(subscriber, contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     static final class SingleSubscriberOffloadedTerminals<T> extends AbstractOffloadedSingleValueSubscriber

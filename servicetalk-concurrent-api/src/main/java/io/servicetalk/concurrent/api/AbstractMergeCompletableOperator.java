@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscriber>
@@ -30,15 +28,15 @@ abstract class AbstractMergeCompletableOperator<T extends CompletableMergeSubscr
     }
 
     @Override
-    final void handleSubscribe(Subscriber subscriber, ContextMap contextMap,
+    final void handleSubscribe(Subscriber subscriber, CapturedContext capturedContext,
                                AsyncContextProvider contextProvider) {
         // The AsyncContext needs to be preserved when ever we interact with the original Subscriber, so we wrap it here
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber operatorSubscriber =
-                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap);
+                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, capturedContext);
         T mergeSubscriber = apply(operatorSubscriber);
-        original.delegateSubscribe(mergeSubscriber, contextMap, contextProvider);
+        original.delegateSubscribe(mergeSubscriber, capturedContext, contextProvider);
         doMerge(mergeSubscriber);
     }
 

@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BooleanSupplier;
 
@@ -35,9 +34,9 @@ final class PublishAndSubscribeOnPublishers {
     }
 
     static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber,
-                                                 ContextMap contextMap, AsyncContextProvider contextProvider,
+                                                 CapturedContext capturedContext, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
-        deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
+        deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, capturedContext), cause);
     }
 
     static <T> Publisher<T> publishOn(final Publisher<T> original,
@@ -69,7 +68,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
-                             final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                             final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             final Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -85,7 +84,7 @@ final class PublishAndSubscribeOnPublishers {
                 return;
             }
 
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
         }
     }
 
@@ -108,7 +107,7 @@ final class PublishAndSubscribeOnPublishers {
 
         @Override
         public void handleSubscribe(final Subscriber<? super T> subscriber,
-                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                    final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             final Subscriber<? super T> upstreamSubscriber;
             try {
                 BooleanSupplier shouldOffload = shouldOffload();
@@ -121,7 +120,7 @@ final class PublishAndSubscribeOnPublishers {
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
                     executor().execute(() -> super.handleSubscribe(
-                            upstreamSubscriber, contextMap, contextProvider));
+                            upstreamSubscriber, capturedContext, contextProvider));
                     return;
                 }
             } catch (Throwable throwable) {
@@ -132,7 +131,7 @@ final class PublishAndSubscribeOnPublishers {
             }
 
             // continue non-offloaded subscribe()
-            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, capturedContext, contextProvider);
         }
     }
 }

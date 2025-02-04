@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -41,19 +40,19 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         // Current expected behavior is to capture the context on the first subscribe, save it, and re-use it on each
         // resubscribe. This allows for async context to be shared across each request retry, and follows the same
         // shared state model as the request object on the client. If copy-on-each-resubscribe is desired this could
         // be provided by an independent operator, or manually cleared/overwritten.
-        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber, contextMap,
-                contextProvider, this), contextMap, contextProvider);
+        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber, capturedContext,
+                contextProvider, this), capturedContext, contextProvider);
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
         private final SequentialCancellable retrySignalCancellable;
         private final RetryWhenSingle<T> retrySingle;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         private final CompletableSource.Subscriber completableSubscriber = new CompletableSource.Subscriber() {
             @Override
@@ -65,7 +64,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             public void onComplete() {
                 // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
                 // source at the top of the chain reset if necessary. We currently choose the second option.
-                retrySingle.original.delegateSubscribe(RetrySubscriber.this, contextMap, contextProvider);
+                retrySingle.original.delegateSubscribe(RetrySubscriber.this, capturedContext, contextProvider);
             }
 
             @Override
@@ -75,12 +74,12 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         };
 
         RetrySubscriber(SequentialCancellable cancellable, int redoCount, Subscriber<? super T> subscriber,
-                        ContextMap contextMap, AsyncContextProvider contextProvider,
+                        CapturedContext capturedContext, AsyncContextProvider contextProvider,
                         RetryWhenSingle<T> retrySingle) {
             super(cancellable, subscriber, redoCount);
             this.retrySingle = retrySingle;
             retrySignalCancellable = new SequentialCancellable();
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
