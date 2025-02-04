@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,21 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
 
-import java.util.function.Consumer;
+/**
+ * An abstraction for detaching a context from the current thread.
+ *
+ * This abstraction is intended to allow the modifications performed by
+ * {@link AsyncContextProvider#attachContext(ContextMap)} to be undone. In practice, this may look like restoring
+ * a {@link ThreadLocal} to the state it had before the call to {@link AsyncContextProvider#attachContext(ContextMap)}
+ * call.
+ */
+interface Scope extends AutoCloseable {
 
-import static java.util.Objects.requireNonNull;
-
-final class ContextPreservingConsumer<T> implements Consumer<T> {
-    private final ContextMap saved;
-    private final Consumer<T> delegate;
-
-    ContextPreservingConsumer(Consumer<T> delegate, ContextMap current) {
-        this.saved = requireNonNull(current);
-        this.delegate = requireNonNull(delegate);
-    }
+    /**
+     * No-op {@link Scope}.
+     */
+    Scope NOOP = () -> { };
 
     @Override
-    public void accept(T t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
-            delegate.accept(t);
-        }
-    }
+    void close();
 }

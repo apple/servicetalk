@@ -16,10 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingRunnable implements Runnable {
@@ -27,7 +24,7 @@ final class ContextPreservingRunnable implements Runnable {
     private final Runnable delegate;
 
     ContextPreservingRunnable(Runnable delegate) {
-        this(delegate, INSTANCE.context());
+        this(delegate, AsyncContext.provider().captureContext());
     }
 
     ContextPreservingRunnable(Runnable delegate, ContextMap current) {
@@ -37,28 +34,8 @@ final class ContextPreservingRunnable implements Runnable {
 
     @Override
     public void run() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                delegate.run();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            slowPath();
-        }
-    }
-
-    private void slowPath() {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             delegate.run();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

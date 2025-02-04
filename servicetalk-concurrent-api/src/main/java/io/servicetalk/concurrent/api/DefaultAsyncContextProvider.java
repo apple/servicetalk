@@ -19,6 +19,10 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -31,10 +35,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-final class DefaultAsyncContextProvider implements AsyncContextProvider {
-    static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
+import static java.lang.ThreadLocal.withInitial;
 
-    private static final AsyncContextMapThreadLocal CONTEXT_LOCAL = new AsyncContextMapThreadLocal();
+final class DefaultAsyncContextProvider implements AsyncContextProvider {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
+    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
+            withInitial(DefaultAsyncContextProvider::newContextMap);
+
+    static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
     private DefaultAsyncContextProvider() {
         // singleton
@@ -43,7 +52,66 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Nonnull
     @Override
     public ContextMap context() {
-        return CONTEXT_LOCAL.get();
+        final Thread t = Thread.currentThread();
+        if (t instanceof ContextMapHolder) {
+            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
+            ContextMap map = contextMapHolder.context();
+            if (map == null) {
+                map = newContextMap();
+                contextMapHolder.context(map);
+            }
+            return map;
+        } else {
+            return CONTEXT_THREAD_LOCAL.get();
+        }
+    }
+
+    @Override
+    public ContextMap captureContext() {
+        return context();
+    }
+
+    @Override
+    public Scope attachContext(ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap prev = asyncContextMapHolder.context();
+            asyncContextMapHolder.context(contextMap);
+            return () -> detachContext(contextMap, prev == null ? newContextMap() : prev);
+        } else {
+            return slowPathSetContext(contextMap);
+        }
+    }
+
+    private static Scope slowPathSetContext(ContextMap contextMap) {
+        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
+        CONTEXT_THREAD_LOCAL.set(contextMap);
+        return () -> detachContext(contextMap, prev);
+    }
+
+    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            ContextMap current = asyncContextMapHolder.context();
+            if (current != expectedContext) {
+                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                        current, expectedContext);
+            }
+            asyncContextMapHolder.context(toRestore);
+        } else {
+            slowPathDetachContext(expectedContext, toRestore);
+        }
+    }
+
+    private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
+        ContextMap current = CONTEXT_THREAD_LOCAL.get();
+        if (current != expectedContext) {
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                    current, expectedContext);
+        }
+        CONTEXT_THREAD_LOCAL.set(toRestore);
     }
 
     @Override
@@ -263,5 +331,9 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
         return new ContextPreservingBiFunction<>(func, context);
+    }
+
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
     }
 }

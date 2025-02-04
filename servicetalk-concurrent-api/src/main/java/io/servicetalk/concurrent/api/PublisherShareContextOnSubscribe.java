@@ -26,7 +26,7 @@ final class PublisherShareContextOnSubscribe<T> extends AbstractNoHandleSubscrib
 
     @Override
     ContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return provider.context();
+        return provider.captureContext();
     }
 
     @Override

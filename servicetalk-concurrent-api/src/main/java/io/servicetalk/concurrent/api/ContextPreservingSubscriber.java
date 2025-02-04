@@ -18,9 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSubscriber<T> implements Subscriber<T> {
@@ -38,109 +36,29 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Subscription s) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                invokeOnSubscribe(s);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onSubscribeSlowPath(s);
-        }
-    }
-
-    private void onSubscribeSlowPath(Subscription s) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             invokeOnSubscribe(s);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onNext(T t) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscriber.onNext(t);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onNextSlowPath(t);
-        }
-    }
-
-    private void onNextSlowPath(T t) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             subscriber.onNext(t);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscriber.onError(t);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onErrorSlowPath(t);
-        }
-    }
-
-    private void onErrorSlowPath(Throwable t) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             subscriber.onError(t);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onComplete() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscriber.onComplete();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onCompleteSlowPath();
-        }
-    }
-
-    private void onCompleteSlowPath() {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
             subscriber.onComplete();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 

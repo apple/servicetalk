@@ -51,6 +51,7 @@ public final class AsyncContext {
     private static final int STATE_INIT = 0;
     private static final int STATE_AUTO_ENABLED = 1;
     private static final int STATE_ENABLED = 2;
+
     /**
      * Note this mechanism is racy. Currently only the {@link #disable()} method is exposed publicly and
      * {@link #STATE_DISABLED} is a terminal state. Because we favor going to the disabled state we don't have to worry
@@ -438,7 +439,7 @@ public final class AsyncContext {
      */
     public static Runnable wrapRunnable(final Runnable runnable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapRunnable(runnable, provider.context());
+        return provider.wrapRunnable(runnable, provider.captureContext());
     }
 
     /**
@@ -449,7 +450,7 @@ public final class AsyncContext {
      */
     public static <V> Callable<V> wrapCallable(final Callable<V> callable) {
         AsyncContextProvider provider = provider();
-        return provider.wrapCallable(callable, provider.context());
+        return provider.wrapCallable(callable, provider.captureContext());
     }
 
     /**
@@ -460,7 +461,7 @@ public final class AsyncContext {
      */
     public static <T> Consumer<T> wrapConsumer(final Consumer<T> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapConsumer(consumer, provider.context());
+        return provider.wrapConsumer(consumer, provider.captureContext());
     }
 
     /**
@@ -472,7 +473,7 @@ public final class AsyncContext {
      */
     public static <T, U> Function<T, U> wrapFunction(final Function<T, U> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapFunction(func, provider.context());
+        return provider.wrapFunction(func, provider.captureContext());
     }
 
     /**
@@ -484,7 +485,7 @@ public final class AsyncContext {
      */
     public static <T, U> BiConsumer<T, U> wrapBiConsume(final BiConsumer<T, U> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiConsumer(consumer, provider.context());
+        return provider.wrapBiConsumer(consumer, provider.captureContext());
     }
 
     /**
@@ -497,7 +498,7 @@ public final class AsyncContext {
      */
     public static <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrapBiFunction(func, provider.context());
+        return provider.wrapBiFunction(func, provider.captureContext());
     }
 
     /**
