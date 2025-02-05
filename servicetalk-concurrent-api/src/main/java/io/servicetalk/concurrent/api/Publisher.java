@@ -2665,7 +2665,7 @@ Kotlin flatMapLatest</a>
     }
 
     public final <R> Single<R> splice(BiFunction<T, Publisher<T>, R> packer) {
-        return this.liftSyncToSingle(new SpliceFlatStreamToHeadTailSingle<>(packer));
+        return this.liftSyncToSingle(new SpliceFlatStreamToPackedSingle<>(packer));
     }
 
     /**

@@ -43,8 +43,8 @@ import static java.util.Objects.requireNonNull;
  * @param <Data> type of container
  * @param <T> type of payload inside the {@link Data}
  */
-final class SpliceFlatStreamToHeadTailSingle<Data, T> implements PublisherToSingleOperator<Object, Data> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToHeadTailSingle.class);
+final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingleOperator<Object, Data> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToPackedSingle.class);
     private final BiFunction<T, Publisher<T>, Data> packer;
 
     /**
@@ -53,7 +53,7 @@ final class SpliceFlatStreamToHeadTailSingle<Data, T> implements PublisherToSing
      * @param packer function to pack the {@link Publisher}&lt;{@link T}&gt; and {@link T} into a
      * {@link Data}
      */
-    SpliceFlatStreamToHeadTailSingle(BiFunction<T, Publisher<T>, Data> packer) {
+    SpliceFlatStreamToPackedSingle(BiFunction<T, Publisher<T>, Data> packer) {
         this.packer = requireNonNull(packer);
     }
 
@@ -120,7 +120,7 @@ final class SpliceFlatStreamToHeadTailSingle<Data, T> implements PublisherToSing
          */
         private boolean onSubscribeSent;
 
-        private final SpliceFlatStreamToHeadTailSingle<Data, T> parent;
+        private final SpliceFlatStreamToPackedSingle<Data, T> parent;
         private final Subscriber<? super Data> dataSubscriber;
 
         /**
@@ -132,7 +132,7 @@ final class SpliceFlatStreamToHeadTailSingle<Data, T> implements PublisherToSing
          * @param parent reference to the parent class holding immutable state
          * @param dataSubscriber {@link Subscriber} to the {@link Data}
          */
-        private SplicingSubscriber(SpliceFlatStreamToHeadTailSingle<Data, T> parent,
+        private SplicingSubscriber(SpliceFlatStreamToPackedSingle<Data, T> parent,
                                    Subscriber<? super Data> dataSubscriber) {
             this.parent = parent;
             this.dataSubscriber = dataSubscriber;
