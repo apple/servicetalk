@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ContextMapUtils;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -57,8 +58,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public void setContextMap(ContextMap contextMap) {
-        // noop
+    public ContextMapHolder context(@Nullable ContextMap contextMap) {
+        return this;
     }
 
     @Override
@@ -170,7 +171,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
         return func;
     }
 
-    private static final class NoopContextMap implements ScopeContextMap {
+    private static final class NoopContextMap implements ContextMap, Scope {
         static final ContextMap INSTANCE = new NoopContextMap();
 
         private NoopContextMap() {
@@ -284,6 +285,11 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
         @Override
         public String toString() {
             return ContextMapUtils.toString(this);
+        }
+
+        @Override
+        public void close() {
+            // noop
         }
     }
 }

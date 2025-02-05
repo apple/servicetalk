@@ -30,12 +30,10 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static java.lang.ThreadLocal.withInitial;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
-    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
-            withInitial(DefaultAsyncContextProvider::newContextMap);
 
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
@@ -43,54 +41,26 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         // singleton
     }
 
+    @Nonnull
     @Override
     public ContextMap context() {
-        final Thread t = Thread.currentThread();
-        if (t instanceof ContextMapHolder) {
-            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
-            ContextMap map = contextMapHolder.context();
-            if (map == null) {
-                map = newContextMap();
-                contextMapHolder.context(map);
-            }
-            return map;
-        } else {
-            return CONTEXT_THREAD_LOCAL.get();
-        }
+        return AsyncContextMapThreadLocal.get();
+    }
+
+    @Override
+    public ContextMapHolder context(@Nullable ContextMap contextMap) {
+        AsyncContextMapThreadLocal.setContext(contextMap);
+        return this;
     }
 
     @Override
     public ContextMap captureContext() {
-        return context();
+        return AsyncContextMapThreadLocal.get();
     }
 
     @Override
     public Scope attachContext(ContextMap contextMap) {
-        ContextMap prev;
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            prev = asyncContextMapHolder.context();
-            asyncContextMapHolder.context(contextMap);
-            if (prev == null) {
-                prev = newContextMap();
-            }
-        } else {
-            prev = CONTEXT_THREAD_LOCAL.get();
-            CONTEXT_THREAD_LOCAL.set(contextMap);
-        }
-        return prev instanceof Scope ? (Scope) prev : new ScopeImpl(prev);
-    }
-
-    @Override
-    public void setContextMap(ContextMap contextMap) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            asyncContextMapHolder.context(contextMap);
-        } else {
-            CONTEXT_THREAD_LOCAL.set(contextMap);
-        }
+        return AsyncContextMapThreadLocal.attachContext(contextMap);
     }
 
     @Override
@@ -310,22 +280,5 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
         return new ContextPreservingBiFunction<>(func, context);
-    }
-
-    private static final class ScopeImpl implements Scope {
-        private final ContextMap toRestore;
-
-        ScopeImpl(ContextMap toRestore) {
-            this.toRestore = toRestore;
-        }
-
-        @Override
-        public void close() {
-            AsyncContext.provider().setContextMap(toRestore);
-        }
-    }
-
-    private static ContextMap newContextMap() {
-        return new CopyOnWriteContextMap();
     }
 }
