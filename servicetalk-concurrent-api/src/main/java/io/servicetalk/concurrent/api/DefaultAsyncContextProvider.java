@@ -34,6 +34,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.lang.ThreadLocal.withInitial;
 
@@ -78,7 +79,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             ContextMap prev = asyncContextMapHolder.context();
             asyncContextMapHolder.context(contextMap);
-            return () -> detachContext(contextMap, prev == null ? newContextMap() : prev);
+            return () -> detachContext(contextMap, prev);
         } else {
             return slowPathSetContext(contextMap);
         }
@@ -90,7 +91,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         return () -> detachContext(contextMap, prev);
     }
 
-    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+    private static void detachContext(ContextMap expectedContext, @Nullable ContextMap toRestore) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
@@ -105,7 +106,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
         }
     }
 
-    private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
+    private static void slowPathDetachContext(ContextMap expectedContext, @Nullable ContextMap toRestore) {
         ContextMap current = CONTEXT_THREAD_LOCAL.get();
         if (current != expectedContext) {
             LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
