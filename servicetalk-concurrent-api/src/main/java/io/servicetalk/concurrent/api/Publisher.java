@@ -2664,6 +2664,10 @@ Kotlin flatMapLatest</a>
         return filter(FilterPublisher.skipWhileSupplier(predicate));
     }
 
+    public final <R> Single<R> splice(BiFunction<T, Publisher<T>, R> packer) {
+        return this.liftSyncToSingle(new SpliceFlatStreamToHeadTailSingle<>(packer));
+    }
+
     /**
      * Takes at most {@code numElements} elements from {@code this} {@link Publisher}.
      * <p>
