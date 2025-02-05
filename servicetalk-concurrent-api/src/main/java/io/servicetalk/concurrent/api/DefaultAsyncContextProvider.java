@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 final class DefaultAsyncContextProvider extends AbstractAsyncContextProvider {
 
     static final DefaultAsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
@@ -27,17 +25,11 @@ final class DefaultAsyncContextProvider extends AbstractAsyncContextProvider {
 
     @Override
     public CapturedContext captureContext() {
-        ContextMap current = context();
-        return () -> ContextMapThreadLocal.attachContext(current);
+        return ContextMapThreadLocal.captureContext();
     }
 
     @Override
     public CapturedContext captureContextCopy() {
-        ContextMap currentCopy = context().copy();
-        return () -> ContextMapThreadLocal.attachContext(currentCopy);
-    }
-
-    private static ContextMap newContextMap() {
-        return new CopyOnWriteContextMap();
+        return ContextMapThreadLocal.captureContextCopy();
     }
 }

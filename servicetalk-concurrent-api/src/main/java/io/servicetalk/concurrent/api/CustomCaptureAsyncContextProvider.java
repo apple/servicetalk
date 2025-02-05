@@ -4,19 +4,19 @@ import static java.util.Objects.requireNonNull;
 
 final class CustomCaptureAsyncContextProvider extends AbstractAsyncContextProvider {
 
-    private final ContextCaptureProvider contextCaptureProvider;
+    private final ContextCaptureProvider delegate;
 
-    CustomCaptureAsyncContextProvider(ContextCaptureProvider contextCaptureProvider) {
-        this.contextCaptureProvider = requireNonNull(contextCaptureProvider);
+    CustomCaptureAsyncContextProvider(ContextCaptureProvider delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public CapturedContext captureContext() {
-        return contextCaptureProvider.captureContext();
+        return delegate.captureContext();
     }
 
     @Override
     public CapturedContext captureContextCopy() {
-        return contextCaptureProvider.captureContextCopy();
+        return delegate.captureContextCopy();
     }
 }

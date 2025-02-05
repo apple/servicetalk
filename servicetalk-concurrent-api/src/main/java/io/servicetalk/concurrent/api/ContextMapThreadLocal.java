@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
@@ -13,10 +28,9 @@ final class ContextMapThreadLocal {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextMapThreadLocal.class);
 
-    protected static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
+    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
             withInitial(ContextMapThreadLocal::newContextMap);
 
-    @Nonnull
     static ContextMap context() {
         final Thread t = Thread.currentThread();
         if (t instanceof ContextMapHolder) {
@@ -32,46 +46,78 @@ final class ContextMapThreadLocal {
         }
     }
 
+    static CapturedContext captureContext() {
+        return toCaptureContext(context());
+    }
+
+    static CapturedContext captureContextCopy() {
+        return toCaptureContext(context().copy());
+    }
+
     static Scope attachContext(ContextMap contextMap) {
+        ContextMap prev = exchangeContext(contextMap);
+        return !LOGGER.isDebugEnabled() && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
+    }
+
+    // Used for `CopyOnWriteContextMap.close()`
+    static void setContext(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
             asyncContextMapHolder.context(contextMap);
-            return prev == null ? Scope.NOOP : () -> detachContext(contextMap, prev);
         } else {
-            return slowPathSetContext(contextMap);
+            CONTEXT_THREAD_LOCAL.set(contextMap);
         }
     }
 
-    private static Scope slowPathSetContext(ContextMap contextMap) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        CONTEXT_THREAD_LOCAL.set(contextMap);
-        return () -> detachContext(contextMap, prev);
+    // Used for CaptureContext operations
+    private static ContextMap exchangeContext(ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        ContextMap result;
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            result = asyncContextMapHolder.context();
+            if (result == null) {
+                result = newContextMap();
+            }
+            asyncContextMapHolder.context(contextMap);
+        } else {
+            result = CONTEXT_THREAD_LOCAL.get();
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+        return result;
+    }
+
+    private static CapturedContext toCaptureContext(ContextMap contextMap) {
+        return contextMap instanceof CapturedContext ?
+                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
+    }
+
+    private static final class CapturedContextImpl implements CapturedContext {
+
+        private final ContextMap contextMap;
+
+        CapturedContextImpl(ContextMap contextMap) {
+            this.contextMap = contextMap;
+        }
+
+        @Override
+        public ContextMap captured() {
+            return contextMap;
+        }
+
+        @Override
+        public Scope restoreContext() {
+            return attachContext(contextMap);
+        }
     }
 
     private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap current = asyncContextMapHolder.context();
-            if (current != expectedContext) {
-                LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
-                        current, expectedContext);
-            }
-            asyncContextMapHolder.context(toRestore);
-        } else {
-            slowPathDetachContext(expectedContext, toRestore);
-        }
-    }
-
-    private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
-        ContextMap current = CONTEXT_THREAD_LOCAL.get();
+        ContextMap current = exchangeContext(toRestore);
         if (current != expectedContext) {
-            LOGGER.warn("Current context didn't match the expected context. current: {}, expected: {}",
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
                     current, expectedContext);
         }
-        CONTEXT_THREAD_LOCAL.set(toRestore);
     }
 
     private static ContextMap newContextMap() {

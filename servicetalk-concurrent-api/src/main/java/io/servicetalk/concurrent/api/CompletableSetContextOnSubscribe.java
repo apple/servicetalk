@@ -31,13 +31,21 @@ final class CompletableSetContextOnSubscribe extends AbstractNoHandleSubscribeCo
     @Override
     CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         CapturedContext parentContext = super.contextForSubscribe(provider);
-        return () -> {
-            Scope outer = parentContext.restoreContext();
-            Scope inner = ContextMapThreadLocal.attachContext(context);
-            return () -> {
-                inner.close();
-                outer.close();
-            };
+        return new CapturedContext() {
+            @Override
+            public ContextMap captured() {
+                return context;
+            }
+
+            @Override
+            public Scope restoreContext() {
+                Scope outer = parentContext.restoreContext();
+                Scope inner = ContextMapThreadLocal.attachContext(context);
+                return () -> {
+                    inner.close();
+                    outer.close();
+                };
+            }
         };
     }
 

@@ -15,11 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 /**
  * An interface representing the restoration of the thread-local like context that can be restored later
  * during an async operation.
  */
 interface CapturedContext {
+
+    /**
+     * The {@link ContextMap} that was captured as part of the context.
+     * @return
+     */
+    ContextMap captured();
 
     /**
      * Restore the thread-local like context.

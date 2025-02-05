@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  * {@link ContextMap.Key}-value entries in a single {@link ContextMap}. Common {@link ContextMap.Key}-value entries are
  * (tracing, MDC, auth, 3-custom user entries).
  */
-final class CopyOnWriteContextMap implements ContextMap {
+final class CopyOnWriteContextMap implements ContextMap, Scope, CapturedContext {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteContextMap.class, CopyContextMap.class, "map");
 
@@ -2972,5 +2972,23 @@ final class CopyOnWriteContextMap implements ContextMap {
             }
             return new SevenOrMoreContextMap(Arrays.copyOf(pairs, index));
         }
+    }
+
+    // CapturedContext methods
+
+    @Override
+    public ContextMap captured() {
+        return this;
+    }
+
+    @Override
+    public Scope restoreContext() {
+        return ContextMapThreadLocal.attachContext(this);
+    }
+
+    // Scope method
+    @Override
+    public void close() {
+        ContextMapThreadLocal.setContext(this);
     }
 }

@@ -15,22 +15,28 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.function.BiFunction;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> {
-    private final CapturedContext saved;
+
+    // TODO: remove once we can get the java agents onto the new API.
+    private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final BiFunction<T, U, V> delegate;
 
     ContextPreservingBiFunction(BiFunction<T, U, V> delegate, CapturedContext capturedContext) {
-        this.saved = requireNonNull(capturedContext);
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public V apply(T t, U u) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             return delegate.apply(t, u);
         }
     }

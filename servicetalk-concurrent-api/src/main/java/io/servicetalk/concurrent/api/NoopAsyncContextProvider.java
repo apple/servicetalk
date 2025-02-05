@@ -37,7 +37,17 @@ import javax.annotation.Nullable;
 final class NoopAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new NoopAsyncContextProvider();
 
-    private static final CapturedContext NOOP_SAVED_CONTEXT = () -> Scope.NOOP;
+    private static final CapturedContext NOOP_SAVED_CONTEXT = new CapturedContext() {
+        @Override
+        public ContextMap captured() {
+            return NoopContextMap.INSTANCE;
+        }
+
+        @Override
+        public Scope restoreContext() {
+            return Scope.NOOP;
+        }
+    };
 
     private NoopAsyncContextProvider() {
         // singleton
