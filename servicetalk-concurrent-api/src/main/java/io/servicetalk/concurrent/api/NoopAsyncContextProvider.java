@@ -57,6 +57,11 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public void setContextMap(ContextMap contextMap) {
+        // noop
+    }
+
+    @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                         final ContextMap context) {
         return subscriber;
@@ -165,7 +170,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
         return func;
     }
 
-    private static final class NoopContextMap implements ContextMap {
+    private static final class NoopContextMap implements ScopeContextMap {
         static final ContextMap INSTANCE = new NoopContextMap();
 
         private NoopContextMap() {

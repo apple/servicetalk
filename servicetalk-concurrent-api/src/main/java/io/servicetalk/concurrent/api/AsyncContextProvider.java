@@ -48,6 +48,12 @@ interface AsyncContextProvider {
     ContextMap context();
 
     /**
+     * Set the current {@link ContextMap}
+     * @param contextMap the {@link ContextMap} to set in the thread local state.
+     */
+    void setContextMap(ContextMap contextMap);
+
+    /**
      * Capture existing context in preparation for an asynchronous thread jump.
      *
      * Note that this can do more than just package up the ServiceTalk {@link AsyncContext} and could be enhanced or
