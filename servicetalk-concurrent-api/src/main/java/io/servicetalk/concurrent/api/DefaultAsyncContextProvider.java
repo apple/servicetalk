@@ -34,14 +34,17 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.lang.ThreadLocal.withInitial;
 
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
     private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
             withInitial(DefaultAsyncContextProvider::newContextMap);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
+    private static final boolean NOT_IS_DEBUG_ENABLED = !LOGGER.isDebugEnabled();
 
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
@@ -67,51 +70,28 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public ContextMapHolder context(@Nullable ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            asyncContextMapHolder.context(contextMap);
+        } else if (contextMap == null) {
+            CONTEXT_THREAD_LOCAL.remove();
+        } else {
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+        return this;
+    }
+
+    @Override
     public ContextMap captureContext() {
         return context();
     }
 
     @Override
     public Scope attachContext(ContextMap contextMap) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            asyncContextMapHolder.context(contextMap);
-            return () -> detachContext(contextMap, prev == null ? newContextMap() : prev);
-        } else {
-            return slowPathSetContext(contextMap);
-        }
-    }
-
-    private static Scope slowPathSetContext(ContextMap contextMap) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        CONTEXT_THREAD_LOCAL.set(contextMap);
-        return () -> detachContext(contextMap, prev);
-    }
-
-    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap current = asyncContextMapHolder.context();
-            if (current != expectedContext) {
-                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
-                        current, expectedContext);
-            }
-            asyncContextMapHolder.context(toRestore);
-        } else {
-            slowPathDetachContext(expectedContext, toRestore);
-        }
-    }
-
-    private static void slowPathDetachContext(ContextMap expectedContext, ContextMap toRestore) {
-        ContextMap current = CONTEXT_THREAD_LOCAL.get();
-        if (current != expectedContext) {
-            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
-                    current, expectedContext);
-        }
-        CONTEXT_THREAD_LOCAL.set(toRestore);
+        ContextMap prev = exchangeContext(contextMap);
+        return NOT_IS_DEBUG_ENABLED && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
     }
 
     @Override
@@ -331,6 +311,31 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
         return new ContextPreservingBiFunction<>(func, context);
+    }
+
+    private static ContextMap exchangeContext(ContextMap contextMap) {
+        ContextMap result;
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            result = asyncContextMapHolder.context();
+            if (result == null) {
+                result = newContextMap();
+            }
+            asyncContextMapHolder.context(contextMap);
+        } else {
+            result = CONTEXT_THREAD_LOCAL.get();
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+        return result;
+    }
+
+    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        ContextMap current = exchangeContext(toRestore);
+        if (current != expectedContext) {
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                    current, expectedContext);
+        }
     }
 
     private static ContextMap newContextMap() {
