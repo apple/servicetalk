@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.context.api.ContextMap;
@@ -910,6 +911,30 @@ class DefaultAsyncContextProviderTest {
     @Test
     void eightPutMultiplePermutations() {
         testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7, K8));
+    }
+
+
+    @Test
+    void captureDefaultContextMap() {
+        testContextMap(new DefaultContextMap());
+    }
+
+    @Test
+    void captureCopyOnWriteContextMap() {
+        testContextMap(new CopyOnWriteContextMap());
+    }
+
+    private static void testContextMap(ContextMap toCapture) {
+        assertNull(AsyncContext.put(K1, "k1"));
+        toCapture.put(K1, "k1-override");
+        CapturedContext capturedContext = AsyncContext.provider().captureContext(toCapture);
+        try (Scope ignored = capturedContext.restoreContext()) {
+            assertEquals("k1-override", AsyncContext.get(K1));
+            AsyncContext.put(K2, "k2");
+        }
+        assertEquals("k1", AsyncContext.get(K1));
+        assertNull(AsyncContext.get(K2));
+        assertEquals("k2", toCapture.get(K2));
     }
 
     private static void testPutMultiplePermutations(List<Key<String>> initialKeys) {

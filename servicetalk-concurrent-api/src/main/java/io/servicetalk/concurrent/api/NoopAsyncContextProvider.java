@@ -74,7 +74,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Scope attachContext(ContextMap contextMap) {
+    public Scope attachContextMap(ContextMap contextMap) {
         return Scope.NOOP;
     }
 

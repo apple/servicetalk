@@ -55,11 +55,25 @@ interface AsyncContextProvider {
      */
     void context(ContextMap context);
 
-    Scope attachContext(ContextMap contextMap);
+    /**
+     * Attach the {@link ContextMap} to the current local scope.
+     * @param contextMap the {@link ContextMap} to attach.
+     * @return a {@link Scope} that must be used to restore the previous {@link ContextMap} when the operation is
+     * complete.
+     */
+    Scope attachContextMap(ContextMap contextMap);
 
+    /**
+     * Capture the current context with the provided {@link ContextMap} as the captured {@link AsyncContext} state.
+     * @return the captured context to be restored across async boundaries.
+     */
     CapturedContext captureContext(ContextMap contextMap);
 
-    // TODO: refactor to remove this
+    /**
+     * Capture the current context. This is expected to provide identical results as calling
+     * {@code captureContext(context());}.
+     * @return the captured context to be restored across async boundaries.
+     */
     CapturedContext captureContext();
 
     /**

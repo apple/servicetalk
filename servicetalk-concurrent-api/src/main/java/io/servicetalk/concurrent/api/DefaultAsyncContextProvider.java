@@ -76,9 +76,9 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final Scope attachContext(ContextMap contextMap) {
+    public final Scope attachContextMap(ContextMap contextMap) {
         ContextMap prev = exchangeContext(contextMap);
-        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
+        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContextMap(contextMap, prev);
     }
 
     @Override
@@ -333,7 +333,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         @Override
         public Scope restoreContext() {
             ContextMap prev = exchangeContext(contextMap);
-            return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
+            return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContextMap(contextMap, prev);
         }
     }
 
@@ -354,7 +354,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         return result;
     }
 
-    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+    private static void detachContextMap(ContextMap expectedContext, ContextMap toRestore) {
         ContextMap current = exchangeContext(toRestore);
         if (current != expectedContext && !NO_DEBUG_LOGGING) {
             LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
