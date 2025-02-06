@@ -35,7 +35,8 @@ final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleC
 
     @Override
     void delegateSubscribeToOriginal(final Subscriber<? super T> offloadSubscriber,
-                                     final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+                                     final CapturedContext capturedContext,
+                                     final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), capturedContext,
                 contextProvider);
     }

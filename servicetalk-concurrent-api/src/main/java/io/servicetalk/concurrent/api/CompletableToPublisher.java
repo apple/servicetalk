@@ -56,7 +56,8 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
         private volatile int terminated;
 
         private ConversionSubscriber(Subscriber<? super T> subscriber,
-                                     final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+                                     final CapturedContext capturedContext,
+                                     final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;

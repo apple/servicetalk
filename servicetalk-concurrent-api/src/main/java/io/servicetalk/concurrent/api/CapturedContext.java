@@ -25,7 +25,7 @@ interface CapturedContext {
 
     /**
      * The {@link ContextMap} that was captured as part of the context.
-     * @return
+     * @return {@link ContextMap} that was captured as part of the context.
      */
     ContextMap captured();
 

@@ -184,7 +184,8 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private Throwable completableError;
         private volatile int state;
 
-        Merger(Subscriber<? super T> subscriber, CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        Merger(Subscriber<? super T> subscriber, CapturedContext capturedContext,
+               AsyncContextProvider contextProvider) {
             this.wrappedSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, capturedContext);
             completableSubscriber = new CompletableSubscriber();
         }

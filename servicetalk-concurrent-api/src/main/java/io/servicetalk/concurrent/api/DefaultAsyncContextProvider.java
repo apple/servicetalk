@@ -20,11 +20,9 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +48,6 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     protected DefaultAsyncContextProvider() {
     }
 
-    @Nonnull
     @Override
     public final ContextMap context() {
         final Thread t = Thread.currentThread();
@@ -68,13 +65,11 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final void context(@Nullable ContextMap contextMap) {
+    public final void context(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
             asyncContextMapHolder.context(contextMap);
-        } else if (contextMap == null) {
-            CONTEXT_THREAD_LOCAL.remove();
         } else {
             CONTEXT_THREAD_LOCAL.set(contextMap);
         }
@@ -209,7 +204,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final <T> PublisherSource.Subscriber<T> wrapSubscription(final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
+    public final <T> PublisherSource.Subscriber<T> wrapSubscription(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
             if (s.capturedContext == context) {
@@ -226,7 +222,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
+    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
             final ContextPreservingSubscriptionSubscriber<T> s =
                     (ContextPreservingSubscriptionSubscriber<T>) subscriber;
@@ -243,8 +240,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriberAndSubscription(final PublisherSource.Subscriber<T> subscriber,
-                                                                                          final CapturedContext context) {
+    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriberAndSubscription(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
             if (s.capturedContext == context) {
@@ -272,7 +269,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final io.servicetalk.concurrent.api.Executor wrapExecutor(final io.servicetalk.concurrent.api.Executor executor) {
+    public final io.servicetalk.concurrent.api.Executor wrapExecutor(
+            final io.servicetalk.concurrent.api.Executor executor) {
         return ContextPreservingStExecutor.of(executor);
     }
 
@@ -308,12 +306,14 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final CapturedContext context) {
+    public final <T, U> BiConsumer<T, U> wrapBiConsumer(
+            final BiConsumer<T, U> consumer, final CapturedContext context) {
         return new ContextPreservingBiConsumer<>(consumer, context);
     }
 
     @Override
-    public final <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final CapturedContext context) {
+    public final <T, U, V> BiFunction<T, U, V> wrapBiFunction(
+            final BiFunction<T, U, V> func, final CapturedContext context) {
         return new ContextPreservingBiFunction<>(func, context);
     }
 
@@ -356,11 +356,9 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
         ContextMap current = exchangeContext(toRestore);
-        if (current != expectedContext) {
-            if (!NO_DEBUG_LOGGING) {
-                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
-                        current, expectedContext, new Throwable("stack trace"));
-            }
+        if (current != expectedContext && !NO_DEBUG_LOGGING) {
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                    current, expectedContext, new Throwable("stack trace"));
         }
     }
 

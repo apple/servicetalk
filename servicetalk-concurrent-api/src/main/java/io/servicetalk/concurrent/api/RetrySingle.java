@@ -43,8 +43,9 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         // resubscribe. This allows for async context to be shared across each request retry, and follows the same
         // shared state model as the request object on the client. If copy-on-each-resubscribe is desired this could
         // be provided by an independent operator, or manually cleared/overwritten.
-        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), this, subscriber, 0, capturedContext,
-                contextProvider), capturedContext, contextProvider);
+        original.delegateSubscribe(new RetrySubscriber<>(
+                new SequentialCancellable(), this, subscriber, 0, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     abstract static class AbstractRetrySubscriber<T> implements Subscriber<T> {

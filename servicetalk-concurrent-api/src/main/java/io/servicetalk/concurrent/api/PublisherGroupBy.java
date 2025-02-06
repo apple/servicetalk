@@ -42,8 +42,9 @@ final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     @Override
     void handleSubscribe(Subscriber<? super GroupedPublisher<Key, T>> subscriber,
                          CapturedContext capturedContext, AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new GroupBySubscriber(subscriber, queueLimit, initialCapacityForGroups, capturedContext,
-                contextProvider), capturedContext, contextProvider);
+        original.delegateSubscribe(new GroupBySubscriber(
+                    subscriber, queueLimit, initialCapacityForGroups, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private final class GroupBySubscriber extends AbstractGroupBySubscriber<Key, T> {

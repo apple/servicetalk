@@ -92,7 +92,8 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         }
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutSingle<X> parent, Subscriber<? super X> target,
-                                                    CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+                                                    CapturedContext capturedContext,
+                                                    AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, contextProvider);
             Cancellable localTimerCancellable;
             try {

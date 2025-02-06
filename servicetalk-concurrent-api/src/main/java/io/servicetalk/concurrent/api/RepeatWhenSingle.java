@@ -147,7 +147,8 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                                 // Either we copy the map up front before subscribe, or we just re-use the same map and
                                 // let the async source at the top of the chain reset if necessary. We currently choose
                                 // the second option.
-                                outer.original.delegateSubscribe(RepeatSubscriber.this, capturedContext, contextProvider);
+                                outer.original.delegateSubscribe(
+                                        RepeatSubscriber.this, capturedContext, contextProvider);
                             }
                             break;
                         }

@@ -107,8 +107,8 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public CompletableFuture<Void> thenRunAsync(final Runnable action, final java.util.concurrent.Executor executor) {
-        return newContextPreservingFuture(delegate.thenRunAsync(AsyncContext.provider().wrapRunnable(action, capturedContext),
-                executor), capturedContext);
+        return newContextPreservingFuture(delegate.thenRunAsync(
+                AsyncContext.provider().wrapRunnable(action, capturedContext), executor), capturedContext);
     }
 
     @Override
@@ -239,13 +239,14 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public <U> CompletableFuture<U> thenCompose(final Function<? super T, ? extends CompletionStage<U>> fn) {
-        return newContextPreservingFuture(delegate.thenCompose(AsyncContext.provider().wrapFunction(fn, capturedContext)), capturedContext);
+        return newContextPreservingFuture(delegate.thenCompose(
+                AsyncContext.provider().wrapFunction(fn, capturedContext)), capturedContext);
     }
 
     @Override
     public <U> CompletableFuture<U> thenComposeAsync(final Function<? super T, ? extends CompletionStage<U>> fn) {
-        return newContextPreservingFuture(delegate.thenComposeAsync(AsyncContext.provider().wrapFunction(fn, capturedContext)),
-                capturedContext);
+        return newContextPreservingFuture(delegate.thenComposeAsync(
+                AsyncContext.provider().wrapFunction(fn, capturedContext)), capturedContext);
     }
 
     @Override
@@ -257,14 +258,14 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public CompletableFuture<T> exceptionally(final Function<Throwable, ? extends T> fn) {
-        return newContextPreservingFuture(delegate.exceptionally(AsyncContext.provider().wrapFunction(fn, capturedContext)),
-                capturedContext);
+        return newContextPreservingFuture(delegate.exceptionally(
+                AsyncContext.provider().wrapFunction(fn, capturedContext)), capturedContext);
     }
 
     @Override
     public CompletableFuture<T> whenComplete(final BiConsumer<? super T, ? super Throwable> action) {
-        return newContextPreservingFuture(delegate.whenComplete(AsyncContext.provider().wrapBiConsumer(action, capturedContext)),
-                capturedContext);
+        return newContextPreservingFuture(delegate.whenComplete(
+                AsyncContext.provider().wrapBiConsumer(action, capturedContext)), capturedContext);
     }
 
     @Override
@@ -282,13 +283,14 @@ final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public <U> CompletableFuture<U> handle(final BiFunction<? super T, Throwable, ? extends U> fn) {
-        return newContextPreservingFuture(delegate.handle(AsyncContext.provider().wrapBiFunction(fn, capturedContext)), capturedContext);
+        return newContextPreservingFuture(delegate.handle(
+                AsyncContext.provider().wrapBiFunction(fn, capturedContext)), capturedContext);
     }
 
     @Override
     public <U> CompletableFuture<U> handleAsync(final BiFunction<? super T, Throwable, ? extends U> fn) {
-        return newContextPreservingFuture(delegate.handleAsync(AsyncContext.provider().wrapBiFunction(fn, capturedContext)),
-                capturedContext);
+        return newContextPreservingFuture(delegate.handleAsync(
+                AsyncContext.provider().wrapBiFunction(fn, capturedContext)), capturedContext);
     }
 
     @Override

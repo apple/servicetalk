@@ -26,7 +26,8 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber,
                                    final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
-        final Subscriber<? super T> wrappedSubscriber = contextProvider.wrapSingleSubscriber(subscriber, capturedContext);
+        final Subscriber<? super T> wrappedSubscriber =
+                contextProvider.wrapSingleSubscriber(subscriber, capturedContext);
         delegateSubscribeToOriginal(wrappedSubscriber, capturedContext, contextProvider);
     }
 
