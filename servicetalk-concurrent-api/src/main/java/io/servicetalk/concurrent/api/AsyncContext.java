@@ -33,7 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextExecutorPlugin.EXECUTOR_PLUGIN;
@@ -70,16 +69,22 @@ public final class AsyncContext {
     private static AsyncContextProvider provider;
 
     static {
-        AsyncContextProvider result = DefaultAsyncContextProvider.INSTANCE;
-        List<UnaryOperator<ContextCaptureProvider>> wrappers = asyncProviderWrappers();
-        if (!wrappers.isEmpty()) {
-            ContextCaptureProvider contextCaptureProvider = DefaultAsyncContextProvider.INSTANCE;
-            for (UnaryOperator<ContextCaptureProvider> wrapper : wrappers) {
-                contextCaptureProvider = wrapper.apply(result);
+        CapturedContextProvider capturedContextProvider = null;
+        for (CapturedContextProvider provider : asyncProviderWrappers()) {
+            if (capturedContextProvider == null) {
+                capturedContextProvider = provider;
+            } else {
+                final CapturedContextProvider finalCapturedContextProvider = capturedContextProvider;
+                // TODO: at some point this is perhaps better as a list iteration.
+                capturedContextProvider = (context) ->
+                        provider.captureContext(finalCapturedContextProvider.captureContext(context));
             }
-            result = new CustomCaptureAsyncContextProvider(contextCaptureProvider);
         }
-        DEFAULT_ENABLED_PROVIDER = result;
+        if (capturedContextProvider == null) {
+            DEFAULT_ENABLED_PROVIDER = DefaultAsyncContextProvider.INSTANCE;
+        } else {
+            DEFAULT_ENABLED_PROVIDER = new CustomCaptureAsyncContextProvider(capturedContextProvider);
+        }
         provider = DEFAULT_ENABLED_PROVIDER;
     }
 
@@ -581,7 +586,7 @@ public final class AsyncContext {
         LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
     }
 
-    private static List<UnaryOperator<ContextCaptureProvider>> asyncProviderWrappers() {
+    private static List<CapturedContextProvider> asyncProviderWrappers() {
         return Collections.emptyList();
     }
 }

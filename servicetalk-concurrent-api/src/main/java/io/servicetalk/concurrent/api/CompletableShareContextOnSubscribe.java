@@ -24,7 +24,7 @@ final class CompletableShareContextOnSubscribe extends AbstractNoHandleSubscribe
 
     @Override
     CapturedContext contextForSubscribe(AsyncContextProvider provider) {
-        return provider.captureContext();
+        return provider.captureContext(provider.context());
     }
 
     @Override

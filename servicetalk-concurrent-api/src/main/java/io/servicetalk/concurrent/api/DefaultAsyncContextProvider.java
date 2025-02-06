@@ -68,7 +68,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final ContextMapHolder context(@Nullable ContextMap contextMap) {
+    public final void context(@Nullable ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
@@ -78,7 +78,6 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         } else {
             CONTEXT_THREAD_LOCAL.set(contextMap);
         }
-        return this;
     }
 
     @Override
@@ -88,13 +87,14 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CapturedContext captureContext() {
-        return toCaptureContext(context());
+    public CapturedContext captureContext(ContextMap contextMap) {
+        return contextMap instanceof CapturedContext ?
+                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
     }
 
     @Override
-    public CapturedContext captureContextCopy() {
-        return toCaptureContext(context().copy());
+    public final CapturedContext captureContext() {
+        return captureContext(context());
     }
 
     @Override
@@ -335,11 +335,6 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             ContextMap prev = exchangeContext(contextMap);
             return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
         }
-    }
-
-    private static CapturedContext toCaptureContext(ContextMap contextMap) {
-        return contextMap instanceof CapturedContext ?
-                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
     }
 
     private static ContextMap exchangeContext(ContextMap contextMap) {

@@ -23,6 +23,8 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +39,7 @@ import static io.servicetalk.concurrent.PublisherSource.Subscriber;
 /**
  * Implementation that backs the {@link AsyncContext}.
  */
-interface AsyncContextProvider extends ContextCaptureProvider, ContextMapHolder {
+interface AsyncContextProvider {
     /**
      * Get the current context.
      *
@@ -46,10 +48,22 @@ interface AsyncContextProvider extends ContextCaptureProvider, ContextMapHolder 
      *
      * @return The current context.
      */
-    @Override
     ContextMap context();
 
+    /**
+     * Set the {@link ContextMap}.
+     *
+     * @param context the new value for {@link ContextMap}.
+     * @return {@code this}.
+     */
+    void context(ContextMap context);
+
     Scope attachContext(ContextMap contextMap);
+
+    CapturedContext captureContext(ContextMap contextMap);
+
+    // TODO: refactor to remove this
+    CapturedContext captureContext();
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.
