@@ -21,6 +21,9 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -33,7 +36,15 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static java.lang.ThreadLocal.withInitial;
+
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
+
+    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
+            withInitial(DefaultAsyncContextProvider::newContextMap);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
+    private static final boolean NOT_IS_DEBUG_ENABLED = !LOGGER.isDebugEnabled();
 
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
@@ -44,23 +55,43 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Nonnull
     @Override
     public ContextMap context() {
-        return AsyncContextMapThreadLocal.get();
+        final Thread t = Thread.currentThread();
+        if (t instanceof ContextMapHolder) {
+            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
+            ContextMap map = contextMapHolder.context();
+            if (map == null) {
+                map = newContextMap();
+                contextMapHolder.context(map);
+            }
+            return map;
+        } else {
+            return CONTEXT_THREAD_LOCAL.get();
+        }
     }
 
     @Override
     public ContextMapHolder context(@Nullable ContextMap contextMap) {
-        AsyncContextMapThreadLocal.setContext(contextMap);
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            asyncContextMapHolder.context(contextMap);
+        } else if (contextMap == null) {
+            CONTEXT_THREAD_LOCAL.remove();
+        } else {
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
         return this;
     }
 
     @Override
     public ContextMap captureContext() {
-        return AsyncContextMapThreadLocal.get();
+        return context();
     }
 
     @Override
     public Scope attachContext(ContextMap contextMap) {
-        return AsyncContextMapThreadLocal.attachContext(contextMap);
+        ContextMap prev = exchangeContext(contextMap);
+        return NOT_IS_DEBUG_ENABLED && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
     }
 
     @Override
@@ -280,5 +311,34 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
         return new ContextPreservingBiFunction<>(func, context);
+    }
+
+    private static ContextMap exchangeContext(ContextMap contextMap) {
+        ContextMap result;
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            result = asyncContextMapHolder.context();
+            if (result == null) {
+                result = newContextMap();
+            }
+            asyncContextMapHolder.context(contextMap);
+        } else {
+            result = CONTEXT_THREAD_LOCAL.get();
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+        return result;
+    }
+
+    private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
+        ContextMap current = exchangeContext(toRestore);
+        if (current != expectedContext) {
+            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                    current, expectedContext);
+        }
+    }
+
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
     }
 }
