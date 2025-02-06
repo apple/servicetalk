@@ -18,18 +18,22 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
-    final CapturedContext saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, CapturedContext current) {
+    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Cancellable cancellable) {
@@ -38,21 +42,21 @@ class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Cancellable cancellable) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             invokeOnSubscribe(cancellable);
         }
     }
 
     @Override
     public final void onSuccess(@Nullable T result) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             subscriber.onSuccess(result);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             subscriber.onError(t);
         }
     }

@@ -17,16 +17,20 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSubscriber<T> implements Subscriber<T> {
-    final CapturedContext saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber<T> subscriber;
 
-    ContextPreservingSubscriber(Subscriber<T> subscriber, CapturedContext current) {
+    ContextPreservingSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Subscription s) {
@@ -35,28 +39,28 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Subscription s) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             invokeOnSubscribe(s);
         }
     }
 
     @Override
     public final void onNext(T t) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             subscriber.onNext(t);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             subscriber.onError(t);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             subscriber.onComplete();
         }
     }

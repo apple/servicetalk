@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> {
 
-    // TODO: remove once we can get the java agents onto the new API.
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
     private final CapturedContext capturedContext;
     private final BiFunction<T, U, V> delegate;

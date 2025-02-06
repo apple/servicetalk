@@ -15,24 +15,29 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingRunnable implements Runnable {
-    private final CapturedContext saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final Runnable delegate;
 
     ContextPreservingRunnable(Runnable delegate) {
         this(delegate, AsyncContext.provider().captureContext());
     }
 
-    ContextPreservingRunnable(Runnable delegate, CapturedContext current) {
-        this.saved = requireNonNull(current);
+    ContextPreservingRunnable(Runnable delegate, CapturedContext capturedContext) {
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void run() {
-        try (Scope ignored = saved.restoreContext()) {
+        try (Scope ignored = capturedContext.restoreContext()) {
             delegate.run();
         }
     }

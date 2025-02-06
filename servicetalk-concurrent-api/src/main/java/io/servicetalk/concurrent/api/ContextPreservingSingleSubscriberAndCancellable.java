@@ -19,12 +19,12 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 final class ContextPreservingSingleSubscriberAndCancellable<T> extends ContextPreservingSingleSubscriber<T> {
-    ContextPreservingSingleSubscriberAndCancellable(Subscriber<T> subscriber, CapturedContext current) {
-        super(subscriber, current);
+    ContextPreservingSingleSubscriberAndCancellable(Subscriber<T> subscriber, CapturedContext capturedContext) {
+        super(subscriber, capturedContext);
     }
 
     @Override
     void invokeOnSubscribe(Cancellable cancellable) {
-        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, capturedContext));
     }
 }

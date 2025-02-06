@@ -17,21 +17,25 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingSubscriptionSubscriber<T> implements Subscriber<T> {
-    final CapturedContext saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber<T> subscriber;
 
-    ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, CapturedContext current) {
+    ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void onSubscribe(final Subscription subscription) {
-        subscriber.onSubscribe(ContextPreservingSubscription.wrap(subscription, saved));
+        subscriber.onSubscribe(ContextPreservingSubscription.wrap(subscription, capturedContext));
     }
 
     @Override
