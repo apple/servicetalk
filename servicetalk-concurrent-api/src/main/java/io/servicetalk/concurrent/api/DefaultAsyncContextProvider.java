@@ -43,7 +43,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             withInitial(DefaultAsyncContextProvider::newContextMap);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
-    private static final boolean NOT_IS_DEBUG_ENABLED = !LOGGER.isDebugEnabled();
+    private static final boolean NO_DEBUG_LOGGING = !LOGGER.isDebugEnabled();
 
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
@@ -84,7 +84,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public final Scope attachContext(ContextMap contextMap) {
         ContextMap prev = exchangeContext(contextMap);
-        return NOT_IS_DEBUG_ENABLED && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
+        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
     }
 
     @Override
@@ -333,7 +333,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         @Override
         public Scope restoreContext() {
             ContextMap prev = exchangeContext(contextMap);
-            return NOT_IS_DEBUG_ENABLED && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
+            return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContext(contextMap, prev);
         }
     }
 
@@ -362,8 +362,10 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     private static void detachContext(ContextMap expectedContext, ContextMap toRestore) {
         ContextMap current = exchangeContext(toRestore);
         if (current != expectedContext) {
-            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
-                    current, expectedContext);
+            if (!NO_DEBUG_LOGGING) {
+                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                        current, expectedContext, new Throwable("stack trace"));
+            }
         }
     }
 
