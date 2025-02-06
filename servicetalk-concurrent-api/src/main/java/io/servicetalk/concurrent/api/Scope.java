@@ -22,8 +22,8 @@ import io.servicetalk.context.api.ContextMap;
  *
  * This abstraction is intended to allow the modifications performed by
  * {@link AsyncContextProvider#attachContextMap(ContextMap)} to be undone. In practice, this may look like restoring
- * a {@link ThreadLocal} to the state it had before the call to {@link AsyncContextProvider#attachContextMap(ContextMap)}
- * call.
+ * a {@link ThreadLocal} to the state it had before the call to
+ * {@link AsyncContextProvider#attachContextMap(ContextMap)}.
  */
 interface Scope extends AutoCloseable {
 
