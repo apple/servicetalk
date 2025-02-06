@@ -56,6 +56,9 @@ interface CapturedContextProvider {
      *          return new CapturedContextImpl(delegate, getMyString());
      *     }
      * }</pre>
+     * @param underlying additional context that <i><b>must</b></i> be utilized as part of the returned
+     * {@link CapturedContext}, usually wrapped as described above.
+     * @return the wrapped {@link CapturedContext}, or the original if there was no additional state captured.
      */
     CapturedContext captureContext(CapturedContext underlying);
 }

@@ -20,9 +20,7 @@ import io.servicetalk.context.api.ContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -70,12 +68,11 @@ public final class AsyncContext {
 
     static {
         CapturedContextProvider capturedContextProvider = null;
-        for (CapturedContextProvider provider : asyncProviderWrappers()) {
+        for (CapturedContextProvider provider : CapturedContextProviders.providers()) {
             if (capturedContextProvider == null) {
                 capturedContextProvider = provider;
             } else {
                 final CapturedContextProvider finalCapturedContextProvider = capturedContextProvider;
-                // TODO: at some point this is perhaps better as a list iteration.
                 capturedContextProvider = (context) ->
                         provider.captureContext(finalCapturedContextProvider.captureContext(context));
             }
@@ -584,9 +581,5 @@ public final class AsyncContext {
         provider = NoopAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
         LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
-    }
-
-    private static List<CapturedContextProvider> asyncProviderWrappers() {
-        return Collections.emptyList();
     }
 }
