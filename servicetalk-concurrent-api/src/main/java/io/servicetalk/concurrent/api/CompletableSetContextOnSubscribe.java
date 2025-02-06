@@ -40,7 +40,7 @@ final class CompletableSetContextOnSubscribe extends AbstractNoHandleSubscribeCo
             @Override
             public Scope restoreContext() {
                 Scope outer = parentContext.restoreContext();
-                Scope inner = ContextMapThreadLocal.attachContext(context);
+                Scope inner = AsyncContext.provider().attachContext(context);
                 return () -> {
                     inner.close();
                     outer.close();

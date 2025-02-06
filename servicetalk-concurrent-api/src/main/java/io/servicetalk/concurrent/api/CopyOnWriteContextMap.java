@@ -187,6 +187,24 @@ final class CopyOnWriteContextMap implements ContextMap, Scope, CapturedContext 
         return ContextMapUtils.toString(this);
     }
 
+    // CapturedContext methods
+
+    @Override
+    public ContextMap captured() {
+        return this;
+    }
+
+    @Override
+    public Scope restoreContext() {
+        return AsyncContext.provider().attachContext(this);
+    }
+
+    // Scope method
+    @Override
+    public void close() {
+        AsyncContext.provider().context(this);
+    }
+
     private interface CopyContextMap {
 
         int size();
@@ -2972,23 +2990,5 @@ final class CopyOnWriteContextMap implements ContextMap, Scope, CapturedContext 
             }
             return new SevenOrMoreContextMap(Arrays.copyOf(pairs, index));
         }
-    }
-
-    // CapturedContext methods
-
-    @Override
-    public ContextMap captured() {
-        return this;
-    }
-
-    @Override
-    public Scope restoreContext() {
-        return ContextMapThreadLocal.attachContext(this);
-    }
-
-    // Scope method
-    @Override
-    public void close() {
-        ContextMapThreadLocal.setContext(this);
     }
 }

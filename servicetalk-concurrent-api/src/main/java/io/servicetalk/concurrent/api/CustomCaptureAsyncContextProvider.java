@@ -2,7 +2,7 @@ package io.servicetalk.concurrent.api;
 
 import static java.util.Objects.requireNonNull;
 
-final class CustomCaptureAsyncContextProvider extends AbstractAsyncContextProvider {
+final class CustomCaptureAsyncContextProvider extends DefaultAsyncContextProvider {
 
     private final ContextCaptureProvider delegate;
 

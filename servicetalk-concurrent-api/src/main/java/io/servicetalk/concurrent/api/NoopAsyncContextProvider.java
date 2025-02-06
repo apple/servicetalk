@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ContextMapUtils;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -66,6 +67,16 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     @Override
     public CapturedContext captureContextCopy() {
         return NOOP_SAVED_CONTEXT;
+    }
+
+    @Override
+    public ContextMapHolder context(@Nullable ContextMap contextMap) {
+        return this;
+    }
+
+    @Override
+    public Scope attachContext(ContextMap contextMap) {
+        return Scope.NOOP;
     }
 
     @Override
