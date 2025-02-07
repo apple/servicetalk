@@ -38,9 +38,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static java.util.Objects.requireNonNull;
 
 /**
- * TODO REWRITE THIS
+ * This class is responsible for splicing a {@link Publisher}&lt;T&gt; into a head element and a
+ * {@link Publisher}&lt;{@link T}&gt; representing the remaining elements in the stream.
  *
- * @param <Data> type of container
+ * @param <Data> type of the container
  * @param <T> type of payload inside the {@link Data}
  */
 final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingleOperator<Object, Data> {
@@ -48,7 +49,8 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
     private final BiFunction<T, Publisher<T>, Data> packer;
 
     /**
-     * TODO REWRITE THIS
+     * Operator splicing a {@link Publisher}&lt;T&gt; into it's fisrt element and a {@link Publisher} representing
+     * the remaining elements in the stream.
      *
      * @param packer function to pack the {@link Publisher}&lt;{@link T}&gt; and {@link T} into a
      * {@link Data}
