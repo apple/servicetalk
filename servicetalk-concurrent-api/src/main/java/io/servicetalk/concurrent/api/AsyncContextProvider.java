@@ -48,12 +48,14 @@ interface AsyncContextProvider {
     ContextMap context();
 
     /**
-     * Set the {@link ContextMap}.
+     * Set the async context {@link ContextMap}.
+     *
+     * Note that unlike {@link AsyncContextProvider#attachContextMap(ContextMap)}, this method does not provide a
+     * {@link Scope} to restore the state to what it was previously.
      *
      * @param context the new value for {@link ContextMap}.
-     * @return {@code this}.
      */
-    void context(ContextMap context);
+    void setContextMap(ContextMap context);
 
     /**
      * Attach the {@link ContextMap} to the current local scope.

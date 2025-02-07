@@ -57,7 +57,7 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public void context(@Nullable ContextMap contextMap) {
+    public void setContextMap(@Nullable ContextMap contextMap) {
         // noop
     }
 

@@ -65,7 +65,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public final void context(ContextMap contextMap) {
+    public final void setContextMap(ContextMap contextMap) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof ContextMapHolder) {
             final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
