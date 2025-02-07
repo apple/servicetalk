@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.ThrowableUtils;
 import java.util.concurrent.CancellationException;
 
 final class StacklessCancellationException extends CancellationException {
-    private static final long serialVersionUID = 5434529104526587317L;
+    private static final long serialVersionUID = 253828407685585783L;
 
     private StacklessCancellationException(String message) {
         super(message);

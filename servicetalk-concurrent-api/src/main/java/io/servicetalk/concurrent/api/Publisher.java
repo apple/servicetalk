@@ -2664,6 +2664,32 @@ Kotlin flatMapLatest</a>
         return filter(FilterPublisher.skipWhileSupplier(predicate));
     }
 
+    /**
+     * After the first element of this {@link Publisher} is emitted pass it, and a {@link Publisher} representing the
+     * remainder of the stream, to a function to a mapping function.
+     * <p>
+     * <pre>{@code
+     *     class Result {
+     *         Result(T head, Iterator<T> tail) {
+     *             this.head = head;
+     *             this.tail = tail;
+     *         }
+     *
+     *         T head;
+     *         Iterator<T> tail;
+     *     }
+     *
+     *     Iterator<T> itr = resultOfThisPublisher();
+     *     Result result = new Result(itr.next(), itr);
+     *     return result;
+     * }</pre>
+     *
+     * @param packer A function that takes the head of the input stream and processes it, along with a {@link Publisher}
+     * of the remainder of the stream.
+     * @return A {@link Single} containing the packed object that is a result of calling packer on the
+     * head and tail of the stream.
+     * @param <R> The resulting type of the packer operation.
+     */
     public final <R> Single<R> splice(BiFunction<T, Publisher<T>, R> packer) {
         return this.liftSyncToSingle(new SpliceFlatStreamToPackedSingle<>(packer));
     }

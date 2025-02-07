@@ -219,7 +219,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
 
         @Nonnull
         private Publisher<T> newPayloadPublisher() {
-            return new SubscribablePublisher<T>() {
+            return new Publisher<T>() {
                 @Override
                 protected void handleSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
