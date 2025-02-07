@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.api.TimeoutPublisher.AbstractTimeoutSubscriber;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -52,10 +51,10 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                TimeoutDemandSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                TimeoutDemandSubscriber.newInstance(this, subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private static final class TimeoutDemandSubscriber<X> extends AbstractTimeoutSubscriber<X> {
@@ -80,10 +79,10 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         static <X> TimeoutDemandSubscriber<X> newInstance(TimeoutDemandPublisher<X> parent,
                                                           Subscriber<? super X> target,
-                                                          ContextMap contextMap,
+                                                          CapturedContext capturedContext,
                                                           AsyncContextProvider contextProvider) {
             TimeoutDemandSubscriber<X> s = new TimeoutDemandSubscriber<>(parent, target, contextProvider);
-            s.initTimer(parent.durationNs, parent.timeoutExecutor, contextMap);
+            s.initTimer(parent.durationNs, parent.timeoutExecutor, capturedContext);
             return s;
         }
 

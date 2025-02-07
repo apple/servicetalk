@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
@@ -52,10 +51,10 @@ final class OnSubscribeIgnoringSubscriberForOffloading<T> implements Subscriber<
     }
 
     static <T> Subscriber<? super T> wrapWithDummyOnSubscribe(Subscriber<? super T> original,
-                                                              ContextMap contextMap,
+                                                              CapturedContext capturedContext,
                                                               AsyncContextProvider contextProvider) {
         Subscriber<? super T> toReturn = contextProvider.wrapPublisherSubscriber(
-                new OnSubscribeIgnoringSubscriberForOffloading<>(original), contextMap);
+                new OnSubscribeIgnoringSubscriberForOffloading<>(original), capturedContext);
         // We have created a wrapped Subscriber but we have sent onSubscribe to the original Subscriber
         // already, so we send an onSubscribe to the wrapped Subscriber which ignores this signal but makes
         // the wrapped does not see spec violation (onError without onSubscribe) for the offloaded

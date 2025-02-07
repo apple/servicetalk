@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,8 +80,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(subscriber, contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     /**

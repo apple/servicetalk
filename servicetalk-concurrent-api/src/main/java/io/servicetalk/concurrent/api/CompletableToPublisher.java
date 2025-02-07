@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -40,9 +39,9 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
@@ -51,15 +50,16 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
         private static final AtomicIntegerFieldUpdater<ConversionSubscriber> terminatedUpdater =
                 newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
 
         private volatile int terminated;
 
         private ConversionSubscriber(Subscriber<? super T> subscriber,
-                                     final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                     final CapturedContext capturedContext,
+                                     final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -89,7 +89,7 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                 // We have not wrapped the Subscriber as we generally emit to the Subscriber from the Completable
                 // Subscriber methods which are correctly wrapped. This is the only case where we invoke the
                 // Subscriber directly, hence we explicitly wrap it.
-                Subscriber<? super T> wrapped = wrapWithDummyOnSubscribe(subscriber, contextMap, contextProvider);
+                Subscriber<? super T> wrapped = wrapWithDummyOnSubscribe(subscriber, capturedContext, contextProvider);
                 try {
                     cancel();
                 } catch (Throwable t) {

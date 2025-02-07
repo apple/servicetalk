@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,11 +92,11 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    final void handleSubscribe(Subscriber<? super T> subscriber, ContextMap contextMap,
+    final void handleSubscribe(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                          AsyncContextProvider contextProvider) {
         final State cState = state;
         assert cState != null;
-        cState.addNewSubscriber(subscriber, contextMap, contextProvider);
+        cState.addNewSubscriber(subscriber, capturedContext, contextProvider);
     }
 
     void resetState(int maxQueueSize, int minSubscribers) {
@@ -118,7 +117,7 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Nullable
         @Override
         final TerminalSubscriber<?> addSubscriber(final MulticastFixedSubscriber<T> subscriber,
-                                                  @Nullable ContextMap contextMap,
+                                                  @Nullable CapturedContext capturedContext,
                                                   AsyncContextProvider contextProvider) {
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
@@ -131,10 +130,10 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     System.arraycopy(currSubs, 0, newSubs, 0, currSubs.length);
                     newSubs[currSubs.length] = subscriber;
                     if (newSubscribersUpdater.compareAndSet(this, currSubs, newSubs)) {
-                        if (contextMap != null) {
+                        if (capturedContext != null) {
                             // This operator has special behavior where it chooses to use the AsyncContext and signal
                             // offloader from the last subscribe operation.
-                            original.delegateSubscribe(this, contextMap, contextProvider);
+                            original.delegateSubscribe(this, capturedContext, contextProvider);
                         }
                         return null;
                     }
@@ -237,21 +236,21 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             throw new UnsupportedOperationException("onNext queuing not supported. wrapped=" + wrapped);
         }
 
-        final void addNewSubscriber(Subscriber<? super T> subscriber, ContextMap contextMap,
+        final void addNewSubscriber(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                                     AsyncContextProvider contextProvider) {
             final int sCount = subscribeCountUpdater.incrementAndGet(this);
             if (exactlyMinSubscribers && sCount > minSubscribers) {
-                deliverOnSubscribeAndOnError(subscriber, contextMap, contextProvider,
+                deliverOnSubscribeAndOnError(subscriber, capturedContext, contextProvider,
                         new RejectedSubscribeException("Only " + minSubscribers + " subscribers are allowed!"));
                 return;
             }
             MulticastFixedSubscriber<T> multiSubscriber =
-                    new MulticastFixedSubscriber<>(this, subscriber, contextMap, contextProvider, sCount);
+                    new MulticastFixedSubscriber<>(this, subscriber, capturedContext, contextProvider, sCount);
             if (tryAcquireLock(subscriptionLockUpdater, this)) {
                 try {
                     // This operator has special behavior where it chooses to use the AsyncContext and signal
                     // offloader from the last subscribe operation.
-                    processSubscribeEventInternal(multiSubscriber, sCount == minSubscribers ? contextMap : null,
+                    processSubscribeEventInternal(multiSubscriber, sCount == minSubscribers ? capturedContext : null,
                             contextProvider);
                 } finally {
                     if (!releaseLock(subscriptionLockUpdater, this)) {
@@ -260,7 +259,7 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 }
             } else {
                 subscriptionEvents.add(new SubscribeEvent<>(multiSubscriber,
-                        sCount == minSubscribers ? contextMap : null, contextProvider));
+                        sCount == minSubscribers ? capturedContext : null, contextProvider));
                 processSubscriptionEvents();
             }
         }
@@ -355,13 +354,14 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * <p>
          * Invocation while {@link #subscriptionLock} is held.
          * @param subscriber The {@link Subscriber} to remove.
-         * @param contextMap The context map to used when subscribing upstream, or {@code null} if should not subscribe.
+         * @param capturedContext The context map to used when subscribing upstream, or {@code null} if should not
+         *                     subscribe.
          * @param contextProvider The context provider to used when subscribing upstream.
          * @return {@code null} if {@code subscriber} was added to the list, or non-{@code null} if not added to the
          * because there was previously a terminal event.
          */
         @Nullable
-        abstract TerminalSubscriber<?> addSubscriber(T subscriber, @Nullable ContextMap contextMap,
+        abstract TerminalSubscriber<?> addSubscriber(T subscriber, @Nullable CapturedContext capturedContext,
                                        AsyncContextProvider contextProvider);
 
         /**
@@ -400,14 +400,14 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         abstract long processCancelEvent(T subscriber);
 
         /**
-         * Invoked after {@link #addSubscriber(MulticastLeafSubscriber, ContextMap, AsyncContextProvider)}.
+         * Invoked after {@link #addSubscriber(MulticastLeafSubscriber, CapturedContext, AsyncContextProvider)}.
          * <p>
          * Invocation while {@link #subscriptionLock} is held.
          * @param subscriber The subscriber which was passed to
          * @param terminalSubscriber {@code null} if the {@code subscriber} was added to the list or non-{@code null}
          * if a terminal event has occurred, and this method <b>MUST</b> eventually deliver the terminal signal to
          * {@code subscriber}.
-         * {@link #addSubscriber(MulticastLeafSubscriber, ContextMap, AsyncContextProvider)}.
+         * {@link #addSubscriber(MulticastLeafSubscriber, CapturedContext, AsyncContextProvider)}.
          * @return {@code false} to stop handling this processor and break out early (e.g. can happen if
          * {@code terminalSubscriber} is non-{@code null} no signals are queued and the terminal is delivered).
          * {@code true} to unblock the {@code subscriber}'s signal queue and keep processing events.
@@ -504,7 +504,8 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         } else if (event instanceof SubscribeEvent) {
                             @SuppressWarnings("unchecked")
                             final SubscribeEvent<T> sEvent = (SubscribeEvent<T>) event;
-                            processSubscribeEventInternal(sEvent.subscriber, sEvent.contextMap, sEvent.contextProvider);
+                            processSubscribeEventInternal(sEvent.subscriber, sEvent.capturedContext,
+                                    sEvent.contextProvider);
                         } else if (event instanceof CancelEvent) {
                             @SuppressWarnings("unchecked")
                             final CancelEvent<T> cEvent = (CancelEvent<T>) event;
@@ -544,9 +545,9 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
         }
 
-        void processSubscribeEventInternal(T subscriber, @Nullable ContextMap contextMap,
+        void processSubscribeEventInternal(T subscriber, @Nullable CapturedContext capturedContext,
                                            AsyncContextProvider contextProvider) {
-            TerminalSubscriber<?> terminalSubscriber = addSubscriber(subscriber, contextMap, contextProvider);
+            TerminalSubscriber<?> terminalSubscriber = addSubscriber(subscriber, capturedContext, contextProvider);
             if (!processSubscribeEvent(subscriber, terminalSubscriber)) {
                 return;
             }
@@ -568,13 +569,13 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         static final class SubscribeEvent<T extends MulticastLeafSubscriber<?>> {
             private final T subscriber;
             @Nullable
-            private final ContextMap contextMap;
+            private final CapturedContext capturedContext;
             private final AsyncContextProvider contextProvider;
 
-            SubscribeEvent(final T subscriber, @Nullable final ContextMap contextMap,
+            SubscribeEvent(final T subscriber, @Nullable final CapturedContext capturedContext,
                            final AsyncContextProvider contextProvider) {
                 this.subscriber = subscriber;
-                this.contextMap = contextMap;
+                this.capturedContext = capturedContext;
                 this.contextProvider = contextProvider;
             }
         }
@@ -620,12 +621,12 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private int priorityQueueIndex = INDEX_NOT_IN_QUEUE;
 
         MulticastFixedSubscriber(final MulticastPublisher<T>.State root,
-                                 final Subscriber<? super T> subscriber, final ContextMap contextMap,
+                                 final Subscriber<? super T> subscriber, final CapturedContext capturedContext,
                                  final AsyncContextProvider contextProvider, final int index) {
             this.root = root;
             this.index = index;
             this.subscriber = requireNonNull(subscriber);
-            ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+            ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, capturedContext);
         }
 
         @Override

@@ -22,17 +22,20 @@ import java.util.function.Consumer;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingConsumer<T> implements Consumer<T> {
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final Consumer<T> delegate;
 
-    ContextPreservingConsumer(Consumer<T> delegate, ContextMap current) {
-        this.saved = requireNonNull(current);
+    ContextPreservingConsumer(Consumer<T> delegate, CapturedContext capturedContext) {
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void accept(T t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.accept(t);
         }
     }

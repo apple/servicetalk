@@ -2671,9 +2671,9 @@ public abstract class Single<T> {
      * @param provider The {@link AsyncContextProvider} which is the source of the map
      * @return {@link ContextMap} for this subscribe operation.
      */
-    ContextMap contextForSubscribe(AsyncContextProvider provider) {
+    CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.captureContext().copy();
+        return provider.captureContext(provider.context().copy());
     }
 
     /**
@@ -2684,32 +2684,32 @@ public abstract class Single<T> {
      * @param provider {@link AsyncContextProvider} to use.
      * @return {@link ContextMap} for this subscribe operation.
      */
-    final ContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+    final CapturedContext subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
         requireNonNull(subscriber);
-        final ContextMap contextMap = contextForSubscribe(provider);
-        Subscriber<? super T> wrapped = provider.wrapCancellable(subscriber, contextMap);
-        if (provider.context() == contextMap) {
+        final CapturedContext capturedContext = contextForSubscribe(provider);
+        Subscriber<? super T> wrapped = provider.wrapCancellable(subscriber, capturedContext);
+        if (provider.context() == capturedContext) {
             // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, contextMap, provider);
+            handleSubscribe(wrapped, capturedContext, provider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope ignored = provider.attachContext(contextMap)) {
-                handleSubscribe(wrapped, contextMap, provider);
+            try (Scope ignored = capturedContext.attachContext()) {
+                handleSubscribe(wrapped, capturedContext, provider);
             }
         }
-        return contextMap;
+        return capturedContext;
     }
 
     /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
-     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber,
-                                 ContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, contextMap, contextProvider);
+                                 CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     /**
@@ -2718,13 +2718,13 @@ public abstract class Single<T> {
      * This method wraps the passed {@link Subscriber}. Operators that do not wish to wrap the passed {@link Subscriber}
      * can override this method and omit the wrapping.
      * @param subscriber the subscriber.
-     * @param contextMap the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         try {
-            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
+            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, capturedContext);
             handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);

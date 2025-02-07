@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
@@ -42,9 +41,9 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         try {
-            subscriber.onSubscribe(new RepeatSubscription<>(this, subscriber, contextMap, contextProvider));
+            subscriber.onSubscribe(new RepeatSubscription<>(this, subscriber, capturedContext, contextProvider));
         } catch (Throwable cause) {
             handleExceptionFromOnSubscribe(subscriber, cause);
         }
@@ -60,17 +59,17 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final RepeatWhenSingle<T> outer;
         private final SequentialCancellable sequentialCancellable = new SequentialCancellable();
         private final Subscriber<? super T> subscriber;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         private final RepeatSubscriber repeatSubscriber = new RepeatSubscriber();
         private volatile long outstandingDemand;
         private int repeatCount;
 
         private RepeatSubscription(final RepeatWhenSingle<T> outer, final Subscriber<? super T> subscriber,
-                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             this.outer = outer;
             this.subscriber = subscriber;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -82,7 +81,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                 if (prev == 0) {
                     // Either we copy the map up front before subscribe, or we just re-use the same map and let the
                     // async source at the top of the chain reset if necessary. We currently choose the second option.
-                    outer.original.delegateSubscribe(repeatSubscriber, contextMap, contextProvider);
+                    outer.original.delegateSubscribe(repeatSubscriber, capturedContext, contextProvider);
                 }
             } else {
                 requestNInvalid(n);
@@ -148,7 +147,8 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                                 // Either we copy the map up front before subscribe, or we just re-use the same map and
                                 // let the async source at the top of the chain reset if necessary. We currently choose
                                 // the second option.
-                                outer.original.delegateSubscribe(RepeatSubscriber.this, contextMap, contextProvider);
+                                outer.original.delegateSubscribe(
+                                        RepeatSubscriber.this, capturedContext, contextProvider);
                             }
                             break;
                         }

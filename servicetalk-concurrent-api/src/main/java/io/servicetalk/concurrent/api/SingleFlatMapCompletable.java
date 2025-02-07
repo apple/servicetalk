@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -39,24 +38,24 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
     @Override
     void handleSubscribe(final Subscriber subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, contextMap, contextProvider),
-                contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private static final class SubscriberImpl<T> implements SingleSource.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
         private final Function<T, ? extends Completable> nextFactory;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
 
         SubscriberImpl(Subscriber subscriber, Function<T, ? extends Completable> nextFactory,
-                       final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                       final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -87,7 +86,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
             // The static AsyncContext should be the same as the original contextMap at this point because we are
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and use an isolated copy to subscribe to the new source.
-            next.subscribeInternal(contextProvider.wrapCompletableSubscriber(this, contextMap));
+            next.subscribeInternal(contextProvider.wrapCompletableSubscriber(this, capturedContext));
         }
 
         @Override

@@ -22,12 +22,15 @@ import io.servicetalk.context.api.ContextMap;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSubscriber<T> implements Subscriber<T> {
-    final ContextMap saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber<T> subscriber;
 
-    ContextPreservingSubscriber(Subscriber<T> subscriber, ContextMap current) {
+    ContextPreservingSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Subscription s) {
@@ -36,28 +39,28 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Subscription s) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             invokeOnSubscribe(s);
         }
     }
 
     @Override
     public final void onNext(T t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onNext(t);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onError(t);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onComplete();
         }
     }

@@ -22,12 +22,15 @@ import io.servicetalk.context.api.ContextMap;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingCompletableSubscriber implements Subscriber {
-    final ContextMap saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber subscriber;
 
-    ContextPreservingCompletableSubscriber(Subscriber subscriber, ContextMap current) {
+    ContextPreservingCompletableSubscriber(Subscriber subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Cancellable cancellable) {
@@ -36,21 +39,21 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
 
     @Override
     public final void onSubscribe(final Cancellable cancellable) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             invokeOnSubscribe(cancellable);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onComplete();
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onError(t);
         }
     }

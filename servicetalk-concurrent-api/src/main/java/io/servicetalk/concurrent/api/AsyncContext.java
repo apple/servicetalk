@@ -52,6 +52,7 @@ public final class AsyncContext {
     private static final int STATE_AUTO_ENABLED = 1;
     private static final int STATE_ENABLED = 2;
 
+    private static final AsyncContextProvider DEFAULT_ENABLED_PROVIDER;
     /**
      * Note this mechanism is racy. Currently only the {@link #disable()} method is exposed publicly and
      * {@link #STATE_DISABLED} is a terminal state. Because we favor going to the disabled state we don't have to worry
@@ -63,7 +64,26 @@ public final class AsyncContext {
      * use case for this is a "once at start up" to {@link #disable()} this mechanism completely. This is currently a
      * best effort mechanism for performance reasons, and we can re-evaluate later if more strict behavior is required.
      */
-    private static AsyncContextProvider provider = DefaultAsyncContextProvider.INSTANCE;
+    private static AsyncContextProvider provider;
+
+    static {
+        CapturedContextProvider capturedContextProvider = null;
+        for (CapturedContextProvider provider : CapturedContextProviders.providers()) {
+            if (capturedContextProvider == null) {
+                capturedContextProvider = provider;
+            } else {
+                final CapturedContextProvider finalCapturedContextProvider = capturedContextProvider;
+                capturedContextProvider = (context) ->
+                        provider.captureContext(finalCapturedContextProvider.captureContext(context));
+            }
+        }
+        if (capturedContextProvider == null) {
+            DEFAULT_ENABLED_PROVIDER = DefaultAsyncContextProvider.INSTANCE;
+        } else {
+            DEFAULT_ENABLED_PROVIDER = new CustomCaptureAsyncContextProvider(capturedContextProvider);
+        }
+        provider = DEFAULT_ENABLED_PROVIDER;
+    }
 
     private AsyncContext() {
         // no instances
@@ -548,7 +568,7 @@ public final class AsyncContext {
     }
 
     private static void enable0() {
-        provider = DefaultAsyncContextProvider.INSTANCE;
+        provider = DEFAULT_ENABLED_PROVIDER;
         EXECUTOR_PLUGINS.add(EXECUTOR_PLUGIN);
         LOGGER.debug("Enabled.");
 

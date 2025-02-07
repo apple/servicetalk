@@ -15,15 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 /**
  * An abstraction for detaching a context from the current thread.
  *
  * This abstraction is intended to allow the modifications performed by
- * {@link AsyncContextProvider#attachContext(ContextMap)} to be undone. In practice, this may look like restoring
- * a {@link ThreadLocal} to the state it had before the call to {@link AsyncContextProvider#attachContext(ContextMap)}
- * call.
+ * {@link CapturedContext#attachContext()} to be undone. In practice, this may look like restoring a {@link ThreadLocal}
+ * to the state it had before the call to {@link CapturedContext#attachContext()}.
  */
 interface Scope extends AutoCloseable {
 

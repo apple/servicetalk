@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 /**
  * Base class for all {@link Single}s that are created with already realized result and does not generate result
  * asynchronously.
@@ -27,10 +25,10 @@ abstract class AbstractSynchronousSingle<T> extends AbstractNoHandleSubscribeSin
 
     @Override
     final void handleSubscribe(Subscriber<? super T> subscriber,
-                               ContextMap contextMap, AsyncContextProvider contextProvider) {
+                               CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         // We need to wrap the Subscriber to save/restore the AsyncContext on each operation or else the AsyncContext
         // may leak from another thread.
-        doSubscribe(contextProvider.wrapSingleSubscriber(subscriber, contextMap));
+        doSubscribe(contextProvider.wrapSingleSubscriber(subscriber, capturedContext));
     }
 
     /**

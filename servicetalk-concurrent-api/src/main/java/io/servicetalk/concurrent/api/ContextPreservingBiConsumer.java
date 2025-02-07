@@ -22,17 +22,21 @@ import java.util.function.BiConsumer;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
+
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final BiConsumer<T, U> delegate;
 
-    ContextPreservingBiConsumer(BiConsumer<T, U> delegate, ContextMap contextMap) {
-        this.saved = requireNonNull(contextMap);
+    ContextPreservingBiConsumer(BiConsumer<T, U> delegate, CapturedContext capturedContext) {
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void accept(T t, U u) {
-        try (Scope ignored = AsyncContext.provider().attachContext(saved)) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.accept(t, u);
         }
     }

@@ -25,17 +25,20 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellableSingleSubscriber<T> implements Subscriber<T> {
-    final ContextMap saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingCancellableSingleSubscriber(Subscriber<T> subscriber, ContextMap current) {
+    ContextPreservingCancellableSingleSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void onSubscribe(final Cancellable cancellable) {
-        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, capturedContext));
     }
 
     @Override

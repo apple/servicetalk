@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +19,16 @@ import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingRunnable implements Runnable {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
-    private final CapturedContext capturedContext;
-    private final Runnable delegate;
+final class CustomCaptureAsyncContextProvider extends DefaultAsyncContextProvider {
 
-    ContextPreservingRunnable(Runnable delegate) {
-        this(delegate, AsyncContext.provider().captureContext());
-    }
+    private final CapturedContextProvider delegate;
 
-    ContextPreservingRunnable(Runnable delegate, CapturedContext capturedContext) {
-        this.capturedContext = requireNonNull(capturedContext);
+    CustomCaptureAsyncContextProvider(CapturedContextProvider delegate) {
         this.delegate = requireNonNull(delegate);
-        this.saved = capturedContext.captured();
     }
 
     @Override
-    public void run() {
-        try (Scope ignored = capturedContext.attachContext()) {
-            delegate.run();
-        }
+    public CapturedContext captureContext(ContextMap contextMap) {
+        return delegate.captureContext(super.captureContext(contextMap));
     }
 }

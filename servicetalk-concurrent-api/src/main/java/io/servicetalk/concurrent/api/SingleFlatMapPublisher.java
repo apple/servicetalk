@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -38,24 +37,24 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory,
-                        contextMap, contextProvider), contextMap, contextProvider);
+                capturedContext, contextProvider), capturedContext, contextProvider);
     }
 
     private static final class SubscriberImpl<T, R> extends DelayedCancellableThenSubscription
             implements SingleSource.Subscriber<T>, Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
 
         SubscriberImpl(Subscriber<? super R> subscriber,
                        Function<? super T, ? extends Publisher<? extends R>> nextFactory,
-                       final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                       final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.nextFactory = requireNonNull(nextFactory);
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -83,7 +82,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and explicitly use it to subscribe.
             next.subscribeInternal((Subscriber<? super R>)
-                    contextProvider.wrapPublisherSubscriber(this, contextMap));
+                    contextProvider.wrapPublisherSubscriber(this, capturedContext));
         }
 
         @Override

@@ -17,15 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
 
 final class ContextPreservingSubscriberAndSubscription<T> extends ContextPreservingSubscriber<T> {
-    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, ContextMap current) {
-        super(subscriber, current);
+    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, CapturedContext capturedContext) {
+        super(subscriber, capturedContext);
     }
 
     @Override
     void invokeOnSubscribe(PublisherSource.Subscription s) {
-        subscriber.onSubscribe(ContextPreservingSubscription.wrap(s, saved));
+        subscriber.onSubscribe(ContextPreservingSubscription.wrap(s, capturedContext));
     }
 }

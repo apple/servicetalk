@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -56,17 +55,17 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
 
     @Override
     void handleSubscribe(final Subscriber<? super R> singleSubscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         final R r;
         try {
             r = resultFactory.get();
         } catch (Throwable t) {
-            deliverOnSubscribeAndOnError(singleSubscriber, contextMap, contextProvider, t);
+            deliverOnSubscribeAndOnError(singleSubscriber, capturedContext, contextProvider, t);
             return;
         }
         PublisherSource.Subscriber<? super T> offloadedSubscription =
-                contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap);
-        source.delegateSubscribe(offloadedSubscription, contextMap, contextProvider);
+                contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), capturedContext);
+        source.delegateSubscribe(offloadedSubscription, capturedContext, contextProvider);
     }
 
     private static final class ReduceSubscriber<R, T> extends DelayedCancellable

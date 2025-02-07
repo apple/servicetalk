@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,23 +39,23 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ResumeSubscriber(subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new ResumeSubscriber(subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private final class ResumeSubscriber implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
         private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, ContextMap contextMap,
+        ResumeSubscriber(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -89,7 +88,8 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                final Subscriber<? super T> wrappedSubscriber = contextProvider.wrapSingleSubscriber(this, contextMap);
+                final Subscriber<? super T> wrappedSubscriber =
+                        contextProvider.wrapSingleSubscriber(this, capturedContext);
                 next.subscribeInternal(wrappedSubscriber);
             }
         }
