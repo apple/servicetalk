@@ -166,7 +166,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         }
                     }
                 })
-                .liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(this::newSplicedResponse));
+                .splice(this::newSplicedResponse);
     }
 
     @Override
@@ -246,9 +246,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream,
                                                       @Nullable FlushStrategy flushStrategy);
 
-    private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
+    private StreamingHttpResponse newSplicedResponse(Object head, Publisher<Object> tail) {
+        HttpResponseMetaData meta = (HttpResponseMetaData) head;
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),
-                connectionContext.executionContext().bufferAllocator(), pub,
+                connectionContext.executionContext().bufferAllocator(), tail,
                 allowDropTrailersReadFromTransport, headersFactory);
     }
 

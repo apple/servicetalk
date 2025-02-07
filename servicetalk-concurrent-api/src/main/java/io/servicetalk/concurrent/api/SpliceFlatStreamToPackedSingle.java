@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.concurrent.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherToSingleOperator;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,36 +38,34 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class is responsible for splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload}
- * into a {@link Data}&lt;{@link Payload}&gt; eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;.
+ * This class is responsible for splicing a {@link Publisher}&lt;T&gt; into a head element and a
+ * {@link Publisher}&lt;{@link T}&gt; representing the remaining elements in the stream.
  *
- * @param <Data> type of container, eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;
- * @param <MetaData> type of meta-data in front of the stream of {@link Payload}, eg. {@link HttpResponseMetaData}
- * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
+ * @param <Packed> type of the container
+ * @param <T> type of payload inside the {@link Packed}
  */
-final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements PublisherToSingleOperator<Object, Data> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
-    private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
+final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSingleOperator<T, Packed> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToPackedSingle.class);
+    private final BiFunction<T, Publisher<T>, Packed> packer;
 
     /**
-     * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload} and {@link
-     * MetaData} header as first element into a {@link Data}&lt;{@link Payload}&gt; eg. {@link
-     * StreamingHttpResponse}&lt;{@link Buffer}&gt;.
+     * Operator splicing a {@link Publisher}&lt;T&gt; into it's fisrt element and a {@link Publisher} representing
+     * the remaining elements in the stream.
      *
-     * @param packer function to pack the {@link Publisher}&lt;{@link Payload}&gt; and {@link MetaData} into a
-     * {@link Data}
+     * @param packer function to pack the {@link Publisher}&lt;{@link T}&gt; and {@link T} into a
+     * {@link Packed}
      */
-    SpliceFlatStreamToMetaSingle(BiFunction<MetaData, Publisher<Payload>, Data> packer) {
+    SpliceFlatStreamToPackedSingle(BiFunction<T, Publisher<T>, Packed> packer) {
         this.packer = requireNonNull(packer);
     }
 
     @Override
-    public PublisherSource.Subscriber<Object> apply(Subscriber<? super Data> subscriber) {
+    public PublisherSource.Subscriber<T> apply(Subscriber<? super Packed> subscriber) {
         return new SplicingSubscriber<>(this, subscriber);
     }
 
-    private static final class SplicingSubscriber<Data, MetaData, Payload>
-            implements PublisherSource.Subscriber<Object> {
+    private static final class SplicingSubscriber<Data, T>
+            implements PublisherSource.Subscriber<T> {
 
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object> maybePayloadSubUpdater =
@@ -90,9 +81,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          * <p>
          * One of <ul>
          *     <li>{@code null} – initial pending state before the {@link Single} is completed</li>
-         *     <li>{@link PublisherSource.Subscriber}&lt;{@link Payload}&gt; - when subscribed to the payload</li>
+         *     <li>{@link PublisherSource.Subscriber}&lt;{@link T}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
-         *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link Payload} pending subscribe</li>
+         *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link T} pending subscribe</li>
          *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) payload</li>
          *     <li>{@link #EMPTY_COMPLETED_DELIVERED} - when the premature (empty) completion event was delivered to a
          *     subscriber</li>
@@ -108,12 +99,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          * non-volatile field to allow caching in register and avoid instanceof and casting on the hot path.
          */
         @Nullable
-        private PublisherSource.Subscriber<Payload> payloadSubscriber;
+        private PublisherSource.Subscriber<T> payloadSubscriber;
 
         /**
-         * Indicates whether the meta-data has been observed.
+         * Indicates whether the first element has been observed.
          */
-        private boolean metaSeenInOnNext;
+        private boolean firstElementSeenInOnNext;
 
         /**
          * The {@link Subscription} before wrapping to pass it to the downstream {@link PublisherSource.Subscriber}.
@@ -131,7 +122,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          */
         private boolean onSubscribeSent;
 
-        private final SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> parent;
+        private final SpliceFlatStreamToPackedSingle<Data, T> parent;
         private final Subscriber<? super Data> dataSubscriber;
 
         /**
@@ -143,7 +134,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          * @param parent reference to the parent class holding immutable state
          * @param dataSubscriber {@link Subscriber} to the {@link Data}
          */
-        private SplicingSubscriber(SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> parent,
+        private SplicingSubscriber(SpliceFlatStreamToPackedSingle<Data, T> parent,
                                    Subscriber<? super Data> dataSubscriber) {
             this.parent = parent;
             this.dataSubscriber = dataSubscriber;
@@ -154,7 +145,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          * {@link Single} has already terminated.
          * <p>
          * Guarded by the CAS to avoid concurrency with the {@link Subscription} on the contained {@link
-         * Publisher}&lt;{@link Payload}&gt;
+         * Publisher}&lt;{@link T}&gt;
          */
         private void cancelData(Subscription subscription) {
             final Object current = maybePayloadSubUpdater.getAndUpdate(this,
@@ -170,7 +161,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 return;
             }
             rawSubscription = inStreamSubscription;
-            // get the first element a MetaData that we consume to complete the SingleSource<Data>
+            // get the first element that we consume to complete the SingleSource<Data>
             rawSubscription.request(1);
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
@@ -180,26 +171,24 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
 
         @SuppressWarnings("unchecked")
         @Override
-        public void onNext(@Nullable Object obj) {
-            if (metaSeenInOnNext) {
-                Payload payload = (Payload) obj;
+        public void onNext(@Nullable T next) {
+            if (firstElementSeenInOnNext) {
                 if (payloadSubscriber != null) {
-                    payloadSubscriber.onNext(payload);
+                    payloadSubscriber.onNext(next);
                 } else {
                     final Object subscriber = maybePayloadSub;
                     if (subscriber instanceof PublisherSource.Subscriber) {
-                        payloadSubscriber = (PublisherSource.Subscriber<Payload>) subscriber;
-                        payloadSubscriber.onNext(payload);
+                        payloadSubscriber = (PublisherSource.Subscriber<T>) subscriber;
+                        payloadSubscriber.onNext(next);
                     }
                 }
             } else {
                 ensureResultSubscriberOnSubscribe();
-                MetaData meta = (MetaData) obj;
                 // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
-                metaSeenInOnNext = true;
+                firstElementSeenInOnNext = true;
                 final Data data;
                 try {
-                    final Publisher<Payload> payload;
+                    final Publisher<T> payload;
                     if (maybePayloadSubUpdater.compareAndSet(this, null, PENDING)) {
                         payload = newPayloadPublisher();
                     } else {
@@ -211,7 +200,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                                 "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
                                         maybePayloadSub, getClass(), "onNext(...)"));
                     }
-                    data = parent.packer.apply(meta, payload);
+                    data = parent.packer.apply(next, payload);
                     assert data != null : "Packer function must return non-null Data";
                 } catch (Throwable t) {
                     assert rawSubscription != null : "Expected rawSubscription but got null";
@@ -229,10 +218,10 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         }
 
         @Nonnull
-        private Publisher<Payload> newPayloadPublisher() {
-            return new SubscribablePublisher<Payload>() {
+        private Publisher<T> newPayloadPublisher() {
+            return new Publisher<T>() {
                 @Override
-                protected void handleSubscribe(PublisherSource.Subscriber<? super Payload> newSubscriber) {
+                protected void handleSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
                     // on maybePayloadSubUpdater. Otherwise there is a potential for concurrent invocation on the
@@ -291,14 +280,14 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 payloadSubscriber.onError(t);
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
-                if (!metaSeenInOnNext) {
+                if (!firstElementSeenInOnNext) {
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(this, t, EMPTY_COMPLETED_DELIVERED)) {
-                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onError(t);
+                        ((PublisherSource.Subscriber<T>) maybeSubscriber).onError(t);
                     } else {
-                        terminateWithIllegalStateException((PublisherSource.Subscriber<Payload>) maybeSubscriber);
+                        terminateWithIllegalStateException((PublisherSource.Subscriber<T>) maybeSubscriber);
                     }
                 } else if (maybeSubscriber == EMPTY_COMPLETED_DELIVERED) {
                     LOGGER.debug("Discarding a terminal error from upstream because the payload publisher was " +
@@ -320,11 +309,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(this, EMPTY_COMPLETED,
                             EMPTY_COMPLETED_DELIVERED)) {
-                        ((PublisherSource.Subscriber<Payload>) maybeSubscriber).onComplete();
+                        ((PublisherSource.Subscriber<T>) maybeSubscriber).onComplete();
                     } else {
-                        terminateWithIllegalStateException((PublisherSource.Subscriber<Payload>) maybeSubscriber);
+                        terminateWithIllegalStateException((PublisherSource.Subscriber<T>) maybeSubscriber);
                     }
-                } else if (!metaSeenInOnNext) {
+                } else if (!firstElementSeenInOnNext) {
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(new IllegalStateException(
                             "Stream unexpectedly completed without emitting any items"));
@@ -336,7 +325,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         }
 
         private void ensureResultSubscriberOnSubscribe() {
-            assert !metaSeenInOnNext : "Already seen meta-data";
+            assert !firstElementSeenInOnNext : "Already seen first element";
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
                 // Since we are going to deliver data or a terminal signal right after this,
@@ -345,7 +334,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
             }
         }
 
-        private void terminateWithIllegalStateException(PublisherSource.Subscriber<Payload> subscriber) {
+        private void terminateWithIllegalStateException(PublisherSource.Subscriber<T> subscriber) {
             subscriber.onError(new IllegalStateException("Duplicate Subscribers are not allowed. Existing: " +
                     subscriber + ", failed the race with a duplicate, but neither has seen onNext()"));
         }
