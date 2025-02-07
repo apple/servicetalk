@@ -41,31 +41,31 @@ import static java.util.Objects.requireNonNull;
  * This class is responsible for splicing a {@link Publisher}&lt;T&gt; into a head element and a
  * {@link Publisher}&lt;{@link T}&gt; representing the remaining elements in the stream.
  *
- * @param <Data> type of the container
- * @param <T> type of payload inside the {@link Data}
+ * @param <Packed> type of the container
+ * @param <T> type of payload inside the {@link Packed}
  */
-final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingleOperator<Object, Data> {
+final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSingleOperator<T, Packed> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToPackedSingle.class);
-    private final BiFunction<T, Publisher<T>, Data> packer;
+    private final BiFunction<T, Publisher<T>, Packed> packer;
 
     /**
      * Operator splicing a {@link Publisher}&lt;T&gt; into it's fisrt element and a {@link Publisher} representing
      * the remaining elements in the stream.
      *
      * @param packer function to pack the {@link Publisher}&lt;{@link T}&gt; and {@link T} into a
-     * {@link Data}
+     * {@link Packed}
      */
-    SpliceFlatStreamToPackedSingle(BiFunction<T, Publisher<T>, Data> packer) {
+    SpliceFlatStreamToPackedSingle(BiFunction<T, Publisher<T>, Packed> packer) {
         this.packer = requireNonNull(packer);
     }
 
     @Override
-    public PublisherSource.Subscriber<Object> apply(Subscriber<? super Data> subscriber) {
+    public PublisherSource.Subscriber<T> apply(Subscriber<? super Packed> subscriber) {
         return new SplicingSubscriber<>(this, subscriber);
     }
 
     private static final class SplicingSubscriber<Data, T>
-            implements PublisherSource.Subscriber<Object> {
+            implements PublisherSource.Subscriber<T> {
 
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object> maybePayloadSubUpdater =
@@ -102,9 +102,9 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
         private PublisherSource.Subscriber<T> payloadSubscriber;
 
         /**
-         * Indicates whether the meta-data has been observed.
+         * Indicates whether the first element has been observed.
          */
-        private boolean metaSeenInOnNext;
+        private boolean firstElementSeenInOnNext;
 
         /**
          * The {@link Subscription} before wrapping to pass it to the downstream {@link PublisherSource.Subscriber}.
@@ -161,7 +161,7 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
                 return;
             }
             rawSubscription = inStreamSubscription;
-            // get the first element a MetaData that we consume to complete the SingleSource<Data>
+            // get the first element that we consume to complete the SingleSource<Data>
             rawSubscription.request(1);
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
@@ -171,23 +171,21 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
 
         @SuppressWarnings("unchecked")
         @Override
-        public void onNext(@Nullable Object obj) {
-            if (metaSeenInOnNext) {
-                T payload = (T) obj;
+        public void onNext(@Nullable T next) {
+            if (firstElementSeenInOnNext) {
                 if (payloadSubscriber != null) {
-                    payloadSubscriber.onNext(payload);
+                    payloadSubscriber.onNext(next);
                 } else {
                     final Object subscriber = maybePayloadSub;
                     if (subscriber instanceof PublisherSource.Subscriber) {
                         payloadSubscriber = (PublisherSource.Subscriber<T>) subscriber;
-                        payloadSubscriber.onNext(payload);
+                        payloadSubscriber.onNext(next);
                     }
                 }
             } else {
                 ensureResultSubscriberOnSubscribe();
-                T meta = (T) obj;
                 // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
-                metaSeenInOnNext = true;
+                firstElementSeenInOnNext = true;
                 final Data data;
                 try {
                     final Publisher<T> payload;
@@ -202,7 +200,7 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
                                 "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
                                         maybePayloadSub, getClass(), "onNext(...)"));
                     }
-                    data = parent.packer.apply(meta, payload);
+                    data = parent.packer.apply(next, payload);
                     assert data != null : "Packer function must return non-null Data";
                 } catch (Throwable t) {
                     assert rawSubscription != null : "Expected rawSubscription but got null";
@@ -282,7 +280,7 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
                 payloadSubscriber.onError(t);
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
-                if (!metaSeenInOnNext) {
+                if (!firstElementSeenInOnNext) {
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
@@ -315,7 +313,7 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
                     } else {
                         terminateWithIllegalStateException((PublisherSource.Subscriber<T>) maybeSubscriber);
                     }
-                } else if (!metaSeenInOnNext) {
+                } else if (!firstElementSeenInOnNext) {
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(new IllegalStateException(
                             "Stream unexpectedly completed without emitting any items"));
@@ -327,7 +325,7 @@ final class SpliceFlatStreamToPackedSingle<Data, T> implements PublisherToSingle
         }
 
         private void ensureResultSubscriberOnSubscribe() {
-            assert !metaSeenInOnNext : "Already seen meta-data";
+            assert !firstElementSeenInOnNext : "Already seen first element";
             if (!onSubscribeSent) {
                 onSubscribeSent = true;
                 // Since we are going to deliver data or a terminal signal right after this,
