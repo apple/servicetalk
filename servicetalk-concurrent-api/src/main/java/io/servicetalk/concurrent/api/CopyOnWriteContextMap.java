@@ -195,7 +195,7 @@ final class CopyOnWriteContextMap implements ContextMap, Scope, CapturedContext 
     }
 
     @Override
-    public Scope restoreContext() {
+    public Scope attachContext() {
         return AsyncContext.provider().attachContextMap(this);
     }
 

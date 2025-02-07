@@ -35,7 +35,7 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
 
     @Override
     public U apply(T t) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             return delegate.apply(t);
         }
     }

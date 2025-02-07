@@ -927,7 +927,7 @@ class DefaultAsyncContextProviderTest {
         assertNull(AsyncContext.put(K1, "k1"));
         toCapture.put(K1, "k1-override");
         CapturedContext capturedContext = AsyncContext.provider().captureContext(toCapture);
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             assertEquals("k1-override", AsyncContext.get(K1));
             AsyncContext.put(K2, "k2");
         }

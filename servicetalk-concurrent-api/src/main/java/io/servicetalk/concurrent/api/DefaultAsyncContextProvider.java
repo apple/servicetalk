@@ -77,8 +77,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public final Scope attachContextMap(ContextMap contextMap) {
-        ContextMap prev = exchangeContext(contextMap);
-        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContextMap(contextMap, prev);
+        return doAttachContextMap(contextMap);
     }
 
     @Override
@@ -331,10 +330,33 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         }
 
         @Override
-        public Scope restoreContext() {
-            ContextMap prev = exchangeContext(contextMap);
-            return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : () -> detachContextMap(contextMap, prev);
+        public Scope attachContext() {
+            return doAttachContextMap(contextMap);
         }
+    }
+
+    private static final class DetachScope implements Scope {
+        private final ContextMap expectedContext;
+        private final ContextMap toRestore;
+
+        DetachScope(ContextMap expectedContext, ContextMap toRestore) {
+            this.expectedContext = expectedContext;
+            this.toRestore = toRestore;
+        }
+
+        @Override
+        public void close() {
+            ContextMap current = exchangeContext(toRestore);
+            if (current != expectedContext && !NO_DEBUG_LOGGING) {
+                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                        current, expectedContext, new Throwable("stack trace"));
+            }
+        }
+    }
+
+    private static Scope doAttachContextMap(ContextMap contextMap) {
+        ContextMap prev = exchangeContext(contextMap);
+        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : new DetachScope(contextMap, prev);
     }
 
     private static ContextMap exchangeContext(ContextMap contextMap) {
@@ -352,14 +374,6 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             CONTEXT_THREAD_LOCAL.set(contextMap);
         }
         return result;
-    }
-
-    private static void detachContextMap(ContextMap expectedContext, ContextMap toRestore) {
-        ContextMap current = exchangeContext(toRestore);
-        if (current != expectedContext && !NO_DEBUG_LOGGING) {
-            LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
-                    current, expectedContext, new Throwable("stack trace"));
-        }
     }
 
     private static ContextMap newContextMap() {

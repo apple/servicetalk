@@ -36,7 +36,7 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
 
     @Override
     public V apply(T t, U u) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             return delegate.apply(t, u);
         }
     }

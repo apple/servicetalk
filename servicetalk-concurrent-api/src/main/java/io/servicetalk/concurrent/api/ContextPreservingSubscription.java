@@ -40,14 +40,14 @@ final class ContextPreservingSubscription implements Subscription {
 
     @Override
     public void request(long l) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscription.request(l);
         }
     }
 
     @Override
     public void cancel() {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscription.cancel();
         }
     }

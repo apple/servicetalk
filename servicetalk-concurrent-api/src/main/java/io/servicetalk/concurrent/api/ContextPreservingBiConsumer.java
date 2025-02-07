@@ -36,7 +36,7 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
 
     @Override
     public void accept(T t, U u) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.accept(t, u);
         }
     }

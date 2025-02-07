@@ -35,7 +35,7 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
 
     @Override
     public void accept(T t) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.accept(t);
         }
     }

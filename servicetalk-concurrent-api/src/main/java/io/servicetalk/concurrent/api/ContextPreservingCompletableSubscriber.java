@@ -39,21 +39,21 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
 
     @Override
     public final void onSubscribe(final Cancellable cancellable) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             invokeOnSubscribe(cancellable);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onComplete();
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onError(t);
         }
     }

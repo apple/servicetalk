@@ -37,18 +37,6 @@ import javax.annotation.Nullable;
 final class NoopAsyncContextProvider implements AsyncContextProvider {
     static final AsyncContextProvider INSTANCE = new NoopAsyncContextProvider();
 
-    private static final CapturedContext NOOP_CAPTURED_CONTEXT = new CapturedContext() {
-        @Override
-        public ContextMap captured() {
-            return NoopContextMap.INSTANCE;
-        }
-
-        @Override
-        public Scope restoreContext() {
-            return Scope.NOOP;
-        }
-    };
-
     private NoopAsyncContextProvider() {
         // singleton
     }
@@ -60,12 +48,12 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public CapturedContext captureContext() {
-        return NOOP_CAPTURED_CONTEXT;
+        return NoopContextMap.INSTANCE;
     }
 
     @Override
     public CapturedContext captureContext(ContextMap contextMap) {
-        return NOOP_CAPTURED_CONTEXT;
+        return NoopContextMap.INSTANCE;
     }
 
     @Override
@@ -187,8 +175,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
         return func;
     }
 
-    static final class NoopContextMap implements ContextMap {
-        static final ContextMap INSTANCE = new NoopContextMap();
+    private static final class NoopContextMap implements ContextMap, CapturedContext, Scope {
+        static final NoopContextMap INSTANCE = new NoopContextMap();
 
         private NoopContextMap() {
             // Singleton
@@ -296,6 +284,21 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
                 return false;
             }
             return ((ContextMap) o).isEmpty();
+        }
+
+        @Override
+        public ContextMap captured() {
+            return this;
+        }
+
+        @Override
+        public Scope attachContext() {
+            return this;
+        }
+
+        @Override
+        public void close() {
+            // noop
         }
 
         @Override

@@ -42,7 +42,7 @@ final class ContextPreservingCancellable implements Cancellable {
 
     @Override
     public void cancel() {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.cancel();
         }
     }

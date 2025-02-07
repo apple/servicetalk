@@ -39,28 +39,28 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public final void onSubscribe(Subscription s) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             invokeOnSubscribe(s);
         }
     }
 
     @Override
     public final void onNext(T t) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onNext(t);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onError(t);
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onComplete();
         }
     }

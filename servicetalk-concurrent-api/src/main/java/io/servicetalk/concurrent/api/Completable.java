@@ -1749,7 +1749,7 @@ public abstract class Completable {
             handleSubscribe(wrapped, capturedContext, contextProvider);
         } else {
             // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope unused = capturedContext.restoreContext()) {
+            try (Scope unused = capturedContext.attachContext()) {
                 handleSubscribe(wrapped, capturedContext, contextProvider);
             }
         }

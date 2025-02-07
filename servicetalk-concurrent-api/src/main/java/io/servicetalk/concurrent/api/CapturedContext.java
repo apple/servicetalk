@@ -18,21 +18,25 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.context.api.ContextMap;
 
 /**
- * An interface representing the restoration of the thread-local like context that can be restored later
- * during an async operation.
+ * A representation of a context state that can be attached to the current thread.
+ *
+ * Instances represent captured context state which includes things like the {@link AsyncContext} state and potentially
+ * additional state if instances of {@link CapturedContextProvider} are found. This state can be attached to the current
+ * thread via the {@link CapturedContext#attachContext()} method which will return a {@link Scope} used to detach this
+ * state, restoring any context information that existed beforehand.
  */
 interface CapturedContext {
 
     /**
-     * The {@link ContextMap} that was captured as part of the context.
-     * @return {@link ContextMap} that was captured as part of the context.
+     * The {@link ContextMap} that was captured.
+     * @return {@link ContextMap} that was captured.
      */
     ContextMap captured();
 
     /**
-     * Restore the thread-local like context.
-     * @return a {@link Scope} that will revert the restoration and return the thread-local like state to the state
-     * that it had before restoring this context.
+     * Attach the captured context to the thread state.
+     * @return a {@link Scope} that will be used to restore the previous context associated with the current thread
+     * state when the scoped operation completes.
      */
-    Scope restoreContext();
+    Scope attachContext();
 }

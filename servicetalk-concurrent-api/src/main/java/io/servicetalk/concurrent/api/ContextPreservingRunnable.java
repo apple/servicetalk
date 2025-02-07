@@ -37,7 +37,7 @@ final class ContextPreservingRunnable implements Runnable {
 
     @Override
     public void run() {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.run();
         }
     }

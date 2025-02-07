@@ -39,7 +39,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
 
     @Override
     public V call() throws Exception {
-        try (Scope ignored = capturedContext.restoreContext()) {
+        try (Scope ignored = capturedContext.attachContext()) {
             return delegate.call();
         }
     }
