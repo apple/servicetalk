@@ -22,11 +22,11 @@ import org.testng.annotations.Test;
 import static io.servicetalk.concurrent.api.Publisher.from;
 
 @Test
-public class SpliceFlatStreamToPackedSingleTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class FirstAndTailToPackedSingleTckTest extends AbstractPublisherOperatorTckTest<Integer> {
 
     @Override
     protected Publisher<Integer> composePublisher(final Publisher<Integer> publisher, final int elements) {
-        Publisher<Integer> composed = publisher.splice(Result::new)
+        Publisher<Integer> composed = publisher.firstAndTail(Result::new)
                 .flatMapPublisher(result -> from(result.first).concat(result.following));
         // For TCK only, convert an error the splice generates for an empty stream to onComplete():
         return elements == 0 ? composed.onErrorComplete(IllegalStateException.class) : composed;

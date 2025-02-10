@@ -42,10 +42,10 @@ import static java.util.Objects.requireNonNull;
  * {@link Publisher}&lt;{@link T}&gt; representing the remaining elements in the stream.
  *
  * @param <Packed> type of the container
- * @param <T> type of payload inside the {@link Packed}
+ * @param <T> type of data inside the {@link Packed}
  */
-final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSingleOperator<T, Packed> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToPackedSingle.class);
+final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOperator<T, Packed> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FirstAndTailToPackedSingle.class);
     private final BiFunction<T, Publisher<T>, Packed> packer;
 
     /**
@@ -55,7 +55,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
      * @param packer function to pack the {@link Publisher}&lt;{@link T}&gt; and {@link T} into a
      * {@link Packed}
      */
-    SpliceFlatStreamToPackedSingle(BiFunction<T, Publisher<T>, Packed> packer) {
+    FirstAndTailToPackedSingle(BiFunction<T, Publisher<T>, Packed> packer) {
         this.packer = requireNonNull(packer);
     }
 
@@ -68,8 +68,8 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
             implements PublisherSource.Subscriber<T> {
 
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object> maybePayloadSubUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class, Object.class, "maybePayloadSub");
+        private static final AtomicReferenceFieldUpdater<SplicingSubscriber, Object> maybeTailSubUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class, Object.class, "maybeTailSub");
 
         private static final String CANCELED = "CANCELED";
         private static final String PENDING = "PENDING";
@@ -81,10 +81,10 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
          * <p>
          * One of <ul>
          *     <li>{@code null} – initial pending state before the {@link Single} is completed</li>
-         *     <li>{@link PublisherSource.Subscriber}&lt;{@link T}&gt; - when subscribed to the payload</li>
+         *     <li>{@link PublisherSource.Subscriber}&lt;{@link T}&gt; - when subscribed to the tail</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
          *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link T} pending subscribe</li>
-         *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) payload</li>
+         *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) tail</li>
          *     <li>{@link #EMPTY_COMPLETED_DELIVERED} - when the premature (empty) completion event was delivered to a
          *     subscriber</li>
          *     <li>{@link Throwable} - the error that occurred in the stream</li>
@@ -92,14 +92,14 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
          */
         @Nullable
         @SuppressWarnings("unused")
-        private volatile Object maybePayloadSub;
+        private volatile Object maybeTailSub;
 
         /**
-         * Once a {@link #maybePayloadSub} is set to a {@link PublisherSource.Subscriber} we cache a copy in a
+         * Once a {@link #maybeTailSub} is set to a {@link PublisherSource.Subscriber} we cache a copy in a
          * non-volatile field to allow caching in register and avoid instanceof and casting on the hot path.
          */
         @Nullable
-        private PublisherSource.Subscriber<T> payloadSubscriber;
+        private PublisherSource.Subscriber<T> tailSubscriber;
 
         /**
          * Indicates whether the first element has been observed.
@@ -122,7 +122,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
          */
         private boolean onSubscribeSent;
 
-        private final SpliceFlatStreamToPackedSingle<Data, T> parent;
+        private final FirstAndTailToPackedSingle<Data, T> parent;
         private final Subscriber<? super Data> dataSubscriber;
 
         /**
@@ -134,7 +134,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
          * @param parent reference to the parent class holding immutable state
          * @param dataSubscriber {@link Subscriber} to the {@link Data}
          */
-        private SplicingSubscriber(SpliceFlatStreamToPackedSingle<Data, T> parent,
+        private SplicingSubscriber(FirstAndTailToPackedSingle<Data, T> parent,
                                    Subscriber<? super Data> dataSubscriber) {
             this.parent = parent;
             this.dataSubscriber = dataSubscriber;
@@ -148,7 +148,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
          * Publisher}&lt;{@link T}&gt;
          */
         private void cancelData(Subscription subscription) {
-            final Object current = maybePayloadSubUpdater.getAndUpdate(this,
+            final Object current = maybeTailSubUpdater.getAndUpdate(this,
                     curr -> curr == null || curr == PENDING ? CANCELED : curr);
             if (current == null || current == PENDING) {
                 subscription.cancel();
@@ -173,34 +173,34 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
         @Override
         public void onNext(@Nullable T next) {
             if (firstElementSeenInOnNext) {
-                if (payloadSubscriber != null) {
-                    payloadSubscriber.onNext(next);
+                if (tailSubscriber != null) {
+                    tailSubscriber.onNext(next);
                 } else {
-                    final Object subscriber = maybePayloadSub;
+                    final Object subscriber = maybeTailSub;
                     if (subscriber instanceof PublisherSource.Subscriber) {
-                        payloadSubscriber = (PublisherSource.Subscriber<T>) subscriber;
-                        payloadSubscriber.onNext(next);
+                        tailSubscriber = (PublisherSource.Subscriber<T>) subscriber;
+                        tailSubscriber.onNext(next);
                     }
                 }
             } else {
                 ensureResultSubscriberOnSubscribe();
-                // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
+                // When the upstream Publisher is canceled we don't give it to any Tail Subscribers
                 firstElementSeenInOnNext = true;
                 final Data data;
                 try {
-                    final Publisher<T> payload;
-                    if (maybePayloadSubUpdater.compareAndSet(this, null, PENDING)) {
-                        payload = newPayloadPublisher();
+                    final Publisher<T> tail;
+                    if (maybeTailSubUpdater.compareAndSet(this, null, PENDING)) {
+                        tail = newTailPublisher();
                     } else {
-                        final Object maybePayloadSub = this.maybePayloadSub;
-                        assert maybePayloadSub == CANCELED : "Expected CANCELED but got: " + maybePayloadSub;
-                        boolean cas = maybePayloadSubUpdater.compareAndSet(this, CANCELED, EMPTY_COMPLETED_DELIVERED);
+                        final Object maybeTailSub = this.maybeTailSub;
+                        assert maybeTailSub == CANCELED : "Expected CANCELED but got: " + maybeTailSub;
+                        boolean cas = maybeTailSubUpdater.compareAndSet(this, CANCELED, EMPTY_COMPLETED_DELIVERED);
                         assert cas : "Could not transition from CANCELED to EMPTY_COMPLETED_DELIVERED";
-                        payload = Publisher.failed(StacklessCancellationException.newInstance(
+                        tail = Publisher.failed(StacklessCancellationException.newInstance(
                                 "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
-                                        maybePayloadSub, getClass(), "onNext(...)"));
+                                        maybeTailSub, getClass(), "onNext(...)"));
                     }
-                    data = parent.packer.apply(next, payload);
+                    data = parent.packer.apply(next, tail);
                     assert data != null : "Packer function must return non-null Data";
                 } catch (Throwable t) {
                     assert rawSubscription != null : "Expected rawSubscription but got null";
@@ -218,19 +218,19 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
         }
 
         @Nonnull
-        private Publisher<T> newPayloadPublisher() {
+        private Publisher<T> newTailPublisher() {
             return new Publisher<T>() {
                 @Override
                 protected void handleSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
-                    // on maybePayloadSubUpdater. Otherwise there is a potential for concurrent invocation on the
+                    // on maybeTailSubUpdater. Otherwise there is a potential for concurrent invocation on the
                     // Subscriber which is not allowed by the Reactive Streams specification.
                     try {
                         newSubscriber.onSubscribe(delayedSubscription);
                     } catch (Throwable t) {
                         handleExceptionFromOnSubscribe(newSubscriber, t);
-                        if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING,
+                        if (maybeTailSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING,
                                 EMPTY_COMPLETED_DELIVERED)) {
                             final Subscription subscription = rawSubscription;
                             assert subscription != null : "Expected rawSubscription but got null";
@@ -238,35 +238,35 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
                         }
                         return;
                     }
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
+                    if (maybeTailSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
                         assert rawSubscription != null : "Expected rawSubscription but got null";
                         delayedSubscription.delayedSubscription(rawSubscription);
                     } else {
                         // Entering this branch means either a duplicate subscriber or a stream that completed or failed
-                        // without a subscriber present. The consequence is that unless we've seen payload data we may
+                        // without a subscriber present. The consequence is that unless we've seen tail data we may
                         // not send onComplete() or onError() to the original subscriber, but that is OK as long as one
                         // subscriber of them gets the correct signal and all others get a duplicate subscriber error.
-                        final Object maybeSubscriber = SplicingSubscriber.this.maybePayloadSub;
+                        final Object maybeSubscriber = SplicingSubscriber.this.maybeTailSub;
                         delayedSubscription.delayedSubscription(EMPTY_SUBSCRIPTION);
-                        if (maybeSubscriber == EMPTY_COMPLETED && maybePayloadSubUpdater
+                        if (maybeSubscriber == EMPTY_COMPLETED && maybeTailSubUpdater
                                 .compareAndSet(SplicingSubscriber.this, EMPTY_COMPLETED, EMPTY_COMPLETED_DELIVERED)) {
-                            // Prematurely completed (header + empty payload)
+                            // Prematurely completed (head + empty tail)
                             newSubscriber.onComplete();
-                        } else if (maybeSubscriber instanceof Throwable && maybePayloadSubUpdater
+                        } else if (maybeSubscriber instanceof Throwable && maybeTailSubUpdater
                                 .compareAndSet(SplicingSubscriber.this, maybeSubscriber, EMPTY_COMPLETED_DELIVERED)) {
                             // Premature error
                             newSubscriber.onError((Throwable) maybeSubscriber);
-                        } else if (maybeSubscriber == CANCELED && maybePayloadSubUpdater
+                        } else if (maybeSubscriber == CANCELED && maybeTailSubUpdater
                                 .compareAndSet(SplicingSubscriber.this, maybeSubscriber, EMPTY_COMPLETED_DELIVERED)) {
                             // Premature cancel, capture the full caller stack-trace to understand which code path
-                            // subscribes to the payload after cancellation.
+                            // subscribes to the tail after cancellation.
                             newSubscriber.onError(new CancellationException(
                                     "Canceled prematurely from SplicingSubscriber.cancelData(..), current state: " +
                                             maybeSubscriber));
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
                             newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber,
-                                    "HTTP request/response payload can only be subscribed to once"));
+                                    "HTTP request/response tail can only be subscribed to once"));
                         }
                     }
                 }
@@ -276,25 +276,25 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
         @SuppressWarnings("unchecked")
         @Override
         public void onError(Throwable t) {
-            if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
-                payloadSubscriber.onError(t);
+            if (tailSubscriber != null) { // We have a subscriber that has seen onNext()
+                tailSubscriber.onError(t);
             } else {
-                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
+                final Object maybeSubscriber = maybeTailSubUpdater.getAndSet(this, t);
                 if (!firstElementSeenInOnNext) {
                     ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(this, t, EMPTY_COMPLETED_DELIVERED)) {
+                    if (maybeTailSubUpdater.compareAndSet(this, t, EMPTY_COMPLETED_DELIVERED)) {
                         ((PublisherSource.Subscriber<T>) maybeSubscriber).onError(t);
                     } else {
                         terminateWithIllegalStateException((PublisherSource.Subscriber<T>) maybeSubscriber);
                     }
                 } else if (maybeSubscriber == EMPTY_COMPLETED_DELIVERED) {
-                    LOGGER.debug("Discarding a terminal error from upstream because the payload publisher was " +
+                    LOGGER.debug("Discarding a terminal error from upstream because the tail publisher was " +
                             "already terminated", t);
                 } else {
-                    LOGGER.debug("Terminal error queued for delayed delivery to the payload publisher. " +
-                            "If the payload is not subscribed, this event will not be delivered.", t);
+                    LOGGER.debug("Terminal error queued for delayed delivery to the tail publisher. " +
+                            "If the tail is not subscribed, this event will not be delivered.", t);
                 }
             }
         }
@@ -302,12 +302,12 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
         @SuppressWarnings("unchecked")
         @Override
         public void onComplete() {
-            if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
-                payloadSubscriber.onComplete();
+            if (tailSubscriber != null) { // We have a subscriber that has seen onNext()
+                tailSubscriber.onComplete();
             } else {
-                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, EMPTY_COMPLETED);
+                final Object maybeSubscriber = maybeTailSubUpdater.getAndSet(this, EMPTY_COMPLETED);
                 if (maybeSubscriber instanceof PublisherSource.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(this, EMPTY_COMPLETED,
+                    if (maybeTailSubUpdater.compareAndSet(this, EMPTY_COMPLETED,
                             EMPTY_COMPLETED_DELIVERED)) {
                         ((PublisherSource.Subscriber<T>) maybeSubscriber).onComplete();
                     } else {
@@ -318,7 +318,7 @@ final class SpliceFlatStreamToPackedSingle<Packed, T> implements PublisherToSing
                     dataSubscriber.onError(new IllegalStateException(
                             "Stream unexpectedly completed without emitting any items"));
                 } else if (maybeSubscriber == EMPTY_COMPLETED_DELIVERED) {
-                    LOGGER.debug("Discarding a terminal complete from upstream because the payload publisher was " +
+                    LOGGER.debug("Discarding a terminal complete from upstream because the tail publisher was " +
                             "already terminated");
                 }
             }

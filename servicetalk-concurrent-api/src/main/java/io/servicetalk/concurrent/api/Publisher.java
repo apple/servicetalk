@@ -2665,8 +2665,8 @@ Kotlin flatMapLatest</a>
     }
 
     /**
-     * After the first element of this {@link Publisher} is emitted pass it, and a {@link Publisher} representing the
-     * remainder of the stream, to a function to a mapping function.
+     * Converts this {@link Publisher} to a {@link Single} that will contain the first element of this {@link Publisher}
+     * and a {@link Publisher} representing the remainder of the stream, to a mapping function.
      * <p>
      * <pre>{@code
      *     class Result {
@@ -2683,6 +2683,10 @@ Kotlin flatMapLatest</a>
      *     Result result = new Result(itr.next(), itr);
      *     return result;
      * }</pre>
+     * <p>
+     * Note that either the packer function itself or any operator following this one MUST eventually take care of the
+     * tail {@link Publisher} or they risk leaking resources. This includes cases where an exception is thrown before
+     * returning a result.
      *
      * @param packer A function that takes the head of the input stream and processes it, along with a {@link Publisher}
      * of the remainder of the stream.
@@ -2690,8 +2694,8 @@ Kotlin flatMapLatest</a>
      * head and tail of the stream.
      * @param <R> The resulting type of the packer operation.
      */
-    public final <R> Single<R> splice(BiFunction<T, Publisher<T>, R> packer) {
-        return this.liftSyncToSingle(new SpliceFlatStreamToPackedSingle<>(packer));
+    public final <R> Single<R> firstAndTail(BiFunction<T, Publisher<T>, R> packer) {
+        return this.liftSyncToSingle(new FirstAndTailToPackedSingle<>(packer));
     }
 
     /**

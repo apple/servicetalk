@@ -289,7 +289,7 @@ final class NettyHttpServer {
 
         void process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
-                    connection.read().splice((head, payload) -> {
+                    connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
                         return newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
                                 meta.headers(), executionContext().bufferAllocator(), payload,

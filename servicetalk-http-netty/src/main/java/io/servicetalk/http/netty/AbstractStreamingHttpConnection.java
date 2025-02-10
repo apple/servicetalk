@@ -166,7 +166,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         }
                     }
                 })
-                .splice(this::newSplicedResponse);
+                .firstAndTail(this::newSplicedResponse);
     }
 
     @Override
