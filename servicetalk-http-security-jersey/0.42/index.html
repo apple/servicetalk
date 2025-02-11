@@ -105,7 +105,7 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#DefaultLoadBalancer">DefaultLoadBalancer</a>
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#LoadBalancer">LoadBalancer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#OpenTracing">OpenTracing</a>
@@ -226,7 +226,13 @@
     <a class="nav-link" href="../../servicetalk-grpc-api/0.42/index.html">gRPC</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
     <a class="nav-link" href="../../servicetalk-loadbalancer/0.42/index.html">Load Balancing</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-loadbalancer/0.42/defaultloadbalancer.html">Default Load Balancer</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="../../servicetalk-client-api/0.42/service-discovery.html">Service Discovery</a>
@@ -1137,7 +1143,7 @@ This is similar to configuring security at JavaEE container level in <code>web.x
 </table>
 </div>
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.52/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java"><code>BasicAuthSecurityContextFilters</code></a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.53/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java"><code>BasicAuthSecurityContextFilters</code></a>
 provides factory methods for the two main types of JAX-RS filters:</p>
 </div>
 <div class="ulist">
@@ -1147,7 +1153,7 @@ provides factory methods for the two main types of JAX-RS filters:</p>
 </li>
 <li>
 <p>Name bound filters, which needs to be manually applied to specific resources via the provided
-<a href="https://github.com/apple/servicetalk/blob/0.42.52/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java"><code>@BasicAuthenticated</code></a> annotation.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.53/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java"><code>@BasicAuthenticated</code></a> annotation.</p>
 </li>
 </ul>
 </div>
