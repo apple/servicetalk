@@ -289,11 +289,12 @@ final class NettyHttpServer {
 
         void process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
-                    connection.read().liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
-                            (HttpRequestMetaData meta, Publisher<Object> payload) ->
-                                    newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
-                                            meta.headers(), executionContext().bufferAllocator(), payload,
-                                            requireTrailerHeader, headersFactory)));
+                    connection.read().firstAndTail((head, payload) -> {
+                        HttpRequestMetaData meta = (HttpRequestMetaData) head;
+                        return newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
+                                meta.headers(), executionContext().bufferAllocator(), payload,
+                                requireTrailerHeader, headersFactory);
+                    });
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber(this));
         }

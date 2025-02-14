@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
@@ -2662,6 +2663,41 @@ Kotlin flatMapLatest</a>
      */
     public final Publisher<T> skipWhile(Predicate<? super T> predicate) {
         return filter(FilterPublisher.skipWhileSupplier(predicate));
+    }
+
+    /**
+     * Converts this {@link Publisher} to a {@link Single} that will contain the first element of this {@link Publisher}
+     * and a {@link Publisher} representing the remainder of the stream, to a mapping function.
+     * <p>
+     * Note that either the packer function itself or any operator following this one MUST eventually take care of the
+     * tail {@link Publisher} or they risk leaking resources or attached callbacks on the original Publisher. This
+     * includes cases where an exception is thrown instead of returning the packed object or a failed Single is
+     * returned. In addition, the tail may only be subscribed to exactly one time. Subsequent {@link Subscriber}s will
+     * receive {@link DuplicateSubscribeException}, even if the original publisher supports re-subscribes.
+     * <pre>{@code
+     *     class Result {
+     *         Result(T head, Iterator<T> tail) {
+     *             this.head = head;
+     *             this.tail = tail;
+     *         }
+     *
+     *         T head;
+     *         Iterator<T> tail;
+     *     }
+     *
+     *     Iterator<T> itr = resultOfThisPublisher();
+     *     Result result = new Result(itr.next(), itr);
+     *     return result;
+     * }</pre>
+     *
+     * @param packer A function that takes the head of the input stream and processes it, along with a {@link Publisher}
+     * of the remainder of the stream.
+     * @param <R> The resulting type of the packer operation.
+     * @return A {@link Single} containing the packed object that is a result of calling packer on the
+     * head and tail of the stream.
+     */
+    public final <R> Single<R> firstAndTail(BiFunction<T, Publisher<T>, R> packer) {
+        return this.liftSyncToSingle(new FirstAndTailToPackedSingle<>(packer));
     }
 
     /**
