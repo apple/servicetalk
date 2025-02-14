@@ -219,9 +219,9 @@ final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOp
 
         @Nonnull
         private Publisher<T> newTailPublisher() {
-            return new Publisher<T>() {
+            return new AbstractSynchronousPublisher<T>() {
                 @Override
-                protected void handleSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
+                protected void doSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
                     // on maybeTailSubUpdater. Otherwise there is a potential for concurrent invocation on the

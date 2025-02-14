@@ -43,12 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FirstAndTailToPackedSingleTest {
+    private static final int METADATA = 0;
+    private static final int FIRST_ELEMENT = 1;
+    private static final int SECOND_ELEMENT = 2;
+    private static final int LAST_ELEMENT = 3;
+
     private final TestSingleSubscriber<Data<Integer>> dataSubscriber = new TestSingleSubscriber<>();
     private final TestPublisher<Integer> upstream = new TestPublisher<>();
-    private final int metaData = 0;
-    private final int one = 1;
-    private final int two = 2;
-    private final int last = 3;
 
     private final TestPublisherSubscriber<Integer> payloadSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Integer> dupePayloadSubscriber = new TestPublisherSubscriber<>();
@@ -58,15 +59,15 @@ class FirstAndTailToPackedSingleTest {
     void streamWithHeaderAndPayloadShouldProduceDataWithEmbeddedPayload() {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(2);
-        upstream.onNext(one, last);
+        upstream.onNext(FIRST_ELEMENT, LAST_ELEMENT);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeOnNext(2), contains(one, last));
+        assertThat(payloadSubscriber.takeOnNext(2), contains(FIRST_ELEMENT, LAST_ELEMENT));
         payloadSubscriber.awaitOnComplete();
     }
 
@@ -75,10 +76,10 @@ class FirstAndTailToPackedSingleTest {
             throws Exception {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         upstream.onComplete();
         assertThat(data.tail().toFuture().get(), empty());
     }
@@ -99,10 +100,10 @@ class FirstAndTailToPackedSingleTest {
         upstream.onSubscribe(subscription);
         dataSubscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         assertPayloadSubscriberReceivesCancellationException(terminateUpstreamWithError);
     }
@@ -114,10 +115,10 @@ class FirstAndTailToPackedSingleTest {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         assertFalse(subscription.isCancelled());
         dataSubscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
@@ -152,10 +153,10 @@ class FirstAndTailToPackedSingleTest {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         assertFalse(subscription.isCancelled());
 
         Publisher<Integer> payload = data.tail();
@@ -191,19 +192,19 @@ class FirstAndTailToPackedSingleTest {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(1);
         if (withPayload) {
-            upstream.onNext(one);
+            upstream.onNext(FIRST_ELEMENT);
         }
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         if (withPayload) {
-            assertThat(payloadSubscriber.takeOnNext(), is(one));
+            assertThat(payloadSubscriber.takeOnNext(), is(FIRST_ELEMENT));
         } else {
             assertThat(payloadSubscriber.pollAllOnNext(), is(empty()));
         }
@@ -215,18 +216,18 @@ class FirstAndTailToPackedSingleTest {
     void streamCompleteAfterPublisherSubscribeShouldDeliverComplete(boolean withPayload) {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
         if (withPayload) {
-            upstream.onNext(one, two, last);
+            upstream.onNext(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT);
         }
         upstream.onComplete();
         if (withPayload) {
-            assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+            assertThat(payloadSubscriber.takeOnNext(3), contains(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT));
         } else {
             assertThat(payloadSubscriber.pollAllOnNext(), is(empty()));
         }
@@ -237,10 +238,10 @@ class FirstAndTailToPackedSingleTest {
     void streamCompleteBeforePublisherSubscribeShouldDeliverCompleteOnSubscribe() {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         upstream.onComplete();
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitOnComplete();
@@ -251,10 +252,10 @@ class FirstAndTailToPackedSingleTest {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         toSource(data.tail()).subscribe(payloadSubscriber);
@@ -265,17 +266,17 @@ class FirstAndTailToPackedSingleTest {
     void publisherSubscribeTwiceShouldFailSecondSubscriber() {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
-        upstream.onNext(one, two, last);
+        upstream.onNext(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT);
         toSource(data.tail()).subscribe(dupePayloadSubscriber);
         assertThat(dupePayloadSubscriber.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT));
         payloadSubscriber.awaitOnComplete();
     }
 
@@ -283,15 +284,15 @@ class FirstAndTailToPackedSingleTest {
     void publisherSubscribeAgainAfterCompletingInitialSubscriberShouldFailSecondSubscriber() {
         Single<Data<Integer>> op = upstream.firstAndTail(Data::new);
         toSource(op).subscribe(dataSubscriber);
-        upstream.onNext(metaData);
+        upstream.onNext(METADATA);
         Data<Integer> data = dataSubscriber.awaitOnSuccess();
         assertThat(data, is(notNullValue()));
-        assertThat(data.head(), equalTo(metaData));
+        assertThat(data.head(), equalTo(METADATA));
         toSource(data.tail()).subscribe(payloadSubscriber);
         payloadSubscriber.awaitSubscription().request(3);
-        upstream.onNext(one, two, last);
+        upstream.onNext(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(FIRST_ELEMENT, SECOND_ELEMENT, LAST_ELEMENT));
         payloadSubscriber.awaitOnComplete();
         toSource(data.tail()).subscribe(dupePayloadSubscriber);
         assertThat(dupePayloadSubscriber.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
@@ -302,7 +303,7 @@ class FirstAndTailToPackedSingleTest {
         // We use Publisher.just() here to make sure the Publisher invokes onError when onNext throws.
         // TestPublisher used in other cases, does not show that behavior. Instead it throws from sendItems() which is
         // less obvious failure message than what we get with dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
-        Publisher<Integer> stream = from(metaData);
+        Publisher<Integer> stream = from(METADATA);
         Single<Data<Integer>> op = stream.firstAndTail((head, tail) -> {
                     throw DELIBERATE_EXCEPTION;
                 });
