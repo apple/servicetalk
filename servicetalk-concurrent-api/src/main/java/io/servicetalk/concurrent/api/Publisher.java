@@ -2670,9 +2670,10 @@ Kotlin flatMapLatest</a>
      * and a {@link Publisher} representing the remainder of the stream, to a mapping function.
      * <p>
      * Note that either the packer function itself or any operator following this one MUST eventually take care of the
-     * tail {@link Publisher} or they risk leaking resources. This includes cases where an exception is thrown before
-     * returning a result. In addition, the tail may only be subscribed to exactly one time. For instance, using memory
-     * publishers such as range, will result in a {@link DuplicateSubscribeException}.
+     * tail {@link Publisher} or they risk leaking resources or attached callbacks on the original Publisher. This
+     * includes cases where an exception is thrown instead of returning the packed object or a failed Single is
+     * returned. In addition, the tail may only be subscribed to exactly one time. Subsequent {@link Subscriber}s will
+     * receive {@link DuplicateSubscribeException}, even if the original publisher supports re-subscribes.
      * <pre>{@code
      *     class Result {
      *         Result(T head, Iterator<T> tail) {

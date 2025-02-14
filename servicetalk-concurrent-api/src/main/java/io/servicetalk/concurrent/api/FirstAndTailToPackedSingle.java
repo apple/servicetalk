@@ -266,7 +266,7 @@ final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOp
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
                             newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber,
-                                    "HTTP request/response tail can only be subscribed to once"));
+                                    "tail can only be subscribed to once"));
                         }
                     }
                 }
