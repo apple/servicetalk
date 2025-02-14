@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -76,10 +75,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                TimeoutSubscriber.newInstance(this, subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     abstract static class AbstractTimeoutSubscriber<X> implements Subscriber<X>, Subscription {
@@ -110,7 +109,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         final void initTimer(long durationNs, io.servicetalk.concurrent.Executor timeoutExecutor,
-                             ContextMap contextMap) {
+                             CapturedContext capturedContext) {
             try {
                 // CAS is just in case the timer fired, the timerFires method schedule a new timer before this thread is
                 // able to set the initial timer value. In this case we don't want to overwrite the active timer.
@@ -124,7 +123,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 timerCancellableUpdater.compareAndSet(this, null, requireNonNull(
                         timeoutExecutor.schedule(this::timerFires, durationNs, NANOSECONDS)));
             } catch (Throwable cause) {
-                handleConstructorException(this, contextMap, contextProvider, cause);
+                handleConstructorException(this, capturedContext, contextProvider, cause);
             }
         }
 
@@ -172,7 +171,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             } else {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
-                contextProvider.wrapConsumer(this::processTimeout, contextProvider.context()).accept(cause);
+                contextProvider.wrapConsumer(this::processTimeout, contextProvider.captureContext()).accept(cause);
             }
         }
 
@@ -200,12 +199,12 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * @param cause The exception.
          */
         private static <X> void handleConstructorException(
-                AbstractTimeoutSubscriber<X> s, ContextMap contextMap, AsyncContextProvider contextProvider,
+                AbstractTimeoutSubscriber<X> s, CapturedContext capturedContext, AsyncContextProvider contextProvider,
                 Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
             s.timerCancellable = LOCAL_IGNORE_CANCEL;
             s.subscription = EMPTY_SUBSCRIPTION;
-            deliverOnSubscribeAndOnError(s.target, contextMap, contextProvider, cause);
+            deliverOnSubscribeAndOnError(s.target, capturedContext, contextProvider, cause);
         }
     }
 
@@ -245,10 +244,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutPublisher<X> parent,
                                                     Subscriber<? super X> target,
-                                                    ContextMap contextMap,
+                                                    CapturedContext capturedContext,
                                                     AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, contextProvider);
-            s.initTimer(parent.durationNs, parent.timeoutExecutor, contextMap);
+            s.initTimer(parent.durationNs, parent.timeoutExecutor, capturedContext);
             return s;
         }
 

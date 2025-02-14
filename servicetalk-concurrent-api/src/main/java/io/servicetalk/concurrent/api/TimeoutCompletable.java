@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -56,10 +55,10 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
 
     @Override
     protected void handleSubscribe(final Subscriber subscriber,
-                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                   final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                TimeoutSubscriber.newInstance(this, subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                TimeoutSubscriber.newInstance(this, subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private static final class TimeoutSubscriber implements Subscriber, Cancellable {
@@ -91,7 +90,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
         }
 
         static TimeoutSubscriber newInstance(TimeoutCompletable parent, Subscriber target,
-                                             ContextMap contextMap, AsyncContextProvider contextProvider) {
+                                             CapturedContext capturedContext, AsyncContextProvider contextProvider) {
             TimeoutSubscriber s = new TimeoutSubscriber(parent, target, contextProvider);
             Cancellable localTimerCancellable;
             try {
@@ -108,7 +107,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
                 s.cancellable = LOCAL_IGNORE_CANCEL;
-                deliverOnSubscribeAndOnError(target, contextMap, contextProvider, cause);
+                deliverOnSubscribeAndOnError(target, capturedContext, contextProvider, cause);
             }
             s.timerCancellable = localTimerCancellable;
             return s;
@@ -172,7 +171,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // We rely upon the timeout Executor to save/restore the context. so we just use
                 // contextProvider.contextMap() here.
                 final Subscriber wrappedTarget = parent.timeoutExecutor == immediate() ? target :
-                        contextProvider.wrapCompletableSubscriber(target, contextProvider.context());
+                        contextProvider.wrapCompletableSubscriber(target, contextProvider.captureContext());
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();

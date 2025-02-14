@@ -16,47 +16,92 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
-final class DefaultAsyncContextProvider implements AsyncContextProvider {
+import static java.lang.ThreadLocal.withInitial;
+
+class DefaultAsyncContextProvider implements AsyncContextProvider {
+
+    private static final ThreadLocal<ContextMap> CONTEXT_THREAD_LOCAL =
+            withInitial(DefaultAsyncContextProvider::newContextMap);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
+    private static final boolean NO_DEBUG_LOGGING = !LOGGER.isDebugEnabled();
+
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
-    private static final AsyncContextMapThreadLocal CONTEXT_LOCAL = new AsyncContextMapThreadLocal();
-
-    private DefaultAsyncContextProvider() {
-        // singleton
-    }
-
-    @Nonnull
-    @Override
-    public ContextMap context() {
-        return CONTEXT_LOCAL.get();
+    protected DefaultAsyncContextProvider() {
     }
 
     @Override
-    public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
-                                                        final ContextMap context) {
+    public final ContextMap context() {
+        final Thread t = Thread.currentThread();
+        if (t instanceof ContextMapHolder) {
+            final ContextMapHolder contextMapHolder = (ContextMapHolder) t;
+            ContextMap map = contextMapHolder.context();
+            if (map == null) {
+                map = newContextMap();
+                contextMapHolder.context(map);
+            }
+            return map;
+        } else {
+            return CONTEXT_THREAD_LOCAL.get();
+        }
+    }
+
+    @Override
+    public final void setContextMap(ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            asyncContextMapHolder.context(contextMap);
+        } else {
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+    }
+
+    @Override
+    public final Scope attachContextMap(ContextMap contextMap) {
+        return doAttachContextMap(contextMap);
+    }
+
+    @Override
+    public CapturedContext captureContext(ContextMap contextMap) {
+        return contextMap instanceof CapturedContext ?
+                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
+    }
+
+    @Override
+    public final CapturedContext captureContext() {
+        return captureContext(context());
+    }
+
+    @Override
+    public final CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
+                                                              final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
                         new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber &&
-                ((ContextPreservingCancellableCompletableSubscriber) subscriber).saved == context) {
+                ((ContextPreservingCancellableCompletableSubscriber) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
@@ -65,17 +110,17 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
-                                                                  final ContextMap context) {
+    public final CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
+                                                                        final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
             final ContextPreservingCancellableCompletableSubscriber s =
                     (ContextPreservingCancellableCompletableSubscriber) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 // replace current wrapper with wrapper that includes Subscriber and Cancellable
                 return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingCompletableSubscriber &&
-                ((ContextPreservingCompletableSubscriber) subscriber).saved == context) {
+                ((ContextPreservingCompletableSubscriber) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
             // it extends from ContextPreservingCompletableSubscriber.
             return subscriber;
@@ -84,18 +129,18 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
-            final CompletableSource.Subscriber subscriber, final ContextMap context) {
+    public final CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
+            final CompletableSource.Subscriber subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
                         new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
             final ContextPreservingCancellableCompletableSubscriber s =
                     (ContextPreservingCancellableCompletableSubscriber) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
             }
         }
@@ -103,16 +148,16 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
-                                                          final ContextMap context) {
+    public final <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
+                                                                final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSingleSubscriber) {
             final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingSingleSubscriberAndCancellable ? subscriber :
                         new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingCancellableSingleSubscriber &&
-                ((ContextPreservingCancellableSingleSubscriber<T>) subscriber).saved == context) {
+                ((ContextPreservingCancellableSingleSubscriber<T>) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
@@ -121,16 +166,16 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
-                                                               final ContextMap context) {
+    public final <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
+                                                                     final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCancellableSingleSubscriber) {
             final ContextPreservingCancellableSingleSubscriber<T> s =
                     (ContextPreservingCancellableSingleSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSingleSubscriber &&
-                ((ContextPreservingSingleSubscriber<T>) subscriber).saved == context) {
+                ((ContextPreservingSingleSubscriber<T>) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
@@ -139,18 +184,18 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
-            final SingleSource.Subscriber<T> subscriber, final ContextMap context) {
+    public final <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
+            final SingleSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSingleSubscriber) {
             final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingSingleSubscriberAndCancellable ? subscriber :
                         new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingCancellableSingleSubscriber) {
             final ContextPreservingCancellableSingleSubscriber<T> s =
                     (ContextPreservingCancellableSingleSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
         }
@@ -158,15 +203,16 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final ContextMap context) {
+    public final <T> PublisherSource.Subscriber<T> wrapSubscription(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingSubscriberAndSubscription ? subscriber :
                         new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSubscriptionSubscriber &&
-                ((ContextPreservingSubscriptionSubscriber<T>) subscriber).saved == context) {
+                ((ContextPreservingSubscriptionSubscriber<T>) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
             // it extends from ContextPreservingSubscriptionSubscriber.
             return subscriber;
@@ -175,15 +221,16 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final ContextMap context) {
+    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
             final ContextPreservingSubscriptionSubscriber<T> s =
                     (ContextPreservingSubscriptionSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSubscriber &&
-                ((ContextPreservingSubscriber<T>) subscriber).saved == context) {
+                ((ContextPreservingSubscriber<T>) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
             // it extends from ContextPreservingSubscriptionSubscriber.
             return subscriber;
@@ -192,18 +239,18 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
-                                                                    final ContextMap context) {
+    public final <T> PublisherSource.Subscriber<T> wrapPublisherSubscriberAndSubscription(
+            final PublisherSource.Subscriber<T> subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSubscriber) {
             final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return subscriber instanceof ContextPreservingSubscriberAndSubscription ? subscriber :
                         new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
             final ContextPreservingSubscriptionSubscriber<T> s =
                     (ContextPreservingSubscriptionSubscriber<T>) subscriber;
-            if (s.saved == context) {
+            if (s.capturedContext == context) {
                 return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         }
@@ -211,57 +258,125 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public Executor wrapJdkExecutor(final Executor executor) {
+    public final java.util.concurrent.Executor wrapJdkExecutor(final java.util.concurrent.Executor executor) {
         return ContextPreservingExecutor.of(executor);
     }
 
     @Override
-    public ExecutorService wrapJdkExecutorService(final ExecutorService executor) {
+    public final ExecutorService wrapJdkExecutorService(final ExecutorService executor) {
         return ContextPreservingExecutorService.of(executor);
     }
 
     @Override
-    public io.servicetalk.concurrent.api.Executor wrapExecutor(final io.servicetalk.concurrent.api.Executor executor) {
+    public final io.servicetalk.concurrent.api.Executor wrapExecutor(
+            final io.servicetalk.concurrent.api.Executor executor) {
         return ContextPreservingStExecutor.of(executor);
     }
 
     @Override
-    public ScheduledExecutorService wrapJdkScheduledExecutorService(final ScheduledExecutorService executor) {
+    public final ScheduledExecutorService wrapJdkScheduledExecutorService(final ScheduledExecutorService executor) {
         return ContextPreservingScheduledExecutorService.of(executor);
     }
 
     @Override
-    public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future, final ContextMap context) {
+    public final <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future,
+                                                                final CapturedContext context) {
         return ContextPreservingCompletableFuture.newContextPreservingFuture(future, context);
     }
 
     @Override
-    public Runnable wrapRunnable(final Runnable runnable, final ContextMap context) {
+    public final Runnable wrapRunnable(final Runnable runnable, final CapturedContext context) {
         return new ContextPreservingRunnable(runnable, context);
     }
 
     @Override
-    public <V> Callable<V> wrapCallable(final Callable<V> callable, final ContextMap context) {
+    public final <V> Callable<V> wrapCallable(final Callable<V> callable, final CapturedContext context) {
         return new ContextPreservingCallable<>(callable, context);
     }
 
     @Override
-    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final ContextMap context) {
+    public final <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final CapturedContext context) {
         return new ContextPreservingConsumer<>(consumer, context);
     }
 
     @Override
-    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final ContextMap context) {
+    public final <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final CapturedContext context) {
         return new ContextPreservingFunction<>(func, context);
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final ContextMap context) {
+    public final <T, U> BiConsumer<T, U> wrapBiConsumer(
+            final BiConsumer<T, U> consumer, final CapturedContext context) {
         return new ContextPreservingBiConsumer<>(consumer, context);
     }
 
     @Override
-    public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func, final ContextMap context) {
+    public final <T, U, V> BiFunction<T, U, V> wrapBiFunction(
+            final BiFunction<T, U, V> func, final CapturedContext context) {
         return new ContextPreservingBiFunction<>(func, context);
+    }
+
+    private static final class CapturedContextImpl implements CapturedContext {
+
+        private final ContextMap contextMap;
+
+        CapturedContextImpl(ContextMap contextMap) {
+            this.contextMap = contextMap;
+        }
+
+        @Override
+        public ContextMap captured() {
+            return contextMap;
+        }
+
+        @Override
+        public Scope attachContext() {
+            return doAttachContextMap(contextMap);
+        }
+    }
+
+    private static final class DetachScope implements Scope {
+        private final ContextMap expectedContext;
+        private final ContextMap toRestore;
+
+        DetachScope(ContextMap expectedContext, ContextMap toRestore) {
+            this.expectedContext = expectedContext;
+            this.toRestore = toRestore;
+        }
+
+        @Override
+        public void close() {
+            ContextMap current = exchangeContext(toRestore);
+            if (current != expectedContext && !NO_DEBUG_LOGGING) {
+                LOGGER.debug("Current context didn't match the expected context. current: {}, expected: {}",
+                        current, expectedContext, new Throwable("stack trace"));
+            }
+        }
+    }
+
+    private static Scope doAttachContextMap(ContextMap contextMap) {
+        ContextMap prev = exchangeContext(contextMap);
+        return NO_DEBUG_LOGGING && prev instanceof Scope ? (Scope) prev : new DetachScope(contextMap, prev);
+    }
+
+    private static ContextMap exchangeContext(ContextMap contextMap) {
+        final Thread currentThread = Thread.currentThread();
+        ContextMap result;
+        if (currentThread instanceof ContextMapHolder) {
+            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
+            result = asyncContextMapHolder.context();
+            if (result == null) {
+                result = newContextMap();
+            }
+            asyncContextMapHolder.context(contextMap);
+        } else {
+            result = CONTEXT_THREAD_LOCAL.get();
+            CONTEXT_THREAD_LOCAL.set(contextMap);
+        }
+        return result;
+    }
+
+    private static ContextMap newContextMap() {
+        return new CopyOnWriteContextMap();
     }
 }

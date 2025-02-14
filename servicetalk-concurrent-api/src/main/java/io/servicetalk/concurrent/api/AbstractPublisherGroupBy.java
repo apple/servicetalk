@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +48,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
     abstract static class AbstractGroupBySubscriber<Key, T> implements Subscriber<T> {
         private boolean rootCancelled;
         private final int queueLimit;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         private final Map<Key, GroupMulticastSubscriber<Key, T>> groups;
         private final GroupMulticastSubscriber<String, GroupedPublisher<Key, T>> target;
@@ -57,13 +56,13 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
         private Subscription subscription;
 
         AbstractGroupBySubscriber(final Subscriber<? super GroupedPublisher<Key, T>> target, final int queueLimit,
-                                  final int initialCapacityForGroups, final ContextMap contextMap,
+                                  final int initialCapacityForGroups, final CapturedContext capturedContext,
                                   final AsyncContextProvider contextProvider) {
             this.queueLimit = queueLimit;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
             this.target = new GroupMulticastSubscriber<>(this, "root");
-            this.target.subscriber(target, false, contextMap, contextProvider);
+            this.target.subscriber(target, false, capturedContext, contextProvider);
             groups = new ConcurrentHashMap<>(initialCapacityForGroups);
         }
 
@@ -98,7 +97,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
             } else {
                 groupSub = new GroupMulticastSubscriber<>(this, key);
                 GroupedPublisher<Key, T> groupedPublisher = new DefaultGroupedPublisher<>(key, groupSub,
-                        contextMap, contextProvider);
+                        capturedContext, contextProvider);
                 final GroupMulticastSubscriber<Key, T> oldVal = groups.put(key, groupSub);
                 assert oldVal == null; // concurrent onNext not allowed, collision not expected.
                 groupSub.onNext(t); // deliver to group first to avoid re-entry creating ordering issues.
@@ -165,16 +164,16 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
         }
 
         void subscriber(final Subscriber<? super T> subscriber, final boolean triggerOnSubscribe,
-                        final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                        final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             // The root Subscriber's downstream subscriber is set internally, so no need for atomic operation to filter
             // duplicates.
             if (!triggerOnSubscribe) {
                 assert this.subscriber == null && ctxSubscriber == null;
                 this.subscriber = subscriber;
-                ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+                ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, capturedContext);
             } else if (subscriberStateUpdater.compareAndSet(this, 0, 1)) {
                 this.subscriber = subscriber;
-                ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+                ctxSubscriber = contextProvider.wrapPublisherSubscriber(subscriber, capturedContext);
                 triggerOnSubscribe();
             } else {
                 // this.subscriber may be null (we set the subscriber variable after subscriberStateUpdater),
@@ -215,14 +214,14 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
     private static final class DefaultGroupedPublisher<Key, T> extends GroupedPublisher<Key, T>
             implements PublisherSource<T> {
         private final GroupMulticastSubscriber<Key, T> groupSink;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
 
         DefaultGroupedPublisher(final Key key, final GroupMulticastSubscriber<Key, T> groupSink,
-                                final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                                final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
             super(key);
             this.groupSink = groupSink;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -233,7 +232,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
 
         @Override
         protected void handleSubscribe(Subscriber<? super T> sub) {
-            groupSink.subscriber(sub, true, contextMap, contextProvider);
+            groupSink.subscriber(sub, true, capturedContext, contextProvider);
         }
     }
 }

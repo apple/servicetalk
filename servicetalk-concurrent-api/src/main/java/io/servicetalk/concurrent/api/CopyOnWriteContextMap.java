@@ -39,9 +39,10 @@ import static java.util.Objects.requireNonNull;
  * {@link ContextMap.Key}-value entries in a single {@link ContextMap}. Common {@link ContextMap.Key}-value entries are
  * (tracing, MDC, auth, 3-custom user entries).
  */
-final class CopyOnWriteContextMap implements ContextMap {
+final class CopyOnWriteContextMap implements ContextMap, Scope, CapturedContext {
     private static final AtomicReferenceFieldUpdater<CopyOnWriteContextMap, CopyContextMap> mapUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CopyOnWriteContextMap.class, CopyContextMap.class, "map");
+
     private volatile CopyContextMap map;
 
     CopyOnWriteContextMap() {
@@ -184,6 +185,27 @@ final class CopyOnWriteContextMap implements ContextMap {
     @Override
     public String toString() {
         return ContextMapUtils.toString(this);
+    }
+
+    // CapturedContext methods
+
+    @Override
+    public ContextMap captured() {
+        return this;
+    }
+
+    // CapturedContext method. For the base async context implementation, attaching means setting the correct
+    // AsyncContextProvider thread-local to _this_ ContextMap instance.
+    @Override
+    public Scope attachContext() {
+        return AsyncContext.provider().attachContextMap(this);
+    }
+
+    // Scope method. For the base async context implementation, the `prev` map instance is returned as the Scope if that
+    // is the context state that needs to be restored and restoring just means setting it to the thread-local.
+    @Override
+    public void close() {
+        AsyncContext.provider().setContextMap(this);
     }
 
     private interface CopyContextMap {

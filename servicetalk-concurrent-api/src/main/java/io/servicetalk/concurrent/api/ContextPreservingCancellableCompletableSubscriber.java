@@ -22,17 +22,20 @@ import static io.servicetalk.concurrent.CompletableSource.Subscriber;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellableCompletableSubscriber implements Subscriber {
-    final ContextMap saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber subscriber;
 
-    ContextPreservingCancellableCompletableSubscriber(Subscriber subscriber, ContextMap current) {
+    ContextPreservingCancellableCompletableSubscriber(Subscriber subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void onSubscribe(final Cancellable cancellable) {
-        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, capturedContext));
     }
 
     @Override

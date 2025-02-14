@@ -16,46 +16,28 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.function.BiConsumer;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
+
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final BiConsumer<T, U> delegate;
 
-    ContextPreservingBiConsumer(BiConsumer<T, U> delegate, ContextMap contextMap) {
-        this.saved = requireNonNull(contextMap);
+    ContextPreservingBiConsumer(BiConsumer<T, U> delegate, CapturedContext capturedContext) {
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override
     public void accept(T t, U u) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                delegate.accept(t, u);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            slowPath(t, u);
-        }
-    }
-
-    private void slowPath(T t, U u) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             delegate.accept(t, u);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

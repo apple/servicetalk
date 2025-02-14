@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -38,23 +36,23 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ResumeSubscriber(subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new ResumeSubscriber(subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private final class ResumeSubscriber implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialSubscription sequentialSubscription;
         private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, ContextMap contextMap,
+        ResumeSubscriber(Subscriber<? super T> subscriber, CapturedContext capturedContext,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -90,7 +88,7 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
                 subscriber.onError(throwable);
             } else {
                 final Subscriber<? super T> offloadedSubscriber =
-                        contextProvider.wrapPublisherSubscriber(this, contextMap);
+                        contextProvider.wrapPublisherSubscriber(this, capturedContext);
                 next.subscribeInternal(offloadedSubscriber);
             }
         }

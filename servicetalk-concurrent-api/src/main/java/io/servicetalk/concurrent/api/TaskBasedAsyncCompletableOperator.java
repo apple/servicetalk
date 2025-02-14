@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +64,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
     @Override
     void handleSubscribe(final Subscriber subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(subscriber, contextMap, contextProvider);
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(subscriber, capturedContext, contextProvider);
     }
 
     abstract static class AbstractOffloadedSingleValueSubscriber {

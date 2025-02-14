@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,26 +39,26 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
 
     @Override
     void handleSubscribe(final Subscriber subscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         original.delegateSubscribe(
-                new ResumeSubscriber(this, subscriber, contextMap, contextProvider),
-                contextMap, contextProvider);
+                new ResumeSubscriber(this, subscriber, capturedContext, contextProvider),
+                capturedContext, contextProvider);
     }
 
     private static final class ResumeSubscriber implements Subscriber {
         private final OnErrorResumeCompletable parent;
         private final Subscriber subscriber;
-        private final ContextMap contextMap;
+        private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
         private boolean resubscribed;
 
         ResumeSubscriber(OnErrorResumeCompletable parent, Subscriber subscriber,
-                         ContextMap contextMap, AsyncContextProvider contextProvider) {
+                         CapturedContext capturedContext, AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.subscriber = subscriber;
-            this.contextMap = contextMap;
+            this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
         }
 
@@ -94,7 +93,7 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
             if (next == null) {
                 subscriber.onError(throwable);
             } else {
-                final Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(this, contextMap);
+                final Subscriber wrappedSubscriber = contextProvider.wrapCompletableSubscriber(this, capturedContext);
                 next.subscribeInternal(wrappedSubscriber);
             }
         }

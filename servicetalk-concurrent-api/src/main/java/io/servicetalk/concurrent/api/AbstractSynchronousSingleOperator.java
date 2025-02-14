@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,7 +41,7 @@ abstract class AbstractSynchronousSingleOperator<T, R> extends AbstractNoHandleS
 
     @Override
     final void handleSubscribe(Subscriber<? super R> subscriber,
-                               ContextMap contextMap, AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(apply(subscriber), contextMap, contextProvider);
+                               CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(apply(subscriber), capturedContext, contextProvider);
     }
 }

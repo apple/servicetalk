@@ -18,18 +18,19 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingCompletableSubscriber implements Subscriber {
-    final ContextMap saved;
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
+    final CapturedContext capturedContext;
     final Subscriber subscriber;
 
-    ContextPreservingCompletableSubscriber(Subscriber subscriber, ContextMap current) {
+    ContextPreservingCompletableSubscriber(Subscriber subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Cancellable cancellable) {
@@ -38,82 +39,22 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
 
     @Override
     public final void onSubscribe(final Cancellable cancellable) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                invokeOnSubscribe(cancellable);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onSubscribeSlowPath(cancellable);
-        }
-    }
-
-    private void onSubscribeSlowPath(Cancellable cancellable) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             invokeOnSubscribe(cancellable);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onComplete() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscriber.onComplete();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onCompleteSlowPath();
-        }
-    }
-
-    private void onCompleteSlowPath() {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onComplete();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscriber.onError(t);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            onErrorSlowPath(t);
-        }
-    }
-
-    private void onErrorSlowPath(Throwable t) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             subscriber.onError(t);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 

@@ -16,51 +16,31 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
 import java.util.concurrent.Callable;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCallable<V> implements Callable<V> {
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final Callable<V> delegate;
 
     ContextPreservingCallable(Callable<V> delegate) {
-        this(delegate, INSTANCE.context());
+        this(delegate, AsyncContext.provider().captureContext());
     }
 
-    ContextPreservingCallable(Callable<V> delegate, ContextMap current) {
-        this.saved = requireNonNull(current);
+    ContextPreservingCallable(Callable<V> delegate, CapturedContext capturedContext) {
+        this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = this.capturedContext.captured();
     }
 
     @Override
     public V call() throws Exception {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                return delegate.call();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            return slowPath();
-        }
-    }
-
-    private V slowPath() throws Exception {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             return delegate.call();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 }

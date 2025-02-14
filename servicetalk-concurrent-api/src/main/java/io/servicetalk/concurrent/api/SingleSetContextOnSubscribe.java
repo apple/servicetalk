@@ -29,16 +29,16 @@ final class SingleSetContextOnSubscribe<T> extends AbstractNoHandleSubscribeSing
     }
 
     @Override
-    ContextMap contextForSubscribe(AsyncContextProvider provider) {
-        return context;
+    CapturedContext contextForSubscribe(AsyncContextProvider provider) {
+        return provider.captureContext(context);
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super T> singleSubscriber,
-                         final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+                         final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
         // This operator currently only targets the subscribe method. Given this limitation if we try to change the
         // ContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the ContextMap and we don't want to discard those changes by using a different ContextMap.
-        original.handleSubscribe(singleSubscriber, contextMap, contextProvider);
+        original.handleSubscribe(singleSubscriber, capturedContext, contextProvider);
     }
 }

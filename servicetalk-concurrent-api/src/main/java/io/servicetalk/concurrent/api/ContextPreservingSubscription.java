@@ -17,77 +17,38 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.context.api.ContextMapHolder;
 
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.CONTEXT_THREAD_LOCAL;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingSubscription implements Subscription {
+    // TODO: remove after 0.42.55
     private final ContextMap saved;
+    private final CapturedContext capturedContext;
     private final Subscription subscription;
 
-    private ContextPreservingSubscription(Subscription subscription, ContextMap current) {
+    private ContextPreservingSubscription(Subscription subscription, CapturedContext capturedContext) {
         this.subscription = requireNonNull(subscription);
-        this.saved = requireNonNull(current);
+        this.capturedContext = requireNonNull(capturedContext);
+        this.saved = capturedContext.captured();
     }
 
-    static Subscription wrap(Subscription subscription, ContextMap current) {
+    static Subscription wrap(Subscription subscription, CapturedContext current) {
         return subscription instanceof ContextPreservingSubscription &&
-                ((ContextPreservingSubscription) subscription).saved == current ? subscription :
+                ((ContextPreservingSubscription) subscription).capturedContext == current ? subscription :
                 new ContextPreservingSubscription(subscription, current);
     }
 
     @Override
     public void request(long l) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscription.request(l);
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            requestSlowPath(l);
-        }
-    }
-
-    private void requestSlowPath(long l) {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             subscription.request(l);
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
     @Override
     public void cancel() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof ContextMapHolder) {
-            final ContextMapHolder asyncContextMapHolder = (ContextMapHolder) currentThread;
-            ContextMap prev = asyncContextMapHolder.context();
-            try {
-                asyncContextMapHolder.context(saved);
-                subscription.cancel();
-            } finally {
-                asyncContextMapHolder.context(prev);
-            }
-        } else {
-            cancelSlowPath();
-        }
-    }
-
-    private void cancelSlowPath() {
-        ContextMap prev = CONTEXT_THREAD_LOCAL.get();
-        try {
-            CONTEXT_THREAD_LOCAL.set(saved);
+        try (Scope ignored = capturedContext.attachContext()) {
             subscription.cancel();
-        } finally {
-            CONTEXT_THREAD_LOCAL.set(prev);
         }
     }
 
