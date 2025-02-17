@@ -62,6 +62,7 @@ class LoggingHttpLifecycleObserverTest {
 
         mockLogger = mock(FixedLevelLogger.class);
         when(mockLogger.logLevel()).thenReturn(LogLevel.INFO);
+        when(mockLogger.isEnabled()).thenReturn(true);
 
         observer = new LoggingHttpLifecycleObserver(mockLogger).onNewExchange();
     }
@@ -70,6 +71,47 @@ class LoggingHttpLifecycleObserverTest {
     void testFactoryMethod() {
         assertThat(observer, isA(HttpLifecycleObserver.HttpRequestObserver.class));
         assertThat(observer, isA(HttpLifecycleObserver.HttpResponseObserver.class));
+    }
+
+    @Test
+    void noErrorResponseCancelDoesntIncludeException() {
+        observer.onConnectionSelected(mock(ConnectionInfo.class));
+        observer.onRequest(mockRequestMetadata);
+        ((HttpLifecycleObserver.HttpRequestObserver) observer).onRequestComplete();
+        observer.onResponseCancel();
+        observer.onExchangeFinally();
+        verify(mockLogger).log(anyString(),
+                any(), // conn info
+                eq(HttpRequestMethod.GET), eq("/foo/bar"), eq(HttpProtocolVersion.HTTP_2_0), eq(0),
+                eq(0L), // request size
+                eq(0), // requestTrailersCount
+                any(), // unwrappedRequestResult
+                any(), // unwrappedResponseResult
+                anyLong(), // responseTimeMs
+                anyLong()); // duration
+    }
+
+    @Test
+    void noErrorDoesntIncludeException() {
+        observer.onConnectionSelected(mock(ConnectionInfo.class));
+        observer.onRequest(mockRequestMetadata);
+        ((HttpLifecycleObserver.HttpRequestObserver) observer).onRequestComplete();
+        observer.onResponse(mockResponseMetadata);
+        ((HttpLifecycleObserver.HttpResponseObserver) observer).onResponseComplete();
+        observer.onExchangeFinally();
+        verify(mockLogger).log(anyString(),
+                any(), // conn info
+                eq(HttpRequestMethod.GET), eq("/foo/bar"), eq(HttpProtocolVersion.HTTP_2_0), eq(0),
+                eq(0L), // request size
+                eq(0), // requestTrailersCount
+                any(), // unwrappedRequestResult
+                eq(HttpResponseStatus.OK.code()), // responseCode
+                eq(0), // response Header Size
+                eq(0L), // responseSize
+                eq(0), // responseTrailersCount
+                any(), // unwrappedResponseResult
+                anyLong(), // responseTimeMs
+                anyLong()); // duration
     }
 
     @Test
