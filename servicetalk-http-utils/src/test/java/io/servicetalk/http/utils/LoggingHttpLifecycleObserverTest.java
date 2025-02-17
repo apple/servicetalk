@@ -93,7 +93,6 @@ class LoggingHttpLifecycleObserverTest {
     @Test
     void noErrorDoesntIncludeException() {
         observer.onConnectionSelected(mock(ConnectionInfo.class));
-        Throwable requestError = new DeliberateException();
         observer.onRequest(mockRequestMetadata);
         ((HttpLifecycleObserver.HttpRequestObserver) observer).onRequestComplete();
         observer.onResponse(mockResponseMetadata);
