@@ -168,6 +168,11 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
 
         @Override
         public void onExchangeFinally() {
+            if (!logger.isEnabled()) {
+                // Logger isn't active so no need to pay for logging since it will go nowhere.
+                return;
+            }
+
             // request info always expected to be available:
             final HttpRequestMetaData requestMetaData = this.requestMetaData;
             assert requestMetaData != null;

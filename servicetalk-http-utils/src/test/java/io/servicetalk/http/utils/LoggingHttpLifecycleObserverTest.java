@@ -62,6 +62,7 @@ class LoggingHttpLifecycleObserverTest {
 
         mockLogger = mock(FixedLevelLogger.class);
         when(mockLogger.logLevel()).thenReturn(LogLevel.INFO);
+        when(mockLogger.isEnabled()).thenReturn(true);
 
         observer = new LoggingHttpLifecycleObserver(mockLogger).onNewExchange();
     }
