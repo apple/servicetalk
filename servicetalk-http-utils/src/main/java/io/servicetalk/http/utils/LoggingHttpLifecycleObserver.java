@@ -23,11 +23,11 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.utils.internal.ThrowableUtils;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
-import static io.servicetalk.utils.internal.ThrowableUtils.combine;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -178,26 +178,42 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
                 unwrappedRequestResult = Result.cancelled;
             }
             assert responseResult != null;
+            final Throwable maybeException = ThrowableUtils.combine(responseResult, requestResult);
             if (responseMetaData != null) {
-                logger.log("connection='{}' " +
-                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} responseResult={} " +
-                "responseTime={}ms totalTime={}ms",
-                connInfo == null ? "unknown" : connInfo,
-                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
-                responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                combine(responseResult, requestResult));
+                final String logMessage = "connection='{}' " +
+                        "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                        "requestResult={} responseCode={} responseHeadersCount={} responseSize={} " +
+                        "responseTrailersCount={} responseResult={} responseTime={}ms totalTime={}ms";
+                if (maybeException == null) {
+                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                            responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                            responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
+                } else {
+                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                            responseMetaData.status().code(), responseMetaData.headers().size(), responseSize,
+                            responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                            maybeException);
+                }
             } else {
-                logger.log("connection='{}' " +
-                "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
-                "responseResult={} responseTime={}ms totalTime={}ms",
-                connInfo == null ? "unknown" : connInfo,
-                requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
-                requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
-                unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
-                combine(responseResult, requestResult));
+                final String logMessage = "connection='{}' " +
+                        "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} " +
+                        "requestResult={} responseResult={} responseTime={}ms totalTime={}ms";
+                if (maybeException == null) {
+                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                            unwrapResult(responseResult), responseTimeMs, durationMs(startTime));
+                } else {
+                    logger.log(logMessage, connInfo == null ? "unknown" : connInfo,
+                            requestMetaData.method(), requestMetaData.requestTarget(), requestMetaData.version(),
+                            requestMetaData.headers().size(), requestSize, requestTrailersCount, unwrappedRequestResult,
+                            unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
+                            maybeException);
+                }
             }
         }
 
