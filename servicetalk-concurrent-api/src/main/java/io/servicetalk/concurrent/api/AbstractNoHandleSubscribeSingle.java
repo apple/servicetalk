@@ -15,27 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Single} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link Single#handleSubscribe(Subscriber, ContextMap, AsyncContextProvider)}.
+ * {@link Single#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)}.
  *
  * @param <T> Type of the result of the single.
  */
-abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> implements SingleSource<T> {
+abstract class AbstractNoHandleSubscribeSingle<T> extends SubscribableSingle<T> {
 
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {
         deliverErrorFromSource(subscriber,
                 new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
-    }
-
-    @Override
-    public final void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 }

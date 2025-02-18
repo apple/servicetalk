@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -40,7 +41,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T>, Subscription {
+final class PublisherProcessor<T> extends SubscribablePublisher<T> implements Processor<T, T>, Subscription {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherProcessor.class);
     @SuppressWarnings("rawtypes")
     private static final ProcessorSignalsConsumer CANCELLED = new NoopProcessorSignalsConsumer();
@@ -120,11 +121,6 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
                             ((SubscriberProcessorSignalsConsumer<T>) existingConsumer).subscriber : null;
             safeOnError(subscriber, new DuplicateSubscribeException(existingSubscriber, subscriber));
         }
-    }
-
-    @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 
     @Override

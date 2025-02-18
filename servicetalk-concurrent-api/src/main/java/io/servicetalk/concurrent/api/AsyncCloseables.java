@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableCompletable;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -238,14 +238,6 @@ public final class AsyncCloseables {
         @Override
         public Completable onClosing() {
             return onClosing;
-        }
-    }
-
-    private abstract static class SubscribableCompletable extends Completable implements CompletableSource {
-
-        @Override
-        public final void subscribe(final Subscriber subscriber) {
-            subscribeInternal(subscriber);
         }
     }
 }

@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.jdkflow;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
@@ -126,7 +127,7 @@ public final class JdkFlowAdapters {
         }
     }
 
-    private static final class FlowToStPublisher<T> extends Publisher<T> {
+    private static final class FlowToStPublisher<T> extends SubscribablePublisher<T> {
         private final java.util.concurrent.Flow.Publisher<T> source;
 
         FlowToStPublisher(final java.util.concurrent.Flow.Publisher<T> source) {

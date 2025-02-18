@@ -16,14 +16,14 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.CompletableSource.Processor;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanMapper;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return new Single<StreamingHttpResponse>() {
+        return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
@@ -77,7 +77,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 // This exists to help users with error propagation. If the user closes the payloadWriter and they throw
                 // (e.g. try-with-resources) this processor is merged with the payloadWriter Publisher so the error will
                 // still be propagated.
-                final Processor exceptionProcessor = newCompletableProcessor();
+                final CompletableSource.Processor exceptionProcessor = newCompletableProcessor();
                 final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
                         () -> ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;

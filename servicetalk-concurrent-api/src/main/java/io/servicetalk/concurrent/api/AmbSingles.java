@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-final class AmbSingles<T> extends Single<T> {
+final class AmbSingles<T> extends SubscribableSingle<T> {
     private final Single<? extends T>[] singles;
 
     @SafeVarargs

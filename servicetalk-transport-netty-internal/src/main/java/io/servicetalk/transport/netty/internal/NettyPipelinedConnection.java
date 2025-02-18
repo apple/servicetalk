@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -103,7 +104,7 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
                           final Supplier<FlushStrategy> flushStrategySupplier,
                           final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier) {
         // Lazy modification of local state required (e.g. nodes, delayed subscriber, queue modifications)
-        return new Publisher<Resp>() {
+        return new SubscribablePublisher<Resp>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
                 final WriteTask nextWriteTask;
@@ -248,7 +249,7 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
                         // the most straightforward way to propagate an error through the APIs is through the read async
                         // source. This has a side effect that the read async source isn't strictly full-duplex (data
                         // will be full-duplex, but completion will be delayed until the write completes).
-                        .mergeDelayError(new Publisher<Resp>() {
+                        .mergeDelayError(new SubscribablePublisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
                                 final Subscriber<? super Resp> nextReadSubscriber;

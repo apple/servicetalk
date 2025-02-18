@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableCompletable;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -143,7 +144,7 @@ public final class BufferStrategies {
                     CountingAccumulator<T, B> firstAccum =
                             new CountingAccumulator<>(state, accumulatorSupplier.get(), count);
                     state.beforeNewAccumulatorEmitted(firstAccum);
-                    return Single.succeeded(firstAccum).concat(new Completable() {
+                    return Single.succeeded(firstAccum).concat(new SubscribableCompletable() {
                         @Override
                         protected void handleSubscribe(final Subscriber subscriber) {
                             // We ignore cancel and expect ambWith to ignore if we delay emit
