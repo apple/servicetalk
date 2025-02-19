@@ -15,12 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource;
-
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
-final class LiftSynchronousPublisherToSingle<T, R> extends Single<R> implements SingleSource<R> {
+final class LiftSynchronousPublisherToSingle<T, R> extends AbstractNoHandleSubscribeSingle<R> {
     private final Publisher<T> original;
     private final PublisherToSingleOperator<? super T, ? extends R> customOperator;
 
@@ -28,17 +25,6 @@ final class LiftSynchronousPublisherToSingle<T, R> extends Single<R> implements 
                                      PublisherToSingleOperator<? super T, ? extends R> customOperator) {
         this.original = original;
         this.customOperator = requireNonNull(customOperator);
-    }
-
-    @Override
-    protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
-        deliverErrorFromSource(subscriber,
-                new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
-    }
-
-    @Override
-    public void subscribe(final SingleSource.Subscriber<? super R> subscriber) {
-        subscribeInternal(subscriber);
     }
 
     @Override
