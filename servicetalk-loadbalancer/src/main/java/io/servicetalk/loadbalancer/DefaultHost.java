@@ -168,11 +168,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 return true;
             }
             // Previous state was open.
-            ConnState nextState = oldState.toExpired();
-            if (connStateUpdater.compareAndSet(this, oldState, nextState)) {
+            if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
                 cancelIfHealthCheck(oldState);
                 hostObserver.onHostMarkedExpired(oldState.connections.size());
-                if (nextState.state == State.CLOSED) {
+                if (oldState.connections.isEmpty()) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
                     return true;
@@ -327,7 +326,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         int addAttempt = 0;
         for (;;) {
             final ConnState previous = connStateUpdater.get(this);
-            if (previous.state == State.CLOSED) {
+            if (previous.state == State.CLOSED || previous.state == State.EXPIRED && previous.connections.isEmpty()) {
                 return false;
             }
             ++addAttempt;
@@ -570,7 +569,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
 
         ConnState toExpired() {
-            return new ConnState(connections, connections.isEmpty() ? State.CLOSED : State.EXPIRED, 0, null);
+            return new ConnState(connections, State.EXPIRED, 0, null);
         }
 
         ConnState removeConnection(C connection) {
