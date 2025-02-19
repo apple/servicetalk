@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribablePublisher;
+
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -25,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  * @param <Key> Key for the group.
  * @param <T> Items emitted by this {@link Publisher}.
  */
-public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
+public abstract class GroupedPublisher<Key, T> extends SubscribablePublisher<T> {
     private final Key key;
 
     GroupedPublisher(Key key) {

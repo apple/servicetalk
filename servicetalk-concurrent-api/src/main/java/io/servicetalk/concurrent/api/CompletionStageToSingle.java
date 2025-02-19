@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
-final class CompletionStageToSingle<T> extends Single<T> implements SingleSource<T> {
+final class CompletionStageToSingle<T> extends SubscribableSingle<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionStageToSingle.class);
     private final CompletionStage<? extends T> stage;
 
@@ -86,10 +86,5 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
         } catch (Throwable cause) {
             return null;
         }
-    }
-
-    @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 }

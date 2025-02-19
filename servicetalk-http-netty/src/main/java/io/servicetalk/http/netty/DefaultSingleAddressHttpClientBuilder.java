@@ -25,12 +25,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
@@ -709,7 +709,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    private static final class SdStatusCompletable extends Completable {
+    private static final class SdStatusCompletable extends SubscribableCompletable {
         private volatile CompletableSource.Processor processor = newCompletableProcessor();
         private boolean seenError;  //  this is only accessed from nextError and resetError which are not concurrent
 

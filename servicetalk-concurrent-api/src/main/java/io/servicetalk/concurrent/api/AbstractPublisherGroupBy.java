@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
@@ -211,8 +210,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
         }
     }
 
-    private static final class DefaultGroupedPublisher<Key, T> extends GroupedPublisher<Key, T>
-            implements PublisherSource<T> {
+    private static final class DefaultGroupedPublisher<Key, T> extends GroupedPublisher<Key, T> {
         private final GroupMulticastSubscriber<Key, T> groupSink;
         private final CapturedContext capturedContext;
         private final AsyncContextProvider contextProvider;
@@ -223,11 +221,6 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractNoHandleSubscrib
             this.groupSink = groupSink;
             this.capturedContext = capturedContext;
             this.contextProvider = contextProvider;
-        }
-
-        @Override
-        public void subscribe(final Subscriber<? super T> subscriber) {
-            subscribeInternal(subscriber);
         }
 
         @Override

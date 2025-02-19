@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -86,7 +87,7 @@ final class PublisherFlatMapConcatUtils {
             final Single<? extends R> single = mapper.apply(t);
             final Item<R> item = new Item<>();
             results.add(item);
-            return new Single<R>() {
+            return new SubscribableSingle<R>() {
                 @Override
                 protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
                     assert item.subscriber == null; // flatMapMergeSingle only does a single subscribe.

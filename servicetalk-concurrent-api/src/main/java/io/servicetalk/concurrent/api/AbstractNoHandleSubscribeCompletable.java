@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableCompletable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
@@ -23,16 +23,11 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  * A {@link Completable} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it
  * overrides {@link Completable#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)}.
  */
-abstract class AbstractNoHandleSubscribeCompletable extends Completable implements CompletableSource {
+abstract class AbstractNoHandleSubscribeCompletable extends SubscribableCompletable {
 
     @Override
     protected final void handleSubscribe(final Subscriber subscriber) {
         deliverErrorFromSource(subscriber, new UnsupportedOperationException("Subscribe with no " +
                 CapturedContext.class.getSimpleName() + " is not supported for " + getClass()));
-    }
-
-    @Override
-    public final void subscribe(final Subscriber subscriber) {
-        subscribeInternal(subscriber);
     }
 }

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
@@ -219,9 +220,9 @@ final class FirstAndTailToPackedSingle<Packed, T> implements PublisherToSingleOp
 
         @Nonnull
         private Publisher<T> newTailPublisher() {
-            return new AbstractSynchronousPublisher<T>() {
+            return new SubscribablePublisher<T>() {
                 @Override
-                protected void doSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
+                protected void handleSubscribe(PublisherSource.Subscriber<? super T> newSubscriber) {
                     final DelayedSubscription delayedSubscription = new DelayedSubscription();
                     // newSubscriber.onSubscribe MUST be called before making newSubscriber visible below with the CAS
                     // on maybeTailSubUpdater. Otherwise there is a potential for concurrent invocation on the

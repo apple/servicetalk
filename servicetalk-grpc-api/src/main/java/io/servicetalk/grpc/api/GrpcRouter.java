@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
@@ -992,7 +993,7 @@ final class GrpcRouter {
         }
 
         private static AsyncCloseable toAsyncCloseable(final GracefulAutoCloseable original) {
-            return AsyncCloseables.toAsyncCloseable(graceful -> new Completable() {
+            return AsyncCloseables.toAsyncCloseable(graceful -> new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
                     try {

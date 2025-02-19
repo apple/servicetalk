@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Processor;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -27,12 +28,12 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
-final class CompletableProcessor extends Completable implements Processor {
+final class CompletableProcessor extends SubscribableCompletable implements Processor {
     private final ClosableConcurrentStack<Subscriber> stack = new ClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
-        // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
+        // We must subscribe before adding subscriber the queue. Otherwise, it is possible that this
         // Completable has been terminated and the subscriber may be notified before onSubscribe is called.
         // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
@@ -69,10 +70,5 @@ final class CompletableProcessor extends Completable implements Processor {
 
     private void terminate(TerminalNotification terminalSignal) {
         stack.close(terminalSignal::terminate);
-    }
-
-    @Override
-    public void subscribe(final Subscriber subscriber) {
-        subscribeInternal(subscriber);
     }
 }

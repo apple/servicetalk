@@ -17,12 +17,13 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractSubmitCompletable extends Completable implements CompletableSource {
+abstract class AbstractSubmitCompletable extends SubscribableCompletable {
     private final Executor runExecutor;
 
     AbstractSubmitCompletable(final Executor runExecutor) {
@@ -58,10 +59,5 @@ abstract class AbstractSubmitCompletable extends Completable implements Completa
             return;
         }
         cancellable.delayedCancellable(eCancellable);
-    }
-
-    @Override
-    public final void subscribe(final Subscriber subscriber) {
-        subscribeInternal(subscriber);
     }
 }

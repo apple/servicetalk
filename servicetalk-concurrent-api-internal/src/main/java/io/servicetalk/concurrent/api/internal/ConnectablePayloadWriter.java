@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -273,7 +272,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         }
     }
 
-    private static final class ConnectedPublisher<T> extends Publisher<T> {
+    private static final class ConnectedPublisher<T> extends SubscribablePublisher<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedPublisher.class);
         private final ConnectablePayloadWriter<T> outer;
 

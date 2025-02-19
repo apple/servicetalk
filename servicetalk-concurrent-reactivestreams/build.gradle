@@ -35,6 +35,7 @@ dependencies {
   api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api-internal")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))

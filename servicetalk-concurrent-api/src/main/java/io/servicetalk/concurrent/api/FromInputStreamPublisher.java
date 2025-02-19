@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted to the {@link PublisherSource.Subscriber}.
  */
-final class FromInputStreamPublisher<T> extends Publisher<T> implements PublisherSource<T> {
+final class FromInputStreamPublisher<T> extends SubscribablePublisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
     // While sun.nio.ch.FileChannelImpl and java.io.InputStream.transferTo(...) use 8Kb chunks,
     // we use 16Kb-32B because 16Kb is:
@@ -87,11 +88,6 @@ final class FromInputStreamPublisher<T> extends Publisher<T> implements Publishe
     FromInputStreamPublisher(final InputStream stream, final ByteArrayMapper<T> mapper) {
         this.stream = requireNonNull(stream);
         this.mapper = requireNonNull(mapper);
-    }
-
-    @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 
     @Override

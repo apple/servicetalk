@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribablePublisher;
 
 import java.util.function.Supplier;
 
@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class PublisherDefer<T> extends Publisher<T> implements PublisherSource<T> {
+final class PublisherDefer<T> extends SubscribablePublisher<T> {
     private final Supplier<? extends Publisher<? extends T>> publisherFactory;
 
     PublisherDefer(Supplier<? extends Publisher<? extends T>> publisherFactory) {
@@ -47,10 +47,5 @@ final class PublisherDefer<T> extends Publisher<T> implements PublisherSource<T>
         // Since, we are invoking user code (publisherFactory) we need this method to be run using an Executor
         // and also use the configured Executor for subscribing to the Publisher returned from publisherFactory.
         publisher.subscribeInternal(subscriber);
-    }
-
-    @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 }

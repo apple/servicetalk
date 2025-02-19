@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
+import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.util.function.Consumer;
@@ -29,7 +30,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
  * {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  * @param <T> The type of result of the {@link Single}.
  */
-final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
+final class SingleProcessor<T> extends SubscribableSingle<T> implements Processor<T, T> {
     private final ClosableConcurrentStack<Subscriber<? super T>> stack = new ClosableConcurrentStack<>();
 
     @Override
@@ -71,10 +72,5 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
 
     private void terminate(Consumer<Subscriber<? super T>> terminalSignal) {
         stack.close(terminalSignal);
-    }
-
-    @Override
-    public void subscribe(final Subscriber<? super T> subscriber) {
-        subscribeInternal(subscriber);
     }
 }

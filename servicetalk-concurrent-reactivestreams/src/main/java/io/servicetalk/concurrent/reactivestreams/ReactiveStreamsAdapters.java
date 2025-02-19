@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -179,7 +180,7 @@ public final class ReactiveStreamsAdapters {
         }
     }
 
-    private static final class RsToStPublisher<T> extends Publisher<T> {
+    private static final class RsToStPublisher<T> extends SubscribablePublisher<T> {
         private final org.reactivestreams.Publisher<T> source;
 
         RsToStPublisher(final org.reactivestreams.Publisher<T> source) {
