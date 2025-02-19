@@ -361,6 +361,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
                     if (!host.markExpired()) {
                         nextHosts.add(host);
                     } else {
+                        System.out.println("sequentialOnNextSdEvents: Marked expired");
                         // Marking it expired also resulted in removing it from the set.
                         hostSetChanged = true;
                     }
@@ -429,6 +430,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             }
             host.onClose().afterFinally(() ->
                     sequentialExecutor.execute(() -> {
+                        System.out.println("Removing host");
                         final List<PrioritizedHostImpl<ResolvedAddress, C>> currentHosts = usedHosts;
                         if (currentHosts.isEmpty()) {
                             // Can't remove an entry from an empty list.
@@ -535,6 +537,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                         final boolean forceNewConnectionAndReserve) {
+        System.out.println("selectConnection0");
         final HostSelector<ResolvedAddress, C> currentHostSelector = hostSelector;
         Single<C> result = currentHostSelector.selectConnection(selector, context, forceNewConnectionAndReserve);
         return result.beforeOnError(exn -> {
@@ -604,6 +607,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
 
     // must be called from within the sequential executor.
     private List<Entry<ResolvedAddress, List<C>>> sequentialUsedAddresses() {
+        System.out.println("Getting used addresses");
         return usedHosts.stream().map(host ->
                 ((DefaultHost<ResolvedAddress, C>) host.delegate()).asEntry()).collect(toList());
     }

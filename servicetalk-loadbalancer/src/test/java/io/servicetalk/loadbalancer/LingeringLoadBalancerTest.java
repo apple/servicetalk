@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Executors;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -115,10 +116,18 @@ abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
         }
     }
 
+    static void safeSleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     // Concurrency test, worth running >10K times to spot concurrency issues.
     @Test
     void expiringAHostDoesntRaceWithConnectionAdding() throws Exception {
-        Executor executor = Executors.newFixedSizeExecutor(1);
+        Executor executor = Executors.newFixedSizeExecutor(2);
         try {
             sendServiceDiscoveryEvents(upEvent("address-1"));
             assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 0));
@@ -126,9 +135,13 @@ abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
             AtomicReference<Exception> e = new AtomicReference<>();
             AtomicReference<TestLoadBalancedConnection> connection = new AtomicReference<>();
 
+            CountDownLatch a = new CountDownLatch(1);
+
             Future<Object> f = executor.submit(() -> {
                 try {
+                    a.countDown();
                      connection.set(lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get());
+                     System.out.println("Acquired connection");
                 } catch (Exception ex) {
                     e.set(ex);
                 }
@@ -136,6 +149,9 @@ abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
             }).toFuture();
 
             // Note that this will send a `EXPIRED` event and the host will remain, but be marked unhealthy.
+
+            a.await();
+            Thread.sleep(600);
             sendServiceDiscoveryEvents(downEvent("address-1"));
             f.get();
 
@@ -151,10 +167,22 @@ abstract class LingeringLoadBalancerTest extends LoadBalancerTest {
                                 .or(instanceOf(ConnectionRejectedException.class)));
                 assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
                 assertNull(connection.get());
+                throw new IllegalStateException("Didn't want to get here");
             } else {
-                // Connection was added first -> Let's validate the host was properly EXPIRED:
-                assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
 
+                // What's going on
+                // - T1: Creating a connection, it gets made and we get right before DefaultHost.addConnection call.
+                // - T2: Different thread signals downEvent. This gets to DefaultHost.markExpired() which successfully
+                //       marks it expired in the state machine and then sleeps.
+                // - T1: DefaultHost.addConnection(..) call triggered, adds the connection to the now expired state.
+                // - T2: checks oldState and the connections were empty, so we trigger the `doClose(..)` call. This
+                //       closes the host and all its connections which now include the newly created connection. So it's
+                //       not a leak, but it runs counter to the test which will now check `usedAddresses()` and find
+                //       nothing there.
+                // Connection was added first -> Let's validate the host was properly EXPIRED:
+                assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));    // TODO: failing assert
+
+                // TODO: how can we ensure this has happened yet? It seems intrinsically racy.
                 // Confirm host is expired:
                 ExecutionException ex = assertThrows(ExecutionException.class,
                         () -> lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get());

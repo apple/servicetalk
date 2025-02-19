@@ -73,6 +73,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
     @Override
     Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
                                 final boolean forceNewConnectionAndReserve) {
+        System.out.println("RoundRobinSelector.selectConnection0");
         // try one loop over hosts and if all are expired, give up
         final int cursor = scheduler.nextHost();
         Host<ResolvedAddress, C> failOpenHost = null;
@@ -103,6 +104,7 @@ final class RoundRobinSelector<ResolvedAddress, C extends LoadBalancedConnection
             }
         }
         // We were unable to find a suitable host.
+        System.out.println("No active hosts.");
         return noActiveHostsFailure(hosts());
     }
 
