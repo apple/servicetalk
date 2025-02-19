@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
 
+import static io.servicetalk.concurrent.api.AbstractNoHandleSubscribeCompletable.newUnsupportedOperationException;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -133,11 +135,23 @@ public final class SourceAdapters {
         return (SingleSource<T>) single;
     }
 
-    private static final class PublisherToPublisherSource<T> implements PublisherSource<T> {
+    // Visible for testing
+    static final class PublisherToPublisherSource<T> extends Publisher<T> implements PublisherSource<T> {
         private final Publisher<T> publisher;
 
         PublisherToPublisherSource(final Publisher<T> publisher) {
             this.publisher = requireNonNull(publisher);
+        }
+
+        @Override
+        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+            deliverErrorFromSource(subscriber, newUnsupportedOperationException(getClass()));
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber<? super T> subscriber,
+                             final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+            publisher.handleSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
@@ -146,11 +160,23 @@ public final class SourceAdapters {
         }
     }
 
-    private static final class SingleToSingleSource<T> implements SingleSource<T> {
+    // Visible for testing
+    static final class SingleToSingleSource<T> extends Single<T> implements SingleSource<T> {
         private final Single<T> single;
 
         SingleToSingleSource(final Single<T> single) {
             this.single = requireNonNull(single);
+        }
+
+        @Override
+        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+            deliverErrorFromSource(subscriber, newUnsupportedOperationException(getClass()));
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber<? super T> subscriber,
+                             final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+            single.handleSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
@@ -159,11 +185,23 @@ public final class SourceAdapters {
         }
     }
 
-    private static final class CompletableToCompletableSource implements CompletableSource {
+    // Visible for testing
+    static final class CompletableToCompletableSource extends Completable implements CompletableSource {
         private final Completable completable;
 
         CompletableToCompletableSource(final Completable completable) {
             this.completable = requireNonNull(completable);
+        }
+
+        @Override
+        protected void handleSubscribe(final Subscriber subscriber) {
+            deliverErrorFromSource(subscriber, newUnsupportedOperationException(getClass()));
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber subscriber,
+                             final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
+            completable.handleSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
@@ -180,7 +218,7 @@ public final class SourceAdapters {
         }
 
         @Override
-        protected void handleSubscribe(final PublisherSource.Subscriber<? super T> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
             source.subscribe(subscriber);
         }
 
@@ -198,7 +236,7 @@ public final class SourceAdapters {
         }
 
         @Override
-        protected void handleSubscribe(final SingleSource.Subscriber<? super T> subscriber) {
+        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
             source.subscribe(subscriber);
         }
 
@@ -216,7 +254,7 @@ public final class SourceAdapters {
         }
 
         @Override
-        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+        protected void handleSubscribe(final Subscriber subscriber) {
             source.subscribe(subscriber);
         }
 

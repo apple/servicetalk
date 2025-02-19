@@ -27,7 +27,11 @@ abstract class AbstractNoHandleSubscribeCompletable extends SubscribableCompleta
 
     @Override
     protected final void handleSubscribe(final Subscriber subscriber) {
-        deliverErrorFromSource(subscriber, new UnsupportedOperationException("Subscribe with no " +
-                CapturedContext.class.getSimpleName() + " is not supported for " + getClass()));
+        deliverErrorFromSource(subscriber, newUnsupportedOperationException(getClass()));
+    }
+
+    static UnsupportedOperationException newUnsupportedOperationException(final Class<?> clazz) {
+        return new UnsupportedOperationException(
+                "Subscribe with no " + CapturedContext.class.getSimpleName() + " is not supported for " + clazz);
     }
 }
