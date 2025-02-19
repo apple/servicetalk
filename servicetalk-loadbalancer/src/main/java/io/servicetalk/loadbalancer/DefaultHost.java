@@ -326,7 +326,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         int addAttempt = 0;
         for (;;) {
             final ConnState previous = connStateUpdater.get(this);
-            if (previous.state == State.CLOSED || previous.state == State.EXPIRED && previous.connections.isEmpty()) {
+            if (previous.state == State.CLOSED ||
+                    // an expired state with no connections is only a transient state and the host is going
+                    // to be closing, so reject the connection.
+                    previous.state == State.EXPIRED && previous.connections.isEmpty()) {
                 return false;
             }
             ++addAttempt;
