@@ -26,8 +26,8 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 abstract class AbstractNoHandleSubscribeCompletable extends SubscribableCompletable {
 
     @Override
-    protected final void handleSubscribe(Subscriber subscriber) {
-        deliverErrorFromSource(subscriber,
-                new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
+    protected final void handleSubscribe(final Subscriber subscriber) {
+        deliverErrorFromSource(subscriber, new UnsupportedOperationException("Subscribe with no " +
+                CapturedContext.class.getSimpleName() + " is not supported for " + getClass()));
     }
 }

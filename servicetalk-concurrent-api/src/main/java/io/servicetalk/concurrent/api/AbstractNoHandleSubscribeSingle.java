@@ -28,8 +28,8 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 abstract class AbstractNoHandleSubscribeSingle<T> extends SubscribableSingle<T> {
 
     @Override
-    protected final void handleSubscribe(Subscriber<? super T> subscriber) {
-        deliverErrorFromSource(subscriber,
-                new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
+    protected final void handleSubscribe(final Subscriber<? super T> subscriber) {
+        deliverErrorFromSource(subscriber, new UnsupportedOperationException("Subscribe with no " +
+                CapturedContext.class.getSimpleName() + " is not supported for " + getClass()));
     }
 }
