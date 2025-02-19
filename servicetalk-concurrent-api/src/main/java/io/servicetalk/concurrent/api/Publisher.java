@@ -4400,7 +4400,7 @@ Kotlin flatMapLatest</a>
      *
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
-    protected void subscribeInternal(Subscriber<? super T> subscriber) {
+    protected final void subscribeInternal(Subscriber<? super T> subscriber) {
         requireNonNull(subscriber);
         AsyncContextProvider provider = AsyncContext.provider();
         CapturedContext capturedContext = contextForSubscribe(provider);
