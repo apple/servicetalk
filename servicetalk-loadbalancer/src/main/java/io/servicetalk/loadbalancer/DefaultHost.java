@@ -160,7 +160,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
 
     @Override
     public boolean markExpired() {
-        System.out.println("Marking expired");
         for (;;) {
             ConnState oldState = connStateUpdater.get(this);
             if (oldState.state == State.EXPIRED) {
@@ -169,22 +168,12 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                 return true;
             }
             // Previous state was open.
-            // This is where the problem is: the connection is made and emittted. Then the host is marked as expired.
-            if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
-                try {
-                    Thread.sleep(50);
-                } catch (Exception ex) {
-                    throw new RuntimeException(ex);
-                }
+            ConnState nextState = oldState.toExpired();
+            if (connStateUpdater.compareAndSet(this, oldState, nextState)) {
                 cancelIfHealthCheck(oldState);
                 hostObserver.onHostMarkedExpired(oldState.connections.size());
-                if (oldState.connections.isEmpty()) {
+                if (nextState.state == State.CLOSED) {
                     // Trigger the callback to remove the host from usedHosts array.
-                    try {
-                        Thread.sleep(500);
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
-                    }
                     this.closeAsync().subscribe();
                     return true;
                 } else {
@@ -205,7 +194,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
     public Single<C> newConnection(
             Predicate<C> selector, final boolean forceNewConnectionAndReserve, @Nullable final ContextMap context) {
         return Single.defer(() -> {
-            System.out.println("DefaultHost.newConnection(..)");
             ContextMap actualContext = context;
             if (actualContext == null) {
                 actualContext = new DefaultContextMap();
@@ -225,7 +213,6 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             }
             return establishConnection
                     .flatMap(newCnx -> {
-                        System.out.println("Created new connection");
                         if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
                             return newCnx.closeAsync().<C>concat(failed(
                                             Exceptions.StacklessConnectionRejectedException.newInstance(
@@ -254,16 +241,9 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
                             return (addConnection(newCnx) ?
                                     failedSingle : newCnx.closeAsync().concat(failedSingle)).shareContextOnSubscribe();
                         }
-                        try {
-                            Thread.sleep(500);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
                         if (addConnection(newCnx)) {
-                            System.out.println("DefaultHost.newConnection() flatMap success");
                             return succeeded(newCnx).shareContextOnSubscribe();
                         }
-                        System.out.println("DefaultHost.newConnection() flatMap failed");
                         return newCnx.closeAsync().<C>concat(
                                         failed(Exceptions.StacklessConnectionRejectedException.newInstance(
                                                 "Failed to add newly created connection " + newCnx + " for " + this,
@@ -590,7 +570,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         }
 
         ConnState toExpired() {
-            return new ConnState(connections, State.EXPIRED, 0, null);
+            return new ConnState(connections, connections.isEmpty() ? State.CLOSED : State.EXPIRED, 0, null);
         }
 
         ConnState removeConnection(C connection) {
