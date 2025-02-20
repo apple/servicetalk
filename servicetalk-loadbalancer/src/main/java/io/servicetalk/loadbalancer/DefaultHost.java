@@ -167,7 +167,7 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             } else if (oldState.state == State.CLOSED) {
                 return true;
             }
-            // Previous state was open.
+            assert oldState.state == State.ACTIVE || oldState.state == State.UNHEALTHY;
             if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
                 cancelIfHealthCheck(oldState);
                 hostObserver.onHostMarkedExpired(oldState.connections.size());
