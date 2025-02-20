@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.SubscribableSources.SubscribableSingle;
 
+import static io.servicetalk.concurrent.api.AbstractNoHandleSubscribeCompletable.newUnsupportedOperationException;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
@@ -29,7 +30,6 @@ abstract class AbstractNoHandleSubscribeSingle<T> extends SubscribableSingle<T> 
 
     @Override
     protected final void handleSubscribe(final Subscriber<? super T> subscriber) {
-        deliverErrorFromSource(subscriber, new UnsupportedOperationException("Subscribe with no " +
-                CapturedContext.class.getSimpleName() + " is not supported for " + getClass()));
+        deliverErrorFromSource(subscriber, newUnsupportedOperationException(getClass()));
     }
 }
