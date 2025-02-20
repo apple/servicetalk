@@ -39,6 +39,6 @@ final class PublisherSetContextOnSubscribe<T> extends AbstractNoHandleSubscribeP
         // This operator currently only targets the subscribe method. Given this limitation if we try to change the
         // ContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the ContextMap and we don't want to discard those changes by using a different ContextMap.
-        original.handleSubscribe(singleSubscriber, capturedContext, contextProvider);
+        original.delegateSubscribe(singleSubscriber, capturedContext, contextProvider);
     }
 }

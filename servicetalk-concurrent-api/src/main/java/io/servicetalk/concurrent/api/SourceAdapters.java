@@ -151,7 +151,7 @@ public final class SourceAdapters {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                              final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
-            publisher.handleSubscribe(subscriber, capturedContext, contextProvider);
+            publisher.delegateSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
@@ -176,7 +176,7 @@ public final class SourceAdapters {
         @Override
         void handleSubscribe(final Subscriber<? super T> subscriber,
                              final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
-            single.handleSubscribe(subscriber, capturedContext, contextProvider);
+            single.delegateSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
@@ -201,7 +201,7 @@ public final class SourceAdapters {
         @Override
         void handleSubscribe(final Subscriber subscriber,
                              final CapturedContext capturedContext, final AsyncContextProvider contextProvider) {
-            completable.handleSubscribe(subscriber, capturedContext, contextProvider);
+            completable.delegateSubscribe(subscriber, capturedContext, contextProvider);
         }
 
         @Override
