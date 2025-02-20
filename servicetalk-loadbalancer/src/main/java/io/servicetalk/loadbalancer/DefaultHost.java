@@ -167,11 +167,11 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             } else if (oldState.state == State.CLOSED) {
                 return true;
             }
-            Object nextState = oldState.connections.isEmpty() ? State.CLOSED : State.EXPIRED;
+            assert oldState.state == State.ACTIVE || oldState.state == State.UNHEALTHY;
             if (connStateUpdater.compareAndSet(this, oldState, oldState.toExpired())) {
                 cancelIfHealthCheck(oldState);
                 hostObserver.onHostMarkedExpired(oldState.connections.size());
-                if (nextState == State.CLOSED) {
+                if (oldState.connections.isEmpty()) {
                     // Trigger the callback to remove the host from usedHosts array.
                     this.closeAsync().subscribe();
                     return true;
@@ -326,7 +326,10 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
         int addAttempt = 0;
         for (;;) {
             final ConnState previous = connStateUpdater.get(this);
-            if (previous.state == State.CLOSED) {
+            if (previous.state == State.CLOSED ||
+                    // an expired state with no connections is only a transient state and the host is going
+                    // to be closing, so reject the connection.
+                    previous.state == State.EXPIRED && previous.connections.isEmpty()) {
                 return false;
             }
             ++addAttempt;
