@@ -221,6 +221,11 @@ final class FilterableClientToClient implements StreamingHttpClient {
             // chain and accidentally subscribed to the same request concurrently. This protection helps them avoid
             // ambiguous runtime behavior caused by a corrupted mutable request state.
             final Object inFlight;
+            // Note that because request.context() lazily allocates a new ContextMap, there is a risk that
+            // synchronization will happen on two different contexts. However, this is acceptable compromise because:
+            //  - Most likely users subscribe 2+ times to the same request from the same thread.
+            //  - This is the best effort protection, giving users at least one rejection should be enough to let them
+            //    know their code is incorrect and should be rewritten.
             synchronized (context) {
                 // We do not override lock because other layers may already set their own one.
                 inFlight = context.putIfAbsent(HTTP_IN_FLIGHT_REQUEST, lock);
