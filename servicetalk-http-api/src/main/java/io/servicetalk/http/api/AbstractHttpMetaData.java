@@ -84,6 +84,8 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Override
     public final ContextMap context() {
         if (context == null) {
+            // If this implementation ever changes to a concurrent one, remove external synchronization from
+            // FilterableClientToClient.executeRequest(...) and make it consistent with DefaultGrpcMetadata.
             context = new DefaultContextMap();
         }
         return context;
