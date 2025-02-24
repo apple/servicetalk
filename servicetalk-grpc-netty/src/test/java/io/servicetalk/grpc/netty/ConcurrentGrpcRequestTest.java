@@ -32,6 +32,11 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.AfterEach;
@@ -79,37 +84,48 @@ class ConcurrentGrpcRequestTest {
     private final ServerContext serverCtx;
 
     ConcurrentGrpcRequestTest() throws Exception {
-        serverCtx = GrpcServers.forAddress(localAddress(0)).listenAndAwait(new TesterService() {
-            @Override
-            public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
-                return testSingle(Publisher.from(request));
-            }
+        serverCtx = GrpcServers.forAddress(localAddress(0))
+                .initializeHttp(builder -> builder.appendServiceFilter(s -> new StreamingHttpServiceFilter(s) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                                StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        receivedFirstRequest.countDown();
+                        Single<StreamingHttpResponse> response = delegate().handle(ctx, request, responseFactory);
+                        if (receivedRequests.incrementAndGet() == 1) {
+                            return response.concat(SourceAdapters.fromSource(responseProcessor));
+                        }
+                        return response;
+                    }
+                }))
+                .listenAndAwait(new TesterService() {
 
-            @Override
-            public Single<TestResponse> testRequestStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
-                return testSingle(request);
-            }
+                    @Override
+                    public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
+                        return newResponse();
+                    }
 
-            @Override
-            public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
-                return testSingle(Publisher.from(request)).toPublisher();
-            }
+                    @Override
+                    public Single<TestResponse> testRequestStream(GrpcServiceContext ctx,
+                                                                  Publisher<TestRequest> request) {
+                        return newResponse();
+                    }
 
-            @Override
-            public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
-                return testSingle(request).toPublisher();
-            }
+                    @Override
+                    public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
+                        return newResponse().toPublisher();
+                    }
 
-            private Single<TestResponse> testSingle(Publisher<TestRequest> request) {
-                receivedFirstRequest.countDown();
-                if (receivedRequests.incrementAndGet() == 1) {
-                    return SourceAdapters.fromSource(responseProcessor)
-                            .concat(request.ignoreElements())
-                            .concat(Single.succeeded(TestResponse.newBuilder().setMessage("first").build()));
-                }
-                return Single.succeeded(TestResponse.newBuilder().setMessage("other").build());
-            }
-        });
+                    @Override
+                    public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx,
+                                                                  Publisher<TestRequest> request) {
+                        return newResponse().toPublisher();
+                    }
+
+                    private Single<TestResponse> newResponse() {
+                        return Single.succeeded(TestResponse.newBuilder().setMessage("msg").build());
+                    }
+                });
     }
 
     @AfterEach
@@ -140,20 +156,19 @@ class ConcurrentGrpcRequestTest {
             Future<TestResponse> firstConcurrent = firstSingle.toFuture();
             Future<TestResponse> secondConcurrent = newSingle(variant, client, metadata).toFuture();
 
-            responseProcessor.onComplete();
-            assertThat(first.get().getMessage(), is("first"));
             assertRejected(firstConcurrent);
             if (metadata != null) {
                 assertRejected(secondConcurrent);
             } else {
                 // Requests are independent when metadata is not shared between them
-                assertThat(secondConcurrent.get().getMessage(), is("other"));
+                assertResponse(secondConcurrent);
             }
+            responseProcessor.onComplete();
+            assertResponse(first);
 
-            Future<TestResponse> firstSequential = firstSingle.toFuture();
-            assertThat(firstSequential.get().getMessage(), is("other"));
-            Future<TestResponse> thirdSequential = newSingle(variant, client, metadata).toFuture();
-            assertThat(thirdSequential.get().getMessage(), is("other"));
+            // Sequential requests should be successful:
+            assertResponse(firstSingle.toFuture());
+            assertResponse(newSingle(variant, client, metadata).toFuture());
         }
         assertThat(receivedRequests.get(), is(metadata != null ? 3 : 4));
     }
@@ -219,5 +234,9 @@ class ConcurrentGrpcRequestTest {
         assertThat(ee.getCause(), is(instanceOf(GrpcStatusException.class)));
         GrpcStatusException gse = (GrpcStatusException) ee.getCause();
         assertThat(gse.getCause(), is(instanceOf(RejectedSubscribeException.class)));
+    }
+
+    private static void assertResponse(Future<TestResponse> future) throws Exception {
+        assertThat(future.get().getMessage(), is("msg"));
     }
 }

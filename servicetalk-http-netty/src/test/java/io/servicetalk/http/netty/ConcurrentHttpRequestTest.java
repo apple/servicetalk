@@ -122,10 +122,10 @@ class ConcurrentHttpRequestTest {
         Future<StreamingHttpResponse> firstConcurrent = firstSingle.toFuture();
         Future<StreamingHttpResponse> secondConcurrent = requester.request(request).toFuture();
 
-        responseProcessor.onComplete();
-        assertResponse(first.get(), HTTP_1_1, OK, 0);
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
+        responseProcessor.onComplete();
+        assertResponse(first.get(), HTTP_1_1, OK, 0);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request, requester.request(request));
@@ -161,10 +161,10 @@ class ConcurrentHttpRequestTest {
         Future<HttpResponse> firstConcurrent = firstSingle.toFuture();
         Future<HttpResponse> secondConcurrent = requester.request(request).toFuture();
 
-        responseProcessor.onComplete();
-        assertAggregatedResponse(first.get(), OK);
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
+        responseProcessor.onComplete();
+        assertAggregatedResponse(first.get(), OK);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request, requester.request(request));
@@ -203,10 +203,10 @@ class ConcurrentHttpRequestTest {
         Future<StreamingHttpResponse> secondConcurrent =
                 executorExtension.executor().submit(() -> requester.request(request).toStreamingResponse()).toFuture();
 
-        responseProcessor.onComplete();
-        assertResponse(first.get(), HTTP_1_1, OK, 0);
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
+        responseProcessor.onComplete();
+        assertResponse(first.get(), HTTP_1_1, OK, 0);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request,
@@ -244,10 +244,10 @@ class ConcurrentHttpRequestTest {
         Future<HttpResponse> secondConcurrent = executorExtension.executor().submit(() -> requester.request(request))
                 .toFuture();
 
-        responseProcessor.onComplete();
-        assertAggregatedResponse(first.get(), OK);
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
+        responseProcessor.onComplete();
+        assertAggregatedResponse(first.get(), OK);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request,
