@@ -91,7 +91,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
             HttpExecutionStrategy clientstrategy = executionContext().executionStrategy();
-            setExecutionStrategy(metaData.context(), clientstrategy);
+            setExecutionStrategy(metaData, clientstrategy);
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
@@ -209,10 +209,8 @@ final class FilterableClientToClient implements StreamingHttpClient {
                                                                 final HttpExecutionStrategy strategy,
                                                                 final Object lock) {
         return Single.defer(() -> {
-            final ContextMap context = request.context();
-
             if (SKIP_CONCURRENT_REQUEST_CHECK) {
-                return executeRequest(requester, request, context, strategy).shareContextOnSubscribe();
+                return setStrategyAndExecute(requester, request, strategy).shareContextOnSubscribe();
             }
 
             // Prevent concurrent execution of the same request through the same layer.
@@ -221,11 +219,12 @@ final class FilterableClientToClient implements StreamingHttpClient {
             // chain and accidentally subscribed to the same request concurrently. This protection helps them avoid
             // ambiguous runtime behavior caused by a corrupted mutable request state.
             final Object inFlight;
-            // Note that because request.context() lazily allocates a new ContextMap, there is a risk that
+            // Note that because request.context() may lazily allocate a new ContextMap, there is a risk that
             // synchronization will happen on two different contexts. However, this is acceptable compromise because:
             //  - Most likely users subscribe 2+ times to the same request from the same thread.
             //  - This is the best effort protection, giving users at least one rejection should be enough to let them
             //    know their code is incorrect and should be rewritten.
+            final ContextMap context = request.context();
             synchronized (context) {
                 // We do not override lock because other layers may already set their own one.
                 inFlight = context.putIfAbsent(HTTP_IN_FLIGHT_REQUEST, lock);
@@ -239,12 +238,13 @@ final class FilterableClientToClient implements StreamingHttpClient {
                         .shareContextOnSubscribe();
             }
 
-            Single<StreamingHttpResponse> response = executeRequest(requester, request, context, strategy);
+            Single<StreamingHttpResponse> response = setStrategyAndExecute(requester, request, strategy);
             if (inFlight == null) {
                 // Remove only if we are the one who set the lock.
                 response = response.beforeFinally(() -> {
                     synchronized (context) {
-                        context.remove(HTTP_IN_FLIGHT_REQUEST);
+                        final Object removedLock = context.remove(HTTP_IN_FLIGHT_REQUEST);
+                        assert removedLock == lock;
                     }
                 });
             }
@@ -252,16 +252,15 @@ final class FilterableClientToClient implements StreamingHttpClient {
         });
     }
 
-    private static Single<StreamingHttpResponse> executeRequest(final StreamingHttpRequester requester,
-                                                                final StreamingHttpRequest request,
-                                                                final ContextMap context,
-                                                                final HttpExecutionStrategy strategy) {
-        setExecutionStrategy(context, strategy);
+    private static Single<StreamingHttpResponse> setStrategyAndExecute(final StreamingHttpRequester requester,
+                                                                       final StreamingHttpRequest request,
+                                                                       final HttpExecutionStrategy strategy) {
+        setExecutionStrategy(request, strategy);
         return requester.request(request);
     }
 
-    private static void setExecutionStrategy(final ContextMap context, final HttpExecutionStrategy strategy) {
+    private static void setExecutionStrategy(final HttpRequestMetaData request, final HttpExecutionStrategy strategy) {
         // We do not override HttpExecutionStrategy because users may prefer to use their own.
-        context.putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
     }
 }
