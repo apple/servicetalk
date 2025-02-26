@@ -16,27 +16,35 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
     static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
-    final Tracer tracer;
-    final ContextPropagators propagators;
-
-    AbstractOpenTelemetryFilter(final OpenTelemetry openTelemetry) {
-        this.tracer = openTelemetry.getTracer(INSTRUMENTATION_SCOPE_NAME);
-        this.propagators = openTelemetry.getPropagators();
-    }
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
         return HttpExecutionStrategies.offloadNone();
+    }
+
+    static <T> Single<T> withContext(Single<T> original, Context context) {
+        return new Single<T>() {
+            @Override
+            protected void handleSubscribe(SingleSource.Subscriber<? super T> subscriber) {
+                try (Scope ignored = context.makeCurrent()) {
+                    // TODO: I don't _think_ we need to be wrapping the Subscriber since it lives upstream of the
+                    //  context and therefore has it's own context state.
+                    SourceAdapters.toSource(original).subscribe(subscriber);
+                }
+            }
+        };
     }
 }

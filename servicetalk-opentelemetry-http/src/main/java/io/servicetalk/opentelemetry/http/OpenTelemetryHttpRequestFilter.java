@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -43,8 +44,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesExtractor;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 import java.util.function.UnaryOperator;
 
@@ -61,7 +60,9 @@ import java.util.function.UnaryOperator;
  * therefore will not see the {@link Span} for the current request/response.
  */
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
-    implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+
+    private static final AttributeKey<String> PEER_SERVICE = AttributeKey.stringKey("peer.service");
 
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
@@ -118,7 +119,6 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      */
     OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName,
                                    final OpenTelemetryOptions opentelemetryOptions) {
-        super(openTelemetry);
         SpanNameExtractor<HttpRequestMetaData> clientSpanNameExtractor =
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
@@ -128,20 +128,18 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         clientInstrumenterBuilder
                 .addAttributesExtractor(
                         HttpClientAttributesExtractor
-                        .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE,
-                                ServiceTalkNetAttributesGetter.CLIENT_INSTANCE)
-                        .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
-                        .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
-                        .build())
-                .addAttributesExtractor(NetClientAttributesExtractor.create(
-                        ServiceTalkNetAttributesGetter.CLIENT_INSTANCE));
+                                .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE,
+                                        ServiceTalkNetAttributesGetter.CLIENT_INSTANCE)
+                                .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
+                                .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
+                                .build());
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
         componentName = componentName.trim();
         if (!componentName.isEmpty()) {
             clientInstrumenterBuilder.addAttributesExtractor(
-                    AttributesExtractor.constant(SemanticAttributes.PEER_SERVICE, componentName));
+                    AttributesExtractor.constant(PEER_SERVICE, componentName));
         }
         instrumenter =
                 clientInstrumenterBuilder.buildClientInstrumenter(RequestHeadersPropagatorSetter.INSTANCE);
@@ -171,18 +169,23 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
                                                        final StreamingHttpRequest request) {
-        final Context parentContext = Context.current();
-        final Context context = instrumenter.start(parentContext, request);
-
-        final Scope scope = context.makeCurrent();
-        final ScopeTracker tracker = new ScopeTracker(scope, context, request, instrumenter);
-        Single<StreamingHttpResponse> response;
-        try {
-            response = delegate.request(request);
-        } catch (Throwable t) {
-            tracker.onError(t);
-            return Single.failed(t);
+        // This should be (essentially) the first filter in the client filter chain, so here is where we initialize
+        // all the little bits and pieces that will end up being part of the request context. This includes setting
+        // up the retry counter context entry since retries will happen further down in the filter chain.
+        Context current = Context.current();
+        if (!instrumenter.shouldStart(current, request)) {
+            return delegate.request(request);
         }
-        return tracker.track(response);
+        final Context context = instrumenter.start(current, request);
+        try (Scope unused = context.makeCurrent()) {
+            final ScopeTracker tracker = new ScopeTracker(context, request, instrumenter);
+            try {
+                Single<StreamingHttpResponse> response = delegate.request(request);
+                return withContext(tracker.track(response), context);
+            } catch (Throwable t) {
+                tracker.onError(t);
+                return Single.failed(t);
+            }
+        }
     }
 }

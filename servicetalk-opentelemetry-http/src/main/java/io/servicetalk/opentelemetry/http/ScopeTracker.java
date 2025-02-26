@@ -25,7 +25,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
 import javax.annotation.Nullable;
@@ -34,7 +33,6 @@ import static java.util.Objects.requireNonNull;
 
 class ScopeTracker implements TerminalSignalConsumer {
 
-    private final Scope currentScope;
     private final Context context;
     private final HttpRequestMetaData requestMetaData;
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
@@ -42,9 +40,8 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Nullable
     private HttpResponseMetaData responseMetaData;
 
-    ScopeTracker(Scope currentScope, Context context, StreamingHttpRequest requestMetaData,
+    ScopeTracker(Context context, StreamingHttpRequest requestMetaData,
                  Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
-        this.currentScope = requireNonNull(currentScope);
         this.context = requireNonNull(context);
         this.requestMetaData = requireNonNull(requestMetaData);
         this.instrumenter = requireNonNull(instrumenter);
@@ -57,42 +54,26 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void onComplete() {
         assert responseMetaData != null : "can't have succeeded without capturing metadata first";
-        try {
-            instrumenter.end(context, requestMetaData, responseMetaData, null);
-        } finally {
-            closeAll();
-        }
+        instrumenter.end(context, requestMetaData, responseMetaData, null);
     }
 
     @Override
     public void onError(final Throwable throwable) {
-        try {
-            instrumenter.end(context, requestMetaData, responseMetaData, throwable);
-        } finally {
-            closeAll();
-        }
+        instrumenter.end(context, requestMetaData, responseMetaData, throwable);
     }
 
     @Override
     public void cancel() {
-        try {
-            instrumenter.end(context, requestMetaData, responseMetaData, CancelledRequestException.INSTANCE);
-        } finally {
-            closeAll();
-        }
+        instrumenter.end(context, requestMetaData, responseMetaData, CancelledRequestException.INSTANCE);
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
         return responseSingle.liftSync(new BeforeFinallyHttpOperator(this))
-            // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
-            // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
-            // completion of Meta. So in order for downstream operators to get a consistent view of the data
-            // path beforeOnSuccess() needs to be applied last.
-            .beforeOnSuccess(this::onResponseMeta);
-    }
-
-    private void closeAll() {
-        currentScope.close();
+                // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
+                // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
+                // completion of Meta. So in order for downstream operators to get a consistent view of the data
+                // path beforeOnSuccess() needs to be applied last.
+                .beforeOnSuccess(this::onResponseMeta);
     }
 
     private static final class CancelledRequestException extends Exception {
@@ -104,3 +85,4 @@ class ScopeTracker implements TerminalSignalConsumer {
         }
     }
 }
+
