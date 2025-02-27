@@ -16,7 +16,9 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -25,6 +27,7 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
@@ -35,14 +38,25 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
         return HttpExecutionStrategies.offloadNone();
     }
 
-    static <T> Single<T> withContext(Single<T> original, Context context) {
-        return new Single<T>() {
+    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> response, Context context) {
+        return new Single<StreamingHttpResponse>() {
             @Override
-            protected void handleSubscribe(SingleSource.Subscriber<? super T> subscriber) {
+            protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    // TODO: I don't _think_ we need to be wrapping the Subscriber since it lives upstream of the
-                    //  context and therefore has it's own context state.
-                    SourceAdapters.toSource(original).subscribe(subscriber);
+                    SourceAdapters.toSource(response.map(resp ->
+                                    resp.transformMessageBody(body -> transformBody(body, context))))
+                            .subscribe(subscriber);
+                }
+            }
+        };
+    }
+
+    private static <T> Publisher<T> transformBody(Publisher<T> body, Context context) {
+        return new Publisher<T>() {
+            @Override
+            protected void handleSubscribe(PublisherSource.Subscriber<? super T> subscriber) {
+                try (Scope ignored = context.makeCurrent()) {
+                    SourceAdapters.toSource(body).subscribe(subscriber);
                 }
             }
         };
