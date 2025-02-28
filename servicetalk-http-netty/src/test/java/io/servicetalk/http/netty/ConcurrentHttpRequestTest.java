@@ -164,7 +164,7 @@ class ConcurrentHttpRequestTest {
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
         responseProcessor.onComplete();
-        assertAggregatedResponse(first.get(), OK);
+        assertAggregatedEmptyResponse(first.get(), OK);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request, requester.request(request));
@@ -247,7 +247,7 @@ class ConcurrentHttpRequestTest {
         assertRejected(firstConcurrent);
         assertRejected(secondConcurrent);
         responseProcessor.onComplete();
-        assertAggregatedResponse(first.get(), OK);
+        assertAggregatedEmptyResponse(first.get(), OK);
 
         assertSequential(multiAddressClient, request, firstSingle);
         assertSequential(multiAddressClient, request,
@@ -280,13 +280,13 @@ class ConcurrentHttpRequestTest {
         if (response instanceof StreamingHttpResponse) {
             assertResponse((StreamingHttpResponse) response, HTTP_1_1, NO_CONTENT, 0);
         } else if (response instanceof HttpResponse) {
-            assertAggregatedResponse((HttpResponse) response, NO_CONTENT);
+            assertAggregatedEmptyResponse((HttpResponse) response, NO_CONTENT);
         } else {
             throw new AssertionError("Unexpected response type: " + response.getClass());
         }
     }
 
-    private static void assertAggregatedResponse(HttpResponse response, HttpResponseStatus status) {
+    private static void assertAggregatedEmptyResponse(HttpResponse response, HttpResponseStatus status) {
         assertResponse(response, HTTP_1_1, status);
         assertThat(response.payloadBody(), is(EMPTY_BUFFER));
     }
