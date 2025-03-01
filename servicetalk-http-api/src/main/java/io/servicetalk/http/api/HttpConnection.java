@@ -15,16 +15,13 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
 /**
  * Represents a single fixed connection to a HTTP server.
  */
-public interface HttpConnection extends HttpRequester, GracefulAutoCloseable {
+public interface HttpConnection extends HttpRequester {
     /**
      * Get the {@link HttpConnectionContext}.
      *
@@ -68,15 +65,5 @@ public interface HttpConnection extends HttpRequester, GracefulAutoCloseable {
      */
     default BlockingHttpConnection asBlockingConnection() {
         return asStreamingConnection().asBlockingConnection();
-    }
-
-    @Override
-    default void close() throws Exception {
-        awaitTermination(closeAsync().toFuture());
-    }
-
-    @Override
-    default void closeGracefully() throws Exception {
-        awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

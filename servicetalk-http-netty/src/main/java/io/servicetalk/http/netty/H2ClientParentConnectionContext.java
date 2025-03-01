@@ -45,6 +45,7 @@ import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -86,7 +87,6 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONC
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.ZERO_MAX_CONCURRENCY_EVENT;
 import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
-import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
@@ -145,14 +145,14 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig),
                             allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
                 } catch (Throwable cause) {
-                    close(channel, cause);
+                    ChannelCloseUtils.close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
                 try {
                     subscriber.onSubscribe(delayedCancellable);
                 } catch (Throwable cause) {
-                    close(channel, cause);
+                    ChannelCloseUtils.close(channel, cause);
                     handleExceptionFromOnSubscribe(subscriber, cause);
                     return;
                 }
@@ -215,7 +215,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         boolean tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
-                close(parentContext.nettyChannel(), cause);
+                ChannelCloseUtils.close(parentContext.nettyChannel(), cause);
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
@@ -391,7 +391,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {
-                            close(streamChannel, cause);
+                            ChannelCloseUtils.close(streamChannel, cause);
                         } catch (Throwable unexpected) {
                             addSuppressed(unexpected, cause);
                             LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
