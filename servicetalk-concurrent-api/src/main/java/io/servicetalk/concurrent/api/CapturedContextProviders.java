@@ -26,13 +26,11 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 
 final class CapturedContextProviders {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CapturedContextProviders.class);
     private static final List<CapturedContextProvider> PROVIDERS;
 
     static {
         final ClassLoader classLoader = CapturedContextProviders.class.getClassLoader();
-        PROVIDERS = loadProviders(CapturedContextProvider.class, classLoader, LOGGER);
+        PROVIDERS = loadProviders(CapturedContextProvider.class, classLoader);
     }
 
     private CapturedContextProviders() {
@@ -46,16 +44,16 @@ final class CapturedContextProviders {
     // This was copied from `ServiceLoaderUtils` because the implementation there logs the result, which normally
     // wouldn't be a problem but as it turns out things like the MDC logging utils depend on the AsyncContext which
     // may result in a cyclical dependency in class initialization.
-    private static <T> List<T> loadProviders(final Class<T> clazz, final ClassLoader classLoader, final Logger logger) {
+    private static <T> List<T> loadProviders(final Class<T> clazz, final ClassLoader classLoader) {
         final List<T> list = new ArrayList<>(0);
         for (T provider : ServiceLoader.load(clazz, classLoader)) {
             list.add(provider);
         }
         if (list.isEmpty()) {
-            runLater(() -> logger.debug("ServiceLoader {}(s) registered: []", clazz.getSimpleName()));
+            runLater(() -> getLogger().debug("ServiceLoader {}(s) registered: []", clazz.getSimpleName()));
             return emptyList();
         }
-        runLater(() -> logger.info("ServiceLoader {}(s) registered: {}", clazz.getSimpleName(), list));
+        runLater(() -> getLogger().info("ServiceLoader {}(s) registered: {}", clazz.getSimpleName(), list));
         return unmodifiableList(list);
     }
 
@@ -66,5 +64,9 @@ final class CapturedContextProviders {
         t.setDaemon(true);
         t.setName(CapturedContextProviders.class.getSimpleName() + "-logging");
         t.start();
+    }
+
+    private static Logger getLogger() {
+        return LoggerFactory.getLogger(CapturedContextProviders.class);
     }
 }
