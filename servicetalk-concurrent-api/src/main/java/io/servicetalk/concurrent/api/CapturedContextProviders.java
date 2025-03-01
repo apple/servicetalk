@@ -30,7 +30,14 @@ final class CapturedContextProviders {
 
     static {
         final ClassLoader classLoader = CapturedContextProviders.class.getClassLoader();
-        PROVIDERS = loadProviders(CapturedContextProvider.class, classLoader);
+        List<CapturedContextProvider> providers = emptyList();
+        try {
+            providers = loadProviders(CapturedContextProvider.class, classLoader);
+        } catch (Throwable ex) {
+            runLater(() ->
+                    getLogger().error("Failed to load {} instances", CapturedContextProvider.class.getName(), ex));
+        }
+        PROVIDERS = providers;
     }
 
     private CapturedContextProviders() {
@@ -59,7 +66,7 @@ final class CapturedContextProviders {
 
     // We have to run logging code 'later' because of cyclical dependency issues that can arise if logging depends
     // on the AsyncContext.
-    private static void runLater(Runnable runnable) {
+    static void runLater(Runnable runnable) {
         Thread t = new Thread(runnable);
         t.setDaemon(true);
         t.setName(CapturedContextProviders.class.getSimpleName() + "-logging");
