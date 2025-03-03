@@ -42,18 +42,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
-    private static final boolean NO_DEBUG_LOGGING;
-
-
-    static {
-        boolean noDebugLogging = true;
-        try {
-            noDebugLogging = !LOGGER.isDebugEnabled();
-        } catch (Exception ex) {
-            System.err.println("Couldn't evaluate debug logging: defaulting to false. Cause:\n" + ex);
-        }
-        NO_DEBUG_LOGGING = noDebugLogging;
-    }
+    private static final boolean NO_DEBUG_LOGGING = isNoDebugLogging();
 
     protected DefaultAsyncContextProvider() {
     }
@@ -388,5 +377,16 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     private static ContextMap newContextMap() {
         return new CopyOnWriteContextMap();
+    }
+
+    @SuppressWarnings("PMD.SystemPrintln")
+    private static boolean isNoDebugLogging() {
+        try {
+            return !LOGGER.isDebugEnabled();
+        } catch (Exception ex) {
+            // Logger isn't initialized, so we have to send it to a console.
+            System.err.println("Couldn't evaluate debug logging: defaulting to false. Cause:\n" + ex);
+            return true;
+        }
     }
 }

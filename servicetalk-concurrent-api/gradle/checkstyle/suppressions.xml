@@ -32,4 +32,7 @@
   <!-- Extra whitespace makes it easier to read doNotFailOnInputStreamWithBrokenAvailableCall() stream inputs -->
   <suppress checks="SingleSpaceSeparator"
             files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]FromInputStreamPublisherTest.java"/>
+  <!--  We can't log at this point, so we must surface errors through the console-->
+  <suppress id="ConsolePrint"
+            files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]DefaultAsyncContextProvider.java"/>
 </suppressions>
