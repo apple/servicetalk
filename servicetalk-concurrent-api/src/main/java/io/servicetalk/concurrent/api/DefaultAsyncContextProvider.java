@@ -41,9 +41,19 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             withInitial(DefaultAsyncContextProvider::newContextMap);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
-    private static final boolean NO_DEBUG_LOGGING = !LOGGER.isDebugEnabled();
-
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
+    private static final boolean NO_DEBUG_LOGGING;
+
+
+    static {
+        boolean noDebugLogging = true;
+        try {
+            noDebugLogging = !LOGGER.isDebugEnabled();
+        } catch (Exception ex) {
+            System.err.println("Couldn't evaluate debug logging: defaulting to false. Cause:\n" + ex);
+        }
+        NO_DEBUG_LOGGING = noDebugLogging;
+    }
 
     protected DefaultAsyncContextProvider() {
     }
