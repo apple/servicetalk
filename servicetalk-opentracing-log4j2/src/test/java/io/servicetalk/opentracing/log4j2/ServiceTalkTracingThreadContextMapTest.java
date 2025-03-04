@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.util.Arrays;
+
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static io.servicetalk.opentracing.internal.TracingIdUtils.idOrNullAsValue;
@@ -43,7 +45,7 @@ class ServiceTalkTracingThreadContextMapTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    public void tearDown() throws Exception {
         loggerStringWriter.remove();
     }
 
@@ -61,7 +63,10 @@ class ServiceTalkTracingThreadContextMapTest {
         tracer.activateSpan(span);
 
         LOGGER.debug("testing logging and MDC");
-        String v = loggerStringWriter.stableAccumulated(1000);
+        // We need to filter out the lines that are not from this thread.
+        String v = Arrays.stream(loggerStringWriter.stableAccumulated(1000).split("\n"))
+                .filter(line -> line.contains(Thread.currentThread().getName()))
+                .reduce("", (a, b) -> a + "\n" + b);
         assertContainsMdcPair(v, "traceId=", span.context().toTraceId());
         assertContainsMdcPair(v, "spanId=", span.context().toSpanId());
         assertContainsMdcPair(v, "parentSpanId=", idOrNullAsValue(span.context().parentSpanId()));
