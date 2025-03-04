@@ -385,7 +385,9 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             return !LOGGER.isDebugEnabled();
         } catch (Exception ex) {
             // Logger isn't initialized, so we have to send it to a console.
-            System.err.println("Couldn't evaluate debug logging: defaulting to false. Cause:\n" + ex);
+            System.err.println("Could not evaluate logging level, considering debug level is disabled by default. " +
+                    "Cause:" + System.lineSeparator() + ex);
+            ex.printStackTrace(System.err);
             return true;
         }
     }
