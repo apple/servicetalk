@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.opentelemetry.asynccontext;
 
+import io.servicetalk.concurrent.api.CapturedContext;
+import io.servicetalk.concurrent.api.CapturedContextProvider;
+import io.servicetalk.concurrent.api.Scope;
 import io.servicetalk.context.api.ContextMap;
 
 import io.opentelemetry.context.Context;
 
-public final class OtelAgentCapturedContextProvider implements CapturedContextProvider {
+/**
+ * A {@link CapturedContextProvider} that properly captures and restores the Open Telemetry {@link Context}.
+ */
+public final class OtelCapturedContextProvider implements CapturedContextProvider {
 
-  public OtelAgentCapturedContextProvider() {
+  public OtelCapturedContextProvider() {
   }
 
   @Override
