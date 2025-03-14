@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
 import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.withMax;
-import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -123,9 +123,11 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     }
 
     private void assertConnectionRequestReceiveTimesOut(final StreamingHttpRequest request) {
-        assertThrows(TimeoutException.class,
-                () -> await(streamingHttpClient().reserveConnection(request).flatMap(conn -> conn.request(request)),
-                TRY_REQUEST_AWAIT_MILLIS, MILLISECONDS));
+        Future<StreamingHttpResponse> future = streamingHttpClient().reserveConnection(request)
+                .flatMap(conn -> conn.request(request))
+                        .toFuture();
+        assertThrows(TimeoutException.class, () -> future.get(TRY_REQUEST_AWAIT_MILLIS, MILLISECONDS));
+        future.cancel(true);
     }
 
     private void assertConnectionRequestSucceeds(final StreamingHttpRequest request) throws Exception {

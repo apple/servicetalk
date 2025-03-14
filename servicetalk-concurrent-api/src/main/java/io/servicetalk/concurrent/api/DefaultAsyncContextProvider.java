@@ -41,9 +41,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             withInitial(DefaultAsyncContextProvider::newContextMap);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAsyncContextProvider.class);
-    private static final boolean NO_DEBUG_LOGGING = !LOGGER.isDebugEnabled();
-
     static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
+    private static final boolean NO_DEBUG_LOGGING = isNoDebugLogging();
 
     protected DefaultAsyncContextProvider() {
     }
@@ -378,5 +377,18 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     private static ContextMap newContextMap() {
         return new CopyOnWriteContextMap();
+    }
+
+    @SuppressWarnings("PMD.SystemPrintln")
+    private static boolean isNoDebugLogging() {
+        try {
+            return !LOGGER.isDebugEnabled();
+        } catch (Exception ex) {
+            // Logger isn't initialized, so we have to send it to a console.
+            System.err.println("Could not evaluate logging level, considering debug level is disabled by default. " +
+                    "Cause:" + System.lineSeparator() + ex);
+            ex.printStackTrace(System.err);
+            return true;
+        }
     }
 }

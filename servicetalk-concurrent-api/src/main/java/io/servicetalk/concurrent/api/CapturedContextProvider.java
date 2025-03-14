@@ -19,7 +19,7 @@ package io.servicetalk.concurrent.api;
  * Functionality related to capturing thread-local like context for later restoration across async boundaries.
  */
 @FunctionalInterface
-interface CapturedContextProvider {
+public interface CapturedContextProvider {
 
     /**
      * Capture existing context in preparation for an asynchronous thread jump.

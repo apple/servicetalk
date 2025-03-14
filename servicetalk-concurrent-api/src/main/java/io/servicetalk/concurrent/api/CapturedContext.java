@@ -25,7 +25,7 @@ import io.servicetalk.context.api.ContextMap;
  * thread via the {@link CapturedContext#attachContext()} method which will return a {@link Scope} used to detach this
  * state, restoring any context information that existed beforehand.
  */
-interface CapturedContext {
+public interface CapturedContext {
 
     /**
      * The {@link ContextMap} that was captured.

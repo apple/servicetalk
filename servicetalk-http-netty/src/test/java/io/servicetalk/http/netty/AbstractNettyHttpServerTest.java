@@ -319,14 +319,14 @@ abstract class AbstractNettyHttpServerTest {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final HttpResponseMetaData response, final HttpProtocolVersion version,
-                        final HttpResponseStatus status) {
+    static void assertResponse(final HttpResponseMetaData response, final HttpProtocolVersion version,
+                               final HttpResponseStatus status) {
         assertEquals(status, response.status());
         assertEquals(version, response.version());
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
-                        final HttpResponseStatus status, final int expectedSize)
+    static void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                               final HttpResponseStatus status, final int expectedSize)
             throws ExecutionException, InterruptedException {
         assertResponse(response, version, status);
         final int size = awaitIndefinitelyNonNull(
@@ -334,8 +334,8 @@ abstract class AbstractNettyHttpServerTest {
         assertEquals(expectedSize, size);
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
-                        final HttpResponseStatus status, final String expectedPayload)
+    static void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                               final HttpResponseStatus status, final String expectedPayload)
             throws ExecutionException, InterruptedException {
         assertResponse(response, version, status);
         String actualPayload = response.payloadBody().collect(StringBuilder::new, (sb, chunk) -> {
@@ -345,8 +345,8 @@ abstract class AbstractNettyHttpServerTest {
         assertThat(actualPayload, is(expectedPayload));
     }
 
-    void assertSerializedResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
-                                  final HttpResponseStatus status, final String expectedPayload)
+    static void assertSerializedResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                                         final HttpResponseStatus status, final String expectedPayload)
             throws ExecutionException, InterruptedException {
         assertResponse(response, version, status);
         String actualPayload = response.payloadBody(appSerializerUtf8FixLen())

@@ -44,6 +44,7 @@ class ServiceTalkThreadContextMapTest {
 
     @BeforeEach
     void verifyMDCSetup() {
+        logger.info("Attempting to log");
         assumeTrue(ThreadContext.getThreadContextMap() instanceof ServiceTalkThreadContextMap);
     }
 
