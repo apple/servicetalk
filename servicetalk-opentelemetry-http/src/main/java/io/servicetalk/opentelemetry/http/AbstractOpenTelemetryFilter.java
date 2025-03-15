@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.servicetalk.http.api.StreamingHttpResponse;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();

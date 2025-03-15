@@ -21,7 +21,7 @@ dependencies {
   implementation "io.opentelemetry:opentelemetry-context"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api")
+  api project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-context-api")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

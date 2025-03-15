@@ -85,4 +85,3 @@ class ScopeTracker implements TerminalSignalConsumer {
         }
     }
 }
-
