@@ -20,10 +20,21 @@ import org.apache.logging.log4j.spi.Provider;
 
 import java.lang.reflect.Field;
 
+/**
+ * Service loaded MDC thread context map implementation.
+ *
+ * This class is service loaded by log4j2 and is used to provide an MDC context map implementation that will work
+ * with ServiceTalks reactive primitives.
+ */
 public class DefaultServiceTalkProvider extends Provider {
 
     private static final String DEFAULT_CURRENT_VERSION = "2.6.0";
 
+    /**
+     * Create a new DefaultServiceTalkProvider.
+     *
+     * The zero-argument constructor is required by the service loading mechanism.
+     */
     public DefaultServiceTalkProvider() {
         super(20, getCurrentVersion(), Log4jContextFactory.class, DefaultServiceTalkThreadContextMap.class);
     }
