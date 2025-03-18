@@ -16,10 +16,25 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+afterEvaluate {
+  if (tasks.findByName("projectHealth")) {
+    dependencyAnalysis {
+      issues {
+        onIncorrectConfiguration {
+          // DefaultServiceTalkProvider is public and exposes the log4j Provider type, but since this is
+          // a service loaded class it's not intended to cause the log4j api to be imported.
+          exclude("org.apache.logging.log4j:log4j-api")
+        }
+      }
+    }
+  }
+}
+
 dependencies {
   api project(":servicetalk-log4j2-mdc-utils")
 
   implementation project(":servicetalk-annotations")
+  implementation "org.apache.logging.log4j:log4j-core"
 
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
