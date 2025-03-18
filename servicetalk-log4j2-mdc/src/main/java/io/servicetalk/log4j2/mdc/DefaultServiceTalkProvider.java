@@ -26,7 +26,7 @@ import java.lang.reflect.Field;
  * This class is service loaded by log4j2 and is used to provide an MDC context map implementation that will work
  * with ServiceTalks reactive primitives.
  */
-public class DefaultServiceTalkProvider extends Provider {
+public final class DefaultServiceTalkProvider extends Provider {
 
     private static final String DEFAULT_CURRENT_VERSION = "2.6.0";
 
