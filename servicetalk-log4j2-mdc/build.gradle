@@ -21,10 +21,20 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation "org.apache.logging.log4j:log4j-core"
-  api "org.apache.logging.log4j:log4j-api"
 
   testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation "org.apache.logging.log4j:log4j-api"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+
+  dependencyAnalysis {
+    issues {
+      onIncorrectConfiguration {
+        // DefaultServiceTalkProvider is public and exposes the log4j Provider type, but since this is
+        // a service loaded class it's not intended to cause the log4j api to be imported.
+        exclude("org.apache.logging.log4j:log4j-api")
+      }
+    }
+  }
 }
