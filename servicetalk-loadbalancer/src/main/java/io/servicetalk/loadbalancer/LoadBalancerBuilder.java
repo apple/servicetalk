@@ -114,6 +114,7 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
      * @return {@code this}
      */
     default LoadBalancerBuilder<ResolvedAddress, C> maxRandomSubsetSize(int maxUsed) {
+        // FIXME: 0.43 - remove default impl
         throw new UnsupportedOperationException("maxRandomSubsetSize is not implemented");
     }
 
