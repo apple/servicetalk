@@ -194,11 +194,11 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2HeadersToH1HeadersClient(ctx, h2Headers, httpStatus, true, streamId)));
     }
 
-    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(final ChannelHandlerContext ctx,
-                                                                   final Http2Headers h2Headers,
-                                                                   @Nullable final HttpResponseStatus httpStatus,
-                                                                   final boolean fullResponse,
-                                                                   final int streamId) throws Http2Exception {
+    private HttpHeaders h2HeadersToH1HeadersClient(final ChannelHandlerContext ctx,
+                                                   final Http2Headers h2Headers,
+                                                   @Nullable final HttpResponseStatus httpStatus,
+                                                   final boolean fullResponse,
+                                                   final int streamId) throws Http2Exception {
         assert method != null;
         h2HeadersSanitizeForH1(h2Headers);
         if (httpStatus != null) {
