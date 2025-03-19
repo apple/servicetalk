@@ -112,7 +112,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             this.loadBalancerObserverFactory = loadBalancerBuilder.loadBalancerObserverFactory;
             this.outlierDetectorConfig = requireNonNull(
                     loadBalancerBuilder.outlierDetectorConfig, "outlierDetectorConfig");
-            this.subsetter = loadBalancerBuilder.subsetter;
+            this.subsetter = requireNonNull(loadBalancerBuilder.subsetter, "subsetter");
             this.connectionSelectorPolicy = requireNonNull(
                     loadBalancerBuilder.connectionSelectorPolicy, "connectionSelectorPolicy");
             this.executor = requireNonNull(loadBalancerBuilder.getExecutor(), "executor");
