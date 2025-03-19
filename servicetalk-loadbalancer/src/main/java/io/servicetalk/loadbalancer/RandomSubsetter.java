@@ -58,4 +58,11 @@ final class RandomSubsetter implements Subsetter {
         }
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "RandomSubsetter{" +
+                "randomSubsetSize=" + randomSubsetSize +
+                '}';
+    }
 }
