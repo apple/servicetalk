@@ -665,23 +665,25 @@ final class NettyHttpServer {
 
         private static void logHttp2Exception(final Http2Exception e, final NettyHttpServerConnection connection) {
             final Http2ErrorCode errorCode = e.errorCode();
-            if (errorCode == CANCEL) {
+            if (CANCEL.equals(errorCode)) {
                 LOGGER.debug(
                         "{} HTTP/2 stream was cancelled by a remote peer, most likely due to timeout or lost interest",
                         connection, e);
-            } else if (errorCode == NO_ERROR) {
+            } else if (NO_ERROR.equals(errorCode)) {
                 LOGGER.debug("{} HTTP/2 stream was closed because underlying connection closed due to GO_AWAY",
                         connection, e);
-            } else if (errorCode == SETTINGS_TIMEOUT) {
+            } else if (SETTINGS_TIMEOUT.equals(errorCode)) {
                 LOGGER.warn("{} HTTP/2 stream was closed because underlying connection did not receive SETTINGS " +
                         "acknowledgement on time", connection, e);
-            } else if (errorCode == PROTOCOL_ERROR || errorCode == INTERNAL_ERROR || errorCode == FLOW_CONTROL_ERROR ||
-                    errorCode == STREAM_CLOSED || errorCode == FRAME_SIZE_ERROR || errorCode == COMPRESSION_ERROR ||
-                    errorCode == INADEQUATE_SECURITY || errorCode == HTTP_1_1_REQUIRED) {
+            } else if (PROTOCOL_ERROR.equals(errorCode) || INTERNAL_ERROR.equals(errorCode) ||
+                    FLOW_CONTROL_ERROR.equals(errorCode) || STREAM_CLOSED.equals(errorCode) ||
+                    FRAME_SIZE_ERROR.equals(errorCode) || COMPRESSION_ERROR.equals(errorCode) ||
+                    INADEQUATE_SECURITY.equals(errorCode) || HTTP_1_1_REQUIRED.equals(errorCode)) {
                 LOGGER.warn("{} HTTP/2 stream failed with an error indicating client misbehavior", connection, e);
             } else {
                 // REFUSED_STREAM & ENHANCE_YOUR_CALM - we don't support ServerPush, should only happen on client side
                 // CONNECT_ERROR - expected to happen only on client side
+                // Any other non-standard error code - we don't know how to handle it
                 LOGGER.warn("{} HTTP/2 stream failed with an error unexpected for the server-side", connection, e);
             }
             if (connection.nettyChannel().isOpen()) {
