@@ -91,8 +91,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerFactory<ResolvedAddress, C> build() {
-        return new DefaultLoadBalancerFactory<>(id, loadBalancingPolicy, loadBalancerObserverFactory,
-                connectionSelectorPolicy, outlierDetectorConfig, subsetter, getExecutor());
+        return new DefaultLoadBalancerFactory<>(this);
     }
 
     static final class DefaultLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
@@ -107,19 +106,16 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
         private final Executor executor;
 
-        DefaultLoadBalancerFactory(final String id, final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-                                   @Nullable final LoadBalancerObserverFactory loadBalancerObserverFactory,
-                                   final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
-                                   final OutlierDetectorConfig outlierDetectorConfig,
-                                   final Subsetter subsetter,
-                                   final Executor executor) {
-            this.id = requireNonNull(id, "id");
-            this.loadBalancingPolicy = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy");
-            this.loadBalancerObserverFactory = loadBalancerObserverFactory;
-            this.outlierDetectorConfig = requireNonNull(outlierDetectorConfig, "outlierDetectorConfig");
-            this.subsetter = subsetter;
-            this.connectionSelectorPolicy = requireNonNull(connectionSelectorPolicy, "connectionSelectorPolicy");
-            this.executor = requireNonNull(executor, "executor");
+        DefaultLoadBalancerFactory(DefaultLoadBalancerBuilder<ResolvedAddress, C> loadBalancerBuilder) {
+            this.id = requireNonNull(loadBalancerBuilder.id, "id");
+            this.loadBalancingPolicy = requireNonNull(loadBalancerBuilder.loadBalancingPolicy, "loadBalancingPolicy");
+            this.loadBalancerObserverFactory = loadBalancerBuilder.loadBalancerObserverFactory;
+            this.outlierDetectorConfig = requireNonNull(
+                    loadBalancerBuilder.outlierDetectorConfig, "outlierDetectorConfig");
+            this.subsetter = loadBalancerBuilder.subsetter;
+            this.connectionSelectorPolicy = requireNonNull(
+                    loadBalancerBuilder.connectionSelectorPolicy, "connectionSelectorPolicy");
+            this.executor = requireNonNull(loadBalancerBuilder.getExecutor(), "executor");
         }
 
         @Override
