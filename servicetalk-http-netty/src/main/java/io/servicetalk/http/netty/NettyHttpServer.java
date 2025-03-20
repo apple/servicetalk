@@ -632,6 +632,8 @@ final class NettyHttpServer {
 
         @Override
         public void onError(final Throwable t) {
+            final boolean isOpen = connection.nettyChannel().isOpen();
+            Throwable cause = t;
             if (t instanceof CloseEventObservedException) {
                 final CloseEventObservedException ceoe = (CloseEventObservedException) t;
                 if (ceoe.event() == CHANNEL_CLOSED_INBOUND && t.getCause() instanceof ClosedChannelException) {
@@ -639,28 +641,30 @@ final class NettyHttpServer {
                             connection, connection.protocol(),
                             HTTP_2_0.equals(connection.protocol()) ? "GO_AWAY" : "'Connection: close' header", t);
                 } else if (t.getCause() instanceof DecoderException) {
-                    logDecoderException((DecoderException) t.getCause(), connection);
+                    cause = t.getCause();
+                    logDecoderException((DecoderException) cause, connection, isOpen);
                 } else {
-                    logUnexpectedException(t.getCause() instanceof IOException ? t.getCause() : t, connection);
+                    cause = t.getCause() instanceof IOException ? t.getCause() : t;
+                    logUnexpectedException(cause, connection);
                 }
             } else if (t instanceof DecoderException) {
-                logDecoderException((DecoderException) t, connection);
+                logDecoderException((DecoderException) t, connection, isOpen);
             } else if (t instanceof Http2Exception) {
                 logHttp2Exception((Http2Exception) t, connection);
             } else {
                 logUnexpectedException(t, connection);
             }
+            if (isOpen) {
+                ChannelCloseUtils.close(connection.nettyChannel(), cause);
+            }
         }
 
-        private static void logDecoderException(final DecoderException e, final NettyHttpServerConnection connection) {
+        private static void logDecoderException(final DecoderException e, final NettyHttpServerConnection connection,
+                                                final boolean isOpen) {
             final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
-            final boolean isOpen = connection.nettyChannel().isOpen();
             final String closeStatement = isOpen ? ", closing it" : "";
             LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}{} due to:",
                     connection, connection.protocol(), whatClosing, closeStatement, e);
-            if (isOpen) {
-                ChannelCloseUtils.close(connection.nettyChannel(), e);
-            }
         }
 
         private static void logHttp2Exception(final Http2Exception e, final NettyHttpServerConnection connection) {
@@ -689,18 +693,12 @@ final class NettyHttpServer {
                 // Any other non-standard error code - we don't know how to handle it
                 LOGGER.warn("{} HTTP/2 stream failed with an error unexpected for the server-side", connection, e);
             }
-            if (connection.nettyChannel().isOpen()) {
-                ChannelCloseUtils.close(connection.nettyChannel(), e);
-            }
         }
 
         private static void logUnexpectedException(final Throwable t, final NettyHttpServerConnection connection) {
             final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
             LOGGER.debug("{} Unexpected error received, closing {} {} due to:",
                     connection, connection.protocol(), whatClosing, t);
-            if (connection.nettyChannel().isOpen()) {
-                ChannelCloseUtils.close(connection.nettyChannel(), t);
-            }
         }
     }
 
