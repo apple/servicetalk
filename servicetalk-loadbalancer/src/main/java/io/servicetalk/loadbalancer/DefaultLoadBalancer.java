@@ -127,7 +127,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param priorityStrategyFactory a builder of the {@link HostPriorityStrategy} to use with the load balancer.
      * @param loadBalancingPolicy a factory of the initial host selector to use with this load balancer.
-     * @param subsetter a subset builder.
+     * @param subsetterFactory a factory that generates subsetters.
      * @param connectionSelectorPolicy factory of the connection pool strategy to use with this load balancer.
      * @param connectionFactory a function which creates new connections.
      * @param loadBalancerObserverFactory factory used to build a {@link LoadBalancerObserver} to use with this
@@ -143,7 +143,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final Function<String, HostPriorityStrategy> priorityStrategyFactory,
             final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy,
-            final Subsetter subsetter,
+            final Subsetter.SubsetterFactory subsetterFactory,
             final ConnectionSelectorPolicy<C> connectionSelectorPolicy,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             final LoadBalancerObserverFactory loadBalancerObserverFactory,
@@ -151,6 +151,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.lbDescription = makeDescription(
                 requireNonNull(id, "id"), requireNonNull(targetResource, "targetResource"));
+        this.subsetter = subsetterFactory.build(lbDescription);
         this.hostSelector = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy")
                 .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(
@@ -161,7 +162,6 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
         this.eventStream = fromSource(eventStreamProcessor)
                 .replay(1); // Allow for multiple subscribers and provide new subscribers with last signal.
         this.connectionFactory = requireNonNull(connectionFactory);
-        this.subsetter = requireNonNull(subsetter, "subsetter");
         this.loadBalancerObserver = CatchAllLoadBalancerObserver.wrap(
                 requireNonNull(loadBalancerObserverFactory, "loadBalancerObserverFactory")
                 .newObserver(lbDescription));

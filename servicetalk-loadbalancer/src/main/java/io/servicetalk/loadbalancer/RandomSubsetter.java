@@ -15,31 +15,43 @@
  */
 package io.servicetalk.loadbalancer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 import static io.servicetalk.utils.internal.NumberUtils.ensurePositive;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Subsetter} that takes a random subset of the provided hosts.
  */
 final class RandomSubsetter implements Subsetter {
 
-    private final int randomSubsetSize;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RandomSubsetter.class);
 
-    RandomSubsetter(int randomSubsetSize) {
+    private final int randomSubsetSize;
+    private final String lbDescription;
+
+    private RandomSubsetter(final int randomSubsetSize, final String lbDescription) {
         this.randomSubsetSize = ensurePositive(randomSubsetSize, "randomSubsetSize");
+        this.lbDescription = requireNonNull(lbDescription, "lbDescription");
     }
 
     @Override
-    public <T extends PrioritizedHost> List<T> subset(List<T> nextHosts) {
-        if (nextHosts.size() <= randomSubsetSize) {
-            return nextHosts;
+    public <T extends PrioritizedHost> List<T> subset(List<T> allHosts) {
+        if (allHosts.size() <= randomSubsetSize) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{}: Host set size of {} is less than designated subset ({})",
+                        lbDescription, allHosts.size(), randomSubsetSize);
+            }
+            return allHosts;
         }
 
         // We need to sort, and then return the list with the subsetSize number of healthy elements.
-        List<T> result = new ArrayList<>(nextHosts);
+        List<T> result = new ArrayList<>(allHosts);
         result.sort(Comparator.comparingLong(PrioritizedHost::randomSeed));
 
         // We don't want to consider the unhealthy elements to be a part of our subset, so we're going to grow it
@@ -56,6 +68,10 @@ final class RandomSubsetter implements Subsetter {
                 }
             }
         }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{}: Using {} hosts out of a total {}. ({} considered unhealthy)", lbDescription,
+                    result.size(), allHosts.size(), result.size() - allHosts.size());
+        }
         return result;
     }
 
@@ -64,5 +80,26 @@ final class RandomSubsetter implements Subsetter {
         return "RandomSubsetter{" +
                 "randomSubsetSize=" + randomSubsetSize +
                 '}';
+    }
+
+    static final class RandomSubsetterFactory implements Subsetter.SubsetterFactory {
+
+        private final int randomSubsetSize;
+
+        RandomSubsetterFactory(int randomSubsetSize) {
+            this.randomSubsetSize = ensurePositive(randomSubsetSize, "randomSubsetSize");
+        }
+
+        @Override
+        public Subsetter build(String lbDescription) {
+            return new RandomSubsetter(randomSubsetSize, lbDescription);
+        }
+
+        @Override
+        public String toString() {
+            return "RandomSubsetterFactory{" +
+                    "randomSubsetSize=" + randomSubsetSize +
+                    '}';
+        }
     }
 }

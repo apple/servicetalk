@@ -43,7 +43,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
     private LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy = defaultLoadBalancingPolicy();
     private ConnectionSelectorPolicy<C> connectionSelectorPolicy = defaultConnectionSelectorPolicy();
     private OutlierDetectorConfig outlierDetectorConfig = OutlierDetectorConfig.DEFAULT_CONFIG;
-    private Subsetter subsetter = new RandomSubsetter(Integer.MAX_VALUE);
+    private Subsetter.SubsetterFactory subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(Integer.MAX_VALUE);
 
     // package private constructor so users must funnel through providers in `LoadBalancers`
     DefaultLoadBalancerBuilder(final String id) {
@@ -79,7 +79,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
 
     @Override
     public LoadBalancerBuilder<ResolvedAddress, C> maxRandomSubsetSize(int maxUsed) {
-        subsetter = new RandomSubsetter(ensurePositive(maxUsed, "maxUsed"));
+        subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(ensurePositive(maxUsed, "maxUsed"));
         return this;
     }
 
@@ -101,7 +101,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
         private final LoadBalancingPolicy<ResolvedAddress, C> loadBalancingPolicy;
         private final ConnectionSelectorPolicy<C> connectionSelectorPolicy;
         private final OutlierDetectorConfig outlierDetectorConfig;
-        private final Subsetter subsetter;
+        private final Subsetter.SubsetterFactory subsetterFactory;
         @Nullable
         private final LoadBalancerObserverFactory loadBalancerObserverFactory;
         private final Executor executor;
@@ -112,7 +112,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
             this.loadBalancerObserverFactory = loadBalancerBuilder.loadBalancerObserverFactory;
             this.outlierDetectorConfig = requireNonNull(
                     loadBalancerBuilder.outlierDetectorConfig, "outlierDetectorConfig");
-            this.subsetter = requireNonNull(loadBalancerBuilder.subsetter, "subsetter");
+            this.subsetterFactory = requireNonNull(loadBalancerBuilder.subsetterFactory, "subsetterFactory");
             this.connectionSelectorPolicy = requireNonNull(
                     loadBalancerBuilder.connectionSelectorPolicy, "connectionSelectorPolicy");
             this.executor = requireNonNull(loadBalancerBuilder.getExecutor(), "executor");
@@ -160,7 +160,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     new XdsOutlierDetector<>(executor, outlierDetectorConfig, lbDescription);
             }
             return new DefaultLoadBalancer<>(id, targetResource, eventPublisher,
-                    DefaultHostPriorityStrategy::new, loadBalancingPolicy, subsetter,
+                    DefaultHostPriorityStrategy::new, loadBalancingPolicy, subsetterFactory,
                     connectionSelectorPolicy, connectionFactory,
                     loadBalancerObserverFactory, healthCheckConfig, outlierDetectorFactory);
         }
@@ -178,7 +178,7 @@ final class DefaultLoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedCo
                     ", loadBalancingPolicy=" + loadBalancingPolicy +
                     ", connectionSelectorPolicy=" + connectionSelectorPolicy +
                     ", outlierDetectorConfig=" + outlierDetectorConfig +
-                    ", subsetter=" + subsetter +
+                    ", subsetterFactory=" + subsetterFactory +
                     ", loadBalancerObserverFactory=" + loadBalancerObserverFactory +
                     ", executor=" + executor +
                     '}';

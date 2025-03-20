@@ -29,4 +29,17 @@ interface Subsetter {
      * @param <T> the type of the {@link PrioritizedHost}
      */
     <T extends PrioritizedHost> List<T> subset(List<T> hosts);
+
+    /**
+     * Build {@link Subsetter} instances using the provided load balancer description.
+     */
+    interface SubsetterFactory {
+
+        /**
+         * Build {@link Subsetter} instances using the provided load balancer description.
+         * @param lbDescription the string based description of the load balancer, useful for observability.
+         * @return the constructed {@link Subsetter}.
+         */
+        Subsetter build(String lbDescription);
+    }
 }
