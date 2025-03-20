@@ -57,7 +57,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     private LoadBalancingPolicy<String, TestLoadBalancedConnection> loadBalancingPolicy =
             LoadBalancingPolicies.p2c().build();
 
-    private Subsetter subsetter = new RandomSubsetter(Integer.MAX_VALUE);
+    private Subsetter.SubsetterFactory subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(Integer.MAX_VALUE);
 
     private Function<String, HostPriorityStrategy> hostPriorityStrategyFactory = DefaultHostPriorityStrategy::new;
 
@@ -236,7 +236,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
     @ValueSource(ints = {1, 2, Integer.MAX_VALUE})
     void subsetting(final int subsetSize) throws Exception {
         serviceDiscoveryPublisher.onComplete();
-        this.subsetter = new RandomSubsetter(subsetSize);
+        this.subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(subsetSize);
         // rr so we can test that each endpoint gets used deterministically.
         this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
         lb = newTestLoadBalancer();
@@ -252,7 +252,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
         serviceDiscoveryPublisher.onComplete();
         final TestOutlierDetectorFactory factory = new TestOutlierDetectorFactory();
         outlierDetectorFactory = factory;
-        this.subsetter = new RandomSubsetter(2);
+        this.subsetterFactory = new RandomSubsetter.RandomSubsetterFactory(2);
         // rr so we can test that each endpoint gets used deterministically.
         this.loadBalancingPolicy = LoadBalancingPolicies.roundRobin().build();
         lb = newTestLoadBalancer();
@@ -316,7 +316,7 @@ class DefaultLoadBalancerTest extends LoadBalancerTestScaffold {
                 serviceDiscoveryPublisher,
                 hostPriorityStrategyFactory,
                 loadBalancingPolicy,
-                subsetter,
+                subsetterFactory,
                 ConnectionSelectorPolicies.linearSearch(),
                 connectionFactory,
                 NoopLoadBalancerObserver.factory(),
