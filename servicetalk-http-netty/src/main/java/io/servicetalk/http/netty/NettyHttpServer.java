@@ -669,16 +669,19 @@ final class NettyHttpServer {
                 LOGGER.debug(
                         "{} HTTP/2 stream was cancelled by a remote peer, most likely due to timeout or lost interest",
                         connection, e);
+            } else if (STREAM_CLOSED.equals(errorCode)) {
+                LOGGER.debug("{} HTTP/2 stream was closed, most likely because regular frames sent raced with " +
+                        "cancellation received from a remote peer", connection, e);
             } else if (NO_ERROR.equals(errorCode)) {
-                LOGGER.debug("{} HTTP/2 stream was closed because underlying connection closed due to GO_AWAY",
+                LOGGER.debug("{} HTTP/2 stream was interrupted because underlying connection closed due to GO_AWAY",
                         connection, e);
             } else if (SETTINGS_TIMEOUT.equals(errorCode)) {
-                LOGGER.warn("{} HTTP/2 stream was closed because underlying connection did not receive SETTINGS " +
+                LOGGER.warn("{} HTTP/2 stream was interrupted because underlying connection did not receive SETTINGS " +
                         "acknowledgement on time", connection, e);
             } else if (PROTOCOL_ERROR.equals(errorCode) || INTERNAL_ERROR.equals(errorCode) ||
-                    FLOW_CONTROL_ERROR.equals(errorCode) || STREAM_CLOSED.equals(errorCode) ||
-                    FRAME_SIZE_ERROR.equals(errorCode) || COMPRESSION_ERROR.equals(errorCode) ||
-                    INADEQUATE_SECURITY.equals(errorCode) || HTTP_1_1_REQUIRED.equals(errorCode)) {
+                    FLOW_CONTROL_ERROR.equals(errorCode) || FRAME_SIZE_ERROR.equals(errorCode) ||
+                    COMPRESSION_ERROR.equals(errorCode) || INADEQUATE_SECURITY.equals(errorCode) ||
+                    HTTP_1_1_REQUIRED.equals(errorCode)) {
                 LOGGER.warn("{} HTTP/2 stream failed with an error indicating client misbehavior", connection, e);
             } else {
                 // REFUSED_STREAM & ENHANCE_YOUR_CALM - we don't support ServerPush, should only happen on client side
