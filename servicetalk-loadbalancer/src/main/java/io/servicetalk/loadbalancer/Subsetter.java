@@ -40,6 +40,6 @@ interface Subsetter {
          * @param lbDescription the string based description of the load balancer, useful for observability.
          * @return the constructed {@link Subsetter}.
          */
-        Subsetter build(String lbDescription);
+        Subsetter newSubsetter(String lbDescription);
     }
 }

@@ -151,7 +151,7 @@ final class DefaultLoadBalancer<ResolvedAddress, C extends LoadBalancedConnectio
             final Function<String, OutlierDetector<ResolvedAddress, C>> outlierDetectorFactory) {
         this.lbDescription = makeDescription(
                 requireNonNull(id, "id"), requireNonNull(targetResource, "targetResource"));
-        this.subsetter = subsetterFactory.build(lbDescription);
+        this.subsetter = subsetterFactory.newSubsetter(lbDescription);
         this.hostSelector = requireNonNull(loadBalancingPolicy, "loadBalancingPolicy")
                 .buildSelector(Collections.emptyList(), lbDescription);
         this.priorityStrategy = requireNonNull(

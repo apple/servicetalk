@@ -44,7 +44,7 @@ final class RandomSubsetter implements Subsetter {
     public <T extends PrioritizedHost> List<T> subset(List<T> allHosts) {
         if (allHosts.size() <= randomSubsetSize) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{}: Host set size of {} is less than designated subset ({})",
+                LOGGER.debug("{}: Host set size of {} is less than designated subset size of {}, returning all hosts",
                         lbDescription, allHosts.size(), randomSubsetSize);
             }
             return allHosts;
@@ -69,8 +69,8 @@ final class RandomSubsetter implements Subsetter {
             }
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("{}: Using {} hosts out of a total {}. ({} considered unhealthy)", lbDescription,
-                    result.size(), allHosts.size(), result.size() - allHosts.size());
+            LOGGER.debug("{}: Using {} out of a total {} hosts ({} considered unhealthy). Used hosts: {}",
+                    lbDescription, result.size(), allHosts.size(), result.size() - allHosts.size(), result);
         }
         return result;
     }
@@ -91,7 +91,7 @@ final class RandomSubsetter implements Subsetter {
         }
 
         @Override
-        public Subsetter build(String lbDescription) {
+        public Subsetter newSubsetter(String lbDescription) {
             return new RandomSubsetter(randomSubsetSize, lbDescription);
         }
 
