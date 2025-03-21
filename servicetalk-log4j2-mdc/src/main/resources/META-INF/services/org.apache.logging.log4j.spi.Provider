@@ -1,1 +1,1 @@
-io.servicetalk.log4j2.mdc.DefaultServiceTalkProvider
+io.servicetalk.log4j2.mdc.DefaultServiceTalkThreadContextMapProvider
