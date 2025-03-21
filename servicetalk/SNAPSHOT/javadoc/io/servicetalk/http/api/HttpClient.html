@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -78,7 +78,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">HttpClient</span><span class="extends-implements">
-extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api">HttpRequester</a>, <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a></span></div>
+extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api">HttpRequester</a></span></div>
 <div class="block">Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> instances and distribute calls to <a href="HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)"><code>HttpRequester.request(HttpRequest)</code></a> amongst this collection.</div>
 </section>
@@ -90,8 +90,8 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -110,15 +110,6 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Convert this <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> to the <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> API.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#close()" class="member-name-link">close</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#closeGracefully()" class="member-name-link">closeGracefully</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Used to close/shutdown a resource, similar to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html#close()" title="class or interface in java.lang" class="external-link"><code>AutoCloseable.close()</code></a>, but attempts to cleanup state before
- abruptly closing.</div>
-</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">reserveConnection</a><wbr>(<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
@@ -132,7 +123,7 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <code><a href="../../concurrent/api/AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpRequester">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpRequester.html" title="interface in io.servicetalk.http.api">HttpRequester</a></h3>
-<code><a href="HttpRequester.html#executionContext()">executionContext</a>, <a href="HttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)">request</a></code></div>
+<code><a href="HttpRequester.html#close()">close</a>, <a href="HttpRequester.html#closeGracefully()">closeGracefully</a>, <a href="HttpRequester.html#executionContext()">executionContext</a>, <a href="HttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)">request</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpRequestFactory">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpRequestFactory.html" title="interface in io.servicetalk.http.api">HttpRequestFactory</a></h3>
 <code><a href="HttpRequestFactory.html#connect(java.lang.String)">connect</a>, <a href="HttpRequestFactory.html#delete(java.lang.String)">delete</a>, <a href="HttpRequestFactory.html#get(java.lang.String)">get</a>, <a href="HttpRequestFactory.html#head(java.lang.String)">head</a>, <a href="HttpRequestFactory.html#newRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String)">newRequest</a>, <a href="HttpRequestFactory.html#options(java.lang.String)">options</a>, <a href="HttpRequestFactory.html#patch(java.lang.String)">patch</a>, <a href="HttpRequestFactory.html#post(java.lang.String)">post</a>, <a href="HttpRequestFactory.html#put(java.lang.String)">put</a>, <a href="HttpRequestFactory.html#trace(java.lang.String)">trace</a></code></div>
@@ -204,40 +195,6 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>a <a href="BlockingHttpClient.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpClient</code></a> representation of this <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a>.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="close()">
-<h3>close</h3>
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">close</span>()
-            throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html#close()" title="class or interface in java.lang" class="external-link">close</a></code>&nbsp;in interface&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html" title="class or interface in java.lang" class="external-link">AutoCloseable</a></code></dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code></dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="closeGracefully()">
-<h3>closeGracefully</h3>
-<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">closeGracefully</span>()
-                      throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../concurrent/GracefulAutoCloseable.html#closeGracefully()">GracefulAutoCloseable</a></code></span></div>
-<div class="block">Used to close/shutdown a resource, similar to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html#close()" title="class or interface in java.lang" class="external-link"><code>AutoCloseable.close()</code></a>, but attempts to cleanup state before
- abruptly closing. This provides a hint that implementations can use to stop accepting new work and finish in
- flight work. This method is implemented on a "best effort" basis and may be equivalent to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html#close()" title="class or interface in java.lang" class="external-link"><code>AutoCloseable.close()</code></a>.
- <p>
- <b>Note</b>: Implementations may or may not apply a timeout for this operation to complete, if a caller does not
- want to wait indefinitely, and are unsure if the implementation applies a timeout, it is advisable to apply a
- timeout and force a call to <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html#close()" title="class or interface in java.lang" class="external-link"><code>AutoCloseable.close()</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="../../concurrent/GracefulAutoCloseable.html#closeGracefully()">closeGracefully</a></code>&nbsp;in interface&nbsp;<code><a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a></code></dd>
-<dt>Throws:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - if graceful closure failed.</dd>
 </dl>
 </section>
 </li>

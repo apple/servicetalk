@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -74,7 +74,7 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Superinterfaces:</dt>
-<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></code>, <code><a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></code></dd>
+<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html" title="class or interface in java.lang" class="external-link">AutoCloseable</a></code>, <code><a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a></code>, <code><a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></code>, <code><a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></code></dd>
 </dl>
 <dl class="notes">
 <dt>All Known Subinterfaces:</dt>
@@ -98,8 +98,8 @@ extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel">
-<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
+<div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -122,7 +122,7 @@ extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.
 <code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()">onClose</a>, <a href="../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">onClosing</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.StreamingHttpRequester">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></h3>
-<code><a href="StreamingHttpRequester.html#executionContext()">executionContext</a>, <a href="StreamingHttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></code></div>
+<code><a href="StreamingHttpRequester.html#close()">close</a>, <a href="StreamingHttpRequester.html#closeGracefully()">closeGracefully</a>, <a href="StreamingHttpRequester.html#executionContext()">executionContext</a>, <a href="StreamingHttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.StreamingHttpRequestFactory">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></h3>
 <code><a href="StreamingHttpRequestFactory.html#connect(java.lang.String)">connect</a>, <a href="StreamingHttpRequestFactory.html#delete(java.lang.String)">delete</a>, <a href="StreamingHttpRequestFactory.html#get(java.lang.String)">get</a>, <a href="StreamingHttpRequestFactory.html#head(java.lang.String)">head</a>, <a href="StreamingHttpRequestFactory.html#newRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String)">newRequest</a>, <a href="StreamingHttpRequestFactory.html#options(java.lang.String)">options</a>, <a href="StreamingHttpRequestFactory.html#patch(java.lang.String)">patch</a>, <a href="StreamingHttpRequestFactory.html#post(java.lang.String)">post</a>, <a href="StreamingHttpRequestFactory.html#put(java.lang.String)">put</a>, <a href="StreamingHttpRequestFactory.html#trace(java.lang.String)">trace</a></code></div>
