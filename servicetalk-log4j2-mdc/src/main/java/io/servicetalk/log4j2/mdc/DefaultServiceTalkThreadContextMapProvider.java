@@ -42,7 +42,7 @@ public final class DefaultServiceTalkThreadContextMapProvider extends Provider {
     private static String getCurrentVersion() {
         // The CURRENT_VERSION field is only available as of 2.24.0. Once we upgrade to 2.24+ we can drop this.
         try {
-            Field field = Provider.class.getField("CURRENT_VERSION");
+            Field field = Provider.class.getDeclaredField("CURRENT_VERSION");
             return (String) field.get(null /* static field */);
         } catch (Exception ex) {
             return DEFAULT_CURRENT_VERSION;
