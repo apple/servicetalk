@@ -22,7 +22,7 @@ package io.servicetalk.concurrent.api;
  * {@link CapturedContext#attachContext()} to be undone. In practice, this may look like restoring a {@link ThreadLocal}
  * to the state it had before the call to {@link CapturedContext#attachContext()}.
  */
-interface Scope extends AutoCloseable {
+public interface Scope extends AutoCloseable {
 
     /**
      * No-op {@link Scope}.
