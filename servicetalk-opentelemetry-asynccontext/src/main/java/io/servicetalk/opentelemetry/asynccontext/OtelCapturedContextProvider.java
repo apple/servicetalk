@@ -37,11 +37,11 @@ public final class OtelCapturedContextProvider implements CapturedContextProvide
 
   static final class WithOtelCapturedContext implements CapturedContext {
 
-    private final Context agentContext;
+    private final Context otelContext;
     private final CapturedContext stContext;
 
-    WithOtelCapturedContext(Context agentContext, CapturedContext stContext) {
-      this.agentContext = agentContext;
+    WithOtelCapturedContext(Context otelContext, CapturedContext stContext) {
+      this.otelContext = otelContext;
       this.stContext = stContext;
     }
 
@@ -53,9 +53,9 @@ public final class OtelCapturedContextProvider implements CapturedContextProvide
     @Override
     public Scope attachContext() {
       Scope stScope = stContext.attachContext();
-      io.opentelemetry.context.Scope agentScope = agentContext.makeCurrent();
+      io.opentelemetry.context.Scope otelScope = otelContext.makeCurrent();
       return () -> {
-        agentScope.close();
+        otelScope.close();
         stScope.close();
       };
     }
