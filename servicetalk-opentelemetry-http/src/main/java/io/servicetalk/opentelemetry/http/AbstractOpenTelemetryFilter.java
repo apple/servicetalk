@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
+import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -39,7 +41,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
     }
 
     static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> response, Context context) {
-        return new Single<StreamingHttpResponse>() {
+        return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
@@ -52,7 +54,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
     }
 
     private static <T> Publisher<T> transformBody(Publisher<T> body, Context context) {
-        return new Publisher<T>() {
+        return new SubscribablePublisher<T>() {
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super T> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {

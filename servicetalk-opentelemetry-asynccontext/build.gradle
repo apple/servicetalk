@@ -18,10 +18,10 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
-  implementation "io.opentelemetry:opentelemetry-context"
-
-  implementation project(":servicetalk-annotations")
   api project(":servicetalk-concurrent-api")
+
+  implementation "io.opentelemetry:opentelemetry-context"
+  implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-context-api")
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")

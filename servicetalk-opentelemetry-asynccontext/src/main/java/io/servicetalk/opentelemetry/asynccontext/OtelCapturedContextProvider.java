@@ -27,37 +27,40 @@ import io.opentelemetry.context.Context;
  */
 public final class OtelCapturedContextProvider implements CapturedContextProvider {
 
-  public OtelCapturedContextProvider() {
-  }
-
-  @Override
-  public CapturedContext captureContext(CapturedContext underlying) {
-    return new WithOtelCapturedContext(Context.current(), underlying);
-  }
-
-  static final class WithOtelCapturedContext implements CapturedContext {
-
-    private final Context otelContext;
-    private final CapturedContext stContext;
-
-    WithOtelCapturedContext(Context otelContext, CapturedContext stContext) {
-      this.otelContext = otelContext;
-      this.stContext = stContext;
+    /**
+     * Creates a new instance.
+     */
+    public OtelCapturedContextProvider() {
     }
 
     @Override
-    public ContextMap captured() {
-      return stContext.captured();
+    public CapturedContext captureContext(CapturedContext underlying) {
+        return new WithOtelCapturedContext(Context.current(), underlying);
     }
 
-    @Override
-    public Scope attachContext() {
-      Scope stScope = stContext.attachContext();
-      io.opentelemetry.context.Scope otelScope = otelContext.makeCurrent();
-      return () -> {
-        otelScope.close();
-        stScope.close();
-      };
+    private static final class WithOtelCapturedContext implements CapturedContext {
+
+        private final Context otelContext;
+        private final CapturedContext stContext;
+
+        WithOtelCapturedContext(Context otelContext, CapturedContext stContext) {
+            this.otelContext = otelContext;
+            this.stContext = stContext;
+        }
+
+        @Override
+        public ContextMap captured() {
+            return stContext.captured();
+        }
+
+        @Override
+        public Scope attachContext() {
+            Scope stScope = stContext.attachContext();
+            io.opentelemetry.context.Scope otelScope = otelContext.makeCurrent();
+            return () -> {
+                otelScope.close();
+                stScope.close();
+            };
+        }
     }
-  }
 }

@@ -28,6 +28,7 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-api")
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
@@ -46,7 +47,7 @@ dependencies {
   testImplementation "com.fasterxml.jackson.core:jackson-databind"
   testImplementation "io.opentelemetry:opentelemetry-sdk-trace"
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
-  testImplementation 'io.opentelemetry.semconv:opentelemetry-semconv:1.23.1-alpha'
+  testImplementation "io.opentelemetry.semconv:opentelemetry-semconv"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
