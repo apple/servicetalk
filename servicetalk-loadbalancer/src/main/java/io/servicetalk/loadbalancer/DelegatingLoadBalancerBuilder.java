@@ -73,6 +73,12 @@ public class DelegatingLoadBalancerBuilder<ResolvedAddress, C extends LoadBalanc
     }
 
     @Override
+    public LoadBalancerBuilder<ResolvedAddress, C> maxRandomSubsetSize(int maxUsed) {
+        delegate = delegate.maxRandomSubsetSize(maxUsed);
+        return this;
+    }
+
+    @Override
     public LoadBalancerBuilder<ResolvedAddress, C> backgroundExecutor(Executor backgroundExecutor) {
         delegate = delegate.backgroundExecutor(backgroundExecutor);
         return this;

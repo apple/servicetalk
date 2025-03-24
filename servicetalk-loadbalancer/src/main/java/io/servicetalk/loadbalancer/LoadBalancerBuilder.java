@@ -105,6 +105,20 @@ public interface LoadBalancerBuilder<ResolvedAddress, C extends LoadBalancedConn
             ConnectionSelectorPolicy<C> connectionSelectorPolicy);
 
     /**
+     * Set the maximum number of healthy backends to load balance against using a random-subsetting strategy.
+     *
+     * Note: If a backend within the subset is found to be unhealthy, another endpoint will be added until the unhealthy
+     * backend recovers, after which the subset will return to its original state.
+     *
+     * @param maxUsed the maximum number of healthy backends to use.
+     * @return {@code this}
+     */
+    default LoadBalancerBuilder<ResolvedAddress, C> maxRandomSubsetSize(int maxUsed) {
+        // FIXME: 0.43 - remove default impl
+        throw new UnsupportedOperationException("maxRandomSubsetSize is not implemented");
+    }
+
+    /**
      * Set the background {@link Executor} to use for determining time and scheduling background tasks such
      * as those associated with outlier detection.
      *

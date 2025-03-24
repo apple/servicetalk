@@ -33,7 +33,8 @@ class RandomSubsetterTest {
     @Test
     void desiredSubsetLargerThanHostList() {
         List<PrioritizedHost> hosts = hosts(10);
-        List<PrioritizedHost> results = new RandomSubsetter(Integer.MAX_VALUE).subset(hosts);
+        List<PrioritizedHost> results = new RandomSubsetter.RandomSubsetterFactory(Integer.MAX_VALUE)
+                .newSubsetter("").subset(hosts);
         assertThat(results, sameInstance(hosts));
     }
 
@@ -71,7 +72,7 @@ class RandomSubsetterTest {
     }
 
     private static List<PrioritizedHost> subset(int randomSubsetSize, List<PrioritizedHost> hosts) {
-        return new RandomSubsetter(randomSubsetSize).subset(hosts);
+        return new RandomSubsetter.RandomSubsetterFactory(randomSubsetSize).newSubsetter("").subset(hosts);
     }
 
     private static List<PrioritizedHost> hosts(int count) {

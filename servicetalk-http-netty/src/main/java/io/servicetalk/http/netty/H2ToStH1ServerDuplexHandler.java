@@ -139,11 +139,11 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId)));
     }
 
-    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(final ChannelHandlerContext ctx,
-                                                                   final Http2Headers h2Headers,
-                                                                   @Nullable final HttpRequestMethod httpMethod,
-                                                                   final boolean fullRequest,
-                                                                   final int streamId) throws Http2Exception {
+    private HttpHeaders h2HeadersToH1HeadersServer(final ChannelHandlerContext ctx,
+                                                   final Http2Headers h2Headers,
+                                                   @Nullable final HttpRequestMethod httpMethod,
+                                                   final boolean fullRequest,
+                                                   final int streamId) throws Http2Exception {
         CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
         if (value != null) {
             h2Headers.set(HOST, value);
@@ -165,7 +165,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 headersFactory.validateValues());
     }
 
-    private NettyH2HeadersToHttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
+    private HttpHeaders h2TrailersToH1TrailersServer(Http2Headers h2Headers) {
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
                 headersFactory.validateValues());
     }

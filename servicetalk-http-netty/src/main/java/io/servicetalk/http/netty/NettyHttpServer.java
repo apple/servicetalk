@@ -30,6 +30,8 @@ import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.Http2ErrorCode;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -90,6 +92,17 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.http.api.Http2ErrorCode.CANCEL;
+import static io.servicetalk.http.api.Http2ErrorCode.COMPRESSION_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.FLOW_CONTROL_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.FRAME_SIZE_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.HTTP_1_1_REQUIRED;
+import static io.servicetalk.http.api.Http2ErrorCode.INADEQUATE_SECURITY;
+import static io.servicetalk.http.api.Http2ErrorCode.INTERNAL_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.NO_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.PROTOCOL_ERROR;
+import static io.servicetalk.http.api.Http2ErrorCode.SETTINGS_TIMEOUT;
+import static io.servicetalk.http.api.Http2ErrorCode.STREAM_CLOSED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
@@ -619,6 +632,8 @@ final class NettyHttpServer {
 
         @Override
         public void onError(final Throwable t) {
+            final boolean isOpen = connection.nettyChannel().isOpen();
+            Throwable cause = t;
             if (t instanceof CloseEventObservedException) {
                 final CloseEventObservedException ceoe = (CloseEventObservedException) t;
                 if (ceoe.event() == CHANNEL_CLOSED_INBOUND && t.getCause() instanceof ClosedChannelException) {
@@ -626,36 +641,64 @@ final class NettyHttpServer {
                             connection, connection.protocol(),
                             HTTP_2_0.equals(connection.protocol()) ? "GO_AWAY" : "'Connection: close' header", t);
                 } else if (t.getCause() instanceof DecoderException) {
-                    logDecoderException((DecoderException) t.getCause(), connection);
+                    cause = t.getCause();
+                    logDecoderException((DecoderException) cause, connection, isOpen);
                 } else {
-                    logUnexpectedException(t.getCause() instanceof IOException ? t.getCause() : t, connection);
+                    cause = t.getCause() instanceof IOException ? t.getCause() : t;
+                    logUnexpectedException(cause, connection);
                 }
             } else if (t instanceof DecoderException) {
-                logDecoderException((DecoderException) t, connection);
+                logDecoderException((DecoderException) t, connection, isOpen);
+            } else if (t instanceof Http2Exception) {
+                logHttp2Exception((Http2Exception) t, connection);
             } else {
                 logUnexpectedException(t, connection);
             }
+            if (isOpen) {
+                ChannelCloseUtils.close(connection.nettyChannel(), cause);
+            }
         }
 
-        private static void logDecoderException(final DecoderException e,
-                                                final NettyHttpServerConnection connection) {
+        private static void logDecoderException(final DecoderException e, final NettyHttpServerConnection connection,
+                                                final boolean isOpen) {
             final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
-            final boolean isOpen = connection.nettyChannel().isOpen();
             final String closeStatement = isOpen ? ", closing it" : "";
             LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}{} due to:",
                     connection, connection.protocol(), whatClosing, closeStatement, e);
-            if (isOpen) {
-                ChannelCloseUtils.close(connection.nettyChannel(), e);
+        }
+
+        private static void logHttp2Exception(final Http2Exception e, final NettyHttpServerConnection connection) {
+            final Http2ErrorCode errorCode = e.errorCode();
+            if (CANCEL.equals(errorCode)) {
+                LOGGER.debug(
+                        "{} HTTP/2 stream was cancelled by a remote peer, most likely due to timeout or lost interest",
+                        connection, e);
+            } else if (STREAM_CLOSED.equals(errorCode)) {
+                LOGGER.debug("{} HTTP/2 stream was closed, most likely because regular frames sent raced with " +
+                        "cancellation received from a remote peer", connection, e);
+            } else if (NO_ERROR.equals(errorCode)) {
+                LOGGER.debug("{} HTTP/2 stream was interrupted because underlying connection closed due to GO_AWAY",
+                        connection, e);
+            } else if (SETTINGS_TIMEOUT.equals(errorCode)) {
+                LOGGER.warn("{} HTTP/2 stream was interrupted because underlying connection did not receive SETTINGS " +
+                        "acknowledgement on time", connection, e);
+            } else if (PROTOCOL_ERROR.equals(errorCode) || INTERNAL_ERROR.equals(errorCode) ||
+                    FLOW_CONTROL_ERROR.equals(errorCode) || FRAME_SIZE_ERROR.equals(errorCode) ||
+                    COMPRESSION_ERROR.equals(errorCode) || INADEQUATE_SECURITY.equals(errorCode) ||
+                    HTTP_1_1_REQUIRED.equals(errorCode)) {
+                LOGGER.warn("{} HTTP/2 stream failed with an error indicating client misbehavior", connection, e);
+            } else {
+                // REFUSED_STREAM & ENHANCE_YOUR_CALM - we don't support ServerPush, should only happen on client side
+                // CONNECT_ERROR - expected to happen only on client side
+                // Any other non-standard error code - we don't know how to handle it
+                LOGGER.warn("{} HTTP/2 stream failed with an error unexpected for the server-side", connection, e);
             }
         }
 
-        private static void logUnexpectedException(final Throwable t, NettyHttpServerConnection connection) {
+        private static void logUnexpectedException(final Throwable t, final NettyHttpServerConnection connection) {
             final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
             LOGGER.debug("{} Unexpected error received, closing {} {} due to:",
                     connection, connection.protocol(), whatClosing, t);
-            if (connection.nettyChannel().isOpen()) {
-                ChannelCloseUtils.close(connection.nettyChannel(), t);
-            }
         }
     }
 
