@@ -40,12 +40,12 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
         return HttpExecutionStrategies.offloadNone();
     }
 
-    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> response, Context context) {
+    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context) {
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(response.map(resp ->
+                    SourceAdapters.toSource(responseSingle.map(resp ->
                                     resp.transformMessageBody(body -> transformBody(body, context))))
                             .subscribe(subscriber);
                 }
