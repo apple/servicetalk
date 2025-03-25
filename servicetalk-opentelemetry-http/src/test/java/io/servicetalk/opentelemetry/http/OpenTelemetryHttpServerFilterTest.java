@@ -16,11 +16,23 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpLifecycleObserver;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentelemetry.http.TestUtils.TestTracingServerLoggerFilter;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,6 +55,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -235,6 +249,30 @@ class OpenTelemetryHttpServerFilterTest {
         }
     }
 
+    @Test
+    void autoRequestDisposal() throws Exception {
+        try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(), new OpenTelemetryOptions.Builder().build())) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+                HttpRequest request = client.get("/foo");
+                request.payloadBody().writeAscii("bar");
+                client.request(request).toFuture().get();
+            }
+
+//            assertThat(otelTesting.getSpans()).isEqualTo("foo");
+
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> {
+                        ta.hasSpansSatisfyingExactly(span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            for (AttributeKey<String> key : TestHttpLifecycleObserver.ALL_KEYS) {
+                                if (!key.getKey().contains("Cancel") && !key.getKey().contains("Error"))
+                                span.hasAttribute(key, "set");
+                            }
+                        });
+                    });
+        }
+    }
+
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
                                              OpenTelemetryOptions opentelemetryOptions) throws Exception {
         return HttpServers.forAddress(localAddress(0))
@@ -258,5 +296,149 @@ class OpenTelemetryHttpServerFilterTest {
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry) throws Exception {
         return buildServer(givenOpentelemetry, new OpenTelemetryOptions.Builder().build());
+    }
+
+    private static ServerContext buildStreamingServer(OpenTelemetry givenOpentelemetry,
+                                                      OpenTelemetryOptions opentelemetryOptions) throws Exception {
+        return HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+                .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver()))
+                .listenStreamingAndAwait(
+                        (ctx, request, responseFactory) -> Single.defer(() -> {
+                            // We deliberately ignore the request
+                            StreamingHttpResponse response = responseFactory.ok();
+                            response.payloadBody(Publisher.from(ctx.executionContext().bufferAllocator()
+                                    .fromAscii("done")));
+                            return Single.succeeded(response);
+                        }));
+    }
+
+    private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
+
+        private static final Set<AttributeKey<String>> ALL_KEYS = new HashSet<>();
+
+        private static AttributeKey<String> makeKey(String keyName) {
+            AttributeKey<String> key = AttributeKey.stringKey(keyName);
+            assert ALL_KEYS.add(key);
+            return key;
+        }
+        private static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = makeKey("onNewExchange");
+        private static final AttributeKey<String> ON_CONNECTION_ACCEPTED_KEY =
+                makeKey("onConnectionAccepted");
+
+        private static final AttributeKey<String> ON_REQUEST_KEY = makeKey("onRequest");
+
+        private static final AttributeKey<String> ON_RESPONSE_KEY = makeKey("onResponse");
+        private static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = makeKey("onResponseError");
+        private static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = makeKey("onResponseCancel");
+        private static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = makeKey("onExchangeFinally");
+
+        private static final AttributeKey<String> ON_REQUEST_DATA_KEY = makeKey("onRequestData");
+        private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
+        private static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = makeKey("onRequestComplete");
+        private static final AttributeKey<String> ON_REQUEST_ERROR_KEY = makeKey("onRequestError");
+        private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
+
+        private static final AttributeKey<String> ON_RESPONSE_DATA_KEY = makeKey("onResponseData");
+        private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
+        private static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = makeKey("onResponseComplete");
+        private static final AttributeKey<String> ON_RESPONSE_ERROR_2_KEY = makeKey("onResponseError-2");
+        private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
+
+        @Override
+        public HttpExchangeObserver onNewExchange() {
+            setKey(ON_NEW_EXCHANGE_KEY);
+            return new HttpExchangeObserver() {
+                @Override
+                public void onConnectionSelected(ConnectionInfo info) {
+                    setKey(ON_CONNECTION_ACCEPTED_KEY);
+                }
+
+                @Override
+                public HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
+                    setKey(ON_REQUEST_KEY);
+                    return new HttpRequestObserver() {
+                        @Override
+                        public void onRequestData(Buffer data) {
+                            setKey(ON_REQUEST_DATA_KEY);
+                        }
+
+                        @Override
+                        public void onRequestTrailers(HttpHeaders trailers) {
+                            setKey(ON_REQUEST_TRAILERS_KEY);
+                        }
+
+                        @Override
+                        public void onRequestComplete() {
+                            setKey(ON_REQUEST_COMPLETE_KEY);
+                        }
+
+                        @Override
+                        public void onRequestError(Throwable cause) {
+                            setKey(ON_REQUEST_ERROR_KEY);
+                        }
+
+                        @Override
+                        public void onRequestCancel() {
+                            setKey(ON_REQUEST_CANCEL_KEY);
+                        }
+                    };
+                }
+
+                @Override
+                public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
+                    setKey(ON_RESPONSE_KEY);
+                    return new HttpResponseObserver() {
+                        @Override
+                        public void onResponseData(Buffer data) {
+                            setKey(ON_RESPONSE_DATA_KEY);
+                        }
+
+                        @Override
+                        public void onResponseTrailers(HttpHeaders trailers) {
+                            setKey(ON_RESPONSE_TRAILERS_KEY);
+                        }
+
+                        @Override
+                        public void onResponseComplete() {
+                            setKey(ON_RESPONSE_COMPLETE_KEY);
+                        }
+
+                        @Override
+                        public void onResponseError(Throwable cause) {
+                            setKey(ON_RESPONSE_ERROR_2_KEY);
+                        }
+
+                        @Override
+                        public void onResponseCancel() {
+                            setKey(ON_RESPONSE_CANCEL_2_KEY);
+                        }
+                    };
+                }
+
+                @Override
+                public void onResponseError(Throwable cause) {
+                    setKey(ON_RESPONSE_ERROR_KEY);
+                }
+
+                @Override
+                public void onResponseCancel() {
+                    setKey(ON_RESPONSE_CANCEL_KEY);
+                }
+
+                @Override
+                public void onExchangeFinally() {
+                    setKey(ON_EXCHANGE_FINALLY_KEY);
+                }
+            };
+        }
+    }
+
+    private static void setKey(AttributeKey<String> key) {
+        Span span = Span.current();
+        if (Span.getInvalid().equals(span)) {
+            System.err.println("!!!!!!! Key " + key + " executed outside of span context");
+        }
+        Span.current().setAttribute(key, "set");
     }
 }
