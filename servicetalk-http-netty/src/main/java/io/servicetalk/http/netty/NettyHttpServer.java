@@ -88,7 +88,6 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
-import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
@@ -388,7 +387,7 @@ final class NettyHttpServer {
                 // the response go through first. After `responseWrite` completes we can immediately start draining the
                 // request message body because completion of the `responseWrite` means completion of the flat response
                 // stream and completion of the business logic.
-                final Completable responseWrite = connection.write(
+                Completable responseWrite = connection.write(
                         // Don't expect any exceptions from service because it's already wrapped with
                         // HttpExceptionMapperServiceFilter.
                         service.handle(this, request, streamingResponseFactory())
@@ -413,16 +412,17 @@ final class NettyHttpServer {
                         }));
 
                 if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
+                    responseWrite = responseWrite.afterFinally(() -> {
+                        if (!payloadSubscribed.get()) {
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
-                            // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe()));
-                } else {
-                    return responseWrite.concat(requestCompletion);
+                            request.messageBody().ignoreElements().subscribe();
+                        }
+                    });
                 }
+
+                return responseWrite.concat(requestCompletion);
             });
             return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
         }
