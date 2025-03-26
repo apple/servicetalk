@@ -53,7 +53,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
         };
     }
 
-    private static <T> Publisher<T> transformBody(Publisher<T> body, Context context) {
+    protected static <T> Publisher<T> transformBody(Publisher<T> body, Context context) {
         return new SubscribablePublisher<T>() {
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super T> subscriber) {
