@@ -26,10 +26,13 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+
+import javax.annotation.Nullable;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
     static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
@@ -40,13 +43,28 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
         return HttpExecutionStrategies.offloadNone();
     }
 
-    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context) {
+    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context,
+                                                     @Nullable StreamingHttpRequest request,
+                                                     @Nullable ScopeTrackerV2 trackerV2) {
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(responseSingle.map(resp ->
-                                    resp.transformMessageBody(body -> transformBody(body, context))))
+                    SourceAdapters.toSource(responseSingle
+                                    .map(resp -> resp.transformMessageBody(body -> {
+                                        Publisher<?> publisher = transformBody(body, context);
+                                        if (request != null && trackerV2 != null) {
+                                            // This should not be race because if request body is already subscribed,
+                                            // we don't need this `transformBody`, but if it will be subscribed later
+                                            // (auto-draining), then it's not racy to apply a transformation here.
+                                            // TODO: We should also handle `beforeOnError` or maybe even `beforeFinally`
+                                            publisher = publisher.beforeOnComplete(() -> request
+                                                    .transformMessageBody(b -> transformBody(b, context)
+                                                            .beforeFinally(trackerV2::requestComplete)));
+                                        }
+                                        return publisher;
+                                    }))
+                                    .shareContextOnSubscribe())
                             .subscribe(subscriber);
                 }
             }
@@ -58,7 +76,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super T> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(body).subscribe(subscriber);
+                    SourceAdapters.toSource(body.shareContextOnSubscribe()).subscribe(subscriber);
                 }
             }
         };

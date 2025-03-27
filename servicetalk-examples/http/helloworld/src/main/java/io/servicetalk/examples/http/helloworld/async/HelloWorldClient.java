@@ -27,7 +27,7 @@ public final class HelloWorldClient {
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textSerializerUtf8()));
-                    })
+                    }).repeat(i -> i <= 3)
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for an asynchronous API but is useful
             // for demonstration purposes.

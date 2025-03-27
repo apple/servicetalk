@@ -613,7 +613,7 @@ public abstract class Publisher<T> {
     public final Publisher<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> Publisher.from(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> Publisher.from(itemSupplier.apply(t)).shareContextOnSubscribe());
     }
 
     /**

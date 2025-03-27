@@ -139,13 +139,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
             final ScopeTrackerV2 tracker = new ScopeTrackerV2(context, request, instrumenter);
             try {
                 Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
-                // We attach this before the response resolves, because this has give the request time to
-                // traverse the entire pipeline. That means our transformation will happen as the last layer
-                // TODO: this is a concurrency bug: we've given away our request but are now modifying it 'later'
-                //  which could happen concurrently with some other modifications.
-                response = response.beforeFinally(() -> request.transformMessageBody(body ->
-                        transformBody(body, context).afterFinally(tracker::requestComplete)));
-                return withContext(tracker.track(response), context);
+                return withContext(tracker.track(response), context, request, tracker);
             } catch (Throwable t) {
                 tracker.onError(t);
                 return Single.failed(t);

@@ -20,20 +20,22 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentelemetry.http.TestUtils.TestTracingServerLoggerFilter;
 import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.OpenTelemetry;
@@ -52,12 +54,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -70,6 +73,15 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OpenTelemetryHttpServerFilterTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     @RegisterExtension
     static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
@@ -90,7 +102,7 @@ class OpenTelemetryHttpServerFilterTest {
     void testInjectWithNoParent() throws Exception {
         final String requestUrl = "/path";
         try (ServerContext context = buildServer(otelTesting.getOpenTelemetry())) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+            try (HttpClient client = newClientBuilder(context).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
@@ -135,7 +147,7 @@ class OpenTelemetryHttpServerFilterTest {
         final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+            try (HttpClient client = newClientBuilder(context)
                 .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
@@ -219,7 +231,7 @@ class OpenTelemetryHttpServerFilterTest {
                 .capturedResponseHeaders(singletonList("my-header"))
                 .capturedRequestHeaders(singletonList("some-request-header"))
                 .build())) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+            try (HttpClient client = newClientBuilder(context).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)
                         .addHeader("some-request-header", "request-header-value"))
                     .toFuture().get();
@@ -253,7 +265,7 @@ class OpenTelemetryHttpServerFilterTest {
     @Test
     void autoRequestDisposal() throws Exception {
         try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(), new OpenTelemetryOptions.Builder().build())) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
+            try (HttpClient client = newClientBuilder(context).build()) {
                 HttpRequest request = client.get("/foo");
                 request.payloadBody().writeAscii("bar");
                 client.request(request).toFuture().get();
@@ -273,9 +285,18 @@ class OpenTelemetryHttpServerFilterTest {
         }
     }
 
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+            ServerContext context) {
+        return forSingleAddress(serverHostAndPort(context))
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(SERVER_CTX.executor());
+    }
+
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
                                              OpenTelemetryOptions opentelemetryOptions) throws Exception {
         return HttpServers.forAddress(localAddress(0))
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executor(SERVER_CTX.executor())
             .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {
@@ -301,6 +322,8 @@ class OpenTelemetryHttpServerFilterTest {
     private static ServerContext buildStreamingServer(OpenTelemetry givenOpentelemetry,
                                                       OpenTelemetryOptions opentelemetryOptions) throws Exception {
         return HttpServers.forAddress(localAddress(0))
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executor(SERVER_CTX.executor())
                 .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
                 .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver()))
                 .listenStreamingAndAwait(
@@ -442,7 +465,7 @@ class OpenTelemetryHttpServerFilterTest {
     private static void setKey(AttributeKey<String> key, @Nullable Throwable cause) {
         Span span = Span.current();
         if (Span.getInvalid().equals(span)) {
-            System.err.println("!!!!!!! Key " + key + " executed outside of span context");
+            System.err.println("!!!!!!! Key " + key + " executed outside of span context. current = " + span);
             if (cause != null) {
                 cause.printStackTrace(System.err);
             }
