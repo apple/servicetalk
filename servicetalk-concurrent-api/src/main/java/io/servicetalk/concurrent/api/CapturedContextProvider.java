@@ -30,18 +30,24 @@ public interface CapturedContextProvider {
      * <p>
      * An example provider may be implemented as follows:
      * <pre>{@code
-     *     private class CapturedContextImpl {
+     *     private class CapturedContextImpl implements CapturedContext {
      *         private final CapturedContext delegate;
      *         private final String state;
      *
-     *         Scope restoreContext() {
+     *         @Override
+     *         public Scope attachContext() {
      *             String old = getMyString();
      *             setMyString(state);
-     *             Scope outer = delegate.restoreContext();
+     *             Scope outer = delegate.attachContext();
      *             return () -> {
      *                 outer.close();
      *                 setMyString(old);
      *             };
+     *         }
+     *
+     *         @Override
+     *         public ContextMap captured() {
+     *             return delegate.captured();
      *         }
      *     }
      *
