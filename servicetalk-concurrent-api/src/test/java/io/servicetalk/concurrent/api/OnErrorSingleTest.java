@@ -17,9 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
+import io.servicetalk.context.api.ContextMap;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -89,6 +95,26 @@ class OnErrorSingleTest {
     }
 
     @Test
+    void onErrorReturnContextPropagation() {
+        Set<ContextMap> contextMapSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        toSource(first
+                .whenOnError(t -> contextMapSet.add(AsyncContext.context()))
+                .onErrorReturn(t -> {   // predicate
+                    contextMapSet.add(AsyncContext.context());
+                    return true;
+                }, t -> {   // item supplier
+                    contextMapSet.add(AsyncContext.context());
+                    return 1;
+                })
+                .whenOnSuccess(i -> contextMapSet.add(AsyncContext.context())))
+                .subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnSuccess(), is(1));
+        assertThat("Unexpected number of different contexts", contextMapSet, Matchers.hasSize(1));
+    }
+
+    @Test
     void onErrorMapMatch() {
         toSource(first.onErrorMap(t -> DELIBERATE_EXCEPTION)).subscribe(subscriber);
         subscriber.awaitSubscription();
@@ -141,6 +167,44 @@ class OnErrorSingleTest {
     }
 
     @Test
+    void onErrorMapContextPropagation() {
+        Set<ContextMap> contextMapSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        toSource(first
+                .whenOnError(t -> contextMapSet.add(AsyncContext.context()))
+                .onErrorMap(t -> {   // predicate
+                    contextMapSet.add(AsyncContext.context());
+                    return true;
+                }, t -> {   // item supplier
+                    contextMapSet.add(AsyncContext.context());
+                    return DELIBERATE_EXCEPTION;
+                })
+                .whenOnError(i -> contextMapSet.add(AsyncContext.context())))
+                .subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onError(new DeliberateException());
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertThat("Unexpected number of different contexts", contextMapSet, Matchers.hasSize(1));
+    }
+
+    @Test
+    void onErrorResumeMatch() {
+        toSource(first.onErrorResume(t -> Single.succeeded(1))).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnSuccess(), is(1));
+    }
+
+    @Test
+    void onErrorResumeThrows() {
+        toSource(first.onErrorResume(t -> {
+            throw DELIBERATE_EXCEPTION;
+        })).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onError(new DeliberateException());
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     void onErrorResumeClassMatch() {
         toSource(first.onErrorResume(DeliberateException.class, t -> failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
@@ -172,5 +236,25 @@ class OnErrorSingleTest {
         subscriber.awaitSubscription();
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void onErrorResumeContextPropagation() {
+        Set<ContextMap> contextMapSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        toSource(first
+                .whenOnError(t -> contextMapSet.add(AsyncContext.context()))
+                .onErrorResume(t -> {   // predicate
+                    contextMapSet.add(AsyncContext.context());
+                    return true;
+                }, t -> {   // item supplier
+                    contextMapSet.add(AsyncContext.context());
+                    return Single.succeeded(1);
+                })
+                .whenOnSuccess(i -> contextMapSet.add(AsyncContext.context())))
+                .subscribe(subscriber);
+        subscriber.awaitSubscription();
+        first.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnSuccess(), is(1));
+        assertThat("Unexpected number of different contexts", contextMapSet, Matchers.hasSize(1));
     }
 }
