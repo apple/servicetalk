@@ -16,13 +16,14 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.HostAndPort;
-
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -33,60 +34,59 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
-abstract class ServiceTalkHttpAttributesGetter {
+abstract class ServiceTalkHttpAttributesGetter
+        implements NetworkAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>,
+        HttpCommonAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
-    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> CLIENT_INSTANCE =
-            new ClientGetter();
+    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+            CLIENT_INSTANCE = new ClientGetter();
 
-    static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> SERVER_INSTANCE =
-            new ServerGetter();
+    static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+            SERVER_INSTANCE = new ServerGetter();
 
-    private ServiceTalkHttpAttributesGetter() {
-    }
+    private ServiceTalkHttpAttributesGetter() {}
 
+    @Override
     public String getHttpRequestMethod(final HttpRequestMetaData httpRequestMetaData) {
         return httpRequestMetaData.method().name();
     }
 
-    public List<String> getHttpRequestHeader(final HttpRequestMetaData httpRequestMetaData, final String name) {
+    @Override
+    public List<String> getHttpRequestHeader(
+            final HttpRequestMetaData httpRequestMetaData, final String name) {
         return getHeaderValues(httpRequestMetaData.headers(), name);
     }
 
-    public Integer getHttpResponseStatusCode(final HttpRequestMetaData httpRequestMetaData,
-                                             final HttpResponseMetaData httpResponseMetaData,
-                                             @Nullable final Throwable error) {
+    @Override
+    public Integer getHttpResponseStatusCode(
+            final HttpRequestMetaData httpRequestMetaData,
+            final HttpResponseMetaData httpResponseMetaData,
+            @Nullable final Throwable error) {
         return httpResponseMetaData.status().code();
     }
 
-    public List<String> getHttpResponseHeader(final HttpRequestMetaData httpRequestMetaData,
-                                              final HttpResponseMetaData httpResponseMetaData,
-                                              final String name) {
+    @Override
+    public List<String> getHttpResponseHeader(
+            final HttpRequestMetaData httpRequestMetaData,
+            final HttpResponseMetaData httpResponseMetaData,
+            final String name) {
         return getHeaderValues(httpResponseMetaData.headers(), name);
     }
 
+    @Override
     @Nullable
-    public String getUrlFull(final HttpRequestMetaData request) {
-        HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
-        if (effectiveHostAndPort == null) {
-            return null;
+    public final String getNetworkProtocolName(
+            final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
+        return "http";
+    }
+
+    @Override
+    public final String getNetworkProtocolVersion(
+            final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
+        if (response == null) {
+            return request.version().fullVersion();
         }
-        String requestScheme = request.scheme() == null ? "http" : request.scheme();
-        String hostAndPort = effectiveHostAndPort.hostName() + ':' + effectiveHostAndPort.port();
-        return requestScheme + "://" + hostAndPort + '/' + request.requestTarget();
-    }
-
-    public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
-        final String scheme = httpRequestMetaData.scheme();
-        return scheme == null ? "http" : scheme;
-    }
-
-    public String getUrlPath(final HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.path();
-    }
-
-    @Nullable
-    public String getUrlQuery(final HttpRequestMetaData httpRequestMetaData) {
-        return httpRequestMetaData.query();
+        return response.version().fullVersion();
     }
 
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
@@ -109,20 +109,82 @@ abstract class ServiceTalkHttpAttributesGetter {
 
     private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
             implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
-        @Nullable
+
         @Override
-        public String getServerAddress(HttpRequestMetaData metaData) {
-            return null;
+        @Nullable
+        public String getUrlFull(final HttpRequestMetaData request) {
+            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            if (effectiveHostAndPort == null) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder();
+            String scheme = request.scheme();
+            sb.append(scheme == null ? "http" : scheme); // TODO: how can we get the scheme?
+            sb.append("://").append(effectiveHostAndPort.hostName());
+            if (effectiveHostAndPort.port() >= 0) {
+                sb.append(':').append(effectiveHostAndPort.port());
+            }
+            sb.append(request.requestTarget());
+            return sb.toString();
+        }
+
+        @Override
+        @Nullable
+        public String getServerAddress(final HttpRequestMetaData request) {
+            final HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
         }
 
         @Nullable
         @Override
         public Integer getServerPort(HttpRequestMetaData metaData) {
+            final HostAndPort effectiveHostAndPort = metaData.effectiveHostAndPort();
+            if (effectiveHostAndPort != null) {
+                return effectiveHostAndPort.port();
+            }
+            // No port. See if we can infer it from the scheme.
+            String scheme = metaData.scheme();
+            if (scheme != null) {
+                if ("http".equals(scheme)) {
+                    return 80;
+                }
+                if ("https".equals(scheme)) {
+                    return 443;
+                }
+            }
             return null;
         }
     }
 
     private static final class ServerGetter extends ServiceTalkHttpAttributesGetter
             implements HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
+
+        @Nullable
+        @Override
+        public String getClientAddress(HttpRequestMetaData metaData) {
+            // TODO: how can we discover this?
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Integer getClientPort(HttpRequestMetaData metaData) {
+            // TODO: how can we discover this?
+            return null;
+        }
+
+        public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
+            final String scheme = httpRequestMetaData.scheme();
+            return scheme == null ? "http" : scheme;
+        }
+
+        public String getUrlPath(final HttpRequestMetaData httpRequestMetaData) {
+            return httpRequestMetaData.path();
+        }
+
+        @Nullable
+        public String getUrlQuery(final HttpRequestMetaData httpRequestMetaData) {
+            return httpRequestMetaData.query();
+        }
     }
 }
