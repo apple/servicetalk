@@ -27,24 +27,49 @@ import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-class ScopeTracker implements TerminalSignalConsumer {
+final class ScopeTracker implements TerminalSignalConsumer {
+
+    private static final AtomicIntegerFieldUpdater<ScopeTracker> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(ScopeTracker.class, "state");
+
+    private static final int IDLE = 0;
+    private static final int REQUEST_COMPLETE = 1;
+    private static final int RESPONSE_COMPLETE = 2;
+    private static final int FINISHED = 3;
 
     private final Context context;
     private final HttpRequestMetaData requestMetaData;
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
     @Nullable
+    private Throwable responseCompleteCause;
+    private volatile int state;
+
+
+    @Nullable
     private HttpResponseMetaData responseMetaData;
 
-    ScopeTracker(Context context, StreamingHttpRequest requestMetaData,
+    private ScopeTracker(boolean isClient, Context context, StreamingHttpRequest requestMetaData,
                  Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
+        this.state = isClient ? REQUEST_COMPLETE : IDLE;
         this.context = requireNonNull(context);
         this.requestMetaData = requireNonNull(requestMetaData);
         this.instrumenter = requireNonNull(instrumenter);
+    }
+
+    public static ScopeTracker client(Context context, StreamingHttpRequest requestMetaData,
+                         Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
+        return new ScopeTracker(true, context, requestMetaData, instrumenter);
+    }
+
+    public static ScopeTracker server(Context context, StreamingHttpRequest requestMetaData,
+                                      Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
+        return new ScopeTracker(false, context, requestMetaData, instrumenter);
     }
 
     void onResponseMeta(final HttpResponseMetaData metaData) {
@@ -54,17 +79,38 @@ class ScopeTracker implements TerminalSignalConsumer {
     @Override
     public void onComplete() {
         assert responseMetaData != null : "can't have succeeded without capturing metadata first";
-        instrumenter.end(context, requestMetaData, responseMetaData, null);
+        responseFinished(null);
     }
 
     @Override
     public void onError(final Throwable throwable) {
-        instrumenter.end(context, requestMetaData, responseMetaData, throwable);
+        responseFinished(throwable);
     }
 
     @Override
     public void cancel() {
-        instrumenter.end(context, requestMetaData, responseMetaData, CancelledRequestException.INSTANCE);
+        responseFinished(CancelledRequestException.INSTANCE);
+    }
+
+    void requestComplete() {
+        if (STATE_UPDATER.compareAndSet(this, IDLE, REQUEST_COMPLETE)) {
+            // nothing to do: it's up to the response to finish now.
+        } else if (STATE_UPDATER.compareAndSet(this, RESPONSE_COMPLETE, FINISHED)) {
+            instrumenter.end(context, requestMetaData, responseMetaData, responseCompleteCause);
+        }
+    }
+
+    private void responseFinished(@Nullable final Throwable throwable) {
+        // Technically we can have racing calls for `responseFinished` (say a cancel and an error)
+        // but in those cases it's always going to be racy, so it really doesn't matter who 'won'.
+        // However, we do need to set the value _before_ we CAS, to ensure we have visibility across
+        // threads for if the requestComplete is responsible for ending the span.
+        responseCompleteCause = throwable;
+        if (STATE_UPDATER.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
+            // nothing to do: it's up to the request to finish now.
+        } else if (STATE_UPDATER.compareAndSet(this, REQUEST_COMPLETE, FINISHED)) {
+            instrumenter.end(context, requestMetaData, responseMetaData, responseCompleteCause);
+        }
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {

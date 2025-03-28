@@ -178,7 +178,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         }
         final Context context = instrumenter.start(current, request);
         try (Scope unused = context.makeCurrent()) {
-            final ScopeTracker tracker = new ScopeTracker(context, request, instrumenter);
+            final ScopeTracker tracker = ScopeTracker.client(context, request, instrumenter);
             try {
                 Single<StreamingHttpResponse> response = delegate.request(request);
                 return withContext(tracker.track(response), context);
