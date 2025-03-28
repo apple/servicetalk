@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequest;
@@ -52,7 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -198,7 +196,6 @@ class OpenTelemetryHttpServerFilterTest {
             assertThat(otelTesting.getSpans()).hasSize(2);
             assertThat(otelTesting.getSpans()).extracting("traceId")
                 .containsExactly(serverSpanState.getTraceId(), serverSpanState.getTraceId());
-
             otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta -> {
                     assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
@@ -252,15 +249,13 @@ class OpenTelemetryHttpServerFilterTest {
 
     @Test
     void autoRequestDisposal() throws Exception {
-        try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(), new OpenTelemetryOptions.Builder().build())) {
+        try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(),
+                new OpenTelemetryOptions.Builder().build())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpRequest request = client.get("/foo");
                 request.payloadBody().writeAscii("bar");
                 client.request(request).toFuture().get();
             }
-
-            Thread.sleep(500);
-
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
                         ta.hasSpansSatisfyingExactly(span -> {
@@ -317,34 +312,28 @@ class OpenTelemetryHttpServerFilterTest {
 
         private static final Set<AttributeKey<String>> ALL_KEYS = new HashSet<>();
 
-        private static AttributeKey<String> makeKey(String keyName) {
-            AttributeKey<String> key = AttributeKey.stringKey(keyName);
-            boolean added = ALL_KEYS.add(key);
-            assert added;
-            return key;
-        }
         private static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = makeKey("onNewExchange");
-//        private static final AttributeKey<String> ON_CONNECTION_ACCEPTED_KEY =
-//                makeKey("onConnectionAccepted");
+        // private static final AttributeKey<String> ON_CONNECTION_ACCEPTED_KEY =
+        //        makeKey("onConnectionAccepted");
 
         private static final AttributeKey<String> ON_REQUEST_KEY = makeKey("onRequest");
 
         private static final AttributeKey<String> ON_RESPONSE_KEY = makeKey("onResponse");
-//        private static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = makeKey("onResponseError");
-//        private static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = makeKey("onResponseCancel");
+        // private static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = makeKey("onResponseError");
+        // private static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = makeKey("onResponseCancel");
         private static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = makeKey("onExchangeFinally");
 
         private static final AttributeKey<String> ON_REQUEST_DATA_KEY = makeKey("onRequestData");
-//        private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
+        // private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
         private static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = makeKey("onRequestComplete");
-//        private static final AttributeKey<String> ON_REQUEST_ERROR_KEY = makeKey("onRequestError");
-//        private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
+        // private static final AttributeKey<String> ON_REQUEST_ERROR_KEY = makeKey("onRequestError");
+        // private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
 
         private static final AttributeKey<String> ON_RESPONSE_DATA_KEY = makeKey("onResponseData");
-//        private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
+        // private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
         private static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = makeKey("onResponseComplete");
-//        private static final AttributeKey<String> ON_RESPONSE_ERROR_2_KEY = makeKey("onResponseError-2");
-//        private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
+        // private static final AttributeKey<String> ON_RESPONSE_ERROR_2_KEY = makeKey("onResponseError-2");
+        // private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
 
         @Override
         public HttpExchangeObserver onNewExchange() {
@@ -352,7 +341,7 @@ class OpenTelemetryHttpServerFilterTest {
             return new HttpExchangeObserver() {
                 @Override
                 public void onConnectionSelected(ConnectionInfo info) {
-//                    setKey(ON_CONNECTION_ACCEPTED_KEY);
+                    // setKey(ON_CONNECTION_ACCEPTED_KEY);
                 }
 
                 @Override
@@ -366,7 +355,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onRequestTrailers(HttpHeaders trailers) {
-//                            setKey(ON_REQUEST_TRAILERS_KEY);
+                            // setKey(ON_REQUEST_TRAILERS_KEY);
                         }
 
                         @Override
@@ -376,12 +365,12 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onRequestError(Throwable cause) {
-//                            setKey(ON_REQUEST_ERROR_KEY, cause);
+                            // setKey(ON_REQUEST_ERROR_KEY, cause);
                         }
 
                         @Override
                         public void onRequestCancel() {
-//                            setKey(ON_REQUEST_CANCEL_KEY);
+                            // setKey(ON_REQUEST_CANCEL_KEY);
                         }
                     };
                 }
@@ -397,7 +386,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onResponseTrailers(HttpHeaders trailers) {
-//                            setKey(ON_RESPONSE_TRAILERS_KEY);
+                            // setKey(ON_RESPONSE_TRAILERS_KEY);
                         }
 
                         @Override
@@ -407,24 +396,24 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onResponseError(Throwable cause) {
-//                            setKey(ON_RESPONSE_ERROR_2_KEY, cause);
+                            // setKey(ON_RESPONSE_ERROR_2_KEY, cause);
                         }
 
                         @Override
                         public void onResponseCancel() {
-//                            setKey(ON_RESPONSE_CANCEL_2_KEY);
+                            // setKey(ON_RESPONSE_CANCEL_2_KEY);
                         }
                     };
                 }
 
                 @Override
                 public void onResponseError(Throwable cause) {
-//                    setKey(ON_RESPONSE_ERROR_KEY, cause);
+                    // setKey(ON_RESPONSE_ERROR_KEY, cause);
                 }
 
                 @Override
                 public void onResponseCancel() {
-//                    setKey(ON_RESPONSE_CANCEL_KEY);
+                    // setKey(ON_RESPONSE_CANCEL_KEY);
                 }
 
                 @Override
@@ -433,22 +422,16 @@ class OpenTelemetryHttpServerFilterTest {
                 }
             };
         }
+
+        private static AttributeKey<String> makeKey(String keyName) {
+            AttributeKey<String> key = AttributeKey.stringKey(keyName);
+            boolean added = ALL_KEYS.add(key);
+            assert added;
+            return key;
+        }
     }
 
     private static void setKey(AttributeKey<String> key) {
-        setKey(key, null);
-    }
-
-    private static void setKey(AttributeKey<String> key, @Nullable Throwable cause) {
-        Span span = Span.current();
-        if (Span.getInvalid().equals(span)) {
-            System.err.println("!!!!!!! Key " + key + " executed outside of span context");
-            if (cause != null) {
-                cause.printStackTrace(System.err);
-            }
-        } else {
-            System.err.println(span.getSpanContext() + ": " + key.getKey());
-            span.setAttribute(key, "set");
-        }
+        Span.current().setAttribute(key, "set");
     }
 }
