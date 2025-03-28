@@ -16,14 +16,15 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGetter;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
-import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.HostAndPort;
+
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpCommonAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGetter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -119,8 +120,8 @@ abstract class ServiceTalkHttpAttributesGetter
             }
             StringBuilder sb = new StringBuilder();
             String scheme = request.scheme();
-            sb.append(scheme == null ? "http" : scheme); // TODO: how can we get the scheme?
-            sb.append("://").append(effectiveHostAndPort.hostName());
+            sb.append(scheme == null ? "http" : scheme)
+              .append("://").append(effectiveHostAndPort.hostName());
             if (effectiveHostAndPort.port() >= 0) {
                 sb.append(':').append(effectiveHostAndPort.port());
             }
@@ -173,16 +174,19 @@ abstract class ServiceTalkHttpAttributesGetter
             return null;
         }
 
+        @Override
         public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
             final String scheme = httpRequestMetaData.scheme();
             return scheme == null ? "http" : scheme;
         }
 
+        @Override
         public String getUrlPath(final HttpRequestMetaData httpRequestMetaData) {
             return httpRequestMetaData.path();
         }
 
         @Nullable
+        @Override
         public String getUrlQuery(final HttpRequestMetaData httpRequestMetaData) {
             return httpRequestMetaData.query();
         }

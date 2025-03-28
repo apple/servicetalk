@@ -137,8 +137,11 @@ class OpenTelemetryHttpRequestFilterTest {
                         SpanData span = ta.getSpan(0);
                         assertThat(span.getAttributes().get(HTTP_REQUEST_METHOD))
                             .isEqualTo("GET");
-//                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
-//                            .isGreaterThan(0);
+                        // This is deprecated: the recommended thing to do is capture the header. The real intent is
+                        // likely to use 'http.response.body.size' which is a 'development' stage attribute.
+                        // These are in the instrumentation-api-incubator package, which is still considered alpha.
+                        //  assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
+                        //     .isGreaterThan(0);
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
                         assertThat(span.getAttributes().get(NETWORK_PROTOCOL_NAME))

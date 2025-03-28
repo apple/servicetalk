@@ -16,9 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
-import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -44,9 +41,9 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-//import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
-//import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
-//import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 
 import java.util.function.UnaryOperator;
 
