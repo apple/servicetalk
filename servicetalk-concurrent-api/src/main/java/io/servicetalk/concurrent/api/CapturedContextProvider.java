@@ -34,7 +34,6 @@ public interface CapturedContextProvider {
      *         private final CapturedContext delegate;
      *         private final String state;
      *
-     *         @Override
      *         public Scope attachContext() {
      *             String old = getMyString();
      *             setMyString(state);
@@ -45,7 +44,6 @@ public interface CapturedContextProvider {
      *             };
      *         }
      *
-     *         @Override
      *         public ContextMap captured() {
      *             return delegate.captured();
      *         }
