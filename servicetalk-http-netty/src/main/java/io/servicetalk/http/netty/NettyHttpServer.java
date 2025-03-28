@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
@@ -325,6 +326,9 @@ final class NettyHttpServer {
         private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle,
                                                           final boolean handleMultipleRequests) {
             final Completable exchange = requestSingle.flatMapCompletable(rawRequest -> {
+                System.err.println("--- " + Thread.currentThread().getName() + " --- handleRequestAndWriteResponse-beforeClean: " + AsyncContext.context());
+                AsyncContext.clear();
+                System.err.println("--- " + Thread.currentThread().getName() + " --- handleRequestAndWriteResponse: " + AsyncContext.context());
                 // We transform the request and delay the completion of the result flattened stream to avoid
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
@@ -393,6 +397,7 @@ final class NettyHttpServer {
                         // HttpExceptionMapperServiceFilter.
                         service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
+                            System.err.println("--- " + Thread.currentThread().getName() + " --- service.handle.flatMapPublisher: " + AsyncContext.context());
                             if (responseSent != null) {
                                 // While concurrency between 100 (Continue) and the final response is handled in Netty
                                 // encoders, it's necessary to prevent generating 100 (Continue) response after the full
@@ -410,21 +415,32 @@ final class NettyHttpServer {
                             return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
+                        // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
+                        // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
 
                 if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
-                            // Discarding the request payload body is an operation which should not impact the state of
-                            // request/response processing. It's appropriate to recover from any error here.
-                            // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
-                            // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe()));
+                    return responseWrite.concat(defer(() -> {
+                        System.err.println("--- " + Thread.currentThread().getName() + " --- payloadSubscribed.defer: " + AsyncContext.context());
+                        return (payloadSubscribed.get() ?
+                                // Discarding the request payload body is an operation which should not impact the state of
+                                // request/response processing. It's appropriate to recover from any error here.
+                                // ST may introduce RejectedSubscribeError if user already consumed the request payload body
+                                requestCompletion : request.messageBody().ignoreElements()
+                                .whenOnComplete(() -> System.err.println("--- " + Thread.currentThread().getName() + " --- ignoreElements.whenOnComplete: " + AsyncContext.context()))
+                                .onErrorComplete())
+                                // No need to make a copy of the context in both cases.
+                                .shareContextOnSubscribe();
+                    // We need to apply shareContextOnSubscribe() on deferred Completable to share context between
+                    // concatenated Completables.
+                    }).shareContextOnSubscribe()).shareContextOnSubscribe();
                 } else {
-                    return responseWrite.concat(requestCompletion);
+                    return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
                 }
             });
-            return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
+            // In case of repetition, we have to wrap each `exchange` in defer to guarantee an isolated AsyncContext
+            // state between subsequent requests on the same HTTP/1.x connection.
+            return handleMultipleRequests ? defer(() -> exchange).repeat(__ -> true).ignoreElements() : exchange;
         }
 
         @Nonnull

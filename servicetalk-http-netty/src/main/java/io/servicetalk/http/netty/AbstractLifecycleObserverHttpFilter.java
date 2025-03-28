@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.context.api.ContextMap;
@@ -79,6 +80,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction) {
 
         return defer(() -> {
+            System.err.println("--- " + Thread.currentThread().getName() + " --- trackLifecycle.defer: " + AsyncContext.context());
             final HttpExchangeObserver onExchange = safeReport(observer::onNewExchange, observer, "onNewExchange",
                     NoopHttpExchangeObserver.INSTANCE);
             final Runnable clearContext;

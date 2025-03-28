@@ -135,10 +135,11 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
         }
         final Context context = instrumenter.start(parentContext, request);
         try (Scope unused = context.makeCurrent()) {
-            final ScopeTracker tracker = new ScopeTracker(context, request, instrumenter);
+            System.err.println("Initiated context: " + Span.current().getSpanContext());
+            final ScopeTrackerV2 tracker = new ScopeTrackerV2(context, request, instrumenter);
             try {
                 Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
-                return withContext(tracker.track(response), context);
+                return withContext(tracker.track(response), context, request, tracker);
             } catch (Throwable t) {
                 tracker.onError(t);
                 return Single.failed(t);

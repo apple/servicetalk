@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -346,7 +347,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             @Nullable final HttpLifecycleObserver lifecycleObserver) {
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>();
         // Append internal filters:
-        appendNonOffloadingServiceFilter(filters, ClearAsyncContextHttpServiceFilter.INSTANCE);
+        // appendNonOffloadingServiceFilter(filters, ClearAsyncContextHttpServiceFilter.INSTANCE);
         if (lifecycleObserver != null) {
             appendNonOffloadingServiceFilter(filters, new HttpLifecycleObserverServiceFilter(lifecycleObserver));
         }
@@ -545,6 +546,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
+                    System.err.println("--- " + Thread.currentThread().getName() + " --- KeepAliveServiceFilter: " + AsyncContext.context());
                     final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
                     // Don't expect any exceptions from delegate because it's already wrapped with
                     // ExceptionMapperServiceFilterFactory
