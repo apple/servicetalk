@@ -200,7 +200,7 @@ public abstract class Single<T> {
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)).shareContextOnSubscribe());
     }
 
     /**
