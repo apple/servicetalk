@@ -79,11 +79,13 @@ class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTe
             }
 
             private Single<HttpResponse> doHandle(HttpResponseFactory factory) {
-                CharSequence requestId = AsyncContext.get(K1);
-                if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                boolean isIoThread = currentThread().getName().startsWith(IO_THREAD_PREFIX);
+                if ((useImmediate && !isIoThread) || (!useImmediate && isIoThread)) {
                     // verify that if we expect to be offloaded, that we actually are
                     return succeeded(factory.badGateway());
                 }
+
+                CharSequence requestId = AsyncContext.get(K1);
                 if (requestId != null) {
                     return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
                 } else {

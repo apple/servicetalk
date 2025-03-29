@@ -71,6 +71,9 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -320,6 +323,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         private final Queue<Throwable> errorQueue;
         @Nullable
+        private ContextMap currentContext;
+        @Nullable
         private CharSequence requestId;
 
         AsyncContextLifecycleObserver(Queue<Throwable> errorQueue) {
@@ -328,11 +333,13 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public HttpExchangeObserver onNewExchange() {
+            currentContext = AsyncContext.context();
             return this;
         }
 
         @Override
         public void onConnectionSelected(ConnectionInfo info) {
+            assertCurrentContext();
         }
 
         @Override
@@ -342,6 +349,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 AsyncContext.put(K1, requestId);
             }
             return this;
+        }
+
+        @Override
+        public void onRequestDataRequested(final long n) {
+            assertAsyncContext();
         }
 
         @Override
@@ -373,6 +385,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
         public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
             assertAsyncContext();
             return this;
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
+            assertAsyncContext();
         }
 
         @Override
@@ -411,6 +428,15 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 return;
             }
             AsyncContextHttpFilterVerifier.assertAsyncContext(K1, requestId, errorQueue);
+            assertCurrentContext();
+        }
+
+        private void assertCurrentContext() {
+            try {
+                assertThat(AsyncContext.context(), is(sameInstance(currentContext)));
+            } catch (Throwable t) {
+                errorQueue.add(t);
+            }
         }
     }
 }

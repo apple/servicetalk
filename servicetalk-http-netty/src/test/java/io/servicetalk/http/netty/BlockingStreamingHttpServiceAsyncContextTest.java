@@ -16,11 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
@@ -39,7 +36,8 @@ class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAs
 
     private static BlockingStreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, response) -> {
-            request.payloadBody().forEach(__ -> { });
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
             if (!AsyncContext.isEmpty()) {
                 response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
@@ -64,37 +62,23 @@ class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAs
     }
 
     private static BlockingStreamingHttpService service() {
-        return new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                doHandle(request, response);
+        return (ctx, request, response) -> {
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
+
+            if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                // verify that we are not offloaded
+                response.status(BAD_GATEWAY).sendMetaData().close();
+                return;
             }
 
-            private void doHandle(final BlockingStreamingHttpRequest request,
-                                  final BlockingStreamingHttpServerResponse response) throws Exception {
-                CharSequence requestId = AsyncContext.get(K1);
-                // The test forces the server to consume the entire request here which will make sure the
-                // AsyncContext is as expected while processing the request data in the filter.
-                request.payloadBody().forEach(__ -> { });
-
-                if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
-                    // verify that we are not offloaded
-                    response.status(BAD_GATEWAY).sendMetaData().close();
-                    return;
-                }
-
-                CharSequence requestId2 = AsyncContext.get(K1);
-                if (requestId2 == requestId && requestId2 != null) {
-                    response.setHeader(REQUEST_ID_HEADER, requestId);
-                } else {
-                    response.status(INTERNAL_SERVER_ERROR)
-                            .setHeader(REQUEST_ID_HEADER, String.valueOf(requestId))
-                            .setHeader(REQUEST_ID_HEADER + "2", String.valueOf(requestId2));
-                }
-                response.sendMetaData().close();
+            CharSequence requestId = AsyncContext.get(K1);
+            if (requestId != null) {
+                response.setHeader(REQUEST_ID_HEADER, requestId);
+            } else {
+                response.status(INTERNAL_SERVER_ERROR).setHeader(REQUEST_ID_HEADER, "null");
             }
+            response.sendMetaData().close();
         };
     }
 }

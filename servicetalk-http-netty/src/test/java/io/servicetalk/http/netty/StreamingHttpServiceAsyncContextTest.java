@@ -45,7 +45,8 @@ class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsync
 
     private StreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
-            request.messageBody().ignoreElements().subscribe();
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
             if (!AsyncContext.isEmpty()) {
                 return succeeded(factory.internalServerError().payloadBody(from(AsyncContext.context().toString()),
@@ -77,34 +78,26 @@ class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsync
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? defer(() -> doHandle(request, responseFactory).shareContextOnSubscribe()) :
-                        doHandle(request, responseFactory);
+                // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+                // A use-case with consumed request.messageBody() is evaluated by aggregated API.
+
+                return asyncService ? defer(() -> doHandle(responseFactory).shareContextOnSubscribe()) :
+                        doHandle(responseFactory);
             }
 
-            private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,
-                                                           final StreamingHttpResponseFactory factory) {
+            private Single<StreamingHttpResponse> doHandle(StreamingHttpResponseFactory factory) {
+                boolean isIoThread = currentThread().getName().startsWith(IO_THREAD_PREFIX);
+                if ((useImmediate && !isIoThread) || (!useImmediate && isIoThread)) {
+                    // verify that if we expect to be offloaded, that we actually are
+                    return succeeded(factory.badGateway());
+                }
+
                 CharSequence requestId = AsyncContext.get(K1);
-                // The test doesn't wait until the request body is consumed and only cares when the request is received
-                // from the client. So we force the server to consume the entire request here which will make sure the
-                // AsyncContext is as expected while processing the request data in the filter.
-                return request.messageBody().ignoreElements()
-                        .concat(defer(() -> {
-                            if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
-                                // verify that if we expect to be offloaded, that we actually are
-                                return succeeded(factory.badGateway());
-                            }
-                            CharSequence requestId2 = AsyncContext.get(K1);
-                            if (requestId2 == requestId && requestId2 != null) {
-                                StreamingHttpResponse response = factory.ok();
-                                response.headers().set(REQUEST_ID_HEADER, requestId);
-                                return succeeded(response);
-                            } else {
-                                StreamingHttpResponse response = factory.internalServerError();
-                                response.headers().set(REQUEST_ID_HEADER, String.valueOf(requestId));
-                                response.headers().set(REQUEST_ID_HEADER + "2", String.valueOf(requestId2));
-                                return succeeded(response);
-                            }
-                        }));
+                if (requestId != null) {
+                    return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
+                } else {
+                    return succeeded(factory.internalServerError().setHeader(REQUEST_ID_HEADER, "null"));
+                }
             }
         };
     }

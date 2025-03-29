@@ -58,18 +58,16 @@ class BlockingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContex
 
     private static BlockingHttpService service() {
         return (ctx, request, responseFactory) -> {
-            CharSequence requestId = AsyncContext.get(K1);
-
             if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                 // verify that we are not offloaded
                 return responseFactory.badGateway();
             }
 
+            CharSequence requestId = AsyncContext.get(K1);
             if (requestId != null) {
                 return responseFactory.ok().setHeader(REQUEST_ID_HEADER, requestId);
             } else {
-                return responseFactory.internalServerError()
-                        .setHeader(REQUEST_ID_HEADER, "null");
+                return responseFactory.internalServerError().setHeader(REQUEST_ID_HEADER, "null");
             }
         };
     }
