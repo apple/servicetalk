@@ -45,8 +45,9 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(responseSingle.map(resp ->
-                                    resp.transformMessageBody(body -> transformBody(body, context))))
+                    SourceAdapters.toSource(responseSingle
+                                    .map(resp -> resp.transformMessageBody(body -> transformBody(body, context)))
+                                    .shareContextOnSubscribe())
                             .subscribe(subscriber);
                 }
             }
@@ -58,7 +59,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
             @Override
             protected void handleSubscribe(PublisherSource.Subscriber<? super T> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(body).subscribe(subscriber);
+                    SourceAdapters.toSource(body.shareContextOnSubscribe()).subscribe(subscriber);
                 }
             }
         };
