@@ -530,7 +530,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * Internal filter that correctly sets {@link HttpHeaderNames#CONNECTION} header value based on the requested
      * keep-alive policy.
      */
-    private static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory {
+    static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new KeepAliveServiceFilter();
 

@@ -33,6 +33,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -45,11 +46,11 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("https://github.com/apple/servicetalk/issues/2756")
 final class HttpMessageDiscardWatchdogServiceFilterTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilterTest.class);
@@ -81,6 +82,7 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
         loggerStringWriter.remove();
     }
 
+    @Disabled("https://github.com/apple/servicetalk/issues/2756")
     @ParameterizedTest(name = "{displayName} [{index}] transformer={0}")
     @MethodSource("responseTransformers")
     void warnsIfDiscarded(final ResponseTransformer transformer) throws Exception {
@@ -112,6 +114,11 @@ final class HttpMessageDiscardWatchdogServiceFilterTest {
                         + output + "\n-- END OUTPUT --");
             }
         }
+    }
+
+    @Test
+    void verifyAsyncContext() throws Exception {
+        verifyServerFilterAsyncContextVisibility(HttpMessageDiscardWatchdogServiceFilter.INSTANCE);
     }
 
     private static Stream<Arguments> responseTransformers() {
