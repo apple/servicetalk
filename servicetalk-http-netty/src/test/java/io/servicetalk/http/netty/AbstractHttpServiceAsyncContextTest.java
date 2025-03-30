@@ -71,9 +71,6 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -339,7 +336,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onConnectionSelected(ConnectionInfo info) {
-            assertCurrentContext();
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext, errorQueue);
         }
 
         @Override
@@ -428,15 +425,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 return;
             }
             AsyncContextHttpFilterVerifier.assertAsyncContext(K1, requestId, errorQueue);
-            assertCurrentContext();
-        }
-
-        private void assertCurrentContext() {
-            try {
-                assertThat(AsyncContext.context(), is(sameInstance(currentContext)));
-            } catch (Throwable t) {
-                errorQueue.add(t);
-            }
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext, errorQueue);
         }
     }
 }
