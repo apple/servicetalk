@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
@@ -279,7 +280,7 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     @Test
-    void autoRequestDisposalErrorResponse() throws Exception {
+    void autoRequestDisposalErrorResponseBody() throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
@@ -294,6 +295,34 @@ class OpenTelemetryHttpServerFilterTest {
             request.payloadBody().writeAscii("bar");
             ExecutionException ex = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
             assertThat(ex.getCause()).isInstanceOf(ClosedChannelException.class);
+
+            Thread.sleep(500);
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasKind(SpanKind.SERVER);
+                                for (AttributeKey<String> key : expected) {
+                                    span.hasAttribute(key, "set");
+                                }
+                            }));
+        });
+    }
+
+    @Test
+    void autoRequestDisposalErrorResponse() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
+        ));
+        withClient(client -> {
+            HttpRequest request = client.get("/responseerror");
+            request.payloadBody().writeAscii("bar");
+            HttpResponse resp = client.request(request).toFuture().get();
+            assertThat(resp.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
 
             Thread.sleep(500);
             otelTesting.assertTraces()
@@ -356,14 +385,17 @@ class OpenTelemetryHttpServerFilterTest {
                             response.payloadBody(Publisher.from(ctx.executionContext().bufferAllocator()
                                     .fromAscii("done")));
 
+                            if (request.path().equals("/responseerror")) {
+                                return Single.failed(new Exception("response failed"));
+                            }
                             if (request.path().startsWith("/consumebodyinhandler")) {
                                 request.payloadBody().ignoreElements().subscribe();
                             } else if (request.path().startsWith("/consumebodyasresponse")) {
                                 response.transformMessageBody(body ->
                                         request.payloadBody().ignoreElements().concat(body));
-                            } else if (request.path().startsWith("/responsebodyerror")) {
+                            } else if (request.path().equals("/responsebodyerror")) {
                                 response.transformMessageBody(body ->
-                                        body.concat(Publisher.failed(new Exception("sad"))));
+                                        body.concat(Publisher.failed(new Exception("response body failed"))));
                             } else if (request.path().startsWith("/slow")) {
                                 response.payloadBody(Publisher.never());
                             }

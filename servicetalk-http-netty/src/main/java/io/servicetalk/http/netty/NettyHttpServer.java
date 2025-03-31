@@ -410,7 +410,7 @@ final class NettyHttpServer {
                             return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
-                        }));
+                        })); // TODO: we may need to complete the response in the case the service.handle(..) method fails.
 
                 if (drainRequestPayloadBody) {
                     responseWrite = responseWrite.beforeFinally(() -> {
