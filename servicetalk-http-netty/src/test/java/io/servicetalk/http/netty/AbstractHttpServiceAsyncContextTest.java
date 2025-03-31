@@ -49,7 +49,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,9 +113,19 @@ abstract class AbstractHttpServiceAsyncContextTest {
     abstract ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                              boolean useImmediate, boolean asyncService) throws Exception;
 
-    @ParameterizedTest(name = "{displayName} [{index}]: useImmediate={0}")
-    @ValueSource(booleans = {false, true})
-    final void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
+    private static List<Arguments> newRequestsGetFreshContextArguments() {
+        List<Arguments> params = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                params.add(Arguments.of(protocol, useImmediate));
+            }
+        }
+        return params;
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0} useImmediate={1}")
+    @MethodSource("newRequestsGetFreshContextArguments")
+    final void newRequestsGetFreshContext(HttpProtocol protocol, boolean useImmediate) throws Exception {
         Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
 
         final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -128,8 +137,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
         // shouldn't pollute the service's AsyncContext.
         AsyncContext.put(K1, k1Value);
 
-        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0)),
-                useImmediate)) {
+        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0))
+                        .protocols(protocol.config), useImmediate)) {
 
             AtomicReference<Throwable> causeRef = new AtomicReference<>();
             CyclicBarrier barrier = new CyclicBarrier(concurrency);
@@ -138,7 +147,9 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 final int finalI = i;
                 executorService.execute(() -> {
                     try (BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
-                            .protocols(h1().maxPipelinedRequests(numRequests).build()).buildBlocking()) {
+                            .protocols(protocol == HttpProtocol.HTTP_1 ?
+                                    h1().maxPipelinedRequests(numRequests).build() : protocol.config)
+                            .buildBlocking()) {
                         try (BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
                             barrier.await();
                             for (int x = 0; x < numRequests; ++x) {
@@ -162,25 +173,28 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
     private static List<Arguments> contextPreservedOverFilterBoundariesArguments() {
         List<Arguments> params = new ArrayList<>();
-        for (boolean useImmediate : Arrays.asList(false, true)) {
-            for (boolean asyncService : Arrays.asList(false, true)) {
-                for (InitContextKeyPlace place : InitContextKeyPlace.values()) {
-                    params.add(Arguments.of(useImmediate, asyncService, place));
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                for (boolean asyncService : Arrays.asList(false, true)) {
+                    for (InitContextKeyPlace place : InitContextKeyPlace.values()) {
+                        params.add(Arguments.of(protocol, useImmediate, asyncService, place));
+                    }
                 }
             }
         }
         return params;
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: useImmediate={0} asyncService={1} initContextKeyPlace={2}")
+    @ParameterizedTest(name = "{displayName} [{index}]: " +
+            "protocol={0} useImmediate={1} asyncService={2} initContextKeyPlace={3}")
     @MethodSource("contextPreservedOverFilterBoundariesArguments")
-    final void contextPreservedOverFilterBoundaries(boolean useImmediate, boolean asyncService,
+    final void contextPreservedOverFilterBoundaries(HttpProtocol protocol, boolean useImmediate, boolean asyncService,
                                                     InitContextKeyPlace place) throws Exception {
         Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
         Assumptions.assumeFalse(isBlocking() && asyncService, "Blocking service can not be async");
 
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0)).protocols(protocol.config);
         switch (place) {
             case LIFECYCLE_OBSERVER:
                 builder.lifecycleObserver(new AsyncContextLifecycleObserver(errorQueue));
@@ -209,7 +223,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 throw new IllegalArgumentException("Unknown InitContextKeyPlace: " + place);
         }
         try (ServerContext ctx = serverWithService(builder, useImmediate, asyncService);
-             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking();
+             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
+                     .protocols(protocol.config).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
             makeClientRequestWithId(connection, "1");
@@ -290,22 +305,24 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
     private static List<Arguments> connectionAcceptorContextDoesNotLeakArguments() {
         List<Arguments> params = new ArrayList<>();
-        for (boolean useImmediate : Arrays.asList(false, true)) {
-            for (ConnectionAcceptorType acceptorType : ConnectionAcceptorType.values()) {
-                params.add(Arguments.of(useImmediate, acceptorType));
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                for (ConnectionAcceptorType acceptorType : ConnectionAcceptorType.values()) {
+                    params.add(Arguments.of(protocol, useImmediate, acceptorType));
+                }
             }
         }
         return params;
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: useImmediate={0} connectionAcceptorType={1}")
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0} useImmediate={1} connectionAcceptorType={2}")
     @MethodSource("connectionAcceptorContextDoesNotLeakArguments")
     @SuppressWarnings("deprecation")
-    final void connectionAcceptorContextDoesNotLeak(boolean useImmediate,
+    final void connectionAcceptorContextDoesNotLeak(HttpProtocol protocol, boolean useImmediate,
                                                     ConnectionAcceptorType connectionAcceptorType) throws Exception {
         Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
 
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0)).protocols(protocol.config);
         switch (connectionAcceptorType) {
             case EARLY:
                 builder.appendEarlyConnectionAcceptor(conn -> {
@@ -329,7 +346,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 throw new IllegalArgumentException("Unknown ConnectionAcceptorType: " + connectionAcceptorType);
         }
         try (ServerContext ctx = serverWithEmptyAsyncContextService(builder, useImmediate);
-             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking();
+             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
+                     .protocols(protocol.config).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
             String ctx1 = makeClientRequestWithId(connection, "1");
