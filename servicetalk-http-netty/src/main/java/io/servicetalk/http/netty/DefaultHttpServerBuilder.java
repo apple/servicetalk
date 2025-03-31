@@ -346,7 +346,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             @Nullable final HttpLifecycleObserver lifecycleObserver) {
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>();
         // Append internal filters:
-        appendNonOffloadingServiceFilter(filters, ClearAsyncContextHttpServiceFilter.INSTANCE);
         if (lifecycleObserver != null) {
             appendNonOffloadingServiceFilter(filters, new HttpLifecycleObserverServiceFilter(lifecycleObserver));
         }

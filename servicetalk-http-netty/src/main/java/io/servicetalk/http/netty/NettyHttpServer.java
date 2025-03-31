@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
@@ -301,6 +302,10 @@ final class NettyHttpServer {
         }
 
         void process(final boolean handleMultipleRequests) {
+            // We must clear the context before starting to read from the connection to make sure every request read
+            // has an empty context
+            AsyncContext.clear();
+
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
@@ -410,6 +415,8 @@ final class NettyHttpServer {
                             return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
+                        // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
+                        // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
 
                 if (drainRequestPayloadBody) {
@@ -419,11 +426,15 @@ final class NettyHttpServer {
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
                             requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
                             // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe()));
+                            .shareContextOnSubscribe())
+                            // We need to apply shareContextOnSubscribe() on deferred Completable to share the same
+                            // context between concatenated Completables.
+                            .shareContextOnSubscribe());
                 } else {
                     return responseWrite.concat(requestCompletion);
                 }
             });
+            // AsyncContext is isolated between repeated exchanges by flatMapCompletable that processes a rawRequest.
             return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
         }
 
@@ -443,7 +454,8 @@ final class NettyHttpServer {
                 if (emptyMessageBody(response, messageBody)) {
                     flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
-                    flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
+                    flatResponse = Single.<Object>succeeded(response)
+                            .concatPropagateCancel(messageBody.shareContextOnSubscribe());
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
