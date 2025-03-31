@@ -67,7 +67,7 @@ class BasicAuthHttpServiceFilterTest {
                                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                                     final StreamingHttpResponseFactory responseFactory) {
                                 request.headers().set(AUTHORIZATION, "Basic " + userPassBase64());
-                                return super.handle(ctx, request, responseFactory);
+                                return delegate().handle(ctx, request, responseFactory);
                             }
                         };
                     }

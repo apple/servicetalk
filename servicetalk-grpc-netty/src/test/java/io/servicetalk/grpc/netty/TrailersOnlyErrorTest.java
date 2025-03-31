@@ -288,7 +288,7 @@ class TrailersOnlyErrorTest {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final StreamingHttpRequest request) {
-                        return super.request(delegate, request)
+                        return delegate.request(request)
                                 .map(response -> {
                                     assertGrpcStatusInHeaders(response, errors);
                                     return response;

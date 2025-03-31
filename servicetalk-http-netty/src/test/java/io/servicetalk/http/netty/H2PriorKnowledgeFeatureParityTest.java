@@ -314,7 +314,7 @@ class H2PriorKnowledgeFeatureParityTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return request.queryParameter(qpName) == null ?
                         succeeded(responseFactory.badRequest()) :
-                        super.handle(ctx, request, responseFactory);
+                        delegate().handle(ctx, request, responseFactory);
             }
         }, null);
         String responseBody = "hello world";

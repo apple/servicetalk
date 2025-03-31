@@ -108,7 +108,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
                         requestDecompressed = request;
                     }
 
-                    return super.handle(ctx, requestDecompressed, responseFactory).map(response -> {
+                    return delegate().handle(ctx, requestDecompressed, responseFactory).map(response -> {
                         final CharSequence reqAcceptEncoding;
                         if (isPassThrough(request.method(), response) ||
                                 (reqAcceptEncoding = request.headers().get(ACCEPT_ENCODING)) == null) {
