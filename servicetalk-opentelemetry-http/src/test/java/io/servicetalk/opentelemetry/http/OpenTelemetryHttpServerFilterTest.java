@@ -80,6 +80,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OpenTelemetryHttpServerFilterTest {
 
+    private static final int SLEEP_DURATION = 1000;
+
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
 
@@ -284,7 +286,7 @@ class OpenTelemetryHttpServerFilterTest {
             request.trailers().set("x-request-trailer", "request-trailer");
             request.payloadBody().writeAscii("bar");
             client.request(request).toFuture().get();
-            Thread.sleep(500);
+            Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
@@ -310,10 +312,11 @@ class OpenTelemetryHttpServerFilterTest {
         withClient(client -> {
             HttpRequest request = client.get("/responsebodyerror");
             request.payloadBody().writeAscii("bar");
-            ExecutionException ex = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
+            ExecutionException ex = assertThrows(ExecutionException.class,
+                    () -> client.request(request).toFuture().get());
             assertThat(ex.getCause()).isInstanceOf(ClosedChannelException.class);
 
-            Thread.sleep(500);
+            Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
@@ -341,7 +344,7 @@ class OpenTelemetryHttpServerFilterTest {
             HttpResponse resp = client.request(request).toFuture().get();
             assertThat(resp.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
 
-            Thread.sleep(500);
+            Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
@@ -372,7 +375,7 @@ class OpenTelemetryHttpServerFilterTest {
                     .flatMap(response -> response.toResponse()).toFuture().get());
             assertThat(ex.getCause().getMessage()).isEqualTo("request body failed");
 
-            Thread.sleep(500);
+            Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
@@ -403,7 +406,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
         // For the http/1.x server, we don't necessarily see the cancellation until we shutdown the server.
         // TODO: is that expected?
-        Thread.sleep(500);
+        Thread.sleep(SLEEP_DURATION);
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
                         ta.hasSpansSatisfyingExactly(span -> {
@@ -428,12 +431,12 @@ class OpenTelemetryHttpServerFilterTest {
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowhead");
             Future<StreamingHttpResponse> response = streamingClient.request(request).toFuture();
-            Thread.sleep(500);
+            Thread.sleep(SLEEP_DURATION);
             response.cancel(true);
         });
         // For the http/1.x server, we don't necessarily see the cancellation until we shutdown the server.
         // TODO: is that expected?
-        Thread.sleep(500);
+        Thread.sleep(SLEEP_DURATION);
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
                         ta.hasSpansSatisfyingExactly(span -> {
@@ -499,23 +502,23 @@ class OpenTelemetryHttpServerFilterTest {
                                 }
                             });
 
-                            if (request.path().equals("/responseerror")) {
+                            if ("/responseerror".equals(request.path())) {
                                 return Single.failed(new Exception("response failed"));
-                            } else if (request.path().equals("/consumebodyinhandler")) {
+                            } else if ("/consumebodyinhandler".equals(request.path())) {
                                 request.payloadBody().ignoreElements().subscribe();
                                 return Single.succeeded(response);
-                            } else if (request.path().equals("/consumebodyasresponse")) {
+                            } else if ("/consumebodyasresponse".equals(request.path())) {
                                 response.transformMessageBody(body ->
                                         request.payloadBody().ignoreElements().concat(body));
                                 return Single.succeeded(response);
-                            } else if (request.path().equals("/responsebodyerror")) {
+                            } else if ("/responsebodyerror".equals(request.path())) {
                                 response.payloadBody(DEFAULT_BODY.concat(
                                         Publisher.failed(new Exception("response body failed"))));
                                 return Single.succeeded(response);
-                            } else if (request.path().equals("/slowbody")) {
+                            } else if ("/slowbody".equals(request.path())) {
                                 response.transformPayloadBody(body -> Publisher.never());
                                 return Single.succeeded(response);
-                            } else if (request.path().equals("/slowhead")) {
+                            } else if ("/slowhead".equals(request.path())) {
                                 return Single.never();
                             } else {
                                 return Single.succeeded(response);
