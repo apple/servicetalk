@@ -17,6 +17,7 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
@@ -27,6 +28,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -62,6 +64,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
@@ -76,6 +79,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OpenTelemetryHttpServerFilterTest {
+
+    private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
+            ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
 
     @RegisterExtension
     static final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
@@ -268,11 +274,14 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                         TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
                         TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                        TestHttpLifecycleObserver.ON_REQUEST_TRAILERS_KEY,
                         TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
+                        TestHttpLifecycleObserver.ON_RESPONSE_TRAILERS_KEY,
                         TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY
         ));
         withClient(client -> {
             HttpRequest request = client.get("/foo");
+            request.trailers().set("x-request-trailer", "request-trailer");
             request.payloadBody().writeAscii("bar");
             client.request(request).toFuture().get();
             Thread.sleep(500);
@@ -375,6 +384,66 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
+    @Test
+    void autoRequestDisposalClientHangupAfterResponseHead() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_BODY_CANCEL_KEY
+        ));
+        withClient(client -> {
+            StreamingHttpClient streamingClient = client.asStreamingClient();
+            // Most endpoints will do, but this one is less likely to be racy.
+            StreamingHttpRequest request = streamingClient.post("/slowbody");
+            StreamingHttpResponse response = streamingClient.request(request).toFuture().get();
+            response.payloadBody().ignoreElements().subscribe().cancel();
+        });
+        // For the http/1.x server, we don't necessarily see the cancellation until we shutdown the server.
+        // TODO: is that expected?
+        Thread.sleep(500);
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            for (AttributeKey<String> key : expected) {
+                                span.hasAttribute(key, "set");
+                            }
+                        }));
+    }
+
+    @Test
+    void autoRequestDisposalClientHangupBeforeResponseHead() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
+        ));
+        withClient(client -> {
+            StreamingHttpClient streamingClient = client.asStreamingClient();
+            // Most endpoints will do, but this one is less likely to be racy.
+            StreamingHttpRequest request = streamingClient.post("/slowhead");
+            Future<StreamingHttpResponse> response = streamingClient.request(request).toFuture();
+            Thread.sleep(500);
+            response.cancel(true);
+        });
+        // For the http/1.x server, we don't necessarily see the cancellation until we shutdown the server.
+        // TODO: is that expected?
+        Thread.sleep(500);
+        otelTesting.assertTraces()
+                .hasTracesSatisfyingExactly(ta ->
+                        ta.hasSpansSatisfyingExactly(span -> {
+                            span.hasKind(SpanKind.SERVER);
+                            for (AttributeKey<String> key : expected) {
+                                span.hasAttribute(key, "set");
+                            }
+                        }));
+    }
+
     private void withClient(RunTest runTest) throws Exception {
         try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(),
                 new OpenTelemetryOptions.Builder().build())) {
@@ -384,7 +453,7 @@ class OpenTelemetryHttpServerFilterTest {
         }
     }
 
-    private static interface RunTest {
+    private interface RunTest {
         void run(HttpClient client) throws Exception;
     }
 
@@ -421,51 +490,61 @@ class OpenTelemetryHttpServerFilterTest {
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> Single.defer(() -> {
                             final StreamingHttpResponse response = responseFactory.ok();
-                            response.payloadBody(Publisher.from(ctx.executionContext().bufferAllocator()
-                                    .fromAscii("done")));
+                            response.payloadBody(DEFAULT_BODY);
+
+                            response.transform(new StatelessTrailersTransformer<Buffer>() {
+                                @Override
+                                protected HttpHeaders payloadComplete(HttpHeaders trailers) {
+                                    return trailers.set("x-trailer", "trailer-value");
+                                }
+                            });
 
                             if (request.path().equals("/responseerror")) {
                                 return Single.failed(new Exception("response failed"));
-                            }
-                            if (request.path().startsWith("/consumebodyinhandler")) {
+                            } else if (request.path().equals("/consumebodyinhandler")) {
                                 request.payloadBody().ignoreElements().subscribe();
-                            } else if (request.path().startsWith("/consumebodyasresponse")) {
+                                return Single.succeeded(response);
+                            } else if (request.path().equals("/consumebodyasresponse")) {
                                 response.transformMessageBody(body ->
                                         request.payloadBody().ignoreElements().concat(body));
+                                return Single.succeeded(response);
                             } else if (request.path().equals("/responsebodyerror")) {
-                                response.transformMessageBody(body ->
-                                        body.concat(Publisher.failed(new Exception("response body failed"))));
-                            } else if (request.path().startsWith("/slow")) {
-                                response.payloadBody(Publisher.never());
+                                response.payloadBody(DEFAULT_BODY.concat(
+                                        Publisher.failed(new Exception("response body failed"))));
+                                return Single.succeeded(response);
+                            } else if (request.path().equals("/slowbody")) {
+                                response.transformPayloadBody(body -> Publisher.never());
+                                return Single.succeeded(response);
+                            } else if (request.path().equals("/slowhead")) {
+                                return Single.never();
+                            } else {
+                                return Single.succeeded(response);
                             }
-                            return Single.succeeded(response);
                         }));
     }
 
     private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
 
         static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = AttributeKey.stringKey("onNewExchange");
-        // private static final AttributeKey<String> ON_CONNECTION_ACCEPTED_KEY =
-        //        makeKey("onConnectionAccepted");
 
         static final AttributeKey<String> ON_REQUEST_KEY = AttributeKey.stringKey("onRequest");
 
         static final AttributeKey<String> ON_RESPONSE_KEY = AttributeKey.stringKey("onResponse");
         static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = AttributeKey.stringKey("onResponseError");
-        // private static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = makeKey("onResponseCancel");
+        static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = AttributeKey.stringKey("onResponseCancel");
         static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = AttributeKey.stringKey("onExchangeFinally");
 
         static final AttributeKey<String> ON_REQUEST_DATA_KEY = AttributeKey.stringKey("onRequestData");
-        // private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
+        static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = AttributeKey.stringKey("onRequestTrailers");
         static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = AttributeKey.stringKey("onRequestComplete");
-         static final AttributeKey<String> ON_REQUEST_ERROR_KEY = AttributeKey.stringKey("onRequestError");
-        // private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
+        static final AttributeKey<String> ON_REQUEST_ERROR_KEY = AttributeKey.stringKey("onRequestError");
+        static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = AttributeKey.stringKey("onRequestCancel");
 
         static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
-        // private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
+        static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = AttributeKey.stringKey("onResponseTrailers");
         static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
         static final AttributeKey<String> ON_RESPONSE_BODY_ERROR_KEY = AttributeKey.stringKey("onResponseBodyError");
-        // private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
+        static final AttributeKey<String> ON_RESPONSE_BODY_CANCEL_KEY = AttributeKey.stringKey("onResponseBodyCancel");
 
         @Override
         public HttpExchangeObserver onNewExchange() {
@@ -473,7 +552,6 @@ class OpenTelemetryHttpServerFilterTest {
             return new HttpExchangeObserver() {
                 @Override
                 public void onConnectionSelected(ConnectionInfo info) {
-                    // setKey(ON_CONNECTION_ACCEPTED_KEY);
                 }
 
                 @Override
@@ -487,7 +565,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onRequestTrailers(HttpHeaders trailers) {
-                            // setKey(ON_REQUEST_TRAILERS_KEY);
+                             setKey(ON_REQUEST_TRAILERS_KEY);
                         }
 
                         @Override
@@ -502,7 +580,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onRequestCancel() {
-                            // setKey(ON_REQUEST_CANCEL_KEY);
+                             setKey(ON_REQUEST_CANCEL_KEY);
                         }
                     };
                 }
@@ -518,7 +596,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onResponseTrailers(HttpHeaders trailers) {
-                            // setKey(ON_RESPONSE_TRAILERS_KEY);
+                            setKey(ON_RESPONSE_TRAILERS_KEY);
                         }
 
                         @Override
@@ -533,7 +611,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onResponseCancel() {
-                            // setKey(ON_RESPONSE_CANCEL_2_KEY);
+                            setKey(ON_RESPONSE_BODY_CANCEL_KEY);
                         }
                     };
                 }
@@ -545,7 +623,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                 @Override
                 public void onResponseCancel() {
-                    // setKey(ON_RESPONSE_CANCEL_KEY);
+                    setKey(ON_RESPONSE_CANCEL_KEY);
                 }
 
                 @Override

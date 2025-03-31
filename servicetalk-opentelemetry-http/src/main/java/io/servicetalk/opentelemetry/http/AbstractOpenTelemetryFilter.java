@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -73,8 +74,26 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
                                     }));
                     // We also need to make sure the body is cleaned up if we don't get a response at all.
                     if (request != null) {
-                        result = result.beforeOnError(ignored2 ->
-                                request.transformMessageBody(b -> transformBody(b, context)));
+                        result = result.beforeFinally(new TerminalSignalConsumer() {
+                            @Override
+                            public void onComplete() {
+                                // noop: result should be attached to body.
+                            }
+
+                            @Override
+                            public void onError(Throwable throwable) {
+                                finish();
+                            }
+
+                            @Override
+                            public void cancel() {
+                                finish();
+                            }
+
+                            private void finish() {
+                                request.transformMessageBody(b -> transformBody(b, context));
+                            }
+                        });
                     }
                     SourceAdapters.toSource(result.shareContextOnSubscribe()).subscribe(subscriber);
                 }
