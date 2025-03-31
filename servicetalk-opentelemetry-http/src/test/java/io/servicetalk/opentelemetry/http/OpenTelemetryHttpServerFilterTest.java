@@ -287,10 +287,10 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
-                TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
+                TestHttpLifecycleObserver.ON_RESPONSE_BODY_ERROR_KEY
         ));
         withClient(client -> {
-            HttpRequest request = client.get("/responseerror");
+            HttpRequest request = client.get("/responsebodyerror");
             request.payloadBody().writeAscii("bar");
             ExecutionException ex = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
             assertThat(ex.getCause()).isInstanceOf(ClosedChannelException.class);
@@ -361,8 +361,9 @@ class OpenTelemetryHttpServerFilterTest {
                             } else if (request.path().startsWith("/consumebodyasresponse")) {
                                 response.transformMessageBody(body ->
                                         request.payloadBody().ignoreElements().concat(body));
-                            } else if (request.path().startsWith("/responseerror")) {
-                                response.payloadBody(Publisher.failed(new Exception("sad")));
+                            } else if (request.path().startsWith("/responsebodyerror")) {
+                                response.transformMessageBody(body ->
+                                        body.concat(Publisher.failed(new Exception("sad"))));
                             } else if (request.path().startsWith("/slow")) {
                                 response.payloadBody(Publisher.never());
                             }
@@ -392,7 +393,7 @@ class OpenTelemetryHttpServerFilterTest {
         static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
         // private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
         static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
-        // private static final AttributeKey<String> ON_RESPONSE_ERROR_2_KEY = makeKey("onResponseError-2");
+        static final AttributeKey<String> ON_RESPONSE_BODY_ERROR_KEY = AttributeKey.stringKey("onResponseBodyError");
         // private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
 
         @Override
@@ -456,7 +457,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onResponseError(Throwable cause) {
-                            // setKey(ON_RESPONSE_ERROR_2_KEY, cause);
+                             setKey(ON_RESPONSE_BODY_ERROR_KEY);
                         }
 
                         @Override
@@ -468,7 +469,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                 @Override
                 public void onResponseError(Throwable cause) {
-                    // setKey(ON_RESPONSE_ERROR_KEY, cause);
+                     setKey(ON_RESPONSE_ERROR_KEY);
                 }
 
                 @Override
