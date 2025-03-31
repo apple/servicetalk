@@ -393,7 +393,7 @@ final class NettyHttpServer {
                 // the response go through first. After `responseWrite` completes we can immediately start draining the
                 // request message body because completion of the `responseWrite` means completion of the flat response
                 // stream and completion of the business logic.
-                final Completable responseWrite = connection.write(
+                Completable responseWrite = connection.write(
                         // Don't expect any exceptions from service because it's already wrapped with
                         // HttpExceptionMapperServiceFilter.
                         service.handle(this, request, streamingResponseFactory())
@@ -420,7 +420,7 @@ final class NettyHttpServer {
                         }));
 
                 if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
+                    responseWrite = responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
@@ -431,11 +431,15 @@ final class NettyHttpServer {
                             // context between concatenated Completables.
                             .shareContextOnSubscribe());
                 } else {
-                    return responseWrite.concat(requestCompletion);
+                    responseWrite = responseWrite.concat(requestCompletion);
                 }
+                // We need to apply shareContextOnSubscribe() to the result of concatenation to share the same context
+                // between steps taken before service.handle(...) and inside service.handle(...).
+                return responseWrite.shareContextOnSubscribe();
             });
-            // AsyncContext is isolated between repeated exchanges by flatMapCompletable that processes a rawRequest.
-            return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
+            // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate
+            // AsyncContext state between repeated cycles.
+            return handleMultipleRequests ? defer(() -> exchange).repeat(__ -> true).ignoreElements() : exchange;
         }
 
         @Nonnull
