@@ -18,11 +18,13 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -42,6 +44,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -68,6 +71,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -147,6 +151,20 @@ class DefaultNettyConnectionTest {
     @Test
     void testWritePublisher() {
         toSource(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())))
+                .subscribe(writeListener);
+        writeListener.awaitOnComplete();
+        pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG);
+    }
+
+    @Test
+    void testWritePublisherAsyncContextPropagation() {
+        // We expect the AsyncContext state to be shared between write publisher and returned completable
+        AtomicReference<ContextMap> savedCtx = new AtomicReference<>();
+        toSource(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())
+                        .beforeOnSubscribe(ignore -> savedCtx.set(AsyncContext.context()))
+                        .beforeFinally(() -> assertThat(AsyncContext.context(), is(sameInstance(savedCtx.get())))))
+                .beforeOnSubscribe(ignore -> assertThat(AsyncContext.context(), is(sameInstance(savedCtx.get()))))
+                .beforeFinally(() -> assertThat(AsyncContext.context(), is(sameInstance(savedCtx.get())))))
                 .subscribe(writeListener);
         writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG);
