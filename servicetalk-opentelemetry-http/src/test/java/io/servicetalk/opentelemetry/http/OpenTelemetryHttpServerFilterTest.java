@@ -54,8 +54,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -66,6 +69,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OpenTelemetryHttpServerFilterTest {
 
@@ -248,24 +252,72 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     @Test
-    void autoRequestDisposal() throws Exception {
+    void autoRequestDisposalOk() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
+                        TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
+                        TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                        TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
+                        TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY
+        ));
+        withClient(client -> {
+            HttpRequest request = client.get("/foo");
+            request.payloadBody().writeAscii("bar");
+            client.request(request).toFuture().get();
+            Thread.sleep(500);
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasKind(SpanKind.SERVER);
+                                for (AttributeKey<String> key : expected) {
+                                    span.hasAttribute(key, "set");
+                                }
+                            }));
+        });
+    }
+
+    @Test
+    void autoRequestDisposalErrorResponse() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
+                TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
+        ));
+        withClient(client -> {
+            HttpRequest request = client.get("/responseerror");
+            request.payloadBody().writeAscii("bar");
+            ExecutionException ex = assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
+            assertThat(ex.getCause()).isInstanceOf(ClosedChannelException.class);
+
+            Thread.sleep(500);
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasKind(SpanKind.SERVER);
+                                for (AttributeKey<String> key : expected) {
+                                    span.hasAttribute(key, "set");
+                                }
+                            }));
+        });
+    }
+
+    private void withClient(RunTest runTest) throws Exception {
         try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(),
                 new OpenTelemetryOptions.Builder().build())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
-                HttpRequest request = client.get("/foo");
-                request.payloadBody().writeAscii("bar");
-                client.request(request).toFuture().get();
+                runTest.run(client);
             }
-            otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta -> {
-                        ta.hasSpansSatisfyingExactly(span -> {
-                            span.hasKind(SpanKind.SERVER);
-                            for (AttributeKey<String> key : TestHttpLifecycleObserver.ALL_KEYS) {
-                                span.hasAttribute(key, "set");
-                            }
-                        });
-                    });
         }
+    }
+
+    private static interface RunTest {
+        void run(HttpClient client) throws Exception;
     }
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
@@ -300,38 +352,46 @@ class OpenTelemetryHttpServerFilterTest {
                 .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver()))
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> Single.defer(() -> {
-                            // We deliberately ignore the request
-                            StreamingHttpResponse response = responseFactory.ok();
+                            final StreamingHttpResponse response = responseFactory.ok();
                             response.payloadBody(Publisher.from(ctx.executionContext().bufferAllocator()
                                     .fromAscii("done")));
+
+                            if (request.path().startsWith("/consumebodyinhandler")) {
+                                request.payloadBody().ignoreElements().subscribe();
+                            } else if (request.path().startsWith("/consumebodyasresponse")) {
+                                response.transformMessageBody(body ->
+                                        request.payloadBody().ignoreElements().concat(body));
+                            } else if (request.path().startsWith("/responseerror")) {
+                                response.payloadBody(Publisher.failed(new Exception("sad")));
+                            } else if (request.path().startsWith("/slow")) {
+                                response.payloadBody(Publisher.never());
+                            }
                             return Single.succeeded(response);
                         }));
     }
 
     private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
 
-        private static final Set<AttributeKey<String>> ALL_KEYS = new HashSet<>();
-
-        private static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = makeKey("onNewExchange");
+        static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = AttributeKey.stringKey("onNewExchange");
         // private static final AttributeKey<String> ON_CONNECTION_ACCEPTED_KEY =
         //        makeKey("onConnectionAccepted");
 
-        private static final AttributeKey<String> ON_REQUEST_KEY = makeKey("onRequest");
+        static final AttributeKey<String> ON_REQUEST_KEY = AttributeKey.stringKey("onRequest");
 
-        private static final AttributeKey<String> ON_RESPONSE_KEY = makeKey("onResponse");
-        // private static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = makeKey("onResponseError");
+        static final AttributeKey<String> ON_RESPONSE_KEY = AttributeKey.stringKey("onResponse");
+        static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = AttributeKey.stringKey("onResponseError");
         // private static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = makeKey("onResponseCancel");
-        private static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = makeKey("onExchangeFinally");
+        static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = AttributeKey.stringKey("onExchangeFinally");
 
-        private static final AttributeKey<String> ON_REQUEST_DATA_KEY = makeKey("onRequestData");
+        static final AttributeKey<String> ON_REQUEST_DATA_KEY = AttributeKey.stringKey("onRequestData");
         // private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
-        private static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = makeKey("onRequestComplete");
+        static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = AttributeKey.stringKey("onRequestComplete");
         // private static final AttributeKey<String> ON_REQUEST_ERROR_KEY = makeKey("onRequestError");
         // private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
 
-        private static final AttributeKey<String> ON_RESPONSE_DATA_KEY = makeKey("onResponseData");
+        static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
         // private static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = makeKey("onResponseTrailers");
-        private static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = makeKey("onResponseComplete");
+        static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
         // private static final AttributeKey<String> ON_RESPONSE_ERROR_2_KEY = makeKey("onResponseError-2");
         // private static final AttributeKey<String> ON_RESPONSE_CANCEL_2_KEY = makeKey("onResponseCancel-2");
 
@@ -421,13 +481,6 @@ class OpenTelemetryHttpServerFilterTest {
                     setKey(ON_EXCHANGE_FINALLY_KEY);
                 }
             };
-        }
-
-        private static AttributeKey<String> makeKey(String keyName) {
-            AttributeKey<String> key = AttributeKey.stringKey(keyName);
-            boolean added = ALL_KEYS.add(key);
-            assert added;
-            return key;
         }
     }
 
