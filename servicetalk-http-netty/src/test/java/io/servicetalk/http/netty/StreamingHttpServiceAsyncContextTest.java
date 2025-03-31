@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,12 @@ import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
-class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
+class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+
+    @Override
+    protected boolean isBlocking() {
+        return false;
+    }
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,

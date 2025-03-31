@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,24 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.hamcrest.Matchers;
+
 import static java.lang.Integer.toHexString;
 import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class BlockingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Override
+    protected boolean isBlocking() {
+        return true;
+    }
+
+    @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                                boolean useImmediate) throws Exception {
-        // Ignore "useImmediate"
+        assertThat(useImmediate, Matchers.is(false));
         return serverBuilder.listenBlockingAndAwait(newEmptyAsyncContextService());
     }
 
@@ -57,7 +65,8 @@ class BlockingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContex
     @Override
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                               boolean useImmediate, boolean asyncService) throws Exception {
-        // Ignore "useImmediate" and "asyncService"
+        assertThat(useImmediate, Matchers.is(false));
+        assertThat(asyncService, Matchers.is(false));
         return serverBuilder.listenBlockingAndAwait(service());
     }
 
