@@ -356,7 +356,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
         }
     }
 
-    private static String makeClientRequestWithId(BlockingHttpConnection connection, String requestId) throws Exception {
+    private static String makeClientRequestWithId(BlockingHttpConnection connection,
+                                                  String requestId) throws Exception {
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
         HttpResponse response = connection.request(request);
