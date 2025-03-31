@@ -27,6 +27,8 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
@@ -342,6 +344,37 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
+    @Test
+    void autoRequestDisposalRequestBodyError() throws Exception {
+        Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
+                TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY
+        ));
+        withClient(client -> {
+            StreamingHttpClient streamingClient = client.asStreamingClient();
+            // Most endpoints will do, but this one is less likely to be racy.
+            StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
+            request.payloadBody(Publisher.from(client.executionContext().bufferAllocator().fromAscii("bar"))
+                    .concat(Publisher.failed(new Exception("request body failed"))));
+            ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
+                    .flatMap(response -> response.toResponse()).toFuture().get());
+            assertThat(ex.getCause().getMessage()).isEqualTo("request body failed");
+
+            Thread.sleep(500);
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasKind(SpanKind.SERVER);
+                                for (AttributeKey<String> key : expected) {
+                                    span.hasAttribute(key, "set");
+                                }
+                            }));
+        });
+    }
+
     private void withClient(RunTest runTest) throws Exception {
         try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(),
                 new OpenTelemetryOptions.Builder().build())) {
@@ -425,7 +458,7 @@ class OpenTelemetryHttpServerFilterTest {
         static final AttributeKey<String> ON_REQUEST_DATA_KEY = AttributeKey.stringKey("onRequestData");
         // private static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = makeKey("onRequestTrailers");
         static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = AttributeKey.stringKey("onRequestComplete");
-        // private static final AttributeKey<String> ON_REQUEST_ERROR_KEY = makeKey("onRequestError");
+         static final AttributeKey<String> ON_REQUEST_ERROR_KEY = AttributeKey.stringKey("onRequestError");
         // private static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = makeKey("onRequestCancel");
 
         static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
@@ -464,7 +497,7 @@ class OpenTelemetryHttpServerFilterTest {
 
                         @Override
                         public void onRequestError(Throwable cause) {
-                            // setKey(ON_REQUEST_ERROR_KEY, cause);
+                             setKey(ON_REQUEST_ERROR_KEY);
                         }
 
                         @Override

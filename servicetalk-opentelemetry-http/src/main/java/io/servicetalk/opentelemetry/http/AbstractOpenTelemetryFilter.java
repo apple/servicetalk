@@ -71,7 +71,6 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
                                         }
                                         return publisher;
                                     }));
-
                     // We also need to make sure the body is cleaned up if we don't get a response at all.
                     if (request != null) {
                         result = result.beforeOnError(ignored2 ->
