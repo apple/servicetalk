@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -29,7 +30,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
 class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
@@ -48,18 +50,21 @@ class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsync
             // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
             // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
+            StreamingHttpResponse response;
             if (!AsyncContext.isEmpty()) {
-                return succeeded(factory.internalServerError().payloadBody(from(AsyncContext.context().toString()),
-                        appSerializerUtf8FixLen()));
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                return succeeded(factory.ok()
-                        .setHeader(REQUEST_ID_HEADER, requestId));
+                response = factory.internalServerError();
             } else {
-                return succeeded(factory.badRequest());
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response = factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response = factory.badRequest();
+                }
             }
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            return succeeded(response.payloadBody(from(
+                    alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context()))))));
         };
     }
 

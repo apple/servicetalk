@@ -15,14 +15,19 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
 class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
@@ -40,17 +45,21 @@ class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAs
             // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
             if (!AsyncContext.isEmpty()) {
-                response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
-                return;
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                response.setHeader(REQUEST_ID_HEADER, requestId);
+                response.status(INTERNAL_SERVER_ERROR);
             } else {
-                response.status(BAD_REQUEST);
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response.setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response.status(BAD_REQUEST);
+                }
             }
-            response.sendMetaData().close();
+
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
+                writer.write(alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context()))));
+            }
         };
     }
 

@@ -18,9 +18,12 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
 class BlockingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
@@ -34,18 +37,20 @@ class BlockingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContex
 
     private static BlockingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
+            HttpResponse response;
             if (!AsyncContext.isEmpty()) {
-                BufferAllocator alloc = ctx.executionContext().bufferAllocator();
-                return factory.internalServerError()
-                        .payloadBody(alloc.fromAscii(AsyncContext.context().toString()));
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                return factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                response = factory.internalServerError();
             } else {
-                return factory.badRequest();
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response = factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response = factory.badRequest();
+                }
             }
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            return response.payloadBody(alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context()))));
         };
     }
 

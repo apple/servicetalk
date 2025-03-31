@@ -29,6 +29,8 @@ import io.servicetalk.transport.api.ServerContext;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
 class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
@@ -44,18 +46,21 @@ class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTe
 
     private HttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
+            HttpResponse response;
             if (!AsyncContext.isEmpty()) {
-                BufferAllocator alloc = ctx.executionContext().bufferAllocator();
-                return succeeded(factory.internalServerError()
-                        .payloadBody(alloc.fromAscii(AsyncContext.context().toString())));
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
+                response = factory.internalServerError();
             } else {
-                return succeeded(factory.badRequest());
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response = factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response = factory.badRequest();
+                }
             }
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            return succeeded(response.payloadBody(
+                    alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context())))));
         };
     }
 

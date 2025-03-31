@@ -71,6 +71,11 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -302,17 +307,19 @@ abstract class AbstractHttpServiceAsyncContextTest {
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            makeClientRequestWithId(connection, "1");
-            makeClientRequestWithId(connection, "2");
+            String ctx1 = makeClientRequestWithId(connection, "1");
+            String ctx2 = makeClientRequestWithId(connection, "2");
+            assertThat("Server must have difference context for each request", ctx1, is(not(equalTo(ctx2))));
         }
     }
 
-    private static void makeClientRequestWithId(BlockingHttpConnection connection, String requestId) throws Exception {
+    private static String makeClientRequestWithId(BlockingHttpConnection connection, String requestId) throws Exception {
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
         HttpResponse response = connection.request(request);
         assertEquals(OK, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
+        return response.payloadBody().toString(UTF_8);
     }
 
     private static final class AsyncContextLifecycleObserver implements HttpLifecycleObserver, HttpExchangeObserver,
