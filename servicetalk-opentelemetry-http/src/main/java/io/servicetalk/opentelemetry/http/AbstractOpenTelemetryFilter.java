@@ -59,7 +59,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(responseSingle.map(resp ->
+                    Single<StreamingHttpResponse> result = responseSingle.map(resp ->
                                     resp.transformMessageBody(body -> {
                                         Publisher<?> publisher = transformBody(body, context);
                                         if (request != null) {
@@ -70,9 +70,14 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
                                                     .transformMessageBody(b -> transformBody(b, context)));
                                         }
                                         return publisher;
-                                    }))
-                                    .shareContextOnSubscribe())
-                            .subscribe(subscriber);
+                                    }));
+
+                    // We also need to make sure the body is cleaned up if we don't get a response at all.
+                    if (request != null) {
+                        result = result.beforeOnError(ignored2 ->
+                                request.transformMessageBody(b -> transformBody(b, context)));
+                    }
+                    SourceAdapters.toSource(result.shareContextOnSubscribe()).subscribe(subscriber);
                 }
             }
         };

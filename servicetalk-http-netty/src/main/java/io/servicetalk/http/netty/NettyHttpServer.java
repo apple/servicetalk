@@ -413,7 +413,7 @@ final class NettyHttpServer {
                         })); // TODO: we may need to complete the response in the case the service.handle(..) method fails.
 
                 if (drainRequestPayloadBody) {
-                    responseWrite = responseWrite.beforeFinally(() -> {
+                    responseWrite = responseWrite.afterFinally(() -> {
                         if (!payloadSubscribed.get()) {
                             request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
                         }
