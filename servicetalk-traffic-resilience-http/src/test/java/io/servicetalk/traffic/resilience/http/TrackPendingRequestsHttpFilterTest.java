@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
-
-import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
+package io.servicetalk.traffic.resilience.http;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
-import static java.util.Collections.singletonList;
 
-class ContentCodingHttpServiceFilterTest {
+class TrackPendingRequestsHttpFilterTest {
 
     @Test
-    @SuppressWarnings("deprecation")
     void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(new ContentCodingHttpServiceFilter(singletonList(identity())));
+        verifyServerFilterAsyncContextVisibility(TrackPendingRequestsHttpFilter.BEFORE);
     }
 }
