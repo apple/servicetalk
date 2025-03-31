@@ -281,7 +281,7 @@ class OpenTelemetryHttpServerFilterTest {
                         TestHttpLifecycleObserver.ON_RESPONSE_TRAILERS_KEY,
                         TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             HttpRequest request = client.get("/foo");
             request.trailers().set("x-request-trailer", "request-trailer");
             request.payloadBody().writeAscii("bar");
@@ -309,7 +309,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_ERROR_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             HttpRequest request = client.get("/responsebodyerror");
             request.payloadBody().writeAscii("bar");
             ExecutionException ex = assertThrows(ExecutionException.class,
@@ -338,7 +338,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             HttpRequest request = client.get("/responseerror");
             request.payloadBody().writeAscii("bar");
             HttpResponse resp = client.request(request).toFuture().get();
@@ -365,7 +365,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
@@ -397,7 +397,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_CANCEL_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowbody");
@@ -426,7 +426,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
-        withClient(client -> {
+        runWithClient(client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowhead");
@@ -447,16 +447,16 @@ class OpenTelemetryHttpServerFilterTest {
                         }));
     }
 
-    private void withClient(RunTest runTest) throws Exception {
+    private void runWithClient(RunWithClient runWithClient) throws Exception {
         try (ServerContext context = buildStreamingServer(otelTesting.getOpenTelemetry(),
                 new OpenTelemetryOptions.Builder().build())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
-                runTest.run(client);
+                runWithClient.run(client);
             }
         }
     }
 
-    private interface RunTest {
+    private interface RunWithClient {
         void run(HttpClient client) throws Exception;
     }
 
@@ -529,20 +529,18 @@ class OpenTelemetryHttpServerFilterTest {
     private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
 
         static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = AttributeKey.stringKey("onNewExchange");
-
-        static final AttributeKey<String> ON_REQUEST_KEY = AttributeKey.stringKey("onRequest");
-
-        static final AttributeKey<String> ON_RESPONSE_KEY = AttributeKey.stringKey("onResponse");
-        static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = AttributeKey.stringKey("onResponseError");
-        static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = AttributeKey.stringKey("onResponseCancel");
         static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = AttributeKey.stringKey("onExchangeFinally");
 
+        static final AttributeKey<String> ON_REQUEST_KEY = AttributeKey.stringKey("onRequest");
         static final AttributeKey<String> ON_REQUEST_DATA_KEY = AttributeKey.stringKey("onRequestData");
         static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = AttributeKey.stringKey("onRequestTrailers");
         static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = AttributeKey.stringKey("onRequestComplete");
         static final AttributeKey<String> ON_REQUEST_ERROR_KEY = AttributeKey.stringKey("onRequestError");
         static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = AttributeKey.stringKey("onRequestCancel");
 
+        static final AttributeKey<String> ON_RESPONSE_KEY = AttributeKey.stringKey("onResponse");
+        static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = AttributeKey.stringKey("onResponseError");
+        static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = AttributeKey.stringKey("onResponseCancel");
         static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
         static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = AttributeKey.stringKey("onResponseTrailers");
         static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
