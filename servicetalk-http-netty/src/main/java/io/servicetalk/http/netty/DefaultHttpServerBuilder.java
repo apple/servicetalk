@@ -76,7 +76,8 @@ import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpServerBuilder implements HttpServerBuilder {
+// Non-final to give more flexibility for testing, production code must use HttpServers static factories.
+class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpServerBuilder.class);
 
@@ -329,6 +330,16 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return listenForService(streamingService, serviceFilters, streamingService.requiredOffloads());
     }
 
+    /**
+     * In internal hook to get access to entire filters chain and modify that for testing if necessary.
+     *
+     * @param filters the original stream of filters
+     * @return modified stream of filters
+     */
+    Stream<StreamingHttpServiceFilterFactory> alterFilters(final Stream<StreamingHttpServiceFilterFactory> filters) {
+        return filters;
+    }
+
     private List<StreamingHttpServiceFilterFactory> initServiceFilters() {
         // Take snapshot of currently appended filters:
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>(this.serviceFilters);
@@ -409,7 +420,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
         // All the filters can be appended.
         filters = Stream.concat(filters, serviceFilters.stream());
-        final StreamingHttpService filteredService = buildService(filters, service);
+        final StreamingHttpService filteredService = buildService(alterFilters(filters), service);
 
         final HttpExecutionStrategy builderStrategy = this.strategy;
         return doBind(roConfig, executionContext, connectionAcceptor, filteredService, earlyConnectionAcceptor,

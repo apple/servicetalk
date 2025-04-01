@@ -50,6 +50,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +62,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
@@ -194,14 +196,16 @@ abstract class AbstractHttpServiceAsyncContextTest {
         Assumptions.assumeFalse(isBlocking() && asyncService, "Blocking service can not be async");
 
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0)).protocols(protocol.config);
+        AtomicReference<ContextMap> currentContext = new AtomicReference<>();
+        HttpServerBuilder builder = new CaptureRequestContextHttpServerBuilder(localAddress(0), currentContext)
+                .protocols(protocol.config);
         switch (place) {
             case LIFECYCLE_OBSERVER:
-                builder.lifecycleObserver(new AsyncContextLifecycleObserver(errorQueue));
+                builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue));
                 break;
             case NON_OFFLOADING_LIFECYCLE_OBSERVER_FILTER:
                 builder.appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(errorQueue)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue)));
                 break;
             case NON_OFFLOADING_FILTER:
                 builder.appendNonOffloadingServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -211,7 +215,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 break;
             case LIFECYCLE_OBSERVER_FILTER:
                 builder.appendServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(errorQueue)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue)));
                 break;
             case FILTER:
                 builder.appendServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -369,25 +373,25 @@ abstract class AbstractHttpServiceAsyncContextTest {
     private static final class AsyncContextLifecycleObserver implements HttpLifecycleObserver, HttpExchangeObserver,
                                                                         HttpRequestObserver, HttpResponseObserver {
 
+        private final AtomicReference<ContextMap> currentContext;
         private final Queue<Throwable> errorQueue;
-        @Nullable
-        private ContextMap currentContext;
         @Nullable
         private CharSequence requestId;
 
-        AsyncContextLifecycleObserver(Queue<Throwable> errorQueue) {
+        AsyncContextLifecycleObserver(AtomicReference<ContextMap> currentContext, Queue<Throwable> errorQueue) {
+            this.currentContext = currentContext;
             this.errorQueue = errorQueue;
         }
 
         @Override
         public HttpExchangeObserver onNewExchange() {
-            currentContext = AsyncContext.context();
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
             return this;
         }
 
         @Override
         public void onConnectionSelected(ConnectionInfo info) {
-            AsyncContextHttpFilterVerifier.assertSameContext(currentContext, errorQueue);
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
         }
 
         @Override
@@ -476,7 +480,38 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 return;
             }
             AsyncContextHttpFilterVerifier.assertAsyncContext(K1, requestId, errorQueue);
-            AsyncContextHttpFilterVerifier.assertSameContext(currentContext, errorQueue);
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
+        }
+    }
+
+    private static final class CaptureRequestContextHttpServerBuilder extends DefaultHttpServerBuilder {
+
+        private final AtomicReference<ContextMap> currentContext;
+
+        CaptureRequestContextHttpServerBuilder(SocketAddress address, AtomicReference<ContextMap> currentContext) {
+            super(address);
+            this.currentContext = currentContext;
+        }
+
+        @Override
+        Stream<StreamingHttpServiceFilterFactory> alterFilters(Stream<StreamingHttpServiceFilterFactory> filters) {
+            return Stream.concat(Stream.of(new CaptureRequestHttpContextServiceFilter()), super.alterFilters(filters));
+        }
+
+        private final class CaptureRequestHttpContextServiceFilter implements StreamingHttpServiceFilterFactory {
+
+            @Override
+            public StreamingHttpServiceFilter create(StreamingHttpService service) {
+                return new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        // Captures the very first AsyncContext state in the filter chain.
+                        currentContext.set(AsyncContext.context());
+                        return delegate().handle(ctx, request, responseFactory);
+                    }
+                };
+            }
         }
     }
 }

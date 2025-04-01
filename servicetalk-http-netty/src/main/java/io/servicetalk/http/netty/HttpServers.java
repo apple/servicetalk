@@ -64,7 +64,7 @@ public final class HttpServers {
      */
     public static HttpServerBuilder forPort(final int port) {
         final InetSocketAddress address = new InetSocketAddress(port);
-        return applyProviders(address, new DefaultHttpServerBuilder(address));
+        return applyProviders(address, new FinalDefaultHttpServerBuilder(address));
     }
 
     /**
@@ -77,6 +77,13 @@ public final class HttpServers {
      * @see HttpServerBuilderProvider
      */
     public static HttpServerBuilder forAddress(final SocketAddress address) {
-        return applyProviders(address, new DefaultHttpServerBuilder(address));
+        return applyProviders(address, new FinalDefaultHttpServerBuilder(address));
+    }
+
+    private static final class FinalDefaultHttpServerBuilder extends DefaultHttpServerBuilder {
+
+        FinalDefaultHttpServerBuilder(final SocketAddress address) {
+            super(address);
+        }
     }
 }
