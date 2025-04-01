@@ -77,7 +77,7 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
                         result = result.beforeFinally(new TerminalSignalConsumer() {
                             @Override
                             public void onComplete() {
-                                // noop: result should be attached to body.
+                                // noop: Transformation be attached to the response body.
                             }
 
                             @Override
@@ -87,6 +87,8 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
 
                             @Override
                             public void cancel() {
+                                // TODO: this cancellation is racy wrt the drain of the request body so sometimes
+                                //  we set the request body context too late.
                                 finish();
                             }
 
