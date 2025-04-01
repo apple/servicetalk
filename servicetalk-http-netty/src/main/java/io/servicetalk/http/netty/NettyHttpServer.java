@@ -415,10 +415,13 @@ final class NettyHttpServer {
                 if (drainRequestPayloadBody) {
                     responseWrite = responseWrite.afterFinally(() -> {
                         if (!payloadSubscribed.get()) {
+                            // At this point, discarding the request payload body is an operation which should not
+                            // impact the state of request/response processing, and we need to do it in order to both
+                            // reuse the connection and finish any operators that may depend on both the request and
+                            // response bodies to have been fully processed.
                             request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
                         }
                     });
-
                 }
                 return responseWrite.concat(requestCompletion);
             });
