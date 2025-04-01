@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpRequestObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpResponseObserver;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
@@ -37,6 +38,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ConnectionInfo;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
@@ -44,6 +46,7 @@ import org.mockito.Mock;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -58,6 +61,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
@@ -69,6 +73,7 @@ import static io.servicetalk.http.utils.HttpLifecycleObservers.combine;
 import static io.servicetalk.http.utils.HttpLifecycleObservers.logging;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -353,6 +358,26 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverInOrder.verify(serverExchangeObserver).onExchangeFinally();
         verifyNoMoreInteractions(serverLifecycleObserver, serverExchangeObserver,
                 serverRequestObserver, serverResponseObserver);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void badResponsePayloadBody(HttpProtocol protocol) throws Exception {
+        serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                        StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                StreamingHttpResponse response = responseFactory.ok();
+                response.payloadBody(Publisher.from(CONTENT).concat(Publisher.failed(DELIBERATE_EXCEPTION)));
+                return Single.succeeded(response);
+            }
+        });
+        setUp(protocol);
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> makeRequestAndAssertResponse(SVC_ECHO, protocol, OK, CONTENT.readableBytes()));
+        assertThat(e.getCause(), instanceOf(protocol == HTTP_1 ? ClosedChannelException.class : Http2Exception.class));
+        awaitFullTermination();
     }
 
     private void makeRequestAndAssertResponse(String path, HttpProtocol protocol,
