@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,15 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -57,6 +62,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
@@ -71,6 +77,11 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,18 +107,29 @@ abstract class AbstractHttpServiceAsyncContextTest {
     protected static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     protected static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
 
+    abstract boolean isBlocking();
+
     abstract ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                               boolean useImmediate) throws Exception;
 
     abstract ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                              boolean useImmediate, boolean asyncService) throws Exception;
 
-    @Test
-    void newRequestsGetFreshContext() throws Exception {
-        newRequestsGetFreshContext(false);
+    private static List<Arguments> newRequestsGetFreshContextArguments() {
+        List<Arguments> params = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                params.add(Arguments.of(protocol, useImmediate));
+            }
+        }
+        return params;
     }
 
-    final void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0} useImmediate={1}")
+    @MethodSource("newRequestsGetFreshContextArguments")
+    final void newRequestsGetFreshContext(HttpProtocol protocol, boolean useImmediate) throws Exception {
+        Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
+
         final ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
         final int numRequests = 10;
@@ -117,8 +139,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
         // shouldn't pollute the service's AsyncContext.
         AsyncContext.put(K1, k1Value);
 
-        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0)),
-                useImmediate)) {
+        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0))
+                        .protocols(protocol.config), useImmediate)) {
 
             AtomicReference<Throwable> causeRef = new AtomicReference<>();
             CyclicBarrier barrier = new CyclicBarrier(concurrency);
@@ -127,7 +149,9 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 final int finalI = i;
                 executorService.execute(() -> {
                     try (BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
-                            .protocols(h1().maxPipelinedRequests(numRequests).build()).buildBlocking()) {
+                            .protocols(protocol == HttpProtocol.HTTP_1 ?
+                                    h1().maxPipelinedRequests(numRequests).build() : protocol.config)
+                            .buildBlocking()) {
                         try (BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
                             barrier.await();
                             for (int x = 0; x < numRequests; ++x) {
@@ -149,23 +173,39 @@ abstract class AbstractHttpServiceAsyncContextTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: useImmediate=false initContextKeyPlace={0} asyncService=false")
-    @EnumSource(InitContextKeyPlace.class)
-    void contextPreservedOverFilterBoundariesOffloaded(InitContextKeyPlace place) throws Exception {
-        contextPreservedOverFilterBoundaries(false, place, false);
+    private static List<Arguments> contextPreservedOverFilterBoundariesArguments() {
+        List<Arguments> params = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                for (boolean asyncService : Arrays.asList(false, true)) {
+                    for (InitContextKeyPlace place : InitContextKeyPlace.values()) {
+                        params.add(Arguments.of(protocol, useImmediate, asyncService, place));
+                    }
+                }
+            }
+        }
+        return params;
     }
 
-    final void contextPreservedOverFilterBoundaries(boolean useImmediate, InitContextKeyPlace place,
-                                                    boolean asyncService) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: " +
+            "protocol={0} useImmediate={1} asyncService={2} initContextKeyPlace={3}")
+    @MethodSource("contextPreservedOverFilterBoundariesArguments")
+    final void contextPreservedOverFilterBoundaries(HttpProtocol protocol, boolean useImmediate, boolean asyncService,
+                                                    InitContextKeyPlace place) throws Exception {
+        Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
+        Assumptions.assumeFalse(isBlocking() && asyncService, "Blocking service can not be async");
+
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+        AtomicReference<ContextMap> currentContext = new AtomicReference<>();
+        HttpServerBuilder builder = new CaptureRequestContextHttpServerBuilder(localAddress(0), currentContext)
+                .protocols(protocol.config);
         switch (place) {
             case LIFECYCLE_OBSERVER:
-                builder.lifecycleObserver(new AsyncContextLifecycleObserver(errorQueue));
+                builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue));
                 break;
             case NON_OFFLOADING_LIFECYCLE_OBSERVER_FILTER:
                 builder.appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(errorQueue)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue)));
                 break;
             case NON_OFFLOADING_FILTER:
                 builder.appendNonOffloadingServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -175,7 +215,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 break;
             case LIFECYCLE_OBSERVER_FILTER:
                 builder.appendServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(errorQueue)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue)));
                 break;
             case FILTER:
                 builder.appendServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -187,7 +227,8 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 throw new IllegalArgumentException("Unknown InitContextKeyPlace: " + place);
         }
         try (ServerContext ctx = serverWithService(builder, useImmediate, asyncService);
-             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking();
+             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
+                     .protocols(protocol.config).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
             makeClientRequestWithId(connection, "1");
@@ -266,16 +307,26 @@ abstract class AbstractHttpServiceAsyncContextTest {
         };
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: connectionAcceptorType={0}")
-    @EnumSource(ConnectionAcceptorType.class)
-    void connectionAcceptorContextDoesNotLeakOffloaded(ConnectionAcceptorType type) throws Exception {
-        connectionAcceptorContextDoesNotLeak(type, false);
+    private static List<Arguments> connectionAcceptorContextDoesNotLeakArguments() {
+        List<Arguments> params = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean useImmediate : Arrays.asList(false, true)) {
+                for (ConnectionAcceptorType acceptorType : ConnectionAcceptorType.values()) {
+                    params.add(Arguments.of(protocol, useImmediate, acceptorType));
+                }
+            }
+        }
+        return params;
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}]: protocol={0} useImmediate={1} connectionAcceptorType={2}")
+    @MethodSource("connectionAcceptorContextDoesNotLeakArguments")
     @SuppressWarnings("deprecation")
-    final void connectionAcceptorContextDoesNotLeak(ConnectionAcceptorType connectionAcceptorType,
-                                                    boolean serverUseImmediate) throws Exception {
-        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+    final void connectionAcceptorContextDoesNotLeak(HttpProtocol protocol, boolean useImmediate,
+                                                    ConnectionAcceptorType connectionAcceptorType) throws Exception {
+        Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
+
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0)).protocols(protocol.config);
         switch (connectionAcceptorType) {
             case EARLY:
                 builder.appendEarlyConnectionAcceptor(conn -> {
@@ -298,41 +349,49 @@ abstract class AbstractHttpServiceAsyncContextTest {
             default:
                 throw new IllegalArgumentException("Unknown ConnectionAcceptorType: " + connectionAcceptorType);
         }
-        try (ServerContext ctx = serverWithEmptyAsyncContextService(builder, serverUseImmediate);
-             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildBlocking();
+        try (ServerContext ctx = serverWithEmptyAsyncContextService(builder, useImmediate);
+             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
+                     .protocols(protocol.config).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            makeClientRequestWithId(connection, "1");
-            makeClientRequestWithId(connection, "2");
+            String ctx1 = makeClientRequestWithId(connection, "1");
+            String ctx2 = makeClientRequestWithId(connection, "2");
+            assertThat("Server must have difference context for each request", ctx1, is(not(equalTo(ctx2))));
         }
     }
 
-    private static void makeClientRequestWithId(BlockingHttpConnection connection, String requestId) throws Exception {
+    private static String makeClientRequestWithId(BlockingHttpConnection connection,
+                                                  String requestId) throws Exception {
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
         HttpResponse response = connection.request(request);
         assertEquals(OK, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
+        return response.payloadBody().toString(UTF_8);
     }
 
     private static final class AsyncContextLifecycleObserver implements HttpLifecycleObserver, HttpExchangeObserver,
                                                                         HttpRequestObserver, HttpResponseObserver {
 
+        private final AtomicReference<ContextMap> currentContext;
         private final Queue<Throwable> errorQueue;
         @Nullable
         private CharSequence requestId;
 
-        AsyncContextLifecycleObserver(Queue<Throwable> errorQueue) {
+        AsyncContextLifecycleObserver(AtomicReference<ContextMap> currentContext, Queue<Throwable> errorQueue) {
+            this.currentContext = currentContext;
             this.errorQueue = errorQueue;
         }
 
         @Override
         public HttpExchangeObserver onNewExchange() {
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
             return this;
         }
 
         @Override
         public void onConnectionSelected(ConnectionInfo info) {
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
         }
 
         @Override
@@ -342,6 +401,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 AsyncContext.put(K1, requestId);
             }
             return this;
+        }
+
+        @Override
+        public void onRequestDataRequested(final long n) {
+            assertAsyncContext();
         }
 
         @Override
@@ -373,6 +437,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
         public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
             assertAsyncContext();
             return this;
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
+            assertAsyncContext();
         }
 
         @Override
@@ -411,6 +480,38 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 return;
             }
             AsyncContextHttpFilterVerifier.assertAsyncContext(K1, requestId, errorQueue);
+            AsyncContextHttpFilterVerifier.assertSameContext(currentContext.get(), errorQueue);
+        }
+    }
+
+    private static final class CaptureRequestContextHttpServerBuilder extends DefaultHttpServerBuilder {
+
+        private final AtomicReference<ContextMap> currentContext;
+
+        CaptureRequestContextHttpServerBuilder(SocketAddress address, AtomicReference<ContextMap> currentContext) {
+            super(address);
+            this.currentContext = currentContext;
+        }
+
+        @Override
+        Stream<StreamingHttpServiceFilterFactory> alterFilters(Stream<StreamingHttpServiceFilterFactory> filters) {
+            return Stream.concat(Stream.of(new CaptureRequestHttpContextServiceFilter()), super.alterFilters(filters));
+        }
+
+        private final class CaptureRequestHttpContextServiceFilter implements StreamingHttpServiceFilterFactory {
+
+            @Override
+            public StreamingHttpServiceFilter create(StreamingHttpService service) {
+                return new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        // Captures the very first AsyncContext state in the filter chain.
+                        currentContext.set(AsyncContext.context());
+                        return delegate().handle(ctx, request, responseFactory);
+                    }
+                };
+            }
         }
     }
 }

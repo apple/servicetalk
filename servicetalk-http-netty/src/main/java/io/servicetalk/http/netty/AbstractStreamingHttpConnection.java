@@ -188,7 +188,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 } else {
                     // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
                     // requests with non-replayable messageBody
-                    flatRequest = Single.<Object>succeeded(request).concatDeferSubscribe(messageBody);
+                    flatRequest = Single.<Object>succeeded(request)
+                            .concatDeferSubscribe(messageBody.shareContextOnSubscribe());
                     if (shouldAppendTrailers(connectionContext().protocol(), request)) {
                         flatRequest = flatRequest.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }
