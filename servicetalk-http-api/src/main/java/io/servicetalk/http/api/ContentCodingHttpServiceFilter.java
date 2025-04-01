@@ -112,7 +112,7 @@ public final class ContentCodingHttpServiceFilter implements StreamingHttpServic
                             request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
                         }
 
-                        return super.handle(ctx, request, responseFactory).map(response -> {
+                        return delegate().handle(ctx, request, responseFactory).map(response -> {
                             encodePayloadContentIfAvailable(request.headers(), request.method(), responseCodings,
                                     response, allocator);
                             return response;

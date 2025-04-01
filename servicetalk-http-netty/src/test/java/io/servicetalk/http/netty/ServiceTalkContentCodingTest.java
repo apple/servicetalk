@@ -119,7 +119,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                             assertThat(actualReqAcceptedEncodings, equalTo(expectedReqAcceptedEncodings));
                         }
 
-                        return super.handle(ctx, request, responseFactory);
+                        return delegate().handle(ctx, request, responseFactory);
                     } catch (Throwable t) {
                         errors.add(t);
                         return failed(t);
@@ -137,7 +137,7 @@ class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
-                    return super.request(delegate, request).map(response -> {
+                    return delegate.request(request).map(response -> {
                         if (INTERNAL_SERVER_ERROR.equals(response.status())) {
                             // Ignore any further validations
                             return response;
