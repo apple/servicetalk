@@ -16,11 +16,19 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
@@ -33,11 +41,13 @@ import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
@@ -47,6 +57,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NettyHttpServerConnectionDrainTest {
     private static final String LARGE_TEXT;
@@ -61,7 +72,6 @@ class NettyHttpServerConnectionDrainTest {
         LARGE_TEXT = sb.toString();
     }
 
-    @Disabled("https://github.com/apple/servicetalk/issues/981")
     @Test
     void requestIsAutoDrainedWhenUserFailsToConsume() throws Exception {
         BlockingHttpClient client = null;
@@ -72,6 +82,26 @@ class NettyHttpServerConnectionDrainTest {
         } finally {
             closeClient(client);
         }
+    }
+
+    @Test
+    void requestIsAutoDrainedWhenUserFailsToConsumeAndResponseBodyFails() throws Exception {
+        AtomicBoolean requestDrained = new AtomicBoolean();
+        StreamingHttpServiceFilterFactory filter = (service) -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                request.transformMessageBody(body -> body.afterFinally(() -> requestDrained.set(true)));
+                return service.handle(ctx, request, responseFactory);
+            }
+        };
+        try (ServerContext serverContext = server(true, respondFailsWithoutReadingRequest(), filter)) {
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .buildBlocking()) {
+                assertThrows(Exception.class, () -> client.request(client.get("/foo")));
+            }
+        }
+        assertTrue(requestDrained.get());
     }
 
     @Test
@@ -151,10 +181,21 @@ class NettyHttpServerConnectionDrainTest {
         return respondOkWithoutReadingRequest(() -> { });
     }
 
-    private static ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
+    private static StreamingHttpService respondFailsWithoutReadingRequest() {
+        return (ctx, request, responseFactory) -> {
+            return succeeded(responseFactory.ok().payloadBody(from("OK"), appSerializerUtf8FixLen())
+                    .transformPayloadBody(body -> body.concat(Publisher.failed(DELIBERATE_EXCEPTION))));
+        };
+    }
+
+    private static ServerContext server(boolean autoDrain, StreamingHttpService handler,
+                                        StreamingHttpServiceFilterFactory... filters) throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
         if (!autoDrain) {
             httpServerBuilder = httpServerBuilder.drainRequestPayloadBody(false);
+        }
+        for (StreamingHttpServiceFilterFactory filter : filters) {
+            httpServerBuilder.appendServiceFilter(filter);
         }
         ServerContext serverContext = httpServerBuilder
                 .listenStreamingAndAwait(handler);
