@@ -246,8 +246,8 @@ final class HeaderUtils {
         // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its content because
         // the PayloadInfo indicated it's effectively empty and does not contain trailers.
         return propagateCancel ?
-                flatMessage.concatPropagateCancel(messageBody.ignoreElements()) :
-                flatMessage.concat(messageBody.ignoreElements());
+                flatMessage.concatPropagateCancel(messageBody.ignoreElements().shareContextOnSubscribe()) :
+                flatMessage.concat(messageBody.ignoreElements().shareContextOnSubscribe());
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
@@ -326,7 +326,7 @@ final class HeaderUtils {
                 if (appendTrailers && !(items.get(items.size() - 1) instanceof HttpHeaders)) {
                     items.add(EmptyHttpHeaders.INSTANCE);
                 }
-                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
+                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items).shareContextOnSubscribe());
             } else if (reduction instanceof HttpHeaders) {
                 flatRequest = from(metadata, reduction);
             } else {

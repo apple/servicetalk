@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -29,10 +30,16 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
-import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
-class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
+class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+
+    @Override
+    protected boolean isBlocking() {
+        return false;
+    }
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
@@ -45,20 +52,24 @@ class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsync
 
     private StreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
-            request.messageBody().ignoreElements().subscribe();
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
+            StreamingHttpResponse response;
             if (!AsyncContext.isEmpty()) {
-                return succeeded(factory.internalServerError().payloadBody(from(AsyncContext.context().toString()),
-                        appSerializerUtf8FixLen()));
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                return succeeded(factory.ok()
-                        .setHeader(REQUEST_ID_HEADER, requestId));
+                response = factory.internalServerError();
             } else {
-                return succeeded(factory.badRequest());
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response = factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response = factory.badRequest();
+                }
             }
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            return succeeded(response.payloadBody(from(
+                    alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context()))))));
         };
     }
 
@@ -77,34 +88,26 @@ class StreamingHttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsync
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? defer(() -> doHandle(request, responseFactory).shareContextOnSubscribe()) :
-                        doHandle(request, responseFactory);
+                // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+                // A use-case with consumed request.messageBody() is evaluated by aggregated API.
+
+                return asyncService ? defer(() -> doHandle(responseFactory).shareContextOnSubscribe()) :
+                        doHandle(responseFactory);
             }
 
-            private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,
-                                                           final StreamingHttpResponseFactory factory) {
+            private Single<StreamingHttpResponse> doHandle(StreamingHttpResponseFactory factory) {
+                boolean isIoThread = currentThread().getName().startsWith(IO_THREAD_PREFIX);
+                if ((useImmediate && !isIoThread) || (!useImmediate && isIoThread)) {
+                    // verify that if we expect to be offloaded, that we actually are
+                    return succeeded(factory.badGateway());
+                }
+
                 CharSequence requestId = AsyncContext.get(K1);
-                // The test doesn't wait until the request body is consumed and only cares when the request is received
-                // from the client. So we force the server to consume the entire request here which will make sure the
-                // AsyncContext is as expected while processing the request data in the filter.
-                return request.messageBody().ignoreElements()
-                        .concat(defer(() -> {
-                            if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
-                                // verify that if we expect to be offloaded, that we actually are
-                                return succeeded(factory.badGateway());
-                            }
-                            CharSequence requestId2 = AsyncContext.get(K1);
-                            if (requestId2 == requestId && requestId2 != null) {
-                                StreamingHttpResponse response = factory.ok();
-                                response.headers().set(REQUEST_ID_HEADER, requestId);
-                                return succeeded(response);
-                            } else {
-                                StreamingHttpResponse response = factory.internalServerError();
-                                response.headers().set(REQUEST_ID_HEADER, String.valueOf(requestId));
-                                response.headers().set(REQUEST_ID_HEADER + "2", String.valueOf(requestId2));
-                                return succeeded(response);
-                            }
-                        }));
+                if (requestId != null) {
+                    return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
+                } else {
+                    return succeeded(factory.internalServerError().setHeader(REQUEST_ID_HEADER, "null"));
+                }
             }
         };
     }

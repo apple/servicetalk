@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
@@ -88,6 +89,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
@@ -300,6 +302,10 @@ final class NettyHttpServer {
         }
 
         void process(final boolean handleMultipleRequests) {
+            // We must clear the context before starting to read from the connection to make sure every request read
+            // has an empty context
+            AsyncContext.clear();
+
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
@@ -366,7 +372,7 @@ final class NettyHttpServer {
                                 public void onError(final Throwable t) {
                                     // After the response payload has terminated, we may attempt to subscribe to the
                                     // request payload and drain/discard the content (in case the user forgets to
-                                    // consume the stream). However this means we may introduce a duplicate subscribe
+                                    // consume the stream). However, this means we may introduce a duplicate subscribe
                                     // and this doesn't mean the request content has not terminated.
                                     if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
                                         requestCompletion.onComplete();
@@ -409,6 +415,8 @@ final class NettyHttpServer {
                             return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
+                        // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
+                        // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
 
                 if (drainRequestPayloadBody) {
@@ -422,9 +430,11 @@ final class NettyHttpServer {
                         }
                     });
                 }
-                return responseWrite.concat(requestCompletion);
+                return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
             });
-            return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
+            // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate
+            // AsyncContext state between repeated cycles.
+            return handleMultipleRequests ? defer(() -> exchange).repeat(__ -> true).ignoreElements() : exchange;
         }
 
         @Nonnull
@@ -443,7 +453,8 @@ final class NettyHttpServer {
                 if (emptyMessageBody(response, messageBody)) {
                     flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
-                    flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
+                    flatResponse = Single.<Object>succeeded(response)
+                            .concatPropagateCancel(messageBody.shareContextOnSubscribe());
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }

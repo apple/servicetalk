@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,16 @@ import io.servicetalk.transport.api.ServerContext;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
 
-class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTest {
+class HttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
+
+    @Override
+    protected boolean isBlocking() {
+        return false;
+    }
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
@@ -44,18 +51,21 @@ class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTe
 
     private HttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
+            HttpResponse response;
             if (!AsyncContext.isEmpty()) {
-                BufferAllocator alloc = ctx.executionContext().bufferAllocator();
-                return succeeded(factory.internalServerError()
-                        .payloadBody(alloc.fromAscii(AsyncContext.context().toString())));
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
+                response = factory.internalServerError();
             } else {
-                return succeeded(factory.badRequest());
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response = factory.ok().setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response = factory.badRequest();
+                }
             }
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            return succeeded(response.payloadBody(
+                    alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context())))));
         };
     }
 
@@ -79,11 +89,13 @@ class HttpServiceAsyncContextTest extends AbstractAsyncHttpServiceAsyncContextTe
             }
 
             private Single<HttpResponse> doHandle(HttpResponseFactory factory) {
-                CharSequence requestId = AsyncContext.get(K1);
-                if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                boolean isIoThread = currentThread().getName().startsWith(IO_THREAD_PREFIX);
+                if ((useImmediate && !isIoThread) || (!useImmediate && isIoThread)) {
                     // verify that if we expect to be offloaded, that we actually are
                     return succeeded(factory.badGateway());
                 }
+
+                CharSequence requestId = AsyncContext.get(K1);
                 if (requestId != null) {
                     return succeeded(factory.ok().setHeader(REQUEST_ID_HEADER, requestId));
                 } else {
