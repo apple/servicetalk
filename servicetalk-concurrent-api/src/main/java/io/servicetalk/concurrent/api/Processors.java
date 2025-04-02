@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import static io.servicetalk.concurrent.api.PublisherProcessorSignalHolders.fixedSize;
 import static io.servicetalk.concurrent.api.PublisherProcessorSignalHolders.fixedSizeDropHead;
@@ -38,8 +39,9 @@ public final class Processors {
 
     /**
      * Create a new {@link CompletableSource.Processor} that allows for multiple
-     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}. The returned
-     * {@link CompletableSource.Processor} provides all the expected API guarantees when used as a
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}.
+     * <p>
+     * The returned {@link CompletableSource.Processor} provides all the expected API guarantees when used as a
      * {@link CompletableSource} but does not expect the same guarantees when used as a
      * {@link CompletableSource.Subscriber}. As an example, users are not expected to call
      * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} or they can call any of the
@@ -50,6 +52,26 @@ public final class Processors {
      */
     public static CompletableSource.Processor newCompletableProcessor() {
         return new CompletableProcessor();
+    }
+
+    /**
+     * Create a new {@link CompletableSource.Processor} that allows only a single
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribe}.
+     * <p>
+     * Subsequent {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes} will fail with
+     * {@link DuplicateSubscribeException}.
+     * <p>
+     * The returned {@link CompletableSource.Processor} provides all the expected API guarantees when used as a
+     * {@link CompletableSource} but does not expect the same guarantees when used as a
+     * {@link CompletableSource.Subscriber}. As an example, users are not expected to call
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} or they can call any of the
+     * {@link CompletableSource.Subscriber} methods concurrently and/or multiple times.
+     *
+     * @return a new {@link CompletableSource.Processor} that allows only a single
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribe}.
+     */
+    public static CompletableSource.Processor newSingleSubscribeCompletableProcessor() {
+        return new SingleSubscribeCompletableProcessor();
     }
 
     /**

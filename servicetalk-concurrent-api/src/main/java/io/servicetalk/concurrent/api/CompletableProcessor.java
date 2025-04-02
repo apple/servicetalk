@@ -26,7 +26,8 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
- * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
+ * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s. This
+ * implementation supports multiple {@link Subscriber}s.
  */
 final class CompletableProcessor extends SubscribableCompletable implements Processor {
     private final ClosableConcurrentStack<Subscriber> stack = new ClosableConcurrentStack<>();

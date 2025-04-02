@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.Processors.newSingleSubscribeCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
@@ -77,7 +77,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                 // This exists to help users with error propagation. If the user closes the payloadWriter and they throw
                 // (e.g. try-with-resources) this processor is merged with the payloadWriter Publisher so the error will
                 // still be propagated.
-                final CompletableSource.Processor exceptionProcessor = newCompletableProcessor();
+                final CompletableSource.Processor exceptionProcessor = newSingleSubscribeCompletableProcessor();
                 final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
                         () -> ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;

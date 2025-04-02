@@ -30,7 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.Processors.newSingleSubscribeCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 
 /**
@@ -57,7 +57,7 @@ public final class EnforceSequentialModeRequesterFilter implements StreamingHttp
     private static Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                          final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            CompletableSource.Processor requestSent = newCompletableProcessor();
+            CompletableSource.Processor requestSent = newSingleSubscribeCompletableProcessor();
             StreamingHttpRequest r = request.transformMessageBody(messageBody -> messageBody
                     .whenFinally(requestSent::onComplete));
             return fromSource(requestSent).merge(delegate.request(r).toPublisher()).firstOrError()

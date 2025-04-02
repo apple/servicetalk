@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
@@ -53,6 +52,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Processors.newSingleSubscribeCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
@@ -155,7 +155,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                                 .shareContextOnSubscribe();
                     }
 
-                    final CompletableSource.Processor requestProcessor = Processors.newCompletableProcessor();
+                    final CompletableSource.Processor requestProcessor = newSingleSubscribeCompletableProcessor();
                     final Cancellable continueTimeout;
                     final boolean expectContinue = request.headers()
                             .contains(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE);
