@@ -499,8 +499,9 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .reduce((prev, acceptor) -> new EarlyConnectionAcceptor() {
                     @Override
                     public Completable accept(final ConnectionInfo info) {
-                        // Defer is required to isolate the context for the individual acceptors.
-                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 
                     @Override
@@ -524,8 +525,9 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .reduce((prev, acceptor) -> new LateConnectionAcceptor() {
                     @Override
                     public Completable accept(final ConnectionInfo info) {
-                        // Defer is required to isolate the context for the individual acceptors.
-                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 
                     @Override

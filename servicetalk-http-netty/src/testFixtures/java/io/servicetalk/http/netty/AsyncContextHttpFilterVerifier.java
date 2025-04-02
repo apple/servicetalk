@@ -34,6 +34,8 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.hamcrest.Matcher;
+
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -52,6 +54,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 
 /**
@@ -182,8 +185,22 @@ public final class AsyncContextHttpFilterVerifier {
      * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
      */
     public static void assertSameContext(@Nullable final ContextMap expected, final Queue<Throwable> errorQueue) {
+        assertContext(sameInstance(expected), errorQueue);
+    }
+
+    /**
+     * Asserts that {@link AsyncContext#context()} is NOT the same instance as the notExpected one.
+     *
+     * @param notExpected {@link ContextMap} we do not expect
+     * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
+     */
+    public static void assertNotSameContext(@Nullable final ContextMap notExpected, final Queue<Throwable> errorQueue) {
+        assertContext(not(sameInstance(notExpected)), errorQueue);
+    }
+
+    private static void assertContext(Matcher<ContextMap> matcher, final Queue<Throwable> errorQueue) {
         try {
-            assertThat(AsyncContext.context(), is(sameInstance(expected)));
+            assertThat(AsyncContext.context(), is(matcher));
         } catch (Throwable t) {
             errorQueue.add(t);
         }
