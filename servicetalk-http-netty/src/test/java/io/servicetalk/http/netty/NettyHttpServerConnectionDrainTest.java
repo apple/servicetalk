@@ -92,7 +92,7 @@ class NettyHttpServerConnectionDrainTest {
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 request.transformMessageBody(body -> body.afterFinally(() -> requestDrained.set(true)));
-                return service.handle(ctx, request, responseFactory);
+                return delegate().handle(ctx, request, responseFactory);
             }
         };
         try (ServerContext serverContext = server(true, respondFailsWithoutReadingRequest(), filter)) {
