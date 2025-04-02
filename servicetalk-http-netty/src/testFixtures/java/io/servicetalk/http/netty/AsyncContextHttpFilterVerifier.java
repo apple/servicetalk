@@ -189,13 +189,13 @@ public final class AsyncContextHttpFilterVerifier {
     }
 
     /**
-     * Asserts that {@link AsyncContext#context()} is NOT the same instance as the expected one.
+     * Asserts that {@link AsyncContext#context()} is NOT the same instance as the notExpected one.
      *
-     * @param expected {@link ContextMap} we do not expect
+     * @param notExpected {@link ContextMap} we do not expect
      * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
      */
-    public static void assertNotSameContext(@Nullable final ContextMap expected, final Queue<Throwable> errorQueue) {
-        assertContext(not(sameInstance(expected)), errorQueue);
+    public static void assertNotSameContext(@Nullable final ContextMap notExpected, final Queue<Throwable> errorQueue) {
+        assertContext(not(sameInstance(notExpected)), errorQueue);
     }
 
     private static void assertContext(Matcher<ContextMap> matcher, final Queue<Throwable> errorQueue) {
