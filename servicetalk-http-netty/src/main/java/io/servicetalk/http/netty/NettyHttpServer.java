@@ -436,6 +436,8 @@ final class NettyHttpServer {
 
                         @Override
                         public void onError(Throwable throwable) {
+                            // We cancel instead of complete to mimic the behavior of the concatPropagateCancel
+                            // operator.
                             cancel();
                         }
 

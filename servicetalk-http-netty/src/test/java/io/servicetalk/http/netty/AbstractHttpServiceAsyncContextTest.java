@@ -35,6 +35,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -273,15 +274,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 case CANCEL_ON_RESPONSE_BODY:
                     makeClientRequestWithIdExpectCancel(connection, "1", latch);
                     break;
-                case ERROR_ON_RESPONSE:
-                    HttpRequest request = connection.get("/");
-                    request.headers().set(REQUEST_ID_HEADER, "1");
-                    HttpResponse response = connection.request(request);
-                    assertEquals(INTERNAL_SERVER_ERROR, response.status());
-                    assertTrue(request.headers().contains(REQUEST_ID_HEADER, "1"));
-                    break;
                 case ERROR_ON_RESPONSE_BODY:
                     makeClientRequestWithIdExpectError(connection, "1");
+                    break;
+                case ERROR_ON_RESPONSE:
+                    makeClientRequestWithId(connection, "1", INTERNAL_SERVER_ERROR);
                     break;
                 case SUCCESS:
                     makeClientRequestWithId(connection, "1");
@@ -438,10 +435,15 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
     private static String makeClientRequestWithId(BlockingHttpConnection connection,
                                                   String requestId) throws Exception {
+        return makeClientRequestWithId(connection, requestId, OK);
+    }
+
+    private static String makeClientRequestWithId(BlockingHttpConnection connection, String requestId,
+                                                  HttpResponseStatus expectedStatus) throws Exception {
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
         HttpResponse response = connection.request(request);
-        assertEquals(OK, response.status());
+        assertEquals(expectedStatus, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
         return response.payloadBody().toString(UTF_8);
     }
