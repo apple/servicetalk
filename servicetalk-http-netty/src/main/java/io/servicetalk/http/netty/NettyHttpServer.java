@@ -436,14 +436,15 @@ final class NettyHttpServer {
 
                         @Override
                         public void onError(Throwable throwable) {
-                            onComplete();
+                            cancel();
                         }
 
                         @Override
                         public void cancel() {
                             if (payloadSubscribed.compareAndSet(false, true)) {
                                 // For the cancellation pathway we want to subscribe and cancel the request body
-                                toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                                toSource(request.messageBody().shareContextOnSubscribe())
+                                        .subscribe(CancelImmediatelySubscriber.INSTANCE);
                             }
                         }
                     });

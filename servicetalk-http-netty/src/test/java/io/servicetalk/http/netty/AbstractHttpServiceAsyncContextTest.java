@@ -18,10 +18,12 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
+import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -35,6 +37,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -60,6 +63,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -69,7 +73,9 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.assertAsyncContext;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
@@ -84,11 +90,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class AbstractHttpServiceAsyncContextTest {
     enum InitContextKeyPlace {
         LIFECYCLE_OBSERVER,
+        LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE,
+        LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE,
+        LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE_BODY,
+        LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE_BODY,
         NON_OFFLOADING_LIFECYCLE_OBSERVER_FILTER,
         NON_OFFLOADING_FILTER,
         NON_OFFLOADING_ASYNC_FILTER,
@@ -190,7 +201,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
     @ParameterizedTest(name = "{displayName} [{index}]: " +
             "protocol={0} useImmediate={1} asyncService={2} initContextKeyPlace={3}")
     @MethodSource("contextPreservedOverFilterBoundariesArguments")
-    final void contextPreservedOverFilterBoundaries(HttpProtocol protocol, boolean useImmediate, boolean asyncService,
+    protected final void contextPreservedOverFilterBoundaries(HttpProtocol protocol, boolean useImmediate, boolean asyncService,
                                                     InitContextKeyPlace place) throws Exception {
         Assumptions.assumeFalse(isBlocking() && useImmediate, "Blocking service can only run with offloading");
         Assumptions.assumeFalse(isBlocking() && asyncService, "Blocking service can not be async");
@@ -199,9 +210,47 @@ abstract class AbstractHttpServiceAsyncContextTest {
         AtomicReference<ContextMap> currentContext = new AtomicReference<>();
         HttpServerBuilder builder = new CaptureRequestContextHttpServerBuilder(localAddress(0), currentContext)
                 .protocols(protocol.config);
+        CountDownLatch latch = new CountDownLatch(1);
+        AsyncContextLifecycleObserver.ExpectedResponse expectedResponse = null;
         switch (place) {
             case LIFECYCLE_OBSERVER:
                 builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue));
+                break;
+            case LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE:
+                expectedResponse = AsyncContextLifecycleObserver.ExpectedResponse.CANCEL;
+            case LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE:
+                if (expectedResponse == null) {
+                    expectedResponse = AsyncContextLifecycleObserver.ExpectedResponse.COMPLETE;
+                }
+            case LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE_BODY:
+                if (expectedResponse == null) {
+                    expectedResponse = AsyncContextLifecycleObserver.ExpectedResponse.CANCEL;
+                }
+            case LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE_BODY:
+                if (expectedResponse == null) {
+                    expectedResponse = AsyncContextLifecycleObserver.ExpectedResponse.ERROR;
+                }
+
+                builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue,
+                        expectedResponse));
+                builder.appendServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        latch.countDown();
+                        switch (place) {
+                            case LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE:
+                                return Single.never();
+                            case LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE:
+                                return Single.failed(DELIBERATE_EXCEPTION);
+                            default:
+                                boolean isError = place == InitContextKeyPlace.LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE_BODY;
+                                return delegate().handle(ctx, request, responseFactory)
+                                    .map(response -> response.transformPayloadBody(body ->
+                                        body.concat(isError ? Publisher.failed(DELIBERATE_EXCEPTION) : Publisher.never())));
+                        }
+                    }
+                });
                 break;
             case NON_OFFLOADING_LIFECYCLE_OBSERVER_FILTER:
                 builder.appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
@@ -230,8 +279,24 @@ abstract class AbstractHttpServiceAsyncContextTest {
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx))
                      .protocols(protocol.config).buildBlocking();
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
-
-            makeClientRequestWithId(connection, "1");
+            switch (place) {
+                case LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE:
+                case LIFECYCLE_OBSERVER_WITH_CANCEL_ON_RESPONSE_BODY:
+                    makeClientRequestWithIdExpectCancel(connection, "1", latch);
+                    break;
+                case LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE:
+                    HttpRequest request = connection.get("/");
+                    request.headers().set(REQUEST_ID_HEADER, "1");
+                    HttpResponse response = connection.request(request);
+                    assertEquals(INTERNAL_SERVER_ERROR, response.status());
+                    assertTrue(request.headers().contains(REQUEST_ID_HEADER, "1"));
+                    break;
+                case LIFECYCLE_OBSERVER_WITH_ERROR_ON_RESPONSE_BODY:
+                    makeClientRequestWithIdExpectError(connection, "1");
+                    break;
+                default:
+                    makeClientRequestWithId(connection, "1");
+            }
             assertNoAsyncErrors(errorQueue);
         }
     }
@@ -360,6 +425,25 @@ abstract class AbstractHttpServiceAsyncContextTest {
         }
     }
 
+    private static void makeClientRequestWithIdExpectError(BlockingHttpConnection connection,
+                                                  String requestId) {
+        HttpRequest request = connection.get("/");
+        request.headers().set(REQUEST_ID_HEADER, requestId);
+        assertThrows(Exception.class, () -> connection.request(request));
+    }
+
+    private static void makeClientRequestWithIdExpectCancel(BlockingHttpConnection connection,
+                                                           String requestId, CountDownLatch latch) throws Exception {
+        HttpConnection streamingConnection = connection.asConnection();
+        HttpRequest request = connection.get("/");
+        request.headers().set(REQUEST_ID_HEADER, requestId);
+        Future<HttpResponse> responseFuture = streamingConnection.request(request)
+                .toFuture();
+        latch.await();
+        responseFuture.cancel(true);
+        assertThrows(Exception.class, () -> responseFuture.get());
+    }
+
     private static String makeClientRequestWithId(BlockingHttpConnection connection,
                                                   String requestId) throws Exception {
         HttpRequest request = connection.get("/");
@@ -373,14 +457,28 @@ abstract class AbstractHttpServiceAsyncContextTest {
     private static final class AsyncContextLifecycleObserver implements HttpLifecycleObserver, HttpExchangeObserver,
                                                                         HttpRequestObserver, HttpResponseObserver {
 
+        enum ExpectedResponse {
+            COMPLETE,
+            CANCEL,
+            ERROR
+        }
+
         private final AtomicReference<ContextMap> currentContext;
         private final Queue<Throwable> errorQueue;
+        private final ExpectedResponse expectedResponse;
+
         @Nullable
         private CharSequence requestId;
 
         AsyncContextLifecycleObserver(AtomicReference<ContextMap> currentContext, Queue<Throwable> errorQueue) {
+            this(currentContext, errorQueue, ExpectedResponse.COMPLETE);
+        }
+
+        AsyncContextLifecycleObserver(AtomicReference<ContextMap> currentContext, Queue<Throwable> errorQueue,
+                                      ExpectedResponse expectedResponse) {
             this.currentContext = currentContext;
             this.errorQueue = errorQueue;
+            this.expectedResponse = expectedResponse;
         }
 
         @Override
@@ -430,7 +528,11 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onRequestCancel() {
-            errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
+            if (ExpectedResponse.COMPLETE == expectedResponse) {
+                errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
+            } else {
+                assertAsyncContext();
+            }
         }
 
         @Override
@@ -456,17 +558,29 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onResponseComplete() {
-            assertAsyncContext();
+            if (ExpectedResponse.COMPLETE == expectedResponse) {
+                assertAsyncContext();
+            } else {
+                errorQueue.add(new AssertionError("Unexpected onResponseComplete"));
+            }
         }
 
         @Override
         public void onResponseError(Throwable cause) {
-            errorQueue.add(new AssertionError("Unexpected onResponseError", cause));
+            if (ExpectedResponse.ERROR == expectedResponse) {
+                assertAsyncContext();
+            } else {
+                errorQueue.add(new AssertionError("Unexpected onResponseError", cause));
+            }
         }
 
         @Override
         public void onResponseCancel() {
-            errorQueue.add(new AssertionError("Unexpected onResponseCancel"));
+            if (ExpectedResponse.CANCEL == expectedResponse) {
+                assertAsyncContext();
+            } else {
+                errorQueue.add(new AssertionError("Unexpected onResponseCancel"));
+            }
         }
 
         @Override
