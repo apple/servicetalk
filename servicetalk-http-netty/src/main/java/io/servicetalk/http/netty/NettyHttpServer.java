@@ -26,7 +26,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -420,13 +422,29 @@ final class NettyHttpServer {
                         }));
 
                 if (drainRequestPayloadBody) {
-                    responseWrite = responseWrite.afterFinally(() -> {
-                        if (!payloadSubscribed.get()) {
-                            // At this point, discarding the request payload body is an operation which should not
-                            // impact the state of request/response processing, and we need to do it in order to both
-                            // reuse the connection and finish any operators that may depend on both the request and
-                            // response bodies to have been fully processed.
-                            request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                    responseWrite = responseWrite.afterFinally(new TerminalSignalConsumer() {
+                        @Override
+                        public void onComplete() {
+                            if (payloadSubscribed.compareAndSet(false, true)) {
+                                // At this point, discarding the request payload body is an operation which should not
+                                // impact the state of request/response processing, and we need to do it in order to
+                                // both reuse the connection and finish any operators that may depend on both the
+                                // request and response bodies to have been fully processed.
+                                request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                            onComplete();
+                        }
+
+                        @Override
+                        public void cancel() {
+                            if (payloadSubscribed.compareAndSet(false, true)) {
+                                // For the cancellation pathway we want to subscribe and cancel the request body
+                                toSource(request.messageBody()).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                            }
                         }
                     });
                 }
