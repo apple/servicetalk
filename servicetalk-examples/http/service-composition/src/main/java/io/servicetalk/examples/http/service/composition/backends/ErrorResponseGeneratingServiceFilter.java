@@ -48,7 +48,7 @@ public final class ErrorResponseGeneratingServiceFilter implements StreamingHttp
                 if (request.hasQueryParameter(SIMULATE_ERROR_QP_NAME, serviceName)) {
                     return succeeded(responseFactory.internalServerError());
                 }
-                return super.handle(ctx, request, responseFactory);
+                return delegate().handle(ctx, request, responseFactory);
             }
         };
     }

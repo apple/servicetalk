@@ -103,7 +103,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                 addTrailers = true;
                             }
                             Publisher<Object> messageBody = fromSource(exceptionProcessor)
-                                    .merge(payloadWriter.connect());
+                                    .merge(payloadWriter.connect().shareContextOnSubscribe());
                             if (addTrailers) {
                                 messageBody = messageBody.scanWithMapper(() -> new TrailersMapper(payloadWriter));
                             }

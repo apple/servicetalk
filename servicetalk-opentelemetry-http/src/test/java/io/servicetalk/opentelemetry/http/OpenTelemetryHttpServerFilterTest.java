@@ -317,7 +317,7 @@ class OpenTelemetryHttpServerFilterTest {
         ));
         // TODO: an odd behavior difference.
         if (http2) {
-            expected.add(TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY);
+            expected.add(TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY);
         } else {
             expected.add(TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY);
             expected.add(TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY);

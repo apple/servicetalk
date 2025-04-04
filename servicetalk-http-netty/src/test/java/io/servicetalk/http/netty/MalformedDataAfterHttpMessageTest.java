@@ -138,7 +138,7 @@ class MalformedDataAfterHttpMessageTest {
                     @Override
                     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                         contextQueue.add(connectionContext());
-                        return super.request(request);
+                        return delegate().request(request);
                     }
                 })
                 .buildBlocking()) {
