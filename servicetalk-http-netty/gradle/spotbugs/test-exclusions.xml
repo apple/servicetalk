@@ -79,4 +79,8 @@
     <Class name="io.servicetalk.http.netty.HttpClientResolvesOnNewConnectionTest$FailureCase$1"/>
     <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.WatchdogLeakDetectorTest"/>
+    <Bug pattern="DM_GC"/>
+  </Match>
 </FindBugsFilter>
