@@ -223,6 +223,13 @@ abstract class AbstractHttpServiceAsyncContextTest {
         contextPreservedOverFilterBoundaries(HttpProtocol.HTTP_2, false, false, InitContextKeyPlace.LIFECYCLE_OBSERVER, ResponseType.CANCEL_ON_RESPONSE);
     }
 
+    @RepeatedTest(10)
+    void repro2() throws Exception {
+        //StreamingHttpServiceAsyncContextTest > contextPreservedOverFilterBoundaries(HttpProtocol, boolean, boolean, InitContextKeyPlace, ResponseType) > contextPreservedOverFilterBoundaries(HttpProtocol, boolean, boolean, InitContextKeyPlace, ResponseType) [162]:
+        // protocol=HTTP_2 useImmediate=false asyncService=false initContextKeyPlace=LIFECYCLE_OBSERVER_FILTER, responseType=CANCEL_ON_RESPONSE FAILED
+        contextPreservedOverFilterBoundaries(HttpProtocol.HTTP_2, false, false, InitContextKeyPlace.LIFECYCLE_OBSERVER, ResponseType.CANCEL_ON_RESPONSE_BODY);
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: " +
             "protocol={0} useImmediate={1} asyncService={2} initContextKeyPlace={3}, responseType={4}")
     @MethodSource("contextPreservedOverFilterBoundariesArguments")
@@ -695,6 +702,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 case ERROR_ON_RESPONSE:
                 case ERROR_ON_RESPONSE_BODY:
                 case CANCEL_ON_RESPONSE:
+                case CANCEL_ON_RESPONSE_BODY:
                     assertAsyncContext();
                     break;
                 default:
