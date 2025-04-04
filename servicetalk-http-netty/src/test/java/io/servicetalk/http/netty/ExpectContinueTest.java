@@ -556,9 +556,7 @@ class ExpectContinueTest {
                             request.headers().contains(FAIL, "true")) {
                         returnResponse.await();
                         response.status(EXPECTATION_FAILED).setHeader(CONTENT_LENGTH, ZERO);
-                        HttpPayloadWriter<Buffer> writer = response.sendMetaData();
-                        sendContinue.await();
-                        writer.close();
+                        response.sendMetaData().close();
                         return;
                     }
                     sendContinue.await();
