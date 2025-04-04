@@ -62,12 +62,12 @@ final class ScopeTracker implements TerminalSignalConsumer {
         this.instrumenter = requireNonNull(instrumenter);
     }
 
-    public static ScopeTracker client(Context context, StreamingHttpRequest requestMetaData,
+    static ScopeTracker client(Context context, StreamingHttpRequest requestMetaData,
                          Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
         return new ScopeTracker(true, context, requestMetaData, instrumenter);
     }
 
-    public static ScopeTracker server(Context context, StreamingHttpRequest requestMetaData,
+    static ScopeTracker server(Context context, StreamingHttpRequest requestMetaData,
                                       Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
         return new ScopeTracker(false, context, requestMetaData, instrumenter);
     }
