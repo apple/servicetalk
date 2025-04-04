@@ -52,6 +52,7 @@ import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -213,6 +214,13 @@ abstract class AbstractHttpServiceAsyncContextTest {
             }
         }
         return params;
+    }
+
+    @RepeatedTest(10)
+    void repro() throws Exception {
+        //StreamingHttpServiceAsyncContextTest > contextPreservedOverFilterBoundaries(HttpProtocol, boolean, boolean, InitContextKeyPlace, ResponseType) > contextPreservedOverFilterBoundaries(HttpProtocol, boolean, boolean, InitContextKeyPlace, ResponseType) [162]:
+        // protocol=HTTP_2 useImmediate=false asyncService=false initContextKeyPlace=LIFECYCLE_OBSERVER_FILTER, responseType=CANCEL_ON_RESPONSE FAILED
+        contextPreservedOverFilterBoundaries(HttpProtocol.HTTP_2, false, false, InitContextKeyPlace.LIFECYCLE_OBSERVER, ResponseType.CANCEL_ON_RESPONSE);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: " +
