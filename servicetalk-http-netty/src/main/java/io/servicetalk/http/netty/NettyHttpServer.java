@@ -26,7 +26,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -372,7 +374,7 @@ final class NettyHttpServer {
                                 public void onError(final Throwable t) {
                                     // After the response payload has terminated, we may attempt to subscribe to the
                                     // request payload and drain/discard the content (in case the user forgets to
-                                    // consume the stream). However this means we may introduce a duplicate subscribe
+                                    // consume the stream). However, this means we may introduce a duplicate subscribe
                                     // and this doesn't mean the request content has not terminated.
                                     if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
                                         requestCompletion.onComplete();
@@ -420,22 +422,36 @@ final class NettyHttpServer {
                         }));
 
                 if (drainRequestPayloadBody) {
-                    responseWrite = responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
-                            // Discarding the request payload body is an operation which should not impact the state of
-                            // request/response processing. It's appropriate to recover from any error here.
-                            // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
-                            // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe())
-                            // We need to apply shareContextOnSubscribe() on deferred Completable to share the same
-                            // context between concatenated Completables.
-                            .shareContextOnSubscribe());
-                } else {
-                    responseWrite = responseWrite.concat(requestCompletion);
+                    responseWrite = responseWrite.afterFinally(new TerminalSignalConsumer() {
+                        @Override
+                        public void onComplete() {
+                            if (payloadSubscribed.compareAndSet(false, true)) {
+                                // At this point, discarding the request payload body is an operation which should not
+                                // impact the state of request/response processing, and we need to do it in order to
+                                // both reuse the connection and finish any operators that may depend on both the
+                                // request and response bodies to have been fully processed.
+                                request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                            // We cancel instead of complete to mimic the behavior of the concatPropagateCancel
+                            // operator.
+                            cancel();
+                        }
+
+                        @Override
+                        public void cancel() {
+                            if (payloadSubscribed.compareAndSet(false, true)) {
+                                // For the cancellation pathway we want to subscribe and cancel the request body
+                                toSource(request.messageBody().shareContextOnSubscribe())
+                                        .subscribe(CancelImmediatelySubscriber.INSTANCE);
+                            }
+                        }
+                    });
                 }
-                // We need to apply shareContextOnSubscribe() to the result of concatenation to share the same context
-                // between steps taken before service.handle(...) and inside service.handle(...).
-                return responseWrite.shareContextOnSubscribe();
+                return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
             });
             // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate
             // AsyncContext state between repeated cycles.

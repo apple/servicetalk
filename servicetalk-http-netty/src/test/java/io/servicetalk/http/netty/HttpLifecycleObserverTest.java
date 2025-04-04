@@ -355,6 +355,25 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                 serverRequestObserver, serverResponseObserver);
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void badResponsePayloadBody(HttpProtocol protocol) throws Exception {
+        serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                        StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                StreamingHttpResponse response = responseFactory.ok();
+                response.payloadBody(Publisher.from(CONTENT).concat(Publisher.failed(DELIBERATE_EXCEPTION)));
+                return Single.succeeded(response);
+            }
+        });
+        setUp(protocol);
+        assertThrows(ExecutionException.class,
+                () -> makeRequestAndAssertResponse(SVC_ECHO, protocol, OK, CONTENT.readableBytes()));
+        awaitFullTermination();
+    }
+
     private void makeRequestAndAssertResponse(String path, HttpProtocol protocol,
                                               HttpResponseStatus status, int contentLength) throws Exception {
         StreamingHttpClient client = streamingHttpClient();
