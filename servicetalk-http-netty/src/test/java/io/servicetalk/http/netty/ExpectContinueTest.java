@@ -521,10 +521,9 @@ class ExpectContinueTest {
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
             client.request(newRequest(client, withCL, true, payload)).subscribe(responses::add);
             requestReceived.await();
-            returnResponse.countDown();
-
             assertThat("Unexpected subscribe to payload body before 100 (Continue)",
                     payload.isSubscribed(), is(false));
+            returnResponse.countDown();
             sendContinue.countDown();
             sendRequestPayload(payload, client.executionContext().bufferAllocator());
             assertResponse(OK, PAYLOAD + PAYLOAD);
@@ -557,7 +556,9 @@ class ExpectContinueTest {
                             request.headers().contains(FAIL, "true")) {
                         returnResponse.await();
                         response.status(EXPECTATION_FAILED).setHeader(CONTENT_LENGTH, ZERO);
-                        response.sendMetaData().close();
+                        HttpPayloadWriter<Buffer> writer = response.sendMetaData();
+                        sendContinue.await();
+                        writer.close();
                         return;
                     }
                     sendContinue.await();
