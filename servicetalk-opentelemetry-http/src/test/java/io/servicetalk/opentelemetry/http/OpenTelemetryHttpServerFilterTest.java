@@ -311,17 +311,11 @@ class OpenTelemetryHttpServerFilterTest {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_ERROR_KEY
         ));
-        // TODO: an odd behavior difference.
-        if (http2) {
-            expected.add(TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY);
-        } else {
-            expected.add(TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY);
-            expected.add(TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY);
-        }
         runWithClient(http2, client -> {
             HttpRequest request = client.get("/responsebodyerror");
             request.payloadBody().writeAscii("bar");
