@@ -227,14 +227,15 @@ abstract class AbstractHttpServiceAsyncContextTest {
         AtomicReference<ContextMap> currentContext = new AtomicReference<>();
         HttpServerBuilder builder = new CaptureRequestContextHttpServerBuilder(localAddress(0), currentContext)
                 .protocols(protocol.config);
+        boolean expectSuccess = ResponseType.SUCCESS == responseType;
         CountDownLatch latch = new CountDownLatch(1);
         switch (place) {
             case LIFECYCLE_OBSERVER:
-                builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue, responseType));
+                builder.lifecycleObserver(new AsyncContextLifecycleObserver(currentContext, errorQueue, expectSuccess));
                 break;
             case NON_OFFLOADING_LIFECYCLE_OBSERVER_FILTER:
                 builder.appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(currentContext, errorQueue, responseType)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue, expectSuccess)));
                 break;
             case NON_OFFLOADING_FILTER:
                 builder.appendNonOffloadingServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -244,7 +245,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 break;
             case LIFECYCLE_OBSERVER_FILTER:
                 builder.appendServiceFilter(new HttpLifecycleObserverServiceFilter(
-                        new AsyncContextLifecycleObserver(currentContext, errorQueue, responseType)));
+                        new AsyncContextLifecycleObserver(currentContext, errorQueue, expectSuccess)));
                 break;
             case FILTER:
                 builder.appendServiceFilter(filterFactory(useImmediate, false, errorQueue));
@@ -624,16 +625,16 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         private final AtomicReference<ContextMap> currentContext;
         private final Queue<Throwable> errorQueue;
-        private final ResponseType responseType;
+        private final boolean expectSuccess;
 
         @Nullable
         private CharSequence requestId;
 
         AsyncContextLifecycleObserver(AtomicReference<ContextMap> currentContext, Queue<Throwable> errorQueue,
-                                      ResponseType responseType) {
+                                      boolean expectSuccess) {
             this.currentContext = currentContext;
             this.errorQueue = errorQueue;
-            this.responseType = responseType;
+            this.expectSuccess = expectSuccess;
         }
 
         @Override
@@ -683,26 +684,16 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onRequestCancel() {
-            switch (responseType) {
-                case ERROR_ON_RESPONSE:
-                case ERROR_ON_RESPONSE_BODY:
-                case CANCEL_ON_RESPONSE:
-                case CANCEL_ON_RESPONSE_BODY:
-                    assertAsyncContext();
-                    break;
-                default:
-                    errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
-                    break;
+            if (expectSuccess) {
+                errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
+            } else {
+                assertAsyncContext();
             }
         }
 
         @Override
         public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
-            if (ResponseType.CANCEL_ON_RESPONSE == responseType) {
-                errorQueue.add(new AssertionError("Unexpected onResponse"));
-            } else {
-                assertAsyncContext();
-            }
+            assertAsyncContext();
             return this;
         }
 
@@ -723,34 +714,25 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onResponseComplete() {
-            // in the whole error response case a filter converts the error to a 5xx so we do get a body.
-            if (ResponseType.SUCCESS == responseType || ResponseType.ERROR_ON_RESPONSE == responseType) {
-                assertAsyncContext();
-            } else {
-                errorQueue.add(new AssertionError("Unexpected onResponseComplete"));
-            }
+            assertAsyncContext();
         }
 
         @Override
         public void onResponseError(Throwable cause) {
-            // used for both response head and response body cancellation
-            if (ResponseType.ERROR_ON_RESPONSE == responseType ||
-                    ResponseType.ERROR_ON_RESPONSE_BODY == responseType) {
-                assertAsyncContext();
-            } else {
+            if (expectSuccess) {
                 errorQueue.add(new AssertionError("Unexpected onResponseError", cause));
+                return;
             }
+            assertAsyncContext();
         }
 
         @Override
         public void onResponseCancel() {
-            // used for both response head and response body cancellation
-            if (ResponseType.CANCEL_ON_RESPONSE_BODY == responseType ||
-                    ResponseType.CANCEL_ON_RESPONSE == responseType) {
-                assertAsyncContext();
-            } else {
+            if (expectSuccess) {
                 errorQueue.add(new AssertionError("Unexpected onResponseCancel"));
+                return;
             }
+            assertAsyncContext();
         }
 
         @Override
