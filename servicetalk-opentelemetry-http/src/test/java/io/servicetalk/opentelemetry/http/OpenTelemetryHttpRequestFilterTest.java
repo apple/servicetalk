@@ -157,7 +157,7 @@ class OpenTelemetryHttpRequestFilterTest {
     void testInjectWithAParentCreated() throws Exception {
         final String requestUrl = "/path/to/resource";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
-        try (ServerContext context = buildServer(openTelemetry, true);) {
+        try (ServerContext context = buildServer(openTelemetry, true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
