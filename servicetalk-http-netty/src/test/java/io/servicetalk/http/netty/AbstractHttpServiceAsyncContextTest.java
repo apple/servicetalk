@@ -691,11 +691,14 @@ abstract class AbstractHttpServiceAsyncContextTest {
 
         @Override
         public void onRequestCancel() {
-             if (ResponseType.ERROR_ON_RESPONSE_BODY == responseType ||
-                    ResponseType.CANCEL_ON_RESPONSE_BODY == responseType) {
-                assertAsyncContext();
-            } else {
-                errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
+            switch (responseType) {
+                case ERROR_ON_RESPONSE:
+                case ERROR_ON_RESPONSE_BODY:
+                case CANCEL_ON_RESPONSE:
+                    assertAsyncContext();
+                    break;
+                default:
+                    errorQueue.add(new AssertionError("Unexpected onRequestCancel"));
             }
         }
 
