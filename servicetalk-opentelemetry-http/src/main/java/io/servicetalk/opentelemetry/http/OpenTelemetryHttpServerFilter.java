@@ -135,10 +135,12 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
         }
         final Context context = instrumenter.start(parentContext, request);
         try (Scope unused = context.makeCurrent()) {
-            final ScopeTracker tracker = new ScopeTracker(context, request, instrumenter);
+            final ScopeTracker tracker = ScopeTracker.server(context, request, instrumenter);
             try {
+                // TODO: this is starting to look a lot like the AbstractLifecycleObserver.
+                request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
                 Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
-                return withContext(tracker.track(response), context);
+                return withContext(request, tracker.track(response), context);
             } catch (Throwable t) {
                 tracker.onError(t);
                 return Single.failed(t);
