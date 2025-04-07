@@ -29,7 +29,6 @@ dependencies {
   implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-api")
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv"

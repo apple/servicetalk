@@ -123,11 +123,19 @@ final class AfterFinallyHttpOperator implements SingleOperator<StreamingHttpResp
 
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
-            assert response != null;
-            subscriber.onSuccess(response.transformMessageBody(payload ->
-                    payload.liftSync(messageBodySubscriber ->
-                            new MessageBodySubscriber(messageBodySubscriber, afterFinally))));
-            dereferenceSubscriber();
+            if (response == null) {
+                try {
+                    subscriber.onSuccess(null);
+                } finally {
+                    dereferenceSubscriber();
+                    afterFinally.onComplete();
+                }
+            } else {
+                subscriber.onSuccess(response.transformMessageBody(payload ->
+                        payload.liftSync(messageBodySubscriber ->
+                                new MessageBodySubscriber(messageBodySubscriber, afterFinally))));
+                dereferenceSubscriber();
+            }
         }
 
         @Override
@@ -152,8 +160,6 @@ final class AfterFinallyHttpOperator implements SingleOperator<StreamingHttpResp
 
         private final Subscriber<? super Object> subscriber;
         private final TerminalSignalConsumer afterFinally;
-        @Nullable
-        private Subscription subscription;
 
         MessageBodySubscriber(final Subscriber<? super Object> subscriber,
                               final TerminalSignalConsumer afterFinally) {
@@ -163,7 +169,6 @@ final class AfterFinallyHttpOperator implements SingleOperator<StreamingHttpResp
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            this.subscription = subscription;
             subscriber.onSubscribe(new Subscription() {
                 @Override
                 public void request(final long n) {

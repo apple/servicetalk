@@ -376,8 +376,7 @@ class OpenTelemetryHttpServerFilterTest {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
-                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, // Missing: https://github.com/apple/servicetalk/actions/runs/14274978738/job/40016246646?pr=3212#step:8:1640. It looks like completion is getting triggered via response:cancel after the span is marked complete.
-//                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY, // Sometimes missing because of a race.
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY
         ));
         runWithClient(http2, client -> {
@@ -661,6 +660,5 @@ class OpenTelemetryHttpServerFilterTest {
 
     private static void setKey(AttributeKey<String> key) {
         Span.current().setAttribute(key, "set");
-        System.out.println(key.getKey() + ": " + Span.current());
     }
 }
