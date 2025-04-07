@@ -56,6 +56,7 @@ import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.SemanticAttributes;
+import io.servicetalk.utils.internal.ThrowableUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -71,7 +72,9 @@ import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -474,10 +477,21 @@ class OpenTelemetryHttpServerFilterTest {
 
     private void runWithClient(boolean http2, RunWithClient runWithClient) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
+        Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
-                new OpenTelemetryOptions.Builder().build());
+                new OpenTelemetryOptions.Builder().build(), errorQueue);
              HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
                 runWithClient.run(client);
+        }
+        if (!errorQueue.isEmpty()) {
+            AssertionError ex = new AssertionError("Async errors, see suppressed");
+            if (true) {
+                throw new AssertionError(errorQueue.poll());
+            }
+            for (Throwable t : errorQueue) {
+                ThrowableUtils.addSuppressed(ex, t);
+            }
+            throw ex;
         }
     }
 
@@ -511,12 +525,12 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
-                                                      OpenTelemetryOptions opentelemetryOptions) throws Exception {
+                                                      OpenTelemetryOptions opentelemetryOptions, Queue<Throwable> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         return HttpServers.forAddress(localAddress(0))
                 .protocols(config)
                 .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
-                .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver()))
+                .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> {
                             final StreamingHttpResponse response = responseFactory.ok();
@@ -573,6 +587,15 @@ class OpenTelemetryHttpServerFilterTest {
         static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
         static final AttributeKey<String> ON_RESPONSE_BODY_ERROR_KEY = AttributeKey.stringKey("onResponseBodyError");
         static final AttributeKey<String> ON_RESPONSE_BODY_CANCEL_KEY = AttributeKey.stringKey("onResponseBodyCancel");
+
+        private final Queue<Throwable> errorQueue;
+
+        // Protected by synchronization
+        private Span initialSpan;
+
+        TestHttpLifecycleObserver(Queue<Throwable> errorQueue) {
+            this.errorQueue = errorQueue;
+        }
 
         @Override
         public HttpExchangeObserver onNewExchange() {
@@ -660,10 +683,24 @@ class OpenTelemetryHttpServerFilterTest {
                 }
             };
         }
-    }
-
-    private static void setKey(AttributeKey<String> key) {
-        Span.current().setAttribute(key, "set");
+        private void setKey(AttributeKey<String> key) {
+            final Span current = Span.current();
+                current.setAttribute(key, "set");
+            final Span initialSpan;
+            synchronized (this) {
+                if (this.initialSpan == null) {
+                    this.initialSpan = current;
+                }
+                initialSpan = this.initialSpan;
+            }
+            if (Span.getInvalid().equals(current)) {
+                errorQueue.offer(new AssertionError("Detected the invalid span"));
+            } else if (!current.equals(initialSpan)) {
+                errorQueue.offer(new AssertionError("Found unexpected unrelated span detected in " +
+                        key.getKey() + ". Initial: " + initialSpan + ", current: " + current));
+            } else {
+            }
+        }
     }
 
     private static void hasOneOf(SpanDataAssert span, AttributeKey<String>... keys) {
