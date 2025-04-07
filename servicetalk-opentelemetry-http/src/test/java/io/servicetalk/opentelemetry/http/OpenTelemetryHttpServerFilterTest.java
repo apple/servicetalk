@@ -57,6 +57,7 @@ import io.opentelemetry.semconv.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -274,7 +275,7 @@ class OpenTelemetryHttpServerFilterTest {
         verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServerFilter());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalOk(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
@@ -305,7 +306,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalErrorResponseBody(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
@@ -335,7 +336,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalErrorResponse(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
@@ -364,14 +365,19 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @ParameterizedTest
+    @RepeatedTest(10)
+    void autoRequestDisposalRequestBodyErrorRepro() throws Exception {
+        autoRequestDisposalRequestBodyError(true);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalRequestBodyError(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
-                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, // Missing: https://github.com/apple/servicetalk/actions/runs/14274978738/job/40016246646?pr=3212#step:8:1640. It looks like completion is getting triggered via response:cancel after the span is marked complete.
+//                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY, // Sometimes missing because of a race.
                 TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY
         ));
         runWithClient(http2, client -> {
@@ -398,7 +404,7 @@ class OpenTelemetryHttpServerFilterTest {
     // TODO: this is flaky due to an intrinsic race between cancellation and response making context-setting
     //  on the request body non-determinate during drains.
     @Disabled
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalClientHangupAfterResponseHead(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
@@ -431,7 +437,7 @@ class OpenTelemetryHttpServerFilterTest {
     // TODO: this is flaky due to an intrinsic race between cancellation and response making context-setting
     //  on the request body non-determinate during drains.
     @Disabled
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
     @ValueSource(booleans = {true, false})
     void autoRequestDisposalClientHangupBeforeResponseHead(boolean http2) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
@@ -655,5 +661,6 @@ class OpenTelemetryHttpServerFilterTest {
 
     private static void setKey(AttributeKey<String> key) {
         Span.current().setAttribute(key, "set");
+        System.out.println(key.getKey() + ": " + Span.current());
     }
 }

@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -114,8 +113,8 @@ final class ScopeTracker implements TerminalSignalConsumer {
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
-        return responseSingle.liftSync(new BeforeFinallyHttpOperator(this))
-                // BeforeFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
+        return responseSingle.liftSync(new AfterFinallyHttpOperator(this))
+                // AfterFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
                 // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
                 // completion of Meta. So in order for downstream operators to get a consistent view of the data
                 // path beforeOnSuccess() needs to be applied last.
@@ -127,7 +126,7 @@ final class ScopeTracker implements TerminalSignalConsumer {
         static final CancelledRequestException INSTANCE = new CancelledRequestException();
 
         CancelledRequestException() {
-            super("canceled", null, false, false);
+            super("cancelled", null, false, false);
         }
     }
 }
