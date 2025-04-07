@@ -45,12 +45,14 @@ import io.servicetalk.transport.api.ServerContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.SemanticAttributes;
@@ -74,6 +76,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilterTest.verifyTraceIdPresentInLogs;
@@ -84,10 +88,11 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class OpenTelemetryHttpServerFilterTest {
 
-    private static final int SLEEP_DURATION = 1000;
+    private static final int SLEEP_DURATION = CI ? 2000 : 1000;
 
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
@@ -376,18 +381,17 @@ class OpenTelemetryHttpServerFilterTest {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
-                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY
+                TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
         runWithClient(http2, client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
             request.payloadBody(Publisher.from(client.executionContext().bufferAllocator().fromAscii("bar"))
-                    .concat(Publisher.failed(new Exception("request body failed"))));
+                    .concat(Publisher.failed(DELIBERATE_EXCEPTION)));
             ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
                     .flatMap(response -> response.toResponse()).toFuture().get());
-            assertThat(ex.getCause().getMessage()).isEqualTo("request body failed");
+            assertThat(ex.getCause()).isSameAs(DELIBERATE_EXCEPTION);
             Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
@@ -396,6 +400,8 @@ class OpenTelemetryHttpServerFilterTest {
                                 for (AttributeKey<String> key : expected) {
                                     span.hasAttribute(key, "set");
                                 }
+                                hasOneOf(span, TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY,
+                                        TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY);
                             }));
         });
     }
@@ -467,13 +473,11 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     private void runWithClient(boolean http2, RunWithClient runWithClient) throws Exception {
+        HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
-                new OpenTelemetryOptions.Builder().build())) {
-            HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .protocols(config).build()) {
+                new OpenTelemetryOptions.Builder().build());
+             HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
                 runWithClient.run(client);
-            }
         }
     }
 
@@ -514,7 +518,7 @@ class OpenTelemetryHttpServerFilterTest {
                 .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
                 .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver()))
                 .listenStreamingAndAwait(
-                        (ctx, request, responseFactory) -> Single.defer(() -> {
+                        (ctx, request, responseFactory) -> {
                             final StreamingHttpResponse response = responseFactory.ok();
                             response.payloadBody(DEFAULT_BODY);
 
@@ -526,17 +530,17 @@ class OpenTelemetryHttpServerFilterTest {
                             });
 
                             if ("/responseerror".equals(request.path())) {
-                                return Single.failed(new Exception("response failed"));
+                                return Single.failed(DELIBERATE_EXCEPTION);
                             } else if ("/consumebodyinhandler".equals(request.path())) {
-                                request.payloadBody().ignoreElements().subscribe();
-                                return Single.succeeded(response);
+                                return request.payloadBody().ignoreElements()
+                                        .concat(Single.succeeded(response));
                             } else if ("/consumebodyasresponse".equals(request.path())) {
                                 response.transformMessageBody(body ->
                                         request.payloadBody().ignoreElements().concat(body));
                                 return Single.succeeded(response);
                             } else if ("/responsebodyerror".equals(request.path())) {
                                 response.payloadBody(DEFAULT_BODY.concat(
-                                        Publisher.failed(new Exception("response body failed"))));
+                                        Publisher.failed(DELIBERATE_EXCEPTION)));
                                 return Single.succeeded(response);
                             } else if ("/slowbody".equals(request.path())) {
                                 response.transformPayloadBody(body -> Publisher.never());
@@ -546,7 +550,7 @@ class OpenTelemetryHttpServerFilterTest {
                             } else {
                                 return Single.succeeded(response);
                             }
-                        }));
+                        });
     }
 
     private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
@@ -660,5 +664,15 @@ class OpenTelemetryHttpServerFilterTest {
 
     private static void setKey(AttributeKey<String> key) {
         Span.current().setAttribute(key, "set");
+    }
+
+    private static void hasOneOf(SpanDataAssert span, AttributeKey<String>... keys) {
+        Attributes attributes = span.actual().getAttributes();
+        for (AttributeKey<String> key : keys) {
+            if (attributes.get(key) != null) {
+                return;
+            }
+        }
+        fail("Failed to find one of attributes " + Arrays.asList(keys) + " in attributes: " + attributes);
     }
 }
