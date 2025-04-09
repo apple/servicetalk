@@ -28,7 +28,6 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-grpc-netty")
   implementation project(":servicetalk-grpc-protoc")
-  implementation project(":servicetalk-grpc-protobuf")
   implementation project(":servicetalk-grpc-utils")
 
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

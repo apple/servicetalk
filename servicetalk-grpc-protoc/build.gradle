@@ -26,7 +26,10 @@ afterEvaluate {
     dependencyAnalysis {
       issues {
         onIncorrectConfiguration {
-          exclude(":servicetalk-data-protobuf") // Needed for the generated classes
+          exclude(":servicetalk-data-protobuf")
+        }
+        onUnusedDependencies {
+          exclude(":servicetalk-grpc-protobuf")
         }
       }
     }
@@ -34,7 +37,9 @@ afterEvaluate {
 }
 
 dependencies {
-  api project(":servicetalk-data-protobuf") // Needed for the generated classes
+  // The following api dependencies are required to compile generated classes:
+  api project(":servicetalk-data-protobuf")
+  api project(":servicetalk-grpc-protobuf")
 
   compileOnly "com.squareup:javapoet:$javaPoetVersion"
 
