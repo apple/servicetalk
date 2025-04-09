@@ -34,6 +34,7 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.HttpAutoDraining;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
@@ -373,7 +374,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(10)
+    @RepeatedTest(100)
     void autoRequestDisposalRequestBodyErrorRepro() throws Exception {
         autoRequestDisposalRequestBodyError(true);
     }
@@ -529,8 +530,10 @@ class OpenTelemetryHttpServerFilterTest {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         return HttpServers.forAddress(localAddress(0))
                 .protocols(config)
-                .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
-                .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
+                .drainRequestPayloadBody(false)
+                .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+                .appendNonOffloadingServiceFilter(new HttpAutoDraining())
+                .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> {
                             final StreamingHttpResponse response = responseFactory.ok();
@@ -685,6 +688,7 @@ class OpenTelemetryHttpServerFilterTest {
         }
         private void setKey(AttributeKey<String> key) {
             final Span current = Span.current();
+            System.err.println(Thread.currentThread().getName() + ": setting key " + key.getKey() + "/" + current);
                 current.setAttribute(key, "set");
             final Span initialSpan;
             synchronized (this) {

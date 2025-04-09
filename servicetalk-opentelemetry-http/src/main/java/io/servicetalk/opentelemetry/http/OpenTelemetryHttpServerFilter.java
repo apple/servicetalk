@@ -140,7 +140,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
                 // TODO: this is starting to look a lot like the AbstractLifecycleObserver.
                 request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
                 Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
-                return withContext(request, tracker.track(response), context);
+                return withContext(tracker.track(response), context);
             } catch (Throwable t) {
                 tracker.onError(t);
                 return Single.failed(t);
