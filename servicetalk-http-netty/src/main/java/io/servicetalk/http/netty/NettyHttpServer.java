@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.Http2ErrorCode;
@@ -80,7 +81,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -92,7 +92,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION_NO_THROW;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.Http2ErrorCode.CANCEL;
 import static io.servicetalk.http.api.Http2ErrorCode.COMPRESSION_ERROR;
@@ -331,72 +330,50 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean responseSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new AtomicBoolean() : null;
-                final AtomicReference<Subscriber<Object>> firstSubscribe = new AtomicReference<>();
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.liftSync(subscriber -> {
-                            if (!firstSubscribe.compareAndSet(null, subscriber)) {
-                                return new Subscriber<Object>() {
-                                    @Override
-                                    public void onSubscribe(Subscription subscription) {
-                                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION_NO_THROW);
-                                    subscriber.onError(new DuplicateSubscribeException(firstSubscribe.get(), subscriber));
-                                        subscription.cancel();
-                                    }
+                        payload -> payload.afterSubscriber(() -> {
+                            if (responseSent != null && !responseSent.get()) {
+                                // After users subscribe to the request payload body, generate 100 (Continue) response
+                                // if the final response wasn't sent already for this request. Concurrency between
+                                // 100 (Continue) and the final response is handled by Netty outbound encoders.
+                                // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
+                                // WriteStreamSubscriber, and CloseHandler state machines.
+                                final Channel channel = nettyChannel();
+                                if (channel.eventLoop().inEventLoop()) {
+                                    channel.write(streamingResponseFactory().continueResponse());
+                                } else {
+                                    channel.eventLoop().execute(() ->
+                                            channel.write(streamingResponseFactory().continueResponse()));
+                                }
+                            }
+                            return new Subscriber<Object>() {
+                                @Override
+                                public void onSubscribe(final Subscription s) {
+                                }
 
-                                    @Override
-                                    public void onNext(@Nullable Object o) {
-                                    }
+                                @Override
+                                public void onNext(final Object obj) {
+                                }
 
-                                    @Override
-                                    public void onError(Throwable t) {
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                    }
-                                };
-                            } else {
-                                if (responseSent != null && !responseSent.get()) {
-                                    // After users subscribe to the request payload body, generate 100 (Continue) response
-                                    // if the final response wasn't sent already for this request. Concurrency between
-                                    // 100 (Continue) and the final response is handled by Netty outbound encoders.
-                                    // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
-                                    // WriteStreamSubscriber, and CloseHandler state machines.
-                                    final Channel channel = nettyChannel();
-                                    if (channel.eventLoop().inEventLoop()) {
-                                        channel.write(streamingResponseFactory().continueResponse());
-                                    } else {
-                                        channel.eventLoop().execute(() ->
-                                                channel.write(streamingResponseFactory().continueResponse()));
+                                @Override
+                                public void onError(final Throwable t) {
+                                    // After the response payload has terminated, we may attempt to subscribe to the
+                                    // request payload and drain/discard the content (in case the user forgets to
+                                    // consume the stream). However, this means we may introduce a duplicate subscribe
+                                    // and this doesn't mean the request content has not terminated.
+                                    if (!(t instanceof RejectedSubscribeError)) {
+                                        requestCompletion.onComplete();
                                     }
                                 }
-                                return new Subscriber<Object>() {
-                                    @Override
-                                    public void onSubscribe(final Subscription s) {
-                                        subscriber.onSubscribe(s);
-                                    }
 
-                                    @Override
-                                    public void onNext(final Object obj) {
-                                        subscriber.onNext(obj);
-                                    }
-
-                                    @Override
-                                    public void onError(final Throwable t) {
-                                        requestCompletion.onComplete();
-                                        subscriber.onError(t);
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        requestCompletion.onComplete();
-                                        subscriber.onComplete();
-                                    }
-                                };
-                            }
+                                @Override
+                                public void onComplete() {
+                                    requestCompletion.onComplete();
+                                }
+                            };
                         }));
 
                 // Remember the original request method before users can modify it.
@@ -431,7 +408,6 @@ final class NettyHttpServer {
                         // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
                         // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
-
                 return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
             });
             // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate
