@@ -80,6 +80,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -91,6 +92,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION_NO_THROW;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.Http2ErrorCode.CANCEL;
 import static io.servicetalk.http.api.Http2ErrorCode.COMPRESSION_ERROR;
@@ -329,15 +331,34 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean responseSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new AtomicBoolean() : null;
-                final AtomicBoolean firstSubscribe = new AtomicBoolean();
+                final AtomicReference<Subscriber<Object>> firstSubscribe = new AtomicReference<>();
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.afterSubscriber(() -> {
-                            // TODO: this isn't totally effective because just because we're the first to execute the
-                            //  lambda doesn't me we're the first the subsribe down the whole chain to where it matters.
-                            if (firstSubscribe.compareAndSet(false, true)) {
+                        payload -> payload.liftSync(subscriber -> {
+                            if (!firstSubscribe.compareAndSet(null, subscriber)) {
+                                return new Subscriber<Object>() {
+                                    @Override
+                                    public void onSubscribe(Subscription subscription) {
+                                    subscriber.onSubscribe(EMPTY_SUBSCRIPTION_NO_THROW);
+                                    subscriber.onError(new DuplicateSubscribeException(firstSubscribe.get(), subscriber));
+                                        subscription.cancel();
+                                    }
+
+                                    @Override
+                                    public void onNext(@Nullable Object o) {
+                                    }
+
+                                    @Override
+                                    public void onError(Throwable t) {
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                    }
+                                };
+                            } else {
                                 if (responseSent != null && !responseSent.get()) {
                                     // After users subscribe to the request payload body, generate 100 (Continue) response
                                     // if the final response wasn't sent already for this request. Concurrency between
@@ -355,27 +376,26 @@ final class NettyHttpServer {
                                 return new Subscriber<Object>() {
                                     @Override
                                     public void onSubscribe(final Subscription s) {
+                                        subscriber.onSubscribe(s);
                                     }
 
                                     @Override
                                     public void onNext(final Object obj) {
+                                        subscriber.onNext(obj);
                                     }
 
                                     @Override
                                     public void onError(final Throwable t) {
                                         requestCompletion.onComplete();
+                                        subscriber.onError(t);
                                     }
 
                                     @Override
                                     public void onComplete() {
                                         requestCompletion.onComplete();
+                                        subscriber.onComplete();
                                     }
                                 };
-                            } else {
-                                // Second subscribes should get nothing, because they're going to be a
-                                // "duplicate subscribe exception" anyway.
-                                // TODO: move this to a more useful place.
-                                return HttpMessageDiscardWatchdogServiceFilter.NoopSubscriber.INSTANCE;
                             }
                         }));
 
