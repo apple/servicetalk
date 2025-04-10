@@ -6,21 +6,74 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= `AsyncContext`
+= Working with Asynchronous Context
+
+**API is decoupled from application data APIs**
+
+A key use case of contextual information is to pass data "through" some APIs that are otherwise oblivious to the data
+so that it can be used at deeper layers in the application. This state maybe useful across different APIs and maybe
+burdensome to account for this state in every API (e.g. gRPC and generated code). It also maybe error-prone to
+rely upon users to propagate this state according to control flow which may result inconsistent state. This state is
+often optional and not always required, and so if it is baked into the protocol APIs this would make them more complex
+and not be required.
+
+To overcome this limitation, we provide two abstractions to propagate context asynchronously: `AsyncContext`, which is
+intended to replace custom `ThreadLocal` definitions, and `CaptureContext` which is used to capture third-party
+context information. This allows programs to decouple values from the exact API call chain by using static APIs to get
+and set values.
+
+However, these benefits don't come for free. Some costs of the static API are as follows:
+
+**Complexity of implementation**
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
-Also depending on the application's threading model a single request may be processed on different threads. This means
+Also, depending on the application's threading model, a single request may be processed on different threads. This means
 that libraries that rely upon ThreadLocal storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work as
-expected. To overcome this limitation, we provide an abstraction called `AsyncContext` which hooks into the internal
-async machinery to make sure thread local context data is propagated along with the request.
+expected.
+
+ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
+that ReactiveStreams operators, Executors, and the offloading strategy must account for when relying upon
+asynchronous context. In order to accomplish this ServiceTalk's asynchronous control flow needs to provide tools for
+users if they have existing code outside ServiceTalk control flow.
+
+**Understandability**
+
+Although asynchronous function composition is not required to use ServiceTalk, the internals of ServiceTalk uses
+asynchronous function composition as a core abstraction which can be difficult to reason about relative to
+traditional imperative programming. On top of this, ServiceTalk provides isolation from the EventLoop
+threads by offloading to application level threads, which introduces asynchronous boundaries. For request/response
+protocols the goal is for the asynchronous context to be isolated for each request/response, but folks that need to
+directly interact with asynchronous context need to understand how modifications are visible (or not) relative to where
+they are set or read in their application.
+
+== `AsyncContext`
 
 Although `AsyncContext` may be convenient to use it shouldn't be overused when traditional argument passing is an
 option. The intended use case of `AsyncContext` is to propagate context across method boundaries which do not
-accommodate for additional parameters. This is typically applicable for infrastructure tasks like tracing,
-logging, etc.
+accommodate for additional parameters.
 
-`AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries. A static
-API has a few benefits:
+`AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries that can
+be used instead of creating a traditional `ThreadLocal`.
+
+**Cost of retention**
+
+In order to make state available in a static fashion across API calls the mechanism to do this is to use thread local
+state. The same thread maybe used to process logically independent asynchronous control flows (e.g. `EventLoop` can
+process multiple sockets, and each socket can process multiple requests, and offloading may re-use threads to process
+different requests). This results in frequently accessing the thread local state to save original value, set correct
+context, and then restore original value.
+
+=== Usage
+
+ServiceTalk provides out-of-the-box support for `AsyncContext`, details about which can be found
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[here]. Users can
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc#disable-asynccontext[disable `AsyncContext`] if they
+do not require this functionality.
+
+== `CapturedContext`
+
+In contrast to the `AsyncContext`, the `CaptureContext` APIs are most suitable for capturing external context and
+restoring it within the ServiceTalk execution chain. It is _not_ a good tool for defining new contextual information.
 
 **Interop with existing APIs depending on `ThreadLocal`**
 
@@ -29,48 +82,27 @@ Some APIs / features assume static state that is coupled with the current thread
 asynchronous execution and also share threads for processing different requests. For example the
 link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
 and the
-link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
-
-**API is decoupled from application data APIs**
-
-A use case for `AsyncContext` is to retain distributed tracing state. This state maybe useful across different APIs
-and maybe burdensome to account for this state in every API (e.g. gRPC and generated code). It also maybe error prone to
-rely upon users to propagate this state according to control flow which may result inconsistent state. This state is
-often optional and not always required, and so if it is baked into the protocol APIs this would make them more complex
-and not be required.
-
-NOTE: This maybe seen as a negative in some respects. On the contrary, this does not restrict users from explicitly
-passing state through their APIs.
-
-However, these benefits don't come for free. Some costs of the static API are as follows:
-
-**Complexity of implementation**
-
-ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
-that ReactiveStreams operators, Executors, and the offloading strategy must account for when relying upon
-`AsyncContext`. In order to accomplish this ServiceTalk's asynchronous control flow needs to account for `AsyncContext`
-and provide tools for users if they have existing code outside ServiceTalk control flow.
-
-**Understandability**
-
-Although asynchronous function composition is not required to use ServiceTalk, the internals of ServiceTalk uses
-asynchronous function composition as a core abstraction which can be difficult to reason about relative to
-traditional imperative programming. On top of this, ServiceTalk provides isolation from the EventLoop
-threads by offloading to application level threads, which introduces asynchronous boundaries. For request/response
-protocols the goal is for the `AsyncContext` to be isolated for each request/response, but folks that need to directly
-interact with `AsyncContext` need to understand how modifications are visible (or not) relative to where they are set.
+link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure. The
+`CapturedContext` APIs can be used to capture `ThreadLocal` state, pass it along asynchronous boundaries, and restore
+it in the ServiceTalk execution chain. This has the further advantage of not being 'infectious': using `CaptureContext`
+does not dictate the behavior of the third-party storage model and makes it more likely to interact correctly with
+other libraries.
 
 **Cost of retention**
 
-In order to make state available in a static fashion across API calls the mechanism to do this is to use thread local
-state. The same thread maybe used to process logically independent asynchronous control flows (e.g. EventLoop can
-process multiple sockets, and each socket can process multiple requests, and offloading may re-use threads to process
-different requests). This results in frequently accessing the thread local state to save original value, set correct
-context, and then restore original value.
+To understand the cost of the context capture and restore process, we need to understand when and how it happens.
+Context capture happens during the subscribe operation of the ServiceTalk concurrent APIs making capture relatively
+infrequent. In contrast, context restoration happens on every interaction of the ServiceTalk concurrent APIs: this
+includes when data is available as well as when errors and cancellation occurs. Every time context needs to be saved or
+restored the existing needs to be captured, the expected state must be restored, the work is done, and finally the
+pre-existing state is restored once more. This means that if the save or restore processes are expensive, such as
+clearing and adding elements to a map, then there will be a high cost to propagating the context. On the other hand, if
+the capture and restore process is simple, such as getting and setting values in a `ThreadLocal`, the cost will be
+relatively low.
 
-== Usage
+=== Usage
 
-ServiceTalk provides out-of-the-box support for `AsyncContext`, details about which can be found
-xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[here]. Users can
-xref:{page-version}@servicetalk-concurrent-api::async-context.adoc#disable-asynccontext[disable `AsyncContext`] if they
-do not require this functionality.
+The `CapturedContext` APIs are used via hooks are loaded via the `Providers` mechanism. This involves creating a
+`CapturedContextProvider` that will be used as part of the ServiceTalk context capture and restore process. For details
+about how to capture and restore custom context see the example in
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java[CapturedContextProvider].
