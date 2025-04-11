@@ -10,7 +10,9 @@ endif::[]
 
 This module implements the
 link:https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/plugin.proto[Protoc Plugin Interface]
-and generates ServiceTalk code for service definitions contained in `.proto` files.
+to generate ServiceTalk code for service definitions contained in `.proto` files. It's also a convenient way of adding
+all required transitive dependencies for the generated code by simply adding `io.servicetalk:servicetalk-grpc-protobuf`
+as a dependency to your classpath.
 
 It is recommended to automate the usage of this plugin in your build via
 link:https://github.com/google/protobuf-gradle-plugin[protobuf-gradle-plugin] or
