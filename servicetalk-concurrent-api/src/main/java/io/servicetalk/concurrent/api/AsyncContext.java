@@ -578,7 +578,7 @@ public final class AsyncContext {
         LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
     }
 
-    private static class CapturedContextProviderUnion implements CapturedContextProvider {
+    private static final class CapturedContextProviderUnion implements CapturedContextProvider {
 
         private final CapturedContextProvider first;
         private final CapturedContextProvider second;

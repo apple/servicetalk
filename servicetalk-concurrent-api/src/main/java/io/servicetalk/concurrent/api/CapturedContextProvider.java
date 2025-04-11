@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 /**
  * Functionality related to capturing thread-local like context for later restoration across async boundaries.
- *
+ * <p>
  * If you want to capture any external state you can create a wrapper {@link CapturedContext} to add additional
  * state capturing to the context pathway. This state can then be restored by wrapping the {@link CapturedContext}
  * with the additional functionality to restore and finally revert the context state.
@@ -67,7 +67,7 @@ package io.servicetalk.concurrent.api;
 public interface CapturedContextProvider {
 
     /**
-     * Capture a reference to existing context in preparation for an asynchronous thread jump.
+     * Capture a reference to existing context in preparation for an asynchronous boundary jump.
      * @param underlying additional context that <i><b>must</b></i> be utilized as part of the returned
      * {@link CapturedContext}, usually wrapped as described above.
      * @return the wrapped {@link CapturedContext}.
@@ -75,7 +75,7 @@ public interface CapturedContextProvider {
     CapturedContext captureContext(CapturedContext underlying);
 
     /**
-     * Capture a copy of existing context in preparation for an asynchronous thread jump.
+     * Capture a copy of existing context in preparation for an asynchronous boundary jump.
      * @param underlying additional context that <i><b>must</b></i> be utilized as part of the returned
      * {@link CapturedContext}, usually wrapped as described above.
      * @return the wrapped {@link CapturedContext}.
