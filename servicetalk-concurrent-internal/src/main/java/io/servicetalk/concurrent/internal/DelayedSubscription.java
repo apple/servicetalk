@@ -93,6 +93,7 @@ public final class DelayedSubscription implements Subscription {
     @Override
     public void cancel() {
         for (;;) {
+            new Exception("Cancelling Delayed Subscription").printStackTrace(System.err);
             final long prevRequested = requested;
             if (prevRequested == SUBSCRIPTION_SET) {
                 assert subscription != null;

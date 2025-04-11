@@ -91,9 +91,11 @@ class InsufficientlySizedExecutorHttpTest {
         }
     }
 
+    // TODO: this is failing when capacity = 0 with a channel closed exception instead of the SERVICE_UNAVAILABLE.
     @ParameterizedTest(name = "{displayName} {index} - capacity: {0}")
     @ValueSource(ints = {0, 1})
     void insufficientServerCapacityStreaming(final int capacity) throws Exception {
+        System.err.println("############ Starting test");
         initWhenServerUnderProvisioned(capacity, false);
         insufficientServerCapacityStreaming0(capacity);
     }
@@ -135,6 +137,7 @@ class InsufficientlySizedExecutorHttpTest {
         }
         server = serverBuilder
                 .executor(executor)
+//                .drainRequestPayloadBody(false)
                 .executionStrategy(strategy)
                 .listenStreamingAndAwait((ctx, request, respFactory) -> succeeded(respFactory.ok()));
         client = newClientBuilder(server, CLIENT_CTX).buildStreaming();

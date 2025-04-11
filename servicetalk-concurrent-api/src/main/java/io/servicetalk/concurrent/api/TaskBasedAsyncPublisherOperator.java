@@ -287,6 +287,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                 //  - The Executor threw from execute(), so we assume it will not run the task.
                 signals.clear();
                 assert subscription != null;
+                // TODO: this is the root of the cancel.
                 safeCancel(subscription);
             }
         }
