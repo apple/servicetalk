@@ -78,6 +78,26 @@ public final class AfterFinallyHttpOperator implements SingleOperator<StreamingH
      * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      */
+    public AfterFinallyHttpOperator(final Runnable afterFinally) {
+        this(TerminalSignalConsumer.from(afterFinally));
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
+     */
+    public AfterFinallyHttpOperator(final TerminalSignalConsumer afterFinally) {
+        this(afterFinally, false);
+    }
+
+    /**
+     * Create a new instance.
+     *
+     * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
+     */
     public AfterFinallyHttpOperator(final TerminalSignalConsumer afterFinally, boolean discardEventsAfterCancel) {
         this.afterFinally = requireNonNull(afterFinally);
         this.discardEventsAfterCancel = discardEventsAfterCancel;
@@ -175,14 +195,15 @@ public final class AfterFinallyHttpOperator implements SingleOperator<StreamingH
 
         @Override
         public void onError(final Throwable t) {
+            boolean didComplete = stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE);
             try {
-                subscriber.onError(t);
-                dereferenceSubscriber();
+                if (didComplete || !discardEventsAfterCancel) {
+                    subscriber.onError(t);
+                    dereferenceSubscriber();
+                }
             } finally {
-                if (stateUpdater.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
+                if (didComplete) {
                     afterFinally.onError(t);
-                } else if (discardEventsAfterCancel) {
-                    return;
                 }
             }
         }
