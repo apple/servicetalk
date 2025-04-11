@@ -357,6 +357,9 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
             @Nullable final HttpLifecycleObserver lifecycleObserver) {
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>();
         // Append internal filters:
+        if (drainRequestPayloadBody) {
+            appendNonOffloadingServiceFilter(filters, HttpRequestAutoDrainingServiceFilter.INSTANCE);
+        }
         if (lifecycleObserver != null) {
             appendNonOffloadingServiceFilter(filters, new HttpLifecycleObserverServiceFilter(lifecycleObserver));
         }
@@ -460,20 +463,20 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
             }
             ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
             return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
-                    connectionAcceptor, filteredService, drainRequestPayloadBody, earlyConnectionAcceptor,
+                    connectionAcceptor, filteredService, earlyConnectionAcceptor,
                     lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, false, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, false, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, true, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, true, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.isH2PriorKnowledge()) {
             return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, earlyConnectionAcceptor, lateConnectionAcceptor);
         }
         return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
-                filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
+                filteredService, earlyConnectionAcceptor, lateConnectionAcceptor);
     }
 
     private static <T extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(

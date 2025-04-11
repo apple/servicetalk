@@ -54,7 +54,6 @@ final class OptionalSslNegotiator {
                                           final SocketAddress listenAddress,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody,
                                           @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
                                           @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         final BiFunction<Channel, ConnectionObserver, Single<NettyConnectionContext>> channelInit =
@@ -68,22 +67,22 @@ final class OptionalSslNegotiator {
                         if (roTcpConfig.isAlpnConfigured()) {
                             return DeferredServerChannelBinder.alpnInitChannel(listenAddress, channel,
                                     roConfig, executionContext,
-                                    service, drainRequestPayloadBody, connectionObserver);
+                                    service, connectionObserver);
                         } else if (roTcpConfig.sniMapping() != null) {
                             return DeferredServerChannelBinder.sniInitChannel(listenAddress, channel,
                                     roConfig, executionContext,
-                                    service, drainRequestPayloadBody, connectionObserver);
+                                    service, connectionObserver);
                         } else if (roConfig.isH2PriorKnowledge()) {
                             return H2ServerParentConnectionContext.initChannel(listenAddress, channel,
                                     executionContext, roConfig,
                                     new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
                                             executionContext), service,
-                                    drainRequestPayloadBody, connectionObserver);
+                                    connectionObserver);
                         } else {
                             return NettyHttpServer.initChannel(channel, executionContext, roConfig,
                                     new TcpServerChannelInitializer(roTcpConfig, connectionObserver,
                                             executionContext), service,
-                                    drainRequestPayloadBody, connectionObserver);
+                                    connectionObserver);
                         }
                     } else {
                         if (roConfigWithoutSsl.h2Config() != null) {
@@ -91,12 +90,12 @@ final class OptionalSslNegotiator {
                                     executionContext, roConfigWithoutSsl,
                                     new TcpServerChannelInitializer(roConfigWithoutSsl.tcpConfig(),
                                             connectionObserver, executionContext), service,
-                                    drainRequestPayloadBody, connectionObserver);
+                                    connectionObserver);
                         } else {
                             return NettyHttpServer.initChannel(channel, executionContext, roConfigWithoutSsl,
                                     new TcpServerChannelInitializer(roConfigWithoutSsl.tcpConfig(),
                                             connectionObserver, executionContext), service,
-                                    drainRequestPayloadBody, connectionObserver);
+                                    connectionObserver);
                         }
                     }
                 });
