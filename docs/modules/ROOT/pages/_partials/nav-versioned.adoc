@@ -2,7 +2,7 @@
 ** xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]
 ** xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[Blocking safe by default]
 ** xref:{page-version}@servicetalk::evolve-to-async.adoc[Evolving to asynchronous]
-** xref:{page-version}@servicetalk::async-context.adoc[Async context]
+** xref:{page-version}@servicetalk::async-context.adoc[Asynchronous Context]
 
 * xref:{page-version}@servicetalk::performance.adoc[Performance]
 
