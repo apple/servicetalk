@@ -71,7 +71,7 @@ interface AsyncContextProvider {
      * @return the captured context to be restored across async boundaries.
      * @deprecated this should be removed once we remove the `*SetContextOnSubscribe` operators.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43
     CapturedContext captureContext(ContextMap context);
 
     /**

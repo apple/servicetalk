@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextExecutorPlugin.EXECUTOR_PLUGIN;
 import static io.servicetalk.concurrent.api.Executors.EXECUTOR_PLUGINS;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Presents a static interface to retain state in an asynchronous environment.
@@ -584,8 +585,8 @@ public final class AsyncContext {
         private final CapturedContextProvider second;
 
         CapturedContextProviderUnion(CapturedContextProvider first, CapturedContextProvider second) {
-            this.first = first;
-            this.second = second;
+            this.first = requireNonNull(first, "first");
+            this.second = requireNonNull(second, "second");
         }
 
         @Override
