@@ -28,8 +28,8 @@ However, these benefits don't come for free. Some costs of the static API are as
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also, depending on the application's threading model, a single request may be processed on different threads. This means
-that libraries that rely upon ThreadLocal storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work as
-expected.
+that libraries that rely upon `ThreadLocal` storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work
+as expected.
 
 ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
 that ReactiveStreams operators, Executors, and the offloading strategy must account for when relying upon
@@ -49,8 +49,8 @@ they are set or read in their application.
 == `AsyncContext`
 
 Although `AsyncContext` may be convenient to use it shouldn't be overused when traditional argument passing is an
-option. The intended use case of `AsyncContext` is to propagate context across method boundaries which do not
-accommodate for additional parameters.
+option. The intended use case of `AsyncContext` is to propagate context across API boundaries which do not accommodate
+for additional parameters.
 
 `AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries that can
 be used instead of creating a traditional `ThreadLocal`.
@@ -72,7 +72,7 @@ do not require this functionality.
 
 == `CapturedContext`
 
-In contrast to the `AsyncContext`, the `CaptureContext` APIs are most suitable for capturing external context and
+In contrast to the `AsyncContext`, the `CapturedContext` APIs are most suitable for capturing external context and
 restoring it within the ServiceTalk execution chain. It is _not_ a good tool for defining new contextual information.
 
 **Interop with existing APIs depending on `ThreadLocal`**
@@ -80,7 +80,7 @@ restoring it within the ServiceTalk execution chain. It is _not_ a good tool for
 Some APIs / features assume static state that is coupled with the current thread. This worked well in the
 1-request-per-thread model, however it breaks down when we may process a request on different threads due to
 asynchronous execution and also share threads for processing different requests. For example the
-link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
+link:https://github.com/open-telemetry/opentelemetry-java/blob/main/api/all/src/main/java/io/opentelemetry/api/trace/Span.java[OpenTelemetry APIs]
 and the
 link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure. The
 `CapturedContext` APIs can be used to capture `ThreadLocal` state, pass it along asynchronous boundaries, and restore
