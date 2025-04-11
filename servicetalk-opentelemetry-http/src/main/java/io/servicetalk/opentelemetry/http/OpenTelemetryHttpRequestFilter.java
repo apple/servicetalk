@@ -41,9 +41,9 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 
 import java.util.function.UnaryOperator;
 
@@ -62,7 +62,7 @@ import java.util.function.UnaryOperator;
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
-    private static final AttributeKey<String> PEER_SERVICE = AttributeKey.stringKey("peer.service");
+    static final AttributeKey<String> PEER_SERVICE = AttributeKey.stringKey("peer.service");
 
     private final Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter;
 
@@ -128,11 +128,11 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         clientInstrumenterBuilder
                 .addAttributesExtractor(
                         HttpClientAttributesExtractor
-                                .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE,
-                                        ServiceTalkNetAttributesGetter.CLIENT_INSTANCE)
+                                .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
                                 .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
                                 .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
                                 .build());
+
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
         }
