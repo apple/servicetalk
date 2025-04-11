@@ -80,14 +80,23 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CapturedContext captureContext(ContextMap contextMap) {
-        return contextMap instanceof CapturedContext ?
-                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
+    public final CapturedContext captureContext() {
+        return captureContext(context());
     }
 
     @Override
-    public final CapturedContext captureContext() {
-        return captureContext(context());
+    public CapturedContext captureContext(ContextMap contextMap) {
+        return convertToCapturedContext(contextMap);
+    }
+
+    @Override
+    public CapturedContext captureContextCopy() {
+        return convertToCapturedContext(context().copy());
+    }
+
+    private CapturedContext convertToCapturedContext(ContextMap contextMap) {
+        return contextMap instanceof CapturedContext ?
+                (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
     }
 
     @Override

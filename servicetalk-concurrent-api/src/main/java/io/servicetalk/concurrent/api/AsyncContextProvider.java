@@ -66,17 +66,27 @@ interface AsyncContextProvider {
     Scope attachContextMap(ContextMap contextMap);
 
     /**
-     * Capture the current context with the provided {@link ContextMap} as the captured {@link AsyncContext} state.
+     * Capture the current context with the provided {@link ContextMap} as the captured {@link AsyncContext} state
+     * using sharing semantics, if applicable.
      * @return the captured context to be restored across async boundaries.
+     * @deprecated this should be removed once we remove the `*SetContextOnSubscribe` operators.
      */
-    CapturedContext captureContext(ContextMap contextMap);
+    @Deprecated
+    CapturedContext captureContext(ContextMap context);
 
     /**
-     * Capture the current context. This is expected to provide identical results as calling
-     * {@code captureContext(context());}.
+     * Capture the current context with the provided {@link ContextMap} as the captured {@link AsyncContext} state
+     * using sharing semantics, if applicable.
      * @return the captured context to be restored across async boundaries.
      */
     CapturedContext captureContext();
+
+    /**
+     * Capture the current context with the provided {@link ContextMap} as the captured {@link AsyncContext} state
+     * using copy or snapshot semantics.
+     * @return the captured context to be restored across async boundaries.
+     */
+    CapturedContext captureContextCopy();
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track {@link AsyncContext} correctly.
