@@ -81,7 +81,9 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
                     .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                 @Override
                 public void onComplete() {
-                    request.payloadBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                    if (payloadSubscribed.compareAndSet(false, true)) {
+                        request.payloadBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                    }
                 }
 
                 @Override
