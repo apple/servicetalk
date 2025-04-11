@@ -27,13 +27,11 @@ import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import javax.annotation.Nullable;
-
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -97,6 +95,9 @@ public final class AfterFinallyHttpOperator implements SingleOperator<StreamingH
      *
      * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
+     * @param discardEventsAfterCancel if {@code true} further events will be discarded if those arrive after
+     * {@link TerminalSignalConsumer#cancel()} is invoked. Otherwise, events may still be delivered if they race with
+     * cancellation.
      */
     public AfterFinallyHttpOperator(final TerminalSignalConsumer afterFinally, boolean discardEventsAfterCancel) {
         this.afterFinally = requireNonNull(afterFinally);
@@ -384,8 +385,6 @@ public final class AfterFinallyHttpOperator implements SingleOperator<StreamingH
 
             try {
                 subscriber.onError(t);
-            }  catch (Throwable cause) {
-                addSuppressed(t, cause);
             } finally {
                 try {
                     afterFinally.onError(t);
