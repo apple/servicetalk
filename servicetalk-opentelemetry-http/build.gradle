@@ -29,7 +29,6 @@ dependencies {
   implementation project(":servicetalk-concurrent")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-api")
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv"
@@ -37,9 +36,11 @@ dependencies {
 
   testImplementation enforcedPlatform("com.fasterxml.jackson:jackson-bom:$jacksonVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-netty"))
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-api")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-serializer-api")
@@ -50,6 +51,7 @@ dependencies {
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
   testImplementation "io.opentelemetry.semconv:opentelemetry-semconv"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
