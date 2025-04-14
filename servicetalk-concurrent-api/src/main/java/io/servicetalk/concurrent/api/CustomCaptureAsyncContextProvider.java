@@ -31,4 +31,9 @@ final class CustomCaptureAsyncContextProvider extends DefaultAsyncContextProvide
     public CapturedContext captureContext(ContextMap contextMap) {
         return delegate.captureContext(super.captureContext(contextMap));
     }
+
+    @Override
+    public CapturedContext captureContextCopy() {
+        return delegate.captureContextCopy(super.captureContextCopy());
+    }
 }

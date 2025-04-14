@@ -35,6 +35,12 @@ public final class OtelCapturedContextProvider implements CapturedContextProvide
 
     @Override
     public CapturedContext captureContext(CapturedContext underlying) {
+        // OTEL state is immutable so everything is a copy.
+        return captureContextCopy(underlying);
+    }
+
+    @Override
+    public CapturedContext captureContextCopy(CapturedContext underlying) {
         return new WithOtelCapturedContext(Context.current(), underlying);
     }
 
