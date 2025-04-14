@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextExecutorPlugin.EXECUTOR_PLUGIN;
 import static io.servicetalk.concurrent.api.Executors.EXECUTOR_PLUGINS;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Presents a static interface to retain state in an asynchronous environment.
@@ -69,13 +70,8 @@ public final class AsyncContext {
     static {
         CapturedContextProvider capturedContextProvider = null;
         for (CapturedContextProvider provider : CapturedContextProviders.providers()) {
-            if (capturedContextProvider == null) {
-                capturedContextProvider = provider;
-            } else {
-                final CapturedContextProvider finalCapturedContextProvider = capturedContextProvider;
-                capturedContextProvider = (context) ->
-                        provider.captureContext(finalCapturedContextProvider.captureContext(context));
-            }
+            capturedContextProvider = capturedContextProvider == null ?
+                    provider : new CapturedContextProviderUnion(capturedContextProvider, provider);
         }
         if (capturedContextProvider == null) {
             DEFAULT_ENABLED_PROVIDER = DefaultAsyncContextProvider.INSTANCE;
@@ -581,5 +577,26 @@ public final class AsyncContext {
         provider = NoopAsyncContextProvider.INSTANCE;
         EXECUTOR_PLUGINS.remove(EXECUTOR_PLUGIN);
         LOGGER.info("Disabled. Features that depend on AsyncContext will stop working.");
+    }
+
+    private static final class CapturedContextProviderUnion implements CapturedContextProvider {
+
+        private final CapturedContextProvider first;
+        private final CapturedContextProvider second;
+
+        CapturedContextProviderUnion(CapturedContextProvider first, CapturedContextProvider second) {
+            this.first = requireNonNull(first, "first");
+            this.second = requireNonNull(second, "second");
+        }
+
+        @Override
+        public CapturedContext captureContext(CapturedContext underlying) {
+            return second.captureContext(first.captureContext(underlying));
+        }
+
+        @Override
+        public CapturedContext captureContextCopy(CapturedContext underlying) {
+            return second.captureContextCopy(first.captureContextCopy(underlying));
+        }
     }
 }
