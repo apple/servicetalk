@@ -103,23 +103,24 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                         // Cancel unconditionally, let the original Single handle cancel post termination, if required
                         cancellable.cancel();
                     } finally {
-                        final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
-                        if (previous == IDLE || previous == PROCESSING_PAYLOAD) {
-                            whenFinally.cancel();
-                        }
+                        tryTriggerCancel();
                     }
                 } else {
                     try {
-                        final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
-                        if (previous == IDLE || previous == PROCESSING_PAYLOAD) {
-                            whenFinally.cancel();
-                        }
+                        tryTriggerCancel();
                     } finally {
                         // Cancel unconditionally, let the original Single handle cancel post termination, if required
                         cancellable.cancel();
                     }
                 }
             });
+        }
+
+        private void tryTriggerCancel() {
+            final int previous = stateUpdater.getAndSet(this, RESPONSE_COMPLETE);
+            if (previous == IDLE || previous == PROCESSING_PAYLOAD) {
+                whenFinally.cancel();
+            }
         }
 
         @Override
@@ -272,6 +273,13 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     subscription.request(n);
                 }
 
+                private void tryCancelWhenFinally() {
+                    if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
+                            PROCESSING_PAYLOAD, TERMINATED)) {
+                        whenFinally.cancel();
+                    }
+                }
+
                 @Override
                 public void cancel() {
                     if (!discardEventsAfterCancel) {
@@ -279,17 +287,11 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                             try {
                                 subscription.cancel();
                             } finally {
-                                if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
-                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                    whenFinally.cancel();
-                                }
+                                tryCancelWhenFinally();
                             }
                         } else {
                             try {
-                                if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
-                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                    whenFinally.cancel();
-                                }
+                                tryCancelWhenFinally();
                             } finally {
                                 subscription.cancel();
                             }
@@ -300,21 +302,7 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     for (;;) {
                         final int state = WhenFinallyHttpOperator.MessageBodySubscriber.this.state;
                         if (state == PROCESSING_PAYLOAD) {
-                            if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
-                                    PROCESSING_PAYLOAD, TERMINATED)) {
-                                if (afterFinallyBehavior) {
-                                    try {
-                                        subscription.cancel();
-                                    } finally {
-                                        whenFinally.cancel();
-                                    }
-                                } else {
-                                    try {
-                                        whenFinally.cancel();
-                                    } finally {
-                                        subscription.cancel();
-                                    }
-                                }
+                            if (tryCancelFromState(PROCESSING_PAYLOAD)) {
                                 break;
                             }
                         } else if (state == DELIVERING_PAYLOAD) {
@@ -374,22 +362,7 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                             if (stateUpdater.compareAndSet(this, DELIVERING_PAYLOAD, PROCESSING_PAYLOAD)) {
                                 break;
                             }
-                        } else if (stateUpdater.compareAndSet(this, AWAITING_CANCEL, TERMINATED)) {
-                            if (afterFinallyBehavior) {
-                                try {
-                                    assert subscription != null;
-                                    subscription.cancel();
-                                } finally {
-                                    whenFinally.cancel();
-                                }
-                            } else {
-                                try {
-                                    whenFinally.cancel();
-                                } finally {
-                                    assert subscription != null;
-                                    subscription.cancel();
-                                }
-                            }
+                        } else if (tryCancelFromState(AWAITING_CANCEL)) {
                             break;
                         }
                     }
@@ -404,15 +377,11 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     try {
                         subscriber.onError(t);
                     } finally {
-                        if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
-                            whenFinally.onError(t);
-                        }
+                        tryWhenFinallyError(t);
                     }
                 } else {
                     try {
-                        if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
-                            whenFinally.onError(t);
-                        }
+                        tryWhenFinallyError(t);
                     } catch (Throwable cause) {
                         addSuppressed(t, cause);
                     }
@@ -460,15 +429,11 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     try {
                         subscriber.onComplete();
                     } finally {
-                        if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
-                            whenFinally.onComplete();
-                        }
+                        tryWhenFinallyComplete();
                     }
                 } else {
                     try {
-                        if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
-                            whenFinally.onComplete();
-                        }
+                        tryWhenFinallyComplete();
                     } catch (Throwable cause) {
                         subscriber.onError(cause);
                         return;
@@ -504,6 +469,41 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                 }
             } finally {
                 cancel0(propagateCancel);
+            }
+        }
+
+        private boolean tryCancelFromState(final int expectedState) {
+            if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
+                    expectedState, TERMINATED)) {
+                assert subscription != null;
+                if (afterFinallyBehavior) {
+                    try {
+                        subscription.cancel();
+                    } finally {
+                        whenFinally.cancel();
+                    }
+                } else {
+                    try {
+                        whenFinally.cancel();
+                    } finally {
+                        subscription.cancel();
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private void tryWhenFinallyError(Throwable t) {
+            if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
+                whenFinally.onError(t);
+            }
+        }
+
+        private void tryWhenFinallyComplete() {
+            if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
+                whenFinally.onComplete();
             }
         }
 

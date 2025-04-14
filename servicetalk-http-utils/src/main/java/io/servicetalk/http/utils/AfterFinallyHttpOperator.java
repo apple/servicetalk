@@ -50,6 +50,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new AfterFinallyHttpOperator(tracker));
  * }</pre>
+ *
+ * @see BeforeFinallyHttpOperator
  */
 public final class AfterFinallyHttpOperator extends WhenFinallyHttpOperator {
 

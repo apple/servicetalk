@@ -37,7 +37,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  * is dictated by the terminal event of the payload body. If the body is subscribed to multiple times, only the first
  * subscribe will receive ownership of the terminal events.</p>
  *
- * Example usage tracking the begin and end of a request:
+ * Example usage tracking the beginning and ending of a request:
  *
  * <pre>{@code
  *     // coarse grained, any terminal signal calls the provided `Runnable`
@@ -50,6 +50,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new BeforeFinallyHttpOperator(tracker));
  * }</pre>
+ *
+ * @see AfterFinallyHttpOperator
  */
 public final class BeforeFinallyHttpOperator extends WhenFinallyHttpOperator {
 
