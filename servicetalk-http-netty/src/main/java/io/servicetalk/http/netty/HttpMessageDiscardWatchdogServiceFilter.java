@@ -39,76 +39,53 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+
 /**
  * Filter which tracks message bodies and warns if they are not discarded properly.
  */
-final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
+final class HttpMessageDiscardWatchdogServiceFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpMessageDiscardWatchdogServiceFilter.class);
+
+    private static final String REQUEST_LEAK_MESSAGE =
+            "Discovered un-drained HTTP service request message body which has " +
+                    "been dropped by user code - this is a strong indication of a bug " +
+                    "in a user-defined filter. Requests (or their message body) must " +
+                    "be fully consumed before retrying.";
+
+    private static final String RESPONSE_LEAK_MESSAGE =
+            "Discovered un-drained HTTP service response message body which has " +
+                    "been dropped by user code - this is a strong indication of a bug " +
+                    "in a user-defined filter. Responses (or their message body) must " +
+                    "be fully consumed before retrying.";
+
+    private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
+            .newKey(HttpMessageDiscardWatchdogServiceFilter.class.getName() + ".messagePublisher",
+                    WatchdogLeakDetector.generifyAtomicReference());
 
     /**
      * Instance of {@link HttpMessageDiscardWatchdogServiceFilter}.
      */
-    static final StreamingHttpServiceFilterFactory INSTANCE = new HttpMessageDiscardWatchdogServiceFilter();
+    static final StreamingHttpServiceFilterFactory INSTANCE;
 
     /**
      * Instance of {@link HttpLifecycleObserverServiceFilter} with the cleaner implementation.
      */
-    static final StreamingHttpServiceFilterFactory CLEANER =
-            new HttpLifecycleObserverServiceFilter(new CleanerHttpLifecycleObserver());
+    static final StreamingHttpServiceFilterFactory CLEANER;
 
-    private static final ContextMap.Key<AtomicReference<Publisher<?>>> MESSAGE_PUBLISHER_KEY = ContextMap.Key
-            .newKey(HttpMessageDiscardWatchdogServiceFilter.class.getName() + ".messagePublisher",
-                    generifyAtomicReference());
+    static {
+        if (WatchdogLeakDetector.strictDetection()) {
+            INSTANCE = new GcHttpMessageWatchdogServiceFilter();
+            CLEANER = new NoopFilterFactory();
+        } else {
+            INSTANCE = new ContextHttpMessageDiscardWatchdogServiceFilter();
+            CLEANER = new HttpLifecycleObserverServiceFilter(new CleanerHttpLifecycleObserver());
+        }
+    }
 
     private HttpMessageDiscardWatchdogServiceFilter() {
-        // Singleton
-    }
-
-    @Override
-    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-
-        return new StreamingHttpServiceFilter(service) {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                return delegate()
-                        .handle(ctx, request, responseFactory)
-                        .map(response -> {
-                            // always write the buffer publisher into the request context. When a downstream subscriber
-                            // arrives, mark the message as subscribed explicitly (having a message present and no
-                            // subscription is an indicator that it must be freed later on).
-                            final AtomicReference<Publisher<?>> reference = request.context()
-                                    .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
-                            assert reference != null;
-                            if (reference.getAndSet(response.messageBody()) != null) {
-                                // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed to
-                                // (i.e. during a retry) and so previous message body needs to be cleaned up by the
-                                // user.
-                                LOGGER.warn("Discovered un-drained HTTP response message body which has " +
-                                        "been dropped by user code - this is a strong indication of a bug " +
-                                        "in a user-defined filter. Responses (or their message body) must " +
-                                        "be fully consumed before retrying.");
-                            }
-
-                            return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
-                                reference.set(null);
-                                return NoopSubscriber.INSTANCE;
-                            }));
-                        });
-            }
-        };
-    }
-
-    @Override
-    public HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.offloadNone();
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> Class<T> generifyAtomicReference() {
-        return (Class<T>) AtomicReference.class;
+        // no instances
     }
 
     static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
@@ -173,10 +150,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                         if (maybePublisher != null && maybePublisher.get() != null) {
                             // No-one subscribed to the message (or there is none), so if there is a message
                             // tell the user to clean it up.
-                            LOGGER.warn("Discovered un-drained HTTP response message body which has " +
-                                    "been dropped by user code - this is a strong indication of a bug " +
-                                    "in a user-defined filter. Responses (or their message body) must " +
-                                    "be fully consumed before discarding.");
+                            LOGGER.warn(RESPONSE_LEAK_MESSAGE);
                         }
                     }
                 }
@@ -193,6 +167,90 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                 public void onResponseCancel() {
                 }
             };
+        }
+    }
+
+    private static final class GcHttpMessageWatchdogServiceFilter implements StreamingHttpServiceFilterFactory {
+        @Override
+        public StreamingHttpServiceFilter create(StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                            StreamingHttpResponseFactory responseFactory) {
+                    return delegate()
+                            .handle(ctx, request.transformMessageBody(publisher ->
+                                    WatchdogLeakDetector.gcLeakDetection(publisher,
+                                            () -> LOGGER.error(REQUEST_LEAK_MESSAGE))), responseFactory)
+                            .map(response -> response.transformMessageBody(publisher ->
+                                    WatchdogLeakDetector.gcLeakDetection(publisher,
+                                            () -> LOGGER.warn(RESPONSE_LEAK_MESSAGE))));
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.offloadNone();
+        }
+    }
+
+    private static final class ContextHttpMessageDiscardWatchdogServiceFilter
+            implements StreamingHttpServiceFilterFactory {
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return HttpExecutionStrategies.offloadNone();
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+
+            return new StreamingHttpServiceFilter(service) {
+
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    return delegate()
+                            .handle(ctx, request, responseFactory)
+                            .map(response -> {
+                                // always write the buffer publisher into the request context. When a downstream
+                                // subscriber arrives, mark the message as subscribed explicitly (having a message
+                                // present and no subscription is an indicator that it must be freed later on).
+                                final AtomicReference<Publisher<?>> reference = request.context()
+                                        .computeIfAbsent(MESSAGE_PUBLISHER_KEY, key -> new AtomicReference<>());
+                                assert reference != null;
+                                if (reference.getAndSet(response.messageBody()) != null) {
+                                    // If a previous message exists, the Single<StreamingHttpResponse> got resubscribed
+                                    // to (i.e. during a retry) and so previous message body needs to be cleaned up by
+                                    // the user.
+                                    LOGGER.warn(RESPONSE_LEAK_MESSAGE);
+                                }
+
+                                return response.transformMessageBody(msgPublisher ->
+                                        msgPublisher.beforeSubscriber(() -> {
+                                    reference.set(null);
+                                    return NoopSubscriber.INSTANCE;
+                                }));
+                            });
+                }
+            };
+        }
+    }
+
+    private static final class NoopFilterFactory implements StreamingHttpServiceFilterFactory {
+
+        private NoopFilterFactory() {
+            // singleton
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service);
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return offloadNone();
         }
     }
 }
