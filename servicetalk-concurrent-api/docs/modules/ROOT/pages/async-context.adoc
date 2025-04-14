@@ -8,8 +8,8 @@ endif::[]
 
 = Asynchronous Context
 
-Traditional thread-based libraries and applications often leverage the concept of a `ThreadLocal` to provide a static
-interface for conveying contextual information across function calls. Important use case for this include `MDC`,
+Traditional thread-per-request libraries and applications often leverage the concept of a `ThreadLocal` to provide a
+static interface for conveying contextual information across function calls. Important use case for this include `MDC`,
 OpenTelemetry `Context`, etc. This `ThreadLocal` model allows libraries to pass information across APIs that can be
 oblivious to the extra information being conveyed. However, ServiceTalk is an asynchronous library and the simple
 `ThreadLocal` model does not work because many computation flows may be happening on a shared set of threads at any
@@ -22,7 +22,7 @@ defined case of `CapturedContext`) for defining your own contextual information.
 **State is shared across asynchronous boundaries**
 
 `ThreadLocal` state is preserved and modifiable across synchronous boundaries, and our operators should provide the same
-functionality. To clarify this means if someone is calling an method in the imperative style and the state is shared
+functionality. To clarify this means if someone is calling a method in the imperative style and the state is shared
 then the same property should hold for adjacent operators. To demonstrate this, consider the following code snippets:
 
 === Function composition
@@ -74,21 +74,21 @@ of state must therefore also be able to follow per-request processing through th
 
 **Works with offloading**
 
-ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking `EventLoop` threads we
+ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking I/O threads we
 offload to other threads. This means that every time we invoke user code we may have to jump threads. It is also
 possible on subsequent calls for the same request we may use a different thread (although not concurrently). We need to
 make sure the same static state is carried along through these different threads.
 
 **Works with Third-Party Libraries**
 
-Many existing APIs assume a ThreadLocal type of state (e.g. MDC, OpenTracing). For this reason we would like to provide
-compatibility within our asynchronous primitives and control flow provided by operators. ServiceTalk needs to provide
-a way to capture third-party context and properly restore it within the reactive execution chain.
+Many existing APIs assume a `ThreadLocal` type of state (e.g. MDC, OpenTracing). For this reason we would like to
+provide compatibility within our asynchronous primitives and control flow provided by operators. ServiceTalk needs to
+provide a way to capture third-party context and properly restore it within the reactive execution chain.
 
 == ServiceTalk Approach
 
 In order to accommodate the <<Expectations, Expectations of Asynchronous Context>> we need specific behavior from
-ServiceTalk. As described above, we are after static state shared across synchronous boundaries, available across
+ServiceTalk. As described above, we are after a static state shared across synchronous boundaries, available across
 asynchronous boundaries, and is also sufficiently isolated in scope so that it can represent request/response control
 flow.
 
@@ -100,6 +100,9 @@ ServiceTalk follows this set of rule set:
 . Asynchronous context will be captured and copied at `subscribe` time.
 .. When using `AsyncContext`, copying provides isolation from other asynchronous operations which typically represent
    independent processing.
+.. If users want to share context across boundaries the `shareContextOnSubscribe()` operator will share the same
+   `AsyncContext` instance across asynchronous operations. This necessary when chaining together different async-sources
+   such as with the `flatMap`, `defer`, and other related operators.
 . Asynchronous context will be saved/restored across asynchronous boundaries.
 .. This is true for asynchronous operators (e.g. `flatMap`) and also `Executor` operations.
 .. If isolation of `AsyncContext` is required for a specific control flow, `defer(..)` operators can be used to create

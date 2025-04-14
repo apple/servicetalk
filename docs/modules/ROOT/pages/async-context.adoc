@@ -6,7 +6,15 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Working with Asynchronous Context
+= Asynchronous Context
+
+ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
+Also, depending on the application's threading model, a single request may be processed on different threads. This means
+that libraries that rely upon `ThreadLocal` storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work
+as expected. To overcome this limitation, we provide an abstractions called `AsyncContext` and `CapturedContext` which
+hooks into the internal async machinery to make sure thread local context data is propagated along with the request.
+
+== Working with Asynchronous Context
 
 **API is decoupled from application data APIs**
 
@@ -18,18 +26,13 @@ often optional and not always required, and so if it is baked into the protocol 
 and not be required.
 
 To overcome this limitation, we provide two abstractions to propagate context asynchronously: `AsyncContext`, which is
-intended to replace custom `ThreadLocal` definitions, and `CaptureContext` which is used to capture third-party
+intended to replace custom `ThreadLocal` definitions, and `CapturedContext` which is used to capture third-party
 context information. This allows programs to decouple values from the exact API call chain by using static APIs to get
 and set values.
 
 However, these benefits don't come for free. Some costs of the static API are as follows:
 
 **Complexity of implementation**
-
-ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
-Also, depending on the application's threading model, a single request may be processed on different threads. This means
-that libraries that rely upon `ThreadLocal` storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work
-as expected.
 
 ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
 that ReactiveStreams operators, Executors, and the offloading strategy must account for when relying upon
@@ -40,7 +43,7 @@ users if they have existing code outside ServiceTalk control flow.
 
 Although asynchronous function composition is not required to use ServiceTalk, the internals of ServiceTalk uses
 asynchronous function composition as a core abstraction which can be difficult to reason about relative to
-traditional imperative programming. On top of this, ServiceTalk provides isolation from the EventLoop
+traditional imperative programming. On top of this, ServiceTalk provides isolation from the I/O
 threads by offloading to application level threads, which introduces asynchronous boundaries. For request/response
 protocols the goal is for the asynchronous context to be isolated for each request/response, but folks that need to
 directly interact with asynchronous context need to understand how modifications are visible (or not) relative to where
@@ -58,7 +61,7 @@ be used instead of creating a traditional `ThreadLocal`.
 **Cost of retention**
 
 In order to make state available in a static fashion across API calls the mechanism to do this is to use thread local
-state. The same thread maybe used to process logically independent asynchronous control flows (e.g. `EventLoop` can
+state. The same thread maybe used to process logically independent asynchronous control flows (e.g. I/O threads can
 process multiple sockets, and each socket can process multiple requests, and offloading may re-use threads to process
 different requests). This results in frequently accessing the thread local state to save original value, set correct
 context, and then restore original value.
@@ -78,7 +81,7 @@ restoring it within the ServiceTalk execution chain. It is _not_ a good tool for
 **Interop with existing APIs depending on `ThreadLocal`**
 
 Some APIs / features assume static state that is coupled with the current thread. This worked well in the
-1-request-per-thread model, however it breaks down when we may process a request on different threads due to
+thread-per-request model, however it breaks down when we may process a request on different threads due to
 asynchronous execution and also share threads for processing different requests. For example the
 link:https://github.com/open-telemetry/opentelemetry-java/blob/main/api/all/src/main/java/io/opentelemetry/api/trace/Span.java[OpenTelemetry APIs]
 and the
@@ -102,7 +105,11 @@ relatively low.
 
 === Usage
 
-The `CapturedContext` APIs are used via hooks are loaded via the `Providers` mechanism. This involves creating a
+The `CapturedContext` APIs are used via hooks are loaded via the `Providers` mechanism, which is backed by the Java
+`java.util.ServiceLoader`. This involves creating a
 `CapturedContextProvider` that will be used as part of the ServiceTalk context capture and restore process. For details
 about how to capture and restore custom context see the example in
 link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java[CapturedContextProvider].
+ServiceTalk uses this mechanism for its OpenTelemetry integration. See
+link:{source-root}/servicetalk-opentelemetry-asynccontext/src/main/java/io/servicetalk/opentelemetry/asynccontext/OtelCapturedContextProvider.java[OtelCapturedContextProvider].
+for more details.
