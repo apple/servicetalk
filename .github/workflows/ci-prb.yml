@@ -19,6 +19,9 @@ jobs:
       matrix:
         java: [ 8, 11, 17, 21 ]
         os: [ ubuntu-latest ]
+        include:
+          - java: 11
+            os: macos-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
