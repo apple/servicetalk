@@ -26,7 +26,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
@@ -409,23 +408,6 @@ final class NettyHttpServer {
                         // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
                         // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
-                responseWrite = responseWrite.beforeFinally(new TerminalSignalConsumer() {
-                    @Override
-                    public void onComplete() {
-                        System.err.println("NettyHttpServer onComplete()");
-                    }
-
-                    @Override
-                    public void onError(Throwable throwable) {
-                        System.err.println("NettyHttpServer onError(" + throwable +")");
-                        throwable.printStackTrace(System.err);
-                    }
-
-                    @Override
-                    public void cancel() {
-                        System.err.println("NettyHttpServer cancel()");
-                    }
-                });
                 return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
             });
             // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate

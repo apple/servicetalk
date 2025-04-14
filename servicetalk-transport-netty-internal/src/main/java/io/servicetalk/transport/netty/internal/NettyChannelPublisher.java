@@ -319,7 +319,6 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
         // any future Subscribers don't get partial data delivered from the queue.
         // We don't need to terminate the subscriber because cancellation is originated by the subscriber, pass null.
-        // TODO: this causes us to close both the read and write aspects of the channel.
         emitCatchError(null, StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel"), true);
     }
 

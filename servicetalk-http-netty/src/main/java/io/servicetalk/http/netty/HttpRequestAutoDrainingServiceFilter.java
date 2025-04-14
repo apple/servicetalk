@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -29,9 +27,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-
-import javax.annotation.Nullable;
+import io.servicetalk.http.utils.AfterFinallyHttpOperator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,7 +74,7 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
                         return HttpMessageDiscardWatchdogServiceFilter.NoopSubscriber.INSTANCE;
                     }));
             return delegate().handle(ctx, request, responseFactory)
-                    .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
+                    .liftSync(new AfterFinallyHttpOperator(new TerminalSignalConsumer() {
                 @Override
                 public void onComplete() {
                     if (payloadSubscribed.compareAndSet(false, true)) {

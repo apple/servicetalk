@@ -354,7 +354,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);
         channel.pipeline().addLast(new NettyToStChannelHandler<>(connection, null,
-                null, false, NoopConnectionObserver.INSTANCE, isClient));
+                null, false, NoopConnectionObserver.INSTANCE));
         return connection;
     }
 
@@ -517,7 +517,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     delayedCancellable = new DelayedCancellable();
                     nettyInboundHandler = new NettyToStChannelHandler<>(connection, subscriber,
-                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig, pipeline), observer, isClient);
+                            delayedCancellable, shouldWaitForSslHandshake(sslSession, sslConfig, pipeline), observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -849,45 +849,22 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Nullable
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
         private final ConnectionObserver observer;
-        private final boolean isClient;
 
         NettyToStChannelHandler(DefaultNettyConnection<Read, Write> connection,
                                 @Nullable
                                 SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
                                 @Nullable DelayedCancellable delayedCancellable,
                                 boolean waitForSslHandshake,
-                                ConnectionObserver observer,
-                                boolean isClient) {
+                                ConnectionObserver observer) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
             this.observer = observer;
-            this.isClient = isClient;
-        }
-
-        @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-            if (!isClient) {
-                System.err.println("Writing " + msg + "(" + msg.getClass().getSimpleName() + ")");
-            }
-            super.write(ctx, msg, promise);
-            if (!isClient) {
-                promise.addListener(self -> {
-                    if (self.isSuccess()) {
-                        System.err.println("Finished writing " + msg);
-                    } else {
-                        System.err.println("Failed to write " + msg);
-                    }
-                });
-            }
         }
 
         @Override
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-            if (!isClient) {
-                System.err.println("Closing channel " + ctx.channel());
-            }
             connection.closeHandler.channelClose(ctx.channel());
             ctx.close(promise);
         }
@@ -944,9 +921,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (isClient) {
-                System.out.println("Channel read: " + msg);
-            }
             @SuppressWarnings("unchecked")
             final Read t = (Read) msg;
             connection.nettyChannelPublisher.channelRead(t);

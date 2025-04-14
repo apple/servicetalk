@@ -55,10 +55,6 @@ public final class TestUtils {
             return;
         }
 
-        if (true) {
-            throw new AssertionError(errors.poll());
-        }
-
         final AssertionError error = null != message ? new AssertionError(message) : new AssertionError();
         Throwable t;
         while ((t = errors.poll()) != null) {
