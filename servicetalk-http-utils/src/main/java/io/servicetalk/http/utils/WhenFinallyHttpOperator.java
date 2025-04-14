@@ -273,7 +273,7 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     subscription.request(n);
                 }
 
-                private void tryCancelWhenFinally() {
+                private void tryWhenFinallyCancel() {
                     if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
                             PROCESSING_PAYLOAD, TERMINATED)) {
                         whenFinally.cancel();
@@ -287,11 +287,11 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                             try {
                                 subscription.cancel();
                             } finally {
-                                tryCancelWhenFinally();
+                                tryWhenFinallyCancel();
                             }
                         } else {
                             try {
-                                tryCancelWhenFinally();
+                                tryWhenFinallyCancel();
                             } finally {
                                 subscription.cancel();
                             }
