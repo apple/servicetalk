@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
+import io.servicetalk.concurrent.internal.NoopSubscribers;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -30,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import javax.annotation.Nullable;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -43,10 +44,11 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
  * eventually consume the entire request payload to enable reading of the next request. This is required because
  * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
  * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
- * ServiceTalk automatically consumes request payload body.
+ * this filter can be used to automatically consume request payload body on the server-side.
  * An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
  *
- * @see io.servicetalk.http.api.HttpServerBuilder#drainRequestPayloadBody(boolean)
+ * @see io.servicetalk.http.api.HttpServerBuilder#drainRequestPayloadBody(boolean) for adding this filter automatically
+ * when the server is constructed.
  */
 public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttpServiceFilterFactory {
 
@@ -79,19 +81,16 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
         public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                     StreamingHttpResponseFactory responseFactory) {
             final DrainTerminalSignalConsumer terminalSignalConsumer = new DrainTerminalSignalConsumer(request);
-            request.transformMessageBody(body ->
-                    body.beforeSubscriber(() -> {
-                        terminalSignalConsumer.requestSubscribed();
-                        return NoopSubscriber.INSTANCE;
-                    }));
+            request.transformMessageBody(body -> body.beforeSubscriber(terminalSignalConsumer));
             return delegate().handle(ctx, request, responseFactory)
                     .liftSync(new AfterFinallyHttpOperator(terminalSignalConsumer, true));
         }
     }
 
-    private static final class DrainTerminalSignalConsumer implements TerminalSignalConsumer {
+    private static final class DrainTerminalSignalConsumer implements TerminalSignalConsumer,
+            Supplier<PublisherSource.Subscriber<Object>> {
 
-        private static final AtomicIntegerFieldUpdater<DrainTerminalSignalConsumer> UPDATER =
+        private static final AtomicIntegerFieldUpdater<DrainTerminalSignalConsumer> stateUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(DrainTerminalSignalConsumer.class, "state");
 
         private static final int PENDING = 0;
@@ -105,14 +104,16 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
             this.request = request;
         }
 
-        void requestSubscribed() {
+        @Override
+        public PublisherSource.Subscriber<Object> get() {
             once();
+            return NoopSubscribers.NOOP_PUBLISHER_SUBSCRIBER;
         }
 
         @Override
         public void onComplete() {
             if (once()) {
-                request.payloadBody().ignoreElements().shareContextOnSubscribe().subscribe();
+                request.messageBody().ignoreElements().shareContextOnSubscribe().subscribe();
             }
         }
 
@@ -130,32 +131,7 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
         }
 
         private boolean once() {
-            return UPDATER.compareAndSet(this, PENDING, COMPLETE);
-        }
-    }
-
-    private static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
-
-        static final NoopSubscriber INSTANCE = new NoopSubscriber();
-
-        private NoopSubscriber() {
-            // Singleton
-        }
-
-        @Override
-        public void onSubscribe(final PublisherSource.Subscription subscription) {
-        }
-
-        @Override
-        public void onNext(@Nullable final Object o) {
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-        }
-
-        @Override
-        public void onComplete() {
+            return stateUpdater.compareAndSet(this, PENDING, COMPLETE);
         }
     }
 }

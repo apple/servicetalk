@@ -16,9 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.internal.NoopSubscribers;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -99,7 +99,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                         if (client) {
                             p = p.beforeSubscriber(() -> {
                                 exchangeContext.requestMessageBodyStarts();
-                                return NoopSubscriber.INSTANCE;
+                                return NoopSubscribers.NOOP_PUBLISHER_SUBSCRIBER;
                             });
                         }
                         return p.beforeRequest(n -> safeReport(onRequest::onRequestDataRequested, n, onRequest,
@@ -295,31 +295,6 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         } catch (Throwable unexpected) {
             addSuppressed(unexpected, t);
             LOGGER.warn("Unexpected exception from {} while reporting a '{}' event", observer, eventName, unexpected);
-        }
-    }
-
-    private static final class NoopSubscriber implements PublisherSource.Subscriber<Object> {
-
-        static final NoopSubscriber INSTANCE = new NoopSubscriber();
-
-        private NoopSubscriber() {
-            // Singleton
-        }
-
-        @Override
-        public void onSubscribe(final PublisherSource.Subscription subscription) {
-        }
-
-        @Override
-        public void onNext(@Nullable final Object o) {
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-        }
-
-        @Override
-        public void onComplete() {
         }
     }
 }
