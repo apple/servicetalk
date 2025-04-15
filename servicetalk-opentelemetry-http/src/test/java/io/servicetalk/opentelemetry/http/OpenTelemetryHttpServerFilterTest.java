@@ -37,10 +37,12 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentelemetry.http.TestUtils.TestTracingServerLoggerFilter;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.utils.internal.ThrowableUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.OpenTelemetry;
@@ -56,7 +58,6 @@ import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.SemanticAttributes;
-import io.servicetalk.utils.internal.ThrowableUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -373,7 +374,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(10)
+    @RepeatedTest(100)
     void autoRequestDisposalRequestBodyErrorRepro() throws Exception {
         autoRequestDisposalRequestBodyError(true);
     }
@@ -525,11 +526,13 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
-                                                      OpenTelemetryOptions opentelemetryOptions, Queue<Throwable> errorQueue) throws Exception {
+                              OpenTelemetryOptions opentelemetryOptions, Queue<Throwable> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         return HttpServers.forAddress(localAddress(0))
                 .protocols(config)
+                .drainRequestPayloadBody(false)
                 .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+                .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                 .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> {
@@ -683,6 +686,7 @@ class OpenTelemetryHttpServerFilterTest {
                 }
             };
         }
+
         private void setKey(AttributeKey<String> key) {
             final Span current = Span.current();
                 current.setAttribute(key, "set");
@@ -698,7 +702,6 @@ class OpenTelemetryHttpServerFilterTest {
             } else if (!current.equals(initialSpan)) {
                 errorQueue.offer(new AssertionError("Found unexpected unrelated span detected in " +
                         key.getKey() + ". Initial: " + initialSpan + ", current: " + current));
-            } else {
             }
         }
     }
