@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,48 +43,48 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSync(new BeforeFinallyHttpOperator(tracker::requestFinished));
+ *                     .liftSync(new AfterFinallyHttpOperator(tracker::requestFinished));
  *
  *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
  *     return requester.request(strategy, request)
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSync(new BeforeFinallyHttpOperator(tracker));
+ *                     .liftSync(new AfterFinallyHttpOperator(tracker));
  * }</pre>
  *
- * @see AfterFinallyHttpOperator
+ * @see BeforeFinallyHttpOperator
  */
-public final class BeforeFinallyHttpOperator extends WhenFinallyHttpOperator {
+public final class AfterFinallyHttpOperator extends WhenFinallyHttpOperator {
 
     /**
      * Create a new instance.
      *
-     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      */
-    public BeforeFinallyHttpOperator(final TerminalSignalConsumer beforeFinally) {
-        this(beforeFinally, false);
+    public AfterFinallyHttpOperator(final Runnable afterFinally) {
+        this(TerminalSignalConsumer.from(afterFinally));
     }
 
     /**
      * Create a new instance.
      *
-     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      */
-    public BeforeFinallyHttpOperator(final Runnable beforeFinally) {
-        this(TerminalSignalConsumer.from(beforeFinally));
+    public AfterFinallyHttpOperator(final TerminalSignalConsumer afterFinally) {
+        this(afterFinally, false);
     }
 
     /**
      * Create a new instance.
      *
-     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * @param afterFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      * @param discardEventsAfterCancel if {@code true} further events will be discarded if those arrive after
      * {@link TerminalSignalConsumer#cancel()} is invoked. Otherwise, events may still be delivered if they race with
      * cancellation.
      */
-    public BeforeFinallyHttpOperator(final TerminalSignalConsumer beforeFinally, boolean discardEventsAfterCancel) {
-        super(beforeFinally, discardEventsAfterCancel, false);
+    public AfterFinallyHttpOperator(final TerminalSignalConsumer afterFinally, boolean discardEventsAfterCancel) {
+        super(afterFinally, discardEventsAfterCancel, true);
     }
 }

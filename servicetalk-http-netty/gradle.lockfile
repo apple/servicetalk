@@ -2,8 +2,6 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath
-io.netty.incubator:netty-incubator-transport-classes-io_uring:0.0.26.Final=runtimeClasspath
-io.netty.incubator:netty-incubator-transport-native-io_uring:0.0.26.Final=runtimeClasspath
 io.netty:netty-bom:4.1.119.Final=compileClasspath,runtimeClasspath
 io.netty:netty-buffer:4.1.119.Final=compileClasspath,runtimeClasspath
 io.netty:netty-codec-dns:4.1.119.Final=runtimeClasspath

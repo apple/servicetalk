@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-class BeforeFinallyHttpOperatorTest extends FinallyHttpOperatorTest {
+class AfterFinallyHttpOperatorTest extends FinallyHttpOperatorTest {
     @Override
     protected SingleOperator<StreamingHttpResponse, StreamingHttpResponse> newWhenFinallyOperator(
             TerminalSignalConsumer whenFinally, boolean discardEventsAfterCancel) {
-        return new BeforeFinallyHttpOperator(whenFinally, discardEventsAfterCancel);
+        return new AfterFinallyHttpOperator(whenFinally, discardEventsAfterCancel);
     }
 }

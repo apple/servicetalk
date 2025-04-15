@@ -55,7 +55,6 @@ final class DeferredServerChannelBinder {
                                           final SocketAddress listenAddress,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody,
                                           final boolean sniOnly,
                                           @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
                                           @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
@@ -64,9 +63,9 @@ final class DeferredServerChannelBinder {
 
         final BiFunction<Channel, ConnectionObserver, Single<NettyConnectionContext>> channelInit = sniOnly ?
                 (channel, connectionObserver) -> sniInitChannel(listenAddress, channel, config, executionContext,
-                        service, drainRequestPayloadBody, connectionObserver) :
+                        service, connectionObserver) :
                 (channel, connectionObserver) -> alpnInitChannel(listenAddress, channel, config, executionContext,
-                        service, drainRequestPayloadBody, connectionObserver);
+                        service, connectionObserver);
 
         return TcpServerBinder.bind(listenAddress, tcpConfig, executionContext, connectionAcceptor, channelInit,
                 serverConnection -> {
@@ -88,7 +87,6 @@ final class DeferredServerChannelBinder {
                                                                   final ReadOnlyHttpServerConfig config,
                                                                   final HttpExecutionContext httpExecutionContext,
                                                                   final StreamingHttpService service,
-                                                                  final boolean drainRequestPayloadBody,
                                                                   final ConnectionObserver observer) {
         return new AlpnChannelSingle(channel,
                 new TcpServerChannelInitializer(config.tcpConfig(), observer, httpExecutionContext),
@@ -99,10 +97,10 @@ final class DeferredServerChannelBinder {
             switch (protocol) {
                 case HTTP_1_1:
                     return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
-                            NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+                            NoopChannelInitializer.INSTANCE, service, observer);
                 case HTTP_2:
                     return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext,
-                            config, NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+                            config, NoopChannelInitializer.INSTANCE, service, observer);
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }
@@ -114,7 +112,6 @@ final class DeferredServerChannelBinder {
                                                                  final ReadOnlyHttpServerConfig config,
                                                                  final HttpExecutionContext httpExecutionContext,
                                                                  final StreamingHttpService service,
-                                                                 final boolean drainRequestPayloadBody,
                                                                  final ConnectionObserver observer) {
         return new SniCompleteChannelSingle(channel,
                 new TcpServerChannelInitializer(config.tcpConfig(), observer, httpExecutionContext)).flatMap(sniEvt -> {
@@ -125,11 +122,11 @@ final class DeferredServerChannelBinder {
 
             if (config.h2Config() != null) {
                 return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext, config,
-                        NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+                        NoopChannelInitializer.INSTANCE, service, observer);
             }
             if (config.h1Config() != null) {
                 return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
-                        NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
+                        NoopChannelInitializer.INSTANCE, service, observer);
             }
             return failed(new IllegalStateException(
                     "SSL handshake completed, but no protocols to initialize. Consider using ALPN to explicitly " +

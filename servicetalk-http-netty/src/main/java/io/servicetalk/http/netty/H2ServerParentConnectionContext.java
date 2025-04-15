@@ -92,7 +92,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                           final SocketAddress listenAddress,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody,
                                           @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
                                           @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         if (config.h2Config() == null) {
@@ -102,7 +101,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(listenAddress, channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
-                        drainRequestPayloadBody, connectionObserver),
+                        connectionObserver),
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ },
                         earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
@@ -120,7 +119,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     static Single<H2ServerParentConnectionContext> initChannel(final SocketAddress listenAddress,
                 final Channel channel, final HttpExecutionContext httpExecutionContext,
                 final ReadOnlyHttpServerConfig config, final ChannelInitializer initializer,
-                final StreamingHttpService service, final boolean drainRequestPayloadBody,
+                final StreamingHttpService service,
                 final ConnectionObserver observer) {
         final H2ProtocolConfig h2ServerConfig = config.h2Config();
         if (h2ServerConfig == null) {
@@ -190,7 +189,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
 
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service, HTTP_2_0,
-                                        h2ServerConfig.headersFactory(), drainRequestPayloadBody,
+                                        h2ServerConfig.headersFactory(),
                                         config.allowDropTrailersReadFromTransport()).process(false);
                             }
                     }).init(channel);
