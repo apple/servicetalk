@@ -86,6 +86,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.api.GrpcStatusException.serverCatchAllShouldLog;
 import static io.servicetalk.grpc.api.GrpcStatusException.toGrpcStatus;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
@@ -267,13 +268,17 @@ final class GrpcUtils {
         }
     }
 
-    static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
+    static GrpcStatus setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
+        final GrpcStatus status;
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
-            setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
+            status = grpcStatusException.status();
+            setStatus(trailers, status, grpcStatusException.applicationStatus(), allocator);
         } else {
-            setStatus(trailers, toGrpcStatus(cause), null, allocator);
+            status = toGrpcStatus(cause);
+            setStatus(trailers, status, null, allocator);
         }
+        return status;
     }
 
     private static void validateStatusCode(HttpResponseStatus status) {
@@ -798,7 +803,7 @@ final class GrpcUtils {
         }
     }
 
-    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
+    private static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
         private static final Logger LOGGER = LoggerFactory.getLogger(GrpcStatusUpdater.class);
 
         private final BufferAllocator allocator;
@@ -817,14 +822,13 @@ final class GrpcUtils {
 
         @Override
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
-            setStatus(trailers, cause, allocator);
-            CharSequence status = trailers.get(GRPC_STATUS);
+            GrpcStatus status = setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
-            String msg = "Converted a payload exception into grpc-status({}) for a request to path: {}";
-            if (GrpcStatusException.serverCatchAllShouldLog(cause)) {
-                LOGGER.error(msg, status, methodDescriptor.httpPath(), cause);
+            String msg = "Exception from response payload for a request to {} was converted to grpc-status={}";
+            if (!(cause instanceof GrpcStatusException) && serverCatchAllShouldLog(cause)) {
+                LOGGER.error(msg, methodDescriptor.httpPath(), status.code(), cause);
             } else {
-                LOGGER.debug(msg, status, methodDescriptor.httpPath(), cause);
+                LOGGER.debug(msg, methodDescriptor.httpPath(), status.code(), cause);
             }
             return trailers;
         }
