@@ -22,12 +22,16 @@ import javax.annotation.Nullable;
 /**
  * Utility instances for Subscribers which don't do anything on events.
  */
-public class NoopSubscribers {
+public final class NoopSubscribers {
 
     /**
      * An instance of a {@link PublisherSource.Subscriber} that doesn't handle any events.
      */
     public static final PublisherSource.Subscriber<Object> NOOP_PUBLISHER_SUBSCRIBER = new NoopPublisherSubscriber();
+
+    private NoopSubscribers() {
+        // no instances.
+    }
 
     private static final class NoopPublisherSubscriber implements PublisherSource.Subscriber<Object> {
 
