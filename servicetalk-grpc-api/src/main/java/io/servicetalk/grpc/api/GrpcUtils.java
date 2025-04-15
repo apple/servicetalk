@@ -197,14 +197,15 @@ final class GrpcUtils {
                                                  final LazyContextMapSupplier responseContext,
                                                  final Publisher<T> payload,
                                                  final GrpcStreamingSerializer<T> serializer,
-                                                 final BufferAllocator allocator) {
+                                                 final BufferAllocator allocator,
+                                                 final MethodDescriptor<?, ?> methodDescriptor) {
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response, contentType, encoding, acceptedEncoding);
         if (responseContext.isInitialized()) {
             response.context(responseContext.get());
         }
         return response.payloadBody(serializer.serialize(payload, allocator))
-                .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
+                .transform(new GrpcStatusUpdater(allocator, methodDescriptor));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
@@ -801,24 +802,30 @@ final class GrpcUtils {
         private static final Logger LOGGER = LoggerFactory.getLogger(GrpcStatusUpdater.class);
 
         private final BufferAllocator allocator;
-        private final GrpcStatus successStatus;
+        private final MethodDescriptor<?, ?> methodDescriptor;
 
-        GrpcStatusUpdater(final BufferAllocator allocator, final GrpcStatus successStatus) {
+        GrpcStatusUpdater(final BufferAllocator allocator, final MethodDescriptor<?, ?> methodDescriptor) {
             this.allocator = allocator;
-            this.successStatus = successStatus;
+            this.methodDescriptor = methodDescriptor;
         }
 
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            setStatus(trailers, successStatus, null, allocator);
+            setStatus(trailers, STATUS_OK, null, allocator);
             return trailers;
         }
 
         @Override
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
+            CharSequence status = trailers.get(GRPC_STATUS);
             // Swallow exception as we are converting it to the trailers.
-            LOGGER.debug("Converted an exception into grpc-status: {}", trailers.get(GRPC_STATUS), cause);
+            String msg = "Converted a payload exception into grpc-status({}) for a request to path: {}";
+            if (GrpcStatusException.serverCatchAllShouldLog(cause)) {
+                LOGGER.error(msg, status, methodDescriptor.httpPath(), cause);
+            } else {
+                LOGGER.debug(msg, status, methodDescriptor.httpPath(), cause);
+            }
             return trailers;
         }
     }
