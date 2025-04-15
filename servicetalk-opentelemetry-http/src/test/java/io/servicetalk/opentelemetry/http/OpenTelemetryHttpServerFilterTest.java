@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -30,10 +32,13 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
@@ -96,7 +101,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class OpenTelemetryHttpServerFilterTest {
 
-    private static final int SLEEP_DURATION = CI ? 2000 : 1000;
+    private static final int SLEEP_DURATION = CI ? 2000 : 100;
 
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
@@ -533,40 +538,47 @@ class OpenTelemetryHttpServerFilterTest {
                 .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
                 .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                 .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
-                .listenStreamingAndAwait(
-                        (ctx, request, responseFactory) -> {
-                            final StreamingHttpResponse response = responseFactory.ok();
-                            response.payloadBody(DEFAULT_BODY);
-
-                            response.transform(new StatelessTrailersTransformer<Buffer>() {
-                                @Override
-                                protected HttpHeaders payloadComplete(HttpHeaders trailers) {
-                                    return trailers.set("x-trailer", "trailer-value");
-                                }
-                            });
-
-                            if ("/responseerror".equals(request.path())) {
-                                return Single.failed(DELIBERATE_EXCEPTION);
-                            } else if ("/consumebodyinhandler".equals(request.path())) {
-                                return request.payloadBody().ignoreElements()
-                                        .concat(Single.succeeded(response));
-                            } else if ("/consumebodyasresponse".equals(request.path())) {
-                                response.transformMessageBody(body ->
-                                        request.payloadBody().ignoreElements().concat(body));
-                                return Single.succeeded(response);
-                            } else if ("/responsebodyerror".equals(request.path())) {
-                                response.payloadBody(DEFAULT_BODY.concat(
-                                        Publisher.failed(DELIBERATE_EXCEPTION)));
-                                return Single.succeeded(response);
-                            } else if ("/slowbody".equals(request.path())) {
-                                response.transformPayloadBody(body -> Publisher.never());
-                                return Single.succeeded(response);
-                            } else if ("/slowhead".equals(request.path())) {
-                                return Single.never();
-                            } else {
-                                return Single.succeeded(response);
+                .listenStreamingAndAwait(new StreamingHttpService() {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        final StreamingHttpResponse response = responseFactory.ok();
+                        response.payloadBody(DEFAULT_BODY);
+                        response.transform(new StatelessTrailersTransformer<Buffer>() {
+                            @Override
+                            protected HttpHeaders payloadComplete(HttpHeaders trailers) {
+                                return trailers.set("x-trailer", "trailer-value");
                             }
                         });
+
+                        if ("/responseerror".equals(request.path())) {
+                            return Single.failed(DELIBERATE_EXCEPTION);
+                        } else if ("/consumebodyinhandler".equals(request.path())) {
+                            return request.payloadBody().ignoreElements()
+                                    .concat(Single.succeeded(response));
+                        } else if ("/consumebodyasresponse".equals(request.path())) {
+                            response.transformMessageBody(body ->
+                                    request.payloadBody().ignoreElements().concat(body));
+                            return Single.succeeded(response);
+                        } else if ("/responsebodyerror".equals(request.path())) {
+                            response.payloadBody(DEFAULT_BODY.concat(
+                                    Publisher.failed(DELIBERATE_EXCEPTION)));
+                            return Single.succeeded(response);
+                        } else if ("/slowbody".equals(request.path())) {
+                            response.transformPayloadBody(body -> Publisher.never());
+                            return Single.succeeded(response);
+                        } else if ("/slowhead".equals(request.path())) {
+                            return Single.never();
+                        } else {
+                            return Single.succeeded(response);
+                        }
+                    }
+
+                    @Override
+                    public HttpExecutionStrategy requiredOffloads() {
+                        return HttpExecutionStrategies.offloadNone();
+                    }
+                });
     }
 
     private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
@@ -696,6 +708,7 @@ class OpenTelemetryHttpServerFilterTest {
                 }
                 initialSpan = this.initialSpan;
             }
+            System.err.println(Thread.currentThread().getName() + " - " + key.getKey() + ": " + current.getSpanContext());
             if (Span.getInvalid().equals(current)) {
                 errorQueue.offer(new AssertionError("Detected the invalid span"));
             } else if (!current.equals(initialSpan)) {

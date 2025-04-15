@@ -96,6 +96,7 @@ final class ScopeTracker implements TerminalSignalConsumer {
         if (STATE_UPDATER.compareAndSet(this, IDLE, REQUEST_COMPLETE)) {
             // nothing to do: it's up to the response to finish now.
         } else if (STATE_UPDATER.compareAndSet(this, RESPONSE_COMPLETE, FINISHED)) {
+            System.err.println(Thread.currentThread().getName() + ": ScopeTracker.requestComplete()");
             instrumenter.end(context, requestMetaData, responseMetaData, responseCompleteCause);
         }
     }
@@ -109,6 +110,7 @@ final class ScopeTracker implements TerminalSignalConsumer {
         if (STATE_UPDATER.compareAndSet(this, IDLE, RESPONSE_COMPLETE)) {
             // nothing to do: it's up to the request to finish now.
         } else if (STATE_UPDATER.compareAndSet(this, REQUEST_COMPLETE, FINISHED)) {
+            System.err.println(Thread.currentThread().getName() + ": ScopeTracker.responseFinished(" + throwable + ")");
             instrumenter.end(context, requestMetaData, responseMetaData, throwable);
         }
     }
