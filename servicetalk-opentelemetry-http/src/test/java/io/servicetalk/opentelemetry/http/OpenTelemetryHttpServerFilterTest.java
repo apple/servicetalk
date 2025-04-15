@@ -50,6 +50,7 @@ import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSIO
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
@@ -238,6 +239,11 @@ class OpenTelemetryHttpServerFilterTest {
                     });
             }
         }
+    }
+
+    @Test
+    void verifyAsyncContextVisibility() throws Exception {
+        verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServerFilter());
     }
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,

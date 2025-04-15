@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
@@ -33,8 +34,8 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ServerContext;
 
-import java.util.Iterator;
-import java.util.List;
+import org.hamcrest.Matcher;
+
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -51,7 +52,10 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 
 /**
  * Utility verifiers for {@link StreamingHttpServiceFilterFactory} filters and their
@@ -79,30 +83,31 @@ public final class AsyncContextHttpFilterVerifier {
     public static void verifyServerFilterAsyncContextVisibility(final StreamingHttpServiceFilterFactory filter)
             throws Exception {
         final BlockingQueue<Throwable> errors = new LinkedBlockingDeque<>();
-        final List<String> payload = singletonList("Hello World");
+        final String content = "Hello World";
 
-        final ServerContext serverContext = forAddress(localAddress(0))
+        try (ServerContext serverContext = forAddress(localAddress(0))
                 .appendServiceFilter(new AsyncContextAssertionFilter(errors))
                 .appendServiceFilter(filter)
                 .listenStreamingAndAwait(asyncContextRequestHandler(errors));
+             BlockingStreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                     .buildBlockingStreaming()) {
 
-        final BlockingStreamingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
-                .buildBlockingStreaming();
-        final BlockingStreamingHttpRequest request = client.post("/test")
-                .payloadBody(payload, appSerializerUtf8FixLen());
+            BlockingStreamingHttpRequest request = client.post("/test")
+                    .payloadBody(singletonList(content), appSerializerUtf8FixLen());
 
-        final BlockingStreamingHttpResponse resp = client.request(request);
-        assertThat(resp.status(), is(OK));
-        Iterator<String> itr = resp.payloadBody(appSerializerUtf8FixLen()).iterator();
-        assertThat(itr.hasNext(), is(true));
-        assertThat(itr.next(), is(payload.get(0)));
-        assertThat(itr.hasNext(), is(false));
+            BlockingStreamingHttpResponse resp = client.request(request);
+            assertThat(resp.status(), is(OK));
+            StringBuilder sb = new StringBuilder();
+            resp.payloadBody(appSerializerUtf8FixLen()).forEach(sb::append);
+            assertThat(sb.toString(), is(equalTo(content)));
+        }
         assertNoAsyncErrors(errors);
     }
 
     private static StreamingHttpService asyncContextRequestHandler(final BlockingQueue<Throwable> errorQueue) {
         return (ctx, request, respFactory) -> {
             AsyncContext.put(K1, V1);
+            ContextMap current = AsyncContext.context();
             return request.payloadBody(appSerializerUtf8FixLen())
                     .collect(StringBuilder::new, (collector, it) -> {
                         collector.append(it);
@@ -111,41 +116,42 @@ public final class AsyncContextHttpFilterVerifier {
                 AsyncContext.put(K2, V2);
                 assertAsyncContext(K1, V1, errorQueue);
                 assertAsyncContext(K2, V2, errorQueue);
+                assertSameContext(current, errorQueue);
 
                 return respFactory.ok().payloadBody(from(it).map(body -> {
                     AsyncContext.put(K3, V3);
                     assertAsyncContext(K1, V1, errorQueue);
                     assertAsyncContext(K2, V2, errorQueue);
                     assertAsyncContext(K3, V3, errorQueue);
+                    assertSameContext(current, errorQueue);
                     return body;
                 }), appSerializerUtf8FixLen()).transformPayloadBody(publisher ->
                             publisher.beforeSubscriber(() -> new PublisherSource.Subscriber<Buffer>() {
                         @Override
                         public void onSubscribe(final PublisherSource.Subscription subscription) {
-                            assertAsyncContext(K1, V1, errorQueue);
-                            assertAsyncContext(K2, V2, errorQueue);
-                            assertAsyncContext(K3, null, errorQueue);
+                            assertContextState(null);
                         }
 
                         @Override
                         public void onNext(final Buffer o) {
-                            assertAsyncContext(K1, V1, errorQueue);
-                            assertAsyncContext(K2, V2, errorQueue);
-                            assertAsyncContext(K3, V3, errorQueue);
+                            assertContextState(V3);
                         }
 
                         @Override
                         public void onError(final Throwable t) {
-                            assertAsyncContext(K1, V1, errorQueue);
-                            assertAsyncContext(K2, V2, errorQueue);
-                            assertAsyncContext(K3, V3, errorQueue);
+                            assertContextState(V3);
                         }
 
                         @Override
                         public void onComplete() {
+                            assertContextState(V3);
+                        }
+
+                        private void assertContextState(@Nullable String v3) {
                             assertAsyncContext(K1, V1, errorQueue);
                             assertAsyncContext(K2, V2, errorQueue);
-                            assertAsyncContext(K3, V3, errorQueue);
+                            assertAsyncContext(K3, v3, errorQueue);
+                            assertSameContext(current, errorQueue);
                         }
                     })
                 );
@@ -173,7 +179,35 @@ public final class AsyncContextHttpFilterVerifier {
     }
 
     /**
-     * A filter that asserts presense of {@link #K1}, {@link #K2}, and {@link #K3} in {@link AsyncContext}.
+     * Asserts that {@link AsyncContext#context()} is the same instance as the expected one.
+     *
+     * @param expected {@link ContextMap} we expect
+     * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
+     */
+    public static void assertSameContext(@Nullable final ContextMap expected, final Queue<Throwable> errorQueue) {
+        assertContext(sameInstance(expected), errorQueue);
+    }
+
+    /**
+     * Asserts that {@link AsyncContext#context()} is NOT the same instance as the notExpected one.
+     *
+     * @param notExpected {@link ContextMap} we do not expect
+     * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
+     */
+    public static void assertNotSameContext(@Nullable final ContextMap notExpected, final Queue<Throwable> errorQueue) {
+        assertContext(not(sameInstance(notExpected)), errorQueue);
+    }
+
+    private static void assertContext(Matcher<ContextMap> matcher, final Queue<Throwable> errorQueue) {
+        try {
+            assertThat(AsyncContext.context(), is(matcher));
+        } catch (Throwable t) {
+            errorQueue.add(t);
+        }
+    }
+
+    /**
+     * A filter that asserts presence of {@link #K1}, {@link #K2}, and {@link #K3} in {@link AsyncContext}.
      */
     public static final class AsyncContextAssertionFilter implements StreamingHttpServiceFilterFactory {
 
@@ -214,20 +248,24 @@ public final class AsyncContextHttpFilterVerifier {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
+                    ContextMap current = AsyncContext.context();
                     assertAsyncContext(K1, null, errorQueue);
                     assertAsyncContext(K2, null, errorQueue);
                     assertAsyncContext(K3, null, errorQueue);
-                    return super.handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
+                    return delegate().handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
+                                assertSameContext(current, errorQueue);
                                 assertAsyncContext(K1, lazyPayload ? V1 : null, errorQueue);
                                 assertAsyncContext(K2, null, errorQueue);
                                 assertAsyncContext(K3, null, errorQueue);
                             })), responseFactory)
                             .beforeOnSuccess(__ -> {
+                                assertSameContext(current, errorQueue);
                                 assertAsyncContext(K1, V1, errorQueue);
                                 assertAsyncContext(K2, hasK2 ? V2 : null, errorQueue);
                                 assertAsyncContext(K3, null, errorQueue);
                             })
                             .liftSync(new BeforeFinallyHttpOperator(() -> {
+                                assertSameContext(current, errorQueue);
                                 assertAsyncContext(K1, V1, errorQueue);
                                 assertAsyncContext(K2, hasK2 ? V2 : null, errorQueue);
                                 assertAsyncContext(K3, hasK3 ? V3 : null, errorQueue);

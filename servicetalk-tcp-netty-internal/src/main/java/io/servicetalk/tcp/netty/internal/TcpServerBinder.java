@@ -52,8 +52,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
@@ -240,8 +240,10 @@ public final class TcpServerBinder {
             final EarlyConnectionAcceptorHandler acceptorHandler = new EarlyConnectionAcceptorHandler();
             channel.pipeline().addLast(acceptorHandler);
 
-            // Defer is required to isolate the context between the user accept callback and the rest of the connection
-            Completable earlyCompletable = Completable.defer(() -> earlyConnectionAcceptor.accept(new TcpConnectionInfo(
+            // AsyncContext propagation is tested by
+            // AbstractHttpServiceAsyncContextTest.connectionAcceptorContextDoesNotLeak(...).
+            // Defer is required to run the `accept` evaluation later, when we have a Subscriber.
+            Completable earlyCompletable = defer(() -> earlyConnectionAcceptor.accept(new TcpConnectionInfo(
                     channel, channelExecutionContext, config.sslConfig(), config.idleTimeoutMs())));
 
             if (earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {
@@ -250,33 +252,31 @@ public final class TcpServerBinder {
 
             connection = earlyCompletable
                     .publishOn(channelExecutionContext.ioExecutor(), () -> !channel.eventLoop().inEventLoop())
-                    .concat(connection)
+                    .concat(connection.shareContextOnSubscribe())
                     .whenOnSuccess(ignored -> acceptorHandler.releaseEvents());
         }
 
         if (lateConnectionAcceptor != null) {
             connection = connection.flatMap(conn -> {
-                // Defer is required to isolate the context between the user accept callback and
-                // the rest of the connection
-                Single<CC> deferred = defer(() -> lateConnectionAcceptor.accept(conn).concat(succeeded(conn)));
+                // Defer is required to isolate the context of returned `accept` Completable.
+                Single<CC> accepted = defer(() -> lateConnectionAcceptor.accept(conn)).concat(succeeded(conn));
                 if (lateConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {
                     // TODO: change in 0.43 after removal of the old connection acceptor
                     // currentThreadIsIoThread check can be removed once the old connectionAcceptor is removed.
-                    deferred = deferred.subscribeOn(offloadExecutor, IoThreadFactory.IoThread::currentThreadIsIoThread);
+                    accepted = accepted.subscribeOn(offloadExecutor, IoThreadFactory.IoThread::currentThreadIsIoThread);
                 }
-                return deferred;
+                return accepted.shareContextOnSubscribe();
             });
         }
 
         if (connectionAcceptor != null) {
             connection = connection.flatMap(conn -> {
-                // Defer is required to isolate the context between the user accept callback and
-                // the rest of the connection
-                Single<CC> deferred = defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)));
+                // Defer is required to isolate the context of returned `accept` Completable.
+                Single<CC> accepted = defer(() -> connectionAcceptor.accept(conn)).concat(succeeded(conn));
                 if (connectionAcceptor.requiredOffloads().isConnectOffloaded()) {
-                    deferred = deferred.subscribeOn(offloadExecutor);
+                    accepted = accepted.subscribeOn(offloadExecutor);
                 }
-                return deferred;
+                return accepted.shareContextOnSubscribe();
             });
         }
 

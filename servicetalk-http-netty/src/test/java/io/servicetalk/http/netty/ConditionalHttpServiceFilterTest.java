@@ -49,7 +49,7 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                     final StreamingHttpRequest req,
                                                                     final StreamingHttpResponseFactory resFactory) {
-                            return super.handle(ctx, markFiltered(req), resFactory);
+                            return delegate().handle(ctx, markFiltered(req), resFactory);
                         }
 
                         @Override

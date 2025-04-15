@@ -39,6 +39,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -76,7 +77,8 @@ import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpServerBuilder implements HttpServerBuilder {
+// Non-final to give more flexibility for testing, production code must use HttpServers static factories.
+class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpServerBuilder.class);
 
@@ -329,6 +331,16 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return listenForService(streamingService, serviceFilters, streamingService.requiredOffloads());
     }
 
+    /**
+     * In internal hook to get access to entire filters chain and modify that for testing if necessary.
+     *
+     * @param filters the original stream of filters
+     * @return modified stream of filters
+     */
+    Stream<StreamingHttpServiceFilterFactory> alterFilters(final Stream<StreamingHttpServiceFilterFactory> filters) {
+        return filters;
+    }
+
     private List<StreamingHttpServiceFilterFactory> initServiceFilters() {
         // Take snapshot of currently appended filters:
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>(this.serviceFilters);
@@ -346,7 +358,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             @Nullable final HttpLifecycleObserver lifecycleObserver) {
         final List<StreamingHttpServiceFilterFactory> filters = new ArrayList<>();
         // Append internal filters:
-        appendNonOffloadingServiceFilter(filters, ClearAsyncContextHttpServiceFilter.INSTANCE);
+        if (drainRequestPayloadBody) {
+            appendNonOffloadingServiceFilter(filters, HttpRequestAutoDrainingServiceFilter.INSTANCE);
+        }
         if (lifecycleObserver != null) {
             appendNonOffloadingServiceFilter(filters, new HttpLifecycleObserverServiceFilter(lifecycleObserver));
         }
@@ -410,7 +424,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
         // All the filters can be appended.
         filters = Stream.concat(filters, serviceFilters.stream());
-        final StreamingHttpService filteredService = buildService(filters, service);
+        final StreamingHttpService filteredService = buildService(alterFilters(filters), service);
 
         final HttpExecutionStrategy builderStrategy = this.strategy;
         return doBind(roConfig, executionContext, connectionAcceptor, filteredService, earlyConnectionAcceptor,
@@ -450,20 +464,20 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             }
             ReadOnlyHttpServerConfig roConfigWithoutSsl = configWithoutSsl.asReadOnly();
             return OptionalSslNegotiator.bind(executionContext, roConfig, roConfigWithoutSsl, address,
-                    connectionAcceptor, filteredService, drainRequestPayloadBody, earlyConnectionAcceptor,
+                    connectionAcceptor, filteredService, earlyConnectionAcceptor,
                     lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, false, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, false, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, true, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, true, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.isH2PriorKnowledge()) {
             return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
+                    filteredService, earlyConnectionAcceptor, lateConnectionAcceptor);
         }
         return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
-                filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
+                filteredService, earlyConnectionAcceptor, lateConnectionAcceptor);
     }
 
     private static <T extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(
@@ -489,8 +503,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .reduce((prev, acceptor) -> new EarlyConnectionAcceptor() {
                     @Override
                     public Completable accept(final ConnectionInfo info) {
-                        // Defer is required to isolate the context for the individual acceptors.
-                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 
                     @Override
@@ -514,8 +529,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .reduce((prev, acceptor) -> new LateConnectionAcceptor() {
                     @Override
                     public Completable accept(final ConnectionInfo info) {
-                        // Defer is required to isolate the context for the individual acceptors.
-                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 
                     @Override
@@ -530,7 +546,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * Internal filter that correctly sets {@link HttpHeaderNames#CONNECTION} header value based on the requested
      * keep-alive policy.
      */
-    private static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory {
+    static final class KeepAliveServiceFilter implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new KeepAliveServiceFilter();
 

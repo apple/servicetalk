@@ -52,7 +52,7 @@ public final class PayloadSizeLimitingHttpServiceFilter implements StreamingHttp
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory responseFactory) {
-                return super.handle(ctx,
+                return delegate().handle(ctx,
                         // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has
                         // slightly less overhead. Since this implementation is internal to ServiceTalk we take the more
                         // advanced route.

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
@@ -133,7 +134,6 @@ final class NettyHttpServer {
                                           final SocketAddress address,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody,
                                           @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
                                           @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         if (config.h1Config() == null) {
@@ -144,7 +144,7 @@ final class NettyHttpServer {
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver, executionContext), service,
-                        drainRequestPayloadBody, connectionObserver),
+                        connectionObserver),
                 serverConnection -> serverConnection.process(true),
                         earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
@@ -164,9 +164,8 @@ final class NettyHttpServer {
                                                          final ReadOnlyHttpServerConfig config,
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
-                                                         final boolean drainRequestPayloadBody,
                                                          final ConnectionObserver observer) {
-        return initChannel(channel, builderExecutionContext, config, initializer, service, drainRequestPayloadBody,
+        return initChannel(channel, builderExecutionContext, config, initializer, service,
                 observer, forPipelinedRequestResponse(false, channel.config()));
     }
 
@@ -175,7 +174,6 @@ final class NettyHttpServer {
                                                                  final ReadOnlyHttpServerConfig config,
                                                                  final ChannelInitializer initializer,
                                                                  final StreamingHttpService service,
-                                                                 final boolean drainRequestPayloadBody,
                                                                  final ConnectionObserver observer,
                                                                  final CloseHandler closeHandler) {
         final H1ProtocolConfig h1Config = config.h1Config();
@@ -190,7 +188,7 @@ final class NettyHttpServer {
                         getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
                 HTTP_1_1, observer, false, __ -> false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,
-                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
+                        HTTP_1_1, h1Config.headersFactory(),
                         config.allowDropTrailersReadFromTransport())),
                 HTTP_1_1, channel);
     }
@@ -272,14 +270,12 @@ final class NettyHttpServer {
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
         private final ChangingFlushStrategy flushStrategy;
-        private final boolean drainRequestPayloadBody;
         private final boolean requireTrailerHeader;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
-                                  final boolean drainRequestPayloadBody,
                                   final boolean requireTrailerHeader) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
@@ -296,11 +292,14 @@ final class NettyHttpServer {
             this.service = service;
             this.flushStrategy = new ChangingFlushStrategy(new FlushStrategyHolder(connection.defaultFlushStrategy()));
             connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
-            this.drainRequestPayloadBody = drainRequestPayloadBody;
             this.requireTrailerHeader = requireTrailerHeader;
         }
 
         void process(final boolean handleMultipleRequests) {
+            // We must clear the context before starting to read from the connection to make sure every request read
+            // has an empty context
+            AsyncContext.clear();
+
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().firstAndTail((head, payload) -> {
                         HttpRequestMetaData meta = (HttpRequestMetaData) head;
@@ -330,16 +329,12 @@ final class NettyHttpServer {
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
-                final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final AtomicBoolean responseSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
                         payload -> payload.afterSubscriber(() -> {
-                            if (drainRequestPayloadBody) {
-                                payloadSubscribed.set(true);
-                            }
                             if (responseSent != null && !responseSent.get()) {
                                 // After users subscribe to the request payload body, generate 100 (Continue) response
                                 // if the final response wasn't sent already for this request. Concurrency between
@@ -367,9 +362,9 @@ final class NettyHttpServer {
                                 public void onError(final Throwable t) {
                                     // After the response payload has terminated, we may attempt to subscribe to the
                                     // request payload and drain/discard the content (in case the user forgets to
-                                    // consume the stream). However this means we may introduce a duplicate subscribe
+                                    // consume the stream). However, this means we may introduce a duplicate subscribe
                                     // and this doesn't mean the request content has not terminated.
-                                    if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
+                                    if (!(t instanceof RejectedSubscribeError)) {
                                         requestCompletion.onComplete();
                                     }
                                 }
@@ -388,7 +383,7 @@ final class NettyHttpServer {
                 // the response go through first. After `responseWrite` completes we can immediately start draining the
                 // request message body because completion of the `responseWrite` means completion of the flat response
                 // stream and completion of the business logic.
-                final Completable responseWrite = connection.write(
+                Completable responseWrite = connection.write(
                         // Don't expect any exceptions from service because it's already wrapped with
                         // HttpExceptionMapperServiceFilter.
                         service.handle(this, request, streamingResponseFactory())
@@ -410,21 +405,14 @@ final class NettyHttpServer {
                             return (resetFlushStrategy == null ? pub : pub.beforeFinally(resetFlushStrategy::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
+                        // There is no need to call shareContextOnSubscribe() at the end of the `write` Publisher here
+                        // because `connection.write(...)` will do it for us internally after applying FlushStrategy.
                         }));
-
-                if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
-                            // Discarding the request payload body is an operation which should not impact the state of
-                            // request/response processing. It's appropriate to recover from any error here.
-                            // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
-                            // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe()));
-                } else {
-                    return responseWrite.concat(requestCompletion);
-                }
+                return responseWrite.concat(requestCompletion).shareContextOnSubscribe();
             });
-            return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
+            // For pipelined connection (repeated reads) we need to wrap each `exchange` with `defer` to isolate
+            // AsyncContext state between repeated cycles.
+            return handleMultipleRequests ? defer(() -> exchange).repeat(__ -> true).ignoreElements() : exchange;
         }
 
         @Nonnull
@@ -443,7 +431,8 @@ final class NettyHttpServer {
                 if (emptyMessageBody(response, messageBody)) {
                     flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
-                    flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
+                    flatResponse = Single.<Object>succeeded(response)
+                            .concatPropagateCancel(messageBody.shareContextOnSubscribe());
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWithMapper(HeaderUtils::appendTrailersMapper);
                     }

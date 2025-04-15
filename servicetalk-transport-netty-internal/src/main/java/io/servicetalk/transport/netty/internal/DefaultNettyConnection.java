@@ -644,7 +644,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver, enrichProtocolError, isClient, shouldWait);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
+                    toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver)
+                            // AsyncContext state should be shared between publisher we write and returned completable
+                            .shareContextOnSubscribe())
                             .subscribe(subscriber);
                 }
             }

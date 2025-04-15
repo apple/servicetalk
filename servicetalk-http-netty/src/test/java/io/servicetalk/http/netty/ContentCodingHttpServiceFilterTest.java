@@ -26,6 +26,7 @@ import static java.util.Collections.singletonList;
 class ContentCodingHttpServiceFilterTest {
 
     @Test
+    @SuppressWarnings("deprecation")
     void verifyAsyncContext() throws Exception {
         verifyServerFilterAsyncContextVisibility(new ContentCodingHttpServiceFilter(singletonList(identity())));
     }

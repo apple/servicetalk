@@ -1730,7 +1730,7 @@ public abstract class Completable {
      */
     CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.captureContext(provider.context().copy());
+        return provider.captureContextCopy();
     }
 
     /**

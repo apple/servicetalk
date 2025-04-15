@@ -200,7 +200,7 @@ public abstract class Single<T> {
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
         requireNonNull(itemSupplier);
-        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)));
+        return onErrorResume(predicate, t -> succeeded(itemSupplier.apply(t)).shareContextOnSubscribe());
     }
 
     /**
@@ -2673,7 +2673,7 @@ public abstract class Single<T> {
      */
     CapturedContext contextForSubscribe(AsyncContextProvider provider) {
         // the default behavior is to copy the map. Some operators may want to use shared map
-        return provider.captureContext(provider.context().copy());
+        return provider.captureContextCopy();
     }
 
     /**

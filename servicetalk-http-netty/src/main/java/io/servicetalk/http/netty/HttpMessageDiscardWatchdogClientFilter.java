@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.NoopSubscribers;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -86,7 +87,7 @@ final class HttpMessageDiscardWatchdogClientFilter implements StreamingHttpConne
 
                     return response.transformMessageBody(msgPublisher -> msgPublisher.beforeSubscriber(() -> {
                         reference.set(null);
-                        return HttpMessageDiscardWatchdogServiceFilter.NoopSubscriber.INSTANCE;
+                        return NoopSubscribers.NOOP_PUBLISHER_SUBSCRIBER;
                     }));
                 });
             }

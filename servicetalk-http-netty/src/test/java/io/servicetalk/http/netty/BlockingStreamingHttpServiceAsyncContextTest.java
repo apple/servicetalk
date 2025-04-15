@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,86 +15,88 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ServerContext;
+
+import org.hamcrest.Matchers;
 
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Override
+    protected boolean isBlocking() {
+        return true;
+    }
+
+    @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                                boolean useImmediate) throws Exception {
-        // Ignore "useImmediate"
+        assertThat(useImmediate, Matchers.is(false));
         return serverBuilder.listenBlockingStreamingAndAwait(newEmptyAsyncContextService());
     }
 
     private static BlockingStreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, response) -> {
-            request.payloadBody().forEach(__ -> { });
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
 
             if (!AsyncContext.isEmpty()) {
-                response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
-                return;
-            }
-            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-            if (requestId != null) {
-                AsyncContext.put(K1, requestId);
-                response.setHeader(REQUEST_ID_HEADER, requestId);
+                response.status(INTERNAL_SERVER_ERROR);
             } else {
-                response.status(BAD_REQUEST);
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                    response.setHeader(REQUEST_ID_HEADER, requestId);
+                } else {
+                    response.status(BAD_REQUEST);
+                }
             }
-            response.sendMetaData().close();
+
+            BufferAllocator alloc = ctx.executionContext().bufferAllocator();
+            try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
+                writer.write(alloc.fromUtf8(toHexString(identityHashCode(AsyncContext.context()))));
+            }
         };
     }
 
     @Override
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                               boolean useImmediate, boolean asyncService) throws Exception {
-        // Ignore "useImmediate" and "asyncService"
+        assertThat(useImmediate, Matchers.is(false));
+        assertThat(asyncService, Matchers.is(false));
         return serverBuilder.listenBlockingStreamingAndAwait(service());
     }
 
     private static BlockingStreamingHttpService service() {
-        return new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                doHandle(request, response);
+        return (ctx, request, response) -> {
+            // We intentionally do not consume request.messageBody() to evaluate behavior with auto-draining.
+            // A use-case with consumed request.messageBody() is evaluated by aggregated API.
+
+            if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                // verify that we are not offloaded
+                response.status(BAD_GATEWAY).sendMetaData().close();
+                return;
             }
 
-            private void doHandle(final BlockingStreamingHttpRequest request,
-                                  final BlockingStreamingHttpServerResponse response) throws Exception {
-                CharSequence requestId = AsyncContext.get(K1);
-                // The test forces the server to consume the entire request here which will make sure the
-                // AsyncContext is as expected while processing the request data in the filter.
-                request.payloadBody().forEach(__ -> { });
-
-                if (currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
-                    // verify that we are not offloaded
-                    response.status(BAD_GATEWAY).sendMetaData().close();
-                    return;
-                }
-
-                CharSequence requestId2 = AsyncContext.get(K1);
-                if (requestId2 == requestId && requestId2 != null) {
-                    response.setHeader(REQUEST_ID_HEADER, requestId);
-                } else {
-                    response.status(INTERNAL_SERVER_ERROR)
-                            .setHeader(REQUEST_ID_HEADER, String.valueOf(requestId))
-                            .setHeader(REQUEST_ID_HEADER + "2", String.valueOf(requestId2));
-                }
-                response.sendMetaData().close();
+            CharSequence requestId = AsyncContext.get(K1);
+            if (requestId != null) {
+                response.setHeader(REQUEST_ID_HEADER, requestId);
+            } else {
+                response.status(INTERNAL_SERVER_ERROR).setHeader(REQUEST_ID_HEADER, "null");
             }
+            response.sendMetaData().close();
         };
     }
 }
