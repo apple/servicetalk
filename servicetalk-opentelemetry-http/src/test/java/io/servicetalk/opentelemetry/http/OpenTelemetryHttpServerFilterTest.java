@@ -352,8 +352,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_DATA_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
         ));
         runWithClient(http2, client -> {
@@ -531,9 +530,9 @@ class OpenTelemetryHttpServerFilterTest {
         return HttpServers.forAddress(localAddress(0))
                 .protocols(config)
                 .drainRequestPayloadBody(false)
-                .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+                .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
                 .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
-                .appendServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
+                .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
                 .listenStreamingAndAwait(
                         (ctx, request, responseFactory) -> {
                             final StreamingHttpResponse response = responseFactory.ok();
