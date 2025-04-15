@@ -6,50 +6,24 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= `AsyncContext`
+= Asynchronous Context
 
-`AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries.
-Motivation for providing support for `AsyncContext` can be found
-xref:{page-version}@servicetalk::async-context.adoc[here].
-
-== High Level Usage
-
-At a high level `AsyncContext` provides a `Map`-like API for storing static state, and is isolated/scoped for each
-request and response to simulate `ThreadLocal` storage. Here is some code
-
-[source, java]
-----
-// Main.java - application logic
-Single<Response> single = authenticate(client.request(...));
-single.map(response -> {
-  if (AsyncContext.get(USER_ID_KEY).equals("admin")) {
-    // do something for admin
-  } else {
-    // do something for non-admin
-  }
-})// do something else in the function composition chain
-
-// AuthenticationFilter.java
-public static final Key<String> USER_ID_KEY = Key.newKey("userId", String.class);
-
-public static Single<Resposne> authenticate(Single<Response> responseSingle) {
-  AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
-}
-----
+Traditional thread-per-request libraries and applications often leverage the concept of a `ThreadLocal` to provide a
+static interface for conveying contextual information across function calls. Important use case for this include `MDC`,
+OpenTelemetry `Context`, etc. This `ThreadLocal` model allows libraries to pass information across APIs that can be
+oblivious to the extra information being conveyed. However, ServiceTalk is an asynchronous library and the simple
+`ThreadLocal` model does not work because many computation flows may be happening on a shared set of threads at any
+given time. To provide a similar experience, ServiceTalk offers a pair of abstractions, `CapturedContext` for capturing
+and restoring contextual information for use across async boundaries, and `AsyncContext` (which is just a ServiceTalk
+defined case of `CapturedContext`) for defining your own contextual information.
 
 == Expectations
 
-Perhaps unfortunately, but many existing APIs assume a `ThreadLocal` type of state (e.g. `MDC`, `OpenTracing`). For this
-reason we would like to provide a similar experience within our asynchronous primitives and control flow provided by
-operators. From a practical stand point we want to leverage this tool as the foundation for infrastructure type tasks
-that require static state, or cannot otherwise be explicitly accounted for in the API. This leads us to the following
-desirable characteristics.
-
-**State is shared across synchronous boundaries**
+**State is shared across asynchronous boundaries**
 
 `ThreadLocal` state is preserved and modifiable across synchronous boundaries, and our operators should provide the same
-functionality. To clarify this means if someone is calling an method in the imperative style and the state is shared
-then the same property should hold for adjacent operators. To demonstrate this check out the following code snippets:
+functionality. To clarify this means if someone is calling a method in the imperative style and the state is shared
+then the same property should hold for adjacent operators. To demonstrate this, consider the following code snippets:
 
 === Function composition
 [source, java]
@@ -84,38 +58,55 @@ String doMap(String in) {
 }
 ----
 
+In both cases, the result of the program is the same. Similarly, a program can use a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java[CapturedContextProvider]
+to save any state they desire and it will be passed along the ServiceTalk async boundaries.
+
 **Isolation and defined scope**
 
 We want a static API that provides us with access to state, but we need to define the scope for which the state is
 valid. A single bag of static state may become difficult to manage and reason about and also lead to memory leaks.
-Instead we would like to have the scope in which the state is modifiable in be defined. For example `ThreadLocal` is
+Instead, we would like to have the scope in which the state is modifiable in be defined. For example `ThreadLocal` is
 modifiable from anywhere within the same thread. Since ServiceTalk is built on an asynchronous framework where the same
 thread may process multiple requests, and the same request may be processed on multiple threads this isn't sufficient.
-However what folks typically use `ThreadLocal` state for is to track static state per-request. The isolation and scope
+However, what folks typically use `ThreadLocal` state for is to track static state per-request. The isolation and scope
 of state must therefore also be able to follow per-request processing through the asynchronous control flow.
 
-**Work with offloading**
+**Works with offloading**
 
-ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking EventLoop threads we
+ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking I/O threads we
 offload to other threads. This means that every time we invoke user code we may have to jump threads. It is also
 possible on subsequent calls for the same request we may use a different thread (although not concurrently). We need to
 make sure the same static state is carried along through these different threads.
 
+**Works with Third-Party Libraries**
+
+Many existing APIs assume a `ThreadLocal` type of state (e.g. MDC, OpenTracing). For this reason we would like to
+provide compatibility within our asynchronous primitives and control flow provided by operators. ServiceTalk needs to
+provide a way to capture third-party context and properly restore it within the reactive execution chain.
+
 == ServiceTalk Approach
 
-In order to accommodate the <<Expectations, Expectations of AsyncContext>> we need specific behavior from `AsyncContext`. As described
-above we are after static state shared across synchronous boundaries, available across asynchronous boundaries, and is
-also sufficiently isolated in scope so that it can represent request/response control flow. To achieve these
-requirements the approach is to have `AsyncContext` backed by a modifiable (concurrent) map, and is associated with a
-`Subscriber` chain. Since the map is modifiable we will need to define the scope (e.g. how the state is isolated) of
-this static state. The `AsyncContext` will follow the following rule set:
+In order to accommodate the <<Expectations, Expectations of Asynchronous Context>> we need specific behavior from
+ServiceTalk. As described above, we are after a static state shared across synchronous boundaries, available across
+asynchronous boundaries, and is also sufficiently isolated in scope so that it can represent request/response control
+flow.
 
-. `AsyncContext` will be captured and copied at `subscribe` time.
-.. This provides isolation from other asynchronous operations which typically represent independent processing.
-. `AsyncContext` will be saved/restored across asynchronous boundaries.
+To achieve these
+requirements the approach is to define context during the subscribe process and propagate it along `Subscriber` chain.
+
+ServiceTalk follows this set of rule set:
+
+. Asynchronous context will be captured and copied at `subscribe` time.
+.. When using `AsyncContext`, copying provides isolation from other asynchronous operations which typically represent
+   independent processing.
+.. If users want to share context across boundaries the `shareContextOnSubscribe()` operator will share the same
+   `AsyncContext` instance across asynchronous operations. This necessary when chaining together different async-sources
+   such as with the `flatMap`, `defer`, and other related operators.
+. Asynchronous context will be saved/restored across asynchronous boundaries.
 .. This is true for asynchronous operators (e.g. `flatMap`) and also `Executor` operations.
-.. If isolation is required for a specific control flow, there will be operators (e.g. `asyncContextBoundary`) and
-utilities (e.g. `Runnable asyncContextBoundary(Runnable)`) to create boundaries.
+.. If isolation of `AsyncContext` is required for a specific control flow, `defer(..)` operators can be used to create
+   new boundaries.
 
 The above approach will provide the isolation required so that the state set inside an offloaded
 `HttpService#handle(..)` call is visible when processing the request/response.
@@ -124,13 +115,24 @@ Due to the intricacies of control flow this mechanism is directly implemented in
 
 === Complexity of implementation
 
-Due to the shared state across the asynchronous boundaries we need to make sure we save the `current` context before the
-boundary, save the `original` context before executing user code on the new thread, restore the `current` context
-while executing user code, and then restore the `original` context. This requires object wrapping/unwrapping and
-leveraging `ThreadLocal` (or an
-link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java[ContextMapHolder]
-) to retain the state. We also need to capture the current context at `subscribe`, propagate it up the operator chain,
-and capture it effectively in the source (or in a wrapped `Subscriber` just outside the source).
+Due to the shared state across the asynchronous boundaries we have a defined process for propagating asynchronous
+context:
+
+. When subscribing to an asynchronous primitive ServiceTalk will capture the `captured` context.
+. The `captured` context will be restored for use during asynchronous operations. This process has it's own rules:
+.. Save the `pre-existing` context that may be present on the executing thread, including empty or null context.
+.. Restore the `captured` context to the executing thread.
+.. Execute the asynchronous logic which now will see the `captured` context state.
+.. When the async logic is complete, restore the `pre-existing` context to the thread, including empty or null values.
+
+This set of rules ensures that asynchronous primitives see the correct state at all times, including during recursive
+calls where different parts of the reactive chain may have different context information.
+
+=== Disable Asynchronous Context
+Asynchronous Context is enabled by default to accommodate for easy setup, but it can be disabled via
+`AsyncContext.disable()`. Note that this disables both the `AsyncContext` and the `CapturedContext`.
+
+== `AsyncContext` Specifics
 
 === Understandability
 
@@ -198,5 +200,56 @@ link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/
 ). There is also additional wrapping/unwrapping introduced on the asynchronous boundaries so there is additional object
 allocation.
 
-=== Disable AsyncContext
-`AsyncContext` is enabled by default to accommodate for easy setup, but it can be disabled via `AsyncContext.disable()`.
+=== `AsyncContext` Examples
+
+`AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries.
+Motivation for providing support for `AsyncContext` can be found
+xref:{page-version}@servicetalk::async-context.adoc[here].
+
+==== High Level Usage
+
+At a high level `AsyncContext` provides a `Map`-like API for storing static state, and is isolated/scoped for each
+request and response to simulate `ThreadLocal` storage. Here is some code
+
+[source, java]
+----
+// Main.java - application logic
+Single<Response> single = authenticate(client.request(...));
+single.map(response -> {
+  if (AsyncContext.get(USER_ID_KEY).equals("admin")) {
+    // do something for admin
+  } else {
+    // do something for non-admin
+  }
+})// do something else in the function composition chain
+
+// AuthenticationFilter.java
+public static final Key<String> USER_ID_KEY = Key.newKey("userId", String.class);
+
+public static Single<Resposne> authenticate(Single<Response> responseSingle) {
+  AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
+}
+----
+
+== `CapturedContext` Specifics
+
+In contrast to `AsyncContext`, the main use case of `CapturedContext` is to work with third-party context abstractions.
+Users can define a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java[CapturedContextProvider]
+which will provide a way for ServiceTalk to capture and restore third-party context along the execution chain. An
+important example of third-party context information is the OpenTelemetry Context. By using the
+`CapturedContextProvider` users can correctly propagate OpenTelemetry context information in a non-invasive way which
+makes it much more likely to work with other third-party libraries.
+
+See the JavaDocs for
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java[CapturedContextProvider]
+for an example of how to define the context capture and restore process.
+
+=== Cost Of Retention
+
+Unlike `AsyncContext` which has a well-defined cost model, the cost of saving and restoring arbitrary contextual
+information is not possible to predict because it is based on the third-party APIs used to access and set it. In
+general, good candidates for the `CapturedContext` model are those where capturing and setting context is 'cheap',
+such as saving and restoring the state of a `ThreadLocal`. Because of the frequency of the save and restore process
+in an asynchronous computation chain careful through should go into the cost of capturing and restoring third-party
+context.
