@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.NoopSubscribers;
@@ -97,10 +98,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
             final StreamingHttpRequest transformed = request
                     .transformMessageBody(p -> {
                         if (client) {
-                            p = p.beforeSubscriber(() -> {
-                                exchangeContext.requestMessageBodyStarts();
-                                return NoopSubscribers.NOOP_PUBLISHER_SUBSCRIBER;
-                            });
+                            p = p.beforeSubscriber(exchangeContext);
                         }
                         return p.beforeRequest(n -> safeReport(onRequest::onRequestDataRequested, n, onRequest,
                                 "onRequestDataRequested"))
@@ -164,7 +162,8 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         return HttpExecutionStrategies.offloadNone();
     }
 
-    private static final class ExchangeContext implements TerminalSignalConsumer {
+    private static final class ExchangeContext implements TerminalSignalConsumer,
+                                                          Supplier<PublisherSource.Subscriber<Object>> {
 
         private static final AtomicIntegerFieldUpdater<ExchangeContext> remainingUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(ExchangeContext.class, "remaining");
@@ -233,7 +232,13 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
             decrementRemaining();
         }
 
-        void requestMessageBodyStarts() {
+        @Override
+        public PublisherSource.Subscriber<Object> get() {
+            requestMessageBodyStarts();
+            return NoopSubscribers.NOOP_PUBLISHER_SUBSCRIBER;
+        }
+
+        private void requestMessageBodyStarts() {
             remainingUpdater.incrementAndGet(this);
         }
 
