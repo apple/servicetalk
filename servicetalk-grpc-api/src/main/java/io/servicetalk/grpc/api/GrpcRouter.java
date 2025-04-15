@@ -78,10 +78,12 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
+import static io.servicetalk.grpc.api.GrpcStatusException.serverCatchAllShouldLog;
 import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
 import static io.servicetalk.grpc.api.GrpcUtils.initResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.negotiateAcceptedEncodingRaw;
@@ -376,16 +378,17 @@ final class GrpcRouter {
                                                     .payloadBody(serializer.serialize(rawResp, allocator));
                                         })
                                         .onErrorReturn(cause -> {
-                                            LOGGER.debug("Unexpected exception from aggregated response for path : {}",
-                                                    methodDescriptor.httpPath(), cause);
-                                            return newErrorResponse(responseFactory, responseContentType, cause,
-                                                    allocator, responseContext);
+                                            HttpResponse response = newErrorResponse(responseFactory,
+                                                    responseContentType, cause, allocator, responseContext);
+                                            logException("aggregated response", methodDescriptor, response.headers(),
+                                                    cause);
+                                            return response;
                                         });
                             } catch (Throwable t) {
-                                LOGGER.debug("Unexpected exception from aggregated endpoint for path: {}",
-                                        methodDescriptor.httpPath(), t);
-                                return succeeded(newErrorResponse(responseFactory, responseContentType, t, allocator,
-                                        nullableResponseContext));
+                                HttpResponse response = newErrorResponse(responseFactory, responseContentType, t,
+                                        allocator, nullableResponseContext);
+                                logException("aggregated endpoint", methodDescriptor, response.headers(), t);
+                                return succeeded(response);
                             }
                         }
 
@@ -447,12 +450,12 @@ final class GrpcRouter {
                                                 deserializer.deserialize(request.payloadBody(), allocator));
                                         return succeeded(newResponse(responseFactory, responseContentType,
                                                 serializer.messageEncoding(), acceptedEncoding, responseContext,
-                                                payload, serializer, allocator));
+                                                payload, serializer, allocator, methodDescriptor));
                                     } catch (Throwable t) {
-                                        LOGGER.debug("Unexpected exception from streaming endpoint for path: {}",
-                                                methodDescriptor.httpPath(), t);
-                                        return succeeded(newErrorResponse(responseFactory, responseContentType, t,
-                                                allocator, nullableResponseContext));
+                                        StreamingHttpResponse response = newErrorResponse(responseFactory,
+                                                responseContentType, t, allocator, nullableResponseContext);
+                                        logException("streaming endpoint", methodDescriptor, response.headers(), t);
+                                        return succeeded(response);
                                     }
                                 }
 
@@ -557,19 +560,21 @@ final class GrpcRouter {
                                                                     GrpcStreamingSerializer::messageEncoding);
                                                     return newResponse(responseFactory, responseContentType,
                                                             serializer.messageEncoding(), acceptedEncoding,
-                                                            responseContext, payload, serializer, allocator);
+                                                            responseContext, payload, serializer, allocator,
+                                                            methodDescriptor);
                                                 }).onErrorReturn(cause -> {
-                                                    LOGGER.debug("Unexpected exception from response-streaming " +
-                                                            "endpoint for path : {}", methodDescriptor.httpPath(),
-                                                            cause);
-                                                    return newErrorResponse(responseFactory, responseContentType, cause,
-                                                            allocator, responseContext);
+                                                    StreamingHttpResponse response = newErrorResponse(responseFactory,
+                                                            responseContentType, cause, allocator, responseContext);
+                                                    logException("response-streaming endpoint", methodDescriptor,
+                                                            response.headers(), cause);
+                                                    return response;
                                                 });
                                     } catch (Throwable t) {
-                                        LOGGER.debug("Unexpected exception from response-streaming route for path: {}",
-                                                methodDescriptor.httpPath(), t);
-                                        return succeeded(newErrorResponse(responseFactory, responseContentType, t,
-                                                allocator, null));
+                                        StreamingHttpResponse response = newErrorResponse(responseFactory,
+                                                responseContentType, t, allocator, null);
+                                        logException("response-streaming route", methodDescriptor,
+                                                response.headers(), t);
+                                        return succeeded(response);
                                     }
                                 }
 
@@ -639,10 +644,10 @@ final class GrpcRouter {
                                         serializer.messageEncoding(), acceptedEncoding)
                                         .payloadBody(serializer.serialize(rawResp, allocator));
                             } catch (Throwable t) {
-                                LOGGER.debug("Unexpected exception from blocking aggregated endpoint for path: {}",
-                                        methodDescriptor.httpPath(), t);
-                                return newErrorResponse(responseFactory, responseContentType, t, allocator,
-                                        responseContext);
+                                HttpResponse response = newErrorResponse(responseFactory, responseContentType, t,
+                                        allocator, responseContext);
+                                logException("blocking aggregated endpoint", methodDescriptor, response.headers(), t);
+                                return response;
                             }
                         }
 
@@ -706,16 +711,17 @@ final class GrpcRouter {
                                 route.handle(serviceContext, deserializer.deserialize(request.payloadBody(),
                                         allocator), grpcResponse);
                             } catch (Throwable t) {
-                                LOGGER.debug("Unexpected exception from blocking streaming endpoint for path: {}",
-                                        methodDescriptor.httpPath(), t);
                                 HttpHeaders trailers;
                                 if (grpcResponse == null || (trailers = grpcResponse.trailers()) == null) {
                                     response.context().put(TRAILERS_ONLY_RESPONSE, Boolean.TRUE);
-                                    setStatus(response.headers(), t, allocator);
+                                    HttpHeaders headers = response.headers();
+                                    setStatus(headers, t, allocator);
+                                    logException("blocking streaming endpoint", methodDescriptor, headers, t);
                                     // Use HTTP response to avoid setting "OK" in trailers and allocating a serializer
                                     response.sendMetaData().close();
                                 } else {
                                     setStatus(trailers, t, allocator);
+                                    logException("blocking streaming endpoint", methodDescriptor, trailers, t);
                                     grpcResponse.close();
                                 }
                             }
@@ -886,6 +892,20 @@ final class GrpcRouter {
 
     private static <Req> GrpcDeserializer<Req> deserializer(MethodDescriptor<Req, ?> methodDescriptor) {
         return new GrpcDeserializer<>(methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
+    }
+
+    private static void logException(String where, MethodDescriptor<?, ?> methodDescriptor,
+                                     HttpHeaders headers, Throwable error) {
+        CharSequence codeValue = headers.get(GRPC_STATUS);
+        assert codeValue != null;
+        GrpcStatusCode statusCode = GrpcStatusCode.fromCodeValue(codeValue);
+        String msg = "Exception from {} for a request to {} was converted to grpc-status={}";
+        boolean logAsError = !(error instanceof GrpcStatusException) && serverCatchAllShouldLog(error);
+        if (logAsError) {
+            LOGGER.error(msg, where, methodDescriptor.httpPath(), statusCode, error);
+        } else {
+            LOGGER.debug(msg, where, methodDescriptor.httpPath(), statusCode, error);
+        }
     }
 
     private static final class DefaultBlockingStreamingGrpcServerResponse<Resp>
