@@ -163,14 +163,12 @@ abstract class ServiceTalkHttpAttributesGetter
         @Nullable
         @Override
         public String getClientAddress(HttpRequestMetaData metaData) {
-            // TODO: how can we discover this?
             return null;
         }
 
         @Nullable
         @Override
         public Integer getClientPort(HttpRequestMetaData metaData) {
-            // TODO: how can we discover this?
             return null;
         }
 

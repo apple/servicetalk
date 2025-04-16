@@ -169,7 +169,7 @@ class OpenTelemetryHttpServerFilterTest {
             try {
                 span
                     .setAttribute(HTTP_REQUEST_METHOD, "GET")
-                    .setAttribute(URL_FULL, url.toString()); // TODO: is this the right one?
+                    .setAttribute(URL_FULL, url.toString());
 
                 HttpURLConnection con = (HttpURLConnection) url.openConnection();
                 textMapPropagator.inject(Context.root().with(span), con, setter);
