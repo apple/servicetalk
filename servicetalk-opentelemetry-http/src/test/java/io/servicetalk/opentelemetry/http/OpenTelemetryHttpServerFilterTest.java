@@ -32,6 +32,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -65,12 +66,10 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -83,6 +82,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -101,7 +101,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class OpenTelemetryHttpServerFilterTest {
 
-    private static final int SLEEP_DURATION = CI ? 2000 : 100;
+    private static final int SLEEP_DURATION = CI ? 500 : 100;
 
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
@@ -289,14 +289,9 @@ class OpenTelemetryHttpServerFilterTest {
         verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServerFilter());
     }
 
-    @RepeatedTest(100)
-    void autoRequestDisposalOkRepro() throws Exception {
-        autoRequestDisposalOk(true);
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalOk(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalOk(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
@@ -308,7 +303,7 @@ class OpenTelemetryHttpServerFilterTest {
                         TestHttpLifecycleObserver.ON_RESPONSE_TRAILERS_KEY,
                         TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             HttpRequest request = client.get("/foo");
             request.trailers().set("x-request-trailer", "request-trailer");
             request.payloadBody().writeAscii("bar");
@@ -325,14 +320,9 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(100)
-    void autoRequestDisposalErrorResponseBodyRepro() throws Exception {
-        autoRequestDisposalErrorResponseBody(true);
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalErrorResponseBody(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalErrorResponseBody(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
@@ -341,7 +331,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_ERROR_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             HttpRequest request = client.get("/responsebodyerror");
             request.payloadBody().writeAscii("bar");
             ExecutionException ex = assertThrows(ExecutionException.class,
@@ -360,14 +350,9 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(100)
-    void autoRequestDisposalErrorResponseRepro() throws Exception {
-        autoRequestDisposalErrorResponse(true);
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalErrorResponse(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalErrorResponse(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
@@ -375,7 +360,7 @@ class OpenTelemetryHttpServerFilterTest {
                 TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             HttpRequest request = client.get("/responseerror");
             request.payloadBody().writeAscii("bar");
             HttpResponse resp = client.request(request).toFuture().get();
@@ -393,20 +378,15 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(100)
-    void autoRequestDisposalRequestBodyErrorRepro() throws Exception {
-        autoRequestDisposalRequestBodyError(true);
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalRequestBodyError(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalRequestBodyError(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/consumebodyinhandler");
@@ -429,21 +409,18 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    // TODO: this is flaky due to an intrinsic race between cancellation and response making context-setting
-    //  on the request body non-determinate during drains.
-    @Disabled
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalClientHangupAfterResponseHead(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalClientHangupAfterResponseHead(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_BODY_CANCEL_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowbody");
@@ -462,20 +439,17 @@ class OpenTelemetryHttpServerFilterTest {
                         }));
     }
 
-    // TODO: this is flaky due to an intrinsic race between cancellation and response making context-setting
-    //  on the request body non-determinate during drains.
-    @Disabled
-    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}")
-    @ValueSource(booleans = {true, false})
-    void autoRequestDisposalClientHangupBeforeResponseHead(boolean http2) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
+    @CsvSource({"true, true", "true, false", "false, true", "false,false"})
+    void autoRequestDisposalClientHangupBeforeResponseHead(boolean http2, boolean useOffloading) throws Exception {
         Set<AttributeKey<String>> expected = new HashSet<>(Arrays.asList(
                 TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY,
                 TestHttpLifecycleObserver.ON_REQUEST_KEY,
-                TestHttpLifecycleObserver.ON_REQUEST_COMPLETE_KEY,
+                TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY,
                 TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY
         ));
-        runWithClient(http2, client -> {
+        runWithClient(http2, useOffloading, client -> {
             StreamingHttpClient streamingClient = client.asStreamingClient();
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowhead");
@@ -495,19 +469,16 @@ class OpenTelemetryHttpServerFilterTest {
                         }));
     }
 
-    private void runWithClient(boolean http2, RunWithClient runWithClient) throws Exception {
+    private void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
-                new OpenTelemetryOptions.Builder().build(), errorQueue);
+                new OpenTelemetryOptions.Builder().build(), useOffloading, errorQueue);
              HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
                 runWithClient.run(client);
         }
         if (!errorQueue.isEmpty()) {
             AssertionError ex = new AssertionError("Async errors, see suppressed");
-            if (true) {
-                throw new AssertionError(errorQueue.poll());
-            }
             for (Throwable t : errorQueue) {
                 ThrowableUtils.addSuppressed(ex, t);
             }
@@ -545,15 +516,25 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
-                              OpenTelemetryOptions opentelemetryOptions, Queue<Throwable> errorQueue) throws Exception {
+                              OpenTelemetryOptions opentelemetryOptions, boolean useOffloading,
+                                                      Queue<Throwable> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
-        return HttpServers.forAddress(localAddress(0))
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config)
-                .drainRequestPayloadBody(false)
-                .appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
-                .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
-                .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(new TestHttpLifecycleObserver(errorQueue)))
-                .listenStreamingAndAwait(new StreamingHttpService() {
+                .drainRequestPayloadBody(false);
+        if (useOffloading) {
+            builder.appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+                    .appendServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+                    .appendServiceFilter(new HttpLifecycleObserverServiceFilter(
+                            new TestHttpLifecycleObserver(errorQueue)));
+        } else {
+            builder.appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(
+                    givenOpentelemetry, opentelemetryOptions))
+                    .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
+                    .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
+                            new TestHttpLifecycleObserver(errorQueue)));
+        }
+            return builder.listenStreamingAndAwait(new StreamingHttpService() {
                     @Override
                     public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                                 StreamingHttpResponseFactory responseFactory) {
@@ -591,7 +572,10 @@ class OpenTelemetryHttpServerFilterTest {
 
                     @Override
                     public HttpExecutionStrategy requiredOffloads() {
-                        return HttpExecutionStrategies.offloadNone();
+                        // Without disabling offloading we surface some race conditions between cancel
+                        // and response completion.
+                        return useOffloading ?
+                                HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
                     }
                 });
     }
@@ -620,6 +604,7 @@ class OpenTelemetryHttpServerFilterTest {
         private final Queue<Throwable> errorQueue;
 
         // Protected by synchronization
+        @Nullable
         private Span initialSpan;
 
         TestHttpLifecycleObserver(Queue<Throwable> errorQueue) {
@@ -723,7 +708,6 @@ class OpenTelemetryHttpServerFilterTest {
                 }
                 initialSpan = this.initialSpan;
             }
-            System.err.println(Thread.currentThread().getName() + " - " + key.getKey() + ": " + current.getSpanContext());
             if (Span.getInvalid().equals(current)) {
                 errorQueue.offer(new AssertionError("Detected the invalid span"));
             } else if (!current.equals(initialSpan)) {

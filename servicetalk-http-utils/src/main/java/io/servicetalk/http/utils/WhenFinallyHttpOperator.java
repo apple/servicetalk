@@ -128,7 +128,6 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
             if (response == null) {
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
-                System.err.println(Thread.currentThread().getName() + ": Response received");
                 subscriber.onSuccess(response.transformMessageBody(payload ->
                         payload.liftSync(messageBodySubscriber ->
                                 // Only the first subscriber needs to be wrapped. Followup subscribers will
@@ -139,7 +138,6 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                                         afterFinallyBehavior) : messageBodySubscriber)
                 ));
             } else {
-                System.err.println(Thread.currentThread().getName() + ": Response received after cancel");
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
                 assert state == RESPONSE_COMPLETE;
@@ -157,7 +155,6 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
 
         @Override
         public void onError(final Throwable t) {
-            System.err.println(Thread.currentThread().getName() + ": WhenFinallyHttpOperator.onError(" + t + ")");
             new Exception("WhenFinallyHttpOperator.onError(..) stack trace").printStackTrace(System.err);
             if (afterFinallyBehavior) {
                 doAfterOnError(t);
