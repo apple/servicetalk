@@ -311,12 +311,7 @@ class OpenTelemetryHttpServerFilterTest {
             Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> {
-                                span.hasKind(SpanKind.SERVER);
-                                for (AttributeKey<String> key : expected) {
-                                    span.hasAttribute(key, "set");
-                                }
-                            }));
+                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
         });
     }
 
@@ -341,12 +336,7 @@ class OpenTelemetryHttpServerFilterTest {
             Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> {
-                                span.hasKind(SpanKind.SERVER);
-                                for (AttributeKey<String> key : expected) {
-                                    span.hasAttribute(key, "set");
-                                }
-                            }));
+                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
         });
     }
 
@@ -369,12 +359,7 @@ class OpenTelemetryHttpServerFilterTest {
             Thread.sleep(SLEEP_DURATION);
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                            ta.hasSpansSatisfyingExactly(span -> {
-                                span.hasKind(SpanKind.SERVER);
-                                for (AttributeKey<String> key : expected) {
-                                    span.hasAttribute(key, "set");
-                                }
-                            }));
+                            ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
         });
     }
 
@@ -399,12 +384,13 @@ class OpenTelemetryHttpServerFilterTest {
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
-                                span.hasKind(SpanKind.SERVER);
-                                for (AttributeKey<String> key : expected) {
-                                    span.hasAttribute(key, "set");
+                                checkAttributes(useOffloading, expected, span);
+                                Attributes attributes = span.actual().getAttributes();
+                                if (useOffloading &&
+                                        attributes.get(TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY) == null &&
+                                        attributes.get(TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY) == null) {
+                                    fail("Failed to find request completion attribute");
                                 }
-                                hasOneOf(span, TestHttpLifecycleObserver.ON_REQUEST_ERROR_KEY,
-                                        TestHttpLifecycleObserver.ON_REQUEST_CANCEL_KEY);
                             }));
         });
     }
@@ -431,12 +417,7 @@ class OpenTelemetryHttpServerFilterTest {
         Thread.sleep(SLEEP_DURATION);
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
-                        ta.hasSpansSatisfyingExactly(span -> {
-                            span.hasKind(SpanKind.SERVER);
-                            for (AttributeKey<String> key : expected) {
-                                span.hasAttribute(key, "set");
-                            }
-                        }));
+                        ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -461,12 +442,17 @@ class OpenTelemetryHttpServerFilterTest {
         Thread.sleep(SLEEP_DURATION);
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
-                        ta.hasSpansSatisfyingExactly(span -> {
-                            span.hasKind(SpanKind.SERVER);
-                            for (AttributeKey<String> key : expected) {
-                                span.hasAttribute(key, "set");
-                            }
-                        }));
+                        ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
+    }
+
+    static void checkAttributes(boolean useOffloading, Set<AttributeKey<String>> expected, SpanDataAssert span) {
+        span.hasKind(SpanKind.SERVER);
+        // We're subject to race conditions when offloading so only check these when we're not.
+        if (!useOffloading) {
+            for (AttributeKey<String> key : expected) {
+                span.hasAttribute(key, "set");
+            }
+        }
     }
 
     private void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient) throws Exception {
@@ -715,15 +701,5 @@ class OpenTelemetryHttpServerFilterTest {
                         key.getKey() + ". Initial: " + initialSpan + ", current: " + current));
             }
         }
-    }
-
-    private static void hasOneOf(SpanDataAssert span, AttributeKey<String>... keys) {
-        Attributes attributes = span.actual().getAttributes();
-        for (AttributeKey<String> key : keys) {
-            if (attributes.get(key) != null) {
-                return;
-            }
-        }
-        fail("Failed to find one of attributes " + Arrays.asList(keys) + " in attributes: " + attributes);
     }
 }
