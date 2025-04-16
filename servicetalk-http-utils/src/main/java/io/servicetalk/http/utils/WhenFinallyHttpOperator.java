@@ -155,7 +155,6 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
 
         @Override
         public void onError(final Throwable t) {
-            new Exception("WhenFinallyHttpOperator.onError(..) stack trace").printStackTrace(System.err);
             if (afterFinallyBehavior) {
                 doAfterOnError(t);
             } else {

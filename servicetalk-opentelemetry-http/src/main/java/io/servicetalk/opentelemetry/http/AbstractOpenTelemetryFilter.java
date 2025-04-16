@@ -41,18 +41,14 @@ abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInflu
     }
 
     static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context) {
-        return doWithContext(responseSingle, context);
-    }
-
-    private static Single<StreamingHttpResponse> doWithContext(Single<StreamingHttpResponse> responseSingle,
-                                                               Context context) {
         return new SubscribableSingle<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
                 try (Scope ignored = context.makeCurrent()) {
-                    Single<StreamingHttpResponse> result = responseSingle.map(resp ->
-                                    resp.transformMessageBody(body -> transformBody(body, context)));
-                    SourceAdapters.toSource(result.shareContextOnSubscribe()).subscribe(subscriber);
+                    SourceAdapters.toSource(responseSingle
+                                    .map(resp -> resp.transformMessageBody(body -> transformBody(body, context)))
+                                    .shareContextOnSubscribe())
+                            .subscribe(subscriber);
                 }
             }
         };
