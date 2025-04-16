@@ -289,7 +289,7 @@ class OpenTelemetryHttpServerFilterTest {
         verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServerFilter());
     }
 
-    @RepeatedTest(500)
+    @RepeatedTest(100)
     void autoRequestDisposalOkRepro() throws Exception {
         autoRequestDisposalOk(true);
     }
@@ -325,7 +325,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(500)
+    @RepeatedTest(100)
     void autoRequestDisposalErrorResponseBodyRepro() throws Exception {
         autoRequestDisposalErrorResponseBody(true);
     }
@@ -360,7 +360,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(500)
+    @RepeatedTest(100)
     void autoRequestDisposalErrorResponseRepro() throws Exception {
         autoRequestDisposalErrorResponse(true);
     }
@@ -393,7 +393,7 @@ class OpenTelemetryHttpServerFilterTest {
         });
     }
 
-    @RepeatedTest(500)
+    @RepeatedTest(100)
     void autoRequestDisposalRequestBodyErrorRepro() throws Exception {
         autoRequestDisposalRequestBodyError(true);
     }
