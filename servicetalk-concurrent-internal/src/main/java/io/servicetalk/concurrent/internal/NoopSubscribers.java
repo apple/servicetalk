@@ -35,8 +35,6 @@ public final class NoopSubscribers {
 
     private static final class NoopPublisherSubscriber implements PublisherSource.Subscriber<Object> {
 
-        static final NoopPublisherSubscriber INSTANCE = new NoopPublisherSubscriber();
-
         private NoopPublisherSubscriber() {
             // Singleton
         }
