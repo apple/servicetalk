@@ -83,7 +83,7 @@ public final class HttpRequestAutoDrainingServiceFilter implements StreamingHttp
             final DrainTerminalSignalConsumer terminalSignalConsumer = new DrainTerminalSignalConsumer(request);
             request.transformMessageBody(body -> body.beforeSubscriber(terminalSignalConsumer));
             return delegate().handle(ctx, request, responseFactory)
-                    .liftSync(new AfterFinallyHttpOperator(terminalSignalConsumer, true));
+                    .liftSync(new AfterFinallyHttpOperator(terminalSignalConsumer));
         }
     }
 

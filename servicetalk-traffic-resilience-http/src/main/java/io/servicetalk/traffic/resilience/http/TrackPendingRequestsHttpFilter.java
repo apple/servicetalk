@@ -113,7 +113,7 @@ final class TrackPendingRequestsHttpFilter implements StreamingHttpClientFilterF
                             private void decrement() {
                                 pendingUpdater.decrementAndGet(TrackPendingRequestsHttpClientFilter.this);
                             }
-                        }, true))
+                        }))
                         .shareContextOnSubscribe();
             });
         }
@@ -166,7 +166,7 @@ final class TrackPendingRequestsHttpFilter implements StreamingHttpClientFilterF
                             private void decrement() {
                                 pendingUpdater.decrementAndGet(TrackPendingRequestsHttpServiceFilter.this);
                             }
-                        }, true))
+                        }))
                         .shareContextOnSubscribe();
             });
         }
