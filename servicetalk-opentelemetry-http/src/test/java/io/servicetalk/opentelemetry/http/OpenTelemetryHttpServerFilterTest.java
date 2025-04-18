@@ -101,8 +101,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class OpenTelemetryHttpServerFilterTest {
 
-    private static final int SLEEP_DURATION = CI ? 500 : 100;
-
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
 
@@ -308,7 +306,7 @@ class OpenTelemetryHttpServerFilterTest {
             request.trailers().set("x-request-trailer", "request-trailer");
             request.payloadBody().writeAscii("bar");
             client.request(request).toFuture().get();
-            Thread.sleep(SLEEP_DURATION);
+            sleep();
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
@@ -333,7 +331,7 @@ class OpenTelemetryHttpServerFilterTest {
                     () -> client.request(request).toFuture().get());
             assertThat(ex.getCause()).isInstanceOf(http2 ? Http2Exception.class : ClosedChannelException.class);
 
-            Thread.sleep(SLEEP_DURATION);
+            sleep();
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
@@ -356,7 +354,7 @@ class OpenTelemetryHttpServerFilterTest {
             HttpResponse resp = client.request(request).toFuture().get();
             assertThat(resp.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
 
-            Thread.sleep(SLEEP_DURATION);
+            sleep();
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
@@ -380,7 +378,7 @@ class OpenTelemetryHttpServerFilterTest {
             ExecutionException ex = assertThrows(ExecutionException.class, () -> streamingClient.request(request)
                     .flatMap(response -> response.toResponse()).toFuture().get());
             assertThat(ex.getCause()).isSameAs(DELIBERATE_EXCEPTION);
-            Thread.sleep(SLEEP_DURATION);
+            sleep();
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                             ta.hasSpansSatisfyingExactly(span -> {
@@ -414,7 +412,7 @@ class OpenTelemetryHttpServerFilterTest {
             response.payloadBody().ignoreElements().subscribe().cancel();
         });
         // For the HTTP/1.x server, we don't necessarily see the cancellation until we shutdown the server.
-        Thread.sleep(SLEEP_DURATION);
+        sleep();
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
                         ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
@@ -435,11 +433,11 @@ class OpenTelemetryHttpServerFilterTest {
             // Most endpoints will do, but this one is less likely to be racy.
             StreamingHttpRequest request = streamingClient.post("/slowhead");
             Future<StreamingHttpResponse> response = streamingClient.request(request).toFuture();
-            Thread.sleep(SLEEP_DURATION);
+            sleep();
             response.cancel(true);
         });
         // For the HTTP/1.x server, we don't necessarily see the cancellation until we shutdown the server.
-        Thread.sleep(SLEEP_DURATION);
+        sleep();
         otelTesting.assertTraces()
                 .hasTracesSatisfyingExactly(ta ->
                         ta.hasSpansSatisfyingExactly(span -> checkAttributes(useOffloading, expected, span)));
@@ -502,7 +500,7 @@ class OpenTelemetryHttpServerFilterTest {
     }
 
     private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
-                              OpenTelemetryOptions opentelemetryOptions, boolean useOffloading,
+                                                      OpenTelemetryOptions opentelemetryOptions, boolean useOffloading,
                                                       Queue<Throwable> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
@@ -700,6 +698,14 @@ class OpenTelemetryHttpServerFilterTest {
                 errorQueue.offer(new AssertionError("Found unexpected unrelated span detected in " +
                         key.getKey() + ". Initial: " + initialSpan + ", current: " + current));
             }
+        }
+    }
+
+    private static void sleep() {
+        try {
+            Thread.sleep(CI ? 500 : 100);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
         }
     }
 }

@@ -137,7 +137,6 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
         try (Scope unused = context.makeCurrent()) {
             final ScopeTracker tracker = ScopeTracker.server(context, request, instrumenter);
             try {
-                request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
                 Single<StreamingHttpResponse> response = delegate.handle(ctx, request, responseFactory);
                 return withContext(tracker.track(response), context);
             } catch (Throwable t) {

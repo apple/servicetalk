@@ -63,13 +63,15 @@ final class ScopeTracker implements TerminalSignalConsumer {
     }
 
     static ScopeTracker client(Context context, StreamingHttpRequest requestMetaData,
-                         Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
+                               Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
         return new ScopeTracker(true, context, requestMetaData, instrumenter);
     }
 
-    static ScopeTracker server(Context context, StreamingHttpRequest requestMetaData,
-                                      Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
-        return new ScopeTracker(false, context, requestMetaData, instrumenter);
+    static ScopeTracker server(Context context, StreamingHttpRequest request,
+                               Instrumenter<HttpRequestMetaData, HttpResponseMetaData> instrumenter) {
+        ScopeTracker tracker = new ScopeTracker(false, context, request, instrumenter);
+        request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
+        return tracker;
     }
 
     void onResponseMeta(final HttpResponseMetaData metaData) {
@@ -92,7 +94,7 @@ final class ScopeTracker implements TerminalSignalConsumer {
         responseFinished(CancelledRequestException.INSTANCE);
     }
 
-    void requestComplete() {
+    private void requestComplete() {
         if (STATE_UPDATER.compareAndSet(this, IDLE, REQUEST_COMPLETE)) {
             // nothing to do: it's up to the response to finish now.
         } else if (STATE_UPDATER.compareAndSet(this, RESPONSE_COMPLETE, FINISHED)) {
