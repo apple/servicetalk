@@ -842,10 +842,7 @@ public final class RetryingHttpRequesterFilter
          * @return {@code this}
          */
         public Builder maxTotalRetries(final int maxRetries) {
-            if (maxRetries <= 0) {
-                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
-            }
-            this.maxTotalRetries = maxRetries;
+            this.maxTotalRetries = ensurePositive(maxRetries, "maxRetries");
             return this;
         }
 

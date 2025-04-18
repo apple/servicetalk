@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.netty.channel.ChannelFuture;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
@@ -109,14 +110,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
-        channel.closeFuture().addListener((ChannelFutureListener) future -> {
-            Throwable t = channelError(channel);
-            if (t == null) {
-                observer.connectionClosed();
-            } else {
-                observer.connectionClosed(t);
-            }
-        });
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, connectionInfoFactory,
                 sslConfig != null, isFastOpen(channel), sslConfig));
     }
@@ -132,6 +125,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         private final Function<Channel, ConnectionInfo> connectionInfoFactory;
         private final boolean handshakeOnActive;
         private boolean tcpHandshakeComplete;
+        private boolean addedCloseListener;
         @Nullable
         private SecurityHandshakeObserver handshakeObserver;
         @Nullable
@@ -155,6 +149,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void handlerAdded(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (channel.isActive()) {
+                maybeAddChannelClosedListener(channel);
                 reportTcpHandshakeComplete(channel);
                 if (handshakeOnActive) {
                     reportSecurityHandshakeStarting(sslConfig);
@@ -163,12 +158,57 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         }
 
         @Override
+        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
+                            ChannelPromise promise) throws Exception {
+            // The connect promise is the first to be notified of problems in the connect phase, even before the
+            // channel.closeFuture(). We typically want to know about closure before we get to returning the failed
+            // response because it is the cause of the failed response, so we eagerly propagate that in the event of
+            // a failed connect promise. We add our listener to the promise before forwarding the call so we can be
+            // sure this callback is fired early in the failure pathway.
+            promise.addListener((ChannelFuture future) -> {
+                if (future.isSuccess()) {
+                    maybeAddChannelClosedListener(ctx.channel());
+                } else {
+                    addedCloseListener = true;
+                    Throwable t = channelError(future.channel());
+                    if (t == null) {
+                        t = future.cause();
+                    }
+                    if (t == null) {
+                        observer.connectionClosed();
+                    } else {
+                        observer.connectionClosed(t);
+                    }
+                }
+            });
+            super.connect(ctx, remoteAddress, localAddress, promise);
+        }
+
+        @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            reportTcpHandshakeComplete(ctx.channel());
+            Channel channel = ctx.channel();
+            maybeAddChannelClosedListener(channel);
+            reportTcpHandshakeComplete(channel);
             if (handshakeOnActive) {
                 reportSecurityHandshakeStarting(sslConfig);
             }
             ctx.fireChannelActive();
+        }
+
+        private void maybeAddChannelClosedListener(Channel channel) {
+            assert channel.eventLoop().inEventLoop();
+            if (addedCloseListener) {
+                return;
+            }
+            addedCloseListener = true;
+            channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                Throwable t = channelError(channel);
+                if (t == null) {
+                    observer.connectionClosed();
+                } else {
+                    observer.connectionClosed(t);
+                }
+            });
         }
 
         private void reportTcpHandshakeComplete(final Channel channel) {
