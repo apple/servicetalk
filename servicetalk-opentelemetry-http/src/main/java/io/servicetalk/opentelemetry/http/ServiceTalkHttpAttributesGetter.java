@@ -39,6 +39,9 @@ abstract class ServiceTalkHttpAttributesGetter
         implements NetworkAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>,
         HttpCommonAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
+    private static final String HTTP_SCHEME = "http";
+    private static final String HTTPS_SCHEME = "https";
+
     static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
             CLIENT_INSTANCE = new ClientGetter();
 
@@ -78,7 +81,7 @@ abstract class ServiceTalkHttpAttributesGetter
     @Nullable
     public final String getNetworkProtocolName(
             final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
-        return "http";
+        return HTTP_SCHEME;
     }
 
     @Override
@@ -118,14 +121,22 @@ abstract class ServiceTalkHttpAttributesGetter
             if (effectiveHostAndPort == null) {
                 return null;
             }
-            StringBuilder sb = new StringBuilder();
             String scheme = request.scheme();
-            sb.append(scheme == null ? "http" : scheme)
+            if (scheme == null) {
+                scheme = HTTP_SCHEME;
+            }
+            String requestTarget = request.requestTarget();
+            StringBuilder sb = new StringBuilder(
+                    scheme.length() + 3 +
+                    effectiveHostAndPort.hostName().length() +
+                    ((effectiveHostAndPort.port()) >= 0 ? 3 : 0) +
+                    requestTarget.length());
+            sb.append(scheme == null ? HTTP_SCHEME : scheme)
               .append("://").append(effectiveHostAndPort.hostName());
             if (effectiveHostAndPort.port() >= 0) {
                 sb.append(':').append(effectiveHostAndPort.port());
             }
-            sb.append(request.requestTarget());
+            sb.append(requestTarget);
             return sb.toString();
         }
 
@@ -146,10 +157,10 @@ abstract class ServiceTalkHttpAttributesGetter
             // No port. See if we can infer it from the scheme.
             String scheme = metaData.scheme();
             if (scheme != null) {
-                if ("http".equals(scheme)) {
+                if (HTTP_SCHEME.equals(scheme)) {
                     return 80;
                 }
-                if ("https".equals(scheme)) {
+                if (HTTPS_SCHEME.equals(scheme)) {
                     return 443;
                 }
             }
@@ -175,7 +186,7 @@ abstract class ServiceTalkHttpAttributesGetter
         @Override
         public String getUrlScheme(final HttpRequestMetaData httpRequestMetaData) {
             final String scheme = httpRequestMetaData.scheme();
-            return scheme == null ? "http" : scheme;
+            return scheme == null ? HTTP_SCHEME : scheme;
         }
 
         @Override
