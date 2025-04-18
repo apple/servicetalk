@@ -129,7 +129,7 @@ abstract class ServiceTalkHttpAttributesGetter
             StringBuilder sb = new StringBuilder(
                     scheme.length() + 3 +
                     effectiveHostAndPort.hostName().length() +
-                    ((effectiveHostAndPort.port()) >= 0 ? 3 : 0) +
+                    ((effectiveHostAndPort.port()) >= 0 ? 5 : 0) +
                     requestTarget.length());
             sb.append(scheme == null ? HTTP_SCHEME : scheme)
               .append("://").append(effectiveHostAndPort.hostName());
