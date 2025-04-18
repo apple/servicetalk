@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
@@ -18,23 +33,23 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import org.junit.jupiter.api.Test;
 
-import javax.annotation.Nullable;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class Repro {
+class ConnectionObserverEventOrderTest {
 
-    private final BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
 
     @Test
     void repro() throws Exception {
@@ -47,16 +62,15 @@ class Repro {
         final int port = hostAndPort.port();
 
         assertThrows(Exception.class, () -> {
-            try (final BlockingHttpClient client = HttpClients.forSingleAddress(hostName, port)
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(hostName, port)
                     .appendConnectionFactoryFilter(new TransportObserverInjectorFilter<>())
                     .appendClientFilter(new HttpLifecycleObserverRequesterFilter(new HttpLifecycleObserverImpl()))
                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                            .retryRetryableExceptions((req, ex) -> RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries())
+                            .retryRetryableExceptions((req, ex) ->
+                                    RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries())
                             .build())
                     .buildBlocking()) {
-                if (true) {
-                    serverContext.close(); // causes request timeout.
-                }
+                serverContext.close(); // causes connection establishment to fail.
                 HttpResponse response = client.request(client.get("/sayHello"));
                 response.payloadBody();
             }
@@ -65,18 +79,7 @@ class Repro {
         List<String> expectedEvents = Arrays.asList("onNewExchange", "onRequest", "onNewConnection",
                 "connectionClosed", "onResponseError", "onExchangeFinally");
         for (String expected : expectedEvents) {
-            assertEquals(expected, eventQueue.take().methodName);
-        }
-    }
-
-    private static final class Event {
-        final Throwable ex = new Exception();
-        final String threadName = Thread.currentThread().getName();
-        final String methodName = ex.getStackTrace()[4].getMethodName();
-
-        @Override
-        public String toString() {
-            return methodName;
+            assertEquals(expected, eventQueue.take());
         }
     }
 
@@ -104,7 +107,6 @@ class Repro {
 
                 @Override
                 public void onResponseError(Throwable cause) {
-                    System.err.println("onResponseError");
                     addEvent();
                 }
 
@@ -136,7 +138,8 @@ class Repro {
         }
     }
 
-    private final class TransportObserverInjector<R> extends DelegatingConnectionFactory<R, FilterableStreamingHttpConnection> {
+    private final class TransportObserverInjector<R> extends
+            DelegatingConnectionFactory<R, FilterableStreamingHttpConnection> {
 
         TransportObserverInjector(final ConnectionFactory<R, FilterableStreamingHttpConnection> delegate) {
             super(delegate);
@@ -196,10 +199,9 @@ class Repro {
                 addEvent();
             }
         }
-
     }
 
     private void addEvent() {
-        eventQueue.add(new Event());
+        eventQueue.add(new Exception().getStackTrace()[2].getMethodName());
     }
 }

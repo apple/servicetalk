@@ -893,7 +893,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void handlerRemoved(ChannelHandlerContext ctx) {
-            System.err.println("handlerRemoved");
             if (subscriber != null) {
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "handlerRemoved(...)"));

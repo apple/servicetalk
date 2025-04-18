@@ -142,7 +142,6 @@ public final class TcpConnector {
                                         SocketAddress localAddress, ChannelPromise promise) throws Exception {
                         ctx.pipeline().remove(this);
                         super.connect(ctx, remoteAddress, localAddress, promise);
-                        // TODO: should we add our callback _after_ the super.connect(..) call?
                         promise.addListener(f -> {
                             Throwable cause = f.cause();
                             if (cause != null) {
@@ -158,7 +157,7 @@ public final class TcpConnector {
                                 if (f instanceof ChannelFuture) {
                                     assignConnectionError(((ChannelFuture) f).channel(), cause);
                                 }
-                                connectHandler.connectFailed(cause); // TODO: this is the root of our .onError(..) call. It just so happens that when connect fails this future is completed before the channel.onClose() future.
+                                connectHandler.connectFailed(cause);
                             }
                         });
                     }

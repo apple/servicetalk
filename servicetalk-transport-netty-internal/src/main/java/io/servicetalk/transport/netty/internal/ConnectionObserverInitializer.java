@@ -162,8 +162,9 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                             ChannelPromise promise) throws Exception {
             // The connect promise is the first to be notified of problems in the connect phase, even before the
             // channel.closeFuture(). We typically want to know about closure before we get to returning the failed
-            // response because it is the cause of the failed response, so we eagerly propgate that in the event of
-            // a failed connect promise.
+            // response because it is the cause of the failed response, so we eagerly propagate that in the event of
+            // a failed connect promise. We add our listener to the promise before forwarding the call so we can be
+            // sure this callback is fired early in the failure pathway.
             promise.addListener((ChannelFuture future) -> {
                 if (future.isSuccess()) {
                     maybeAddChannelClosedListener(ctx.channel());
@@ -171,10 +172,11 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                     addedCloseListener = true;
                     Throwable t = channelError(future.channel());
                     if (t == null) {
-                        System.err.println("connectionClosed()");
+                        t = future.cause();
+                    }
+                    if (t == null) {
                         observer.connectionClosed();
                     } else {
-                        System.err.println("connectionClosed(t)");
                         observer.connectionClosed(t);
                     }
                 }
@@ -182,7 +184,19 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             super.connect(ctx, remoteAddress, localAddress, promise);
         }
 
+        @Override
+        public void channelActive(final ChannelHandlerContext ctx) {
+            Channel channel = ctx.channel();
+            maybeAddChannelClosedListener(channel);
+            reportTcpHandshakeComplete(channel);
+            if (handshakeOnActive) {
+                reportSecurityHandshakeStarting(sslConfig);
+            }
+            ctx.fireChannelActive();
+        }
+
         private void maybeAddChannelClosedListener(Channel channel) {
+            assert channel.eventLoop().inEventLoop();
             if (addedCloseListener) {
                 return;
             }
@@ -192,19 +206,9 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 if (t == null) {
                     observer.connectionClosed();
                 } else {
-                    System.err.println("connectionClosed(t)");
                     observer.connectionClosed(t);
                 }
             });
-        }
-
-        @Override
-        public void channelActive(final ChannelHandlerContext ctx) {
-            reportTcpHandshakeComplete(ctx.channel());
-            if (handshakeOnActive) {
-                reportSecurityHandshakeStarting(sslConfig);
-            }
-            ctx.fireChannelActive();
         }
 
         private void reportTcpHandshakeComplete(final Channel channel) {
