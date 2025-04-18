@@ -2070,7 +2070,7 @@ class H2PriorKnowledgeFeatureParityTest {
         }
 
         private static void onDataRead(ChannelHandlerContext ctx, Http2DataFrame data) {
-            ctx.write(new DefaultHttp2DataFrame(data.content().retainedDuplicate(), data.isEndStream()));
+            ctx.write(new DefaultHttp2DataFrame(data.content(), data.isEndStream()));
         }
 
         private void onHeadersRead(ChannelHandlerContext ctx, Http2HeadersFrame headers) {
