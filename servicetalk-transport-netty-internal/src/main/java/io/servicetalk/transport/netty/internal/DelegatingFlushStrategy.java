@@ -19,8 +19,12 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link FlushStrategy} implementation that delegates all calls to another {@link FlushStrategy}.
+ *
+ * @deprecated this class will be made package-private in the future releases. If you depend on this code, consider
+ * copying it into your codebase.
  */
-public class DelegatingFlushStrategy implements FlushStrategy {
+@Deprecated
+public class DelegatingFlushStrategy implements FlushStrategy { // FIXME: 0.43 - make this class pkg-private and final
 
     private final FlushStrategy delegate;
 
