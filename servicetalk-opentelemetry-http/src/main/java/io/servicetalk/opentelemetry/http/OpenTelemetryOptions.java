@@ -18,10 +18,10 @@ package io.servicetalk.opentelemetry.http;
 
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.OperationMetrics;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractorBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientMetrics;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractorBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerMetrics;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractorBuilder;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExtractorBuilder;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -32,7 +32,6 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,9 +43,13 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
+import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
+import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilter.PEER_SERVICE;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
@@ -100,8 +103,8 @@ class OpenTelemetryHttpRequestFilterTest {
 
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
-                            .isEqualTo("http"));
+                        assertThat(ta.getSpan(0).getAttributes().get(NETWORK_PROTOCOL_NAME))
+                            .isNull()); // only needs to be set if != http
             }
         }
     }
@@ -132,15 +135,18 @@ class OpenTelemetryHttpRequestFilterTest {
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
                         SpanData span = ta.getSpan(0);
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
+                        assertThat(span.getAttributes().get(HTTP_REQUEST_METHOD))
                             .isEqualTo("GET");
-                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
-                            .isGreaterThan(0);
-                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_VERSION))
+                        // This is deprecated: the recommended thing to do is capture the header. The real intent is
+                        // likely to use 'http.response.body.size' which is a 'development' stage attribute.
+                        // These are in the instrumentation-api-incubator package, which is still considered alpha.
+                        //  assertThat(span.getAttributes().get(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH))
+                        //     .isGreaterThan(0);
+                        assertThat(span.getAttributes().get(NETWORK_PROTOCOL_VERSION))
                             .isEqualTo("1.1");
-                        assertThat(span.getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
-                            .isEqualTo("http");
-                        assertThat(span.getAttributes().get(SemanticAttributes.PEER_SERVICE))
+                        assertThat(span.getAttributes().get(NETWORK_PROTOCOL_NAME))
+                            .isNull(); // this attribute is optional unless it's something other than 'http'
+                        assertThat(span.getAttributes().get(PEER_SERVICE))
                             .isEqualTo("testClient");
                         assertThat(span.getAttributes()
                             .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
@@ -191,9 +197,9 @@ class OpenTelemetryHttpRequestFilterTest {
                         .hasTracesSatisfyingExactly(ta -> {
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
                                     .isEqualTo("serviceTalk");
-                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
-                                .isEqualTo("http");
                             assertThat(ta.getSpan(1).getParentSpanId()).isEqualTo(ta.getSpan(0).getSpanId());
+                            assertThat(ta.getSpan(1).getAttributes().get(NETWORK_PROTOCOL_NAME))
+                                .isNull(); // only needs to be set if != http
                             assertThat(ta.getSpan(2).getParentSpanId()).isEqualTo(ta.getSpan(1).getSpanId());
                         });
             }
@@ -231,10 +237,10 @@ class OpenTelemetryHttpRequestFilterTest {
                     .hasTracesSatisfyingExactly(ta -> {
                         SpanData span = ta.getSpan(0);
                         assertThat(span.getAttributes()
-                            .get(AttributeKey.stringArrayKey("http.response.header.my_header")))
+                            .get(AttributeKey.stringArrayKey("http.response.header.my-header")))
                             .isEqualTo(singletonList("header-value"));
                         assertThat(span.getAttributes()
-                            .get(AttributeKey.stringArrayKey("http.request.header.some_request_header")))
+                            .get(AttributeKey.stringArrayKey("http.request.header.some-request-header")))
                             .isEqualTo(singletonList("request-header-value"));
                     });
             }
