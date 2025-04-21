@@ -26,10 +26,18 @@ import org.apache.logging.log4j.spi.ReadOnlyThreadContextMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MdcCapturedContextProvider implements CapturedContextProvider {
+/**
+ * A {@link CapturedContextProvider} implementation to correctly propagate MDC context.
+ * Note: this class should not be used directly: it is only intended to be service loaded by ServiceTalk.
+ */
+public final class MdcCapturedContextProvider implements CapturedContextProvider {
 
     private final boolean enabled;
 
+    /**
+     * Create a new {@link CapturedContextProvider} for MDC.
+     * Note: this class should not be used directly: it is only intended to be service loaded by ServiceTalk.
+     */
     public MdcCapturedContextProvider() {
         enabled = shouldEnableMdcCapture();
     }

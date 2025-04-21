@@ -21,12 +21,6 @@
     </Console>
   </Appenders>
 
-<!--  We add the DynamicThresholdFilter to surface cyclical dependencies between MDC logging and the AsyncContext -->
-  <DynamicThresholdFilter key="USER_ROLE" defaultThreshold="ERROR" onMatch="ACCEPT" onMismatch="DENY">
-    <KeyValuePair key="ADMIN" value="INFO"/>
-    <KeyValuePair key="GUEST" value="DEBUG"/>
-  </DynamicThresholdFilter>
-
   <Loggers>
     <Logger name="io.netty" level="info"/>
     <Root level="debug">
