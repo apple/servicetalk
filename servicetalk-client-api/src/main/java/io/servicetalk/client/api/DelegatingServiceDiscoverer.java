@@ -15,12 +15,10 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.Collection;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ServiceDiscoverer} that delegates all methods to another {@link ServiceDiscoverer}.
@@ -30,7 +28,7 @@ import static java.util.Objects.requireNonNull;
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link #discover(Object)}.
  */
 public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
-        E extends ServiceDiscovererEvent<ResolvedAddress>>
+        E extends ServiceDiscovererEvent<ResolvedAddress>> extends DelegatingListenableAsyncCloseable
         implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> {
     private final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate;
 
@@ -40,7 +38,8 @@ public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      * @param delegate {@link ServiceDiscoverer} to which all methods are delegated.
      */
     public DelegatingServiceDiscoverer(final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate) {
-        this.delegate = requireNonNull(delegate);
+        super(delegate);
+        this.delegate = delegate;
     }
 
     /**
@@ -48,6 +47,7 @@ public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      *
      * @return Delegate {@link ServiceDiscoverer}.
      */
+    @Override
     protected final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate() {
         return delegate;
     }
@@ -55,30 +55,5 @@ public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
     @Override
     public Publisher<Collection<E>> discover(final UnresolvedAddress address) {
         return delegate.discover(address);
-    }
-
-    @Override
-    public Completable onClose() {
-        return delegate.onClose();
-    }
-
-    @Override
-    public Completable onClosing() {
-        return delegate.onClosing();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return delegate.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return delegate.closeAsyncGracefully();
-    }
-
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
     }
 }
