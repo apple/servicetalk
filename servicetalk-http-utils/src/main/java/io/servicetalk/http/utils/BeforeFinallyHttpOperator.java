@@ -53,7 +53,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  *
  * @see AfterFinallyHttpOperator
  */
-public final class BeforeFinallyHttpOperator extends WhenFinallyHttpOperator {
+public final class BeforeFinallyHttpOperator extends AbstractWhenFinallyHttpOperator {
 
     /**
      * Create a new instance.

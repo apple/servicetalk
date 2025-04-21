@@ -34,21 +34,22 @@ import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
+abstract class AbstractWhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
     private final TerminalSignalConsumer whenFinally;
     private final boolean discardEventsAfterCancel;
     private final boolean afterFinallyBehavior;
 
-    WhenFinallyHttpOperator(final TerminalSignalConsumer whenFinally, boolean discardEventsAfterCancel,
-                            boolean afterFinallyBehavior) {
+    AbstractWhenFinallyHttpOperator(final TerminalSignalConsumer whenFinally, boolean discardEventsAfterCancel,
+                                    boolean afterFinallyBehavior) {
         this.whenFinally = requireNonNull(whenFinally);
         this.discardEventsAfterCancel = discardEventsAfterCancel;
         this.afterFinallyBehavior = afterFinallyBehavior;
     }
 
     @Override
-    public final SingleSource.Subscriber<? super StreamingHttpResponse> apply(
+    // FIXME: 0.43 - consider making this method final (breaks binary compatibility)
+    public SingleSource.Subscriber<? super StreamingHttpResponse> apply(
             final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
         // Here we avoid calling beforeFinally#onCancel when we get a cancel() on the Single after we have handed out
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
@@ -274,8 +275,7 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                 }
 
                 private void tryWhenFinallyCancel() {
-                    if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
-                            PROCESSING_PAYLOAD, TERMINATED)) {
+                    if (stateUpdater.compareAndSet(MessageBodySubscriber.this, PROCESSING_PAYLOAD, TERMINATED)) {
                         whenFinally.cancel();
                     }
                 }
@@ -300,13 +300,13 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
                     }
 
                     for (;;) {
-                        final int state = WhenFinallyHttpOperator.MessageBodySubscriber.this.state;
+                        final int state = MessageBodySubscriber.this.state;
                         if (state == PROCESSING_PAYLOAD) {
                             if (tryCancelFromState(PROCESSING_PAYLOAD)) {
                                 break;
                             }
                         } else if (state == DELIVERING_PAYLOAD) {
-                            if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
+                            if (stateUpdater.compareAndSet(MessageBodySubscriber.this,
                                     DELIVERING_PAYLOAD, AWAITING_CANCEL)) {
                                 break;
                             }
@@ -473,8 +473,7 @@ class WhenFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, S
         }
 
         private boolean tryCancelFromState(final int expectedState) {
-            if (stateUpdater.compareAndSet(WhenFinallyHttpOperator.MessageBodySubscriber.this,
-                    expectedState, TERMINATED)) {
+            if (stateUpdater.compareAndSet(this, expectedState, TERMINATED)) {
                 assert subscription != null;
                 if (afterFinallyBehavior) {
                     try {
