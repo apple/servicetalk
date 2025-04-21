@@ -47,7 +47,7 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
      *
      * @return the delegate {@link HttpServiceContext}.
      */
-    public HttpServiceContext delegate() {
+    public HttpServiceContext delegate() {  // FIXME: 0.43 - consider making this method protected
         return delegate;
     }
 

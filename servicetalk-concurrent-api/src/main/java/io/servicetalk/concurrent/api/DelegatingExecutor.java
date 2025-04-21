@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An {@link Executor} that simply delegates all calls to another {@link Executor}.
  */
-public abstract class DelegatingExecutor implements Executor {
+public class DelegatingExecutor implements Executor {
 
     private final Executor delegate;
 
