@@ -15,18 +15,20 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link ConnectionContext} implementation that delegates all calls to a provided {@link ConnectionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
  */
-public class DelegatingConnectionContext extends DelegatingListenableAsyncCloseable implements ConnectionContext {
+public class DelegatingConnectionContext implements ConnectionContext {
 
     private final ConnectionContext delegate;
 
@@ -36,8 +38,7 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
      * @param delegate {@link ConnectionContext} to delegate all calls.
      */
     public DelegatingConnectionContext(final ConnectionContext delegate) {
-        super(delegate);
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     /**
@@ -45,7 +46,6 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
      *
      * @return the {@link ConnectionContext} that this class delegates to.
      */
-    @Override
     protected ConnectionContext delegate() {
         return delegate;
     }
@@ -91,6 +91,26 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
     @Override
     public ConnectionContext parent() {
         return delegate.parent();
+    }
+
+    @Override
+    public Completable onClose() {
+        return delegate.onClose();
+    }
+
+    @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return delegate.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
     }
 
     @Override

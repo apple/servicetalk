@@ -16,14 +16,15 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Implementation of {@link FilterableStreamingHttpLoadBalancedConnection} that delegates all methods.
  */
-public class DelegatingFilterableStreamingHttpLoadBalancedConnection extends DelegatingListenableAsyncCloseable
+public class DelegatingFilterableStreamingHttpLoadBalancedConnection
         implements FilterableStreamingHttpLoadBalancedConnection {
     private final FilterableStreamingHttpLoadBalancedConnection delegate;
 
@@ -33,13 +34,7 @@ public class DelegatingFilterableStreamingHttpLoadBalancedConnection extends Del
      */
     public DelegatingFilterableStreamingHttpLoadBalancedConnection(
             final FilterableStreamingHttpLoadBalancedConnection delegate) {
-        super(delegate);
-        this.delegate = delegate;
-    }
-
-    @Override
-    protected FilterableStreamingHttpLoadBalancedConnection delegate() {
-        return delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
@@ -60,6 +55,26 @@ public class DelegatingFilterableStreamingHttpLoadBalancedConnection extends Del
     @Override
     public int score() {
         return delegate.score();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return delegate.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
+
+    @Override
+    public Completable onClose() {
+        return delegate.onClose();
+    }
+
+    @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
     }
 
     @Override

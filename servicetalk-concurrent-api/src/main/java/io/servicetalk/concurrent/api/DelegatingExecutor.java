@@ -23,10 +23,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An {@link Executor} that simply delegates all calls to another {@link Executor}.
  */
-public abstract class DelegatingExecutor extends DelegatingListenableAsyncCloseable implements Executor {
+public abstract class DelegatingExecutor implements Executor {
 
     private final Executor delegate;
 
@@ -36,8 +38,12 @@ public abstract class DelegatingExecutor extends DelegatingListenableAsyncClosea
      * @param delegate {@link Executor} to delegate all calls to.
      */
     protected DelegatingExecutor(final Executor delegate) {
-        super(delegate);
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{delegate=" + delegate() + "}";
     }
 
     /**
@@ -45,7 +51,6 @@ public abstract class DelegatingExecutor extends DelegatingListenableAsyncClosea
      *
      * @return The delegate {@link Executor} used.
      */
-    @Override
     protected Executor delegate() {
         return delegate;
     }
@@ -99,5 +104,25 @@ public abstract class DelegatingExecutor extends DelegatingListenableAsyncClosea
     @Override
     public long currentTime(TimeUnit unit) {
         return delegate.currentTime(unit);
+    }
+
+    @Override
+    public Completable onClose() {
+        return delegate.onClose();
+    }
+
+    @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return delegate.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
     }
 }
