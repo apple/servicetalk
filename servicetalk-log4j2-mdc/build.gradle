@@ -31,6 +31,7 @@ afterEvaluate {
 }
 
 dependencies {
+  api project(":servicetalk-concurrent-api")
   api project(":servicetalk-log4j2-mdc-utils")
 
   implementation project(":servicetalk-annotations")
@@ -41,4 +42,6 @@ dependencies {
   testImplementation "org.apache.logging.log4j:log4j-api"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
 }

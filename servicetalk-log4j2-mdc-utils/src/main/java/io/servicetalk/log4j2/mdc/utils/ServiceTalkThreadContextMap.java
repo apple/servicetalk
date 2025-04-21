@@ -231,7 +231,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         return getCopyOrNull(getStorage(), true);
     }
 
-    static Map<String, String> getStorage() {
+    protected Map<String, String> getStorage() {
         final ContextMap context = AsyncContext.context();
         Map<String, String> ret = context.get(key);
         if (ret == null) {

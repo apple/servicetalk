@@ -17,8 +17,22 @@ package io.servicetalk.log4j2.mdc;
 
 import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
- * Empty subclass to differentiate uses of MDC.
+ * Subclass which uses the {@link io.servicetalk.concurrent.api.CapturedContext} mechanism for propagation.
  */
 public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContextMap {
+
+    static final ThreadLocal<Map<String, String>> CONTEXT_STORAGE =
+            ThreadLocal.withInitial(() ->
+                // better be thread safe, since the context may be used in multiple operators which may use different
+                // threads MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
+                new ConcurrentHashMap<>(4));
+
+    @Override
+    protected Map<String, String> getStorage() {
+        return CONTEXT_STORAGE.get();
+    }
 }
