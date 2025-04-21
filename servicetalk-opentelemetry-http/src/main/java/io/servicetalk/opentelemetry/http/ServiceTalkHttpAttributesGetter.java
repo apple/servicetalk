@@ -131,10 +131,12 @@ abstract class ServiceTalkHttpAttributesGetter
                     effectiveHostAndPort.hostName().length() +
                     ((effectiveHostAndPort.port()) >= 0 ? 5 : 0) +
                     requestTarget.length());
-            sb.append(scheme == null ? HTTP_SCHEME : scheme)
-              .append("://").append(effectiveHostAndPort.hostName());
+            sb.append(scheme)
+                    .append("://")
+                    .append(effectiveHostAndPort.hostName());
             if (effectiveHostAndPort.port() >= 0) {
-                sb.append(':').append(effectiveHostAndPort.port());
+                sb.append(':')
+                        .append(effectiveHostAndPort.port());
             }
             sb.append(requestTarget);
             return sb.toString();
