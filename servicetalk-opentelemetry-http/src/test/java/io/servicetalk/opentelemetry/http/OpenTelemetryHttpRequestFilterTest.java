@@ -188,18 +188,14 @@ class OpenTelemetryHttpRequestFilterTest {
                             ta.hasTraceId(serverSpanState.getTraceId()));
 
                     otelTesting.assertTraces()
-                        .hasTracesSatisfyingExactly(ta ->
-                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
-                                .isEqualTo("http"));
-                        otelTesting.assertTraces()
-                        .hasTracesSatisfyingExactly(ta ->
+                        .hasTracesSatisfyingExactly(ta -> {
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
-                            .isEqualTo("serviceTalk"));
-                SpanData firstSpan = otelTesting.getSpans().get(0);
-                SpanData secondSpan = otelTesting.getSpans().get(1);
-                SpanData thirdSpan = otelTesting.getSpans().get(2);
-                assertThat(firstSpan.getParentSpanId()).isEqualTo(secondSpan.getSpanId());
-                assertThat(secondSpan.getParentSpanId()).isEqualTo(thirdSpan.getSpanId());
+                                    .isEqualTo("serviceTalk");
+                            assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.NET_PROTOCOL_NAME))
+                                .isEqualTo("http");
+                            assertThat(ta.getSpan(1).getParentSpanId()).isEqualTo(ta.getSpan(0).getSpanId());
+                            assertThat(ta.getSpan(2).getParentSpanId()).isEqualTo(ta.getSpan(1).getSpanId());
+                        });
             }
         }
     }
