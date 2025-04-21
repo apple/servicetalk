@@ -16,7 +16,7 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -25,7 +25,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter.CONNECTION_FACTORY_CONTEXT_MAP_KEY;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ConnectionFactory} that delegates all methods to another {@link ConnectionFactory}.
@@ -34,7 +33,8 @@ import static java.util.Objects.requireNonNull;
  * @param <C> The type of connections created by this factory.
  */
 public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
-        implements ConnectionFactory<ResolvedAddress, C> {
+        extends DelegatingListenableAsyncCloseable implements ConnectionFactory<ResolvedAddress, C> {
+
     private final ConnectionFactory<ResolvedAddress, C> delegate;
 
     /**
@@ -43,7 +43,18 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
      * @param delegate {@link ConnectionFactory} to which all methods are delegated.
      */
     public DelegatingConnectionFactory(final ConnectionFactory<ResolvedAddress, C> delegate) {
-        this.delegate = requireNonNull(delegate);
+        super(delegate);
+        this.delegate = delegate;
+    }
+
+    /**
+     * Returns the {@link ConnectionFactory} delegate.
+     *
+     * @return Delegate {@link ConnectionFactory}.
+     */
+    @Override
+    protected final ConnectionFactory<ResolvedAddress, C> delegate() {
+        return delegate;
     }
 
     @Deprecated
@@ -61,34 +72,5 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
             }
             return newConnection(resolvedAddress, observer).shareContextOnSubscribe();
         });
-    }
-
-    @Override
-    public Completable onClose() {
-        return delegate.onClose();
-    }
-
-    @Override
-    public Completable onClosing() {
-        return delegate.onClosing();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return delegate.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return delegate.closeAsyncGracefully();
-    }
-
-    /**
-     * Returns the {@link ConnectionFactory} delegate.
-     *
-     * @return Delegate {@link ConnectionFactory}.
-     */
-    protected final ConnectionFactory<ResolvedAddress, C> delegate() {
-        return delegate;
     }
 }
