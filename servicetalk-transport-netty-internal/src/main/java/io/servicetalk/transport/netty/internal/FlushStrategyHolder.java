@@ -38,6 +38,7 @@ public final class FlushStrategyHolder {
      *
      * @param flushStrategy Initial {@link FlushStrategy} to use.
      */
+    @SuppressWarnings("deprecation")
     public FlushStrategyHolder(final FlushStrategy flushStrategy) {
         // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
         originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);

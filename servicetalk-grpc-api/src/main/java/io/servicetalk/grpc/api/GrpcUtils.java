@@ -86,6 +86,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.api.GrpcStatusException.serverCatchAllShouldLog;
 import static io.servicetalk.grpc.api.GrpcStatusException.toGrpcStatus;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
@@ -197,14 +198,15 @@ final class GrpcUtils {
                                                  final LazyContextMapSupplier responseContext,
                                                  final Publisher<T> payload,
                                                  final GrpcStreamingSerializer<T> serializer,
-                                                 final BufferAllocator allocator) {
+                                                 final BufferAllocator allocator,
+                                                 final MethodDescriptor<?, ?> methodDescriptor) {
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response, contentType, encoding, acceptedEncoding);
         if (responseContext.isInitialized()) {
             response.context(responseContext.get());
         }
         return response.payloadBody(serializer.serialize(payload, allocator))
-                .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
+                .transform(new GrpcStatusUpdater(allocator, methodDescriptor));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
@@ -266,13 +268,17 @@ final class GrpcUtils {
         }
     }
 
-    static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
+    static GrpcStatus setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
+        final GrpcStatus status;
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
-            setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
+            status = grpcStatusException.status();
+            setStatus(trailers, status, grpcStatusException.applicationStatus(), allocator);
         } else {
-            setStatus(trailers, toGrpcStatus(cause), null, allocator);
+            status = toGrpcStatus(cause);
+            setStatus(trailers, status, null, allocator);
         }
+        return status;
     }
 
     private static void validateStatusCode(HttpResponseStatus status) {
@@ -797,28 +803,33 @@ final class GrpcUtils {
         }
     }
 
-    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
+    private static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
         private static final Logger LOGGER = LoggerFactory.getLogger(GrpcStatusUpdater.class);
 
         private final BufferAllocator allocator;
-        private final GrpcStatus successStatus;
+        private final MethodDescriptor<?, ?> methodDescriptor;
 
-        GrpcStatusUpdater(final BufferAllocator allocator, final GrpcStatus successStatus) {
+        GrpcStatusUpdater(final BufferAllocator allocator, final MethodDescriptor<?, ?> methodDescriptor) {
             this.allocator = allocator;
-            this.successStatus = successStatus;
+            this.methodDescriptor = methodDescriptor;
         }
 
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            setStatus(trailers, successStatus, null, allocator);
+            setStatus(trailers, STATUS_OK, null, allocator);
             return trailers;
         }
 
         @Override
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
-            setStatus(trailers, cause, allocator);
+            GrpcStatus status = setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
-            LOGGER.debug("Converted an exception into grpc-status: {}", trailers.get(GRPC_STATUS), cause);
+            String msg = "Exception from response payload for a request to {} was converted to grpc-status={}";
+            if (!(cause instanceof GrpcStatusException) && serverCatchAllShouldLog(cause)) {
+                LOGGER.error(msg, methodDescriptor.httpPath(), status.code(), cause);
+            } else {
+                LOGGER.debug(msg, methodDescriptor.httpPath(), status.code(), cause);
+            }
             return trailers;
         }
     }
