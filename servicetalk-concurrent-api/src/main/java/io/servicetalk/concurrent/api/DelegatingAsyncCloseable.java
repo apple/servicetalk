@@ -40,7 +40,7 @@ public class DelegatingAsyncCloseable<T extends AsyncCloseable> implements Async
      *
      * @return the {@link T} subtype of {@link AsyncCloseable} that this class delegates to.
      */
-    protected T delegate() {
+    protected T delegate() {    // FIXME: 0.43 - consider making this method `final`
         return delegate;
     }
 
