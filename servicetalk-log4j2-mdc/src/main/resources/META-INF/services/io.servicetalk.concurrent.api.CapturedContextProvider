@@ -1,1 +1,1 @@
-io.servicetalk.log4j2.mdc.MdcCapturedContextProvider
+io.servicetalk.log4j2.mdc.DefaultMdcCapturedContextProvider

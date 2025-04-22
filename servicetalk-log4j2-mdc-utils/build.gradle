@@ -18,10 +18,10 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api platform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
+  api project(":servicetalk-concurrent-api")
   api "org.apache.logging.log4j:log4j-api"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-context-api")
 
   runtimeOnly "org.apache.logging.log4j:log4j-core"

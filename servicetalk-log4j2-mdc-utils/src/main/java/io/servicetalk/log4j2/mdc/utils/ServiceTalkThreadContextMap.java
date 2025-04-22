@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
@@ -53,8 +54,19 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
             " The %s MDC adapters should not be" +
             " loaded at the same time. Please exclude one from your dependencies.%n";
 
+    private static final String ENABLE_PROPERTY_NAME = "io.servicetalk.log4j2.mdc.capturedContextStorage";
+    private static final boolean DEFAULT_PROPERTY_VALUE = true;
+    static final ThreadLocal<ConcurrentMap<String, String>> CONTEXT_STORAGE =
+            ThreadLocal.withInitial(() ->
+                    // better be thread safe, since the context may be used in multiple operators which may use different
+                    // threads MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
+                    new ConcurrentHashMap<>(4));
+
+    private final boolean useLocalStorage;
+
     public ServiceTalkThreadContextMap() {
         detectPossibleConflicts();
+        useLocalStorage = initUseLocalStorage();
     }
 
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
@@ -231,7 +243,14 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
         return getCopyOrNull(getStorage(), true);
     }
 
-    protected Map<String, String> getStorage() {
+    boolean useLocalStorage() {
+        return useLocalStorage;
+    }
+
+    final Map<String, String> getStorage() {
+        if (useLocalStorage()) {
+            return CONTEXT_STORAGE.get();
+        }
         final ContextMap context = AsyncContext.context();
         Map<String, String> ret = context.get(key);
         if (ret == null) {
@@ -270,5 +289,10 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
     @Nullable
     private static String unwrapNull(String value) {
         return value == NULL_STRING ? null : value;
+    }
+
+    private static boolean initUseLocalStorage() {
+        String propertyValue = System.getProperty(ENABLE_PROPERTY_NAME);
+        return propertyValue == null ? DEFAULT_PROPERTY_VALUE : Boolean.parseBoolean(propertyValue);
     }
 }

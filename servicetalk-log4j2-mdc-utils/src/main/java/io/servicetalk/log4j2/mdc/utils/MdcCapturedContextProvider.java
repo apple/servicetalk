@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.log4j2.mdc;
+package io.servicetalk.log4j2.mdc.utils;
 
 import io.servicetalk.concurrent.api.CapturedContext;
 import io.servicetalk.concurrent.api.CapturedContextProvider;
@@ -28,27 +28,25 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * A {@link CapturedContextProvider} implementation to correctly propagate MDC context.
- * Note: this class should not be used directly: it is only intended to be service loaded by ServiceTalk.
  */
-public final class MdcCapturedContextProvider implements CapturedContextProvider {
+public abstract class MdcCapturedContextProvider implements CapturedContextProvider {
 
     private final boolean enabled;
 
     /**
      * Create a new {@link CapturedContextProvider} for MDC.
-     * Note: this class should not be used directly: it is only intended to be service loaded by ServiceTalk.
      */
     public MdcCapturedContextProvider() {
         enabled = shouldEnableMdcCapture();
     }
 
     @Override
-    public CapturedContext captureContext(CapturedContext underlying) {
+    public final CapturedContext captureContext(CapturedContext underlying) {
         return enabled ? new MdcCapturedContext(underlying, getCurrent()) : underlying;
     }
 
     @Override
-    public CapturedContext captureContextCopy(CapturedContext underlying) {
+    public final CapturedContext captureContextCopy(CapturedContext underlying) {
         return enabled ? new MdcCapturedContext(underlying, getCurrentCopy()) : underlying;
     }
 
@@ -80,18 +78,18 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
     }
 
     private static ConcurrentMap<String, String> getCurrent() {
-        return DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
+        return ServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
     }
 
     private static ConcurrentMap<String, String> getCurrentCopy() {
-        ConcurrentMap<String, String> current = DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
+        ConcurrentMap<String, String> current = ServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
         ConcurrentMap<String, String> result = new ConcurrentHashMap<>(Math.max(current.size(), 4));
         result.putAll(current);
         return result;
     }
 
     private static void setCurrent(ConcurrentMap<String, String> storage) {
-        DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.set(storage);
+        ServiceTalkThreadContextMap.CONTEXT_STORAGE.set(storage);
     }
 
     // TODO: we could attempt a 'slow path' where we can copy and propagate values over whatever MDC context provider
@@ -99,8 +97,8 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
     private static boolean shouldEnableMdcCapture() {
         ReadOnlyThreadContextMap implementation = ThreadContext.getThreadContextMap();
-        if (implementation instanceof DefaultServiceTalkThreadContextMap) {
-            return ((DefaultServiceTalkThreadContextMap) implementation).useLocalStorage;
+        if (implementation instanceof ServiceTalkThreadContextMap) {
+            return ((ServiceTalkThreadContextMap) implementation).useLocalStorage();
         }
         System.err.println("Incompatible MDC ThreadContext adapter detected (" +
                 implementation.getClass().getName() + "). ServiceTalk MDC propagation will be disabled.");

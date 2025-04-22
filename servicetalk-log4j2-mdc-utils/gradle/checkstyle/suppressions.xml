@@ -21,6 +21,8 @@
 <suppressions>
   <suppress id="ConsolePrint"
             files="io[\\/]servicetalk[\\/]log4j2[\\/]mdc[\\/]utils[\\/]ServiceTalkThreadContextMap.java"/>
+  <suppress id="ConsolePrint"
+            files="io[\\/]servicetalk[\\/]log4j2[\\/]mdc[\\/]utils[\\/]MdcCapturedContextProvider.java"/>
   <suppress checks="LineLength"
             files="io[\\/]servicetalk[\\/]log4j2[\\/]mdc[\\/]utils[\\/]ServiceTalkThreadContextMap.java"/>
 </suppressions>

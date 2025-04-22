@@ -24,8 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
-import java.util.Map;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -55,49 +53,32 @@ class ServiceTalkThreadContextMapLog4jProviderTest {
 
     @Test
     void withoutSharingMDCContextIsCopied() throws Exception {
-        assertThat(runWithMdc().toFuture().get().fooString, nullValue());
+        assertThat(runWithMdc().toFuture().get(), nullValue());
         MDC.put(FOO_STRING, FOO_STRING);
-        Result result = runWithMdc().toFuture().get();
-        assertThat(result.fooString, equalTo(FOO_STRING));
-        assertThat(result.contextInstance, not(sameInstance(currentContext())));
+        String result = runWithMdc().toFuture().get();
+        assertThat(result, equalTo(FOO_STRING));
         assertThat(MDC.get(FOO_STRING), equalTo(FOO_STRING));
         assertThat(MDC.get(BAR_STRING), nullValue());
     }
 
     @Test
     void withSharingMDCContextIsShared() throws Exception {
-        assertThat(runWithMdc().toFuture().get().fooString, nullValue());
+        assertThat(runWithMdc().toFuture().get(), nullValue());
         MDC.put(FOO_STRING, FOO_STRING);
-        Result result = runWithMdc().shareContextOnSubscribe().toFuture().get();
-        assertThat(result.fooString, equalTo(FOO_STRING));
-        assertThat(result.contextInstance, sameInstance(currentContext()));
+        String result = runWithMdc().shareContextOnSubscribe().toFuture().get();
+        assertThat(result, equalTo(FOO_STRING));
         assertThat(MDC.get(FOO_STRING), nullValue());
         assertThat(MDC.get(BAR_STRING), equalTo(BAR_STRING));
     }
 
-    private static Single<Result> runWithMdc() {
+    private static Single<String> runWithMdc() {
         Thread callingThread = Thread.currentThread();
         return Executors.global().submitCallable(() -> () -> {
             assertThat(callingThread, not(sameInstance(Thread.currentThread())));
-            Map<?, ?> context = currentContext();
             String result = MDC.get(FOO_STRING);
             MDC.clear();
             MDC.put(BAR_STRING, BAR_STRING);
-            return new Result(context, result);
+            return result;
         });
-    }
-
-    private static final class Result {
-        final Map<?, ?> contextInstance;
-        final String fooString;
-
-        Result(Map<?, ?> contextInstance, String fooString) {
-            this.contextInstance = contextInstance;
-            this.fooString = fooString;
-        }
-    }
-
-    private static Map<String, String> currentContext() {
-        return DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
     }
 }

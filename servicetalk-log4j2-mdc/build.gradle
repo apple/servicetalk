@@ -31,14 +31,13 @@ afterEvaluate {
 }
 
 dependencies {
-  api project(":servicetalk-concurrent-api")
   api project(":servicetalk-log4j2-mdc-utils")
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-context-api")
   implementation "org.apache.logging.log4j:log4j-core"
 
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-concurrent-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.apache.logging.log4j:log4j-api"
   testImplementation "org.junit.jupiter:junit-jupiter-api"

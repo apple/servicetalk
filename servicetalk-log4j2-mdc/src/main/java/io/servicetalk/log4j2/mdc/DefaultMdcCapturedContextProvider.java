@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package io.servicetalk.log4j2.mdc;
 
-import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
+import io.servicetalk.log4j2.mdc.utils.MdcCapturedContextProvider;
 
 /**
  * Empty subclass to differentiate uses of MDC.
  * Note: this is intended to be service-loaded and not instantiated directly.
  */
-public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContextMap {
+public final class DefaultMdcCapturedContextProvider extends MdcCapturedContextProvider {
 }
