@@ -28,9 +28,9 @@ import java.util.Collection;
  * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link #discover(Object)}.
  */
 public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
-        E extends ServiceDiscovererEvent<ResolvedAddress>> extends DelegatingListenableAsyncCloseable
+        E extends ServiceDiscovererEvent<ResolvedAddress>>
+        extends DelegatingListenableAsyncCloseable<ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E>>
         implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> {
-    private final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate;
 
     /**
      * Creates a new instance.
@@ -39,21 +39,20 @@ public class DelegatingServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      */
     public DelegatingServiceDiscoverer(final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
     /**
-     * Returns the {@link ServiceDiscoverer} delegate.
+     * Get the {@link ServiceDiscoverer} that this class delegates to.
      *
-     * @return Delegate {@link ServiceDiscoverer}.
+     * @return the {@link ServiceDiscoverer} that this class delegates to.
      */
     @Override
     protected final ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, E> delegate() {
-        return delegate;
+        return super.delegate();
     }
 
     @Override
     public Publisher<Collection<E>> discover(final UnresolvedAddress address) {
-        return delegate.discover(address);
+        return delegate().discover(address);
     }
 }

@@ -26,9 +26,8 @@ import javax.net.ssl.SSLSession;
  * A {@link ConnectionContext} implementation that delegates all calls to a provided {@link ConnectionContext}. Any of
  * the methods can be overridden by implementations to change the behavior.
  */
-public class DelegatingConnectionContext extends DelegatingListenableAsyncCloseable implements ConnectionContext {
-
-    private final ConnectionContext delegate;
+public class DelegatingConnectionContext extends DelegatingListenableAsyncCloseable<ConnectionContext>
+        implements ConnectionContext {
 
     /**
      * New instance.
@@ -37,7 +36,6 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
      */
     public DelegatingConnectionContext(final ConnectionContext delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
     /**
@@ -47,54 +45,54 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
      */
     @Override
     protected ConnectionContext delegate() {
-        return delegate;
+        return super.delegate();
     }
 
     @Override
     public SocketAddress localAddress() {
-        return delegate.localAddress();
+        return delegate().localAddress();
     }
 
     @Override
     public SocketAddress remoteAddress() {
-        return delegate.remoteAddress();
+        return delegate().remoteAddress();
     }
 
     @Nullable
     @Override
     public SslConfig sslConfig() {
-        return delegate.sslConfig();
+        return delegate().sslConfig();
     }
 
     @Nullable
     @Override
     public SSLSession sslSession() {
-        return delegate.sslSession();
+        return delegate().sslSession();
     }
 
     @Override
     public ExecutionContext<?> executionContext() {
-        return delegate.executionContext();
+        return delegate().executionContext();
     }
 
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
-        return delegate.socketOption(option);
+        return delegate().socketOption(option);
     }
 
     @Override
     public Protocol protocol() {
-        return delegate.protocol();
+        return delegate().protocol();
     }
 
     @Nullable
     @Override
     public ConnectionContext parent() {
-        return delegate.parent();
+        return delegate().parent();
     }
 
     @Override
     public String toString() {
-        return delegate.toString();
+        return delegate().toString();
     }
 }

@@ -26,9 +26,7 @@ import java.util.function.Supplier;
 /**
  * An {@link Executor} that simply delegates all calls to another {@link Executor}.
  */
-public class DelegatingExecutor extends DelegatingListenableAsyncCloseable implements Executor {
-
-    private final Executor delegate;
+public class DelegatingExecutor extends DelegatingListenableAsyncCloseable<Executor> implements Executor {
 
     /**
      * New instance.
@@ -37,67 +35,67 @@ public class DelegatingExecutor extends DelegatingListenableAsyncCloseable imple
      */
     protected DelegatingExecutor(final Executor delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
     /**
-     * Returns the delegate {@link Executor} used.
+     * Get the {@link Executor} that this class delegates to.
      *
-     * @return The delegate {@link Executor} used.
+     * @return the {@link Executor} that this class delegates to.
      */
     @Override
+    @SuppressWarnings("PMD.UselessOverridingMethod") // Method is overridden to preserve binary compatibility
     protected Executor delegate() {
-        return delegate;
+        return super.delegate();
     }
 
     @Override
     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
-        return delegate.execute(task);
+        return delegate().execute(task);
     }
 
     @Override
     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
             throws RejectedExecutionException {
-        return delegate.schedule(task, delay, unit);
+        return delegate().schedule(task, delay, unit);
     }
 
     @Override
     public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
-        return delegate.schedule(task, delay);
+        return delegate().schedule(task, delay);
     }
 
     @Override
     public Completable timer(final long delay, final TimeUnit unit) {
-        return delegate.timer(delay, unit);
+        return delegate().timer(delay, unit);
     }
 
     @Override
     public Completable timer(final Duration delay) {
-        return delegate.timer(delay);
+        return delegate().timer(delay);
     }
 
     @Override
     public Completable submit(final Runnable runnable) {
-        return delegate.submit(runnable);
+        return delegate().submit(runnable);
     }
 
     @Override
     public Completable submitRunnable(final Supplier<Runnable> runnableSupplier) {
-        return delegate.submitRunnable(runnableSupplier);
+        return delegate().submitRunnable(runnableSupplier);
     }
 
     @Override
     public <T> Single<T> submit(final Callable<? extends T> callable) {
-        return delegate.submit(callable);
+        return delegate().submit(callable);
     }
 
     @Override
     public <T> Single<T> submitCallable(final Supplier<? extends Callable<? extends T>> callableSupplier) {
-        return delegate.submitCallable(callableSupplier);
+        return delegate().submitCallable(callableSupplier);
     }
 
     @Override
     public long currentTime(TimeUnit unit) {
-        return delegate.currentTime(unit);
+        return delegate().currentTime(unit);
     }
 }

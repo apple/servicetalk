@@ -17,38 +17,39 @@ package io.servicetalk.concurrent.api;
 
 /**
  * {@link ListenableAsyncCloseable} that delegates all calls to another {@link ListenableAsyncCloseable}.
+ *
+ * @param <T> The type of {@link ListenableAsyncCloseable} to delegate to.
  */
-public class DelegatingListenableAsyncCloseable extends DelegatingAsyncCloseable implements ListenableAsyncCloseable {
-
-    private final ListenableAsyncCloseable delegate;
+public class DelegatingListenableAsyncCloseable<T extends ListenableAsyncCloseable> extends DelegatingAsyncCloseable<T>
+        implements ListenableAsyncCloseable {
 
     /**
      * New instance.
      *
-     * @param delegate {@link ListenableAsyncCloseable} to delegate all calls to.
+     * @param delegate {@link T} subtype of {@link ListenableAsyncCloseable} to delegate all calls to.
      */
-    public DelegatingListenableAsyncCloseable(final ListenableAsyncCloseable delegate) {
+    public DelegatingListenableAsyncCloseable(final T delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
     /**
-     * Get the {@link ListenableAsyncCloseable} that this class delegates to.
+     * Get the {@link T} subtype of {@link ListenableAsyncCloseable} that this class delegates to.
      *
-     * @return the {@link ListenableAsyncCloseable} that this class delegates to.
+     * @return the {@link T} subtype of {@link ListenableAsyncCloseable} that this class delegates to.
      */
     @Override
-    protected ListenableAsyncCloseable delegate() {
-        return delegate;
+    @SuppressWarnings("PMD.UselessOverridingMethod") // Method is overridden for consistency w/ other delegating classes
+    protected T delegate() {
+        return super.delegate();
     }
 
     @Override
     public Completable onClose() {
-        return delegate.onClose();
+        return delegate().onClose();
     }
 
     @Override
     public Completable onClosing() {
-        return delegate.onClosing();
+        return delegate().onClosing();
     }
 }
