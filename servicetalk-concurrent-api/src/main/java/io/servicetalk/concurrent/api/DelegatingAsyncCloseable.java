@@ -19,26 +19,28 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * {@link AsyncCloseable} that delegates all calls to another {@link AsyncCloseable}.
+ *
+ * @param <T> The type of {@link AsyncCloseable} to delegate to.
  */
-public class DelegatingAsyncCloseable implements AsyncCloseable {
+public class DelegatingAsyncCloseable<T extends AsyncCloseable> implements AsyncCloseable {
 
-    private final AsyncCloseable delegate;
+    private final T delegate;
 
     /**
      * New instance.
      *
-     * @param delegate {@link AsyncCloseable} to delegate all calls to.
+     * @param delegate {@link T} subtype of {@link AsyncCloseable} to delegate all calls to.
      */
-    public DelegatingAsyncCloseable(final AsyncCloseable delegate) {
+    public DelegatingAsyncCloseable(final T delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
     /**
-     * Get the {@link AsyncCloseable} that this class delegates to.
+     * Get the {@link T} subtype of {@link AsyncCloseable} that this class delegates to.
      *
-     * @return the {@link AsyncCloseable} that this class delegates to.
+     * @return the {@link T} subtype of {@link AsyncCloseable} that this class delegates to.
      */
-    protected AsyncCloseable delegate() {
+    protected T delegate() {    // FIXME: 0.43 - consider making this method `final`
         return delegate;
     }
 

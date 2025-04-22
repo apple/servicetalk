@@ -23,9 +23,9 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * Implementation of {@link FilterableStreamingHttpLoadBalancedConnection} that delegates all methods.
  */
-public class DelegatingFilterableStreamingHttpLoadBalancedConnection extends DelegatingListenableAsyncCloseable
+public class DelegatingFilterableStreamingHttpLoadBalancedConnection
+        extends DelegatingListenableAsyncCloseable<FilterableStreamingHttpLoadBalancedConnection>
         implements FilterableStreamingHttpLoadBalancedConnection {
-    private final FilterableStreamingHttpLoadBalancedConnection delegate;
 
     /**
      * Create a new instance.
@@ -34,126 +34,130 @@ public class DelegatingFilterableStreamingHttpLoadBalancedConnection extends Del
     public DelegatingFilterableStreamingHttpLoadBalancedConnection(
             final FilterableStreamingHttpLoadBalancedConnection delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
+    /**
+     * Get the {@link FilterableStreamingHttpLoadBalancedConnection} that this class delegates to.
+     *
+     * @return the {@link FilterableStreamingHttpLoadBalancedConnection} that this class delegates to.
+     */
     @Override
     protected FilterableStreamingHttpLoadBalancedConnection delegate() {
-        return delegate;
+        return super.delegate();
     }
 
     @Override
     public Result tryRequest() {
-        return delegate.tryRequest();
+        return delegate().tryRequest();
     }
 
     @Override
     public void requestFinished() {
-        delegate.requestFinished();
+        delegate().requestFinished();
     }
 
     @Override
     public boolean tryReserve() {
-        return delegate.tryReserve();
+        return delegate().tryReserve();
     }
 
     @Override
     public int score() {
-        return delegate.score();
+        return delegate().score();
     }
 
     @Override
     public HttpConnectionContext connectionContext() {
-        return delegate.connectionContext();
+        return delegate().connectionContext();
     }
 
     @Override
     public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-        return delegate.transportEventStream(eventKey);
+        return delegate().transportEventStream(eventKey);
     }
 
     @Override
     public void close() throws Exception {
-        delegate.close();
+        delegate().close();
     }
 
     @Override
     public void closeGracefully() throws Exception {
-        delegate.closeGracefully();
+        delegate().closeGracefully();
     }
 
     @Override
     public Completable releaseAsync() {
-        return delegate.releaseAsync();
+        return delegate().releaseAsync();
     }
 
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return delegate.newRequest(method, requestTarget);
+        return delegate().newRequest(method, requestTarget);
     }
 
     @Override
     public StreamingHttpRequest get(final String requestTarget) {
-        return delegate.get(requestTarget);
+        return delegate().get(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest post(final String requestTarget) {
-        return delegate.post(requestTarget);
+        return delegate().post(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest put(final String requestTarget) {
-        return delegate.put(requestTarget);
+        return delegate().put(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest options(final String requestTarget) {
-        return delegate.options(requestTarget);
+        return delegate().options(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest head(final String requestTarget) {
-        return delegate.head(requestTarget);
+        return delegate().head(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest trace(final String requestTarget) {
-        return delegate.trace(requestTarget);
+        return delegate().trace(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest delete(final String requestTarget) {
-        return delegate.delete(requestTarget);
+        return delegate().delete(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest patch(final String requestTarget) {
-        return delegate.patch(requestTarget);
+        return delegate().patch(requestTarget);
     }
 
     @Override
     public StreamingHttpRequest connect(final String requestTarget) {
-        return delegate.connect(requestTarget);
+        return delegate().connect(requestTarget);
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return delegate.request(request);
+        return delegate().request(request);
     }
 
     @Override
     public HttpExecutionContext executionContext() {
-        return delegate.executionContext();
+        return delegate().executionContext();
     }
 
     @Override
     public StreamingHttpResponseFactory httpResponseFactory() {
-        return delegate.httpResponseFactory();
+        return delegate().httpResponseFactory();
     }
 
     @Override
     public String toString() {
-        return delegate.toString();
+        return delegate().toString();
     }
 }

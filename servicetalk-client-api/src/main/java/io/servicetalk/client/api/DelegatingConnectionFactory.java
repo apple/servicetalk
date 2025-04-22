@@ -33,9 +33,8 @@ import static io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter.C
  * @param <C> The type of connections created by this factory.
  */
 public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
-        extends DelegatingListenableAsyncCloseable implements ConnectionFactory<ResolvedAddress, C> {
-
-    private final ConnectionFactory<ResolvedAddress, C> delegate;
+        extends DelegatingListenableAsyncCloseable<ConnectionFactory<ResolvedAddress, C>>
+        implements ConnectionFactory<ResolvedAddress, C> {
 
     /**
      * Create a new instance.
@@ -44,23 +43,22 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
      */
     public DelegatingConnectionFactory(final ConnectionFactory<ResolvedAddress, C> delegate) {
         super(delegate);
-        this.delegate = delegate;
     }
 
     /**
-     * Returns the {@link ConnectionFactory} delegate.
+     * Get the {@link ConnectionFactory} that this class delegates to.
      *
-     * @return Delegate {@link ConnectionFactory}.
+     * @return the {@link ConnectionFactory} that this class delegates to.
      */
     @Override
     protected final ConnectionFactory<ResolvedAddress, C> delegate() {
-        return delegate;
+        return super.delegate();
     }
 
     @Deprecated
     @Override
     public Single<C> newConnection(final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
-        return delegate.newConnection(resolvedAddress, observer);
+        return delegate().newConnection(resolvedAddress, observer);
     }
 
     @Override

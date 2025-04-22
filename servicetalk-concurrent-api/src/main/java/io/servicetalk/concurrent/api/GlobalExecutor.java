@@ -37,11 +37,6 @@ final class GlobalExecutor extends DelegatingExecutor {
     }
 
     @Override
-    public String toString() {
-        return this.getClass().getSimpleName() + "{delegate=" + delegate() + "}";
-    }
-
-    @Override
     public Completable closeAsync() {
         return delegate().closeAsync()
                 .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsync()"));
