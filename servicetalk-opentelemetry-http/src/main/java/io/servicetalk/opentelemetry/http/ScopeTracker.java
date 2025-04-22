@@ -116,7 +116,9 @@ final class ScopeTracker implements TerminalSignalConsumer {
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
-        return responseSingle.liftSync(new AfterFinallyHttpOperator(this))
+        // Note that we use `discardEventsAfterCancel` to make sure the events that the observer sees are the
+        // same that the users see.
+        return responseSingle.liftSync(new AfterFinallyHttpOperator(this, true))
                 // AfterFinallyHttpOperator conditionally outputs a Single<Meta> with a failed
                 // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
                 // completion of Meta. So in order for downstream operators to get a consistent view of the data
