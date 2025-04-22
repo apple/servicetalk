@@ -16,4 +16,8 @@
 package io.servicetalk.log4j2.mdc.utils;
 
 public final class TestMdcCapturedContextProvider extends MdcCapturedContextProvider {
+
+    public TestMdcCapturedContextProvider() {
+        super(ServiceTalkThreadContextMap.class);
+    }
 }

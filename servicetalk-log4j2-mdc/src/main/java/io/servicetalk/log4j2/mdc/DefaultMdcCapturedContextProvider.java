@@ -22,4 +22,8 @@ import io.servicetalk.log4j2.mdc.utils.MdcCapturedContextProvider;
  * Note: this is intended to be service-loaded and not instantiated directly.
  */
 public final class DefaultMdcCapturedContextProvider extends MdcCapturedContextProvider {
+
+    public DefaultMdcCapturedContextProvider() {
+        super(DefaultServiceTalkThreadContextMap.class);
+    }
 }

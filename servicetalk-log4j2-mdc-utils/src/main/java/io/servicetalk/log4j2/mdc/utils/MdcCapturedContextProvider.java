@@ -35,9 +35,10 @@ public abstract class MdcCapturedContextProvider implements CapturedContextProvi
 
     /**
      * Create a new {@link CapturedContextProvider} for MDC.
+     * @param expectedThreadContextMapClass the expected type of the MDC {@link ThreadContext}.
      */
-    public MdcCapturedContextProvider() {
-        enabled = shouldEnableMdcCapture();
+    public MdcCapturedContextProvider(Class<? extends ServiceTalkThreadContextMap> expectedThreadContextMapClass) {
+        enabled = shouldEnableMdcCapture(expectedThreadContextMapClass);
     }
 
     @Override
@@ -82,8 +83,8 @@ public abstract class MdcCapturedContextProvider implements CapturedContextProvi
     }
 
     private static ConcurrentMap<String, String> getCurrentCopy() {
-        ConcurrentMap<String, String> current = ServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
-        ConcurrentMap<String, String> result = new ConcurrentHashMap<>(Math.max(current.size(), 4));
+        ConcurrentMap<String, String> current = getCurrent();
+        ConcurrentMap<String, String> result = new ConcurrentHashMap<>(Math.max((int) (current.size() * 1.5), 4));
         result.putAll(current);
         return result;
     }
@@ -95,13 +96,15 @@ public abstract class MdcCapturedContextProvider implements CapturedContextProvi
     // TODO: we could attempt a 'slow path' where we can copy and propagate values over whatever MDC context provider
     //  is present, but for now we're just going to disable it since that would be what happens anyway.
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})
-    private static boolean shouldEnableMdcCapture() {
+    private static boolean shouldEnableMdcCapture(
+            Class<? extends ServiceTalkThreadContextMap> expectedThreadContextMapClass) {
         ReadOnlyThreadContextMap implementation = ThreadContext.getThreadContextMap();
-        if (implementation instanceof ServiceTalkThreadContextMap) {
-            return ((ServiceTalkThreadContextMap) implementation).useLocalStorage();
+        if (expectedThreadContextMapClass == implementation.getClass()) {
+            return expectedThreadContextMapClass.cast(implementation).useLocalStorage();
         }
-        System.err.println("Incompatible MDC ThreadContext adapter detected (" +
-                implementation.getClass().getName() + "). ServiceTalk MDC propagation will be disabled.");
+        System.err.println("Incompatible MDC ThreadContext adapter detected:" +
+                implementation.getClass().getName() + " (required " + expectedThreadContextMapClass.getName() +
+                "). ServiceTalk MDC propagation will be disabled.");
         return false;
     }
 }

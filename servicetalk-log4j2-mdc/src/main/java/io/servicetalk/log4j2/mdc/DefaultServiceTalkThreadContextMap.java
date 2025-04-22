@@ -21,5 +21,6 @@ import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
  * Empty subclass to differentiate uses of MDC.
  * Note: this is intended to be service-loaded and not instantiated directly.
  */
+// FIXME: 0.43 - make this class final
 public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContextMap {
 }
