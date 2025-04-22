@@ -65,9 +65,26 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
 
     private final boolean useLocalStorage;
 
+    /**
+     * Create a new {@link org.apache.logging.log4j.spi.ThreadContextMap}
+     * Note: this is intended to be used via service loading and not instantiated directly.
+     */
     public ServiceTalkThreadContextMap() {
+        this(initUseLocalStorage());
+    }
+
+    /**
+     * Create a new {@link org.apache.logging.log4j.spi.ThreadContextMap}
+     * Note: this is intended to be used via service loading and not instantiated directly.
+     * @param useLocalStorage whether to use a thread-local storage model. If false, {@link AsyncContext} will be used.
+     *                        If using a thread-local storage model then the
+     *                        {@link io.servicetalk.concurrent.api.CapturedContextProvider} mechanism is necessary to
+     *                        properly propagate context across the reactive stream boundaries. See the
+     *                        {@link MdcCapturedContextProvider} for an abstract implementation.
+     */
+    public ServiceTalkThreadContextMap(boolean useLocalStorage) {
         detectPossibleConflicts();
-        useLocalStorage = initUseLocalStorage();
+        this.useLocalStorage = useLocalStorage;
     }
 
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "PMD.SystemPrintln"})

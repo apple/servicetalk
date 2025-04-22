@@ -47,6 +47,16 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
     private static final String SPAN_ID_KEY = "spanId";
     private static final String PARENT_SPAN_ID_KEY = "parentSpanId";
 
+    /**
+     * Create a new {@link org.apache.logging.log4j.spi.ThreadContextMap}
+     * Note: this is intended to be used via service loading and not instantiated directly.
+     */
+    public ServiceTalkTracingThreadContextMap() {
+        // We want to keep the context models for MDC and trace propagation the same, which right now is AsyncContext,
+        // so we disable the use of local storage.
+        super(false);
+    }
+
     @Nullable
     @Override
     public String get(String key) {
