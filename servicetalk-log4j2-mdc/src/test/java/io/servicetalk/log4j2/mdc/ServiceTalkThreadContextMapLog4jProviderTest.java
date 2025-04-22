@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Single;
 
 import org.apache.logging.log4j.ThreadContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -44,6 +45,11 @@ class ServiceTalkThreadContextMapLog4jProviderTest {
 
     @BeforeEach
     void setup() {
+        MDC.clear();
+    }
+
+    @AfterEach
+    void teardown() {
         MDC.clear();
     }
 
