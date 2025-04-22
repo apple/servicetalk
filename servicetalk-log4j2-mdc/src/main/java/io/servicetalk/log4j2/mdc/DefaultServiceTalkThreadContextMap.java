@@ -28,6 +28,11 @@ public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContext
 
     private static final String ENABLE_PROPERTY_NAME = "io.servicetalk.log4j2.mdc.capturedContextStorage";
     private static final boolean DEFAULT_PROPERTY_VALUE = true;
+    static final ThreadLocal<ConcurrentMap<String, String>> CONTEXT_STORAGE =
+            ThreadLocal.withInitial(() ->
+                // better be thread safe, since the context may be used in multiple operators which may use different
+                // threads MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
+                new ConcurrentHashMap<>(4));
 
     final boolean useLocalStorage;
 
@@ -38,12 +43,6 @@ public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContext
     public DefaultServiceTalkThreadContextMap() {
         useLocalStorage = useLocalStorage();
     }
-
-    static final ThreadLocal<ConcurrentMap<String, String>> CONTEXT_STORAGE =
-            ThreadLocal.withInitial(() ->
-                // better be thread safe, since the context may be used in multiple operators which may use different
-                // threads MDC is typically small (e.g. <8) so start with 4 (which ConcurrentHashMap will double to 8).
-                new ConcurrentHashMap<>(4));
 
     @Override
     protected final Map<String, String> getStorage() {
