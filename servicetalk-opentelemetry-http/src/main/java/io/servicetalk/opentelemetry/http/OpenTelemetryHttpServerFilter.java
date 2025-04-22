@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -45,16 +46,17 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
  * <p>
  * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
- * This filter propagates the OpenTelemetry {@link Context} so the ordering of filters is crucial.
+ * This filter propagates the OpenTelemetry {@link Context} (thus {@link Span}) so the ordering of filters is crucial.
  * <ul>
- *     <li>Append this filter before others that are expected to see {@link Context} for this request/response.</li>
- *     <li>If auto-draining of the request body is desired, add the
+ *     <li>Append this filter before others that are expected to see the {@link Span} for this request/response.</li>
+ *     <li>If you want to see the correct {@link Span} information for auto-drained requests
+ *     (when a streaming request body was not consumed by the service), add the
  *     {@link io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter} immediately after.</li>
  *     <li>To ensure tracing sees the same result status codes as the calling client, add the
  *     {@link io.servicetalk.http.api.HttpExceptionMapperServiceFilter} after this filter.</li>
  *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the the
- *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct span information is present.
- *     </li>
+ *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct {@link Span} information is
+ *     present.</li>
  * </ul>
  * Be sure to use the
  * {@link io.servicetalk.http.api.HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)}
