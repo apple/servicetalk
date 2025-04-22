@@ -26,6 +26,19 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContextMap {
 
+    private static final String ENABLE_PROPERTY_NAME = "io.servicetalk.log4j2.mdc.capturedContextStorage";
+    private static final boolean DEFAULT_PROPERTY_VALUE = true;
+
+    final boolean useLocalStorage;
+
+    /**
+     * Create a new ServiceTalk based ThreadContextMap.
+     * Note: this is only intended to be used by service loading mechanisms and not instantiated by user code.
+     */
+    public DefaultServiceTalkThreadContextMap() {
+        useLocalStorage = useLocalStorage();
+    }
+
     static final ThreadLocal<ConcurrentMap<String, String>> CONTEXT_STORAGE =
             ThreadLocal.withInitial(() ->
                 // better be thread safe, since the context may be used in multiple operators which may use different
@@ -33,7 +46,12 @@ public class DefaultServiceTalkThreadContextMap extends ServiceTalkThreadContext
                 new ConcurrentHashMap<>(4));
 
     @Override
-    protected Map<String, String> getStorage() {
-        return CONTEXT_STORAGE.get();
+    protected final Map<String, String> getStorage() {
+        return useLocalStorage ? CONTEXT_STORAGE.get() : super.getStorage();
+    }
+
+    private static boolean useLocalStorage() {
+        String propertyValue = System.getProperty(ENABLE_PROPERTY_NAME);
+        return propertyValue == null ? DEFAULT_PROPERTY_VALUE : Boolean.parseBoolean(propertyValue);
     }
 }

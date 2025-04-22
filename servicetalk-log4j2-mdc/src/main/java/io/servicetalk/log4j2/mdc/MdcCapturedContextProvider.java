@@ -100,7 +100,7 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
     private static boolean shouldEnableMdcCapture() {
         ReadOnlyThreadContextMap implementation = ThreadContext.getThreadContextMap();
         if (implementation instanceof DefaultServiceTalkThreadContextMap) {
-            return true;
+            return ((DefaultServiceTalkThreadContextMap) implementation).useLocalStorage;
         }
         System.err.println("Incompatible MDC ThreadContext adapter detected (" +
                 implementation.getClass().getName() + "). ServiceTalk MDC propagation will be disabled.");
