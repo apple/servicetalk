@@ -23,8 +23,8 @@ import io.servicetalk.context.api.ContextMap;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.spi.ReadOnlyThreadContextMap;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A {@link CapturedContextProvider} implementation to correctly propagate MDC context.
@@ -55,9 +55,9 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
     private static final class MdcCapturedContext implements CapturedContext {
 
         private final CapturedContext delegate;
-        private final Map<String, String> storage;
+        private final ConcurrentMap<String, String> storage;
 
-        MdcCapturedContext(CapturedContext delegate, Map<String, String> storage) {
+        MdcCapturedContext(CapturedContext delegate, ConcurrentMap<String, String> storage) {
             this.delegate = delegate;
             this.storage = storage;
         }
@@ -69,7 +69,7 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
 
         @Override
         public Scope attachContext() {
-            Map<String, String> old = getCurrent();
+            ConcurrentMap<String, String> old = getCurrent();
             setCurrent(storage);
             Scope delegateScope = delegate.attachContext();
             return () -> {
@@ -79,18 +79,18 @@ public final class MdcCapturedContextProvider implements CapturedContextProvider
         }
     }
 
-    private static Map<String, String> getCurrent() {
+    private static ConcurrentMap<String, String> getCurrent() {
         return DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
     }
 
-    private static Map<String, String> getCurrentCopy() {
-        Map<String, String> current = DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
-        Map<String, String> result = new ConcurrentHashMap<>(Math.max(current.size(), 4));
+    private static ConcurrentMap<String, String> getCurrentCopy() {
+        ConcurrentMap<String, String> current = DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.get();
+        ConcurrentMap<String, String> result = new ConcurrentHashMap<>(Math.max(current.size(), 4));
         result.putAll(current);
         return result;
     }
 
-    private static void setCurrent(Map<String, String> storage) {
+    private static void setCurrent(ConcurrentMap<String, String> storage) {
         DefaultServiceTalkThreadContextMap.CONTEXT_STORAGE.set(storage);
     }
 
