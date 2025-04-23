@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -41,20 +40,27 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExt
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 
-import java.util.function.UnaryOperator;
-
 /**
  * A {@link StreamingHttpService} that supports
  * <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
  * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
- * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
- * appended after this filter that use operators with the <strong>after*</strong> prefix on
- * {@link StreamingHttpService#handle(HttpServiceContext, StreamingHttpRequest, StreamingHttpResponseFactory)
- * response meta data} or the {@link StreamingHttpResponse#transformMessageBody(UnaryOperator) response message body}
- * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
- * therefore will not see the {@link Span} for the current request/response.
+ * This filter propagates the OpenTelemetry {@link Context} (thus {@link Span}) so the ordering of filters is crucial.
+ * <ul>
+ *     <li>Append this filter before others that are expected to see the {@link Span} for this request/response.</li>
+ *     <li>If you want to see the correct {@link Span} information for auto-drained requests
+ *     (when a streaming request body was not consumed by the service), add the
+ *     {@link io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter} immediately after.</li>
+ *     <li>To ensure tracing sees the same result status codes as the calling client, add the
+ *     {@link io.servicetalk.http.api.HttpExceptionMapperServiceFilter} after this filter.</li>
+ *     <li>If you intend to use a {@link io.servicetalk.http.api.HttpLifecycleObserver}, add it using the the
+ *     HttpLifecycleObserverServiceFilter after the tracing filter to ensure the correct {@link Span} information is
+ *     present.</li>
+ * </ul>
+ * Be sure to use the
+ * {@link io.servicetalk.http.api.HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)}
+ * method for adding these filters as non-offloading filters are always added before offloading filters.
  */
 public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpServiceFilterFactory {
@@ -77,7 +83,8 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
     }
 
     /**
-     * Create a new Instance, searching for any instance of an opentelemetry available.
+     * Create a new instance using the {@link OpenTelemetry} from {@link GlobalOpenTelemetry#get()} with default
+     * {@link OpenTelemetryOptions}.
      */
     public OpenTelemetryHttpServerFilter() {
         this(DEFAULT_OPTIONS);
@@ -86,13 +93,13 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
     /**
      * Create a new instance.
      *
-     * @param opentelemetryOptions extra options to create the opentelemetry filter
+     * @param openTelemetryOptions extra options to create the opentelemetry filter
      */
-    public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions opentelemetryOptions) {
-        this(GlobalOpenTelemetry.get(), opentelemetryOptions);
+    public OpenTelemetryHttpServerFilter(final OpenTelemetryOptions openTelemetryOptions) {
+        this(GlobalOpenTelemetry.get(), openTelemetryOptions);
     }
 
-    OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry, final OpenTelemetryOptions opentelemetryOptions) {
+    OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry, final OpenTelemetryOptions openTelemetryOptions) {
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> serverInstrumenterBuilder =
@@ -102,10 +109,10 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
         serverInstrumenterBuilder
                 .addAttributesExtractor(HttpServerAttributesExtractor
                         .builder(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE)
-                        .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
-                        .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
+                        .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())
+                        .setCapturedResponseHeaders(openTelemetryOptions.capturedResponseHeaders())
                         .build());
-        if (opentelemetryOptions.enableMetrics()) {
+        if (openTelemetryOptions.enableMetrics()) {
             serverInstrumenterBuilder.addOperationMetrics(HttpServerMetrics.get());
         }
         instrumenter =
