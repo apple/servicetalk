@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 
 class HttpClientsCompileTest {
-    private static final String IGNORE_ADDRESS = "";
+    private static final String IGNORE_ADDRESS = "<ignored>";
 
     @Test
     void testHttpClientsAcceptsBaseServiceDiscovererEvents() {

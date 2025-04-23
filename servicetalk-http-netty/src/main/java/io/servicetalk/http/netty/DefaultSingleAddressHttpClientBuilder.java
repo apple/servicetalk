@@ -140,7 +140,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = defaultLoadBalancer();
+        this.loadBalancerFactory = defaultLoadBalancer(address.toString());
         this.serviceDiscoverer = new CastedServiceDiscoverer<>(serviceDiscoverer);
         clientFilterFactory = appendFilter(clientFilterFactory, HttpMessageDiscardWatchdogClientFilter.CLIENT_CLEANER);
     }
@@ -825,10 +825,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer() {
+    private static <ResolvedAddress> HttpLoadBalancerFactory<ResolvedAddress> defaultLoadBalancer(String id) {
         return new DefaultHttpLoadBalancerFactory<>(
                 RoundRobinLoadBalancers.<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                                DefaultHttpLoadBalancerFactory.class.getSimpleName()).build());
+                                id).build());
     }
 
     // Because of the change in https://github.com/apple/servicetalk/pull/2379, we should constrain the type back to
