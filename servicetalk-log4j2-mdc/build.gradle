@@ -36,9 +36,13 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation "org.apache.logging.log4j:log4j-core"
 
-  testImplementation enforcedPlatform("org.apache.logging.log4j:log4j-bom:$log4jVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation project(":servicetalk-concurrent-api")
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "org.apache.logging.log4j:log4j-api"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap.getStorage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -129,5 +128,10 @@ class ServiceTalkThreadContextMapTest {
         assertNotNull(immutableMap);
         assertEquals(1, immutableMap.size());
         assertThrows(UnsupportedOperationException.class, () -> immutableMap.put("y", "20"));
+    }
+
+    private static Map<String, String> getStorage() {
+        ServiceTalkThreadContextMap contextMap = (ServiceTalkThreadContextMap) ThreadContext.getThreadContextMap();
+        return contextMap.getStorage();
     }
 }
