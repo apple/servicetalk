@@ -37,7 +37,7 @@ public abstract class MdcCapturedContextProvider implements CapturedContextProvi
      * Create a new {@link CapturedContextProvider} for MDC.
      * @param expectedThreadContextMapClass the expected type of the MDC {@link ThreadContext}.
      */
-    public MdcCapturedContextProvider(Class<? extends ServiceTalkThreadContextMap> expectedThreadContextMapClass) {
+    protected MdcCapturedContextProvider(Class<? extends ServiceTalkThreadContextMap> expectedThreadContextMapClass) {
         enabled = shouldEnableMdcCapture(expectedThreadContextMapClass);
     }
 
@@ -103,7 +103,7 @@ public abstract class MdcCapturedContextProvider implements CapturedContextProvi
             return expectedThreadContextMapClass.cast(implementation).useLocalStorage();
         }
         System.err.println("Incompatible MDC ThreadContext adapter detected:" +
-                implementation.getClass().getName() + " (required " + expectedThreadContextMapClass.getName() +
+                implementation.getClass().getName() + " (expected " + expectedThreadContextMapClass.getName() +
                 "). ServiceTalk MDC propagation will be disabled.");
         return false;
     }

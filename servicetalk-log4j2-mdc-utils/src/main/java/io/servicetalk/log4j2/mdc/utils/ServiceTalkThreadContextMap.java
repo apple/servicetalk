@@ -55,7 +55,7 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
             " loaded at the same time. Please exclude one from your dependencies.%n";
 
     // FIXME: 0.43 remove the property which should be temporary.
-    private static final String ENABLE_PROPERTY_NAME = "io.servicetalk.log4j2.mdc.utils.capturedContextStorage";
+    private static final String ENABLE_PROPERTY_NAME = "io.servicetalk.log4j2.mdc.utils.useCapturedContextStorage";
     private static final boolean DEFAULT_PROPERTY_VALUE = true;
     static final ThreadLocal<ConcurrentMap<String, String>> CONTEXT_STORAGE =
             ThreadLocal.withInitial(() ->
