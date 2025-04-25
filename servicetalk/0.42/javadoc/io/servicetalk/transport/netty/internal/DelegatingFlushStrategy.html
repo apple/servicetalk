@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -80,9 +80,14 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">DelegatingFlushStrategy</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public class </span><span class="element-name type-name-label">DelegatingFlushStrategy</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this class will be made package-private in the future releases. If you depend on this code, consider
+ copying it into your codebase.</div>
+</div>
 <div class="block">A <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> implementation that delegates all calls to another <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a>.</div>
 </section>
 <section class="summary">
@@ -106,6 +111,7 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.transport.netty.internal.FlushStrategy)" class="member-name-link">DelegatingFlushStrategy</a><wbr>(<a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;delegate)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -116,25 +122,28 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.WriteEventsListener</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)" class="member-name-link">apply</a><wbr>(<a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.FlushSender</a>&nbsp;sender)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.WriteEventsListener</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)" class="member-name-link">apply</a><wbr>(<a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.FlushSender</a>&nbsp;sender)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Every time a new write that requires custom flushes is initiated, this method is invoked.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>protected <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns the delegate <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> used.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shouldFlushOnUnwritable()" class="member-name-link">shouldFlushOnUnwritable</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#shouldFlushOnUnwritable()" class="member-name-link">shouldFlushOnUnwritable</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns <code>true</code> if pending writes, if any, MUST be flushed when the connection is not writable.</div>
 </div>
 </div>
@@ -158,6 +167,7 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <section class="detail" id="&lt;init&gt;(io.servicetalk.transport.netty.internal.FlushStrategy)">
 <h3>DelegatingFlushStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DelegatingFlushStrategy</span><wbr><span class="parameters">(<a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;delegate)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -177,6 +187,7 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <section class="detail" id="apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)">
 <h3>apply</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.WriteEventsListener</a></span>&nbsp;<span class="element-name">apply</span><wbr><span class="parameters">(<a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy.FlushSender</a>&nbsp;sender)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="FlushStrategy.html#apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)">FlushStrategy</a></code></span></div>
 <div class="block">Every time a new write that requires custom flushes is initiated, this method is invoked. Passed
  <a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy.FlushSender</code></a> is used to <a href="FlushStrategy.FlushSender.html#flush()"><code>signal</code></a> to the connection that writes should now be
@@ -196,6 +207,7 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <section class="detail" id="shouldFlushOnUnwritable()">
 <h3>shouldFlushOnUnwritable</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">shouldFlushOnUnwritable</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="FlushStrategy.html#shouldFlushOnUnwritable()">FlushStrategy</a></code></span></div>
 <div class="block">Returns <code>true</code> if pending writes, if any, MUST be flushed when the connection is not writable. <p>
  This method is expected to be idempotent.</div>
@@ -211,6 +223,7 @@ implements <a href="FlushStrategy.html" title="interface in io.servicetalk.trans
 <section class="detail" id="delegate()">
 <h3>delegate</h3>
 <div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="return-type"><a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></span>&nbsp;<span class="element-name">delegate</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns the delegate <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> used.</div>
 <dl class="notes">
 <dt>Returns:</dt>

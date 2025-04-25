@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -100,7 +100,15 @@ implements org.apache.logging.log4j.spi.ReadOnlyThreadContextMap, org.apache.log
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">ServiceTalkThreadContextMap</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">Create a new <code>ThreadContextMap</code>
+ Note: this is intended to be used via service loading and not instantiated directly.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(boolean)" class="member-name-link">ServiceTalkThreadContextMap</a><wbr>(boolean&nbsp;useLocalStorage)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Create a new <code>ThreadContextMap</code>
+ Note: this is intended to be used via service loading and not instantiated directly.</div>
+</div>
 </div>
 </section>
 </li>
@@ -110,8 +118,8 @@ implements org.apache.logging.log4j.spi.ReadOnlyThreadContextMap, org.apache.log
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
@@ -173,6 +181,24 @@ implements org.apache.logging.log4j.spi.ReadOnlyThreadContextMap, org.apache.log
 <section class="detail" id="&lt;init&gt;()">
 <h3>ServiceTalkThreadContextMap</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ServiceTalkThreadContextMap</span>()</div>
+<div class="block">Create a new <code>ThreadContextMap</code>
+ Note: this is intended to be used via service loading and not instantiated directly.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(boolean)">
+<h3>ServiceTalkThreadContextMap</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ServiceTalkThreadContextMap</span><wbr><span class="parameters">(boolean&nbsp;useLocalStorage)</span></div>
+<div class="block">Create a new <code>ThreadContextMap</code>
+ Note: this is intended to be used via service loading and not instantiated directly.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>useLocalStorage</code> - whether to use a thread-local storage model. If false, <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be used.
+                        If using a thread-local storage model then the
+                        <a href="../../../concurrent/api/CapturedContextProvider.html" title="interface in io.servicetalk.concurrent.api"><code>CapturedContextProvider</code></a> mechanism is necessary to
+                        properly propagate context across the reactive stream boundaries. See the
+                        <a href="MdcCapturedContextProvider.html" title="class in io.servicetalk.log4j2.mdc.utils"><code>MdcCapturedContextProvider</code></a> for an abstract implementation.</dd>
+</dl>
 </section>
 </li>
 </ul>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>AsyncContext :: ServiceTalk Docs</title>
+    <title>Asynchronous Context :: ServiceTalk Docs</title>
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../_/css/site.css">
 <meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
@@ -53,7 +53,7 @@
     <a class="nav-link" href="../../servicetalk/SNAPSHOT/evolve-to-async.html">Evolving to asynchronous</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../servicetalk/SNAPSHOT/async-context.html">Async context</a>
+    <a class="nav-link" href="../../servicetalk/SNAPSHOT/async-context.html">Asynchronous Context</a>
   </li>
 </ul>
   </li>
@@ -173,19 +173,19 @@
     <span class="nav-text">Concurrent API</span>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="asynchronous-primitives.html">Asynchronous primitives</a>
+    <a class="nav-link" href="asynchronous-primitives.html">Asynchronous Primitives</a>
   </li>
   <li class="nav-item" data-depth="2">
     <button class="nav-toggle"></button>
-    <a class="nav-link" href="blocking-safe-by-default.html">Blocking safe by default</a>
+    <a class="nav-link" href="blocking-safe-by-default.html">Blocking Safe by Default</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="blocking-implementation.html">Implementation details</a>
+    <a class="nav-link" href="blocking-implementation.html">Implementation Details</a>
   </li>
 </ul>
   </li>
   <li class="nav-item is-current-page" data-depth="2">
-    <a class="nav-link" href="async-context.html">Async Context</a>
+    <a class="nav-link" href="async-context.html">Asynchronous Context</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="pitfalls.html">Concurrency Pitfalls</a>
@@ -1068,7 +1068,7 @@
 <nav class="crumbs" aria-label="breadcrumbs">
         <ul>
                 <li class="crumb">Concurrent API</li>
-                <li class="crumb"><a href="async-context.html">Async Context</a></li>
+                <li class="crumb"><a href="async-context.html">Asynchronous Context</a></li>
         </ul>
 </nav>
 <div class="page-versions">
@@ -1103,42 +1103,18 @@
 </div>
 </div>
         <article class="doc">
-<h1><code>AsyncContext</code></h1>
+<h1>Asynchronous Context</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p><code>AsyncContext</code> is designed to provide a static API to retain state associated across asynchronous boundaries.
-Motivation for providing support for <code>AsyncContext</code> can be found
-<a href="../../servicetalk/SNAPSHOT/async-context.html" class="page">here</a>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="high-level-usage"><a class="anchor" href="#high-level-usage"></a><a class="link" href="#high-level-usage">High Level Usage</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>At a high level <code>AsyncContext</code> provides a <code>Map</code>-like API for storing static state, and is isolated/scoped for each
-request and response to simulate <code>ThreadLocal</code> storage. Here is some code</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Main.java - application logic
-Single&lt;Response&gt; single = authenticate(client.request(...));
-single.map(response -&gt; {
-  if (AsyncContext.get(USER_ID_KEY).equals("admin")) {
-    // do something for admin
-  } else {
-    // do something for non-admin
-  }
-})// do something else in the function composition chain
-
-// AuthenticationFilter.java
-public static final Key&lt;String&gt; USER_ID_KEY = Key.newKey("userId", String.class);
-
-public static Single&lt;Resposne&gt; authenticate(Single&lt;Response&gt; responseSingle) {
-  AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
-}</code></pre>
-</div>
+<p>Traditional thread-per-request libraries and applications often leverage the concept of a <code>ThreadLocal</code> to provide a
+static interface for conveying contextual information across function calls. Important use case for this include <code>MDC</code>,
+OpenTelemetry <code>Context</code>, etc. This <code>ThreadLocal</code> model allows libraries to pass information across APIs that can be
+oblivious to the extra information being conveyed. However, ServiceTalk is an asynchronous library and the simple
+<code>ThreadLocal</code> model does not work because many computation flows may be happening on a shared set of threads at any
+given time. To provide a similar experience, ServiceTalk offers a pair of abstractions, <code>CapturedContext</code> for capturing
+and restoring contextual information for use across async boundaries, and <code>AsyncContext</code> (which is just a ServiceTalk
+defined case of <code>CapturedContext</code>) for defining your own contextual information.</p>
 </div>
 </div>
 </div>
@@ -1146,19 +1122,12 @@ public static Single&lt;Resposne&gt; authenticate(Single&lt;Response&gt; respons
 <h2 id="expectations"><a class="anchor" href="#expectations"></a><a class="link" href="#expectations">Expectations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Perhaps unfortunately, but many existing APIs assume a <code>ThreadLocal</code> type of state (e.g. <code>MDC</code>, <code>OpenTracing</code>). For this
-reason we would like to provide a similar experience within our asynchronous primitives and control flow provided by
-operators. From a practical stand point we want to leverage this tool as the foundation for infrastructure type tasks
-that require static state, or cannot otherwise be explicitly accounted for in the API. This leads us to the following
-desirable characteristics.</p>
-</div>
-<div class="paragraph">
-<p><strong>State is shared across synchronous boundaries</strong></p>
+<p><strong>State is shared across asynchronous boundaries</strong></p>
 </div>
 <div class="paragraph">
 <p><code>ThreadLocal</code> state is preserved and modifiable across synchronous boundaries, and our operators should provide the same
-functionality. To clarify this means if someone is calling an method in the imperative style and the state is shared
-then the same property should hold for adjacent operators. To demonstrate this check out the following code snippets:</p>
+functionality. To clarify this means if someone is calling a method in the imperative style and the state is shared
+then the same property should hold for adjacent operators. To demonstrate this, consider the following code snippets:</p>
 </div>
 <div class="sect2">
 <h3 id="function-composition"><a class="anchor" href="#function-composition"></a><a class="link" href="#function-composition">Function composition</a></h3>
@@ -1197,25 +1166,38 @@ String doMap(String in) {
 </div>
 </div>
 <div class="paragraph">
+<p>In both cases, the result of the program is the same. Similarly, a program can use a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+to save any state they desire and it will be passed along the ServiceTalk async boundaries.</p>
+</div>
+<div class="paragraph">
 <p><strong>Isolation and defined scope</strong></p>
 </div>
 <div class="paragraph">
 <p>We want a static API that provides us with access to state, but we need to define the scope for which the state is
 valid. A single bag of static state may become difficult to manage and reason about and also lead to memory leaks.
-Instead we would like to have the scope in which the state is modifiable in be defined. For example <code>ThreadLocal</code> is
+Instead, we would like to have the scope in which the state is modifiable in be defined. For example <code>ThreadLocal</code> is
 modifiable from anywhere within the same thread. Since ServiceTalk is built on an asynchronous framework where the same
 thread may process multiple requests, and the same request may be processed on multiple threads this isn&#8217;t sufficient.
-However what folks typically use <code>ThreadLocal</code> state for is to track static state per-request. The isolation and scope
+However, what folks typically use <code>ThreadLocal</code> state for is to track static state per-request. The isolation and scope
 of state must therefore also be able to follow per-request processing through the asynchronous control flow.</p>
 </div>
 <div class="paragraph">
-<p><strong>Work with offloading</strong></p>
+<p><strong>Works with offloading</strong></p>
 </div>
 <div class="paragraph">
-<p>ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking EventLoop threads we
+<p>ServiceTalk is an asynchronous framework at its core, but in order to avoid user code blocking I/O threads we
 offload to other threads. This means that every time we invoke user code we may have to jump threads. It is also
 possible on subsequent calls for the same request we may use a different thread (although not concurrently). We need to
 make sure the same static state is carried along through these different threads.</p>
+</div>
+<div class="paragraph">
+<p><strong>Works with Third-Party Libraries</strong></p>
+</div>
+<div class="paragraph">
+<p>Many existing APIs assume a <code>ThreadLocal</code> type of state (e.g. MDC, OpenTracing). For this reason we would like to
+provide compatibility within our asynchronous primitives and control flow provided by operators. ServiceTalk needs to
+provide a way to capture third-party context and properly restore it within the reactive execution chain.</p>
 </div>
 </div>
 </div>
@@ -1224,35 +1206,46 @@ make sure the same static state is carried along through these different threads
 <h2 id="servicetalk-approach"><a class="anchor" href="#servicetalk-approach"></a><a class="link" href="#servicetalk-approach">ServiceTalk Approach</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In order to accommodate the <a href="#expectations">Expectations of AsyncContext</a> we need specific behavior from <code>AsyncContext</code>. As described
-above we are after static state shared across synchronous boundaries, available across asynchronous boundaries, and is
-also sufficiently isolated in scope so that it can represent request/response control flow. To achieve these
-requirements the approach is to have <code>AsyncContext</code> backed by a modifiable (concurrent) map, and is associated with a
-<code>Subscriber</code> chain. Since the map is modifiable we will need to define the scope (e.g. how the state is isolated) of
-this static state. The <code>AsyncContext</code> will follow the following rule set:</p>
+<p>In order to accommodate the <a href="#expectations">Expectations of Asynchronous Context</a> we need specific behavior from
+ServiceTalk. As described above, we are after a static state shared across synchronous boundaries, available across
+asynchronous boundaries, and is also sufficiently isolated in scope so that it can represent request/response control
+flow.</p>
+</div>
+<div class="paragraph">
+<p>To achieve these
+requirements the approach is to define context during the subscribe process and propagate it along <code>Subscriber</code> chain.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk follows this set of rule set:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><code>AsyncContext</code> will be captured and copied at <code>subscribe</code> time.</p>
+<p>Asynchronous context will be captured and copied at <code>subscribe</code> time.</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>This provides isolation from other asynchronous operations which typically represent independent processing.</p>
+<p>When using <code>AsyncContext</code>, copying provides isolation from other asynchronous operations which typically represent
+independent processing.</p>
+</li>
+<li>
+<p>If users want to share context across boundaries the <code>shareContextOnSubscribe()</code> operator will share the same
+<code>AsyncContext</code> instance across asynchronous operations. This necessary when chaining together different async-sources
+such as with the <code>flatMap</code>, <code>defer</code>, and other related operators.</p>
 </li>
 </ol>
 </div>
 </li>
 <li>
-<p><code>AsyncContext</code> will be saved/restored across asynchronous boundaries.</p>
+<p>Asynchronous context will be saved/restored across asynchronous boundaries.</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
 <p>This is true for asynchronous operators (e.g. <code>flatMap</code>) and also <code>Executor</code> operations.</p>
 </li>
 <li>
-<p>If isolation is required for a specific control flow, there will be operators (e.g. <code>asyncContextBoundary</code>) and
-utilities (e.g. <code>Runnable asyncContextBoundary(Runnable)</code>) to create boundaries.</p>
+<p>If isolation of <code>AsyncContext</code> is required for a specific control flow, <code>defer(..)</code> operators can be used to create
+new boundaries.</p>
 </li>
 </ol>
 </div>
@@ -1269,15 +1262,52 @@ utilities (e.g. <code>Runnable asyncContextBoundary(Runnable)</code>) to create 
 <div class="sect2">
 <h3 id="complexity-of-implementation"><a class="anchor" href="#complexity-of-implementation"></a><a class="link" href="#complexity-of-implementation">Complexity of implementation</a></h3>
 <div class="paragraph">
-<p>Due to the shared state across the asynchronous boundaries we need to make sure we save the <code>current</code> context before the
-boundary, save the <code>original</code> context before executing user code on the new thread, restore the <code>current</code> context
-while executing user code, and then restore the <code>original</code> context. This requires object wrapping/unwrapping and
-leveraging <code>ThreadLocal</code> (or an
-<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
-) to retain the state. We also need to capture the current context at <code>subscribe</code>, propagate it up the operator chain,
-and capture it effectively in the source (or in a wrapped <code>Subscriber</code> just outside the source).</p>
+<p>Due to the shared state across the asynchronous boundaries we have a defined process for propagating asynchronous
+context:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When subscribing to an asynchronous primitive ServiceTalk will capture the <code>captured</code> context.</p>
+</li>
+<li>
+<p>The <code>captured</code> context will be restored for use during asynchronous operations. This process has it&#8217;s own rules:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Save the <code>pre-existing</code> context that may be present on the executing thread, including empty or null context.</p>
+</li>
+<li>
+<p>Restore the <code>captured</code> context to the executing thread.</p>
+</li>
+<li>
+<p>Execute the asynchronous logic which now will see the <code>captured</code> context state.</p>
+</li>
+<li>
+<p>When the async logic is complete, restore the <code>pre-existing</code> context to the thread, including empty or null values.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This set of rules ensures that asynchronous primitives see the correct state at all times, including during recursive
+calls where different parts of the reactive chain may have different context information.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="disable-asynchronous-context"><a class="anchor" href="#disable-asynchronous-context"></a><a class="link" href="#disable-asynchronous-context">Disable Asynchronous Context</a></h3>
+<div class="paragraph">
+<p>Asynchronous Context is enabled by default to accommodate for easy setup, but it can be disabled via
+<code>AsyncContext.disable()</code>. Note that this disables both the <code>AsyncContext</code> and the <code>CapturedContext</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="asynccontext-specifics"><a class="anchor" href="#asynccontext-specifics"></a><a class="link" href="#asynccontext-specifics"><code>AsyncContext</code> Specifics</a></h2>
+<div class="sectionbody">
 <div class="sect2">
 <h3 id="understandability"><a class="anchor" href="#understandability"></a><a class="link" href="#understandability">Understandability</a></h3>
 <div class="paragraph">
@@ -1359,9 +1389,68 @@ allocation.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="disable-asynccontext"><a class="anchor" href="#disable-asynccontext"></a><a class="link" href="#disable-asynccontext">Disable AsyncContext</a></h3>
+<h3 id="asynccontext-examples"><a class="anchor" href="#asynccontext-examples"></a><a class="link" href="#asynccontext-examples"><code>AsyncContext</code> Examples</a></h3>
 <div class="paragraph">
-<p><code>AsyncContext</code> is enabled by default to accommodate for easy setup, but it can be disabled via <code>AsyncContext.disable()</code>.</p>
+<p><code>AsyncContext</code> is designed to provide a static API to retain state associated across asynchronous boundaries.
+Motivation for providing support for <code>AsyncContext</code> can be found
+<a href="../../servicetalk/SNAPSHOT/async-context.html" class="page">here</a>.</p>
+</div>
+<div class="sect3">
+<h4 id="high-level-usage"><a class="anchor" href="#high-level-usage"></a><a class="link" href="#high-level-usage">High Level Usage</a></h4>
+<div class="paragraph">
+<p>At a high level <code>AsyncContext</code> provides a <code>Map</code>-like API for storing static state, and is isolated/scoped for each
+request and response to simulate <code>ThreadLocal</code> storage. Here is some code</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Main.java - application logic
+Single&lt;Response&gt; single = authenticate(client.request(...));
+single.map(response -&gt; {
+  if (AsyncContext.get(USER_ID_KEY).equals("admin")) {
+    // do something for admin
+  } else {
+    // do something for non-admin
+  }
+})// do something else in the function composition chain
+
+// AuthenticationFilter.java
+public static final Key&lt;String&gt; USER_ID_KEY = Key.newKey("userId", String.class);
+
+public static Single&lt;Resposne&gt; authenticate(Single&lt;Response&gt; responseSingle) {
+  AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="capturedcontext-specifics"><a class="anchor" href="#capturedcontext-specifics"></a><a class="link" href="#capturedcontext-specifics"><code>CapturedContext</code> Specifics</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In contrast to <code>AsyncContext</code>, the main use case of <code>CapturedContext</code> is to work with third-party context abstractions.
+Users can define a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+which will provide a way for ServiceTalk to capture and restore third-party context along the execution chain. An
+important example of third-party context information is the OpenTelemetry Context. By using the
+<code>CapturedContextProvider</code> users can correctly propagate OpenTelemetry context information in a non-invasive way which
+makes it much more likely to work with other third-party libraries.</p>
+</div>
+<div class="paragraph">
+<p>See the JavaDocs for
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/CapturedContextProvider.java">CapturedContextProvider</a>
+for an example of how to define the context capture and restore process.</p>
+</div>
+<div class="sect2">
+<h3 id="cost-of-retention-2"><a class="anchor" href="#cost-of-retention-2"></a><a class="link" href="#cost-of-retention-2">Cost Of Retention</a></h3>
+<div class="paragraph">
+<p>Unlike <code>AsyncContext</code> which has a well-defined cost model, the cost of saving and restoring arbitrary contextual
+information is not possible to predict because it is based on the third-party APIs used to access and set it. In
+general, good candidates for the <code>CapturedContext</code> model are those where capturing and setting context is 'cheap',
+such as saving and restoring the state of a <code>ThreadLocal</code>. Because of the frequency of the save and restore process
+in an asynchronous computation chain careful through should go into the cost of capturing and restoring third-party
+context.</p>
 </div>
 </div>
 </div>

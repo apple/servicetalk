@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-tree-page">
@@ -65,7 +65,15 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.concurrent.api.<a href="BufferStrategies.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">BufferStrategies</a></li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="Completable.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Completable</a></li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="DefaultThreadFactory.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">DefaultThreadFactory</a> (implements java.util.concurrent.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ThreadFactory.html" title="class or interface in java.util.concurrent" class="external-link">ThreadFactory</a>)</li>
+<li class="circle">io.servicetalk.concurrent.api.<a href="DelegatingAsyncCloseable.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">DelegatingAsyncCloseable</a>&lt;T&gt; (implements io.servicetalk.concurrent.api.<a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)
+<ul>
+<li class="circle">io.servicetalk.concurrent.api.<a href="DelegatingListenableAsyncCloseable.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">DelegatingListenableAsyncCloseable</a>&lt;T&gt; (implements io.servicetalk.concurrent.api.<a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)
+<ul>
 <li class="circle">io.servicetalk.concurrent.api.<a href="DelegatingExecutor.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a> (implements io.servicetalk.concurrent.api.<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>)</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="Executors.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Executors</a></li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="Processors.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Processors</a></li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="Publisher.html" class="type-name-link" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;
@@ -117,6 +125,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.concurrent.api.<a href="CompositeCloseable.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">CompositeCloseable</a> (also extends io.servicetalk.concurrent.api.<a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)</li>
 </ul>
 </li>
+<li class="circle">io.servicetalk.concurrent.api.<a href="Scope.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">Scope</a></li>
 </ul>
 </li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="BiIntFunction.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;T,<wbr>R&gt;</li>
@@ -125,6 +134,8 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.concurrent.api.<a href="BufferStrategy.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">BufferStrategy</a>&lt;T,<wbr>BC,<wbr>B&gt;</li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="BufferStrategy.Accumulator.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">BufferStrategy.Accumulator</a>&lt;T,<wbr>B&gt;</li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="ByteArrayMapper.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ByteArrayMapper</a>&lt;T&gt;</li>
+<li class="circle">io.servicetalk.concurrent.api.<a href="CapturedContext.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">CapturedContext</a></li>
+<li class="circle">io.servicetalk.concurrent.api.<a href="CapturedContextProvider.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">CapturedContextProvider</a></li>
 <li class="circle">java.util.function.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" class="type-name-link external-link" title="class or interface in java.util.function">Function</a>&lt;T,<wbr>R&gt;
 <ul>
 <li class="circle">io.servicetalk.concurrent.api.<a href="CompletableOperator.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">CompletableOperator</a></li>

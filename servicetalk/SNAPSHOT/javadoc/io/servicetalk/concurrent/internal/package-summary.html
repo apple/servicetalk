@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -98,8 +98,8 @@ loadScripts(document, 'script');</script>
 <li>
 <div id="class-summary">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
-<div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
-<div class="summary-table two-column-summary">
+<div id="class-summary.tabpanel" role="tabpanel">
+<div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="AbstractCloseableIterable.html" title="class in io.servicetalk.concurrent.internal">AbstractCloseableIterable</a>&lt;T&gt;</div>
@@ -178,46 +178,50 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">Deprecated.
 <div class="deprecation-comment">This class is no longer used by ServiceTalk and will be removed in the future releases.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab5"><a href="QueueFullAndRejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab5">Deprecated.
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="NoopSubscribers.html" title="class in io.servicetalk.concurrent.internal">NoopSubscribers</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Utility instances for Subscribers which don't do anything on events.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="QueueFullAndRejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">QueueFullAndRejectedSubscribeException</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab5">Deprecated.
 <div class="deprecation-comment">This class is no longer used by ServiceTalk and will be removed in the future releases.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="QueueFullException.html" title="class in io.servicetalk.concurrent.internal">QueueFullException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="QueueFullException.html" title="class in io.servicetalk.concurrent.internal">QueueFullException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Exception indicating a bounded queue is full.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="RejectedSubscribeError.html" title="interface in io.servicetalk.concurrent.internal">RejectedSubscribeError</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RejectedSubscribeError.html" title="interface in io.servicetalk.concurrent.internal">RejectedSubscribeError</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Used in scenarios where a subscribe to an asynchronous source is attempted, but no "real" subscription is
  established.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="RejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">RejectedSubscribeException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="RejectedSubscribeException.html" title="class in io.servicetalk.concurrent.internal">RejectedSubscribeException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Used in scenarios where a subscribe to an asynchronous source is attempted, but no "real" subscription is
  established.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ScalarValueSubscription.html" title="class in io.servicetalk.concurrent.internal">ScalarValueSubscription</a>&lt;T&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ScalarValueSubscription.html" title="class in io.servicetalk.concurrent.internal">ScalarValueSubscription</a>&lt;T&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> that only emits a single value.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SequentialCancellable.html" title="class in io.servicetalk.concurrent.internal">SequentialCancellable</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SequentialCancellable.html" title="class in io.servicetalk.concurrent.internal">SequentialCancellable</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that can hold at most one <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that will be cancelled when this is cancelled.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SubscriberUtils.html" title="class in io.servicetalk.concurrent.internal">SubscriberUtils</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SubscriberUtils.html" title="class in io.servicetalk.concurrent.internal">SubscriberUtils</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A set of utilities for common <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> tasks.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TerminalNotification.html" title="class in io.servicetalk.concurrent.internal">TerminalNotification</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TerminalNotification.html" title="class in io.servicetalk.concurrent.internal">TerminalNotification</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Holder of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ThreadInterruptingCancellable.html" title="class in io.servicetalk.concurrent.internal">ThreadInterruptingCancellable</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ThreadInterruptingCancellable.html" title="class in io.servicetalk.concurrent.internal">ThreadInterruptingCancellable</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that will <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Thread.html#interrupt()" title="class or interface in java.lang" class="external-link"><code>interrupt a thread</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ThrowableUtils.html" title="class in io.servicetalk.concurrent.internal">ThrowableUtils</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ThrowableUtils.html" title="class in io.servicetalk.concurrent.internal">ThrowableUtils</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Utility for creating static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>s.</div>
 </div>
 </div>

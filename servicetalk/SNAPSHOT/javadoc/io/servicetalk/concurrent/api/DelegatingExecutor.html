@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -72,7 +72,11 @@ loadScripts(document, 'script');</script>
 <h1 title="Class DelegatingExecutor" class="title">Class DelegatingExecutor</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
+<div class="inheritance"><a href="DelegatingAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.DelegatingAsyncCloseable</a>&lt;T&gt;
+<div class="inheritance"><a href="DelegatingListenableAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;
 <div class="inheritance">io.servicetalk.concurrent.api.DelegatingExecutor</div>
+</div>
+</div>
 </div>
 <section class="class-description" id="class-description">
 <dl class="notes">
@@ -80,8 +84,8 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code>, <code><a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a></code>, <code><a href="../TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public abstract class </span><span class="element-name type-name-label">DelegatingExecutor</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
+<div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">DelegatingExecutor</span>
+<span class="extends-implements">extends <a href="DelegatingListenableAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingListenableAsyncCloseable</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;
 implements <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></span></div>
 <div class="block">An <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that simply delegates all calls to another <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
 </section>
@@ -110,22 +114,11 @@ implements <a href="Executor.html" title="interface in io.servicetalk.concurrent
 <h2>Method Summary</h2>
 <div id="method-summary-table">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
-<div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
-<div class="summary-table three-column-summary">
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#closeAsync()" class="member-name-link">closeAsync</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Used to close/shutdown a resource.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Used to close/shutdown a resource, similar to <a href="AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
- abruptly closing.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#currentTime(java.util.concurrent.TimeUnit)" class="member-name-link">currentTime</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -134,22 +127,12 @@ implements <a href="Executor.html" title="interface in io.servicetalk.concurrent
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the delegate <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> used.</div>
+<div class="block">Get the <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that this class delegates to.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#execute(java.lang.Runnable)" class="member-name-link">execute</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;task)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Executes the passed <code>task</code> as soon as possible.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClose()" class="member-name-link">onClose</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClosing()" class="member-name-link">onClosing</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#schedule(java.lang.Runnable,long,java.util.concurrent.TimeUnit)" class="member-name-link">schedule</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;task,
@@ -196,15 +179,24 @@ implements <a href="Executor.html" title="interface in io.servicetalk.concurrent
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will complete after the time duration expires.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
 <div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.DelegatingListenableAsyncCloseable">Methods inherited from class&nbsp;io.servicetalk.concurrent.api.<a href="DelegatingListenableAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingListenableAsyncCloseable</a></h3>
+<code><a href="DelegatingListenableAsyncCloseable.html#onClose()">onClose</a>, <a href="DelegatingListenableAsyncCloseable.html#onClosing()">onClosing</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.DelegatingAsyncCloseable">Methods inherited from class&nbsp;io.servicetalk.concurrent.api.<a href="DelegatingAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingAsyncCloseable</a></h3>
+<code><a href="DelegatingAsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="DelegatingAsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a>, <a href="DelegatingAsyncCloseable.html#toString()">toString</a></code></div>
+<div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.AsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></h3>
+<code><a href="AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.ListenableAsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></h3>
+<code><a href="ListenableAsyncCloseable.html#onClose()">onClose</a>, <a href="ListenableAsyncCloseable.html#onClosing()">onClosing</a></code></div>
 </section>
 </li>
 </ul>
@@ -236,23 +228,15 @@ implements <a href="Executor.html" title="interface in io.servicetalk.concurrent
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="toString()">
-<h3>toString</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toString</span>()</div>
-<dl class="notes">
-<dt>Overrides:</dt>
-<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
-</dl>
-</section>
-</li>
-<li>
 <section class="detail" id="delegate()">
 <h3>delegate</h3>
 <div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="return-type"><a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></span>&nbsp;<span class="element-name">delegate</span>()</div>
-<div class="block">Returns the delegate <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> used.</div>
+<div class="block">Get the <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that this class delegates to.</div>
 <dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="DelegatingListenableAsyncCloseable.html#delegate()">delegate</a></code>&nbsp;in class&nbsp;<code><a href="DelegatingListenableAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingListenableAsyncCloseable</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;</code></dd>
 <dt>Returns:</dt>
-<dd>The delegate <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> used.</dd>
+<dd>the <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that this class delegates to.</dd>
 </dl>
 </section>
 </li>
@@ -462,77 +446,6 @@ implements <a href="Executor.html" title="interface in io.servicetalk.concurrent
 <dd><code>unit</code> - the time unit to calculate</dd>
 <dt>Returns:</dt>
 <dd>the internal clock time in the specified <code>unit</code>.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onClose()">
-<h3>onClose</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClose</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="ListenableAsyncCloseable.html#onClose()">ListenableAsyncCloseable</a></code></span></div>
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="ListenableAsyncCloseable.html#onClose()">onClose</a></code>&nbsp;in interface&nbsp;<code><a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
-<dt>Returns:</dt>
-<dd>the <code>Completable</code> that is notified on close.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="onClosing()">
-<h3>onClosing</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClosing</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="ListenableAsyncCloseable.html#onClosing()">ListenableAsyncCloseable</a></code></span></div>
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.
- <p>
- Closing begin might be when a close operation is initiated locally (e.g. subscribing to <a href="AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>) or
- it could also be a transport event received from a remote peer (e.g. read a <code>connection: close</code> header).
- <p>
- For backwards compatibility this method maybe functionally equivalent to <a href="ListenableAsyncCloseable.html#onClose()"><code>ListenableAsyncCloseable.onClose()</code></a>. Therefore, provides
- a best-effort leading edge notification of closing, but may fall back to notification on trailing edge.
- <p>
- The goal of this method is often to notify asap when closing so this method may not be offloaded and care must
- be taken to avoid blocking if subscribing to the return <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="ListenableAsyncCloseable.html#onClosing()">onClosing</a></code>&nbsp;in interface&nbsp;<code><a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
-<dt>Returns:</dt>
-<dd>a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="closeAsync()">
-<h3>closeAsync</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">closeAsync</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="AsyncCloseable.html#closeAsync()">AsyncCloseable</a></code></span></div>
-<div class="block">Used to close/shutdown a resource.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="AsyncCloseable.html#closeAsync()">closeAsync</a></code>&nbsp;in interface&nbsp;<code><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code></dd>
-<dt>Returns:</dt>
-<dd>A <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the close is complete.</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="closeAsyncGracefully()">
-<h3>closeAsyncGracefully</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">closeAsyncGracefully</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="AsyncCloseable.html#closeAsyncGracefully()">AsyncCloseable</a></code></span></div>
-<div class="block">Used to close/shutdown a resource, similar to <a href="AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
- abruptly closing. This provides a hint that implementations can use to stop accepting new work and finish in
- flight work. This method is implemented on a "best effort" basis and may be equivalent to <a href="AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>.
- <p>
- <b>Note</b>: Implementations may or may not apply a timeout for this operation to complete, if a caller does not
- want to wait indefinitely, and are unsure if the implementation applies a timeout, it is advisable to apply a
- timeout and force a call to <a href="AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code>&nbsp;in interface&nbsp;<code><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code></dd>
-<dt>Returns:</dt>
-<dd>A <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the close is complete.</dd>
 </dl>
 </section>
 </li>

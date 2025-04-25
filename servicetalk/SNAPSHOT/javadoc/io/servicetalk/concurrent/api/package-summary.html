@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -106,8 +106,8 @@ loadScripts(document, 'script');</script>
 <li>
 <div id="class-summary">
 <div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
-<div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
-<div class="summary-table two-column-summary">
+<div id="class-summary.tabpanel" role="tabpanel">
+<div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></div>
@@ -158,6 +158,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A mapper to transform <code>byte[]</code> buffer regions into a desired type <code>T</code>.</div>
 </div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="CapturedContext.html" title="interface in io.servicetalk.concurrent.api">CapturedContext</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">A representation of a context state that can be attached to the current thread.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="CapturedContextProvider.html" title="interface in io.servicetalk.concurrent.api">CapturedContextProvider</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">Functionality related to capturing thread-local like context for later restoration across async boundaries.</div>
+</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An asynchronous computation that does not emit any data.</div>
@@ -175,9 +183,17 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ThreadFactory.html" title="class or interface in java.util.concurrent" class="external-link"><code>ThreadFactory</code></a> implementation.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingExecutor.html" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingAsyncCloseable</a>&lt;T extends <a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&gt;</div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block"><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a> that delegates all calls to another <a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a>.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingExecutor.html" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">An <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that simply delegates all calls to another <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingListenableAsyncCloseable.html" title="class in io.servicetalk.concurrent.api">DelegatingListenableAsyncCloseable</a>&lt;T extends <a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block"><a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> that delegates all calls to another <a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a>.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
@@ -289,35 +305,39 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab1">Deprecated.
 <div class="deprecation-comment">Use <a href="ScanMapper.html" title="interface in io.servicetalk.concurrent.api"><code>ScanMapper</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="Scope.html" title="interface in io.servicetalk.concurrent.api">Scope</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">An abstraction for detaching a context from the current thread.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An asynchronous computation that either completes with success giving the result or completes with an error.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;T,<wbr>R&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;T,<wbr>R&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An operator contract for a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A contract that provides discrete callbacks for various ways in which a <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> can
  terminate.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SourceAdapters.html" title="class in io.servicetalk.concurrent.api">SourceAdapters</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SourceAdapters.html" title="class in io.servicetalk.concurrent.api">SourceAdapters</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A set of adapter methods to convert an asynchronous source in this module to a corresponding source in
  <a href="../package-summary.html"><code>io.servicetalk.concurrent</code></a> module.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SwitchMapSignal.html" title="interface in io.servicetalk.concurrent.api">SwitchMapSignal</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SwitchMapSignal.html" title="interface in io.servicetalk.concurrent.api">SwitchMapSignal</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A signal containing the data from a series of <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s switched in a serial fashion.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A contract that provides discrete callbacks for various ways in which a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> or a
  <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> can terminate.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TriConsumer.html" title="interface in io.servicetalk.concurrent.api">TriConsumer</a>&lt;X,<wbr>Y,<wbr>Z&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TriConsumer.html" title="interface in io.servicetalk.concurrent.api">TriConsumer</a>&lt;X,<wbr>Y,<wbr>Z&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Represents an operation that accepts three input arguments and returns no
  result.</div>
 </div>
