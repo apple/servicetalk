@@ -38,7 +38,7 @@ public final class Processors {
 
     /**
      * Create a new {@link CompletableSource.Processor} that allows for multiple
-     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}. The returned
+     * {@link CompletableSource#subscribe(CompletableSource.Subscriber) subscribes}. The returned
      * {@link CompletableSource.Processor} provides all the expected API guarantees when used as a
      * {@link CompletableSource} but does not expect the same guarantees when used as a
      * {@link CompletableSource.Subscriber}. As an example, users are not expected to call
@@ -46,7 +46,7 @@ public final class Processors {
      * {@link CompletableSource.Subscriber} methods concurrently and/or multiple times.
      *
      * @return a new {@link CompletableSource.Processor} that allows for multiple
-     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}.
+     * {@link CompletableSource#subscribe(CompletableSource.Subscriber) subscribes}.
      */
     public static CompletableSource.Processor newCompletableProcessor() {
         return new CompletableProcessor();
@@ -54,7 +54,7 @@ public final class Processors {
 
     /**
      * Create a new {@link SingleSource.Processor} that allows for multiple
-     * {@link SingleSource.Subscriber#subscribe(SingleSource.Subscriber) subscribes}. The returned
+     * {@link SingleSource#subscribe(SingleSource.Subscriber) subscribes}. The returned
      * {@link SingleSource.Processor} provides all the expected API guarantees when used as a
      * {@link SingleSource} but does not expect the same guarantees when used as a
      * {@link SingleSource.Subscriber}. As an example, users are not expected to call
@@ -64,7 +64,7 @@ public final class Processors {
      * @param <T> The {@link SingleSource} type and {@link SingleSource.Subscriber} type of the
      * {@link SingleSource.Processor}.
      * @return a new {@link SingleSource.Processor} that allows for multiple
-     * {@link SingleSource.Subscriber#subscribe(SingleSource.Subscriber) subscribes}.
+     * {@link SingleSource#subscribe(SingleSource.Subscriber) subscribes}.
      */
     public static <T> SingleSource.Processor<T, T> newSingleProcessor() {
         return new SingleProcessor<>();
@@ -72,7 +72,7 @@ public final class Processors {
 
     /**
      * Create a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}. The returned
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}. The returned
      * {@link PublisherSource.Processor} provides all the expected API guarantees when used as a
      * {@link PublisherSource} but does not expect the same guarantees when used as a
      * {@link PublisherSource.Subscriber}. As an example, users are not expected to call
@@ -86,7 +86,7 @@ public final class Processors {
      * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
      * {@link PublisherSource.Processor}.
      * @return a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}.
      * @see #newPublisherProcessor(int)
      * @see #newPublisherProcessor(PublisherProcessorSignalsHolder)
      */
@@ -96,7 +96,7 @@ public final class Processors {
 
     /**
      * Create a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}. The returned
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}. The returned
      * {@link PublisherSource.Processor} provides all the expected API guarantees when used as a
      * {@link PublisherSource} but does not expect the same guarantees when used as a
      * {@link PublisherSource.Subscriber}. As an example, users are not expected to call
@@ -112,7 +112,7 @@ public final class Processors {
      * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
      * {@link PublisherSource.Processor}.
      * @return a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}.
      */
     public static <T> PublisherSource.Processor<T, T> newPublisherProcessor(final int maxBuffer) {
         return newPublisherProcessor(fixedSize(maxBuffer));
@@ -120,7 +120,7 @@ public final class Processors {
 
     /**
      * Create a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}. The returned
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}. The returned
      * {@link PublisherSource.Processor} provides all the expected API guarantees when used as a
      * {@link PublisherSource} but does not expect the same guarantees when used as a
      * {@link PublisherSource.Subscriber}. As an example, users are not expected to call
@@ -136,7 +136,7 @@ public final class Processors {
      * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
      * {@link PublisherSource.Processor}.
      * @return a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}.
      */
     public static <T> PublisherSource.Processor<T, T> newPublisherProcessorDropHeadOnOverflow(final int maxBuffer) {
         return newPublisherProcessor(fixedSizeDropHead(maxBuffer));
@@ -144,7 +144,7 @@ public final class Processors {
 
     /**
      * Create a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}. The returned
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}. The returned
      * {@link PublisherSource.Processor} provides all the expected API guarantees when used as a
      * {@link PublisherSource} but does not expect the same guarantees when used as a
      * {@link PublisherSource.Subscriber}. As an example, users are not expected to call
@@ -160,7 +160,7 @@ public final class Processors {
      * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
      * {@link PublisherSource.Processor}.
      * @return a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}.
      */
     public static <T> PublisherSource.Processor<T, T> newPublisherProcessorDropTailOnOverflow(final int maxBuffer) {
         return newPublisherProcessor(fixedSizeDropTail(maxBuffer));
@@ -168,7 +168,7 @@ public final class Processors {
 
     /**
      * Create a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}. The returned
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}. The returned
      * {@link PublisherSource.Processor} provides all the expected API guarantees when used as a
      * {@link PublisherSource}. Users are expected to provide same API guarantees from the passed
      * {@link PublisherProcessorSignalsHolder} as they use the returned {@link PublisherSource.Processor} as a
@@ -181,7 +181,7 @@ public final class Processors {
      * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
      * {@link PublisherSource.Processor}.
      * @return a new {@link PublisherSource.Processor} that allows for a single
-     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     * {@link PublisherSource#subscribe(PublisherSource.Subscriber) subscribe}.
      */
     public static <T> PublisherSource.Processor<T, T> newPublisherProcessor(
             final PublisherProcessorSignalsHolder<T> holder) {

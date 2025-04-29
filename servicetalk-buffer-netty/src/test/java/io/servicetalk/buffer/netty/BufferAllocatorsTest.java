@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.internal.PlatformDependent;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -240,7 +241,10 @@ class BufferAllocatorsTest {
     }
 
     private void assertBuffer(BufferAllocator allocator, Buffer buffer) {
-        assertBuffer(buffer, allocator != PREFER_HEAP_ALLOCATOR);
+        // JDK24+ disables unsafe by default, which means allocators like PREFER_DIRECT will also fall back to
+        // heap allocations if unsafe is not explicitly enabled via a JVM arg.
+        final boolean direct = allocator != PREFER_HEAP_ALLOCATOR && PlatformDependent.hasUnsafe();
+        assertBuffer(buffer, direct);
     }
 
     private static void assertBuffer(Buffer buffer, boolean direct) {
