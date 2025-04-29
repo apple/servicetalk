@@ -111,7 +111,8 @@ public final class TrafficResilienceHttpClientFilter extends AbstractTrafficResi
 
     /**
      * Default rejection observer for dropped requests from an external sourced due to service unavailability.
-     * see. {@link Builder#peerBreakerRejection(HttpResponseMetaData, CircuitBreaker, Function)}.
+     * see. {@link TrafficResilienceHttpClientFilter#peerBreakerRejection(HttpResponseMetaData,
+     * CircuitBreaker, Function)}.
      * <p>
      * The default predicate matches the following HTTP response codes:
      * <ul>

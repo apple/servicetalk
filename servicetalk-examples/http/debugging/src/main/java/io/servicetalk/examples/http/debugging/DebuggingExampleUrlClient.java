@@ -156,6 +156,7 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  * 2023-08-29 18:02:12,535 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0xc0b781e2, L:/127.0.0.1:63690 - R:localhost/127.0.0.1:8080] CLOSE
  * 2023-08-29 18:02:12,536 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0xc0b781e2, L:/127.0.0.1:63690 ! R:localhost/127.0.0.1:8080] INACTIVE
  * 2023-08-29 18:02:12,537 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0xc0b781e2, L:/127.0.0.1:63690 ! R:localhost/127.0.0.1:8080] UNREGISTERED
+ * </pre>
  */
 public class DebuggingExampleUrlClient {
 
