@@ -15,26 +15,20 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DelegatingConnectionFactory;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ExecutionStrategy;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,27 +37,27 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectionObserverEventOrderTest {
 
+    @RegisterExtension
+    static final ExecutionContextExtension EXECUTION_CONTEXT =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+
     private final BlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
 
     @Test
     void repro() throws Exception {
-        final ServerContext serverContext = HttpServers.forPort(0)
+        final ServerContext serverContext = BuilderUtils.newServerBuilder(EXECUTION_CONTEXT)
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody("Test server response", textSerializerUtf8()));
-
-        final HostAndPort hostAndPort = serverHostAndPort(serverContext);
-        final String hostName = hostAndPort.hostName();
-        final int port = hostAndPort.port();
-
         assertThrows(Exception.class, () -> {
-            try (BlockingHttpClient client = HttpClients.forSingleAddress(hostName, port)
-                    .appendConnectionFactoryFilter(new TransportObserverInjectorFilter<>())
+            try (BlockingHttpClient client = BuilderUtils.newClientBuilder(serverContext, EXECUTION_CONTEXT)
+                    .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(
+                            new TestTransportObserver()))
                     .appendClientFilter(new HttpLifecycleObserverRequesterFilter(new HttpLifecycleObserverImpl()))
                     .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                             .retryRetryableExceptions((req, ex) ->
@@ -71,8 +65,7 @@ class ConnectionObserverEventOrderTest {
                             .build())
                     .buildBlocking()) {
                 serverContext.close(); // causes connection establishment to fail.
-                HttpResponse response = client.request(client.get("/sayHello"));
-                response.payloadBody();
+                client.request(client.get("/sayHello"));
             }
         });
 
@@ -120,36 +113,6 @@ class ConnectionObserverEventOrderTest {
                     addEvent();
                 }
             };
-        }
-    }
-
-    private final class TransportObserverInjectorFilter<R>
-            implements ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> {
-
-        @Override
-        public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
-                ConnectionFactory<R, FilterableStreamingHttpConnection> original) {
-            return new TransportObserverInjector<>(original);
-        }
-
-        @Override
-        public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.offloadNone();
-        }
-    }
-
-    private final class TransportObserverInjector<R> extends
-            DelegatingConnectionFactory<R, FilterableStreamingHttpConnection> {
-
-        TransportObserverInjector(final ConnectionFactory<R, FilterableStreamingHttpConnection> delegate) {
-            super(delegate);
-        }
-
-        @Override
-        public Single<FilterableStreamingHttpConnection> newConnection(final R resolvedAddress,
-                                                                       @Nullable final ContextMap context,
-                                                                       @Nullable final TransportObserver observer) {
-            return delegate().newConnection(resolvedAddress, context, new TestTransportObserver());
         }
     }
 

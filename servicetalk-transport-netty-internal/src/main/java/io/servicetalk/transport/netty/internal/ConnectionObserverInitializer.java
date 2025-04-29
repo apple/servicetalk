@@ -149,11 +149,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void handlerAdded(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (channel.isActive()) {
-                maybeAddChannelClosedListener(channel);
-                reportTcpHandshakeComplete(channel);
-                if (handshakeOnActive) {
-                    reportSecurityHandshakeStarting(sslConfig);
-                }
+                whenChannelActive(channel);
             }
         }
 
@@ -169,6 +165,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
                 if (future.isSuccess()) {
                     maybeAddChannelClosedListener(ctx.channel());
                 } else {
+                    assert ctx.channel().eventLoop().inEventLoop();
                     addedCloseListener = true;
                     Throwable t = channelError(future.channel());
                     if (t == null) {
@@ -186,13 +183,16 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            Channel channel = ctx.channel();
+            whenChannelActive(ctx.channel());
+            ctx.fireChannelActive();
+        }
+
+        private void whenChannelActive(final Channel channel) {
             maybeAddChannelClosedListener(channel);
             reportTcpHandshakeComplete(channel);
             if (handshakeOnActive) {
                 reportSecurityHandshakeStarting(sslConfig);
             }
-            ctx.fireChannelActive();
         }
 
         private void maybeAddChannelClosedListener(Channel channel) {

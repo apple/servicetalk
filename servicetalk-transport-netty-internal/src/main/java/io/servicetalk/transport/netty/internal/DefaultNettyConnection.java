@@ -1010,6 +1010,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
+            // TODO: how can we make sure we have the correct context information here.
+            //  See HttpTransportObserverAsyncContextTest. It has some assertions for 'broken' behavior.
             connection.dataObserver = observer.connectionEstablished(connection);
             subscriberCopy.onSuccess(connection);
         }

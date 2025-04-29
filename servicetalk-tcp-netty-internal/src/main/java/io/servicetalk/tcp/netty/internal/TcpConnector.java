@@ -141,7 +141,6 @@ public final class TcpConnector {
                     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
                                         SocketAddress localAddress, ChannelPromise promise) throws Exception {
                         ctx.pipeline().remove(this);
-                        super.connect(ctx, remoteAddress, localAddress, promise);
                         promise.addListener(f -> {
                             Throwable cause = f.cause();
                             if (cause != null) {
@@ -160,6 +159,7 @@ public final class TcpConnector {
                                 connectHandler.connectFailed(cause);
                             }
                         });
+                        super.connect(ctx, remoteAddress, localAddress, promise);
                     }
                 });
                 connectHandler.accept(channel);
