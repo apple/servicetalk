@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelFuture;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
@@ -26,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
