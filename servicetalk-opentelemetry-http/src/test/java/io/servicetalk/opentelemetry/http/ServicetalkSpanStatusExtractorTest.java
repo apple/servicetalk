@@ -22,11 +22,13 @@ import io.servicetalk.http.api.HttpResponseStatus;
 
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusBuilder;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -43,39 +45,64 @@ class ServicetalkSpanStatusExtractorTest {
     @Mock
     HttpResponseMetaData responseMetaData;
 
-    @Test
-    void testStatus200To399() {
-        int executions = 0;
+    @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
+    @ValueSource(booleans = {true, false})
+    void testStatus200To399(boolean isServer) {
         for (int code = 100; code < 400; code++) {
-            executions++;
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
-            ServicetalkSpanStatusExtractor.INSTANCE.extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
         }
-        verify(spanStatusBuilder, times(executions)).setStatus(StatusCode.OK);
+        // Should remain at the default value of UNSET
+        verify(spanStatusBuilder, times(0)).setStatus(any());
     }
 
-    @Test
-    void testStatus400to599() {
+    @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
+    @ValueSource(booleans = {true, false})
+    void testStatus400to499(boolean isServer) {
         int executions = 0;
-        for (int code = 400; code < 600; code++) {
+        for (int code = 400; code < 500; code++) {
             executions++;
             when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
-            ServicetalkSpanStatusExtractor.INSTANCE.extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+        }
+        if (isServer) {
+            // Should remain at the default value of UNSET
+            verify(spanStatusBuilder, times(0)).setStatus(any());
+        } else {
+            verify(spanStatusBuilder, times(executions)).setStatus(StatusCode.ERROR);
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
+    @ValueSource(booleans = {true, false})
+    void testStatus500to599(boolean isServer) {
+        int executions = 0;
+        for (int code = 500; code < 600; code++) {
+            executions++;
+            when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(code, "any"));
+            getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
         }
         verify(spanStatusBuilder, times(executions)).setStatus(StatusCode.ERROR);
     }
 
-    @Test
-    void testStatusUnknown() {
+    @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
+    @ValueSource(booleans = {true, false})
+    void testStatusUnknown(boolean isServer) {
         when(responseMetaData.status()).thenReturn(HttpResponseStatus.of(600, "any"));
-        ServicetalkSpanStatusExtractor.INSTANCE.extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
-        verify(spanStatusBuilder).setStatus(StatusCode.OK);
+        getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData, null);
+        verify(spanStatusBuilder, times(0)).setStatus(any());
     }
 
-    @Test
-    void testExceptionError() {
-        ServicetalkSpanStatusExtractor.INSTANCE.extract(spanStatusBuilder, requestMetaData, responseMetaData,
+    @ParameterizedTest(name = "{displayName} [{index}]: isServer={0}")
+    @ValueSource(booleans = {true, false})
+    void testExceptionError(boolean isServer) {
+        getExtractor(isServer).extract(spanStatusBuilder, requestMetaData, responseMetaData,
             new RuntimeException());
         verify(spanStatusBuilder).setStatus(StatusCode.ERROR);
+    }
+
+    private static ServicetalkSpanStatusExtractor getExtractor(boolean isServer) {
+        return isServer ? ServicetalkSpanStatusExtractor.SERVER_INSTANCE :
+                ServicetalkSpanStatusExtractor.CLIENT_INSTANCE;
     }
 }
