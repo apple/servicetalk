@@ -104,7 +104,7 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> serverInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
-        serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.INSTANCE);
+        serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder
                 .addAttributesExtractor(HttpServerAttributesExtractor
