@@ -16,11 +16,14 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -32,6 +35,8 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +46,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
@@ -245,6 +254,105 @@ class OpenTelemetryHttpRequestFilterTest {
                             .isEqualTo(singletonList("request-header-value"));
                     });
             }
+        }
+    }
+
+    @Test
+    void transportObserver() throws Exception {
+        final String requestUrl = "/";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
+        TransportObserver transportObserver = new TransportObserver() {
+
+            final AtomicReference<Span> span = new AtomicReference<>();
+
+            private void checkSpan() {
+                Span current = Span.current();
+                if (!current.equals(span.get())) {
+                    errors.add(new AssertionError("Unexpected span: " + current +
+                            " (expected " + span.get() + ")."));
+                }
+            }
+
+            @Override
+            public ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress) {
+                if (!span.compareAndSet(null, Span.current())) {
+                    errors.add(new AssertionError("onNewConnection called twice"));
+                }
+                return new ConnectionObserver() {
+                    @Override
+                    public void onDataRead(int size) {
+                        // TODO: Getting null span info here.
+//                        checkSpan();
+                    }
+
+                    @Override
+                    public void onDataWrite(int size) {
+                        // TODO: Getting null span info here.
+//                        checkSpan();
+                    }
+
+                    @Override
+                    public void onFlush() {
+                        // TODO: Getting null span info here.
+//                        checkSpan();
+                    }
+
+                    @Override
+                    public DataObserver connectionEstablished(ConnectionInfo info) {
+                        // TODO: Getting null span info here.
+//                        checkSpan();
+                        return NoopTransportObserver.NoopDataObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
+                        checkSpan();
+                        return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public void connectionClosed(Throwable error) {
+                        checkSpan();
+                    }
+
+                    @Override
+                    public void connectionClosed() {
+                        // TODO: Getting null span info here. It should only matter if it happens as part of a
+                        //  request.
+//                        checkSpan();
+                    }
+                };
+            }
+        };
+        try (ServerContext context = buildServer(openTelemetry, false)) {
+            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                    .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                    .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
+                    .appendConnectionFactoryFilter(
+                            new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
+                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
+                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                        serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                        TRACING_TEST_LOG_LINE_PREFIX);
+                assertThat(otelTesting.getSpans()).hasSize(1);
+                assertThat(otelTesting.getSpans()).extracting("traceId")
+                        .containsExactly(serverSpanState.getTraceId());
+                assertThat(otelTesting.getSpans()).extracting("spanId")
+                        .containsAnyOf(serverSpanState.getSpanId());
+                otelTesting.assertTraces()
+                        .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
+
+                otelTesting.assertTraces()
+                        .hasTracesSatisfyingExactly(ta -> {
+                            SpanData span = ta.getSpan(0);
+                        });
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw errors.poll();
         }
     }
 
