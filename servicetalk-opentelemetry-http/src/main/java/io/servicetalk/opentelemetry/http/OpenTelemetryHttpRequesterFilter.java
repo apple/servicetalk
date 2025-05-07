@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,33 +39,15 @@ import java.util.function.UnaryOperator;
  * {@link StreamingHttpResponse#transformMessageBody(UnaryOperator)} response message body}
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
- * @deprecated use {@link OpenTelemetryHttpRequesterFilter} instead.
  */
-@Deprecated // FIXME: 0.43 - remove deprecated class
-public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryHttpRequesterFilter {
-
-    /**
-     * Create a new instance.
-     *
-     * @param openTelemetry the {@link OpenTelemetry}.
-     * @param componentName The component name used during building new spans.
-     * @deprecated this method is internal, no user should be setting the {@link OpenTelemetry} as it is obtained by
-     * using {@link GlobalOpenTelemetry#get()} and there should be no other implementations but the one available in
-     * the classpath, this constructor will be removed in the future releases.
-     * Use {@link #OpenTelemetryHttpRequestFilter(String, OpenTelemetryOptions)} or
-     * {@link #OpenTelemetryHttpRequestFilter()} instead.
-     */
-    @Deprecated // FIXME: 0.43 - remove deprecated ctor
-    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        super(openTelemetry, componentName, DEFAULT_OPTIONS);
-    }
+public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetryHttpRequesterFilter {
 
     /**
      * Create a new instance, searching for any instance of an opentelemetry available.
      *
      * @param componentName The component name used during building new spans.
      */
-    public OpenTelemetryHttpRequestFilter(final String componentName) {
+    public OpenTelemetryHttpRequesterFilter(final String componentName) {
         this(componentName, DEFAULT_OPTIONS);
     }
 
@@ -75,15 +57,21 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param componentName        The component name used during building new spans.
      * @param opentelemetryOptions extra options to create the opentelemetry filter
      */
-    public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions) {
-        super(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
+    public OpenTelemetryHttpRequesterFilter(final String componentName,
+                                            final OpenTelemetryOptions opentelemetryOptions) {
+        this(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
     }
 
     /**
      * Create a new instance, searching for any instance of an opentelemetry available,
      * using the hostname as the component name.
      */
-    public OpenTelemetryHttpRequestFilter() {
+    public OpenTelemetryHttpRequesterFilter() {
         this("");
+    }
+
+    OpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
+                                             final OpenTelemetryOptions opentelemetryOptions) {
+        super(openTelemetry, componentName, opentelemetryOptions);
     }
 }

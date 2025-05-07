@@ -94,6 +94,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
@@ -104,7 +105,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class OpenTelemetryHttpServerFilterTest {
+class OpenTelemetryHttpServiceFilterTest {
 
     private static final Publisher<Buffer> DEFAULT_BODY = Publisher.from(
             ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR.fromAscii("data"));
@@ -174,7 +175,7 @@ class OpenTelemetryHttpServerFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient", DEFAULT_OPTIONS))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -289,7 +290,7 @@ class OpenTelemetryHttpServerFilterTest {
 
     @Test
     void verifyAsyncContextVisibility() throws Exception {
-        verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServerFilter());
+        verifyServerFilterAsyncContextVisibility(new OpenTelemetryHttpServiceFilter());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: http2={0}, useOffloading={1}")
@@ -482,7 +483,7 @@ class OpenTelemetryHttpServerFilterTest {
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry,
                                              OpenTelemetryOptions opentelemetryOptions) throws Exception {
         return HttpServers.forAddress(localAddress(0))
-            .appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+            .appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
             .appendServiceFilter(new TestTracingServerLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
             .listenAndAwait((ctx, request, responseFactory) -> {
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
@@ -512,12 +513,12 @@ class OpenTelemetryHttpServerFilterTest {
                 .protocols(config)
                 .drainRequestPayloadBody(false);
         if (useOffloading) {
-            builder.appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry, opentelemetryOptions))
+            builder.appendServiceFilter(new OpenTelemetryHttpServiceFilter(givenOpentelemetry, opentelemetryOptions))
                     .appendServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                     .appendServiceFilter(new HttpLifecycleObserverServiceFilter(
                             new TestHttpLifecycleObserver(errorQueue)));
         } else {
-            builder.appendNonOffloadingServiceFilter(new OpenTelemetryHttpServerFilter(
+            builder.appendNonOffloadingServiceFilter(new OpenTelemetryHttpServiceFilter(
                     givenOpentelemetry, opentelemetryOptions))
                     .appendNonOffloadingServiceFilter(HttpRequestAutoDrainingServiceFilter.INSTANCE)
                     .appendNonOffloadingServiceFilter(new HttpLifecycleObserverServiceFilter(
