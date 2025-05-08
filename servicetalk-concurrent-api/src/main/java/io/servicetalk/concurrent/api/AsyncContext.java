@@ -98,6 +98,10 @@ public final class AsyncContext {
         return provider().context();
     }
 
+    public static CapturedContext capturedContext() {
+        return provider().captureContext();
+    }
+
     /**
      * Convenience method to put a new entry to the current context.
      *

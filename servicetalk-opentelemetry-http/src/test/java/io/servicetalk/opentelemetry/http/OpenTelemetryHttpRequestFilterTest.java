@@ -274,6 +274,14 @@ class OpenTelemetryHttpRequestFilterTest {
                 }
             }
 
+            private void checkNoSpan() {
+                Span current = Span.current();
+                if (!current.equals(Span.getInvalid())) {
+                    errors.add(new AssertionError("Unexpected span: " + current +
+                            " (expected " + span.get() + ")."));
+                }
+            }
+
             @Override
             public ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress) {
                 if (!span.compareAndSet(null, Span.current())) {
@@ -282,26 +290,23 @@ class OpenTelemetryHttpRequestFilterTest {
                 return new ConnectionObserver() {
                     @Override
                     public void onDataRead(int size) {
-                        // TODO: Getting null span info here.
-//                        checkSpan();
+                        checkNoSpan();
                     }
 
                     @Override
                     public void onDataWrite(int size) {
-                        // TODO: Getting null span info here.
-//                        checkSpan();
+                        checkNoSpan();
                     }
 
                     @Override
                     public void onFlush() {
-                        // TODO: Getting null span info here.
-//                        checkSpan();
+                        checkNoSpan();
                     }
 
                     @Override
                     public DataObserver connectionEstablished(ConnectionInfo info) {
                         // TODO: Getting null span info here.
-//                        checkSpan();
+                        checkSpan();
                         return NoopTransportObserver.NoopDataObserver.INSTANCE;
                     }
 
@@ -313,14 +318,14 @@ class OpenTelemetryHttpRequestFilterTest {
 
                     @Override
                     public void connectionClosed(Throwable error) {
-                        checkSpan();
+                        // TODO: We should have a test for when session establishment fails, we have the span.
+                        checkNoSpan();
                     }
 
                     @Override
                     public void connectionClosed() {
-                        // TODO: Getting null span info here. It should only matter if it happens as part of a
-                        //  request.
-//                        checkSpan();
+                        // TODO: We should have a test for when session establishment fails, we have the span.
+                        checkNoSpan();
                     }
                 };
             }
