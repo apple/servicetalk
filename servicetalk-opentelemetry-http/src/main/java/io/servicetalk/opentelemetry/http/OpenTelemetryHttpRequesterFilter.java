@@ -71,7 +71,7 @@ public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetr
     }
 
     OpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
-                                             final OpenTelemetryOptions opentelemetryOptions) {
+                                     final OpenTelemetryOptions opentelemetryOptions) {
         super(openTelemetry, componentName, opentelemetryOptions);
     }
 }
