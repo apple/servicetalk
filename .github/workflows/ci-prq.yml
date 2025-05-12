@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 8, 11, 17, 21, 24 ]
+        java: [ 8, 11 ] # These are the JDK's we publish artifacts with.
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
