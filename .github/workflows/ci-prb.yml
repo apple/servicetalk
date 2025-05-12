@@ -21,7 +21,7 @@ jobs:
         os: [ ubuntu-latest ]
         include:
           - java: 11
-            os: macos-latest
+            os: [self-hosted, macos, general]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
