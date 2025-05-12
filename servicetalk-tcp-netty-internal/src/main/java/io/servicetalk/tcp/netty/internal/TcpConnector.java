@@ -347,8 +347,8 @@ public final class TcpConnector {
     //
     private static final class ContextPreservingConnectionObserver extends DelegatingConnectionObserver {
 
-        private volatile boolean useContext = true;
-        private final CapturedContext capturedContext;
+        @Nullable
+        private volatile CapturedContext capturedContext;
 
         ContextPreservingConnectionObserver(ConnectionObserver delegate) {
             super(delegate);
@@ -427,11 +427,12 @@ public final class TcpConnector {
         }
 
         private Scope attachContext() {
-            return useContext ? capturedContext.attachContext() : Scope.NOOP;
+            CapturedContext context = capturedContext;
+            return context != null ? context.attachContext() : Scope.NOOP;
         }
 
         private void unattachContext() {
-            useContext = false;
+            capturedContext = null;
         }
     }
 }

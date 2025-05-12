@@ -24,6 +24,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -67,6 +68,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -259,6 +261,10 @@ class OpenTelemetryHttpRequestFilterTest {
 
     @Test
     void transportObserver() throws Exception {
+        transportObserver(true);
+    }
+
+    void transportObserver(boolean fail) throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
@@ -330,14 +336,23 @@ class OpenTelemetryHttpRequestFilterTest {
                 };
             }
         };
-        try (ServerContext context = buildServer(openTelemetry, false)) {
-            try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
-                    .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
-                    .appendConnectionFactoryFilter(
-                            new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
-                HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+        ServerContext context = buildServer(openTelemetry, false);
+        try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
+                .appendConnectionFactoryFilter(
+                        new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
+            final HttpResponse response;
+            final TestSpanState serverSpanState;
+            if (fail) {
+                context.close();
+                context = null;
+                assertThrows(Exception.class, () -> client.request(client.get(requestUrl)).toFuture().get());
+                serverSpanState = null;
+            } else {
+                response = client.request(client.get(requestUrl)).toFuture().get();
+                serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                         serverSpanState.getTraceId(), serverSpanState.getSpanId(),
@@ -354,6 +369,10 @@ class OpenTelemetryHttpRequestFilterTest {
                         .hasTracesSatisfyingExactly(ta -> {
                             SpanData span = ta.getSpan(0);
                         });
+            }
+        } finally {
+            if (context != null) {
+                context.close();
             }
         }
         if (!errors.isEmpty()) {
