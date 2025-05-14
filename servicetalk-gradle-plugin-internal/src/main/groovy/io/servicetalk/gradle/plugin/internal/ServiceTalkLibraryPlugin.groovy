@@ -153,11 +153,10 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
                   def version = dep.version?.text()
                   if (version == null || version.trim().isEmpty()) {
                     // Some dependencies have shorter groupId for their corresponding BOM:
-                    def groupIdPrefix = groupId.count('.') == 1 ? groupId :
-                        groupId.substring(0, groupId.lastIndexOf('.'))
+                    def altGroupId = groupId.count('.') > 1 ? groupId.substring(0, groupId.lastIndexOf('.')) : groupId
                     def bom = pomNode.dependencyManagement?.dependencies?.dependency?.find { mDep ->
                       def mGroupId = mDep.groupId.text()
-                      (mGroupId == groupId || mGroupId == groupIdPrefix) && mDep.type?.text() == 'pom'
+                      (mGroupId == groupId || mGroupId == altGroupId) && mDep.type?.text() == 'pom'
                     }
                     if (!bom) {
                       throw new GradleException("POM generation failed: Missing version for dependency " +
