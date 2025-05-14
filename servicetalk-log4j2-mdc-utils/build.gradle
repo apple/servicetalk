@@ -24,8 +24,6 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-context-api")
 
-  runtimeOnly "org.apache.logging.log4j:log4j-core"
-
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testImplementation project(":servicetalk-concurrent")
   testImplementation project(":servicetalk-test-resources")
