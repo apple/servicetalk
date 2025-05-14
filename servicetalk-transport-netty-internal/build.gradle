@@ -31,7 +31,6 @@ dependencies {
   api "io.netty:netty-handler"
   api "io.netty:netty-transport"
 
-  implementation platform("io.netty:netty-bom:$nettyVersion")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-internal")

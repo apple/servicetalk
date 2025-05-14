@@ -34,12 +34,12 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
+  testFixturesApi platform("org.junit:junit-bom:$junit5Version")
   testFixturesApi project(":servicetalk-concurrent")
   testFixturesApi project(":servicetalk-concurrent-internal")
   testFixturesApi "org.junit.jupiter:junit-jupiter-api"
   testFixturesApi "org.hamcrest:hamcrest:$hamcrestVersion"
 
-  testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation project(":servicetalk-concurrent-test-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
