@@ -16,6 +16,7 @@
 package io.servicetalk.gradle.plugin.internal
 
 import com.github.spotbugs.snom.SpotBugsTask
+import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
@@ -142,6 +143,27 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
               ciManagement {
                 system = 'ServiceTalk CI'
                 url = "${ciManagementUrl}"
+              }
+              // Validate that all dependencies either have an explicit version or corresponding BOM:
+              withXml {
+                def pomNode = asNode()
+                pomNode.dependencies?.dependency?.each { dep ->
+                  def groupId = dep.groupId.text()
+                  def artifactId = dep.artifactId.text()
+                  def version = dep.version?.text()
+                  if (version == null || version.trim().isEmpty()) {
+                    // Some dependencies have shorter groupId for their corresponding BOM:
+                    def altGroupId = groupId.count('.') > 1 ? groupId.substring(0, groupId.lastIndexOf('.')) : groupId
+                    def bom = pomNode.dependencyManagement?.dependencies?.dependency?.find { mDep ->
+                      def mGroupId = mDep.groupId.text()
+                      (mGroupId == groupId || mGroupId == altGroupId) && mDep.type?.text() == 'pom'
+                    }
+                    if (!bom) {
+                      throw new GradleException("POM generation failed: Missing version for dependency " +
+                          "'${groupId}:${artifactId}'. Did you forget to add a version number or a platform BOM?")
+                    }
+                  }
+                }
               }
             }
           }
