@@ -60,6 +60,7 @@ dependencies {
 
   testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson"
 
+  testFixturesApi platform("org.glassfish.jersey:jersey-bom:$actualJerseyVersion")
   testFixturesApi platform("org.junit:junit-bom:$junit5Version")
   testFixturesApi project(":servicetalk-buffer-api")
   testFixturesApi project(":servicetalk-concurrent-api")
