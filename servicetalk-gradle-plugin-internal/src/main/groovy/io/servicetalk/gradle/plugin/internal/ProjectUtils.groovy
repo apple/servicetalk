@@ -250,6 +250,9 @@ final class ProjectUtils {
         if (tasks.findByName("javadoc")) {  // verifies that javadoc generates without errors
           dependsOn tasks.javadoc
         }
+        if (tasks.findByName("generatePomFileForMavenJavaPublication")) {  // verifies generated pom.xml
+          dependsOn tasks.generatePomFileForMavenJavaPublication
+        }
       }
     }
   }
