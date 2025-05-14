@@ -12,9 +12,11 @@ jobs:
       matrix:
         java: [ 8, 11, 17, 21, 24 ]
         os: [ ubuntu-latest ]
+        os_label: [ ubuntu ]
         include:
           - java: 11
             os: [self-hosted, macos, general]
+            os_label: macos
     steps:
       - name: Download Artifacts
         uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295
@@ -24,11 +26,11 @@ jobs:
           workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           # File location set in ci-prb.yml and must be coordinated.
-          name: test-results-${{ matrix.os }}-${{ matrix.java }}
+          name: test-results-${{ matrix.os_label }}-${{ matrix.java }}
       - name: Publish Test Report
         uses: scacap/action-surefire-report@1a128e49c0585bc0b8e38e541ac3b6e35a5bc727
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
           commit: ${{ github.event.workflow_run.head_commit.id }}
-          check_name: Test Report JDK ${{ matrix.java }} ${{ matrix.os }}
+          check_name: Test Report JDK ${{ matrix.java }} ${{ matrix.os_label }}
