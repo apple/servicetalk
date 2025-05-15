@@ -16,7 +16,7 @@ jobs:
       matrix:
         java: [ 8 ]
         os: [ ubuntu-latest ]
-        netty: [ 4.1+, 4.2.0.RC+ ]
+        netty: [ 4.1+, 4.2.+ ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
