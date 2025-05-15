@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -38,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -236,5 +239,21 @@ class DefaultHostTest {
         assertEquals(DELIBERATE_EXCEPTION, underlying);
         verify(healthIndicator, times(1)).beforeConnectStart();
         verify(healthIndicator, times(1)).onConnectError(0L, ConnectTracker.ErrorClass.CONNECT_ERROR);
+    }
+
+    @Test
+    void connectionInsertionOrderIsRandom() throws Exception {
+        buildHost();
+
+        List<TestLoadBalancedConnection> cxns = new ArrayList<>();
+        for (int i = 0; i < 32; i++) {
+            TestLoadBalancedConnection cxn =
+                    host.newConnection(c -> true, false, null).toFuture().get();
+            when(cxn.tryReserve()).thenReturn(false);
+            cxns.add(cxn);
+        }
+        List<TestLoadBalancedConnection> found = host.asEntry().getValue();
+        // There is about a 1 in (2^32) bn chance the insertion order in the same as the addition order.
+        assertNotEquals(cxns, found);
     }
 }
