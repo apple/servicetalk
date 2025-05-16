@@ -38,6 +38,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -601,9 +602,14 @@ final class DefaultHost<Addr, C extends LoadBalancedConnection> implements Host<
             if (connections.contains(connection)) {
                 return this;
             }
-            ArrayList<C> newList = new ArrayList<>(connections.size() + 1);
-            newList.addAll(connections);
-            newList.add(connection);
+            // We add the connection in a random position in our list to add some entropy which helps to avoid
+            // problems with correlated connection churn.
+            final int newSize = connections.size() + 1;
+            final int insertionIndex = ThreadLocalRandom.current().nextInt(newSize);
+            ArrayList<C> newList = new ArrayList<>(newSize);
+            for (int i = 0, j = 0; i < newSize; i++) {
+                newList.add(i == insertionIndex ? connection : connections.get(j++));
+            }
             return new ConnState(newList, State.ACTIVE, 0, null);
         }
 
