@@ -253,7 +253,7 @@ class DefaultHostTest {
             cxns.add(cxn);
         }
         List<TestLoadBalancedConnection> found = host.asEntry().getValue();
-        // There is about a 1 in (2^32) bn chance the insertion order in the same as the addition order.
+        // There is about a 1 in 32! chance the insertion order in the same as the addition order.
         assertNotEquals(cxns, found);
     }
 }
