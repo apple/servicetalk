@@ -19,9 +19,9 @@ apply plugin: "java-platform"
 
 description="ServiceTalk BOM that includes all modules"
 
-rootProject.subprojects.findAll { !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
-                                  !it.name.contains("examples") && !it.name.equals("grpc") &&
-                                  !it.name.equals("http")}.each {
+rootProject.subprojects.findAll { !it.path.endsWith("-bom") && !it.path.endsWith("-dependencies") &&
+                                  !it.path.endsWith("-benchmarks") &&
+                                  !it.path.startsWith(":servicetalk-examples")}.each {
     dependencies.constraints.add("api", it)
 }
 
