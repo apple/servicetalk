@@ -18,13 +18,19 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.CapturedContext;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Scope;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.DelegatingConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -45,6 +51,7 @@ import io.netty.resolver.NoopAddressResolver;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +109,7 @@ public final class TcpConnector {
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                 final ConnectionObserver connectionObserver =
-                        observer.onNewConnection(localAddress, resolvedRemoteAddress);
+                        getConnectionObserver(localAddress, resolvedRemoteAddress, observer);
                 final ConnectHandler<C> connectHandler;
                 try {
                      connectHandler = new ConnectHandler<>(subscriber, connectionFactory, connectionObserver);
@@ -120,6 +127,17 @@ public final class TcpConnector {
                 }
             }
         };
+    }
+
+    private static ConnectionObserver getConnectionObserver(@Nullable final SocketAddress localAddress,
+                                                            final Object resolvedRemoteAddress,
+                                                            TransportObserver observer) {
+        ConnectionObserver connectionObserver =
+                observer.onNewConnection(localAddress, resolvedRemoteAddress);
+        if (connectionObserver != NoopTransportObserver.NoopConnectionObserver.INSTANCE) {
+            connectionObserver = new ContextPreservingConnectionObserver(connectionObserver);
+        }
+        return connectionObserver;
     }
 
     private static Future<?> connect0(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
@@ -323,6 +341,97 @@ public final class TcpConnector {
             if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 target.onError(cause);
             }
+        }
+    }
+
+    //
+    private static final class ContextPreservingConnectionObserver extends DelegatingConnectionObserver {
+
+        private volatile boolean useContext = true;
+        private final CapturedContext capturedContext;
+
+        ContextPreservingConnectionObserver(ConnectionObserver delegate) {
+            super(delegate);
+            this.capturedContext = AsyncContext.capturedContext();
+        }
+
+        @Override
+        public void connectionClosed(Throwable error) {
+            try (Scope unused = attachContext()) {
+                delegate().connectionClosed(error);
+            } finally {
+                unattachContext();
+            }
+        }
+
+        @Override
+        public void connectionClosed() {
+            try (Scope unused = attachContext()) {
+                delegate().connectionClosed();
+            } finally {
+                unattachContext();
+            }
+        }
+
+        @Override
+        public SecurityHandshakeObserver onSecurityHandshake() {
+            try (Scope unused = attachContext()) {
+                return delegate().onSecurityHandshake();
+            }
+        }
+
+        @Override
+        public SecurityHandshakeObserver onSecurityHandshake(SslConfig sslConfig) {
+            try (Scope unused = attachContext()) {
+                return delegate().onSecurityHandshake(sslConfig);
+            }
+        }
+
+        @Override
+        public ProxyConnectObserver onProxyConnect(Object connectMsg) {
+            try (Scope unused = attachContext()) {
+                return delegate().onProxyConnect(connectMsg);
+            }
+        }
+
+        @Override
+        public void onTransportHandshakeComplete() {
+            try (Scope unused = attachContext()) {
+                delegate().onTransportHandshakeComplete();
+            }
+        }
+
+        @Override
+        public void onTransportHandshakeComplete(ConnectionInfo info) {
+            try (Scope unused = attachContext()) {
+                delegate().onTransportHandshakeComplete(info);
+            }
+        }
+
+        @Override
+        public DataObserver connectionEstablished(ConnectionInfo info) {
+            try (Scope unused = attachContext()) {
+                return delegate().connectionEstablished(info);
+            } finally {
+                unattachContext();
+            }
+        }
+
+        @Override
+        public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
+            try (Scope unused = attachContext()) {
+                return delegate().multiplexedConnectionEstablished(info);
+            } finally {
+                unattachContext();
+            }
+        }
+
+        private Scope attachContext() {
+            return useContext ? capturedContext.attachContext() : Scope.NOOP;
+        }
+
+        private void unattachContext() {
+            useContext = false;
         }
     }
 }
