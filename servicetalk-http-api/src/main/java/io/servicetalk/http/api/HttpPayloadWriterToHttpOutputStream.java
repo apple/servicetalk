@@ -45,7 +45,16 @@ final class HttpPayloadWriterToHttpOutputStream extends HttpOutputStream {
         if (len == 0) {
             return;
         }
-        writer.write(allocator.wrap(b, off, len));
+
+        if (b == null) {
+          throw new NullPointerException();
+        }
+
+        if (off < 0 || off + len > b.length) {
+          throw new ArrayIndexOutOfBoundsException();
+        }
+
+        payloadWriter.write(allocator.wrap(b, off, len));
     }
 
     @Override
