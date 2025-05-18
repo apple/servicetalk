@@ -58,6 +58,14 @@ public final class ConnectableBufferOutputStream extends OutputStream {
             return;
         }
 
+        if (b == null) {
+          throw new NullPointerException();
+        }
+
+        if (off < 0 || off + len > b.length) {
+          throw new ArrayIndexOutOfBoundsException();
+        }
+
         payloadWriter.write(allocator.wrap(b, off, len));
     }
 
