@@ -312,9 +312,19 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
         @Override
         public void write(final byte[] b, final int off, final int len) throws IOException {
-            final byte[] result = new byte[len];
-            arraycopy(b, off, result, 0, result.length);
-            delegate.write(result);
+            if (len == 0) {
+                return;
+            }
+    
+            if (b == null) {
+              throw new NullPointerException();
+            }
+    
+            if (off < 0 || off + len > b.length) {
+              throw new ArrayIndexOutOfBoundsException();
+            }
+    
+            payloadWriter.write(allocator.wrap(b, off, len));
         }
 
         @Override
