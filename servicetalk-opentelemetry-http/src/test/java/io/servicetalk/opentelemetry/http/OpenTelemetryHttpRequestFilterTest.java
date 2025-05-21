@@ -60,6 +60,7 @@ import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.DEFAULT_OPTIONS;
@@ -78,6 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OpenTelemetryHttpRequestFilterTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final int SLEEP_TIME = CI ? 500 : 100;
 
     private final LoggerStringWriter loggerStringWriter = new LoggerStringWriter();
 
@@ -364,7 +366,7 @@ class OpenTelemetryHttpRequestFilterTest {
                 context.close();
                 context = null;
                 assertThrows(Exception.class, () -> client.request(client.get(requestUrl)).toFuture().get());
-                Thread.sleep(50);
+                Thread.sleep(SLEEP_TIME);
                 otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
                     ta.hasSpansSatisfyingExactly(span ->
                         span.hasEventsSatisfying(eventData -> {
