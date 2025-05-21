@@ -27,12 +27,12 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.DelegatingConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -51,7 +51,6 @@ import io.netty.resolver.NoopAddressResolver;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -345,20 +344,41 @@ public final class TcpConnector {
     }
 
     //
-    private static final class ContextPreservingConnectionObserver extends DelegatingConnectionObserver {
+    private static final class ContextPreservingConnectionObserver implements ConnectionObserver {
 
+        private final ConnectionObserver delegate;
         @Nullable
-        private volatile CapturedContext capturedContext;
+        private CapturedContext capturedContext;
 
         ContextPreservingConnectionObserver(ConnectionObserver delegate) {
-            super(delegate);
-            this.capturedContext = AsyncContext.capturedContext();
+            this.delegate = delegate;
+            this.capturedContext = AsyncContext.captureContext();
+        }
+
+        @Override
+        public void onDataRead(int size) {
+            delegate.onDataRead(size);
+        }
+
+        @Override
+        public void onDataWrite(int size) {
+            delegate.onDataWrite(size);
+        }
+
+        @Override
+        public void onFlush() {
+            delegate.onFlush();
+        }
+
+        @Override
+        public void connectionWritabilityChanged(boolean isWritable) {
+            delegate.connectionWritabilityChanged(isWritable);
         }
 
         @Override
         public void connectionClosed(Throwable error) {
             try (Scope unused = attachContext()) {
-                delegate().connectionClosed(error);
+                delegate.connectionClosed(error);
             } finally {
                 unattachContext();
             }
@@ -367,7 +387,7 @@ public final class TcpConnector {
         @Override
         public void connectionClosed() {
             try (Scope unused = attachContext()) {
-                delegate().connectionClosed();
+                delegate.connectionClosed();
             } finally {
                 unattachContext();
             }
@@ -376,42 +396,42 @@ public final class TcpConnector {
         @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             try (Scope unused = attachContext()) {
-                return delegate().onSecurityHandshake();
+                return delegate.onSecurityHandshake();
             }
         }
 
         @Override
         public SecurityHandshakeObserver onSecurityHandshake(SslConfig sslConfig) {
             try (Scope unused = attachContext()) {
-                return delegate().onSecurityHandshake(sslConfig);
+                return delegate.onSecurityHandshake(sslConfig);
             }
         }
 
         @Override
         public ProxyConnectObserver onProxyConnect(Object connectMsg) {
             try (Scope unused = attachContext()) {
-                return delegate().onProxyConnect(connectMsg);
+                return delegate.onProxyConnect(connectMsg);
             }
         }
 
         @Override
         public void onTransportHandshakeComplete() {
             try (Scope unused = attachContext()) {
-                delegate().onTransportHandshakeComplete();
+                delegate.onTransportHandshakeComplete();
             }
         }
 
         @Override
         public void onTransportHandshakeComplete(ConnectionInfo info) {
             try (Scope unused = attachContext()) {
-                delegate().onTransportHandshakeComplete(info);
+                delegate.onTransportHandshakeComplete(info);
             }
         }
 
         @Override
         public DataObserver connectionEstablished(ConnectionInfo info) {
             try (Scope unused = attachContext()) {
-                return delegate().connectionEstablished(info);
+                return delegate.connectionEstablished(info);
             } finally {
                 unattachContext();
             }
@@ -420,7 +440,7 @@ public final class TcpConnector {
         @Override
         public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
             try (Scope unused = attachContext()) {
-                return delegate().multiplexedConnectionEstablished(info);
+                return delegate.multiplexedConnectionEstablished(info);
             } finally {
                 unattachContext();
             }

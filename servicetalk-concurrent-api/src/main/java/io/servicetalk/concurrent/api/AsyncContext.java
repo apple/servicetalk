@@ -98,7 +98,11 @@ public final class AsyncContext {
         return provider().context();
     }
 
-    public static CapturedContext capturedContext() {
+    /**
+     * Grab a reference of the current context.
+     * @return the current context.
+     */
+    public static CapturedContext captureContext() {
         return provider().captureContext();
     }
 

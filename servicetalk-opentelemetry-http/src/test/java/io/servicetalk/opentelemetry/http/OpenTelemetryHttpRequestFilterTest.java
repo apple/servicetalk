@@ -24,8 +24,9 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -35,23 +36,25 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
+import io.opentelemetry.sdk.trace.data.EventData;
+import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
@@ -259,12 +262,9 @@ class OpenTelemetryHttpRequestFilterTest {
         }
     }
 
-    @Test
-    void transportObserver() throws Exception {
-        transportObserver(true);
-    }
-
-    void transportObserver(boolean fail) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: transportFailure={0}")
+    @ValueSource(booleans = {true, false})
+    void transportObserver(boolean transportFailure) throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
@@ -272,12 +272,13 @@ class OpenTelemetryHttpRequestFilterTest {
 
             final AtomicReference<Span> span = new AtomicReference<>();
 
-            private void checkSpan() {
+            private void checkSpan(String eventName) {
                 Span current = Span.current();
                 if (!current.equals(span.get())) {
                     errors.add(new AssertionError("Unexpected span: " + current +
                             " (expected " + span.get() + ")."));
                 }
+                current.addEvent(eventName);
             }
 
             private void checkNoSpan() {
@@ -290,8 +291,9 @@ class OpenTelemetryHttpRequestFilterTest {
 
             @Override
             public ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress) {
-                if (!span.compareAndSet(null, Span.current())) {
-                    errors.add(new AssertionError("onNewConnection called twice"));
+                if (!span.compareAndSet(null, Span.current()) && !transportFailure) {
+                    // If we expect failures then we expect retries, so it's fine.
+                    errors.add(new AssertionError("onNewConnection called multiple times"));
                 }
                 return new ConnectionObserver() {
                     @Override
@@ -311,27 +313,40 @@ class OpenTelemetryHttpRequestFilterTest {
 
                     @Override
                     public DataObserver connectionEstablished(ConnectionInfo info) {
-                        // TODO: Getting null span info here.
-                        checkSpan();
+                        if (transportFailure) {
+                            errors.add(new AssertionError("Unexpected connection"));
+                        } else {
+                            checkSpan("connectionEstablished");
+                        }
                         return NoopTransportObserver.NoopDataObserver.INSTANCE;
                     }
 
                     @Override
                     public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
-                        checkSpan();
+                        if (transportFailure) {
+                            errors.add(new AssertionError("Unexpected connection"));
+                        } else {
+                            checkSpan("multiplexedConnectionEstablished");
+                        }
                         return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
                     }
 
                     @Override
                     public void connectionClosed(Throwable error) {
-                        // TODO: We should have a test for when session establishment fails, we have the span.
-                        checkNoSpan();
+                        if (transportFailure) {
+                            checkSpan("connectionClosed(error)");
+                        } else {
+                            checkNoSpan();
+                        }
                     }
 
                     @Override
                     public void connectionClosed() {
-                        // TODO: We should have a test for when session establishment fails, we have the span.
-                        checkNoSpan();
+                        if (transportFailure) {
+                            checkSpan("connectionClosed()");
+                        } else {
+                            checkNoSpan();
+                        }
                     }
                 };
             }
@@ -345,11 +360,20 @@ class OpenTelemetryHttpRequestFilterTest {
                         new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
             final HttpResponse response;
             final TestSpanState serverSpanState;
-            if (fail) {
+            if (transportFailure) {
                 context.close();
                 context = null;
                 assertThrows(Exception.class, () -> client.request(client.get(requestUrl)).toFuture().get());
-                serverSpanState = null;
+                Thread.sleep(50);
+                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
+                    ta.hasSpansSatisfyingExactly(span ->
+                        span.hasEventsSatisfying(eventData -> {
+                            for (EventData data : eventData) {
+                                if (!(data instanceof ExceptionEventData)) {
+                                    assertThat(data.getName()).isEqualTo("connectionClosed(error)");
+                                }
+                            }
+                        })));
             } else {
                 response = client.request(client.get(requestUrl)).toFuture().get();
                 serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
@@ -363,11 +387,12 @@ class OpenTelemetryHttpRequestFilterTest {
                 assertThat(otelTesting.getSpans()).extracting("spanId")
                         .containsAnyOf(serverSpanState.getSpanId());
                 otelTesting.assertTraces()
-                        .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
-
-                otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta -> {
-                            SpanData span = ta.getSpan(0);
+                            ta.hasTraceId(serverSpanState.getTraceId());
+                            ta.hasSpansSatisfyingExactly(span -> span.hasEventsSatisfying(eventData -> {
+                                assertThat(eventData).hasSize(1);
+                                assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
+                            }));
                         });
             }
         } finally {
