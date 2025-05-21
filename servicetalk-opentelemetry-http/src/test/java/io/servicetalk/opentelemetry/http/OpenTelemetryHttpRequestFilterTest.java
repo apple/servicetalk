@@ -383,6 +383,7 @@ class OpenTelemetryHttpRequestFilterTest {
                 verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
                         serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                         TRACING_TEST_LOG_LINE_PREFIX);
+                Thread.sleep(SLEEP_TIME);
                 assertThat(otelTesting.getSpans()).hasSize(1);
                 assertThat(otelTesting.getSpans()).extracting("traceId")
                         .containsExactly(serverSpanState.getTraceId());
