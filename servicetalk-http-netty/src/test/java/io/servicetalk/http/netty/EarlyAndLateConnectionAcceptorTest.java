@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023, 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -63,6 +65,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EarlyAndLateConnectionAcceptorTest {
@@ -93,7 +96,14 @@ class EarlyAndLateConnectionAcceptorTest {
         HttpServerBuilder builder = serverBuilder().appendEarlyConnectionAcceptor(new EarlyConnectionAcceptor() {
             @Override
             public Completable accept(final ConnectionInfo info) {
-                assertNotNull(info);
+                throw new UnsupportedOperationException("Not expected to be invoked");
+            }
+
+            @Override
+            public Completable accept(final ConnectionContext ctx) {
+                assertNotNull(ctx);
+                assertNotNull(ctx.sslConfig());
+                assertNull(ctx.sslSession());
                 offloaded.set(!IoThreadFactory.IoThread.currentThreadIsIoThread());
                 return Completable.completed();
             }
@@ -103,7 +113,7 @@ class EarlyAndLateConnectionAcceptorTest {
                 return offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone();
             }
         });
-        doSuccessRequestResponse(builder, Protocol.H1);
+        doSuccessRequestResponse(builder, Protocol.H1_TLS);
 
         assertThat("EarlyConnectionAcceptor was not invoked", offloaded.get(), is(notNullValue()));
         assertThat("Incorrect offloading for EarlyConnectionAcceptor", offloaded.get(), is(offload));
@@ -117,7 +127,14 @@ class EarlyAndLateConnectionAcceptorTest {
         HttpServerBuilder builder = serverBuilder().appendLateConnectionAcceptor(new LateConnectionAcceptor() {
             @Override
             public Completable accept(final ConnectionInfo info) {
-                assertNotNull(info);
+                throw new UnsupportedOperationException("Not expected to be invoked");
+            }
+
+            @Override
+            public Completable accept(final ConnectionContext ctx) {
+                assertNotNull(ctx);
+                assertNotNull(ctx.sslConfig());
+                assertNotNull(ctx.sslSession());
                 offloaded.set(!IoThreadFactory.IoThread.currentThreadIsIoThread());
                 return Completable.completed();
             }
@@ -127,7 +144,7 @@ class EarlyAndLateConnectionAcceptorTest {
                 return offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone();
             }
         });
-        doSuccessRequestResponse(builder, Protocol.H1);
+        doSuccessRequestResponse(builder, Protocol.H1_TLS);
 
         assertThat("LateConnectionAcceptor was not invoked", offloaded.get(), is(notNullValue()));
         assertThat("Incorrect offloading for LateConnectionAcceptor", offloaded.get(), is(offload));
@@ -189,6 +206,11 @@ class EarlyAndLateConnectionAcceptorTest {
             return new EarlyConnectionAcceptor() {
                 @Override
                 public Completable accept(final ConnectionInfo info) {
+                    throw new UnsupportedOperationException("Not expected to be invoked");
+                }
+
+                @Override
+                public Completable accept(final ConnectionContext ctx) {
                     if (!IoThreadFactory.IoThread.currentThreadIsIoThread()) {
                         numOffloaded.incrementAndGet();
                     }
@@ -205,7 +227,7 @@ class EarlyAndLateConnectionAcceptorTest {
     }
 
     private static LateConnectionAcceptor lateAcceptor(boolean shouldOffload, final AtomicInteger numOffloaded,
-                                                        final Queue<Integer> executionOrder, final int numOrder) {
+                                                       final Queue<Integer> executionOrder, final int numOrder) {
         if (shouldOffload) {
             return info -> {
                 if (!IoThreadFactory.IoThread.currentThreadIsIoThread()) {
@@ -218,6 +240,11 @@ class EarlyAndLateConnectionAcceptorTest {
             return new LateConnectionAcceptor() {
                 @Override
                 public Completable accept(final ConnectionInfo info) {
+                    throw new UnsupportedOperationException("Not expected to be invoked");
+                }
+
+                @Override
+                public Completable accept(final ConnectionContext ctx) {
                     if (!IoThreadFactory.IoThread.currentThreadIsIoThread()) {
                         numOffloaded.incrementAndGet();
                     }
@@ -291,7 +318,7 @@ class EarlyAndLateConnectionAcceptorTest {
     @Test
     void earlyConnectionAcceptorCanReject() throws Exception {
         HttpServerBuilder builder = serverBuilder()
-                .appendEarlyConnectionAcceptor(info -> Completable.failed(new Exception("woops")));
+                .appendEarlyConnectionAcceptor(info -> Completable.failed(DELIBERATE_EXCEPTION));
 
         final HttpService service = (ctx, request, responseFactory) ->
                 succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
@@ -307,7 +334,7 @@ class EarlyAndLateConnectionAcceptorTest {
     @Test
     void lateConnectionAcceptorCanReject() throws Exception {
         HttpServerBuilder builder = serverBuilder()
-                .appendLateConnectionAcceptor(info -> Completable.failed(new Exception("woops")));
+                .appendLateConnectionAcceptor(info -> Completable.failed(DELIBERATE_EXCEPTION));
 
         final HttpService service = (ctx, request, responseFactory) ->
                 succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));

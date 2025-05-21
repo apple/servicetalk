@@ -43,6 +43,7 @@ import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -502,9 +503,17 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .stream()
                 .reduce((prev, acceptor) -> new EarlyConnectionAcceptor() {
                     @Override
+                    @SuppressWarnings("deprecation")
                     public Completable accept(final ConnectionInfo info) {
                         // Defer invocation of the next acceptor, but share context between them.
                         return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
+                    }
+
+                    @Override
+                    public Completable accept(final ConnectionContext ctx) {
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(ctx).concat(defer(() -> acceptor.accept(ctx)).shareContextOnSubscribe())
                                 .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 
@@ -528,9 +537,17 @@ class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .stream()
                 .reduce((prev, acceptor) -> new LateConnectionAcceptor() {
                     @Override
+                    @SuppressWarnings("deprecation")
                     public Completable accept(final ConnectionInfo info) {
                         // Defer invocation of the next acceptor, but share context between them.
                         return prev.accept(info).concat(defer(() -> acceptor.accept(info)).shareContextOnSubscribe())
+                                .shareContextOnSubscribe(); // Share context with the rest of the chain.
+                    }
+
+                    @Override
+                    public Completable accept(final ConnectionContext ctx) {
+                        // Defer invocation of the next acceptor, but share context between them.
+                        return prev.accept(ctx).concat(defer(() -> acceptor.accept(ctx)).shareContextOnSubscribe())
                                 .shareContextOnSubscribe(); // Share context with the rest of the chain.
                     }
 

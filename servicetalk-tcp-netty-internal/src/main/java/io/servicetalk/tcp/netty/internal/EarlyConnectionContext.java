@@ -15,9 +15,10 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
 
@@ -28,7 +29,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
-final class TcpConnectionInfo implements ConnectionInfo {
+final class EarlyConnectionContext extends NettyChannelListenableAsyncCloseable implements ConnectionContext {
 
     private static final Protocol TCP_PROTOCOL = () -> "TCP";
 
@@ -38,10 +39,11 @@ final class TcpConnectionInfo implements ConnectionInfo {
     private final SslConfig sslConfig;
     private final long idleTimeoutMs;
 
-    TcpConnectionInfo(final Channel channel,
-                      final ExecutionContext<?> executionContext,
-                      @Nullable final SslConfig sslConfig,
-                      final long idleTimeoutMs) {
+    EarlyConnectionContext(final Channel channel,
+                           final ExecutionContext<?> executionContext,
+                           @Nullable final SslConfig sslConfig,
+                           final long idleTimeoutMs) {
+        super(channel, executionContext.executor());
         this.channel = channel;
         this.executionContext = executionContext;
         this.sslConfig = sslConfig;
@@ -72,7 +74,7 @@ final class TcpConnectionInfo implements ConnectionInfo {
     @Nullable
     @Override
     public SSLSession sslSession() {
-        return null;
+        return null;    // Expected to always be null at this point for EarlyConnectionAcceptor
     }
 
     @Nullable

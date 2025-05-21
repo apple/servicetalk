@@ -46,6 +46,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
@@ -591,8 +592,14 @@ abstract class AbstractHttpServiceAsyncContextTest {
     private static EarlyConnectionAcceptor newEarly(boolean useImmediate, EarlyConnectionAcceptor delegate) {
         return new EarlyConnectionAcceptor() {
             @Override
+            @SuppressWarnings("deprecation")
             public Completable accept(ConnectionInfo info) {
                 return delegate.accept(info);
+            }
+
+            @Override
+            public Completable accept(ConnectionContext ctx) {
+                return delegate.accept(ctx);
             }
 
             @Override
@@ -605,8 +612,14 @@ abstract class AbstractHttpServiceAsyncContextTest {
     private static LateConnectionAcceptor newLate(boolean useImmediate, LateConnectionAcceptor delegate) {
         return new LateConnectionAcceptor() {
             @Override
+            @SuppressWarnings("deprecation")
             public Completable accept(ConnectionInfo info) {
                 return delegate.accept(info);
+            }
+
+            @Override
+            public Completable accept(ConnectionContext ctx) {
+                return delegate.accept(ctx);
             }
 
             @Override

@@ -91,7 +91,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {    // F
         final ClientSslConfig sslConfig = config.sslConfig();
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
-                    channel -> new TcpConnectionInfo(channel,
+                    channel -> new EarlyConnectionContext(channel,
                             // ExecutionContext can be null if users used deprecated ctor
                             executionContext == null ? null : channelExecutionContext(channel, executionContext),
                             sslConfig, config.idleTimeoutMs()), true, deferSslHandler ? null : sslConfig));
