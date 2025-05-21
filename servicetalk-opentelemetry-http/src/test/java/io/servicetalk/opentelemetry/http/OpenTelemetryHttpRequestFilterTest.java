@@ -360,6 +360,9 @@ class OpenTelemetryHttpRequestFilterTest {
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
                 .appendConnectionFactoryFilter(
                         new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
+            // This is necessary to let the load balancer become ready
+            Thread.sleep(SLEEP_TIME);
+
             final HttpResponse response;
             final TestSpanState serverSpanState;
             if (transportFailure) {
