@@ -197,30 +197,30 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
 
             @Override
             public void onTransportHandshakeComplete(final ConnectionInfo info) {
-                // AsyncContext is unknown at this point because this event is triggered by network
+                storageMap.put("onTransportHandshakeComplete", valueOf(AsyncContext.get(key)));
             }
 
             @Override
             public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
-                // AsyncContext is unknown at this point because this event is triggered by network
+                storageMap.put("onProxyConnect", valueOf(AsyncContext.get(key)));
                 return NoopProxyConnectObserver.INSTANCE;
             }
 
             @Override
             public SecurityHandshakeObserver onSecurityHandshake(final SslConfig config) {
-                // AsyncContext is unknown at this point because this event is triggered by network
+                storageMap.put("onSecurityHandshake", valueOf(AsyncContext.get(key)));
                 return NoopSecurityHandshakeObserver.INSTANCE;
             }
 
             @Override
             public DataObserver connectionEstablished(final ConnectionInfo info) {
-                // AsyncContext is unknown at this point because this event is triggered by network
+                storageMap.put("connectionEstablished", valueOf(AsyncContext.get(key)));
                 return new AsyncContextCaptureDataObserver();
             }
 
             @Override
             public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
-                // AsyncContext is unknown at this point because this event is triggered by network
+                storageMap.put("multiplexedConnectionEstablished", valueOf(AsyncContext.get(key)));
                 return new AsyncContextCaptureMultiplexedObserver();
             }
 

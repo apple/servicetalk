@@ -99,6 +99,14 @@ public final class AsyncContext {
     }
 
     /**
+     * Grab a reference of the current context.
+     * @return the current context.
+     */
+    public static CapturedContext captureContext() {
+        return provider().captureContext();
+    }
+
+    /**
      * Convenience method to put a new entry to the current context.
      *
      * @param key The {@link ContextMap.Key} used to index the {@code value}.
