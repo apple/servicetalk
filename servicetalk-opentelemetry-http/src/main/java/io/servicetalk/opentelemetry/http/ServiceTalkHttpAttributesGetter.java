@@ -42,8 +42,8 @@ abstract class ServiceTalkHttpAttributesGetter
     private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
 
-    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
-            CLIENT_INSTANCE = new ClientGetter();
+    private static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+            CLIENT_INSTANCE = new ClientGetter(null);
 
     static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
             SERVER_INSTANCE = new ServerGetter();
@@ -78,7 +78,6 @@ abstract class ServiceTalkHttpAttributesGetter
     }
 
     @Override
-    @Nullable
     public final String getNetworkProtocolName(
             final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
         return HTTP_SCHEME;
@@ -91,6 +90,11 @@ abstract class ServiceTalkHttpAttributesGetter
             return request.version().fullVersion();
         }
         return response.version().fullVersion();
+    }
+
+    static HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+    clientGetter(@Nullable final HostAndPort hostAndPort) {
+        return hostAndPort == null ? CLIENT_INSTANCE : new ClientGetter(hostAndPort);
     }
 
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
@@ -114,38 +118,44 @@ abstract class ServiceTalkHttpAttributesGetter
     private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
             implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
 
+        @Nullable
+        private final HostAndPort hostAndPort;
+
+        ClientGetter(@Nullable HostAndPort hostAndPort) {
+            this.hostAndPort = hostAndPort;
+        }
+
         @Override
         @Nullable
         public String getUrlFull(final HttpRequestMetaData request) {
-            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            String requestTarget = request.requestTarget();
+            if (requestTarget.startsWith("https://") || requestTarget.startsWith("http://")) {
+                // request target is already absolute-form: just return it.
+                return requestTarget;
+            }
+
+            // in this case the request target is most likely origin-form so we need to convert it to absolute-form.
+            HostAndPort effectiveHostAndPort = hostAndPort(request);
             if (effectiveHostAndPort == null) {
+                // we cant create the authority so we must just return.
                 return null;
             }
             String scheme = request.scheme();
             if (scheme == null) {
-                scheme = HTTP_SCHEME;
+                scheme = effectiveHostAndPort.port() == 443 ? HTTPS_SCHEME : HTTP_SCHEME;
             }
-            String requestTarget = request.requestTarget();
-            StringBuilder sb = new StringBuilder(
-                    scheme.length() + 3 +
-                    effectiveHostAndPort.hostName().length() +
-                    ((effectiveHostAndPort.port()) >= 0 ? 5 : 0) +
-                    requestTarget.length());
-            sb.append(scheme)
-                    .append("://")
-                    .append(effectiveHostAndPort.hostName());
-            if (effectiveHostAndPort.port() >= 0) {
-                sb.append(':')
-                        .append(effectiveHostAndPort.port());
+            String authority = effectiveHostAndPort.hostName();
+            if (!isDefaultPort(scheme, effectiveHostAndPort.port())) {
+                authority = authority + ':' + effectiveHostAndPort.port();
             }
-            sb.append(requestTarget);
-            return sb.toString();
+            String authoritySeparator = requestTarget.startsWith("/") ? "" : "/";
+            return scheme + "://" + authority + authoritySeparator + requestTarget;
         }
 
         @Override
         @Nullable
         public String getServerAddress(final HttpRequestMetaData request) {
-            final HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            HostAndPort effectiveHostAndPort = hostAndPort(request);
             return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
         }
 
@@ -166,7 +176,20 @@ abstract class ServiceTalkHttpAttributesGetter
                     return 443;
                 }
             }
+            if (hostAndPort != null && hostAndPort.port() > 0) {
+                return hostAndPort.port();
+            }
             return null;
+        }
+
+        @Nullable
+        private HostAndPort hostAndPort(HttpRequestMetaData metaData) {
+            HostAndPort effectiveHostAndPort = metaData.effectiveHostAndPort();
+            return effectiveHostAndPort != null ? effectiveHostAndPort : this.hostAndPort;
+        }
+
+        private static boolean isDefaultPort(String scheme, int port) {
+            return port < 1 || HTTPS_SCHEME.equals(scheme) && port == 443 || HTTP_SCHEME.equals(scheme) && port == 80;
         }
     }
 

@@ -19,6 +19,7 @@ package io.servicetalk.opentelemetry.http;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -57,7 +58,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        super(openTelemetry, componentName, DEFAULT_OPTIONS);
+        super(openTelemetry, componentName, DEFAULT_OPTIONS, null);
     }
 
     /**
@@ -76,7 +77,19 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param opentelemetryOptions extra options to create the opentelemetry filter
      */
     public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions) {
-        super(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
+        super(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions, null);
+    }
+
+    /**
+     * Create a new instance, searching for any instance of an opentelemetry available.
+     *
+     * @param componentName        The component name used during building new spans.
+     * @param opentelemetryOptions extra options to create the opentelemetry filter
+     * @param hostAndPort          The host and port of the backend service
+     */
+    public OpenTelemetryHttpRequestFilter(final String componentName, final OpenTelemetryOptions opentelemetryOptions,
+                                          HostAndPort hostAndPort) {
+        super(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions, hostAndPort);
     }
 
     /**
