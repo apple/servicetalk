@@ -343,7 +343,6 @@ public final class TcpConnector {
         }
     }
 
-    //
     private static final class ContextPreservingConnectionObserver implements ConnectionObserver {
 
         private final ConnectionObserver delegate;
