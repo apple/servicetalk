@@ -19,6 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
   api project(":servicetalk-http-api")
+  api project(':servicetalk-transport-api')
   api "io.opentelemetry:opentelemetry-api"
 
   implementation platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:" +
@@ -28,7 +29,6 @@ dependencies {
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-http-utils")
-  implementation project(":servicetalk-transport-api")
   implementation "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api"
   implementation "io.opentelemetry:opentelemetry-context"
 
@@ -50,6 +50,7 @@ dependencies {
   testImplementation "io.opentelemetry:opentelemetry-sdk-trace"
   testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
   testImplementation "io.opentelemetry.semconv:opentelemetry-semconv"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"
   testImplementation "org.assertj:assertj-core:$assertJCoreVersion"
