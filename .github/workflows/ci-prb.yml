@@ -13,15 +13,17 @@ on:
       - '**.txt'
 jobs:
   build:
-    name: JDK ${{ matrix.java }} ${{ matrix.os }}
+    name: JDK ${{ matrix.java }} ${{ matrix.os_label }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         java: [ 8, 11, 17, 21, 24 ]
         os: [ ubuntu-latest ]
+        os_label: [ ubuntu ]
         include:
           - java: 11
-            os: macos-latest
+            os: [self-hosted, macos, general]
+            os_label: macos
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -59,5 +61,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-${{ matrix.java }}
+          name: test-results-${{ matrix.os_label }}-${{ matrix.java }}
           path: '**/build/test-results/test/TEST-*.xml'
