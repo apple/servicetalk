@@ -1716,7 +1716,9 @@ public abstract class Single<T> {
      * that means this must be the "last operator" in the chain for this to have an impact.
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Single} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     * @deprecated using this method is usually a sign that there is a problem in the operator chain.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated interface
     public final Single<T> setContextOnSubscribe(ContextMap context) {
         return new SingleSetContextOnSubscribe<>(this, context);
     }
@@ -2688,11 +2690,10 @@ public abstract class Single<T> {
         requireNonNull(subscriber);
         final CapturedContext capturedContext = contextForSubscribe(provider);
         Subscriber<? super T> wrapped = provider.wrapCancellable(subscriber, capturedContext);
+        // Ensure that CapturedContext used for handleSubscribe() is the CapturedContext for the subscribe()
         if (provider.context() == capturedContext) {
-            // No need to wrap as we are sharing the AsyncContext
             handleSubscribe(wrapped, capturedContext, provider);
         } else {
-            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
             try (Scope ignored = capturedContext.attachContext()) {
                 handleSubscribe(wrapped, capturedContext, provider);
             }
@@ -2705,11 +2706,19 @@ public abstract class Single<T> {
      * source.
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
+     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber,
-                                 CapturedContext capturedContext, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, capturedContext, contextProvider);
+                                 CapturedContext capturedContext, AsyncContextProvider provider) {
+        // TODO: What is the purpose of this function if it only forwarded to the `handleSubscribe` method?
+        // Ensure that CapturedContext used for handleSubscribe() is the CapturedContext for the subscribe()
+        if (provider.context() == capturedContext) {
+            handleSubscribe(subscriber, capturedContext, provider);
+        } else {
+            try (Scope ignored = capturedContext.attachContext()) {
+                handleSubscribe(subscriber, capturedContext, provider);
+            }
+        }
     }
 
     /**

@@ -15,7 +15,9 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.CapturedContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
@@ -24,11 +26,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
+import io.servicetalk.context.api.ContextMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
@@ -36,6 +40,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -180,5 +185,34 @@ class RetryWhenTest {
         toSource(source.retryWhen((times, cause) -> null)).subscribe(subscriberRule);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriberRule.awaitOnError(), instanceOf(NullPointerException.class));
+    }
+
+    @Test
+    void contextSharedAcrossRetries() throws Exception {
+        final ContextMap context = AsyncContext.context();
+        // This is an indication of whether we are using the same offloader across different subscribes. If this works,
+        // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
+        // the lifetime of the Subscriber, we can reuse the offloader.
+        executor = newCachedThreadExecutor();
+        AtomicInteger count = new AtomicInteger();
+        Single<String> source = Single.defer(() ->{
+            if (AsyncContext.context() != context) {
+                throw new AssertionError("Unexpected context in defer: " + context);
+            }
+            return count.incrementAndGet() == 1 ? Single.succeeded("done") : Single.failed(DELIBERATE_EXCEPTION);
+        })
+            .subscribeOn(executor)
+            .publishOn(executor)
+            .retryWhen((unused, t) -> {
+                if (AsyncContext.context() != context) {
+                    throw new AssertionError("Unexpected context in retryWhen: " + context);
+                }
+                return Completable.defer(() -> executor.submit(() -> {
+                    if (AsyncContext.context() != context) {
+                        throw new AssertionError("Unexpected context in defer: " + context);
+                    }
+                }));
+            });
+         assertThat(source.shareContextOnSubscribe().toFuture().get(), equalTo("done"));
     }
 }

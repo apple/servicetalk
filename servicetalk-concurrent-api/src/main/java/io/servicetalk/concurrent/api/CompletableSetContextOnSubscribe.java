@@ -19,6 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
+// FIXME: 0.43 - remove deprecated interface
 final class CompletableSetContextOnSubscribe extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
     private final ContextMap context;
