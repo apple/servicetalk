@@ -99,6 +99,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
                 (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
     }
 
+    /// ///
+
     @Override
     public final CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                               final CapturedContext context) {
@@ -111,7 +113,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber &&
                 ((ContextPreservingCancellableCompletableSubscriber) subscriber).capturedContext == context) {
             // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
-            // it extends from ContextPreservingSingleSubscriber.
+            // it extends from ContextPreservingCompletableSubscriber.
             return subscriber;
         }
         return new ContextPreservingCancellableCompletableSubscriber(subscriber, context);
@@ -127,8 +129,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
                 // replace current wrapper with wrapper that includes Subscriber and Cancellable
                 return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
             }
-        } else if (subscriber instanceof ContextPreservingCompletableSubscriber &&
-                ((ContextPreservingCompletableSubscriber) subscriber).capturedContext == context) {
+        } else if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
             // it extends from ContextPreservingCompletableSubscriber.
             return subscriber;
@@ -154,6 +155,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
         }
         return new ContextPreservingCompletableSubscriberAndCancellable(subscriber, context);
     }
+
+    /// ///
 
     @Override
     public final <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
@@ -182,8 +185,7 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             if (s.capturedContext == context) {
                 return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
-        } else if (subscriber instanceof ContextPreservingSingleSubscriber &&
-                ((ContextPreservingSingleSubscriber<T>) subscriber).capturedContext == context) {
+        } else if (subscriber instanceof ContextPreservingSingleSubscriber) {
             // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
@@ -237,10 +239,9 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             if (s.capturedContext == context) {
                 return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
-        } else if (subscriber instanceof ContextPreservingSubscriber &&
-                ((ContextPreservingSubscriber<T>) subscriber).capturedContext == context) {
+        } else if (subscriber instanceof ContextPreservingSubscriber) {
             // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
-            // it extends from ContextPreservingSubscriptionSubscriber.
+            // it extends from ContextPreservingSubscriber.
             return subscriber;
         }
         return new ContextPreservingSubscriber<>(subscriber, context);
