@@ -99,42 +99,31 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
                 (CapturedContext) contextMap : new CapturedContextImpl(contextMap);
     }
 
-    /// ///
-
     @Override
     public final CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                               final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
-            if (s.capturedContext == context) {
-                return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
-                        new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
-            }
-        } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber &&
-                ((ContextPreservingCancellableCompletableSubscriber) subscriber).capturedContext == context) {
-            // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
-            // it extends from ContextPreservingCompletableSubscriber.
-            return subscriber;
+            // Cancellation happens going the other way as the subscriber wrapping: the cancellable is coming
+            // in via the outermost call and thus the outer wrapper will be the one to set the effective context.
+            return s.cancellableCapturedContext == context ? subscriber :
+                    new ContextPreservingCompletableSubscriber(s.subscriber, context, s.subscriberCapturedContext);
         }
-        return new ContextPreservingCancellableCompletableSubscriber(subscriber, context);
+        return new ContextPreservingCompletableSubscriber(subscriber, context, null);
     }
 
     @Override
     public final CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
                                                                         final CapturedContext context) {
-        if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
-            final ContextPreservingCancellableCompletableSubscriber s =
-                    (ContextPreservingCancellableCompletableSubscriber) subscriber;
-            if (s.capturedContext == context) {
-                // replace current wrapper with wrapper that includes Subscriber and Cancellable
-                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
+        if (subscriber instanceof ContextPreservingCompletableSubscriber) {
+            final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
+            if (s.subscriberCapturedContext != null) {
+                // Subscriber already wrapped.
+                return subscriber;
             }
-        } else if (subscriber instanceof ContextPreservingCompletableSubscriber) {
-            // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
-            // it extends from ContextPreservingCompletableSubscriber.
-            return subscriber;
+            return new ContextPreservingCompletableSubscriber(subscriber, s.cancellableCapturedContext, context);
         }
-        return new ContextPreservingCompletableSubscriber(subscriber, context);
+        return new ContextPreservingCompletableSubscriber(subscriber, null, context);
     }
 
     @Override
@@ -142,21 +131,16 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             final CompletableSource.Subscriber subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
-            if (s.capturedContext == context) {
-                return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
-                        new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
+            if (s.cancellableCapturedContext == context && s.subscriberCapturedContext != null) {
+                // Subscriber already wrapped.
+                return subscriber;
             }
-        } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
-            final ContextPreservingCancellableCompletableSubscriber s =
-                    (ContextPreservingCancellableCompletableSubscriber) subscriber;
-            if (s.capturedContext == context) {
-                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, context);
-            }
+            CapturedContext subscriberContext = s.subscriberCapturedContext == null ?
+                    context : s.subscriberCapturedContext;
+            return new ContextPreservingCompletableSubscriber(s.subscriber, context, subscriberContext);
         }
-        return new ContextPreservingCompletableSubscriberAndCancellable(subscriber, context);
+        return new ContextPreservingCompletableSubscriber(subscriber, context, context);
     }
-
-    /// ///
 
     @Override
     public final <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
