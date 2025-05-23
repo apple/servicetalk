@@ -2689,15 +2689,7 @@ public abstract class Single<T> {
     final CapturedContext subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
         requireNonNull(subscriber);
         final CapturedContext capturedContext = contextForSubscribe(provider);
-        Subscriber<? super T> wrapped = provider.wrapCancellable(subscriber, capturedContext);
-        // Ensure that CapturedContext used for handleSubscribe() is the CapturedContext for the subscribe()
-        if (provider.context() == capturedContext) {
-            handleSubscribe(wrapped, capturedContext, provider);
-        } else {
-            try (Scope ignored = capturedContext.attachContext()) {
-                handleSubscribe(wrapped, capturedContext, provider);
-            }
-        }
+        delegateSubscribe(subscriber, capturedContext, provider);
         return capturedContext;
     }
 
@@ -2711,12 +2703,13 @@ public abstract class Single<T> {
     final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  CapturedContext capturedContext, AsyncContextProvider provider) {
         // TODO: What is the purpose of this function if it only forwarded to the `handleSubscribe` method?
+        Subscriber<? super T> wrapped = provider.wrapCancellable(subscriber, capturedContext);
         // Ensure that CapturedContext used for handleSubscribe() is the CapturedContext for the subscribe()
         if (provider.context() == capturedContext) {
-            handleSubscribe(subscriber, capturedContext, provider);
+            handleSubscribe(wrapped, capturedContext, provider);
         } else {
             try (Scope ignored = capturedContext.attachContext()) {
-                handleSubscribe(subscriber, capturedContext, provider);
+                handleSubscribe(wrapped, capturedContext, provider);
             }
         }
     }
