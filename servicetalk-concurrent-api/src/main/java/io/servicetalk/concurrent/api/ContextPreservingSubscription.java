@@ -33,8 +33,7 @@ final class ContextPreservingSubscription implements Subscription {
     }
 
     static Subscription wrap(Subscription subscription, CapturedContext current) {
-        return subscription instanceof ContextPreservingSubscription &&
-                ((ContextPreservingSubscription) subscription).capturedContext == current ? subscription :
+        return subscription instanceof ContextPreservingSubscription ? subscription :
                 new ContextPreservingSubscription(subscription, current);
     }
 

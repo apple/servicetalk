@@ -35,8 +35,7 @@ final class ContextPreservingCancellable implements Cancellable {
     static Cancellable wrap(Cancellable delegate, CapturedContext capturedContext) {
         // The double wrapping can be observed when folks manually create a Single/Completable and directly call the
         // onSubscribe method.
-        return delegate instanceof ContextPreservingCancellable &&
-                ((ContextPreservingCancellable) delegate).capturedContext == capturedContext ? delegate :
+        return delegate instanceof ContextPreservingCancellable ? delegate :
                 new ContextPreservingCancellable(delegate, capturedContext);
     }
 
