@@ -95,7 +95,7 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.DEFAULT_OPTIONS;
-import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequestFilterTest.verifyTraceIdPresentInLogs;
+import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilterTest.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -175,7 +175,8 @@ class OpenTelemetryHttpServiceFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient", DEFAULT_OPTIONS))
+                .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
+                        DEFAULT_OPTIONS, null))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);

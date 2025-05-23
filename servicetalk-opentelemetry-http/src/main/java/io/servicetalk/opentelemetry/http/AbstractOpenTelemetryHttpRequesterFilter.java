@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -38,8 +39,11 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
+
+import javax.annotation.Nullable;
 
 abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
@@ -56,9 +60,12 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
      * @param opentelemetryOptions extra options to create the opentelemetry filter.
      */
     AbstractOpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
-                                             final OpenTelemetryOptions opentelemetryOptions) {
+                                             final OpenTelemetryOptions opentelemetryOptions,
+                                             @Nullable HostAndPort hostAndPort) {
+        HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> clientAttributesGetter =
+                ServiceTalkHttpAttributesGetter.clientGetter(hostAndPort);
         SpanNameExtractor<HttpRequestMetaData> clientSpanNameExtractor =
-                HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
+                HttpSpanNameExtractor.create(clientAttributesGetter);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
         clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.CLIENT_INSTANCE);
@@ -66,7 +73,7 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
         clientInstrumenterBuilder
                 .addAttributesExtractor(
                         HttpClientAttributesExtractor
-                                .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
+                                .builder(clientAttributesGetter)
                                 .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
                                 .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
                                 .build());
