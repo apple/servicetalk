@@ -510,6 +510,7 @@ class DefaultAsyncContextProviderTest {
                 break;
             default: // NONE
                 wrapped = INSTANCE.wrapCompletableSubscriber(wrapped, c2);
+                break;
         }
         wrapped.onSubscribe(IGNORE_CANCEL);
         wrapped.onComplete();
@@ -546,8 +547,9 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
                 break;
-            default:
+            default: // NONE
                 wrapped = INSTANCE.wrapSingleSubscriber(wrapped, c2);
+                break;
         }
         wrapped.onSubscribe(IGNORE_CANCEL);
         wrapped.onSuccess("");
@@ -591,9 +593,9 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
                 break;
-            default:
+            default: // NONE
                 wrapped = INSTANCE.wrapPublisherSubscriber(wrapped, c2);
-
+                break;
         }
         wrapped.onSubscribe(new Subscription() {
             @Override
@@ -626,8 +628,9 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapCompletableSubscriberAndCancellable(wrapped, c2);
                 break;
-            default:
+            default: // NONE
                 wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                break;
         }
         wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
         subscriber.awaitSubscription().cancel();
@@ -651,9 +654,9 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
                 break;
-            default:
+            default: // NONE
                 wrapped = INSTANCE.wrapCancellable(wrapped, c2);
-
+                break;
         }
         wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
         subscriber.awaitSubscription().cancel();
@@ -678,8 +681,9 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
                 break;
-            default:
+            default: // NONE
                 wrapped = INSTANCE.wrapSubscription(wrapped, c2);
+                break;
         }
         wrapped.onSubscribe(new Subscription() {
             @Override

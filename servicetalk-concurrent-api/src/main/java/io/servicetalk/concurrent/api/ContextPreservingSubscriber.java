@@ -17,51 +17,70 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.context.api.ContextMap;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingSubscriber<T> implements Subscriber<T> {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
-    final CapturedContext capturedContext;
+    @Nullable
+    final CapturedContext subscriptionCapturedContext;
+    @Nullable
+    final CapturedContext subscriberCapturedContext;
     final Subscriber<T> subscriber;
 
-    ContextPreservingSubscriber(Subscriber<T> subscriber, CapturedContext capturedContext) {
+    ContextPreservingSubscriber(Subscriber<T> subscriber, @Nullable CapturedContext subscriptionCapturedContext,
+                                @Nullable CapturedContext subscriberCapturedContext) {
+        assert subscriptionCapturedContext != null || subscriberCapturedContext != null;
         this.subscriber = requireNonNull(subscriber);
-        this.capturedContext = requireNonNull(capturedContext);
-        this.saved = capturedContext.captured();
-    }
-
-    void invokeOnSubscribe(Subscription s) {
-        subscriber.onSubscribe(s);
+        this.subscriptionCapturedContext = subscriptionCapturedContext;
+        this.subscriberCapturedContext = subscriberCapturedContext;
     }
 
     @Override
     public final void onSubscribe(Subscription s) {
-        try (Scope ignored = capturedContext.attachContext()) {
-            invokeOnSubscribe(s);
+        if (subscriptionCapturedContext != null) {
+            s = ContextPreservingSubscription.wrap(s, subscriptionCapturedContext);
+        }
+        if (subscriberCapturedContext == null) {
+            subscriber.onSubscribe(s);
+        } else {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onSubscribe(s);
+            }
         }
     }
 
     @Override
-    public final void onNext(T t) {
-        try (Scope ignored = capturedContext.attachContext()) {
+    public final void onNext(@Nullable T t) {
+        if (subscriberCapturedContext == null) {
             subscriber.onNext(t);
+        } else {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onNext(t);
+            }
         }
     }
 
     @Override
     public final void onError(Throwable t) {
-        try (Scope ignored = capturedContext.attachContext()) {
+        if (subscriberCapturedContext == null) {
             subscriber.onError(t);
+        } else {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onError(t);
+            }
         }
     }
 
     @Override
     public final void onComplete() {
-        try (Scope ignored = capturedContext.attachContext()) {
+        if (subscriberCapturedContext == null) {
             subscriber.onComplete();
+        } else {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onComplete();
+            }
         }
     }
 
