@@ -22,15 +22,12 @@ import io.servicetalk.context.api.ContextMap;
 import static java.util.Objects.requireNonNull;
 
 class ContextPreservingCompletableSubscriber implements Subscriber {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
     final CapturedContext capturedContext;
     final Subscriber subscriber;
 
     ContextPreservingCompletableSubscriber(Subscriber subscriber, CapturedContext capturedContext) {
         this.subscriber = requireNonNull(subscriber);
         this.capturedContext = requireNonNull(capturedContext);
-        this.saved = capturedContext.captured();
     }
 
     void invokeOnSubscribe(Cancellable cancellable) {
