@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
@@ -128,7 +129,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
 
                 final CharSequence varyHeader = response.headers().get(VARY);
                 if (varyHeader != null) {
-                    assertEquals(ACCEPT_ENCODING.toString(), varyHeader.toString());
+                    assertThat(varyHeader, contentEqualTo(ACCEPT_ENCODING));
                 }
 
                 assertEquals(payloadAsString((byte) 'b'), response.payloadBody(textSerializerUtf8()));
