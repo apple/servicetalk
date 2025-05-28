@@ -21,8 +21,6 @@ import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.ContentEncodingHttpServiceFilter;
-import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
