@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
-import io.servicetalk.concurrent.api.CapturedContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
@@ -25,8 +24,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
-
 import io.servicetalk.context.api.ContextMap;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -195,7 +194,7 @@ class RetryWhenTest {
         // the lifetime of the Subscriber, we can reuse the offloader.
         executor = newCachedThreadExecutor();
         AtomicInteger count = new AtomicInteger();
-        Single<String> source = Single.defer(() ->{
+        Single<String> source = Single.defer(() -> {
             if (AsyncContext.context() != context) {
                 throw new AssertionError("Unexpected context in defer: " + context);
             }

@@ -15,18 +15,23 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.function.BiConsumer;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
 
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
     private final CapturedContext capturedContext;
     private final BiConsumer<T, U> delegate;
 
     ContextPreservingBiConsumer(BiConsumer<T, U> delegate, CapturedContext capturedContext) {
         this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = capturedContext.captured();
     }
 
     @Override

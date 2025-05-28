@@ -22,6 +22,8 @@ import java.util.concurrent.Callable;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCallable<V> implements Callable<V> {
+    // TODO: remove after 0.42.55
+    private final ContextMap saved;
     private final CapturedContext capturedContext;
     private final Callable<V> delegate;
 
@@ -32,6 +34,7 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     ContextPreservingCallable(Callable<V> delegate, CapturedContext capturedContext) {
         this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
+        this.saved = this.capturedContext.captured();
     }
 
     @Override

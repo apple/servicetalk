@@ -36,7 +36,6 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -364,7 +363,8 @@ class RetryingHttpRequesterFilterTest {
                          public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
                              return new StreamingHttpClientFilter(client) {
                                  @Override
-                                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate, StreamingHttpRequest request) {
+                                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                                 StreamingHttpRequest request) {
                                      if (AsyncContext.context() != current) {
                                          throw new AssertionError("Unexpected context: " + AsyncContext.context());
                                      }

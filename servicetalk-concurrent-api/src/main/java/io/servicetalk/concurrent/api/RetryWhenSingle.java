@@ -64,7 +64,8 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             public void onComplete() {
                 // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
                 // source at the top of the chain reset if necessary. We currently choose the second option.
-                retrySingle.original.delegateSubscribeWithContext(RetrySubscriber.this, capturedContext, contextProvider);
+                retrySingle.original.delegateSubscribeWithContext(
+            RetrySubscriber.this, capturedContext, contextProvider);
             }
 
             @Override

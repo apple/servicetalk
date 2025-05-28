@@ -1716,7 +1716,9 @@ public abstract class Single<T> {
      * that means this must be the "last operator" in the chain for this to have an impact.
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Single} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     * @deprecated using this method is usually a sign that there is a problem in the operator chain.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated interface
     public final Single<T> setContextOnSubscribe(ContextMap context) {
         return new SingleSetContextOnSubscribe<>(this, context);
     }
