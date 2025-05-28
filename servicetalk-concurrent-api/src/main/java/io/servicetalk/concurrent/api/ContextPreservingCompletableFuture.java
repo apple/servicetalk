@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -33,15 +31,12 @@ import static io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture.c
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCompletableFuture<T> extends CompletableFuture<T> {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
     private final CompletableFuture<T> delegate;
     private final CapturedContext capturedContext;
 
     private ContextPreservingCompletableFuture(CompletableFuture<T> delegate, CapturedContext capturedContext) {
         this.delegate = requireNonNull(delegate);
         this.capturedContext = requireNonNull(capturedContext);
-        this.saved = capturedContext.captured();
     }
 
     static <T> ContextPreservingCompletableFuture<T> newContextPreservingFuture(CompletableFuture<T> original,

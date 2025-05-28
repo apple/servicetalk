@@ -16,20 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellable implements Cancellable {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
     private final CapturedContext capturedContext;
     private final Cancellable delegate;
 
     private ContextPreservingCancellable(Cancellable delegate, CapturedContext current) {
         this.capturedContext = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
-        this.saved = capturedContext.captured();
     }
 
     static Cancellable wrap(Cancellable delegate, CapturedContext capturedContext) {
