@@ -132,7 +132,7 @@ public final class ContentCodingHttpRequesterFilter
                                                         final BufferAllocator allocator) {
         ContentCodec coding = request.encoding();
         if (coding != null && !identity().equals(coding)) {
-            addContentEncoding(request.headers(), coding.name());
+            addContentEncoding(request.headers(), coding.name(), false);
             request.transformPayloadBody(pub -> coding.encode(pub, allocator));
         }
     }
