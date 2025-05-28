@@ -2695,8 +2695,9 @@ public abstract class Single<T> {
     }
 
     /**
-     * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
-     * source.
+     * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
+     *      * This method is used by operators to subscribe to the upstream outside a delegating
+     *      * {@link Single#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)} method.
      * @param subscriber the subscriber.
      * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.

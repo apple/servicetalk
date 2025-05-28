@@ -2271,6 +2271,7 @@ public abstract class Completable {
      */
     final void delegateSubscribe(Subscriber subscriber,
                                  CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        assert contextProvider.context() == capturedContext.captured();
         handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 
