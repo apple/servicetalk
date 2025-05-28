@@ -21,6 +21,8 @@ import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ContentEncodingHttpRequesterFilter;
 import io.servicetalk.http.api.ContentEncodingHttpServiceFilter;
+import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -38,6 +40,7 @@ import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.VARY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
@@ -48,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
     @Override
@@ -107,6 +111,7 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
                             assertHeader(() -> clientEncoding.encoder == null ? null :
                                             clientEncoding.encoder.encodingName(),
                                     request.headers().get(CONTENT_ENCODING), true);
+                            assertNull(request.headers().get(VARY));
                             assertHeader(clientDecoder.group::advertisedMessageEncoding,
                                     request.headers().get(ACCEPT_ENCODING), false);
                             return delegate.request(request).shareContextOnSubscribe();
@@ -122,6 +127,11 @@ class ServiceTalkContentEncodingTest extends BaseContentEncodingTest {
 
                 // content encoding should be stripped by the time the decoding is done.
                 assertThat(response.headers().get(CONTENT_ENCODING), nullValue());
+
+                final CharSequence varyHeader = response.headers().get(VARY);
+                if (varyHeader != null) {
+                    assertEquals(ACCEPT_ENCODING.toString(), varyHeader.toString());
+                }
 
                 assertEquals(payloadAsString((byte) 'b'), response.payloadBody(textSerializerUtf8()));
             } else {
