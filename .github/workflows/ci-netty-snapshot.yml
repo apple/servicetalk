@@ -7,7 +7,7 @@ env:
   JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
 jobs:
   build:
-    name: Netty ${{ matrix.netty }} Snapshot on JDK ${{ matrix.java }} ${{ matrix.os }}
+    name: Netty ${{ matrix.netty }} Snapshot
     runs-on: ${{ matrix.os }}
     env:
       ORG_GRADLE_PROJECT_nettyVersion: ${{ matrix.netty }}

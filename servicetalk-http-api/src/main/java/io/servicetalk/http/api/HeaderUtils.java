@@ -203,11 +203,13 @@ public final class HeaderUtils {
         return headers.contains(CONTENT_LENGTH);
     }
 
-    static void addContentEncoding(final HttpHeaders headers, CharSequence encoding) {
-        // H2 does not support TE / Transfer-Encoding, so we rely in the presentation encoding only.
+    static void addContentEncoding(final HttpHeaders headers, final CharSequence encoding, final boolean vary) {
+        // H2 does not support TE / Transfer-Encoding, so we rely on the presentation encoding only.
         // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
         headers.add(CONTENT_ENCODING, encoding);
-        headers.add(VARY, CONTENT_ENCODING);
+        if (vary) {
+            headers.add(VARY, ACCEPT_ENCODING);
+        }
     }
 
     static boolean hasContentEncoding(final HttpHeaders headers) {

@@ -145,7 +145,7 @@ public final class ContentCodingHttpServiceFilter implements StreamingHttpServic
 
         ContentCodec coding = codingForResponse(requestHeaders, response, supportedEncodings);
         if (coding != null) {
-            addContentEncoding(response.headers(), coding.name());
+            addContentEncoding(response.headers(), coding.name(), true);
             response.transformPayloadBody(bufferPublisher -> coding.encode(bufferPublisher, allocator));
         }
     }

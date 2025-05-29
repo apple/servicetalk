@@ -243,7 +243,7 @@ public final class TcpServerBinder {
             // AsyncContext propagation is tested by
             // AbstractHttpServiceAsyncContextTest.connectionAcceptorContextDoesNotLeak(...).
             // Defer is required to run the `accept` evaluation later, when we have a Subscriber.
-            Completable earlyCompletable = defer(() -> earlyConnectionAcceptor.accept(new TcpConnectionInfo(
+            Completable earlyCompletable = defer(() -> earlyConnectionAcceptor.accept(new EarlyConnectionContext(
                     channel, channelExecutionContext, config.sslConfig(), config.idleTimeoutMs())));
 
             if (earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {

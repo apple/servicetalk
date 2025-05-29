@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2023, 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,31 @@ public interface EarlyConnectionAcceptor extends ExecutionStrategyInfluencer<Con
     /**
      * Accept or reject an incoming connection.
      * <p>
-     * Note that the {@link ConnectionInfo#sslSession()} will always return null with this acceptor since it is called
-     * before the TLS handshake is performed (and as a result no SSL session has been established).
+     * Note that the {@link ConnectionInfo#sslSession()} will always return {@code null} with this acceptor since it
+     * is called before the TLS handshake is performed (and as a result no SSL session has been established).
      *
-     * @param info additional information about the connection to make an acceptance decision.
-     * @return a completed (to accept) or a failed (to reject) {@link Completable}
+     * @param info {@link ConnectionInfo} to make an acceptance decision
+     * @return {@link Completable#completed()} to accept, or {@link Completable#failed(Throwable)} to reject with the
+     * cause
+     * @deprecated Implement {@link #accept(ConnectionContext)} instead
      */
+    @Deprecated // FIXME: 0.43 - swap default implementation with non-deprecated method
     Completable accept(ConnectionInfo info);
+
+    /**
+     * Accept or reject an incoming connection.
+     * <p>
+     * Note that the {@link ConnectionContext#sslSession()} will always return {@code null} with this acceptor since it
+     * is called before the TLS handshake is performed (and as a result no SSL session has been established).
+     *
+     * @param ctx {@link ConnectionContext} with full information about the connection to make an acceptance decision
+     * and ability to monitor when it's closed
+     * @return {@link Completable#completed()} to accept, or {@link Completable#failed(Throwable)} to reject with the
+     * cause
+     */
+    default Completable accept(ConnectionContext ctx) {
+        return accept((ConnectionInfo) ctx);
+    }
 
     /**
      * Customize the offloading strategy for this acceptor.
