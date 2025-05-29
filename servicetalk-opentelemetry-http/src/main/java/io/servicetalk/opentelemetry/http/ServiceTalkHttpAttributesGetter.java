@@ -42,8 +42,8 @@ abstract class ServiceTalkHttpAttributesGetter
     private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
 
-    private static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
-            CLIENT_INSTANCE = new ClientGetter(null);
+    static final HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
+            CLIENT_INSTANCE = new ClientGetter();
 
     static final HttpServerAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
             SERVER_INSTANCE = new ServerGetter();
@@ -93,8 +93,8 @@ abstract class ServiceTalkHttpAttributesGetter
     }
 
     static HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
-    clientGetter(@Nullable final HostAndPort hostAndPort) {
-        return hostAndPort == null ? CLIENT_INSTANCE : new ClientGetter(hostAndPort);
+    clientGetter() {
+        return CLIENT_INSTANCE;
     }
 
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
@@ -117,13 +117,6 @@ abstract class ServiceTalkHttpAttributesGetter
 
     private static final class ClientGetter extends ServiceTalkHttpAttributesGetter
             implements HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData> {
-
-        @Nullable
-        private final HostAndPort hostAndPort;
-
-        ClientGetter(@Nullable HostAndPort hostAndPort) {
-            this.hostAndPort = hostAndPort;
-        }
 
         @Override
         @Nullable
@@ -176,16 +169,12 @@ abstract class ServiceTalkHttpAttributesGetter
                     return 443;
                 }
             }
-            if (hostAndPort != null && hostAndPort.port() > 0) {
-                return hostAndPort.port();
-            }
             return null;
         }
 
         @Nullable
         private HostAndPort hostAndPort(HttpRequestMetaData metaData) {
-            HostAndPort effectiveHostAndPort = metaData.effectiveHostAndPort();
-            return effectiveHostAndPort != null ? effectiveHostAndPort : this.hostAndPort;
+            return metaData.effectiveHostAndPort();
         }
 
         private static boolean isDefaultPort(String scheme, int port) {

@@ -176,7 +176,7 @@ class OpenTelemetryHttpServiceFilterTest {
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequesterFilter(openTelemetry, "testClient",
-                        DEFAULT_OPTIONS, null))
+                        DEFAULT_OPTIONS))
                 .build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);

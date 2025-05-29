@@ -19,7 +19,6 @@ package io.servicetalk.opentelemetry.http;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -28,7 +27,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 
 import java.util.function.UnaryOperator;
-import javax.annotation.Nullable;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
@@ -61,20 +59,7 @@ public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetr
      */
     public OpenTelemetryHttpRequesterFilter(final String componentName,
                                             final OpenTelemetryOptions opentelemetryOptions) {
-        this(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions, null);
-    }
-
-    /**
-     * Create a new instance, searching for any instance of an opentelemetry available.
-     *
-     * @param componentName        The component name used during building new spans.
-     * @param opentelemetryOptions extra options to create the opentelemetry filter
-     * @param hostAndPort          The host and port of the backend service
-     */
-    public OpenTelemetryHttpRequesterFilter(final String componentName,
-                                            final OpenTelemetryOptions opentelemetryOptions,
-                                            final HostAndPort hostAndPort) {
-        this(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions, hostAndPort);
+        this(GlobalOpenTelemetry.get(), componentName, opentelemetryOptions);
     }
 
     /**
@@ -86,8 +71,7 @@ public final class OpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetr
     }
 
     OpenTelemetryHttpRequesterFilter(final OpenTelemetry openTelemetry, String componentName,
-                                     final OpenTelemetryOptions opentelemetryOptions,
-                                     @Nullable final HostAndPort hostAndPort) {
-        super(openTelemetry, componentName, opentelemetryOptions, hostAndPort);
+                                     final OpenTelemetryOptions opentelemetryOptions) {
+        super(openTelemetry, componentName, opentelemetryOptions);
     }
 }
