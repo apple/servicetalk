@@ -183,7 +183,7 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @ParameterizedTest() // TODO: set the name
+    @ParameterizedTest(name = "{displayName} [{index}]: absoluteForm={0}, withHostHeader={1}")
     @CsvSource({"false, false", "false, true", "true, false", "true, true"})
     void testInjectWithAParentCreated(boolean absoluteForm, boolean withHostHeader) throws Exception {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();

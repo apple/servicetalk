@@ -130,6 +130,7 @@ abstract class ServiceTalkHttpAttributesGetter
             }
             String scheme = request.scheme();
             if (scheme == null) {
+                // Note that this is best effort guessing: we cannot know if the connection is actually secure.
                 scheme = effectiveHostAndPort.port() == 443 ? HTTPS_SCHEME : HTTP_SCHEME;
             }
             String authority = effectiveHostAndPort.hostName();
