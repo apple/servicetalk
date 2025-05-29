@@ -395,7 +395,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
      * ServiceDiscoveryRetryStrategy and LoadBalancer.
      */
     private static <U, R> String targetResource(final HttpClientBuildContext<U, R> ctx) {
-        final String uniqueAddress = ctx.builder.address + "/" + CLIENT_ID.incrementAndGet();
+        final String uniqueAddress = ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address) + "/" +
+                CLIENT_ID.incrementAndGet();
         return ctx.builder.proxyAddress == null ? uniqueAddress :
                 uniqueAddress + " (via " + ctx.builder.proxyAddress + ")";
     }
