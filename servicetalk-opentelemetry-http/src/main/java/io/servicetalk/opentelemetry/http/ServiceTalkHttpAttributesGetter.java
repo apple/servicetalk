@@ -92,11 +92,6 @@ abstract class ServiceTalkHttpAttributesGetter
         return response.version().fullVersion();
     }
 
-    static HttpClientAttributesGetter<HttpRequestMetaData, HttpResponseMetaData>
-    clientGetter() {
-        return CLIENT_INSTANCE;
-    }
-
     private static List<String> getHeaderValues(final HttpHeaders headers, final String name) {
         final Iterator<? extends CharSequence> iterator = headers.valuesIterator(name);
         if (!iterator.hasNext()) {
@@ -128,7 +123,7 @@ abstract class ServiceTalkHttpAttributesGetter
             }
 
             // in this case the request target is most likely origin-form so we need to convert it to absolute-form.
-            HostAndPort effectiveHostAndPort = hostAndPort(request);
+            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
             if (effectiveHostAndPort == null) {
                 // we cant create the authority so we must just return.
                 return null;
@@ -148,7 +143,7 @@ abstract class ServiceTalkHttpAttributesGetter
         @Override
         @Nullable
         public String getServerAddress(final HttpRequestMetaData request) {
-            HostAndPort effectiveHostAndPort = hostAndPort(request);
+            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
             return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
         }
 
@@ -170,11 +165,6 @@ abstract class ServiceTalkHttpAttributesGetter
                 }
             }
             return null;
-        }
-
-        @Nullable
-        private HostAndPort hostAndPort(HttpRequestMetaData metaData) {
-            return metaData.effectiveHostAndPort();
         }
 
         private static boolean isDefaultPort(String scheme, int port) {
