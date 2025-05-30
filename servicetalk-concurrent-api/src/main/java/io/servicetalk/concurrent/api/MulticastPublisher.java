@@ -133,7 +133,7 @@ class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         if (capturedContext != null) {
                             // This operator has special behavior where it chooses to use the AsyncContext and signal
                             // offloader from the last subscribe operation.
-                            original.delegateSubscribe(this, capturedContext, contextProvider);
+                            original.delegateSubscribeWithContext(this, capturedContext, contextProvider);
                         }
                         return null;
                     }
