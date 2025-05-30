@@ -78,7 +78,6 @@ abstract class ServiceTalkHttpAttributesGetter
     }
 
     @Override
-    @Nullable
     public final String getNetworkProtocolName(
             final HttpRequestMetaData request, @Nullable final HttpResponseMetaData response) {
         return HTTP_SCHEME;
@@ -117,35 +116,35 @@ abstract class ServiceTalkHttpAttributesGetter
         @Override
         @Nullable
         public String getUrlFull(final HttpRequestMetaData request) {
+            String requestTarget = request.requestTarget();
+            if (requestTarget.startsWith("https://") || requestTarget.startsWith("http://")) {
+                // request target is already absolute-form: just return it.
+                return requestTarget;
+            }
+
+            // in this case the request target is most likely origin-form so we need to convert it to absolute-form.
             HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
             if (effectiveHostAndPort == null) {
+                // we cant create the authority so we must just return.
                 return null;
             }
             String scheme = request.scheme();
             if (scheme == null) {
-                scheme = HTTP_SCHEME;
+                // Note that this is best effort guessing: we cannot know if the connection is actually secure.
+                scheme = effectiveHostAndPort.port() == 443 ? HTTPS_SCHEME : HTTP_SCHEME;
             }
-            String requestTarget = request.requestTarget();
-            StringBuilder sb = new StringBuilder(
-                    scheme.length() + 3 +
-                    effectiveHostAndPort.hostName().length() +
-                    ((effectiveHostAndPort.port()) >= 0 ? 5 : 0) +
-                    requestTarget.length());
-            sb.append(scheme)
-                    .append("://")
-                    .append(effectiveHostAndPort.hostName());
-            if (effectiveHostAndPort.port() >= 0) {
-                sb.append(':')
-                        .append(effectiveHostAndPort.port());
+            String authority = effectiveHostAndPort.hostName();
+            if (!isDefaultPort(scheme, effectiveHostAndPort.port())) {
+                authority = authority + ':' + effectiveHostAndPort.port();
             }
-            sb.append(requestTarget);
-            return sb.toString();
+            String authoritySeparator = requestTarget.startsWith("/") ? "" : "/";
+            return scheme + "://" + authority + authoritySeparator + requestTarget;
         }
 
         @Override
         @Nullable
         public String getServerAddress(final HttpRequestMetaData request) {
-            final HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
+            HostAndPort effectiveHostAndPort = request.effectiveHostAndPort();
             return effectiveHostAndPort != null ? effectiveHostAndPort.hostName() : null;
         }
 
@@ -167,6 +166,10 @@ abstract class ServiceTalkHttpAttributesGetter
                 }
             }
             return null;
+        }
+
+        private static boolean isDefaultPort(String scheme, int port) {
+            return port < 1 || HTTPS_SCHEME.equals(scheme) && port == 443 || HTTP_SCHEME.equals(scheme) && port == 80;
         }
     }
 
