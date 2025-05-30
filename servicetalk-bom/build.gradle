@@ -21,6 +21,7 @@ description="ServiceTalk BOM that includes all modules"
 
 rootProject.subprojects.findAll { !it.path.endsWith("-bom") && !it.path.endsWith("-dependencies") &&
                                   !it.path.endsWith("-benchmarks") &&
+                                  !it.path.endsWith("servicetalk-gradle-plugin-internal") &&
                                   !it.path.startsWith(":servicetalk-examples")}.each {
     dependencies.constraints.add("api", it)
 }
