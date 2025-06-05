@@ -325,7 +325,7 @@ class RetryingHttpRequesterFilterTest {
 
     @Test
     void contextIsSharedAcrossBoundaries() throws Exception {
-        byte[] helloWorld = "hello world".getBytes(UTF_8);
+        String helloWorld = "hello world";
         final ContextMap current = AsyncContext.context();
         try (ServerContext serverCtx = forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
@@ -338,8 +338,7 @@ class RetryingHttpRequesterFilterTest {
                         int count = reqCount.incrementAndGet();
                         final HttpResponse response;
                         if (count > 1) {
-                            Buffer responseBuf = ctx.executionContext().bufferAllocator().newBuffer();
-                            responseBuf.writeBytes(helloWorld);
+                            Buffer responseBuf = ctx.executionContext().bufferAllocator().fromUtf8(helloWorld);
                             response = responseFactory.ok().payloadBody(responseBuf);
                         } else {
                             response = responseFactory.serviceUnavailable();
@@ -366,19 +365,20 @@ class RetryingHttpRequesterFilterTest {
                                  protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
                                                                                  StreamingHttpRequest request) {
                                      if (AsyncContext.context() != current) {
-                                         throw new AssertionError("Unexpected context: " + AsyncContext.context());
+                                         return Single.failed(
+                                                 new AssertionError("Unexpected context: " + AsyncContext.context()));
                                      }
-                                     return delegate().request(request);
+                                     return delegate.request(request);
                                  }
                              };
                          }
                      })
                      .buildStreaming()) {
-            Single<String> response = client.request(client.get("/")).shareContextOnSubscribe()
+            Single<String> response = client.request(client.get("/"))
                     .flatMap(resp ->
                 resp.payloadBody().collect(() -> "", (acc, buffer) -> acc + buffer.toString(UTF_8)));
             String result = response.shareContextOnSubscribe().toFuture().get();
-            assertThat(result, equalTo(new String(helloWorld, UTF_8)));
+            assertThat(result, equalTo(helloWorld));
         }
     }
 

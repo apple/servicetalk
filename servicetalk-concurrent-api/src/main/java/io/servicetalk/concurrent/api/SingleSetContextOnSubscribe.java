@@ -19,7 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
-// FIXME: 0.43 - remove deprecated interface
+// FIXME: 0.43 - remove deprecated class
 final class SingleSetContextOnSubscribe<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
     private final ContextMap context;

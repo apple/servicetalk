@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
@@ -26,15 +27,14 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.context.api.ContextMap;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -55,6 +55,11 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class RetryWhenTest {
+
+    @RegisterExtension
+    static final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor()
+            .setClassLevel(true);
+
     private final TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
@@ -65,6 +70,7 @@ class RetryWhenTest {
     @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
+        executor = executorExtension.executor();
         source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
@@ -75,19 +81,11 @@ class RetryWhenTest {
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriberRule);
     }
 
-    @AfterEach
-    void tearDown() throws Exception {
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
-    }
-
     @Test
     void publishOnWithRetry() throws Exception {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
-        executor = newCachedThreadExecutor();
         Single<Object> source = Single.failed(DELIBERATE_EXCEPTION)
                 .publishOn(executor)
                 .retryWhen((count, t) ->
@@ -192,11 +190,10 @@ class RetryWhenTest {
         // This is an indication of whether we are using the same offloader across different subscribes. If this works,
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
-        executor = newCachedThreadExecutor();
         AtomicInteger count = new AtomicInteger();
         Single<String> source = Single.defer(() -> {
             if (AsyncContext.context() != context) {
-                throw new AssertionError("Unexpected context in defer: " + context);
+                return Single.failed(new AssertionError("Unexpected context in defer: " + context));
             }
             return count.incrementAndGet() == 1 ? Single.succeeded("done") : Single.failed(DELIBERATE_EXCEPTION);
         })
@@ -204,7 +201,8 @@ class RetryWhenTest {
             .publishOn(executor)
             .retryWhen((unused, t) -> {
                 if (AsyncContext.context() != context) {
-                    throw new AssertionError("Unexpected context in retryWhen: " + context);
+                    return Completable.failed(
+                            new AssertionError("Unexpected context in retryWhen: " + context));
                 }
                 return Completable.defer(() -> executor.submit(() -> {
                     if (AsyncContext.context() != context) {

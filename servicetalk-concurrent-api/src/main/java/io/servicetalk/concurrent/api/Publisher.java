@@ -3982,9 +3982,10 @@ Kotlin flatMapLatest</a>
      * operator, that means this must be the "last operator" in the chain for this to have an impact.
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
-     * @deprecated needing this operator is a sign that there is a problem in your operator chain.
+     * @deprecated requiring this operator is a sign that there is a problem in your operator chain. Use
+     * {@link #defer(Supplier)} and {@link #shareContextOnSubscribe()} to control context.
      */
-    @Deprecated // FIXME: 0.43 - remove deprecated interface
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public final Publisher<T> setContextOnSubscribe(ContextMap context) {
         return new PublisherSetContextOnSubscribe<>(this, context);
     }
@@ -4888,7 +4889,7 @@ Kotlin flatMapLatest</a>
 
     /**
      * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
-     * This method is used by operators to subscribe to the upstream outside of a delegating
+     * This method is used by operators to subscribe to the upstream outside a delegating
      * {@link Publisher#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)} method.
      * source.
      * @param subscriber the subscriber.
