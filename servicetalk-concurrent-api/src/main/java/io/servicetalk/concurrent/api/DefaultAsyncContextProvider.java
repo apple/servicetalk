@@ -128,6 +128,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
             final CompletableSource.Subscriber subscriber, final CapturedContext context) {
         if (subscriber instanceof ContextPreservingCompletableSubscriber) {
             final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
+            // Cancellation happens going the other way as the subscriber wrapping: the cancellable is coming
+            // in via the outermost call and thus the outer wrapper will be the one to set the effective context.
             if (s.cancellableCapturedContext == context && s.subscriberCapturedContext != null) {
                 // Subscriber already wrapped.
                 return subscriber;
@@ -144,6 +146,8 @@ class DefaultAsyncContextProvider implements AsyncContextProvider {
                                                                 final CapturedContext context) {
         if (subscriber instanceof ContextPreservingSingleSubscriber) {
             final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
+            // The most outer wrapper gets the first shot at wrapping the cancellable, so if the previous context
+            // doesn't match the new context, we need to replace it with the new context who now has the first shot.
             return s.cancellableCapturedContext == context ? subscriber :
                     new ContextPreservingSingleSubscriber<>(s.subscriber, context, s.subscriberCapturedContext);
         }

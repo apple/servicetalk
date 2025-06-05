@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-class ContextPreservingSubscriber<T> implements Subscriber<T> {
+final class ContextPreservingSubscriber<T> implements Subscriber<T> {
     @Nullable
     final CapturedContext subscriptionCapturedContext;
     @Nullable
@@ -38,7 +38,7 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
-    public final void onSubscribe(Subscription s) {
+    public void onSubscribe(Subscription s) {
         if (subscriptionCapturedContext != null) {
             s = ContextPreservingSubscription.wrap(s, subscriptionCapturedContext);
         }
@@ -52,7 +52,7 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
-    public final void onNext(@Nullable T t) {
+    public void onNext(@Nullable T t) {
         if (subscriberCapturedContext == null) {
             subscriber.onNext(t);
         } else {
@@ -63,7 +63,7 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
-    public final void onError(Throwable t) {
+    public void onError(Throwable t) {
         if (subscriberCapturedContext == null) {
             subscriber.onError(t);
         } else {
@@ -74,7 +74,7 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     }
 
     @Override
-    public final void onComplete() {
+    public void onComplete() {
         if (subscriberCapturedContext == null) {
             subscriber.onComplete();
         } else {

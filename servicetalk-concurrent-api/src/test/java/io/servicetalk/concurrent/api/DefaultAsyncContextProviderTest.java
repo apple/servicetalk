@@ -508,9 +508,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapCompletableSubscriberAndCancellable(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapCompletableSubscriber(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(IGNORE_CANCEL);
         wrapped.onComplete();
@@ -547,9 +549,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapSingleSubscriber(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(IGNORE_CANCEL);
         wrapped.onSuccess("");
@@ -593,9 +597,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapPublisherSubscriber(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(new Subscription() {
             @Override
@@ -628,9 +634,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapCompletableSubscriberAndCancellable(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapCancellable(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
         subscriber.awaitSubscription().cancel();
@@ -654,9 +662,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapCancellable(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
         subscriber.awaitSubscription().cancel();
@@ -681,9 +691,11 @@ class DefaultAsyncContextProviderTest {
             case CONCURRENT:
                 wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
                 break;
-            default: // NONE
+            case NONE:
                 wrapped = INSTANCE.wrapSubscription(wrapped, c2);
                 break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
         }
         wrapped.onSubscribe(new Subscription() {
             @Override
