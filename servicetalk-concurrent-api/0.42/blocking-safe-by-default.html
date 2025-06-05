@@ -53,7 +53,7 @@
     <a class="nav-link" href="../../servicetalk/0.42/evolve-to-async.html">Evolving to asynchronous</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../servicetalk/0.42/async-context.html">Async context</a>
+    <a class="nav-link" href="../../servicetalk/0.42/async-context.html">Asynchronous Context</a>
   </li>
 </ul>
   </li>
@@ -173,19 +173,19 @@
     <span class="nav-text">Concurrent API</span>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="asynchronous-primitives.html">Asynchronous primitives</a>
+    <a class="nav-link" href="asynchronous-primitives.html">Asynchronous Primitives</a>
   </li>
   <li class="nav-item is-current-page" data-depth="2">
     <button class="nav-toggle"></button>
-    <a class="nav-link" href="blocking-safe-by-default.html">Blocking safe by default</a>
+    <a class="nav-link" href="blocking-safe-by-default.html">Blocking Safe by Default</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="blocking-implementation.html">Implementation details</a>
+    <a class="nav-link" href="blocking-implementation.html">Implementation Details</a>
   </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="async-context.html">Async Context</a>
+    <a class="nav-link" href="async-context.html">Asynchronous Context</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="pitfalls.html">Concurrency Pitfalls</a>
@@ -1068,7 +1068,7 @@
 <nav class="crumbs" aria-label="breadcrumbs">
         <ul>
                 <li class="crumb">Concurrent API</li>
-                <li class="crumb"><a href="blocking-safe-by-default.html">Blocking safe by default</a></li>
+                <li class="crumb"><a href="blocking-safe-by-default.html">Blocking Safe by Default</a></li>
         </ul>
 </nav>
 <div class="page-versions">
@@ -1141,7 +1141,7 @@ in parallel.</p>
 </div>
 <div class="paragraph">
 <p><strong>By default, in ServiceTalk, signals are not executed on an EventLoop thread, but instead executed using an
-<a href="https://github.com/apple/servicetalk/blob/0.42.55/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.56/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
 provided by the application in the order they are received.</strong></p>
 </div>
 <div class="sect3">
@@ -1199,7 +1199,7 @@ offloaded tasks. Often the <code>Executor</code> has a pool of threads, possibly
 is available. In particular, different threads may be used for each task executed and code running in tasks cannot
 depend upon a consistent thread being used for invoking program logic. This approach is generally the most scalable
 because it makes the best utilization of threads. If it is necessary to share state between tasks then
-`<a href="https://github.com/apple/servicetalk/blob/0.42.55/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java">ContextMap</a>`s
+`<a href="https://github.com/apple/servicetalk/blob/0.42.56/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java">ContextMap</a>`s
 can be used.</p>
 </div>
 <div class="paragraph">

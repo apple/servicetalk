@@ -53,7 +53,7 @@
     <a class="nav-link" href="../../servicetalk/0.42/evolve-to-async.html">Evolving to asynchronous</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../servicetalk/0.42/async-context.html">Async context</a>
+    <a class="nav-link" href="../../servicetalk/0.42/async-context.html">Asynchronous Context</a>
   </li>
 </ul>
   </li>
@@ -173,19 +173,19 @@
     <span class="nav-text">Concurrent API</span>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/asynchronous-primitives.html">Asynchronous primitives</a>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/asynchronous-primitives.html">Asynchronous Primitives</a>
   </li>
   <li class="nav-item" data-depth="2">
     <button class="nav-toggle"></button>
-    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/blocking-safe-by-default.html">Blocking safe by default</a>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/blocking-safe-by-default.html">Blocking Safe by Default</a>
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/blocking-implementation.html">Implementation details</a>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/blocking-implementation.html">Implementation Details</a>
   </li>
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/async-context.html">Async Context</a>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/async-context.html">Asynchronous Context</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/pitfalls.html">Concurrency Pitfalls</a>
@@ -1257,7 +1257,7 @@ session acquisition flow is roughly like this:</p>
 <p>Not all hosts are created equal! Due to different underlying hardware platforms, other tenants on the same host, or even
 just a bad cache day, we often find that not all instances of a service have the same capacity. The P2C selection
 algorithm can bias toward better performing hosts, but if the capacity of a backend is known it can be accounted for
-explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.55/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+explicitly. With <a href="https://github.com/apple/servicetalk/blob/0.42.56/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 or control-plane support we can explicitly propagate weight information to ServiceTalk&#8217;s default load balancer. Adding
 weight support to the host selection process will let users leverage this data.</p>
 </div>

@@ -80,9 +80,12 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></code>, <code><a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></code>, <code><a href="../../transport/api/ExecutionStrategyInfluencer.html" title="interface in io.servicetalk.transport.api">ExecutionStrategyInfluencer</a>&lt;<a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&gt;</code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">OpenTelemetryHttpServerFilter</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
-implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></span></div>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">OpenTelemetryHttpServerFilter</span>
+<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="OpenTelemetryHttpServiceFilter.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryHttpServiceFilter</code></a> instead.</div>
+</div>
 <div class="block">A <a href="../../http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that supports
  <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  <p>
@@ -116,6 +119,7 @@ implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpServerFilter</a>()</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance using the <code>OpenTelemetry</code> from <code>GlobalOpenTelemetry.get()</code> with default
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
 </div>
@@ -129,6 +133,7 @@ implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title
 </div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)" class="member-name-link">OpenTelemetryHttpServerFilter</a><wbr>(<a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;openTelemetryOptions)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -139,20 +144,20 @@ implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../http/api/StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api">StreamingHttpServiceFilter</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create</a><wbr>(<a href="../../http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../http/api/StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api">StreamingHttpServiceFilter</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#create(io.servicetalk.http.api.StreamingHttpService)" class="member-name-link">create</a><wbr>(<a href="../../http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block">Create a <a href="../../http/api/StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpServiceFilter</code></a> using the provided <a href="../../http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>final <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block">Return an <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
 </div>
@@ -198,6 +203,7 @@ implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title
 <section class="detail" id="&lt;init&gt;()">
 <h3>OpenTelemetryHttpServerFilter</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServerFilter</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance using the <code>OpenTelemetry</code> from <code>GlobalOpenTelemetry.get()</code> with default
  <a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http"><code>OpenTelemetryOptions</code></a>.</div>
 </section>
@@ -206,6 +212,7 @@ implements <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title
 <section class="detail" id="&lt;init&gt;(io.servicetalk.opentelemetry.http.OpenTelemetryOptions)">
 <h3>OpenTelemetryHttpServerFilter</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpServerFilter</span><wbr><span class="parameters">(<a href="OpenTelemetryOptions.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryOptions</a>&nbsp;openTelemetryOptions)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
