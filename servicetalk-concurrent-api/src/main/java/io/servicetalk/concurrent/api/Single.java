@@ -2723,7 +2723,7 @@ public abstract class Single<T> {
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  CapturedContext capturedContext, AsyncContextProvider contextProvider) {
-        assert contextProvider.context() == capturedContext.captured();
+        assert contextProvider.context() == capturedContext.captured() : "capturedContext was not active";
         handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 
