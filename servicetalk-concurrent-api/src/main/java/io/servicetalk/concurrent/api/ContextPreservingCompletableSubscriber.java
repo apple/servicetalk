@@ -17,43 +17,59 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.context.api.ContextMap;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-class ContextPreservingCompletableSubscriber implements Subscriber {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
-    final CapturedContext capturedContext;
+final class ContextPreservingCompletableSubscriber implements Subscriber {
     final Subscriber subscriber;
+    @Nullable
+    final CapturedContext cancellableCapturedContext;
+    @Nullable
+    final CapturedContext subscriberCapturedContext;
 
-    ContextPreservingCompletableSubscriber(Subscriber subscriber, CapturedContext capturedContext) {
+    ContextPreservingCompletableSubscriber(Subscriber subscriber,
+                                           @Nullable CapturedContext cancellableCapturedContext,
+                                           @Nullable CapturedContext subscriberCapturedContext) {
+        assert cancellableCapturedContext != null || subscriberCapturedContext != null;
         this.subscriber = requireNonNull(subscriber);
-        this.capturedContext = requireNonNull(capturedContext);
-        this.saved = capturedContext.captured();
-    }
-
-    void invokeOnSubscribe(Cancellable cancellable) {
-        subscriber.onSubscribe(cancellable);
+        this.cancellableCapturedContext = cancellableCapturedContext;
+        this.subscriberCapturedContext = subscriberCapturedContext;
     }
 
     @Override
-    public final void onSubscribe(final Cancellable cancellable) {
-        try (Scope ignored = capturedContext.attachContext()) {
-            invokeOnSubscribe(cancellable);
+    public void onSubscribe(Cancellable cancellable) {
+        if (cancellableCapturedContext != null) {
+            cancellable = ContextPreservingCancellable.wrap(cancellable, cancellableCapturedContext);
+        }
+        if (subscriberCapturedContext != null) {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onSubscribe(cancellable);
+            }
+        } else {
+            subscriber.onSubscribe(cancellable);
         }
     }
 
     @Override
-    public final void onComplete() {
-        try (Scope ignored = capturedContext.attachContext()) {
+    public void onComplete() {
+        if (subscriberCapturedContext != null) {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onComplete();
+            }
+        } else {
             subscriber.onComplete();
         }
     }
 
     @Override
-    public final void onError(Throwable t) {
-        try (Scope ignored = capturedContext.attachContext()) {
+    public void onError(Throwable t) {
+        if (subscriberCapturedContext != null) {
+            try (Scope ignored = subscriberCapturedContext.attachContext()) {
+                subscriber.onError(t);
+            }
+        } else {
             subscriber.onError(t);
         }
     }
