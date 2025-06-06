@@ -38,20 +38,16 @@ final class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
         this.cancellableCapturedContext = cancellableCapturedContext;
     }
 
-    void invokeOnSubscribe(Cancellable cancellable) {
-        subscriber.onSubscribe(cancellable);
-    }
-
     @Override
     public void onSubscribe(Cancellable cancellable) {
         if (cancellableCapturedContext != null) {
             cancellable = ContextPreservingCancellable.wrap(cancellable, cancellableCapturedContext);
         }
         if (subscriberCapturedContext == null) {
-            invokeOnSubscribe(cancellable);
+            subscriber.onSubscribe(cancellable);
         } else {
             try (Scope ignored = subscriberCapturedContext.attachContext()) {
-                invokeOnSubscribe(cancellable);
+                subscriber.onSubscribe(cancellable);
             }
         }
     }
