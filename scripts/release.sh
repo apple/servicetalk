@@ -29,10 +29,11 @@ BRANCH_NAME=${BRANCH_NAME##refs/heads/}
 GIT_AUTHOR=$(git --no-pager show -s --format='%an <%ae>' HEAD)
 
 function usage() {
-  echo "Usage: $0 old_version next_version"
-  echo "old_version - the previous version to run japicmp against. \"${JAPICMP_SKIP_VERSION}\" to skip japicmp"
-  echo "next_version - the next version to update gradle.properties, \"-SNAPSHOT\" suffix expected"
-  echo "Example to release 0.42.10: $0 0.42.9 0.42.11-SNAPSHOT"
+  echo "Patch release usage:    $0 PATCH_RELEASE"
+  echo "Explicit version usage: $0 old_version next_version"
+  echo "    old_version - the previous version to run japicmp against. \"${JAPICMP_SKIP_VERSION}\" to skip japicmp"
+  echo "    next_version - the next version to update gradle.properties, \"-SNAPSHOT\" suffix expected"
+  echo "    Example to release 0.42.10: $0 0.42.9 0.42.11-SNAPSHOT"
 }
 
 function clean_up_gh_pages() {
@@ -48,9 +49,26 @@ function clean_up_gh_pages() {
   rm -rf gh-pages
 }
 
-if [ "$#" -ne "2" ]; then
+version=$(cat gradle.properties | grep version= | sed 's/^version=//')
+
+if [[ "$#" == "1" ]] && [[ "$1" == "PATCH_RELEASE" ]]; then
+    releaseVersion=${version%"-SNAPSHOT"}
+    IFS="." read -r -a parts <<< "$releaseVersion"
+    oldVersion="${parts[0]}.${parts[1]}.$((parts[2] - 1))"
+    nextVersion="${parts[0]}.${parts[1]}.$((parts[2] + 1))-SNAPSHOT"
+    echo "Performing PATCH release with version detection. Detected versions:"
+    echo "Current version:  $version"
+    echo "Release version:  $releaseVersion"
+    echo "Previous release: $oldVersion"
+    echo "Next version:     $nextVersion"
+    echo "Verify versions and press enter to continue, or ctrl c to abort"
+    read
+elif [ "$#" -ne "2" ]; then
     usage
     exit 1
+else
+    oldVersion="$1"
+    nextVersion="$2"
 fi
 
 if [ -n "$(git status --porcelain)" ]; then
@@ -66,16 +84,12 @@ if [ "$java_version" != "17.0" ]; then
   exit 1
 fi
 
-oldVersion="$1"
-nextVersion="$2"
-
 if ( echo "$nextVersion" | grep -qv "SNAPSHOT" ); then
     echo "Expected next version to be a SNAPSHOT version"
     usage
     exit 1
 fi
 
-version=$(cat gradle.properties | grep version= | sed 's/^version=//')
 
 if [ "$nextVersion" == "$version" ]; then
     echo "Next version '$nextVersion' cannot be equal to the current version in gradle.properties: $version"
