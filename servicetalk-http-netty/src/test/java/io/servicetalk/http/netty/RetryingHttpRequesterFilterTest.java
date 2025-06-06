@@ -24,6 +24,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.RequestRejectedException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseables;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executors;
@@ -42,6 +43,7 @@ import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -319,6 +321,65 @@ class RetryingHttpRequesterFilterTest {
         return Stream.of(true, false).flatMap(returnOriginalResponses ->
                 Stream.of(ExceptionSource.values())
                         .map(lambda -> Arguments.of(returnOriginalResponses, lambda)));
+    }
+
+    @Test
+    void contextIsSharedAcrossBoundaries() throws Exception {
+        String helloWorld = "hello world";
+        final ContextMap current = AsyncContext.context();
+        try (ServerContext serverCtx = forAddress(localAddress(0))
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .build())
+                .listenBlockingAndAwait(new BlockingHttpService() {
+                    private final AtomicInteger reqCount = new AtomicInteger();
+                    @Override
+                    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                                               final HttpResponseFactory responseFactory) {
+                        int count = reqCount.incrementAndGet();
+                        final HttpResponse response;
+                        if (count > 1) {
+                            Buffer responseBuf = ctx.executionContext().bufferAllocator().fromUtf8(helloWorld);
+                            response = responseFactory.ok().payloadBody(responseBuf);
+                        } else {
+                            response = responseFactory.serviceUnavailable();
+                        }
+                        return response;
+                    }
+                });
+             StreamingHttpClient client = forSingleAddress(serverHostAndPort(serverCtx))
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                             .peerHost(serverPemHostname())
+                             .build())
+                     .appendClientFilter(new Builder()
+                             .waitForLoadBalancer(true)
+                             .responseMapper(resp -> resp.status().statusClass() == SERVER_ERROR_5XX ?
+                                     new HttpResponseException("failed", resp) : null)
+                             .retryResponses((requestMetaData, throwable) -> ofImmediate(Integer.MAX_VALUE - 1))
+                             .maxTotalRetries(Integer.MAX_VALUE)
+                             .build())
+                     .appendClientFilter(new StreamingHttpClientFilterFactory() {
+                         @Override
+                         public StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
+                             return new StreamingHttpClientFilter(client) {
+                                 @Override
+                                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                                 StreamingHttpRequest request) {
+                                     if (AsyncContext.context() != current) {
+                                         return Single.failed(
+                                                 new AssertionError("Unexpected context: " + AsyncContext.context()));
+                                     }
+                                     return delegate.request(request);
+                                 }
+                             };
+                         }
+                     })
+                     .buildStreaming()) {
+            Single<String> response = client.request(client.get("/"))
+                    .flatMap(resp ->
+                resp.payloadBody().collect(() -> "", (acc, buffer) -> acc + buffer.toString(UTF_8)));
+            String result = response.shareContextOnSubscribe().toFuture().get();
+            assertThat(result, equalTo(helloWorld));
+        }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}]: returnOriginalResponses={0}, thrower={1}")

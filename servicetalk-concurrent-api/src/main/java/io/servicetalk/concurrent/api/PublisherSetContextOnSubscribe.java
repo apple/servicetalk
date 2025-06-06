@@ -19,6 +19,7 @@ import io.servicetalk.context.api.ContextMap;
 
 import static java.util.Objects.requireNonNull;
 
+// FIXME: 0.43 - remove deprecated class
 final class PublisherSetContextOnSubscribe<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
     private final ContextMap context;

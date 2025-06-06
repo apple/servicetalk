@@ -21,14 +21,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -53,7 +51,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -278,19 +275,11 @@ public final class RetryingHttpRequesterFilter
             // State intentionally outside the defer because the request state is shared across subscribes. If
             // re-applying operators duplicates logic that isn't desirable and lead to StackOverflowException.
             final Publisher<Object> originalMessageBody = request.messageBody();
-            final AtomicReference<ContextMap> contextRef = new AtomicReference<>();
             Single<StreamingHttpResponse> single = Single.defer(() -> {
                 final Single<StreamingHttpResponse> reqSingle = delegate.request(
                         request.transformMessageBody(mayReplayRequestPayload ?
                                 messageBodyDuplicator(originalMessageBody) : p -> originalMessageBody));
-                // A retryWhen filter is applied outside this scope and although retryWhen will preserve the context
-                // at that scope, since we are introducing a defer boundary the original context won't be preserved
-                // across the async boundary. Otherwise, the context wouldn't be shared when processing the response
-                // payload body and state would be dropped.
-                final ContextMap map = contextRef.get();
-                return map == null && contextRef.compareAndSet(null, AsyncContext.context()) ?
-                        reqSingle.shareContextOnSubscribe() :
-                        reqSingle.setContextOnSubscribe(contextRef.get());
+                return reqSingle.shareContextOnSubscribe();
             });
 
             if (responseMapper != null) {

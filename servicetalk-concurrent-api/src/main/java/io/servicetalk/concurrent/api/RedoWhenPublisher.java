@@ -86,7 +86,8 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             public void onComplete() {
                 // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
                 // source at the top of the chain reset if necessary. We currently choose the second option.
-                redoPublisher.original.delegateSubscribe(RedoSubscriber.this, capturedContext, contextProvider);
+                redoPublisher.original.delegateSubscribeWithContext(RedoSubscriber.this,
+                        capturedContext, contextProvider);
             }
 
             @Override
