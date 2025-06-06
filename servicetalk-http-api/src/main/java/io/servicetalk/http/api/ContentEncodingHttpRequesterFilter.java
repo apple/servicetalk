@@ -94,7 +94,7 @@ public final class ContentEncodingHttpRequesterFilter implements
             BufferEncoder encoder = request.contentEncoding();
             final StreamingHttpRequest encodedRequest;
             if (encoder != null && !identityEncoder().equals(encoder)) {
-                addContentEncoding(request.headers(), encoder.encodingName());
+                addContentEncoding(request.headers(), encoder.encodingName(), false);
                 // After we encode the content length is unlikely to still be correct, remove it!
                 request.headers().remove(CONTENT_LENGTH);
                 encodedRequest = request.transformPayloadBody(pub -> encoder.streamingEncoder().serialize(pub,

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.SourceToFuture.CompletableToFuture;
 import io.servicetalk.context.api.ContextMap;
 
@@ -1640,7 +1641,10 @@ public abstract class Completable {
      * operator, that means this must be the "last operator" in the chain for this to have an impact.
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     * @deprecated requiring this operator is a sign that there is a problem in your operator chain. Use
+     * {@link #defer(Supplier)} and {@link #shareContextOnSubscribe()} to control context.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public final Completable setContextOnSubscribe(ContextMap context) {
         return new CompletableSetContextOnSubscribe(this, context);
     }
@@ -1744,15 +1748,7 @@ public abstract class Completable {
         AsyncContextProvider contextProvider = AsyncContext.provider();
         CapturedContext capturedContext = contextForSubscribe(contextProvider);
         Subscriber wrapped = contextProvider.wrapCancellable(subscriber, capturedContext);
-        if (contextProvider.context() == capturedContext) {
-            // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, capturedContext, contextProvider);
-        } else {
-            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope unused = capturedContext.attachContext()) {
-                handleSubscribe(wrapped, capturedContext, contextProvider);
-            }
-        }
+        delegateSubscribeWithContext(wrapped, capturedContext, contextProvider);
     }
 
     /**
@@ -2260,6 +2256,26 @@ public abstract class Completable {
     //
 
     /**
+     * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
+     * This method is used by operators to subscribe to the upstream outside a delegating
+     * {@link Completable#handleSubscribe(CompletableSource.Subscriber, CapturedContext, AsyncContextProvider)} method.
+     * source.
+     * @param subscriber the subscriber.
+     * @param capturedContext the {@link ContextMap} to use for this {@link PublisherSource.Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
+     */
+    final void delegateSubscribeWithContext(Subscriber subscriber,
+                                            CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        if (contextProvider.context() == capturedContext) {
+            handleSubscribe(subscriber, capturedContext, contextProvider);
+        } else {
+            try (Scope ignored = capturedContext.attachContext()) {
+                handleSubscribe(subscriber, capturedContext, contextProvider);
+            }
+        }
+    }
+
+    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      *
@@ -2269,6 +2285,7 @@ public abstract class Completable {
      */
     final void delegateSubscribe(Subscriber subscriber,
                                  CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        assert contextProvider.context() == capturedContext.captured() : "capturedContext was not active";
         handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 

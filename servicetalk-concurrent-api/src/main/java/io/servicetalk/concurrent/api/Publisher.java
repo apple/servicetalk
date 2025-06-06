@@ -3982,7 +3982,10 @@ Kotlin flatMapLatest</a>
      * operator, that means this must be the "last operator" in the chain for this to have an impact.
      * @param context The {@link ContextMap} to use for {@link AsyncContext} when subscribed.
      * @return A {@link Completable} that will use the {@link ContextMap} for {@link AsyncContext} when subscribed.
+     * @deprecated requiring this operator is a sign that there is a problem in your operator chain. Use
+     * {@link #defer(Supplier)} and {@link #shareContextOnSubscribe()} to control context.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public final Publisher<T> setContextOnSubscribe(ContextMap context) {
         return new PublisherSetContextOnSubscribe<>(this, context);
     }
@@ -4405,15 +4408,7 @@ Kotlin flatMapLatest</a>
         AsyncContextProvider provider = AsyncContext.provider();
         CapturedContext capturedContext = contextForSubscribe(provider);
         Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, capturedContext);
-        if (provider.context() == capturedContext) {
-            // No need to wrap as we are sharing the AsyncContext
-            handleSubscribe(wrapped, capturedContext, provider);
-        } else {
-            // Ensure that AsyncContext used for handleSubscribe() is the contextMap for the subscribe()
-            try (Scope ignored = capturedContext.attachContext()) {
-                handleSubscribe(wrapped, capturedContext, provider);
-            }
-        }
+        delegateSubscribeWithContext(wrapped, capturedContext, provider);
     }
 
     /**
@@ -4893,6 +4888,26 @@ Kotlin flatMapLatest</a>
     //
 
     /**
+     * Delegate subscribe calls in an operator chain while also ensuring the provided {@link CapturedContext} is active.
+     * This method is used by operators to subscribe to the upstream outside a delegating
+     * {@link Publisher#handleSubscribe(Subscriber, CapturedContext, AsyncContextProvider)} method.
+     * source.
+     * @param subscriber the subscriber.
+     * @param capturedContext the {@link ContextMap} to use for this {@link Subscriber}.
+     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve {@link ContextMap}.
+     */
+    final void delegateSubscribeWithContext(Subscriber<? super T> subscriber,
+                                 CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        if (contextProvider.context() == capturedContext) {
+            handleSubscribe(subscriber, capturedContext, contextProvider);
+        } else {
+            try (Scope ignored = capturedContext.attachContext()) {
+                handleSubscribe(subscriber, capturedContext, contextProvider);
+            }
+        }
+    }
+
+    /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
      * @param subscriber the subscriber.
@@ -4901,6 +4916,7 @@ Kotlin flatMapLatest</a>
      */
     final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  CapturedContext capturedContext, AsyncContextProvider contextProvider) {
+        assert contextProvider.context() == capturedContext.captured() : "capturedContext was not active";
         handleSubscribe(subscriber, capturedContext, contextProvider);
     }
 
