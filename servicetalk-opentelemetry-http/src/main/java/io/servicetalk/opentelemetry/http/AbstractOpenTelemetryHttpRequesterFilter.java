@@ -16,6 +16,7 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -41,6 +42,8 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExt
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 
+import javax.annotation.Nullable;
+
 abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTelemetryFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
@@ -61,15 +64,9 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> clientInstrumenterBuilder =
                 Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, clientSpanNameExtractor);
-        clientInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.CLIENT_INSTANCE);
-
         clientInstrumenterBuilder
-                .addAttributesExtractor(
-                        HttpClientAttributesExtractor
-                                .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
-                                .setCapturedRequestHeaders(opentelemetryOptions.capturedRequestHeaders())
-                                .setCapturedResponseHeaders(opentelemetryOptions.capturedResponseHeaders())
-                                .build());
+                .setSpanStatusExtractor(ServicetalkSpanStatusExtractor.CLIENT_INSTANCE)
+                .addAttributesExtractor(new DeferredClientAttributesExtractor(opentelemetryOptions));
 
         if (opentelemetryOptions.enableMetrics()) {
             clientInstrumenterBuilder.addOperationMetrics(HttpClientMetrics.get());
@@ -124,6 +121,32 @@ abstract class AbstractOpenTelemetryHttpRequesterFilter extends AbstractOpenTele
                 tracker.onError(t);
                 return Single.failed(t);
             }
+        }
+    }
+
+    private static final class DeferredClientAttributesExtractor implements
+            AttributesExtractor<HttpRequestMetaData, HttpResponseMetaData> {
+
+        private final AttributesExtractor<HttpRequestMetaData, HttpResponseMetaData> delegate;
+
+        private DeferredClientAttributesExtractor(OpenTelemetryOptions openTelemetryOptions) {
+            this.delegate = HttpClientAttributesExtractor
+                    .builder(ServiceTalkHttpAttributesGetter.CLIENT_INSTANCE)
+                    .setCapturedRequestHeaders(openTelemetryOptions.capturedRequestHeaders())
+                    .setCapturedResponseHeaders(openTelemetryOptions.capturedResponseHeaders())
+                    .build();
+        }
+
+        @Override
+        public void onStart(AttributesBuilder attributes, Context parentContext, HttpRequestMetaData metaData) {
+            // noop: we will defer this until the `onEnd` call.
+        }
+
+        @Override
+        public void onEnd(AttributesBuilder attributes, Context context, HttpRequestMetaData requestMetaData,
+                          @Nullable HttpResponseMetaData responseMetaData, @Nullable Throwable error) {
+            delegate.onStart(attributes, context, requestMetaData);
+            delegate.onEnd(attributes, context, requestMetaData, responseMetaData, error);
         }
     }
 }
