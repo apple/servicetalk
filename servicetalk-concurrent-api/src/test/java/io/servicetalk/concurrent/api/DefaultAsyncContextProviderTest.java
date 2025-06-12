@@ -23,7 +23,9 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.concurrent.internal.SubscriberUtils;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 
@@ -31,6 +33,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +66,7 @@ import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -466,6 +471,248 @@ class DefaultAsyncContextProviderTest {
         assertNull(AsyncContext.get(K2));
 
         // TODO we don't have nested operators such as flatMap yet, to be tested when we implement them
+    }
+
+    private enum WrapType {
+        NONE,
+        SEQUENTIAL,
+        CONCURRENT,
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multipleCompletableWrapSubscriber(WrapType wrapType) throws Exception {
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
+            @Override
+            public void onSubscribe(Cancellable cancellable) {
+            }
+
+            @Override
+            public void onComplete() {
+                f1.complete(AsyncContext.captureContext());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+            }
+        };
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        CompletableSource.Subscriber wrapped = INSTANCE.wrapCompletableSubscriber(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                wrapped = INSTANCE.wrapCompletableSubscriber(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapCompletableSubscriberAndCancellable(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapCompletableSubscriber(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(IGNORE_CANCEL);
+        wrapped.onComplete();
+        // inner subscription wrapping wins.
+        assertThat(f1.get(), sameInstance(c1));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multipleSingleWrapSubscriber(WrapType wrapType) throws Exception {
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        SingleSource.Subscriber<String> subscriber = new SingleSource.Subscriber<String>() {
+            @Override
+            public void onSubscribe(Cancellable cancellable) {
+            }
+
+            @Override
+            public void onSuccess(@Nullable String result) {
+                f1.complete(AsyncContext.captureContext());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+            }
+        };
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        SingleSource.Subscriber<String> wrapped = INSTANCE.wrapSingleSubscriber(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                wrapped = INSTANCE.wrapSingleSubscriber(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapSingleSubscriber(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(IGNORE_CANCEL);
+        wrapped.onSuccess("");
+        // inner subscription wrapping wins.
+        assertThat(f1.get(), sameInstance(c1));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multiplePublisherWrapSubscriber(WrapType wrapType) throws Exception {
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        CompletableFuture<CapturedContext> f2 = new CompletableFuture<>();
+        PublisherSource.Subscriber<String> subscriber = new PublisherSource.Subscriber<String>() {
+
+            @Override
+            public void onSubscribe(Subscription subscription) {
+            }
+
+            @Override
+            public void onNext(@Nullable String s) {
+                f1.complete(AsyncContext.captureContext());
+            }
+
+            @Override
+            public void onComplete() {
+                f2.complete(AsyncContext.captureContext());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+            }
+        };
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        PublisherSource.Subscriber<String> wrapped = INSTANCE.wrapPublisherSubscriber(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapSubscription(wrapped, c2);
+                wrapped = INSTANCE.wrapPublisherSubscriber(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapPublisherSubscriber(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(new Subscription() {
+            @Override
+            public void request(long n) {
+            }
+
+            @Override
+            public void cancel() {
+            }
+        });
+        wrapped.onNext("");
+        wrapped.onComplete();
+        // inner subscription wrapping wins.
+        assertThat(f1.get(), sameInstance(c1));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multipleCompletableWrapCancellable(WrapType wrapType) throws Exception {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        CompletableSource.Subscriber wrapped = INSTANCE.wrapCancellable(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapCompletableSubscriber(wrapped, c1);
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapCompletableSubscriberAndCancellable(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
+        subscriber.awaitSubscription().cancel();
+        // Outer wrapping wins.
+        assertThat(f1.get(), sameInstance(c2));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multipleSingleWrapCancellable(WrapType wrapType) throws Exception {
+        TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        SingleSource.Subscriber<String> wrapped = INSTANCE.wrapCancellable(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapSingleSubscriber(wrapped, c1);
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapSingleSubscriberAndCancellable(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapCancellable(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(() -> f1.complete(AsyncContext.captureContext()));
+        subscriber.awaitSubscription().cancel();
+        // Outer wrapping wins.
+        assertThat(f1.get(), sameInstance(c2));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] wrapType={0}")
+    @EnumSource(WrapType.class)
+    void multiplePublisherWrapSubscription(WrapType wrapType) throws Exception {
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        CompletableFuture<CapturedContext> f1 = new CompletableFuture<>();
+        CompletableFuture<CapturedContext> f2 = new CompletableFuture<>();
+        CapturedContext c1 = new CopyOnWriteContextMap();
+        CapturedContext c2 = new CopyOnWriteContextMap();
+        PublisherSource.Subscriber<String> wrapped = INSTANCE.wrapSubscription(subscriber, c1);
+        switch (wrapType) {
+            case SEQUENTIAL:
+                wrapped = INSTANCE.wrapPublisherSubscriber(wrapped, c1);
+                wrapped = INSTANCE.wrapSubscription(wrapped, c2);
+                break;
+            case CONCURRENT:
+                wrapped = INSTANCE.wrapPublisherSubscriberAndSubscription(wrapped, c2);
+                break;
+            case NONE:
+                wrapped = INSTANCE.wrapSubscription(wrapped, c2);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported wrapType: " + wrapType);
+        }
+        wrapped.onSubscribe(new Subscription() {
+            @Override
+            public void request(long n) {
+                f1.complete(AsyncContext.captureContext());
+            }
+
+            @Override
+            public void cancel() {
+                f2.complete(AsyncContext.captureContext());
+            }
+        });
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
+        // Outer wrapping wins.
+        assertThat(f1.get(), sameInstance(c2));
+        assertThat(f2.get(), sameInstance(c2));
     }
 
     @Test

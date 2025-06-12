@@ -15,22 +15,17 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.context.api.ContextMap;
-
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingFunction<T, U> implements Function<T, U> {
-    // TODO: remove after 0.42.55
-    private final ContextMap saved;
     private final CapturedContext capturedContext;
     private final Function<T, U> delegate;
 
     ContextPreservingFunction(Function<T, U> delegate, CapturedContext capturedContext) {
         this.capturedContext = requireNonNull(capturedContext);
         this.delegate = requireNonNull(delegate);
-        this.saved = capturedContext.captured();
     }
 
     @Override
