@@ -151,7 +151,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     @Override
     public final void onRequestError(final long beforeStartTimeNs, RequestTracker.ErrorClass errorClass) {
         super.onRequestError(beforeStartTimeNs, errorClass);
-        doOnError(errorClass == RequestTracker.ErrorClass.CANCELLED);
+        doOnError(errorClass == RequestTracker.ErrorClass.CANCELLED, errorClass);
     }
 
     @Override
@@ -164,7 +164,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         // This assumes that the connect request was intended to be used for a request dispatch which
         // will have now failed. This is not strictly true: a connection can be acquired and simply not
         // used, but in practice it's a very good assumption.
-        doOnError(errorClass == ConnectTracker.ErrorClass.CANCELLED);
+        doOnError(errorClass == ConnectTracker.ErrorClass.CANCELLED, errorClass);
     }
 
     @Override
@@ -172,7 +172,7 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
         // noop: the request path will now determine if the request was a success or failure.
     }
 
-    private void doOnError(boolean isCancellation) {
+    private void doOnError(boolean isCancellation, Object errorClass) {
         if (!cancellationIsError && isCancellation) {
             // short circuit: it's a cancellation, and we don't consider them to be errors.
             return;
@@ -185,15 +185,16 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
                 if (!cancelled && evictedUntilNanos == null &&
                         sequentialTryEject(currentConfig(), CONSECUTIVE_5XX_CAUSE) && // side effecting
                         LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("{}-{}: observed error which did result in consecutive 5xx ejection. " +
-                                    "Consecutive 5xx: {}, limit: {}.", lbDescription, address, consecutiveFailures,
-                            localConfig.consecutive5xx());
+                    LOGGER.debug("{}-{}: observed error of type {} which did result in consecutive 5xx ejection. " +
+                                    "Consecutive 5xx: {}, limit: {}.", lbDescription, address, errorClass,
+                            consecutiveFailures, localConfig.consecutive5xx());
                 }
             });
         } else {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("{}-{}: observed error which didn't result in ejection. Consecutive 5xx: {}, limit: {}",
-                        lbDescription, address, consecutiveFailures, localConfig.consecutive5xx());
+                LOGGER.trace("{}-{}: observed error of type {} which did not result in ejection. " +
+                                "Consecutive 5xx: {}, limit: {}",
+                        lbDescription, address, errorClass, consecutiveFailures, localConfig.consecutive5xx());
             }
         }
     }
@@ -261,9 +262,10 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     @Override
     public String toString() {
         return "XdsHealthIndicator{" +
-                ", consecutive5xx=" + consecutive5xx.get() +
+                "consecutive5xx=" + consecutive5xx.get() +
                 ", successes=" + successes.get() +
                 ", failures=" + failures.get() +
+                ", failureMultiplier=" + failureMultiplier +
                 ", evictedUntilNanos=" + evictedUntilNanos +
                 '}';
     }
