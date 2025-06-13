@@ -219,15 +219,15 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
             // If we are evicted or just transitioned out of eviction we shouldn't be marked as an outlier this round.
             // Note that this differs from the envoy behavior. If we want to mimic it, then I think we need to just
             // fall through and maybe attempt to eject again.
-            LOGGER.info("{}-{}: markAsOutlier(..) resulted in host revival.", lbDescription, address);
+            LOGGER.info("{}-{}: Health indicator revived.", lbDescription, address);
             return false;
         } else if (isOutlier) {
             final boolean result = sequentialTryEject(config, OUTLIER_DETECTOR_CAUSE);
             if (result) {
-                LOGGER.info("{}-{}: markAsOutlier(isOutlier = true) resulted in ejection. " +
+                LOGGER.info("{}-{}: Health indicator was found to be an outlier and was ejected. " +
                         "Failure multiplier: {}.", lbDescription, address, failureMultiplier);
             } else if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{}-{}: markAsOutlier(isOutlier = true) did not result in ejection. " +
+                LOGGER.debug("{}-{}: Health indicator was found to be an outlier but was not ejected. " +
                         "Failure multiplier: {}.", lbDescription, address, failureMultiplier);
             }
             return result;
@@ -263,14 +263,15 @@ abstract class XdsHealthIndicator<ResolvedAddress, C extends LoadBalancedConnect
     @Override
     public String toString() {
         Long evictedUntilNanos = this.evictedUntilNanos;
-        long evictedForNanos = evictedUntilNanos == null ? 0 : Math.max(0, evictedUntilNanos - currentTimeNanos());
+        long remainingEvictionTimeNanos = evictedUntilNanos == null ? 0 :
+                Math.max(0, evictedUntilNanos - currentTimeNanos());
         return "XdsHealthIndicator{" +
                 "isHealthy=" + isHealthy() +
                 ", successes=" + successes.get() +
                 ", failures=" + failures.get() +
                 ", consecutive5xx=" + consecutive5xx.get() +
                 ", failureMultiplier=" + failureMultiplier +
-                ", evictedForNanos=" + evictedForNanos +
+                ", remainingEvictionTimeNanos=" + remainingEvictionTimeNanos +
                 '}';
     }
 
