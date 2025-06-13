@@ -62,6 +62,8 @@ import javax.annotation.Nullable;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_NAME;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PROTOCOL_VERSION;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
@@ -230,12 +232,12 @@ class OpenTelemetryHttpRequesterFilterTest {
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
                                     .isEqualTo("serviceTalk");
                             assertThat(ta.getSpan(1).getParentSpanId()).isEqualTo(ta.getSpan(0).getSpanId());
-                            if (absoluteForm || withHostHeader) {
-                                assertThat(ta.getSpan(1).getAttributes().get(URL_FULL)).isEqualTo(
-                                        fullUrl(serverHostAndPort, requestPath));
-                            } else {
-                                assertThat(ta.getSpan(1).getAttributes().get(URL_FULL)).isNull();
-                            }
+                            assertThat(ta.getSpan(1).getAttributes().get(URL_FULL)).isEqualTo(
+                                    fullUrl(serverHostAndPort, requestPath));
+                            assertThat(ta.getSpan(1).getAttributes().get(SERVER_ADDRESS)).isEqualTo(
+                                    serverHostAndPort.hostName());
+                            assertThat(ta.getSpan(1).getAttributes().get(SERVER_PORT)).isEqualTo(
+                                    serverHostAndPort.port());
                             assertThat(ta.getSpan(1).getAttributes().get(NETWORK_PROTOCOL_NAME))
                                     .isNull(); // only needs to be set if != http
                             assertThat(ta.getSpan(2).getParentSpanId()).isEqualTo(ta.getSpan(1).getSpanId());
