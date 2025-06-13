@@ -17,10 +17,12 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.transport.api.ConnectionInfo;
@@ -48,13 +50,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -287,10 +290,16 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]: transportFailure={0}")
-    @ValueSource(booleans = {true, false})
-    void transportObserver(boolean transportFailure) throws Exception {
-        final String requestUrl = "/";
+    private enum ResultType {
+        SUCCESS,
+        TRANSPORT_ERROR,
+        CANCEL
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: resultType={0}")
+    @EnumSource(ResultType.class)
+    void transportObserver(final ResultType resultType) throws Exception {
+        final boolean transportFailure = resultType == ResultType.TRANSPORT_ERROR;
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
         TransportObserver transportObserver = new TransportObserver() {
@@ -381,6 +390,8 @@ class OpenTelemetryHttpRequesterFilterTest {
         try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                 .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
                 .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
+                .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
+                        new TestHttpLifecycleObserver(errors)))
                 .appendConnectionFactoryFilter(
                         new TransportObserverConnectionFactoryFilter<>(transportObserver)).build()) {
             // This is necessary to let the load balancer become ready
@@ -388,41 +399,71 @@ class OpenTelemetryHttpRequesterFilterTest {
 
             final HttpResponse response;
             final TestSpanState serverSpanState;
-            if (transportFailure) {
-                context.close();
-                context = null;
-                assertThrows(Exception.class, () -> client.request(client.get(requestUrl)).toFuture().get());
-                Thread.sleep(SLEEP_TIME);
-                otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
-                    ta.hasSpansSatisfyingExactly(span ->
-                        span.hasEventsSatisfying(eventData -> {
-                            for (EventData data : eventData) {
-                                if (!(data instanceof ExceptionEventData)) {
-                                    assertThat(data.getName()).isEqualTo("connectionClosed(error)");
-                                }
-                            }
-                        })));
-            } else {
-                response = client.request(client.get(requestUrl)).toFuture().get();
-                serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+            switch (resultType) {
+                case SUCCESS:
+                    response = client.request(client.get("/")).toFuture().get();
+                    serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
 
-                verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
-                        serverSpanState.getTraceId(), serverSpanState.getSpanId(),
-                        TRACING_TEST_LOG_LINE_PREFIX);
-                Thread.sleep(SLEEP_TIME);
-                assertThat(otelTesting.getSpans()).hasSize(1);
-                assertThat(otelTesting.getSpans()).extracting("traceId")
-                        .containsExactly(serverSpanState.getTraceId());
-                assertThat(otelTesting.getSpans()).extracting("spanId")
-                        .containsAnyOf(serverSpanState.getSpanId());
-                otelTesting.assertTraces()
-                        .hasTracesSatisfyingExactly(ta -> {
-                            ta.hasTraceId(serverSpanState.getTraceId());
-                            ta.hasSpansSatisfyingExactly(span -> span.hasEventsSatisfying(eventData -> {
-                                assertThat(eventData).hasSize(1);
-                                assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
+                    verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), "/",
+                            serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                            TRACING_TEST_LOG_LINE_PREFIX);
+                    Thread.sleep(SLEEP_TIME);
+                    assertThat(otelTesting.getSpans()).hasSize(1);
+                    assertThat(otelTesting.getSpans()).extracting("traceId")
+                            .containsExactly(serverSpanState.getTraceId());
+                    assertThat(otelTesting.getSpans()).extracting("spanId")
+                            .containsAnyOf(serverSpanState.getSpanId());
+                    otelTesting.assertTraces()
+                            .hasTracesSatisfyingExactly(ta -> {
+                                ta.hasTraceId(serverSpanState.getTraceId());
+                                ta.hasSpansSatisfyingExactly(span -> {
+                                    span.hasEventsSatisfying(eventData -> {
+                                        assertThat(eventData).hasSize(1);
+                                        assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
+                                    });
+                                    span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
+                                    span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
+                                    span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_DATA_KEY, "set");
+                                    span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_COMPLETE_KEY, "set");
+                                    span.hasAttribute(TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, "set");
+                                });
+                            });
+                    break;
+                case CANCEL:
+                    Future<HttpResponse> result = client.request(client.get("/slow")).toFuture();
+                    Thread.sleep(20);
+                    result.cancel(true);
+                    Thread.sleep(SLEEP_TIME);
+                    otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_CANCEL_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, "set");
                             }));
-                        });
+                    break;
+                case TRANSPORT_ERROR:
+                    context.close();
+                    context = null;
+                    assertThrows(Exception.class, () -> client.request(client.get("/")).toFuture().get());
+                    Thread.sleep(SLEEP_TIME);
+                    otelTesting.assertTraces().hasTracesSatisfyingExactly(ta ->
+                            ta.hasSpansSatisfyingExactly(span -> {
+                                span.hasEventsSatisfying(eventData -> {
+                                    for (EventData data : eventData) {
+                                        if (!(data instanceof ExceptionEventData)) {
+                                            assertThat(data.getName()).isEqualTo("connectionClosed(error)");
+                                        }
+                                    }
+                                });
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_NEW_EXCHANGE_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY, "set");
+                                span.hasAttribute(TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, "set");
+                            }));
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected resultType: " + resultType);
             }
         } finally {
             if (context != null) {
@@ -442,6 +483,9 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
         return httpServerBuilder
             .listenAndAwait((ctx, request, responseFactory) -> {
+                if ("/slow".equals(request.path())) {
+                    return Single.never();
+                }
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
                 Context tracingContext = propagators.getTextMapPropagator()

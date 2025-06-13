@@ -25,12 +25,9 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -46,7 +43,6 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.HttpRequestAutoDrainingServiceFilter;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentelemetry.http.TestUtils.TestTracingServerLoggerFilter;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.utils.internal.ThrowableUtils;
 
@@ -81,7 +77,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import javax.annotation.Nullable;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
@@ -461,7 +456,7 @@ class OpenTelemetryHttpServiceFilterTest {
 
     private void runWithClient(boolean http2, boolean useOffloading, RunWithClient runWithClient) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
-        Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
+        Queue<Error> errorQueue = new ConcurrentLinkedQueue<>();
         try (ServerContext context = buildStreamingServer(http2, otelTesting.getOpenTelemetry(),
                 new OpenTelemetryOptions.Builder().build(), useOffloading, errorQueue);
              HttpClient client = forSingleAddress(serverHostAndPort(context)).protocols(config).build()) {
@@ -507,7 +502,7 @@ class OpenTelemetryHttpServiceFilterTest {
 
     private static ServerContext buildStreamingServer(boolean http2, OpenTelemetry givenOpentelemetry,
                                                       OpenTelemetryOptions opentelemetryOptions, boolean useOffloading,
-                                                      Queue<Throwable> errorQueue) throws Exception {
+                                                      Queue<Error> errorQueue) throws Exception {
         HttpProtocolConfig config = http2 ? HttpProtocolConfigs.h2Default() : HttpProtocolConfigs.h1Default();
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config)
@@ -568,143 +563,6 @@ class OpenTelemetryHttpServiceFilterTest {
                                 HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
                     }
                 });
-    }
-
-    private static final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
-
-        static final AttributeKey<String> ON_NEW_EXCHANGE_KEY = AttributeKey.stringKey("onNewExchange");
-        static final AttributeKey<String> ON_EXCHANGE_FINALLY_KEY = AttributeKey.stringKey("onExchangeFinally");
-
-        static final AttributeKey<String> ON_REQUEST_KEY = AttributeKey.stringKey("onRequest");
-        static final AttributeKey<String> ON_REQUEST_DATA_KEY = AttributeKey.stringKey("onRequestData");
-        static final AttributeKey<String> ON_REQUEST_TRAILERS_KEY = AttributeKey.stringKey("onRequestTrailers");
-        static final AttributeKey<String> ON_REQUEST_COMPLETE_KEY = AttributeKey.stringKey("onRequestComplete");
-        static final AttributeKey<String> ON_REQUEST_ERROR_KEY = AttributeKey.stringKey("onRequestError");
-        static final AttributeKey<String> ON_REQUEST_CANCEL_KEY = AttributeKey.stringKey("onRequestCancel");
-
-        static final AttributeKey<String> ON_RESPONSE_KEY = AttributeKey.stringKey("onResponse");
-        static final AttributeKey<String> ON_RESPONSE_ERROR_KEY = AttributeKey.stringKey("onResponseError");
-        static final AttributeKey<String> ON_RESPONSE_CANCEL_KEY = AttributeKey.stringKey("onResponseCancel");
-        static final AttributeKey<String> ON_RESPONSE_DATA_KEY = AttributeKey.stringKey("onResponseData");
-        static final AttributeKey<String> ON_RESPONSE_TRAILERS_KEY = AttributeKey.stringKey("onResponseTrailers");
-        static final AttributeKey<String> ON_RESPONSE_COMPLETE_KEY = AttributeKey.stringKey("onResponseComplete");
-        static final AttributeKey<String> ON_RESPONSE_BODY_ERROR_KEY = AttributeKey.stringKey("onResponseBodyError");
-        static final AttributeKey<String> ON_RESPONSE_BODY_CANCEL_KEY = AttributeKey.stringKey("onResponseBodyCancel");
-
-        private final Queue<Throwable> errorQueue;
-
-        // Protected by synchronization
-        @Nullable
-        private Span initialSpan;
-
-        TestHttpLifecycleObserver(Queue<Throwable> errorQueue) {
-            this.errorQueue = errorQueue;
-        }
-
-        @Override
-        public HttpExchangeObserver onNewExchange() {
-            setKey(ON_NEW_EXCHANGE_KEY);
-            return new HttpExchangeObserver() {
-                @Override
-                public void onConnectionSelected(ConnectionInfo info) {
-                }
-
-                @Override
-                public HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
-                    setKey(ON_REQUEST_KEY);
-                    return new HttpRequestObserver() {
-                        @Override
-                        public void onRequestData(Buffer data) {
-                            setKey(ON_REQUEST_DATA_KEY);
-                        }
-
-                        @Override
-                        public void onRequestTrailers(HttpHeaders trailers) {
-                             setKey(ON_REQUEST_TRAILERS_KEY);
-                        }
-
-                        @Override
-                        public void onRequestComplete() {
-                            setKey(ON_REQUEST_COMPLETE_KEY);
-                        }
-
-                        @Override
-                        public void onRequestError(Throwable cause) {
-                             setKey(ON_REQUEST_ERROR_KEY);
-                        }
-
-                        @Override
-                        public void onRequestCancel() {
-                             setKey(ON_REQUEST_CANCEL_KEY);
-                        }
-                    };
-                }
-
-                @Override
-                public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
-                    setKey(ON_RESPONSE_KEY);
-                    return new HttpResponseObserver() {
-                        @Override
-                        public void onResponseData(Buffer data) {
-                            setKey(ON_RESPONSE_DATA_KEY);
-                        }
-
-                        @Override
-                        public void onResponseTrailers(HttpHeaders trailers) {
-                            setKey(ON_RESPONSE_TRAILERS_KEY);
-                        }
-
-                        @Override
-                        public void onResponseComplete() {
-                            setKey(ON_RESPONSE_COMPLETE_KEY);
-                        }
-
-                        @Override
-                        public void onResponseError(Throwable cause) {
-                             setKey(ON_RESPONSE_BODY_ERROR_KEY);
-                        }
-
-                        @Override
-                        public void onResponseCancel() {
-                            setKey(ON_RESPONSE_BODY_CANCEL_KEY);
-                        }
-                    };
-                }
-
-                @Override
-                public void onResponseError(Throwable cause) {
-                     setKey(ON_RESPONSE_ERROR_KEY);
-                }
-
-                @Override
-                public void onResponseCancel() {
-                    setKey(ON_RESPONSE_CANCEL_KEY);
-                }
-
-                @Override
-                public void onExchangeFinally() {
-                    setKey(ON_EXCHANGE_FINALLY_KEY);
-                }
-            };
-        }
-
-        private void setKey(AttributeKey<String> key) {
-            final Span current = Span.current();
-                current.setAttribute(key, "set");
-            final Span initialSpan;
-            synchronized (this) {
-                if (this.initialSpan == null) {
-                    this.initialSpan = current;
-                }
-                initialSpan = this.initialSpan;
-            }
-            if (Span.getInvalid().equals(current)) {
-                errorQueue.offer(new AssertionError("Detected the invalid span"));
-            } else if (!current.equals(initialSpan)) {
-                errorQueue.offer(new AssertionError("Found unexpected unrelated span detected in " +
-                        key.getKey() + ". Initial: " + initialSpan + ", current: " + current));
-            }
-        }
     }
 
     private static void sleep() {
