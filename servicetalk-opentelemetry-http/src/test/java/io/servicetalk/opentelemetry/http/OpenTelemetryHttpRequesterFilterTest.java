@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.sdk.testing.assertj.AttributeAssertion;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
@@ -52,7 +51,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +78,6 @@ import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.util.Collections.replaceAll;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -461,7 +458,6 @@ class OpenTelemetryHttpRequesterFilterTest {
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_REQUEST_KEY, "set");
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_RESPONSE_ERROR_KEY, "set");
                                 span.hasAttribute(TestHttpLifecycleObserver.ON_EXCHANGE_FINALLY_KEY, "set");
-
                             }));
                     break;
                 default:
@@ -485,7 +481,7 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
         return httpServerBuilder
             .listenAndAwait((ctx, request, responseFactory) -> {
-                if (request.path().equals("/slow")) {
+                if ("/slow".equals(request.path())) {
                     return Single.never();
                 }
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();

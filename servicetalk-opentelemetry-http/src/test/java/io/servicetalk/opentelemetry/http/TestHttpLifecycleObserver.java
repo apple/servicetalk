@@ -15,8 +15,6 @@
  */
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.trace.Span;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
@@ -24,8 +22,11 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.api.ConnectionInfo;
 
-import javax.annotation.Nullable;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+
 import java.util.Queue;
+import javax.annotation.Nullable;
 
 final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
 
@@ -146,7 +147,6 @@ final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
     }
 
     private void setKey(AttributeKey<String> key) {
-        System.err.println("Setting key " + key);
         final Span current = Span.current();
         current.setAttribute(key, "set");
         final Span initialSpan;
