@@ -31,7 +31,7 @@ import java.util.function.UnaryOperator;
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
- * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
+ * The filter gets a {@link Tracer} with {@value Singletons#INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
@@ -57,7 +57,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      */
     @Deprecated // FIXME: 0.43 - remove deprecated ctor
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        super(openTelemetry, componentName, DEFAULT_OPTIONS);
+        super(openTelemetry, componentName, Singletons.DEFAULT_OPTIONS);
     }
 
     /**
@@ -66,7 +66,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryH
      * @param componentName The component name used during building new spans.
      */
     public OpenTelemetryHttpRequestFilter(final String componentName) {
-        this(componentName, DEFAULT_OPTIONS);
+        this(componentName, Singletons.DEFAULT_OPTIONS);
     }
 
     /**

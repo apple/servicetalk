@@ -17,12 +17,10 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -32,26 +30,16 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
 abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
-    static final OpenTelemetryOptions DEFAULT_OPTIONS = new OpenTelemetryOptions.Builder().build();
-    static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
         return HttpExecutionStrategies.offloadNone();
     }
 
-    static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context) {
-        return new SubscribableSingle<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
-                try (Scope ignored = context.makeCurrent()) {
-                    SourceAdapters.toSource(responseSingle
-                                    .map(resp -> resp.transformMessageBody(body -> transformBody(body, context)))
-                                    .shareContextOnSubscribe())
-                            .subscribe(subscriber);
-                }
-            }
-        };
+    protected static Single<StreamingHttpResponse> withContext(Single<StreamingHttpResponse> responseSingle, Context context) {
+        return Singletons.withContext(responseSingle
+                .map(resp -> resp.transformMessageBody(body -> transformBody(body, context)))
+                .shareContextOnSubscribe(), context);
     }
 
     private static <T> Publisher<T> transformBody(Publisher<T> body, Context context) {

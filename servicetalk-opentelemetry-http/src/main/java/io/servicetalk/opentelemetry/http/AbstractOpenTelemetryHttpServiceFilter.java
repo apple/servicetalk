@@ -46,7 +46,7 @@ abstract class AbstractOpenTelemetryHttpServiceFilter extends AbstractOpenTeleme
         SpanNameExtractor<HttpRequestMetaData> serverSpanNameExtractor =
                 HttpSpanNameExtractor.create(ServiceTalkHttpAttributesGetter.SERVER_INSTANCE);
         InstrumenterBuilder<HttpRequestMetaData, HttpResponseMetaData> serverInstrumenterBuilder =
-                Instrumenter.builder(openTelemetry, INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
+                Instrumenter.builder(openTelemetry, Singletons.INSTRUMENTATION_SCOPE_NAME, serverSpanNameExtractor);
         serverInstrumenterBuilder.setSpanStatusExtractor(ServicetalkSpanStatusExtractor.SERVER_INSTANCE);
 
         serverInstrumenterBuilder

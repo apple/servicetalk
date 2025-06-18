@@ -29,7 +29,7 @@ import io.opentelemetry.context.Context;
  * A {@link StreamingHttpService} that supports
  * <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
- * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
+ * The filter gets a {@link Tracer} with {@value Singletons#INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
  * This filter propagates the OpenTelemetry {@link Context} (thus {@link Span}) so the ordering of filters is crucial.
  * <ul>
@@ -54,7 +54,7 @@ public final class OpenTelemetryHttpServiceFilter extends AbstractOpenTelemetryH
      * {@link OpenTelemetryOptions}.
      */
     public OpenTelemetryHttpServiceFilter() {
-        this(DEFAULT_OPTIONS);
+        this(Singletons.DEFAULT_OPTIONS);
     }
 
     /**

@@ -70,7 +70,7 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
-import static io.servicetalk.opentelemetry.http.AbstractOpenTelemetryFilter.DEFAULT_OPTIONS;
+import static io.servicetalk.opentelemetry.http.Singletons.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilter.PEER_SERVICE;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
@@ -433,6 +433,60 @@ class OpenTelemetryHttpRequesterFilterTest {
             throw errors.poll();
         }
     }
+
+    /// ////////////////////
+
+    @Test
+    void connectionInstrumenter() throws Exception {
+        final String requestUrl = "/";
+        OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
+        BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
+
+
+        ServerContext context = buildServer(openTelemetry, false);
+        try (HttpClient client = forSingleAddress(serverHostAndPort(context))
+                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
+                .appendConnectionFactoryFilter(new ConnectionInstrumenter.ConnectionFactoryFilterImpl<>(openTelemetry))
+                .appendConnectionFilter(new ConnectionInstrumenter.SpanLinkingHttpHttpConnectionFilterFactory())
+                        .build()) {
+            // This is necessary to let the load balancer become ready
+            Thread.sleep(SLEEP_TIME);
+
+            final HttpResponse response;
+            final TestSpanState serverSpanState;
+
+            response = client.request(client.get(requestUrl)).toFuture().get();
+            serverSpanState = response.payloadBody(SPAN_STATE_SERIALIZER);
+
+            verifyTraceIdPresentInLogs(loggerStringWriter.stableAccumulated(1000), requestUrl,
+                    serverSpanState.getTraceId(), serverSpanState.getSpanId(),
+                    TRACING_TEST_LOG_LINE_PREFIX);
+            Thread.sleep(SLEEP_TIME);
+            assertThat(otelTesting.getSpans()).hasSize(1);
+            assertThat(otelTesting.getSpans()).extracting("traceId")
+                    .containsExactly(serverSpanState.getTraceId());
+            assertThat(otelTesting.getSpans()).extracting("spanId")
+                    .containsAnyOf(serverSpanState.getSpanId());
+            assertThat(otelTesting.getSpans().toString()).isEqualTo("[]");
+            otelTesting.assertTraces()
+                    .hasTracesSatisfyingExactly(ta -> {
+                        ta.hasTraceId(serverSpanState.getTraceId());
+                        ta.hasSpansSatisfyingExactly(span -> span.hasEventsSatisfying(eventData -> {
+                            assertThat(eventData).hasSize(1);
+                            assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
+                        }));
+                    });
+        } finally {
+            if (context != null) {
+                context.close();
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw errors.poll();
+        }
+    }
+    /// ////////////////////
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry, boolean addFilter) throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
