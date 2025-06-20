@@ -116,7 +116,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                 .map(conn -> {
                     // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
-                            connectionFilterFunction != null ? connectionFilterFunction.create(conn, context) : conn;
+                            connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
                     return protocolBinding.bind(filteredConnection, newConcurrencyController(filteredConnection),
                             context);
                 });

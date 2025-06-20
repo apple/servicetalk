@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.context.api.ContextMap;
-
-import javax.annotation.Nullable;
-
 /**
  * A factory for {@link StreamingHttpConnectionFilter}.
  */
@@ -32,8 +28,4 @@ public interface StreamingHttpConnectionFilterFactory extends HttpExecutionStrat
      * @return {@link StreamingHttpConnectionFilter} using the provided {@link FilterableStreamingHttpConnection}.
      */
     StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection);
-
-    default StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection, @Nullable ContextMap contextMap) {
-        return create(connection);
-    }
 }

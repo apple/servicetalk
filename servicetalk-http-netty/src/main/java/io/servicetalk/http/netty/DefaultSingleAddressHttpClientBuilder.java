@@ -31,7 +31,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpLoadBalancerFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
@@ -49,7 +48,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -539,21 +537,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
+    // Use another method to keep final references and avoid StackOverflowError
     private static StreamingHttpConnectionFilterFactory appendConnectionFilter(
             @Nullable final StreamingHttpConnectionFilterFactory current,
             final StreamingHttpConnectionFilterFactory next) {
-        return current == null ? next : new StreamingHttpConnectionFilterFactory() {
-            @Override
-            public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection, @Nullable ContextMap ctx) {
-                return current.create(next.create(connection, ctx), ctx);
-            }
-
-        };
+        return current == null ? next : connection -> current.create(next.create(connection));
     }
 
     @Override

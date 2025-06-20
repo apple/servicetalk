@@ -16,17 +16,24 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
+import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -54,9 +61,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
@@ -434,22 +448,26 @@ class OpenTelemetryHttpRequesterFilterTest {
         }
     }
 
-    /// ////////////////////
-
-    @Test
-    void connectionInstrumenter() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void connectionInstrumenter(boolean secure) throws Exception {
         final String requestUrl = "/";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
 
 
-        ServerContext context = buildServer(openTelemetry, false);
-        try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
-                .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
-                .appendConnectionFactoryFilter(new ConnectionInstrumenter.ConnectionFactoryFilterImpl<>(openTelemetry))
-                .appendConnectionFilter(new ConnectionInstrumenter.SpanLinkingHttpHttpConnectionFilterFactory())
-                        .build()) {
+        ServerContext context = buildServer(openTelemetry, false, secure);
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                forSingleAddress(serverHostAndPort(context))
+                        .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
+                        .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
+                        .appendConnectionFactoryFilter(new ConnectionInstrumenter.ConnectionFactoryFilterImpl<>(openTelemetry));
+        if (secure) {
+            clientBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .hostnameVerificationAlgorithm("")
+                    .build());
+        }
+        try (HttpClient client = clientBuilder.build()) {
             // This is necessary to let the load balancer become ready
             Thread.sleep(SLEEP_TIME);
 
@@ -463,19 +481,37 @@ class OpenTelemetryHttpRequesterFilterTest {
                     serverSpanState.getTraceId(), serverSpanState.getSpanId(),
                     TRACING_TEST_LOG_LINE_PREFIX);
             Thread.sleep(SLEEP_TIME);
-            assertThat(otelTesting.getSpans()).hasSize(1);
-            assertThat(otelTesting.getSpans()).extracting("traceId")
-                    .containsExactly(serverSpanState.getTraceId());
-            assertThat(otelTesting.getSpans()).extracting("spanId")
-                    .containsAnyOf(serverSpanState.getSpanId());
-            assertThat(otelTesting.getSpans().toString()).isEqualTo("[]");
+            assertThat(otelTesting.getSpans()).hasSize(secure ? 3 : 2);
+            Map<String, SpanData> spanDataMap = otelTesting.getSpans().stream().collect(Collectors.toMap(
+                    SpanData::getName, Function.identity()));
             otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta -> {
                         ta.hasTraceId(serverSpanState.getTraceId());
-                        ta.hasSpansSatisfyingExactly(span -> span.hasEventsSatisfying(eventData -> {
-                            assertThat(eventData).hasSize(1);
-                            assertThat(eventData.get(0).getName()).isEqualTo("connectionEstablished");
-                        }));
+                        List<Consumer<SpanDataAssert>> assertions = new ArrayList<>();
+                        assertions.add(span -> {
+                            // TODO: client span.
+                            span.hasKind(SpanKind.CLIENT);
+                            span.hasNoParent();
+                        });
+                        assertions.add(span -> {
+                            // TODO: connect span
+                            span.hasName(ConnectionInstrumenter.CONNECTION_SPAN_NAME);
+                            span.hasKind(SpanKind.INTERNAL);
+                            span.hasParent(spanDataMap.get("GET"));
+                            InetSocketAddress serverAddress = (InetSocketAddress) context.listenAddress();
+                            span.hasAttribute(ConnectionInstrumenter.NETWORK_PEER_ADDRESS_KEY,
+                                    serverAddress.getAddress().getHostAddress());
+                            span.hasAttribute(ConnectionInstrumenter.NETWORK_PEER_PORT_KEY,
+                                    (long) serverAddress.getPort());
+                        });
+                        if (secure) {
+                            assertions.add(span -> {
+                                span.hasName(ConnectionInstrumenter.TLS_SPAN_NAME);
+                                span.hasKind(SpanKind.INTERNAL);
+                                span.hasParent(spanDataMap.get(ConnectionInstrumenter.CONNECTION_SPAN_NAME));
+                            });
+                        }
+                        ta.hasSpansSatisfyingExactly(assertions.toArray(new Consumer[0]));
                     });
         } finally {
             if (context != null) {
@@ -486,10 +522,19 @@ class OpenTelemetryHttpRequesterFilterTest {
             throw errors.poll();
         }
     }
-    /// ////////////////////
 
     private static ServerContext buildServer(OpenTelemetry givenOpentelemetry, boolean addFilter) throws Exception {
+        return buildServer(givenOpentelemetry, addFilter, false);
+    }
+
+    private static ServerContext buildServer(OpenTelemetry givenOpentelemetry, boolean addFilter, boolean secure)
+            throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
+        if (secure) {
+            httpServerBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey)
+                    .build());
+        }
         if (addFilter) {
             httpServerBuilder =
                 httpServerBuilder.appendServiceFilter(new OpenTelemetryHttpServerFilter(givenOpentelemetry));
