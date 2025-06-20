@@ -15,13 +15,6 @@
  */
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
@@ -37,10 +30,17 @@ import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.api.TransportObservers;
 
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 
 import java.net.InetSocketAddress;
+import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.opentelemetry.http.Singletons.INSTRUMENTATION_SCOPE_NAME;
 
@@ -75,14 +75,13 @@ final class ConnectionInstrumenter {
                     }
                     Span span = createSpan(current);
                     setIpAndPort(span, resolvedAddress);
-                    System.err.println(Thread.currentThread().getName() + ": Creating new connection with span " +
-                            span + "\nCurrent span: " + Span.current());
                     Context nextContext = span.storeInContext(current);
                     try (Scope ignored = nextContext.makeCurrent()) {
                         TransportObserver tracingTransportObserver = new TracingTransportObserver(tracer, nextContext);
                         TransportObserver transportObserver = observer == null ? tracingTransportObserver :
                                 TransportObservers.combine(observer, tracingTransportObserver);
-                        Single<C> delegateResult = delegate().newConnection(resolvedAddress, context, transportObserver);
+                        Single<C> delegateResult = delegate().newConnection(resolvedAddress, context,
+                                transportObserver);
                         return Singletons.withContext(
                                 delegateResult.beforeFinally(new TerminalSignalConsumer() {
                                     @Override
@@ -138,7 +137,7 @@ final class ConnectionInstrumenter {
         private final Tracer tracer;
         private final Context context;
 
-        public TracingTransportObserver(Tracer tracer, Context context) {
+        TracingTransportObserver(Tracer tracer, Context context) {
             this.tracer = tracer;
             this.context = context;
         }
@@ -154,7 +153,7 @@ final class ConnectionInstrumenter {
         private final Tracer tracer;
         private final Context context;
 
-        public TracingConnectionObserver(Tracer tracer, Context context) {
+        TracingConnectionObserver(Tracer tracer, Context context) {
             this.tracer = tracer;
             this.context = context;
         }
@@ -183,12 +182,10 @@ final class ConnectionInstrumenter {
 
         @Override
         public void connectionClosed(Throwable error) {
-
         }
 
         @Override
         public void connectionClosed() {
-
         }
 
         @Override
@@ -197,7 +194,8 @@ final class ConnectionInstrumenter {
         }
     }
 
-    private static final class TracingSecurityHandshakeObserver implements ConnectionObserver.SecurityHandshakeObserver {
+    private static final class TracingSecurityHandshakeObserver
+            implements ConnectionObserver.SecurityHandshakeObserver {
 
         private final Span span;
 
@@ -222,6 +220,7 @@ final class ConnectionInstrumenter {
 
         private static void addAttributes(SSLSession session) {
             // TODO: what attributes should we extract?
+            assert session != null;
         }
     }
 

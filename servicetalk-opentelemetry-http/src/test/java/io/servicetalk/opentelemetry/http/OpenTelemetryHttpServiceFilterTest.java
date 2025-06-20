@@ -94,8 +94,8 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.opentelemetry.http.Singletons.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilterTest.verifyTraceIdPresentInLogs;
+import static io.servicetalk.opentelemetry.http.Singletons.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;

@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
@@ -31,9 +30,7 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -44,6 +41,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.testing.assertj.SpanDataAssert;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.EventData;
 import io.opentelemetry.sdk.trace.data.ExceptionEventData;
@@ -84,8 +82,8 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
-import static io.servicetalk.opentelemetry.http.Singletons.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.OpenTelemetryHttpRequesterFilter.PEER_SERVICE;
+import static io.servicetalk.opentelemetry.http.Singletons.DEFAULT_OPTIONS;
 import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
 import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
@@ -455,13 +453,13 @@ class OpenTelemetryHttpRequesterFilterTest {
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         BlockingQueue<Error> errors = new LinkedBlockingQueue<>();
 
-
         ServerContext context = buildServer(openTelemetry, false, secure);
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 forSingleAddress(serverHostAndPort(context))
                         .appendClientFilter(new OpenTelemetryHttpRequestFilter(openTelemetry, "testClient"))
                         .appendClientFilter(new TestTracingClientLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX))
-                        .appendConnectionFactoryFilter(new ConnectionInstrumenter.ConnectionFactoryFilterImpl<>(openTelemetry));
+                        .appendConnectionFactoryFilter(
+                                new ConnectionInstrumenter.ConnectionFactoryFilterImpl<>(openTelemetry));
         if (secure) {
             clientBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .hostnameVerificationAlgorithm("")
