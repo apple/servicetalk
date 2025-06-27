@@ -21,7 +21,7 @@ Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various exa
 different features of ServiceTalk.
 
 NOTE: Builds of the development version are available in
-link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
+link:https://central.sonatype.com/repository/maven-snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
 
 == Supported JVM
 The minimum supported JDK version is 1.8.

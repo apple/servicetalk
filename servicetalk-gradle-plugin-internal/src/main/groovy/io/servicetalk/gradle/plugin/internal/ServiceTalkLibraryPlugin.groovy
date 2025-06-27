@@ -173,8 +173,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           repositories {
             maven {
               name = "sonatype"
-              def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-              def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+              def releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+              def snapshotsRepoUrl = "https://central.sonatype.com/repository/maven-snapshots/"
               url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
               credentials {
                 username = System.getenv("SONATYPE_USER")
