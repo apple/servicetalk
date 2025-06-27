@@ -29,8 +29,7 @@ if (!repositories) {
       if ("$nettyVersion".endsWith("+")) {
         maven {
           name "Netty Snapshots"
-          // This will eventually need to become https://central.sonatype.com/repository/maven-snapshots/
-          url "https://oss.sonatype.org/content/repositories/snapshots"
+          url "https://central.sonatype.com/repository/maven-snapshots/"
 
           content {
             includeGroup "io.netty"
