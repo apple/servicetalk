@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.reactivestreams.tck.PublisherSwitchMapTckTest.SingleUpstreamDemandOperator;
+import io.servicetalk.concurrent.reactivestreams.tck.PublisherSwitchMapTckTest.OneUpstreamDemandOperator;
 
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
@@ -29,7 +29,7 @@ public class PublisherSwitchMapDelayErrorTckTest extends AbstractPublisherOperat
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
         return defer(() -> {
-            final SingleUpstreamDemandOperator<Integer> demandOperator = new SingleUpstreamDemandOperator<>();
+            final OneUpstreamDemandOperator<Integer> demandOperator = new OneUpstreamDemandOperator<>();
             return publisher.liftAsync(demandOperator)
                     .switchMapDelayError(i ->
                             from(i).afterOnNext(x -> demandOperator.subscriberRef.get().decrementDemand()));
