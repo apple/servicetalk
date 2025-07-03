@@ -314,4 +314,9 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     public boolean removeSetCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
         return false;
     }
+
+    @Override
+    public int totalLength() {
+        return 0;
+    }
 }

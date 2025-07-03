@@ -132,6 +132,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Returns the number of headers in this object.
+     * <p>
+     * If the total number of bytes for the name-value pairs is needed, see {@link #totalLength()} instead.
      *
      * @return the number of headers in this object.
      */
@@ -602,4 +604,24 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @return {@code true} if at least one entry has been removed.
      */
     boolean removeSetCookies(CharSequence name, CharSequence domain, CharSequence path);
+
+    /**
+     * Returns the total length in bytes of all the header names and values combined.
+     * <p>
+     * Note that this does not include whitespace like new lines or spaces between name and value.
+     *
+     * @return the total length of headers in bytes.
+     */
+    default int totalLength() {
+        if (isEmpty()) {
+            return 0;
+        }
+
+        int length = 0;
+        for (final Entry<CharSequence, CharSequence> entry : this) {
+            length += entry.getKey().length();
+            length += entry.getValue().length();
+        }
+        return length;
+    }
 }
