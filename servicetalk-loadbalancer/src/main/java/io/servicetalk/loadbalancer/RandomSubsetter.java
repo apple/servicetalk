@@ -56,7 +56,8 @@ final class RandomSubsetter implements Subsetter {
 
         // We don't want to consider the unhealthy elements to be a part of our subset, so we're going to grow it
         // to account for un-health endpoints. However, we need to know how many that is.
-        for (int i = 0, healthyCount = 0; i < result.size(); i++) {
+        int healthyCount = 0;
+        for (int i = 0; i < result.size(); i++) {
             if (result.get(i).isHealthy()) {
                 ++healthyCount;
                 if (healthyCount == randomSubsetSize) {
@@ -70,7 +71,7 @@ final class RandomSubsetter implements Subsetter {
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("{}: Using {} out of a total {} hosts ({} considered unhealthy). Used hosts: {}",
-                    lbDescription, result.size(), allHosts.size(), result.size() - allHosts.size(), result);
+                    lbDescription, result.size(), allHosts.size(), result.size() - healthyCount, result);
         }
         return result;
     }
