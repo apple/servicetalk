@@ -50,6 +50,7 @@ final class TestRecordStore implements RecordStore {
     private static final int SRV_DEFAULT_PRIORITY = 10;
 
     private final Set<ServFail> failSet = new HashSet<>();
+    private final Map<String, CountDownLatch> stalledRecords = new HashMap<>();
     private final Map<QuestionRecord, CountDownLatch> timeouts = new ConcurrentHashMap<>();
     private final Map<String, Map<RecordType, List<ResourceRecord>>> recordsToReturnByDomain =
             new ConcurrentHashMap<>();
@@ -91,6 +92,10 @@ final class TestRecordStore implements RecordStore {
         public int hashCode() {
             return Objects.hash(name, type);
         }
+    }
+
+    public synchronized void addStall(final String dnsRecordName, CountDownLatch latch) {
+        stalledRecords.put(dnsRecordName, latch);
     }
 
     public synchronized void addFail(final ServFail fail) {
@@ -245,10 +250,30 @@ final class TestRecordStore implements RecordStore {
             }
         }
         final String domain = questionRecord.getDomainName();
-        if (failSet.contains(ServFail.of(questionRecord))) {
-            throw new DnsException(SERVER_FAILURE);
+
+        // TODO: the blocking doesn't work as expected because we can't get any more messages through for the
+        //  backup request.
+        final CountDownLatch latch;
+        synchronized (this) {
+            latch = stalledRecords.remove(domain);
         }
-        final Map<RecordType, List<ResourceRecord>> recordsToReturn = recordsToReturnByDomain.get(domain);
+        if (latch != null) {
+            try {
+                latch.await();
+            } catch (InterruptedException cause) {
+                DnsException ex = new DnsException(SERVER_FAILURE);
+                ex.initCause(cause);
+                throw ex;
+            }
+        }
+        final Map<RecordType, List<ResourceRecord>> recordsToReturn;
+        synchronized (this) {
+            if (failSet.contains(ServFail.of(questionRecord))) {
+                throw new DnsException(SERVER_FAILURE);
+            }
+            recordsToReturn = recordsToReturnByDomain.get(domain);
+        }
+
         LOGGER.debug("Getting {} records for {}", questionRecord.getRecordType(), domain);
         if (recordsToReturn != null) {
             final List<ResourceRecord> recordsForType = recordsToReturn.get(questionRecord.getRecordType());
