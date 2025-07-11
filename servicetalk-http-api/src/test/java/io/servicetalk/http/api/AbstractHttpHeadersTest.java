@@ -936,6 +936,23 @@ public abstract class AbstractHttpHeadersTest {
         assertTrue(headers.isEmpty());
     }
 
+    @Test
+    void testTotalLength() {
+        final HttpHeaders headers = newHeaders();
+        assertEquals(0, headers.totalLength());
+
+        headers.add("name", "value1");
+        assertEquals(10, headers.totalLength());
+        headers.add("name", "value2");
+        assertEquals(20, headers.totalLength());
+        headers.remove("name");
+        assertEquals(0, headers.totalLength());
+
+        headers.add("a", "a");
+        headers.add("b", "b");
+        assertEquals(4, headers.totalLength());
+    }
+
     @SafeVarargs
     private static <T> void assertIteratorIs(final Iterator<? extends T> iterator, final T... elements) {
         final List<T> list = new ArrayList<>();
