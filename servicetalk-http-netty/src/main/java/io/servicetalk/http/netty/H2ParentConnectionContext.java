@@ -95,13 +95,18 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     }
 
     @Override
-    public FlushStrategy defaultFlushStrategy() {
+    public final FlushStrategy defaultFlushStrategy() {
         return flushStrategyHolder.currentStrategy();
     }
 
     @Override
     public final Single<Throwable> transportError() {
         return fromSource(transportError);
+    }
+
+    @Override
+    public final String connectionId() {
+        return "0x" + channel().id().asShortText();
     }
 
     @Override
@@ -116,7 +121,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Nullable
     @Override
-    public SslConfig sslConfig() {
+    public final SslConfig sslConfig() {
         return sslConfig;
     }
 
@@ -133,18 +138,18 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Nullable
     @Override
-    public <T> T socketOption(final SocketOption<T> option) {
+    public final <T> T socketOption(final SocketOption<T> option) {
         return getOption(option, channel().config(), idleTimeoutMs);
     }
 
     @Override
-    public HttpProtocolVersion protocol() {
+    public final HttpProtocolVersion protocol() {
         return HTTP_2_0;
     }
 
     @Nullable
     @Override
-    public ConnectionContext parent() {
+    public final ConnectionContext parent() {
         return null;
     }
 

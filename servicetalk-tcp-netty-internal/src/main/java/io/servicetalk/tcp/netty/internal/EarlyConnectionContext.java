@@ -51,6 +51,11 @@ final class EarlyConnectionContext extends NettyChannelListenableAsyncCloseable 
     }
 
     @Override
+    public String connectionId() {
+        return "0x" + channel.id().asShortText();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return channel.localAddress();
     }

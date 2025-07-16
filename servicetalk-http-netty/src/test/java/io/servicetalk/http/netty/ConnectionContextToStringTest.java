@@ -19,6 +19,7 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -29,9 +30,14 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.notNullValue;
 
 class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
+    private static final String CONNECTION_ID_HEADER = "x-connection-id";
 
     private HttpProtocol protocol;
 
@@ -44,8 +50,12 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
     @Override
     void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService(HttpExecutionStrategies.offloadNone(),
-                (BlockingHttpService) (ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody(ctx.toString(), textSerializerUtf8()))));
+                (BlockingHttpService) (ctx, request, responseFactory) -> {
+                    ConnectionInfo parent = ctx.parent();
+                    String connectionId = parent != null ? parent.connectionId() : ctx.connectionId();
+                    return responseFactory.ok().setHeader(CONNECTION_ID_HEADER, connectionId)
+                            .payloadBody(ctx.toString(), textSerializerUtf8());
+                })));
     }
 
     @ParameterizedTest(name = "protocol={0}")
@@ -54,11 +64,20 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
         setUp(httpProtocol);
         StreamingHttpResponse response = makeRequest(streamingHttpConnection().get("/"));
         assertResponse(response, protocol.version, OK);
-        String serverContext = response.toResponse().toFuture().get().payloadBody(textSerializerUtf8());
+        CharSequence serverConnectionId = response.headers().get(CONNECTION_ID_HEADER);
+        String serverConnectionString = response.toResponse().toFuture().get().payloadBody(textSerializerUtf8());
 
-        assertThat("Client's ConnectionContext does not contain netty channel id",
-                streamingHttpConnection().connectionContext().toString(), containsString("[id: "));
-        assertThat("Server's ConnectionContext does not contain netty channel id",
-                serverContext, containsString("[id: "));
+        assertThat(serverConnectionId, is(notNullValue()));
+        assertConnectionIdAndString("Server", serverConnectionId.toString(), serverConnectionString);
+
+        ConnectionInfo clientConnection = streamingHttpConnection().connectionContext();
+        assertConnectionIdAndString("Client", clientConnection.connectionId(), clientConnection.toString());
+    }
+
+    private static void assertConnectionIdAndString(String what, String connectionId, String connectionString) {
+        assertThat(what + "'s connectionId does not match expected pattern",
+                connectionId, matchesPattern("^0x[0-9a-fA-F]{8}$"));
+        assertThat(what + "'s ConnectionContext does not contain netty channel id",
+                connectionString, allOf(containsString("[id: 0x"), containsString(connectionId)));
     }
 }
