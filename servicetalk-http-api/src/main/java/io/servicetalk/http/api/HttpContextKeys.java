@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.transport.api.ConnectionInfo;
@@ -67,6 +68,17 @@ public final class HttpContextKeys {
      */
     public static final Key<Boolean> HTTP_FORCE_NEW_CONNECTION =
             newKey("HTTP_FORCE_NEW_CONNECTION", Boolean.class);
+
+    /**
+     * The key used by server-side routers to assign an
+     * <a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/http/#http-route">http.route</a>
+     * attribute for incoming requests.
+     * <p>
+     * Router implementation are responsible for assigning this key to either {@link HttpRequestMetaData#context()}
+     * (preferred) or {@link AsyncContext} if {@link HttpRequestMetaData} is not available in the scope of the router.
+     * This key can be used later by observability extensions to assign an attribute for emitted metrics or traces.
+     */
+    public static final Key<String> HTTP_ROUTE = newKey("http.route", String.class);
 
     private HttpContextKeys() {
         // No instances
