@@ -73,6 +73,13 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
+        public void onTransportHandshakeComplete() {
+            first.onTransportHandshakeComplete();
+            second.onTransportHandshakeComplete();
+        }
+
+        @Override
         public void onTransportHandshakeComplete(final ConnectionInfo info) {
             first.onTransportHandshakeComplete(info);
             second.onTransportHandshakeComplete(info);
@@ -260,6 +267,13 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
+        public void itemRead() {
+            first.itemRead();
+            second.itemRead();
+        }
+
+        @Override
         public void itemRead(@Nullable final Object item) {
             first.itemRead(item);
             second.itemRead(item);
@@ -301,6 +315,13 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
+        public void itemReceived() {
+            first.itemReceived();
+            second.itemReceived();
+        }
+
+        @Override
         public void itemReceived(@Nullable final Object item) {
             first.itemReceived(item);
             second.itemReceived(item);
@@ -310,6 +331,13 @@ final class BiTransportObserver implements TransportObserver {
         public void onFlushRequest() {
             first.onFlushRequest();
             second.onFlushRequest();
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public void itemWritten() {
+            first.itemWritten();
+            second.itemWritten();
         }
 
         @Override
