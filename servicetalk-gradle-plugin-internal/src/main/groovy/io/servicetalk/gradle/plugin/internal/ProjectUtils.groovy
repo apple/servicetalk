@@ -85,7 +85,7 @@ final class ProjectUtils {
 
   static void enforceUtf8FileSystem() {
     def fenc = System.getProperty("file.encoding")
-    if (!"UTF-8".equalsIgnoreCase(fenc)) {
+    if (!("UTF-8".equalsIgnoreCase(fenc) || "UTF8".equalsIgnoreCase(fenc))) {
       throw new GradleException("File encoding must be UTF-8 but is $fenc, consider using a file system that " +
           "supports it or setting the JAVA_TOOL_OPTIONS env var to: -Dfile.encoding=UTF-8.\n\nMake sure the jvm is " +
           "restarted to pickup these changes (e.g. `gradle --stop`, and restart your IDE)!");

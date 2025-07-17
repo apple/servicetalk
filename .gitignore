@@ -1,7 +1,7 @@
 # virtual machine crash logs, see https://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# intellij
+# IntelliJ IDEA
 /.idea
 *.iml
 /*.ipr
@@ -9,14 +9,14 @@ hs_err_pid*
 **/out/
 /.shelf/
 
-# gradle
+# Gradle
 .gradle/
 .out/
 build/
 /buildSrc/.gradle/
 .dist/
 
-# maven (examples)
+# Maven
 target/
 
 # Eclipse
@@ -32,8 +32,9 @@ target/
 /nbdist/
 /.nb-gradle/
 
-#VS Code
+# VSCode
 .vscode/
+bin/
 
 # Mac
 .DS_Store
