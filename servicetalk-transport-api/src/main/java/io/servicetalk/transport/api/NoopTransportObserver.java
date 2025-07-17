@@ -24,11 +24,8 @@ import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
 final class NoopTransportObserver implements TransportObserver {
-
-    static final TransportObserver INSTANCE = new NoopTransportObserver();
 
     private NoopTransportObserver() {
         // Singleton
@@ -46,59 +43,6 @@ final class NoopTransportObserver implements TransportObserver {
         private NoopConnectionObserver() {
             // Singleton
         }
-
-        @Override
-        public void onDataRead(final int size) {
-        }
-
-        @Override
-        public void onDataWrite(final int size) {
-        }
-
-        @Override
-        public void onFlush() {
-        }
-
-        @Override
-        public void onTransportHandshakeComplete(final ConnectionInfo info) {
-        }
-
-        @Override
-        public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
-            return NoopProxyConnectObserver.INSTANCE;
-        }
-
-        @Override
-        public SecurityHandshakeObserver onSecurityHandshake() {
-            return NoopSecurityHandshakeObserver.INSTANCE;
-        }
-
-        @Override
-        public SecurityHandshakeObserver onSecurityHandshake(final SslConfig sslConfig) {
-            return NoopSecurityHandshakeObserver.INSTANCE;
-        }
-
-        @Override
-        public DataObserver connectionEstablished(final ConnectionInfo info) {
-            return NoopDataObserver.INSTANCE;
-        }
-
-        @Override
-        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
-            return NoopMultiplexedObserver.INSTANCE;
-        }
-
-        @Override
-        public void connectionWritabilityChanged(final boolean isWritable) {
-        }
-
-        @Override
-        public void connectionClosed(final Throwable error) {
-        }
-
-        @Override
-        public void connectionClosed() {
-        }
     }
 
     static final class NoopProxyConnectObserver implements ProxyConnectObserver {
@@ -107,14 +51,6 @@ final class NoopTransportObserver implements TransportObserver {
 
         private NoopProxyConnectObserver() {
             // Singleton
-        }
-
-        @Override
-        public void proxyConnectFailed(final Throwable cause) {
-        }
-
-        @Override
-        public void proxyConnectComplete(final Object responseMsg) {
         }
     }
 
@@ -125,14 +61,6 @@ final class NoopTransportObserver implements TransportObserver {
         private NoopSecurityHandshakeObserver() {
             // Singleton
         }
-
-        @Override
-        public void handshakeFailed(final Throwable cause) {
-        }
-
-        @Override
-        public void handshakeComplete(final SSLSession sslSession) {
-        }
     }
 
     static final class NoopDataObserver implements DataObserver {
@@ -141,16 +69,6 @@ final class NoopTransportObserver implements TransportObserver {
 
         private NoopDataObserver() {
             // Singleton
-        }
-
-        @Override
-        public ReadObserver onNewRead() {
-            return NoopReadObserver.INSTANCE;
-        }
-
-        @Override
-        public WriteObserver onNewWrite() {
-            return NoopWriteObserver.INSTANCE;
         }
     }
 
@@ -161,11 +79,6 @@ final class NoopTransportObserver implements TransportObserver {
         private NoopMultiplexedObserver() {
             // Singleton
         }
-
-        @Override
-        public StreamObserver onNewStream() {
-            return NoopStreamObserver.INSTANCE;
-        }
     }
 
     static final class NoopStreamObserver implements StreamObserver {
@@ -174,23 +87,6 @@ final class NoopTransportObserver implements TransportObserver {
 
         private NoopStreamObserver() {
             // Singleton
-        }
-
-        @Override
-        public void streamIdAssigned(final long streamId) {
-        }
-
-        @Override
-        public DataObserver streamEstablished() {
-            return NoopDataObserver.INSTANCE;
-        }
-
-        @Override
-        public void streamClosed(final Throwable error) {
-        }
-
-        @Override
-        public void streamClosed() {
         }
     }
 
@@ -201,26 +97,6 @@ final class NoopTransportObserver implements TransportObserver {
         private NoopReadObserver() {
             // Singleton
         }
-
-        @Override
-        public void requestedToRead(final long n) {
-        }
-
-        @Override
-        public void itemRead(@Nullable final Object item) {
-        }
-
-        @Override
-        public void readFailed(final Throwable cause) {
-        }
-
-        @Override
-        public void readComplete() {
-        }
-
-        @Override
-        public void readCancelled() {
-        }
     }
 
     static final class NoopWriteObserver implements WriteObserver {
@@ -229,38 +105,6 @@ final class NoopTransportObserver implements TransportObserver {
 
         private NoopWriteObserver() {
             // Singleton
-        }
-
-        @Override
-        public void requestedToWrite(final long n) {
-        }
-
-        @Override
-        public void itemReceived(@Nullable final Object item) {
-        }
-
-        @Override
-        public void onFlushRequest() {
-        }
-
-        @Override
-        public void itemWritten(@Nullable final Object item) {
-        }
-
-        @Override
-        public void itemFlushed() {
-        }
-
-        @Override
-        public void writeFailed(final Throwable cause) {
-        }
-
-        @Override
-        public void writeComplete() {
-        }
-
-        @Override
-        public void writeCancelled() {
         }
     }
 }

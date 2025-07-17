@@ -30,7 +30,6 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -352,7 +351,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                         } else {
                             checkSpan("connectionEstablished");
                         }
-                        return NoopTransportObserver.NoopDataObserver.INSTANCE;
+                        return ConnectionObserver.super.connectionEstablished(info);
                     }
 
                     @Override
@@ -362,7 +361,7 @@ class OpenTelemetryHttpRequesterFilterTest {
                         } else {
                             checkSpan("multiplexedConnectionEstablished");
                         }
-                        return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+                        return ConnectionObserver.super.multiplexedConnectionEstablished(info);
                     }
 
                     @Override

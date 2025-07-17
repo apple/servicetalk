@@ -25,7 +25,6 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -143,13 +142,13 @@ class ConnectionObserverEventOrderTest {
             @Override
             public DataObserver connectionEstablished(ConnectionInfo info) {
                 addEvent();
-                return NoopTransportObserver.NoopDataObserver.INSTANCE;
+                return ConnectionObserver.super.connectionEstablished(info);
             }
 
             @Override
             public MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
                 addEvent();
-                return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+                return ConnectionObserver.super.multiplexedConnectionEstablished(info);
             }
 
             @Override

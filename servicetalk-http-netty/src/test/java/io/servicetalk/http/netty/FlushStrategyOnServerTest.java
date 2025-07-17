@@ -21,12 +21,10 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -304,28 +302,6 @@ class FlushStrategyOnServerTest {
         @Override
         public ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress) {
             return this;
-        }
-
-        @Override
-        public void onDataRead(int size) {
-        }
-
-        @Override
-        public DataObserver connectionEstablished(final ConnectionInfo info) {
-            return NoopTransportObserver.NoopDataObserver.INSTANCE;
-        }
-
-        @Override
-        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
-            return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
-        }
-
-        @Override
-        public void connectionClosed(final Throwable error) {
-        }
-
-        @Override
-        public void connectionClosed() {
         }
     }
 }

@@ -19,7 +19,6 @@ import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ServerContext;
@@ -27,8 +26,6 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -97,10 +94,6 @@ class SecurityHandshakeObserverTest {
         when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
                 .thenReturn(clientSecurityHandshakeObserver);
-        when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
-                .thenReturn(NoopDataObserver.INSTANCE);
-        when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-            .thenReturn(NoopMultiplexedObserver.INSTANCE);
         countDownOnClosed(clientConnectionObserver, bothClosed);
         countDownOnHandshakeTermination(clientSecurityHandshakeObserver, bothHandshakeFinished);
         clientOrder = inOrder(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver);
@@ -111,10 +104,6 @@ class SecurityHandshakeObserverTest {
         when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake(any(SslConfig.class)))
                 .thenReturn(serverSecurityHandshakeObserver);
-        when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
-                .thenReturn(NoopDataObserver.INSTANCE);
-        when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-            .thenReturn(NoopMultiplexedObserver.INSTANCE);
         countDownOnClosed(serverConnectionObserver, bothClosed);
         countDownOnHandshakeTermination(serverSecurityHandshakeObserver, bothHandshakeFinished);
         serverOrder = inOrder(serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);

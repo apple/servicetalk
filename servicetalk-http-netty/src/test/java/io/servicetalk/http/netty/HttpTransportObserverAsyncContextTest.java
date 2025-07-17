@@ -32,8 +32,6 @@ import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopProxyConnectObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopSecurityHandshakeObserver;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -203,19 +201,19 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             @Override
             public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
                 storageMap.put("onProxyConnect", valueOf(AsyncContext.get(key)));
-                return NoopProxyConnectObserver.INSTANCE;
+                return ConnectionObserver.super.onProxyConnect(connectMsg);
             }
 
             @Override
             public SecurityHandshakeObserver onSecurityHandshake(final SslConfig config) {
                 storageMap.put("onSecurityHandshake", valueOf(AsyncContext.get(key)));
-                return NoopSecurityHandshakeObserver.INSTANCE;
+                return ConnectionObserver.super.onSecurityHandshake(config);
             }
 
             @Override
             public DataObserver connectionEstablished(final ConnectionInfo info) {
                 storageMap.put("connectionEstablished", valueOf(AsyncContext.get(key)));
-                return new AsyncContextCaptureDataObserver();
+                return ConnectionObserver.super.connectionEstablished(info);
             }
 
             @Override
@@ -333,28 +331,9 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
                 storageMap.put("onFlushRequest", valueOf(AsyncContext.get(key)));
             }
 
-            // For the following callbacks AsyncContext is unknown because protocols can write multiple requests
+            // For other unimplemented callbacks AsyncContext is unknown because protocols can write multiple requests
             // concurrently. Users should use other callbacks above to retrieve the request context and keep it in a
             // class local variable.
-            @Override
-            public void itemWritten(@Nullable final Object item) {
-            }
-
-            @Override
-            public void itemFlushed() {
-            }
-
-            @Override
-            public void writeFailed(final Throwable cause) {
-            }
-
-            @Override
-            public void writeComplete() {
-            }
-
-            @Override
-            public void writeCancelled() {
-            }
         }
     }
 }

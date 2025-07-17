@@ -47,6 +47,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopReadObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
 import io.netty.channel.Channel;
@@ -550,6 +551,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 return target;
             }
             final ReadObserver observer = dataObserver.onNewRead();
+            if (observer == NoopReadObserver.INSTANCE) {
+                return target;
+            }
             return new PublisherSource.Subscriber<Read>() {
                 @Override
                 public void onSubscribe(final Subscription subscription) {

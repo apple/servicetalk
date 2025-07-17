@@ -16,7 +16,6 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.transport.api.NoopTransportObserver.NoopConnectionObserver;
 
 import javax.annotation.Nullable;
 
@@ -30,6 +29,7 @@ import javax.annotation.Nullable;
  * is executed inside callbacks without offloading, it will negatively impact {@link IoExecutor} and overall performance
  * of the application.
  */
+@FunctionalInterface
 public interface TransportObserver {
 
     /**
@@ -41,7 +41,7 @@ public interface TransportObserver {
     @Deprecated
     default ConnectionObserver onNewConnection() {
         // FIXME: 0.43 - remove deprecated method
-        return NoopConnectionObserver.INSTANCE;
+        return NoopTransportObserver.NoopConnectionObserver.INSTANCE;
     }
 
     /**
