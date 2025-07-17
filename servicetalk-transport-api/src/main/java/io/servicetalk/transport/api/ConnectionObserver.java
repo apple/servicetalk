@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2023 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.transport.api;
-
-import io.servicetalk.transport.api.NoopTransportObserver.NoopProxyConnectObserver;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -34,19 +32,22 @@ public interface ConnectionObserver {
      *
      * @param size size of the data chunk read
      */
-    void onDataRead(int size);
+    default void onDataRead(int size) {
+    }
 
     /**
      * Callback when {@code size} bytes are written to the connection.
      *
      * @param size size of the data chunk written
      */
-    void onDataWrite(int size);
+    default void onDataWrite(int size) {
+    }
 
     /**
      * Callback when previously written data is flushed to the connection.
      */
-    void onFlush();
+    default void onFlush() {
+    }
 
     /**
      * Callback when a transport handshake completes.
@@ -85,8 +86,8 @@ public interface ConnectionObserver {
      * @param connectMsg a message sent to a proxy in request to establish a connection to the target server
      * @return a new {@link ProxyConnectObserver} that provides visibility into proxy connect events.
      */
-    default ProxyConnectObserver onProxyConnect(Object connectMsg) {    // FIXME: 0.43 - consider removing default impl
-        return NoopProxyConnectObserver.INSTANCE;
+    default ProxyConnectObserver onProxyConnect(Object connectMsg) {
+        return NoopTransportObserver.NoopProxyConnectObserver.INSTANCE;
     }
 
     /**
@@ -142,7 +143,9 @@ public interface ConnectionObserver {
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link DataObserver} that provides visibility into read and write events
      */
-    DataObserver connectionEstablished(ConnectionInfo info);
+    default DataObserver connectionEstablished(ConnectionInfo info) {
+        return NoopTransportObserver.NoopDataObserver.INSTANCE;
+    }
 
     /**
      * Callback when a multiplexed connection is established and ready.
@@ -150,7 +153,9 @@ public interface ConnectionObserver {
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link MultiplexedObserver} that provides visibility into new streams
      */
-    MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info);
+    default MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info) {
+        return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
+    }
 
     /**
      * Callback when a writable state of the connection changes.
@@ -159,7 +164,7 @@ public interface ConnectionObserver {
      * the requested write operation immediately. If {@code false}, write requests will be queued until the I/O thread
      * is ready to process the queued items and the transport will start applying backpressure.
      */
-    default void connectionWritabilityChanged(boolean isWritable) { // FIXME: 0.43 - consider removing default impl
+    default void connectionWritabilityChanged(boolean isWritable) {
     }
 
     /**
@@ -167,12 +172,14 @@ public interface ConnectionObserver {
      *
      * @param error an occurred error
      */
-    void connectionClosed(Throwable error);
+    default void connectionClosed(Throwable error) {
+    }
 
     /**
      * Callback when the connection is closed.
      */
-    void connectionClosed();
+    default void connectionClosed() {
+    }
 
     /**
      * An observer interface that provides visibility into proxy connect events for establishing a tunnel.
@@ -187,7 +194,8 @@ public interface ConnectionObserver {
          *
          * @param cause the cause of proxy connect failure
          */
-        void proxyConnectFailed(Throwable cause);
+        default void proxyConnectFailed(Throwable cause) {
+        }
 
         /**
          * Callback when the proxy connect attempt is complete successfully.
@@ -196,7 +204,8 @@ public interface ConnectionObserver {
          * protocol implementation (e.g. <a href="https://en.wikipedia.org/wiki/HTTP_tunnel">HTTP Tunnel</a>,
          * <a href="https://en.wikipedia.org/wiki/SOCKS">SOCKS</a>, etc.)
          */
-        void proxyConnectComplete(Object responseMsg);
+        default void proxyConnectComplete(Object responseMsg) {
+        }
     }
 
     /**
@@ -212,14 +221,16 @@ public interface ConnectionObserver {
          *
          * @param cause the cause of handshake failure
          */
-        void handshakeFailed(Throwable cause);
+        default void handshakeFailed(Throwable cause) {
+        }
 
         /**
          * Callback when the handshake is complete successfully.
          *
          * @param sslSession the {@link SSLSession} for this connection
          */
-        void handshakeComplete(SSLSession sslSession);
+        default void handshakeComplete(SSLSession sslSession) {
+        }
     }
 
     /**
@@ -232,14 +243,18 @@ public interface ConnectionObserver {
          *
          * @return {@link ReadObserver} that provides visibility into <strong>read</strong> events
          */
-        ReadObserver onNewRead();
+        default ReadObserver onNewRead() {
+            return NoopTransportObserver.NoopReadObserver.INSTANCE;
+        }
 
         /**
          * Callback when the connection starts writing a new message.
          *
          * @return {@link WriteObserver} that provides visibility into <strong>write</strong> events
          */
-        WriteObserver onNewWrite();
+        default WriteObserver onNewWrite() {
+            return NoopTransportObserver.NoopWriteObserver.INSTANCE;
+        }
     }
 
     /**
@@ -252,7 +267,9 @@ public interface ConnectionObserver {
          *
          * @return {@link StreamObserver} that provides visibility into stream events
          */
-        StreamObserver onNewStream();
+        default StreamObserver onNewStream() {
+            return NoopTransportObserver.NoopStreamObserver.INSTANCE;
+        }
     }
 
     /**
@@ -270,7 +287,8 @@ public interface ConnectionObserver {
          *
          * @param streamId assigned stream identifier
          */
-        void streamIdAssigned(long streamId);   // Use long to comply with HTTP/3 requirements
+        default void streamIdAssigned(long streamId) {   // Use long to comply with HTTP/3 requirements
+        }
 
         /**
          * Callback when the stream is established and ready to be used. It may or may not have an already assigned
@@ -279,19 +297,23 @@ public interface ConnectionObserver {
          * @return a new {@link DataObserver} that provides visibility into read and write events
          * @see #streamIdAssigned(long)
          */
-        DataObserver streamEstablished();
+        default DataObserver streamEstablished() {
+            return NoopTransportObserver.NoopDataObserver.INSTANCE;
+        }
 
         /**
          * Callback when the stream is closed due to an {@link Throwable error}.
          *
          * @param error an occurred error
          */
-        void streamClosed(Throwable error);
+        default void streamClosed(Throwable error) {
+        }
 
         /**
          * Callback when the stream is closed.
          */
-        void streamClosed();
+        default void streamClosed() {
+        }
     }
 
     /**
@@ -308,7 +330,8 @@ public interface ConnectionObserver {
          *
          * @param n number of requested items to read
          */
-        void requestedToRead(long n);
+        default void requestedToRead(long n) {
+        }
 
         /**
          * Invokes when a new item is read.
@@ -318,8 +341,7 @@ public interface ConnectionObserver {
          * @deprecated Use {@link #itemRead(Object)}
          */
         @Deprecated
-        default void itemRead() {
-            // FIXME: 0.43 - remove deprecated method
+        default void itemRead() {   // FIXME: 0.43 - remove deprecated method
         }
 
         /**
@@ -327,24 +349,28 @@ public interface ConnectionObserver {
          *
          * @param item an item that was read
          */
-        void itemRead(@Nullable Object item);
+        default void itemRead(@Nullable Object item) {
+        }
 
         /**
          * Callback when the read operation fails with an {@link Throwable error}.
          *
          * @param cause {@link Throwable} that terminated the read
          */
-        void readFailed(Throwable cause);
+        default void readFailed(Throwable cause) {
+        }
 
         /**
          * Callback when the entire read operation completes successfully.
          */
-        void readComplete();
+        default void readComplete() {
+        }
 
         /**
          * Callback when the read operation is cancelled.
          */
-        void readCancelled();
+        default void readCancelled() {
+        }
     }
 
     /**
@@ -361,7 +387,8 @@ public interface ConnectionObserver {
          *
          * @param n number of requested items to write
          */
-        void requestedToWrite(long n);
+        default void requestedToWrite(long n) {
+        }
 
         /**
          * Callback when an item is received and ready to be written.
@@ -371,8 +398,7 @@ public interface ConnectionObserver {
          * @deprecated Use {{@link #itemReceived(Object)}}
          */
         @Deprecated
-        default void itemReceived() {
-            // FIXME: 0.43 - remove deprecated method
+        default void itemReceived() {   // FIXME: 0.43 - remove deprecated method
         }
 
         /**
@@ -380,12 +406,14 @@ public interface ConnectionObserver {
          *
          * @param item received item
          */
-        void itemReceived(@Nullable Object item);
+        default void itemReceived(@Nullable Object item) {
+        }
 
         /**
          * Callback when flush operation is requested.
          */
-        void onFlushRequest();
+        default void onFlushRequest() {
+        }
 
         /**
          * Callback when an item is written to the transport.
@@ -395,8 +423,7 @@ public interface ConnectionObserver {
          * @deprecated Use {@link #itemWritten(Object)}
          */
         @Deprecated
-        default void itemWritten() {
-            // FIXME: 0.43 - remove deprecated method
+        default void itemWritten() {    // FIXME: 0.43 - remove deprecated method
         }
 
         /**
@@ -404,28 +431,33 @@ public interface ConnectionObserver {
          *
          * @param item written item
          */
-        void itemWritten(@Nullable Object item);
+        default void itemWritten(@Nullable Object item) {
+        }
 
         /**
          * Callback when an item is flushed to the network. Items are flushed in order they have been written.
          */
-        void itemFlushed();
+        default void itemFlushed() {
+        }
 
         /**
          * Callback when the write operation fails with an {@link Throwable error}.
          *
          * @param cause {@link Throwable} that terminated the write
          */
-        void writeFailed(Throwable cause);
+        default void writeFailed(Throwable cause) {
+        }
 
         /**
          * Callback when the entire write operation completes successfully.
          */
-        void writeComplete();
+        default void writeComplete() {
+        }
 
         /**
          * Callback when the write operation is cancelled.
          */
-        void writeCancelled();
+        default void writeCancelled() {
+        }
     }
 }

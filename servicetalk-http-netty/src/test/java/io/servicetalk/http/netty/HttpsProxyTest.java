@@ -44,16 +44,12 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -102,7 +98,6 @@ import static org.mockito.Mockito.when;
 
 class HttpsProxyTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpsProxyTest.class);
     private static final String AUTH_TOKEN = "aGVsbG86d29ybGQ=";
 
     @RegisterExtension
@@ -164,9 +159,6 @@ class HttpsProxyTest {
         when(connectionObserver.onProxyConnect(any())).thenReturn(proxyConnectObserver);
         lenient().when(connectionObserver.onSecurityHandshake(any(SslConfig.class)))
                 .thenReturn(securityHandshakeObserver);
-        lenient().when(connectionObserver.connectionEstablished(any())).thenReturn(NoopDataObserver.INSTANCE);
-        lenient().when(connectionObserver.multiplexedConnectionEstablished(any()))
-                .thenReturn(NoopMultiplexedObserver.INSTANCE);
         order = inOrder(transportObserver, connectionObserver, proxyConnectObserver, securityHandshakeObserver);
     }
 

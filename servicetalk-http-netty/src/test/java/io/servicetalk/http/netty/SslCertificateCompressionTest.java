@@ -23,7 +23,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.CertificateCompressionAlgorithms;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -31,7 +30,6 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.OpenSslContextOption;
@@ -169,41 +167,6 @@ class SslCertificateCompressionTest {
                             inHandshake = false;
                         }
                     };
-                }
-
-                @Override
-                public void onFlush() {
-                }
-
-                @Override
-                public void onTransportHandshakeComplete(final ConnectionInfo info) {
-                }
-
-                @Override
-                public ProxyConnectObserver onProxyConnect(final Object connectMsg) {
-                    return NoopTransportObserver.NoopProxyConnectObserver.INSTANCE;
-                }
-
-                @Override
-                public DataObserver connectionEstablished(final ConnectionInfo info) {
-                    return NoopTransportObserver.NoopDataObserver.INSTANCE;
-                }
-
-                @Override
-                public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
-                    return NoopTransportObserver.NoopMultiplexedObserver.INSTANCE;
-                }
-
-                @Override
-                public void connectionWritabilityChanged(final boolean isWritable) {
-                }
-
-                @Override
-                public void connectionClosed(final Throwable error) {
-                }
-
-                @Override
-                public void connectionClosed() {
                 }
             };
         }
