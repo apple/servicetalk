@@ -46,10 +46,7 @@ public interface ConnectionInfo {
      * @return String representation of an identifier for this connection (can be globally non-unique).
      */
     default String connectionId() {
-        final long hashCode = System.identityHashCode(this);
-        final int high = (int) (hashCode >>> 32);
-        final int low = (int) (hashCode & 0xFFFFFFFFL);
-        return String.format("0x%08x", high ^ low);
+        return String.format("0x%08x", System.identityHashCode(this));
     }
 
     /**
