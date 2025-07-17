@@ -73,4 +73,10 @@
     </Or>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+  <!-- Not interested in returned values -->
+  <Match>
+    <Class name="io.servicetalk.grpc.netty.GrpcLifecycleObserverTest"/>
+    <Method name="verifyObservers"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
 </FindBugsFilter>

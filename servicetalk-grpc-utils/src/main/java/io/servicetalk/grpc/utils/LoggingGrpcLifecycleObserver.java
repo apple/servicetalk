@@ -99,10 +99,6 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
         }
 
         @Override
-        public void onRequestDataRequested(final long n) {
-        }
-
-        @Override
         public void onRequestData(final Buffer data) {
             requestSize += data.readableBytes();
         }
@@ -135,10 +131,6 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
             assert this.responseMetaData == null;
             this.responseMetaData = responseMetaData;
             return this;
-        }
-
-        @Override
-        public void onResponseDataRequested(final long n) {
         }
 
         @Override

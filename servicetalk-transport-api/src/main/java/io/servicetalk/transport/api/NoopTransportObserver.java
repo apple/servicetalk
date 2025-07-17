@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 final class NoopTransportObserver implements TransportObserver {
 
     private NoopTransportObserver() {
-        // Singleton
+        // No instances
     }
 
     @Override

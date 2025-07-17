@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -31,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +122,6 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
 
         @Override
         public HttpExchangeObserver onNewExchange() {
-
             return new HttpExchangeObserver() {
 
                 @Nullable
@@ -133,12 +130,7 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                 @Override
                 public HttpRequestObserver onRequest(final HttpRequestMetaData requestMetaData) {
                     this.requestContext = requestMetaData.context();
-                    return NoopHttpLifecycleObserver.NoopHttpRequestObserver.INSTANCE;
-                }
-
-                @Override
-                public HttpResponseObserver onResponse(final HttpResponseMetaData responseMetaData) {
-                    return NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE;
+                    return HttpExchangeObserver.super.onRequest(requestMetaData);
                 }
 
                 @Override
@@ -154,18 +146,6 @@ final class HttpMessageDiscardWatchdogServiceFilter implements StreamingHttpServ
                                     "be fully consumed before discarding.");
                         }
                     }
-                }
-
-                @Override
-                public void onConnectionSelected(final ConnectionInfo info) {
-                }
-
-                @Override
-                public void onResponseError(final Throwable cause) {
-                }
-
-                @Override
-                public void onResponseCancel() {
                 }
             };
         }

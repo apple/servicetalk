@@ -20,7 +20,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.transport.api.ConnectionInfo;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
@@ -63,9 +62,6 @@ final class TestHttpLifecycleObserver implements HttpLifecycleObserver {
     public HttpExchangeObserver onNewExchange() {
         setKey(ON_NEW_EXCHANGE_KEY);
         return new HttpExchangeObserver() {
-            @Override
-            public void onConnectionSelected(ConnectionInfo info) {
-            }
 
             @Override
             public HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {

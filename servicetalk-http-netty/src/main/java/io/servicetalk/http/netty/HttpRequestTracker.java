@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
@@ -23,11 +22,9 @@ import io.servicetalk.client.api.RequestTracker;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -124,8 +121,8 @@ final class HttpRequestTracker {
             return new RequestTrackerExchangeObserver(tracker);
         }
 
-        private static final class RequestTrackerExchangeObserver implements HttpLifecycleObserver.HttpExchangeObserver,
-                HttpLifecycleObserver.HttpResponseObserver {
+        private static final class RequestTrackerExchangeObserver implements HttpExchangeObserver,
+                                                                             HttpResponseObserver {
 
             private static final AtomicLongFieldUpdater<RequestTrackerExchangeObserver> START_TIME_UPDATER =
                     AtomicLongFieldUpdater.newUpdater(RequestTrackerExchangeObserver.class, "startTime");
@@ -141,18 +138,13 @@ final class HttpRequestTracker {
             // HttpExchangeObserver methods
 
             @Override
-            public void onConnectionSelected(ConnectionInfo info) {
-                // noop
-            }
-
-            @Override
             public HttpLifecycleObserver.HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
                 START_TIME_UPDATER.set(this, tracker.beforeRequestStart());
-                return NoopHttpLifecycleObserver.NoopHttpRequestObserver.INSTANCE;
+                return HttpExchangeObserver.super.onRequest(requestMetaData);
             }
 
             @Override
-            public HttpLifecycleObserver.HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
+            public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
                 RequestTracker.ErrorClass error = classifyResponse(responseMetaData);
                 if (error != null) {
                     final long startTime = finish();
@@ -161,11 +153,6 @@ final class HttpRequestTracker {
                     }
                 }
                 return this;
-            }
-
-            @Override
-            public void onExchangeFinally() {
-                // noop
             }
 
             // Shared interface methods
@@ -187,16 +174,6 @@ final class HttpRequestTracker {
             }
 
             // HttpResponseObserver methods
-
-            @Override
-            public void onResponseData(Buffer data) {
-                // noop
-            }
-
-            @Override
-            public void onResponseTrailers(HttpHeaders trailers) {
-                // noop
-            }
 
             @Override
             public void onResponseComplete() {

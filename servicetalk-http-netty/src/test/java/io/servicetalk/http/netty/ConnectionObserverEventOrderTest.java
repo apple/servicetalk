@@ -88,13 +88,13 @@ class ConnectionObserverEventOrderTest {
                 @Override
                 public HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
                     addEvent();
-                    return NoopHttpLifecycleObserver.NoopHttpRequestObserver.INSTANCE;
+                    return HttpExchangeObserver.super.onRequest(requestMetaData);
                 }
 
                 @Override
                 public HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
                     addEvent();
-                    return NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE;
+                    return HttpExchangeObserver.super.onResponse(responseMetaData);
                 }
 
                 @Override
