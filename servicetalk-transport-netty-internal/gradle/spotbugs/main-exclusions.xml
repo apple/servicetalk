@@ -103,10 +103,19 @@
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
 
-  <!-- FIXME: 0.43 - Remove temporary suppression after we can remove deprecated constructors -->
+  <!-- FIXME: 0.43 - Remove temporary suppression after we can remove deprecated code -->
   <Match>
     <Class name="io.servicetalk.transport.netty.internal.ConnectionObserverInitializer$PartialConnectionInfo"/>
     <Method name="executionContext"/>
     <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.transport.netty.internal.NoopTransportObserver$NoopDataObserver"/>
+      <Class name="io.servicetalk.transport.netty.internal.NoopTransportObserver$NoopMultiplexedObserver"/>
+      <Class name="io.servicetalk.transport.netty.internal.NoopTransportObserver$NoopProxyConnectObserver"/>
+      <Class name="io.servicetalk.transport.netty.internal.NoopTransportObserver$NoopSecurityHandshakeObserver"/>
+    </Or>
+    <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
   </Match>
 </FindBugsFilter>
