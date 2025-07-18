@@ -547,15 +547,14 @@ abstract class AbstractHttpServiceAsyncContextTest {
         assertNoAsyncErrors(errorQueue);
     }
 
-    private static void makeClientRequestWithIdExpectError(BlockingHttpConnection connection,
-                                                  String requestId) {
+    private static void makeClientRequestWithIdExpectError(BlockingHttpConnection connection, String requestId) {
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
         assertThrows(Exception.class, () -> connection.request(request));
     }
 
     private static void makeClientRequestWithIdExpectCancel(BlockingHttpConnection connection,
-                                                           String requestId, CountDownLatch latch) throws Exception {
+                                                            String requestId, CountDownLatch latch) throws Exception {
         HttpConnection streamingConnection = connection.asConnection();
         HttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
@@ -563,7 +562,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 .toFuture();
         latch.await();
         responseFuture.cancel(true);
-        assertThrows(Exception.class, () -> responseFuture.get());
+        assertThrows(Exception.class, responseFuture::get);
     }
 
     private static String makeClientRequestWithId(BlockingHttpConnection connection,

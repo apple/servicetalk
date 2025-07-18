@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2023, 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@ public interface HttpLifecycleObserver {
          *
          * @param info {@link ConnectionInfo} of the selected connection
          */
-        void onConnectionSelected(ConnectionInfo info);
+        default void onConnectionSelected(ConnectionInfo info) {
+        }
 
         /**
          * Callback when a request starts.
@@ -72,7 +73,9 @@ public interface HttpLifecycleObserver {
          * @param requestMetaData The corresponding {@link HttpRequestMetaData}
          * @return an {@link HttpRequestObserver} that provides visibility into request events
          */
-        HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData);
+        default HttpRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
+            return NoopHttpLifecycleObservers.NOOP_HTTP_REQUEST_OBSERVER;
+        }
 
         /**
          * Callback when a response meta-data was observed.
@@ -80,21 +83,25 @@ public interface HttpLifecycleObserver {
          * @param responseMetaData the corresponding {@link HttpResponseMetaData}
          * @return an {@link HttpResponseObserver} that provides visibility into response events
          */
-        HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData);
+        default HttpResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
+            return NoopHttpLifecycleObservers.NOOP_HTTP_RESPONSE_OBSERVER;
+        }
 
         /**
          * Callback if the response meta-data was not received due to an error.
          *
          * @param cause the cause of a response meta-data failure
          */
-        void onResponseError(Throwable cause);
+        default void onResponseError(Throwable cause) {
+        }
 
         /**
          * Callback if the response meta-data was cancelled.
          * <p>
          * Cancellation is the best effort, more events may be signaled after cancel.
          */
-        void onResponseCancel();
+        default void onResponseCancel() {
+        }
 
         /**
          * Callback when the exchange completes.
@@ -103,7 +110,8 @@ public interface HttpLifecycleObserver {
          * {@link HttpResponseObserver} terminate or {@link #onResponseError(Throwable)}/{@link #onResponseCancel()}
          * method is invoked.
          */
-        void onExchangeFinally();
+        default void onExchangeFinally() {
+        }
     }
 
     /**
@@ -122,7 +130,7 @@ public interface HttpLifecycleObserver {
          *
          * @param n number of requested items
          */
-        default void onRequestDataRequested(long n) {   // FIXME: 0.43 - consider removing default impl
+        default void onRequestDataRequested(long n) {
         }
 
         /**
@@ -132,21 +140,24 @@ public interface HttpLifecycleObserver {
          *
          * @param data the request payload body data chunk
          */
-        void onRequestData(Buffer data);
+        default void onRequestData(Buffer data) {
+        }
 
         /**
          * Callback when request trailers were observed.
          *
          * @param trailers trailers of the request
          */
-        void onRequestTrailers(HttpHeaders trailers);
+        default void onRequestTrailers(HttpHeaders trailers) {
+        }
 
         /**
          * Callback if the request completes successfully.
          * <p>
          * This is one of the possible terminal events.
          */
-        void onRequestComplete();
+        default void onRequestComplete() {
+        }
 
         /**
          * Callback if the request fails with an error.
@@ -155,7 +166,8 @@ public interface HttpLifecycleObserver {
          *
          * @param cause {@link Throwable} that fails this request
          */
-        void onRequestError(Throwable cause);
+        default void onRequestError(Throwable cause) {
+        }
 
         /**
          * Callback if the request is cancelled.
@@ -163,7 +175,8 @@ public interface HttpLifecycleObserver {
          * This is one of the possible terminal events.
          * Cancellation is the best effort, more events may be signaled after cancel.
          */
-        void onRequestCancel();
+        default void onRequestCancel() {
+        }
     }
 
     /**
@@ -182,7 +195,7 @@ public interface HttpLifecycleObserver {
          *
          * @param n number of requested items
          */
-        default void onResponseDataRequested(long n) {  // FIXME: 0.43 - consider removing default impl
+        default void onResponseDataRequested(long n) {
         }
 
         /**
@@ -192,21 +205,24 @@ public interface HttpLifecycleObserver {
          *
          * @param data the response payload body data chunk
          */
-        void onResponseData(Buffer data);
+        default void onResponseData(Buffer data) {
+        }
 
         /**
          * Callback when response trailers were observed.
          *
          * @param trailers trailers of the response
          */
-        void onResponseTrailers(HttpHeaders trailers);
+        default void onResponseTrailers(HttpHeaders trailers) {
+        }
 
         /**
          * Callback when the response completes successfully.
          * <p>
          * This is one of the possible terminal events.
          */
-        void onResponseComplete();
+        default void onResponseComplete() {
+        }
 
         /**
          * Callback when the response fails with an error.
@@ -215,7 +231,8 @@ public interface HttpLifecycleObserver {
          *
          * @param cause {@link Throwable} that terminated this response
          */
-        void onResponseError(Throwable cause);
+        default void onResponseError(Throwable cause) {
+        }
 
         /**
          * Callback when the response is cancelled.
@@ -223,6 +240,7 @@ public interface HttpLifecycleObserver {
          * This is one of the possible terminal events.
          * Cancellation is the best effort, more events may be signaled after cancel.
          */
-        void onResponseCancel();
+        default void onResponseCancel() {
+        }
     }
 }

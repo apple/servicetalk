@@ -15,12 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
-import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.transport.api.ConnectionInfo;
 
 final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
 
@@ -42,32 +37,6 @@ final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
         private NoopHttpExchangeObserver() {
             // Singleton
         }
-
-        @Override
-        public void onConnectionSelected(final ConnectionInfo info) {
-        }
-
-        @Override
-        public HttpRequestObserver onRequest(final HttpRequestMetaData requestMetaData) {
-            return NoopHttpRequestObserver.INSTANCE;
-        }
-
-        @Override
-        public HttpResponseObserver onResponse(final HttpResponseMetaData responseMetaData) {
-            return NoopHttpResponseObserver.INSTANCE;
-        }
-
-        @Override
-        public void onResponseError(final Throwable cause) {
-        }
-
-        @Override
-        public void onResponseCancel() {
-        }
-
-        @Override
-        public void onExchangeFinally() {
-        }
     }
 
     static final class NoopHttpRequestObserver implements HttpRequestObserver {
@@ -77,30 +46,6 @@ final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
         private NoopHttpRequestObserver() {
             // Singleton
         }
-
-        @Override
-        public void onRequestDataRequested(final long n) {
-        }
-
-        @Override
-        public void onRequestData(final Buffer data) {
-        }
-
-        @Override
-        public void onRequestTrailers(final HttpHeaders trailers) {
-        }
-
-        @Override
-        public void onRequestComplete() {
-        }
-
-        @Override
-        public void onRequestError(final Throwable cause) {
-        }
-
-        @Override
-        public void onRequestCancel() {
-        }
     }
 
     static final class NoopHttpResponseObserver implements HttpResponseObserver {
@@ -109,30 +54,6 @@ final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
 
         private NoopHttpResponseObserver() {
             // Singleton
-        }
-
-        @Override
-        public void onResponseDataRequested(final long n) {
-        }
-
-        @Override
-        public void onResponseData(final Buffer data) {
-        }
-
-        @Override
-        public void onResponseTrailers(final HttpHeaders trailers) {
-        }
-
-        @Override
-        public void onResponseComplete() {
-        }
-
-        @Override
-        public void onResponseError(final Throwable cause) {
-        }
-
-        @Override
-        public void onResponseCancel() {
         }
     }
 }

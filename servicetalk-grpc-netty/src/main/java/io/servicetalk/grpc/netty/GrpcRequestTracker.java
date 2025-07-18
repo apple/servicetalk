@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
@@ -25,11 +24,9 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcStatus;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.netty.HttpLifecycleObserverRequesterFilter;
-import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -45,8 +42,6 @@ import static io.servicetalk.client.api.RequestTracker.REQUEST_TRACKER_KEY;
 final class GrpcRequestTracker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRequestTracker.class);
-    private static final GrpcLifecycleObserver.GrpcRequestObserver NOOP_REQUEST_OBSERVER =
-            new NoopGrpcRequestObserver();
 
     private static final Function<GrpcStatus, RequestTracker.ErrorClass> PEER_RESPONSE_ERROR_CLASSIFIER = (status) -> {
         // TODO: this needs to be gone over with more detail.
@@ -140,8 +135,8 @@ final class GrpcRequestTracker {
             return new Observer.RequestTrackerExchangeObserver(tracker);
         }
 
-        private static final class RequestTrackerExchangeObserver implements GrpcLifecycleObserver.GrpcExchangeObserver,
-                GrpcLifecycleObserver.GrpcResponseObserver {
+        private static final class RequestTrackerExchangeObserver implements GrpcExchangeObserver,
+                                                                             GrpcResponseObserver {
 
             private static final AtomicLongFieldUpdater<RequestTrackerExchangeObserver> START_TIME_UPDATER =
                     AtomicLongFieldUpdater.newUpdater(RequestTrackerExchangeObserver.class, "startTime");
@@ -154,18 +149,13 @@ final class GrpcRequestTracker {
             }
 
             @Override
-            public void onConnectionSelected(ConnectionInfo info) {
-                // noop
-            }
-
-            @Override
             public GrpcLifecycleObserver.GrpcRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
                 START_TIME_UPDATER.set(this, tracker.beforeRequestStart());
-                return NOOP_REQUEST_OBSERVER;
+                return GrpcExchangeObserver.super.onRequest(requestMetaData);
             }
 
             @Override
-            public GrpcLifecycleObserver.GrpcResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
+            public GrpcResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
                 // TODO: should we _also_ check the HttpResponseMetadata?
                 return this;
             }
@@ -187,11 +177,6 @@ final class GrpcRequestTracker {
             }
 
             @Override
-            public void onExchangeFinally() {
-                // noop
-            }
-
-            @Override
             public void onGrpcStatus(GrpcStatus status) {
                 RequestTracker.ErrorClass error = PEER_RESPONSE_ERROR_CLASSIFIER.apply(status);
                 if (error != null) {
@@ -200,16 +185,6 @@ final class GrpcRequestTracker {
                         tracker.onRequestError(startTime, error);
                     }
                 }
-            }
-
-            @Override
-            public void onResponseData(Buffer data) {
-                // noop
-            }
-
-            @Override
-            public void onResponseTrailers(HttpHeaders trailers) {
-                // noop: this is called right before `onGrpcStatus` in the GrpcToHttpLifecycleObserverBridge.
             }
 
             @Override
@@ -227,33 +202,6 @@ final class GrpcRequestTracker {
             private boolean checkOnce(long startTime) {
                 return startTime != Long.MAX_VALUE && startTime != Long.MIN_VALUE;
             }
-        }
-    }
-
-    private static final class NoopGrpcRequestObserver implements GrpcLifecycleObserver.GrpcRequestObserver {
-        @Override
-        public void onRequestTrailers(HttpHeaders trailers) {
-            // noop
-        }
-
-        @Override
-        public void onRequestData(Buffer data) {
-            // noop
-        }
-
-        @Override
-        public void onRequestComplete() {
-            // noop
-        }
-
-        @Override
-        public void onRequestError(Throwable cause) {
-            // noop
-        }
-
-        @Override
-        public void onRequestCancel() {
-            // noop
         }
     }
 }

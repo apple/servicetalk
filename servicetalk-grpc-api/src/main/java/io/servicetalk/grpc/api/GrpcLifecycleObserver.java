@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021, 2025 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +60,14 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
     interface GrpcExchangeObserver extends HttpExchangeObserver {
 
         @Override
-        GrpcRequestObserver onRequest(HttpRequestMetaData requestMetaData);
+        default GrpcRequestObserver onRequest(HttpRequestMetaData requestMetaData) {
+            return NoopGrpcLifecycleObservers.NOOP_GRPC_REQUEST_OBSERVER;
+        }
 
         @Override
-        GrpcResponseObserver onResponse(HttpResponseMetaData responseMetaData);
+        default GrpcResponseObserver onResponse(HttpResponseMetaData responseMetaData) {
+            return NoopGrpcLifecycleObservers.NOOP_GRPC_RESPONSE_OBSERVER;
+        }
     }
 
     /**
@@ -82,7 +86,8 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
          * the server listens both gRPC and HTTP traffic or receives non-gRPC requests from untrusted peers.
          */
         @Override
-        void onRequestTrailers(HttpHeaders trailers);
+        default void onRequestTrailers(HttpHeaders trailers) {
+        }
     }
 
     /**
@@ -98,6 +103,7 @@ public interface GrpcLifecycleObserver extends HttpLifecycleObserver {
          *
          * @param status the corresponding {@link GrpcStatus}
          */
-        void onGrpcStatus(GrpcStatus status);
+        default void onGrpcStatus(GrpcStatus status) {
+        }
     }
 }
