@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.servicetalk.opentelemetry.grpc;
+package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.ConnectionInfo;
@@ -22,26 +22,20 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
-final class GrpcRequestInfo {
-
+/**
+ * Wrapper for request information including HTTP metadata and connection details.
+ * <p>
+ * This provides access to both HTTP-level request information and network-level
+ * connection information needed for complete observability attributes.
+ */
+final class RequestInfo {
     private final HttpRequestMetaData metadata;
-
     @Nullable
-    private final SocketAddress remoteAddress;
-    @Nullable
-    private final SocketAddress localAddress;
+    private final ConnectionInfo connectionInfo;
 
-    GrpcRequestInfo(HttpRequestMetaData metadata,
-                    @Nullable
-                    ConnectionInfo connectionInfo) {
+    RequestInfo(HttpRequestMetaData metadata, @Nullable ConnectionInfo connectionInfo) {
         this.metadata = metadata;
-        if (connectionInfo != null) {
-            remoteAddress = connectionInfo.remoteAddress();
-            localAddress = connectionInfo.localAddress();
-        } else {
-            remoteAddress = null;
-            localAddress = null;
-        }
+        this.connectionInfo = connectionInfo;
     }
 
     HttpRequestMetaData getMetadata() {
@@ -49,12 +43,17 @@ final class GrpcRequestInfo {
     }
 
     @Nullable
-    SocketAddress getRemoteAddress() {
-        return remoteAddress;
+    ConnectionInfo getConnectionInfo() {
+        return connectionInfo;
     }
 
     @Nullable
     SocketAddress getLocalAddress() {
-        return localAddress;
+        return connectionInfo != null ? connectionInfo.localAddress() : null;
+    }
+
+    @Nullable
+    SocketAddress getRemoteAddress() {
+        return connectionInfo != null ? connectionInfo.remoteAddress() : null;
     }
 }

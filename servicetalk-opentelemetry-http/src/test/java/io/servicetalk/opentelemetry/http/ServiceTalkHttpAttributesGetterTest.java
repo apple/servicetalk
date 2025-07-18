@@ -35,7 +35,8 @@ class ServiceTalkHttpAttributesGetterTest {
     void clientUrlExtractionNoHostAndPort() {
         String pathQueryFrag = "/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), nullValue());
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), nullValue());
     }
 
     @Test
@@ -43,7 +44,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
     @Test
@@ -51,7 +53,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String pathQueryFrag = "foo";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice:8080/" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080/" + pathQueryFrag));
     }
 
     @Test
@@ -59,7 +62,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:8080");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice:8080" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice:8080" + pathQueryFrag));
     }
 
     @Test
@@ -67,7 +71,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:80");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("http://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("http://myservice" + pathQueryFrag));
     }
 
     @Test
@@ -75,7 +80,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String pathQueryFrag = "/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(pathQueryFrag);
         request.addHeader(HOST, "myservice:443");
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo("https://myservice" + pathQueryFrag));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo("https://myservice" + pathQueryFrag));
     }
 
     @Test
@@ -83,7 +89,8 @@ class ServiceTalkHttpAttributesGetterTest {
         String requestTarget = "https://myservice/foo?bar=baz#frag";
         HttpRequestMetaData request = newRequest(requestTarget);
         request.addHeader(HOST, "badservice"); // should be unused
-        assertThat(CLIENT_INSTANCE.getUrlFull(request), equalTo(requestTarget));
+        RequestInfo requestInfo = new RequestInfo(request, null);
+        assertThat(CLIENT_INSTANCE.getUrlFull(requestInfo), equalTo(requestTarget));
     }
 
     private static HttpRequestMetaData newRequest(String requestTarget) {

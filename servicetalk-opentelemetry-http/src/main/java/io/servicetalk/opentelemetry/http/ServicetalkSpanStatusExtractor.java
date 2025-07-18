@@ -16,7 +16,6 @@
 
 package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 
 import io.opentelemetry.api.trace.StatusCode;
@@ -25,7 +24,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusExtractor;
 
 import javax.annotation.Nullable;
 
-final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<HttpRequestMetaData, HttpResponseMetaData> {
+final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<RequestInfo, HttpResponseMetaData> {
 
     static final ServicetalkSpanStatusExtractor CLIENT_INSTANCE = new ServicetalkSpanStatusExtractor(true);
     static final ServicetalkSpanStatusExtractor SERVER_INSTANCE = new ServicetalkSpanStatusExtractor(false);
@@ -39,7 +38,7 @@ final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<HttpRe
     @Override
     public void extract(
             SpanStatusBuilder spanStatusBuilder,
-            HttpRequestMetaData request,
+            RequestInfo requestInfo,
             @Nullable HttpResponseMetaData status,
             @Nullable Throwable error) {
         if (error != null) {
@@ -71,7 +70,7 @@ final class ServicetalkSpanStatusExtractor implements SpanStatusExtractor<HttpRe
                     break;
             }
         } else {
-            SpanStatusExtractor.getDefault().extract(spanStatusBuilder, request, null, null);
+            SpanStatusExtractor.getDefault().extract(spanStatusBuilder, requestInfo, null, null);
         }
     }
 }

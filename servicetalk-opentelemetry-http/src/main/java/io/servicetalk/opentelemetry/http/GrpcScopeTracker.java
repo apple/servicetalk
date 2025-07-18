@@ -1,0 +1,108 @@
+/*
+ * Copyright © 2025 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.servicetalk.opentelemetry.http;
+
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.TrailersTransformer;
+import io.servicetalk.http.utils.AfterFinallyHttpOperator;
+import io.servicetalk.transport.api.ConnectionInfo;
+
+import io.opentelemetry.context.Context;
+import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+
+import javax.annotation.Nullable;
+
+final class GrpcScopeTracker extends AbstractScopeTracker<GrpcTelemetryStatus> {
+
+    @Nullable
+    private HttpResponseMetaData responseMetaData;
+
+    @Nullable
+    private HttpHeaders trailers;
+
+    private GrpcScopeTracker(boolean isClient, Context context, StreamingHttpRequest request,
+                             @Nullable ConnectionInfo connectionInfo,
+                             Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter) {
+        super(isClient, context, request, connectionInfo, instrumenter);
+    }
+
+    static GrpcScopeTracker client(Context context, StreamingHttpRequest request,
+                                   @Nullable ConnectionInfo connectionInfo,
+                                   Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter) {
+        return new GrpcScopeTracker(true, context, request, connectionInfo, instrumenter);
+    }
+
+    static GrpcScopeTracker server(Context context, StreamingHttpRequest request,
+                                   @Nullable ConnectionInfo connectionInfo,
+                                   Instrumenter<RequestInfo, GrpcTelemetryStatus> instrumenter) {
+        GrpcScopeTracker tracker = new GrpcScopeTracker(false, context, request, connectionInfo, instrumenter);
+        request.transformMessageBody(body -> body.afterFinally(tracker::requestComplete));
+        return tracker;
+    }
+
+    @Override
+    protected void finishSpan(@Nullable Throwable error) {
+        // Create GrpcTelemetryStatus with captured response metadata, trailers, and error
+        GrpcTelemetryStatus telemetryStatus = new GrpcTelemetryStatus(responseMetaData, trailers);
+        instrumenter.end(context, requestInfo, telemetryStatus, error);
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
+        // Note that we use `discardEventsAfterCancel` to make sure the events that the observer sees are the
+        // same that the users see.
+        return responseSingle
+                // We want to make sure we capture our response and add our trailers listener first.
+                .map(this::captureTrailers)
+                .liftSync(new AfterFinallyHttpOperator(this, true));
+    }
+
+    private StreamingHttpResponse captureTrailers(StreamingHttpResponse response) {
+        this.responseMetaData = response;
+        return response.transform(new TrailersCapturingTransformer());
+    }
+
+    private final class TrailersCapturingTransformer implements TrailersTransformer<Void, Buffer> {
+        @Override
+        public Void newState() {
+            return null;
+        }
+
+        @Override
+        public Buffer accept(@Nullable Void state, Buffer buffer) {
+            return buffer;
+        }
+
+        @Override
+        public HttpHeaders payloadComplete(@Nullable Void state, HttpHeaders responseTrailers) {
+            // Atomically set trailers for later use in span completion
+            trailers = responseTrailers;
+            return responseTrailers;
+        }
+
+        @Override
+        public HttpHeaders catchPayloadFailure(@Nullable Void state, Throwable cause, HttpHeaders responseTrailers) {
+            // Same implementation.
+            return payloadComplete(state, responseTrailers);
+        }
+    }
+}
