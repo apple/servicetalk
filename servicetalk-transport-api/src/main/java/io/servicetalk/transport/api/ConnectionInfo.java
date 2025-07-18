@@ -26,6 +26,30 @@ import javax.net.ssl.SSLSession;
  */
 public interface ConnectionInfo {
     /**
+     * String representation of the current connection information.
+     *
+     * @return String representation of the current connection information.
+     */
+    @Override
+    String toString();
+
+    /**
+     * String representation of an identifier for this connection (can be globally non-unique).
+     * <p>
+     * Note: this identifier is a string representation of an ID assigned by underlying implementation of the
+     * connection. Whether it's globally unique or not depends on that implementation. It's not recommended to use this
+     * identifier as a map key for storing connection related data. It can be used for logging purposes to correlate
+     * events happening on this connection with other logs or events related to the same instance. If necessary,
+     * uniqueness can be ensured by using a combination of the current identifier with {@link #localAddress()} and
+     * {@link #remoteAddress()}.
+     *
+     * @return String representation of an identifier for this connection (can be globally non-unique).
+     */
+    default String connectionId() {
+        return String.format("0x%08x", System.identityHashCode(this));
+    }
+
+    /**
      * The {@link SocketAddress} to which the associated connection is bound.
      *
      * @return The {@link SocketAddress} to which the associated connection is bound.

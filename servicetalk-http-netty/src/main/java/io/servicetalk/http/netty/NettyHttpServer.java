@@ -449,6 +449,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public String connectionId() {
+            return connection.connectionId();
+        }
+
+        @Override
         public SocketAddress localAddress() {
             return connection.localAddress();
         }

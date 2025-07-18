@@ -31,6 +31,7 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestResponseStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.transport.api.ConnectionInfo;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -41,8 +42,10 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 
 class ConnectionContextToStringTest {
@@ -55,19 +58,21 @@ class ConnectionContextToStringTest {
              TesterProto.Tester.BlockingTesterClient client = GrpcClients.forAddress(serverHostAndPort(server))
                      .buildBlocking(new TesterProto.Tester.ClientFactory())) {
 
-            assertThat("GrpcServiceContext doesn't contain netty channel id for endpoint" +
-                            TestRpc.methodDescriptor().javaMethodName(),
-                    client.test(newRequest()).getMessage(), containsString("[id: "));
-            assertThat("GrpcServiceContext doesn't contain netty channel id for endpoint" +
-                            TestBiDiStreamRpc.methodDescriptor().javaMethodName(),
-                    readMessage(client.testBiDiStream(singletonList(newRequest()))), containsString("[id: "));
-            assertThat("GrpcServiceContext doesn't contain netty channel id for endpoint" +
-                            TestResponseStreamRpc.methodDescriptor().javaMethodName(),
-                    readMessage(client.testResponseStream(newRequest())), containsString("[id: "));
-            assertThat("GrpcServiceContext doesn't contain netty channel id for endpoint" +
-                            TestRequestStreamRpc.methodDescriptor().javaMethodName(),
-                    client.testRequestStream(singletonList(newRequest())).getMessage(), containsString("[id: "));
+            assertConnectionIdAndString(TestRpc.methodDescriptor().javaMethodName(), client.test(newRequest()));
+            assertConnectionIdAndString(TestBiDiStreamRpc.methodDescriptor().javaMethodName(),
+                    getFirst(client.testBiDiStream(singletonList(newRequest()))));
+            assertConnectionIdAndString(TestResponseStreamRpc.methodDescriptor().javaMethodName(),
+                    getFirst(client.testResponseStream(newRequest())));
+            assertConnectionIdAndString(TestRequestStreamRpc.methodDescriptor().javaMethodName(),
+                    client.testRequestStream(singletonList(newRequest())));
         }
+    }
+
+    private static void assertConnectionIdAndString(String endpoint, TestResponse response) {
+        assertThat("GrpcServiceContext connectionId does not match expected pattern for endpoint: " + endpoint,
+                response.getConnectionId(), matchesPattern("^0x[0-9a-fA-F]{8}$"));
+        assertThat("GrpcServiceContext does not contain netty channel id for endpoint: " + endpoint,
+                response.getMessage(), allOf(containsString("[id: 0x"), containsString(response.getConnectionId())));
     }
 
     private static TestRequest newRequest() {
@@ -75,21 +80,26 @@ class ConnectionContextToStringTest {
     }
 
     private static TestResponse newResponse(GrpcServiceContext ctx) {
-        return TestResponse.newBuilder().setMessage(ctx.toString()).build();
+        ConnectionInfo parent = ctx.parent();
+        return TestResponse.newBuilder()
+                .setMessage(ctx.toString())
+                .setConnectionId(parent != null ? parent.connectionId() : ctx.connectionId())
+                .build();
     }
 
-    private static String readMessage(BlockingIterable<TestResponse> iterable) {
-        BlockingIterator<TestResponse> iterator = iterable.iterator();
-        if (iterator.hasNext()) {
-            TestResponse response = iterator.next();
-            assertThat(response, is(notNullValue()));
-            // Discard all other items
-            while (iterator.hasNext()) {
-                iterator.next();
+    private static TestResponse getFirst(BlockingIterable<TestResponse> iterable) throws Exception {
+        TestResponse response;
+        try (BlockingIterator<TestResponse> iterator = iterable.iterator()) {
+            if (!iterator.hasNext()) {
+                throw new AssertionError("Empty iterable");
             }
-            return response.getMessage();
+            response = iterator.next();
+            assertThat(response, is(notNullValue()));
+            if (iterator.hasNext()) {
+                throw new AssertionError("Expected one item, but found 2+");
+            }
         }
-        throw new AssertionError("Empty iterable");
+        return response;
     }
 
     private static final class TesterServiceImpl implements TesterService {

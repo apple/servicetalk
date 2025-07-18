@@ -34,4 +34,5 @@ message TestRequest {
 
 message TestResponse {
     string message = 1;
+    string connectionId = 2;
 }

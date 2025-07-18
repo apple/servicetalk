@@ -163,8 +163,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }, HTTP_2_0, channel);
     }
 
-    private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements
-                                                                                             H2ClientParentConnection {
+    private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection
+            implements H2ClientParentConnection {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultH2ClientParentConnection.class);
 
@@ -422,6 +422,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 cleanupWhenError(futureCause, streamObserver, onCloseRunnable);
                 subscriber.onError(futureCause);
             }
+        }
+
+        @Override
+        public String connectionId() {
+            return parentContext.connectionId();
         }
 
         @Override

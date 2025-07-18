@@ -53,6 +53,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
+    public String connectionId() {
+        return connectionContext.connectionId();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return connectionContext.localAddress();
     }

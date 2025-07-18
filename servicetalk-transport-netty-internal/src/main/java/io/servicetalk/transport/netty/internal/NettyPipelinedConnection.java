@@ -125,6 +125,11 @@ public final class NettyPipelinedConnection<Req, Resp> implements NettyConnectio
     }
 
     @Override
+    public String connectionId() {
+        return connection.connectionId();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return connection.localAddress();
     }

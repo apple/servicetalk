@@ -57,6 +57,11 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
+    public String connectionId() {
+        return delegate.connectionId();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return delegate.localAddress();
     }

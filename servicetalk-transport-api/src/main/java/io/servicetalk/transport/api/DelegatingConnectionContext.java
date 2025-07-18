@@ -49,6 +49,11 @@ public class DelegatingConnectionContext extends DelegatingListenableAsyncClosea
     }
 
     @Override
+    public String connectionId() {
+        return delegate().connectionId();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return delegate().localAddress();
     }

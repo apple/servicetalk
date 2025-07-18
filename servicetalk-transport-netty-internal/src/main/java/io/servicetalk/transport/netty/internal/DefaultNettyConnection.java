@@ -680,6 +680,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
+    public String connectionId() {
+        return "0x" + channel().id().asShortText();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return channel().localAddress();
     }

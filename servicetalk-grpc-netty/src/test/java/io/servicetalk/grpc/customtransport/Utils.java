@@ -102,12 +102,14 @@ final class Utils {
     }
 
     static final class ChannelGrpcServiceContext implements GrpcServiceContext {
+        private final Channel channel;
         private final ListenableAsyncCloseable closeAsync;
         private final GrpcExecutionContext ctx;
         private final ContextMap requestContext = new DefaultContextMap();
         private final ContextMap responseContext = new DefaultContextMap();
 
         ChannelGrpcServiceContext(Channel channel, GrpcExecutionContext ctx) {
+            this.channel = channel;
             closeAsync = toListenableAsyncCloseable(new AsyncCloseable() {
                 private final Completable closeAsync = new SubscribableCompletable() {
                     @Override
@@ -176,13 +178,18 @@ final class Utils {
         }
 
         @Override
+        public String connectionId() {
+            return "0x" + channel.id().asShortText();
+        }
+
+        @Override
         public SocketAddress localAddress() {
-            return InMemorySocketAddress.INSTANCE;
+            return channel.localAddress();
         }
 
         @Override
         public SocketAddress remoteAddress() {
-            return InMemorySocketAddress.INSTANCE;
+            return channel.remoteAddress();
         }
 
         @Nullable
@@ -223,19 +230,6 @@ final class Utils {
         @Override
         public List<ContentCodec> supportedMessageCodings() {
             return Collections.emptyList();
-        }
-    }
-
-    private static final class InMemorySocketAddress extends SocketAddress {
-        private static final long serialVersionUID = 2360781509780657308L;
-        static final SocketAddress INSTANCE = new InMemorySocketAddress();
-
-        private InMemorySocketAddress() {
-        }
-
-        @Override
-        public String toString() {
-            return "InMemory";
         }
     }
 
